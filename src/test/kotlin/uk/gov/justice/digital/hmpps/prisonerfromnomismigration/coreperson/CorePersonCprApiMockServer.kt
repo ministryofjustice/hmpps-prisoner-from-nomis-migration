@@ -79,9 +79,9 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun migrateCorePersonResponse(request: MigrateCorePersonRequest = migrateCorePersonRequest()) = MigrateCorePersonResponse(
       nomisPrisonNumber = request.nomisPrisonNumber,
       cprId = "CPR-" + request.nomisPrisonNumber,
-      addressIds = request.addresses.map { IdPair(nomisId = it.nomisAddressId, cprId = "CPR-" + it.nomisAddressId) },
-      phoneIds = request.phoneNumbers.map { IdPair(nomisId = it.nomisPhoneId, cprId = "CPR-" + it.nomisPhoneId) },
-      emailAddressIds = request.emailAddresses.map { IdPair(nomisId = it.nomisEmailAddressId, cprId = "CPR-" + it.nomisEmailAddressId) },
+      addressIds = request.addresses?.map { IdPair(nomisId = it.nomisAddressId, cprId = "CPR-" + it.nomisAddressId) },
+      phoneIds = request.phoneNumbers?.map { IdPair(nomisId = it.nomisPhoneId, cprId = "CPR-" + it.nomisPhoneId) },
+      emailAddressIds = request.emailAddresses?.map { IdPair(nomisId = it.nomisEmailAddressId, cprId = "CPR-" + it.nomisEmailAddressId) },
       // TODO add additional children
       // offenderIds = request.offenders.map { IdPair(nomisId = it.nomisOffenderId, cprId = "CPR-" + it.nomisOffenderId) },
     )

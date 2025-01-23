@@ -18,17 +18,17 @@ fun CorePerson.toMigrateCorePersonRequest(): MigrateCorePersonRequest = MigrateC
   nomisPrisonNumber = prisonNumber,
   activeFlag = activeFlag,
   inOutStatus = inOutStatus,
-  offenders = offenders.map { it.toMockCprOffender() },
-  addresses = addresses.map { it.toCprAddress() },
-  phoneNumbers = phoneNumbers.map { it.toCprPhoneNumber() },
-  emailAddresses = emailAddresses.map { MockCprEmailAddress(it.emailAddressId, it.email) },
-  religions = beliefs.map { it.toCprBelief() },
+  offenders = offenders?.map { it.toMockCprOffender() },
+  addresses = addresses?.map { it.toCprAddress() },
+  phoneNumbers = phoneNumbers?.map { it.toCprPhoneNumber() },
+  emailAddresses = emailAddresses?.map { MockCprEmailAddress(it.emailAddressId, it.email) },
+  religions = beliefs?.map { it.toCprBelief() },
   sentenceStartDates = sentenceStartDates,
-  nationalities = nationalities.map { it.toCprNationality() },
-  nationalityDetails = nationalityDetails.map { it.toCprNationalityDetails() },
-  sexualOrientations = sexualOrientations.map { it.toCprSexualOrientation() },
-  disabilities = disabilities.map { it.toCprDisability() },
-  interestsToImmigration = interestsToImmigration.map { it.toCprInterestToImmigration() },
+  nationalities = nationalities?.map { it.toCprNationality() },
+  nationalityDetails = nationalityDetails?.map { it.toCprNationalityDetails() },
+  sexualOrientations = sexualOrientations?.map { it.toCprSexualOrientation() },
+  disabilities = disabilities?.map { it.toCprDisability() },
+  interestsToImmigration = interestsToImmigration?.map { it.toCprInterestToImmigration() },
 )
 
 fun CoreOffender.toMockCprOffender() = MockCprOffender(
@@ -45,6 +45,7 @@ fun CoreOffender.toMockCprOffender() = MockCprOffender(
   sex = sex?.code,
   workingName = workingName,
   nameType = nameType?.code,
+  createDate = createDate,
   identifiers = identifiers.map { it.toMockCprIdentifier() },
 )
 fun Identifier.toMockCprIdentifier() = MockCprIdentifier(
@@ -73,8 +74,8 @@ fun OffenderAddress.toCprAddress() =
     startDate = startDate,
     endDate = endDate,
     validatedPAF = validatedPAF,
-    usages = usages.map { addrUsage -> MockCprAddressUsage(addrUsage.usage.code, addrUsage.active) },
-    phoneNumbers = phoneNumbers.map { it.toCprPhoneNumber() },
+    usages = usages?.map { addrUsage -> MockCprAddressUsage(addrUsage.usage.code, addrUsage.active) },
+    phoneNumbers = phoneNumbers?.map { it.toCprPhoneNumber() },
   )
 
 fun OffenderPhoneNumber.toCprPhoneNumber() =

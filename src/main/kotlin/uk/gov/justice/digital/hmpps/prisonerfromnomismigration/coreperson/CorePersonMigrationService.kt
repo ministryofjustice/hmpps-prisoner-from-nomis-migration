@@ -42,6 +42,7 @@ class CorePersonMigrationService(
     pageSize: Long,
     pageNumber: Long,
   ): PageImpl<PrisonerId> = nomisApiService.getPrisonerIds(
+    // TODO add filter
     pageNumber = pageNumber,
     pageSize = pageSize,
   )
@@ -111,9 +112,9 @@ private fun MigrateCorePersonResponse.toCorePersonMappingsDto(migrationId: Strin
   mappingType = CorePersonMappingsDto.MappingType.MIGRATED,
   label = migrationId,
   personMapping = toCorePersonMappingIdDto(),
-  addressMappings = addressIds.map { it.toCorePersonSimpleMappingIdDto() },
-  phoneMappings = phoneIds.map { it.toCorePersonPhoneMappingIdDto(CorePersonPhoneMappingIdDto.CprPhoneType.CORE_PERSON) },
-  emailMappings = emailAddressIds.map { it.toCorePersonSimpleMappingIdDto() },
+  addressMappings = addressIds?.map { it.toCorePersonSimpleMappingIdDto() } ?: emptyList(),
+  phoneMappings = phoneIds?.map { it.toCorePersonPhoneMappingIdDto(CorePersonPhoneMappingIdDto.CprPhoneType.CORE_PERSON) } ?: emptyList(),
+  emailMappings = emailAddressIds?.map { it.toCorePersonSimpleMappingIdDto() } ?: emptyList(),
   // TODO set other mappings beliefs etc
 )
 

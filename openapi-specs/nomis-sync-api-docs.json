@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-01-21.10868.300f79d"
+    "version": "2025-01-22.10945.14e0398"
   },
   "servers": [
     {
@@ -14766,15 +14766,6 @@
             }
           },
           {
-            "name": "excludeProgramCode",
-            "in": "query",
-            "description": "Exclude program codes",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/excludeProgramCode"
-            }
-          },
-          {
             "name": "courseActivityId",
             "in": "query",
             "description": "Course Activity ID",
@@ -14916,15 +14907,6 @@
             }
           },
           {
-            "name": "excludeProgramCode",
-            "in": "query",
-            "description": "Exclude program codes",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/excludeProgramCode"
-            }
-          },
-          {
             "name": "courseActivityId",
             "in": "query",
             "description": "Course Activity ID",
@@ -15007,15 +14989,6 @@
             "schema": {
               "type": "string",
               "description": "Prison id"
-            }
-          },
-          {
-            "name": "excludeProgramCode",
-            "in": "query",
-            "description": "Exclude program codes",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/excludeProgramCode"
             }
           },
           {
@@ -15558,15 +15531,6 @@
             }
           },
           {
-            "name": "excludeProgramCode",
-            "in": "query",
-            "description": "Exclude program codes",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/excludeProgramCode"
-            }
-          },
-          {
             "name": "courseActivityId",
             "in": "query",
             "description": "Course Activity ID",
@@ -15641,15 +15605,6 @@
             "schema": {
               "type": "string",
               "description": "Prison id"
-            }
-          },
-          {
-            "name": "excludeProgramCode",
-            "in": "query",
-            "description": "Exclude program codes",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/excludeProgramCode"
             }
           },
           {
@@ -15735,15 +15690,6 @@
             "schema": {
               "type": "string",
               "description": "Prison id"
-            }
-          },
-          {
-            "name": "excludeProgramCode",
-            "in": "query",
-            "description": "Exclude program codes",
-            "required": false,
-            "schema": {
-              "$ref": "#/components/schemas/excludeProgramCode"
             }
           },
           {
@@ -16074,8 +16020,7 @@
           },
           "active": {
             "type": "boolean",
-            "description": "Flag to indicate if the adjustment is being applied",
-            "default": true
+            "description": "Flag to indicate if the adjustment is being applied"
           },
           "sentenceSequence": {
             "minimum": 0,
@@ -17378,8 +17323,7 @@
           },
           "active": {
             "type": "boolean",
-            "description": "Flag to indicate if the adjustment is being applied",
-            "default": true
+            "description": "Flag to indicate if the adjustment is being applied"
           }
         },
         "description": "Key date adjustment update request"
@@ -21622,13 +21566,13 @@
       "PageVisitIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -22139,13 +22083,13 @@
       "PageQuestionnaireIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -23880,6 +23824,14 @@
             "type": "string",
             "description": "Author last name"
           },
+          "authorUsernames": {
+            "type": "array",
+            "description": "List of all usernames for authorStaffId",
+            "items": {
+              "type": "string",
+              "description": "List of all usernames for authorStaffId"
+            }
+          },
           "prisonId": {
             "type": "string",
             "description": "Prison id"
@@ -23977,13 +23929,13 @@
       "PagePrisonerIds": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -24044,13 +23996,13 @@
       "PagePrisonerId": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -25075,13 +25027,13 @@
       "PagePersonIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -25228,13 +25180,13 @@
       "PageNonAssociationIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -25483,13 +25435,13 @@
       "PageLocationIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -26082,13 +26034,13 @@
       "PageIncidentIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -26202,13 +26154,13 @@
       "PageIncentiveIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -26438,13 +26390,13 @@
       "PageCSIPIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -26498,13 +26450,13 @@
       "PageCourtCaseIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -26823,13 +26775,13 @@
       "PageCorporateOrganisationIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -26921,6 +26873,11 @@
           "nameType": {
             "$ref": "#/components/schemas/CodeDescription"
           },
+          "createDate": {
+            "type": "string",
+            "description": "Date this offender record was created. This is separate from the CREATE_DATETIME audit column.",
+            "format": "date"
+          },
           "workingName": {
             "type": "boolean",
             "description": "The offender record associated with the current booking"
@@ -26938,18 +26895,7 @@
       "CorePerson": {
         "required": [
           "activeFlag",
-          "addresses",
-          "beliefs",
-          "disabilities",
-          "emailAddresses",
-          "interestsToImmigration",
-          "nationalities",
-          "nationalityDetails",
-          "offenders",
-          "phoneNumbers",
-          "prisonNumber",
-          "sentenceStartDates",
-          "sexualOrientations"
+          "prisonNumber"
         ],
         "type": "object",
         "properties": {
@@ -27091,9 +27037,7 @@
         "required": [
           "addressId",
           "mailAddress",
-          "phoneNumbers",
           "primaryAddress",
-          "usages",
           "validatedPAF"
         ],
         "type": "object",
@@ -27792,13 +27736,13 @@
       "PageAppointmentIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -28030,14 +27974,6 @@
         },
         "description": "Activity Schedule Rules"
       },
-      "excludeProgramCode": {
-        "type": "array",
-        "description": "Exclude program codes",
-        "items": {
-          "type": "string",
-          "description": "Exclude program codes"
-        }
-      },
       "FindSuspendedAllocationsResponse": {
         "required": [
           "courseActivityDescription",
@@ -28139,13 +28075,13 @@
       "PageFindActiveAllocationIdsResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -28204,13 +28140,13 @@
       "PageAdjustmentIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -28275,13 +28211,13 @@
       "PageAdjudicationChargeIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -28601,13 +28537,13 @@
       "PageFindActiveActivityIdsResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
