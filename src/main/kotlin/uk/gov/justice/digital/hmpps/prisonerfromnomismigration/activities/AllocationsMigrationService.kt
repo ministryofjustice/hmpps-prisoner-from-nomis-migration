@@ -170,7 +170,10 @@ private fun GetAllocationResponse.toAllocationMigrateRequest(activityId: Long, s
 fun List<AllocationExclusion>.toDpsExclusions(scheduleRules: List<ScheduleRulesResponse>): List<Slot> =
   listOf(AM, PM, ED).map { timeSlot ->
     this
-      .filter { exclusion -> exclusion.slot == null || exclusion.slot.value == timeSlot.value }
+      .filter { exclusion ->
+        val slot = exclusion.slot
+        slot == null || slot.value == timeSlot.value
+      }
       .map { exclusion -> exclusion.findDay() }
       .filter { day -> scheduleRules.includes(day, timeSlot) }
       .toSet()

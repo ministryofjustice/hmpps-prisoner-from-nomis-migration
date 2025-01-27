@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto.MappingType.DPS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.UpdateAmendment
@@ -39,13 +40,21 @@ class CaseNotesSynchronisationService(
   }
 
   suspend fun caseNoteInserted(event: CaseNotesEvent) {
-    val nomisCaseNote = nomisApiService.getCaseNote(event.caseNoteId)
-    if (nomisCaseNote.isSourcedFromDPS()) {
-      telemetryClient.trackEvent("casenotes-synchronisation-created-skipped", event.toTelemetryProperties())
-      return
-    }
-
     try {
+      val nomisCaseNote = nomisApiService.getCaseNote(event.caseNoteId)
+      if (nomisCaseNote.isSourcedFromDPS()) {
+        telemetryClient.trackEvent("casenotes-synchronisation-created-skipped", event.toTelemetryProperties())
+        return
+      }
+      if (nomisCaseNote.auditMissing()) {
+        val cn = caseNotesMappingService.getMappingGivenNomisIdOrNull(event.caseNoteId)
+        if (cn != null && cn.mappingType == DPS_CREATED) {
+          // Detected where the auditModuleName is null but the mapping exists, signifying that this CN was created from DPS
+          telemetryClient.trackEvent("casenotes-synchronisation-created-skipped-null", event.toTelemetryProperties())
+          return
+        }
+      }
+
       caseNotesService.upsertCaseNote(nomisCaseNote.toDPSSyncCaseNote(event.offenderIdDisplay!!)).apply {
         tryToCreateCaseNoteMapping(
           event,
@@ -419,6 +428,7 @@ private fun CaseNotesEvent.toTelemetryProperties(
   )
 
 private fun CaseNoteResponse.isSourcedFromDPS() = auditModuleName == "DPS_SYNCHRONISATION"
+private fun CaseNoteResponse.auditMissing() = auditModuleName == null
 
 private fun isMergeCopy(
   response: CaseNoteResponse,
