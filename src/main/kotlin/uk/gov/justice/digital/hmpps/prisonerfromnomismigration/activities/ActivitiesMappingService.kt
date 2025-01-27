@@ -11,19 +11,16 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ActivityMigrationMappingDto
 
 @Service
-class ActivitiesMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
-  MigrationMapping<ActivityMigrationMappingDto>(domainUrl = "/mapping/activities/migration", webClient) {
+class ActivitiesMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<ActivityMigrationMappingDto>(domainUrl = "/mapping/activities/migration", webClient) {
 
-  suspend fun findNomisMapping(courseActivityId: Long): ActivityMigrationMappingDto? {
-    return webClient.get()
-      .uri("/mapping/activities/migration/nomis-course-activity-id/{courseActivityId}", courseActivityId)
-      .retrieve()
-      .bodyToMono(ActivityMigrationMappingDto::class.java)
-      .onErrorResume(WebClientResponseException.NotFound::class.java) {
-        Mono.empty()
-      }
-      .awaitSingleOrNull()
-  }
+  suspend fun findNomisMapping(courseActivityId: Long): ActivityMigrationMappingDto? = webClient.get()
+    .uri("/mapping/activities/migration/nomis-course-activity-id/{courseActivityId}", courseActivityId)
+    .retrieve()
+    .bodyToMono(ActivityMigrationMappingDto::class.java)
+    .onErrorResume(WebClientResponseException.NotFound::class.java) {
+      Mono.empty()
+    }
+    .awaitSingleOrNull()
 
   suspend fun getActivityMigrationDetails(migrationId: String, size: Long = 1): ActivityMigrationDetails = webClient.get()
     .uri {

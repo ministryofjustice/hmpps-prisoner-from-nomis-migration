@@ -17,38 +17,35 @@ interface MigrationHistoryCustomRepository {
 
 @Repository
 class MigrationHistoryRepositoryImpl(private val template: R2dbcEntityTemplate) : MigrationHistoryCustomRepository {
-  override fun findAllWithFilter(filter: HistoryFilter): Flow<MigrationHistory> {
-    return template.select(MigrationHistory::class.java)
-      .from("migration_history")
-      .matching(
-        buildQuery(filter)
-          .sort(Sort.by("when_started").descending()),
-      )
-      .flow()
-  }
-
-  private fun buildQuery(filter: HistoryFilter): Query =
-    query(
-      CriteriaDefinition.from(
-        mutableListOf<CriteriaDefinition>().apply {
-          this and filter.fromDateTime?.let {
-            where("when_started").greaterThanOrEquals(it)
-          }
-          this and filter.toDateTime?.let {
-            where("when_started").lessThanOrEquals(it)
-          }
-          this and filter.includeOnlyFailures.takeIf { it }?.let {
-            where("records_failed").greaterThan(0)
-          }
-          this and filter.migrationTypes?.takeIf { it.isNotEmpty() }?.let {
-            where("migration_type").`in`(it)
-          }
-          this and filter.filterContains?.let {
-            where("filter").like("%$it%")
-          }
-        },
-      ),
+  override fun findAllWithFilter(filter: HistoryFilter): Flow<MigrationHistory> = template.select(MigrationHistory::class.java)
+    .from("migration_history")
+    .matching(
+      buildQuery(filter)
+        .sort(Sort.by("when_started").descending()),
     )
+    .flow()
+
+  private fun buildQuery(filter: HistoryFilter): Query = query(
+    CriteriaDefinition.from(
+      mutableListOf<CriteriaDefinition>().apply {
+        this and filter.fromDateTime?.let {
+          where("when_started").greaterThanOrEquals(it)
+        }
+        this and filter.toDateTime?.let {
+          where("when_started").lessThanOrEquals(it)
+        }
+        this and filter.includeOnlyFailures.takeIf { it }?.let {
+          where("records_failed").greaterThan(0)
+        }
+        this and filter.migrationTypes?.takeIf { it.isNotEmpty() }?.let {
+          where("migration_type").`in`(it)
+        }
+        this and filter.filterContains?.let {
+          where("filter").like("%$it%")
+        }
+      },
+    ),
+  )
 }
 
 private infix fun MutableList<CriteriaDefinition>.and(criteria: CriteriaDefinition?) {

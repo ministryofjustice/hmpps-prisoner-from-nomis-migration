@@ -10,17 +10,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AllocationMigrationMappingDto
 
 @Service
-class AllocationsMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
-  MigrationMapping<AllocationMigrationMappingDto>(domainUrl = "/mapping/allocations/migration", webClient) {
+class AllocationsMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<AllocationMigrationMappingDto>(domainUrl = "/mapping/allocations/migration", webClient) {
 
-  suspend fun findNomisMapping(allocationId: Long): AllocationMigrationMappingDto? {
-    return webClient.get()
-      .uri("/mapping/allocations/migration/nomis-allocation-id/{nomisAllocationId}", allocationId)
-      .retrieve()
-      .bodyToMono(AllocationMigrationMappingDto::class.java)
-      .onErrorResume(WebClientResponseException.NotFound::class.java) {
-        Mono.empty()
-      }
-      .awaitSingleOrNull()
-  }
+  suspend fun findNomisMapping(allocationId: Long): AllocationMigrationMappingDto? = webClient.get()
+    .uri("/mapping/allocations/migration/nomis-allocation-id/{nomisAllocationId}", allocationId)
+    .retrieve()
+    .bodyToMono(AllocationMigrationMappingDto::class.java)
+    .onErrorResume(WebClientResponseException.NotFound::class.java) {
+      Mono.empty()
+    }
+    .awaitSingleOrNull()
 }

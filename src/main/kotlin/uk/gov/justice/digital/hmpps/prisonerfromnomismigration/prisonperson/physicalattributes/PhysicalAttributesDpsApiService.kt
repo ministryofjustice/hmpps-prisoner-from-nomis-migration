@@ -23,13 +23,12 @@ class PhysicalAttributesDpsApiService(@Qualifier("prisonPersonApiWebClient") pri
     latestBooking: Boolean,
     createdAt: LocalDateTime,
     createdBy: String,
-  ): PhysicalAttributesSyncResponse =
-    webClient
-      .put()
-      .uri("/sync/prisoners/{prisonerNumber}/physical-attributes", prisonerNumber)
-      .bodyValue(syncPhysicalAttributesRequest(heightCentimetres, weightKilograms, appliesFrom, appliesTo, latestBooking, createdAt, createdBy))
-      .retrieve()
-      .awaitBody()
+  ): PhysicalAttributesSyncResponse = webClient
+    .put()
+    .uri("/sync/prisoners/{prisonerNumber}/physical-attributes", prisonerNumber)
+    .bodyValue(syncPhysicalAttributesRequest(heightCentimetres, weightKilograms, appliesFrom, appliesTo, latestBooking, createdAt, createdBy))
+    .retrieve()
+    .awaitBody()
 
   private fun syncPhysicalAttributesRequest(
     heightCentimetres: Int?,
@@ -39,27 +38,25 @@ class PhysicalAttributesDpsApiService(@Qualifier("prisonPersonApiWebClient") pri
     latestBooking: Boolean,
     createdAt: LocalDateTime,
     createdBy: String,
-  ) =
-    PhysicalAttributesSyncRequest(
-      height = heightCentimetres,
-      weight = weightKilograms,
-      appliesFrom = appliesFrom.atPrisonPersonZone(),
-      appliesTo = appliesTo?.atPrisonPersonZone(),
-      latestBooking = latestBooking,
-      createdAt = createdAt.atPrisonPersonZone(),
-      createdBy = createdBy,
-    )
+  ) = PhysicalAttributesSyncRequest(
+    height = heightCentimetres,
+    weight = weightKilograms,
+    appliesFrom = appliesFrom.atPrisonPersonZone(),
+    appliesTo = appliesTo?.atPrisonPersonZone(),
+    latestBooking = latestBooking,
+    createdAt = createdAt.atPrisonPersonZone(),
+    createdBy = createdBy,
+  )
 
   suspend fun migratePhysicalAttributes(
     prisonerNumber: String,
     requests: List<PhysicalAttributesMigrationRequest>,
-  ): PhysicalAttributesMigrationResponse =
-    webClient
-      .put()
-      .uri("/migration/prisoners/{prisonerNumber}/physical-attributes", prisonerNumber)
-      .bodyValue(requests)
-      .retrieve()
-      .awaitBody()
+  ): PhysicalAttributesMigrationResponse = webClient
+    .put()
+    .uri("/migration/prisoners/{prisonerNumber}/physical-attributes", prisonerNumber)
+    .bodyValue(requests)
+    .retrieve()
+    .awaitBody()
 
   fun migratePhysicalAttributesRequest(
     heightCentimetres: Int?,
@@ -69,14 +66,13 @@ class PhysicalAttributesDpsApiService(@Qualifier("prisonPersonApiWebClient") pri
     createdAt: LocalDateTime,
     createdBy: String,
     latestBooking: Boolean,
-  ) =
-    PhysicalAttributesMigrationRequest(
-      height = heightCentimetres,
-      weight = weightKilograms,
-      appliesFrom = appliesFrom.atPrisonPersonZone(),
-      appliesTo = appliesTo?.atPrisonPersonZone(),
-      createdAt = createdAt.atPrisonPersonZone(),
-      createdBy = createdBy,
-      latestBooking = latestBooking,
-    )
+  ) = PhysicalAttributesMigrationRequest(
+    height = heightCentimetres,
+    weight = weightKilograms,
+    appliesFrom = appliesFrom.atPrisonPersonZone(),
+    appliesTo = appliesTo?.atPrisonPersonZone(),
+    createdAt = createdAt.atPrisonPersonZone(),
+    createdBy = createdBy,
+    latestBooking = latestBooking,
+  )
 }

@@ -60,59 +60,58 @@ internal class ActivitiesApiServiceTest {
       )
     }
 
-    fun migrateActivityRequest() =
-      ActivityMigrateRequest(
-        programServiceCode = "SOME_PROGRAM",
-        prisonCode = "NXI",
-        startDate = LocalDate.now().minusDays(1),
-        endDate = LocalDate.now().plusDays(1),
-        capacity = 10,
-        description = "Some activity",
-        payPerSession = PayPerSession.H,
-        runsOnBankHoliday = true,
-        internalLocationDescription = "BXI-A-1-01",
-        internalLocationCode = "CELL-01",
-        internalLocationId = 123,
-        outsideWork = true,
-        scheduleRules = listOf(
-          NomisScheduleRule(
-            startTime = LocalDate.now().atTime(8, 0).toString(),
-            endTime = LocalDate.now().atTime(11, 30).toString(),
-            monday = true,
-            tuesday = true,
-            wednesday = true,
-            thursday = false,
-            friday = false,
-            saturday = false,
-            sunday = false,
-            timeSlot = NomisScheduleRule.TimeSlot.AM,
-          ),
-          NomisScheduleRule(
-            startTime = LocalDate.now().atTime(13, 0).toString(),
-            endTime = LocalDate.now().atTime(15, 30).toString(),
-            monday = false,
-            tuesday = false,
-            wednesday = true,
-            thursday = true,
-            friday = true,
-            saturday = false,
-            sunday = false,
-            timeSlot = NomisScheduleRule.TimeSlot.PM,
-          ),
+    fun migrateActivityRequest() = ActivityMigrateRequest(
+      programServiceCode = "SOME_PROGRAM",
+      prisonCode = "NXI",
+      startDate = LocalDate.now().minusDays(1),
+      endDate = LocalDate.now().plusDays(1),
+      capacity = 10,
+      description = "Some activity",
+      payPerSession = PayPerSession.H,
+      runsOnBankHoliday = true,
+      internalLocationDescription = "BXI-A-1-01",
+      internalLocationCode = "CELL-01",
+      internalLocationId = 123,
+      outsideWork = true,
+      scheduleRules = listOf(
+        NomisScheduleRule(
+          startTime = LocalDate.now().atTime(8, 0).toString(),
+          endTime = LocalDate.now().atTime(11, 30).toString(),
+          monday = true,
+          tuesday = true,
+          wednesday = true,
+          thursday = false,
+          friday = false,
+          saturday = false,
+          sunday = false,
+          timeSlot = NomisScheduleRule.TimeSlot.AM,
         ),
-        payRates = listOf(
-          NomisPayRate(
-            incentiveLevel = "BAS",
-            rate = 120,
-            nomisPayBand = "1",
-          ),
-          NomisPayRate(
-            incentiveLevel = "BAS",
-            rate = 140,
-            nomisPayBand = "2",
-          ),
+        NomisScheduleRule(
+          startTime = LocalDate.now().atTime(13, 0).toString(),
+          endTime = LocalDate.now().atTime(15, 30).toString(),
+          monday = false,
+          tuesday = false,
+          wednesday = true,
+          thursday = true,
+          friday = true,
+          saturday = false,
+          sunday = false,
+          timeSlot = NomisScheduleRule.TimeSlot.PM,
         ),
-      )
+      ),
+      payRates = listOf(
+        NomisPayRate(
+          incentiveLevel = "BAS",
+          rate = 120,
+          nomisPayBand = "1",
+        ),
+        NomisPayRate(
+          incentiveLevel = "BAS",
+          rate = 140,
+          nomisPayBand = "2",
+        ),
+      ),
+    )
 
     @Test
     internal fun `should supply authentication token`(): Unit = runBlocking {
@@ -259,34 +258,33 @@ internal class ActivitiesApiServiceTest {
       )
     }
 
-    private fun migrateAllocationRequest() =
-      AllocationMigrateRequest(
-        prisonCode = "NXI",
-        startDate = LocalDate.now().minusDays(1),
-        endDate = LocalDate.now().plusDays(1),
-        activityId = 4444,
-        splitRegimeActivityId = 5555,
-        prisonerNumber = "A1234AA",
-        bookingId = 8888,
-        suspendedFlag = true,
-        cellLocation = "BXI-A-1-01",
-        nomisPayBand = "1",
-        endComment = "Ended",
-        exclusions = listOf(
-          Slot(
-            weekNumber = 1,
-            timeSlot = AM,
-            monday = true,
-            tuesday = false,
-            wednesday = false,
-            thursday = false,
-            friday = false,
-            saturday = false,
-            sunday = false,
-            daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY),
-          ),
+    private fun migrateAllocationRequest() = AllocationMigrateRequest(
+      prisonCode = "NXI",
+      startDate = LocalDate.now().minusDays(1),
+      endDate = LocalDate.now().plusDays(1),
+      activityId = 4444,
+      splitRegimeActivityId = 5555,
+      prisonerNumber = "A1234AA",
+      bookingId = 8888,
+      suspendedFlag = true,
+      cellLocation = "BXI-A-1-01",
+      nomisPayBand = "1",
+      endComment = "Ended",
+      exclusions = listOf(
+        Slot(
+          weekNumber = 1,
+          timeSlot = AM,
+          monday = true,
+          tuesday = false,
+          wednesday = false,
+          thursday = false,
+          friday = false,
+          saturday = false,
+          sunday = false,
+          daysOfWeek = setOf(Slot.DaysOfWeek.MONDAY),
         ),
-      )
+      ),
+    )
 
     @Test
     internal fun `should supply authentication token`(): Unit = runBlocking {

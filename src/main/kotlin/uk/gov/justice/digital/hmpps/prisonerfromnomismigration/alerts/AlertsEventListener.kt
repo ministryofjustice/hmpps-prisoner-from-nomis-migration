@@ -69,8 +69,7 @@ class AlertsEventListener(
     }
   }
 
-  private inline fun <reified T> String.fromJson(): T =
-    objectMapper.readValue(this)
+  private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this)
 }
 
 data class AlertInsertedEvent(

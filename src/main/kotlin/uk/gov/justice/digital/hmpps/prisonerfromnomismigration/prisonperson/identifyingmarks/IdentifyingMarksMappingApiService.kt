@@ -10,17 +10,15 @@ import java.util.UUID
 
 @Service
 class IdentifyingMarksMappingApiService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
-  suspend fun getByNomisId(bookingId: Long, idMarksSeq: Long): IdentifyingMarkMappingDto? =
-    webClient.get()
-      .uri("/mapping/prisonperson/nomis-booking-id/{bookingId}/identifying-mark-sequence/{sequence}", bookingId, idMarksSeq)
-      .retrieve()
-      .awaitBodyOrNullWhenNotFound()
+  suspend fun getByNomisId(bookingId: Long, idMarksSeq: Long): IdentifyingMarkMappingDto? = webClient.get()
+    .uri("/mapping/prisonperson/nomis-booking-id/{bookingId}/identifying-mark-sequence/{sequence}", bookingId, idMarksSeq)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 
-  suspend fun getByDpsId(dpsId: UUID): IdentifyingMarkMappingDto? =
-    webClient.get()
-      .uri("/mapping/prisonperson/dps-identifying-mark-id/{dpsId}", dpsId)
-      .retrieve()
-      .awaitBodyOrNullWhenNotFound()
+  suspend fun getByDpsId(dpsId: UUID): IdentifyingMarkMappingDto? = webClient.get()
+    .uri("/mapping/prisonperson/dps-identifying-mark-id/{dpsId}", dpsId)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 
   suspend fun createMapping(mapping: IdentifyingMarkMappingDto) {
     webClient.post()

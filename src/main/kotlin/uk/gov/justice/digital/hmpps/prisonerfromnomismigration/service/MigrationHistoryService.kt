@@ -42,53 +42,48 @@ class MigrationHistoryService(
     )
   }.onFailure { log.error("Unable to record migration started record", it) }
 
-  suspend fun recordMigrationCompleted(migrationId: String, recordsFailed: Long, recordsMigrated: Long) =
-    runCatching {
-      migrationHistoryRepository.findById(migrationId)?.run {
-        migrationHistoryRepository.save(
-          this.copy(
-            whenEnded = LocalDateTime.now(),
-            recordsFailed = recordsFailed,
-            recordsMigrated = recordsMigrated,
-            status = MigrationStatus.COMPLETED,
-          ),
-        )
-      }
-    }.onFailure { log.error("Unable to record migration stopped record", it) }
+  suspend fun recordMigrationCompleted(migrationId: String, recordsFailed: Long, recordsMigrated: Long) = runCatching {
+    migrationHistoryRepository.findById(migrationId)?.run {
+      migrationHistoryRepository.save(
+        this.copy(
+          whenEnded = LocalDateTime.now(),
+          recordsFailed = recordsFailed,
+          recordsMigrated = recordsMigrated,
+          status = MigrationStatus.COMPLETED,
+        ),
+      )
+    }
+  }.onFailure { log.error("Unable to record migration stopped record", it) }
 
-  suspend fun recordMigrationCancelled(migrationId: String, recordsFailed: Long, recordsMigrated: Long) =
-    runCatching {
-      migrationHistoryRepository.findById(migrationId)?.run {
-        migrationHistoryRepository.save(
-          this.copy(
-            whenEnded = LocalDateTime.now(),
-            recordsFailed = recordsFailed,
-            recordsMigrated = recordsMigrated,
-            status = CANCELLED,
-          ),
-        )
-      }
-    }.onFailure { log.error("Unable to record migration stopped cancelled", it) }
+  suspend fun recordMigrationCancelled(migrationId: String, recordsFailed: Long, recordsMigrated: Long) = runCatching {
+    migrationHistoryRepository.findById(migrationId)?.run {
+      migrationHistoryRepository.save(
+        this.copy(
+          whenEnded = LocalDateTime.now(),
+          recordsFailed = recordsFailed,
+          recordsMigrated = recordsMigrated,
+          status = CANCELLED,
+        ),
+      )
+    }
+  }.onFailure { log.error("Unable to record migration stopped cancelled", it) }
 
-  suspend fun recordMigrationCancelledRequested(migrationId: String) =
-    kotlin.runCatching {
-      migrationHistoryRepository.findById(migrationId)?.run {
-        migrationHistoryRepository.save(
-          this.copy(
-            status = CANCELLED_REQUESTED,
-          ),
-        )
-      }
-    }.onFailure { log.error("Unable to record migration cancelled requested", it) }
+  suspend fun recordMigrationCancelledRequested(migrationId: String) = kotlin.runCatching {
+    migrationHistoryRepository.findById(migrationId)?.run {
+      migrationHistoryRepository.save(
+        this.copy(
+          status = CANCELLED_REQUESTED,
+        ),
+      )
+    }
+  }.onFailure { log.error("Unable to record migration cancelled requested", it) }
 
   fun findAll(filter: HistoryFilter) = migrationHistoryRepository.findAllWithFilter(filter)
 
   suspend fun deleteAll() = migrationHistoryRepository.deleteAll()
-  suspend fun get(migrationId: String): MigrationHistory =
-    migrationHistoryRepository.findById(migrationId) ?: throw NotFoundException(migrationId)
+  suspend fun get(migrationId: String): MigrationHistory = migrationHistoryRepository.findById(migrationId) ?: throw NotFoundException(migrationId)
 
-  suspend fun isCancelling(migrationId: String) =
-    migrationHistoryRepository.findById(migrationId)?.status in listOf(CANCELLED_REQUESTED, CANCELLED)
+  suspend fun isCancelling(migrationId: String) = migrationHistoryRepository.findById(migrationId)?.status in listOf(CANCELLED_REQUESTED, CANCELLED)
 
   suspend fun getActiveMigrationDetails(type: MigrationType): InProgressMigration {
     val queue = hmppsQueueService.findByQueueId(type.queueId)!!

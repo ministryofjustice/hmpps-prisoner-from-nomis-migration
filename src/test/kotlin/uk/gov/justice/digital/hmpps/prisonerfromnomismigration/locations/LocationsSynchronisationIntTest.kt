@@ -951,11 +951,10 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
   }
 }
 
-fun SqsAsyncClient.waitForMessageCountOnQueue(queueUrl: String, messageCount: Int) =
-  await untilCallTo {
-    countAllMessagesOnQueue(queueUrl)
-      .get()
-  } matches { it == messageCount }
+fun SqsAsyncClient.waitForMessageCountOnQueue(queueUrl: String, messageCount: Int) = await untilCallTo {
+  countAllMessagesOnQueue(queueUrl)
+    .get()
+} matches { it == messageCount }
 
 fun locationEvent(
   eventType: String = "AGENCY_INTERNAL_LOCATIONS-UPDATED",

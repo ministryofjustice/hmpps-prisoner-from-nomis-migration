@@ -140,25 +140,23 @@ class ProfileDetailsPhysicalAttributesMigrationIntTest : SqsIntegrationTestBase(
       }
     }
 
-    private fun WebTestClient.performMigration(offenderNo: String? = null) =
-      post().uri("/migrate/prisonperson")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_PRISONPERSON")))
-        .header("Content-Type", "application/json")
-        .bodyValue(PrisonPersonMigrationFilter(prisonerNumber = offenderNo, migrationType = PROFILE_DETAILS_PHYSICAL_ATTRIBUTES))
-        .exchange()
-        .expectStatus().isAccepted
-        .returnResult<MigrationResult>().responseBody.blockFirst()!!
-        .also {
-          waitUntilCompleted()
-        }
-
-    private fun waitUntilCompleted() =
-      await atMost Duration.ofSeconds(60) untilAsserted {
-        verify(telemetryClient).trackEvent(
-          eq("prisonperson-migration-completed"),
-          any(),
-          isNull(),
-        )
+    private fun WebTestClient.performMigration(offenderNo: String? = null) = post().uri("/migrate/prisonperson")
+      .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_PRISONPERSON")))
+      .header("Content-Type", "application/json")
+      .bodyValue(PrisonPersonMigrationFilter(prisonerNumber = offenderNo, migrationType = PROFILE_DETAILS_PHYSICAL_ATTRIBUTES))
+      .exchange()
+      .expectStatus().isAccepted
+      .returnResult<MigrationResult>().responseBody.blockFirst()!!
+      .also {
+        waitUntilCompleted()
       }
+
+    private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
+      verify(telemetryClient).trackEvent(
+        eq("prisonperson-migration-completed"),
+        any(),
+        isNull(),
+      )
+    }
   }
 }

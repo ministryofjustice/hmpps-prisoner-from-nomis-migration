@@ -27,23 +27,13 @@ class LocationsMigrationMessageListener(
 
   @SqsListener(LOCATIONS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
   @WithSpan(value = "dps-syscon-migration_locations_queue", kind = SpanKind.SERVER)
-  fun onLocationMessage(message: String, rawMessage: Message): CompletableFuture<Void?> {
-    return onMessage(message, rawMessage)
-  }
+  fun onLocationMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
 
-  override fun parseContextFilter(json: String): MigrationMessage<*, LocationsMigrationFilter> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextFilter(json: String): MigrationMessage<*, LocationsMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<LocationsMigrationFilter>> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<LocationsMigrationFilter>> = objectMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, LocationIdResponse> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextNomisId(json: String): MigrationMessage<*, LocationIdResponse> = objectMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, LocationMappingDto> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextMapping(json: String): MigrationMessage<*, LocationMappingDto> = objectMapper.readValue(json)
 }

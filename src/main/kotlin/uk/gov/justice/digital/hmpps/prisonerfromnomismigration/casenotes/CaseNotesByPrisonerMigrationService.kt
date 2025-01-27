@@ -47,18 +47,17 @@ class CaseNotesByPrisonerMigrationService(
     migrationFilter: CaseNotesMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<PrisonerId> =
-    migrationFilter.offenderNos?.let {
-      PageImpl<PrisonerId>(
-        migrationFilter.offenderNos.map { PrisonerId(it) },
-        Pageable.ofSize(migrationFilter.offenderNos.size),
-        migrationFilter.offenderNos.size.toLong(),
-      )
-    }
-      ?: nomisService.getPrisonerIds(
-        pageNumber = pageNumber,
-        pageSize = pageSize,
-      )
+  ): PageImpl<PrisonerId> = migrationFilter.offenderNos?.let {
+    PageImpl<PrisonerId>(
+      migrationFilter.offenderNos.map { PrisonerId(it) },
+      Pageable.ofSize(migrationFilter.offenderNos.size),
+      migrationFilter.offenderNos.size.toLong(),
+    )
+  }
+    ?: nomisService.getPrisonerIds(
+      pageNumber = pageNumber,
+      pageSize = pageSize,
+    )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     val offenderNo = context.body.offenderNo

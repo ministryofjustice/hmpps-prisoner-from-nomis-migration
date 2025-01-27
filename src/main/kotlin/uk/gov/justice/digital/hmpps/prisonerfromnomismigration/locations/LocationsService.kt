@@ -11,12 +11,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.N
 
 @Service
 class LocationsService(@Qualifier("locationsApiWebClient") private val webClient: WebClient) {
-  suspend fun upsertLocation(upsertRequest: NomisSyncLocationRequest): LegacyLocation =
-    webClient.post()
-      .uri("/sync/upsert")
-      .bodyValue(upsertRequest)
-      .retrieve()
-      .awaitBody()
+  suspend fun upsertLocation(upsertRequest: NomisSyncLocationRequest): LegacyLocation = webClient.post()
+    .uri("/sync/upsert")
+    .bodyValue(upsertRequest)
+    .retrieve()
+    .awaitBody()
 
   suspend fun deleteLocation(id: String) {
     webClient.delete()
@@ -25,10 +24,9 @@ class LocationsService(@Qualifier("locationsApiWebClient") private val webClient
       .awaitBodilessEntity()
   }
 
-  suspend fun migrateLocation(request: NomisMigrateLocationRequest): LegacyLocation =
-    webClient.post()
-      .uri("/migrate/location")
-      .bodyValue(request)
-      .retrieve()
-      .awaitBody()
+  suspend fun migrateLocation(request: NomisMigrateLocationRequest): LegacyLocation = webClient.post()
+    .uri("/migrate/location")
+    .bodyValue(request)
+    .retrieve()
+    .awaitBody()
 }

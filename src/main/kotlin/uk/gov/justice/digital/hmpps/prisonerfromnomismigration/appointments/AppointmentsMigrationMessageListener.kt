@@ -26,23 +26,13 @@ class AppointmentsMigrationMessageListener(
 
   @SqsListener(APPOINTMENTS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
   @WithSpan(value = "dps-syscon-migration_appointments_queue", kind = SpanKind.SERVER)
-  fun onAppointmentsMessage(message: String, rawMessage: Message): CompletableFuture<Void?> {
-    return onMessage(message, rawMessage)
-  }
+  fun onAppointmentsMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
 
-  override fun parseContextFilter(json: String): MigrationMessage<*, AppointmentsMigrationFilter> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextFilter(json: String): MigrationMessage<*, AppointmentsMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<AppointmentsMigrationFilter>> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<AppointmentsMigrationFilter>> = objectMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, AppointmentIdResponse> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextNomisId(json: String): MigrationMessage<*, AppointmentIdResponse> = objectMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, AppointmentMapping> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextMapping(json: String): MigrationMessage<*, AppointmentMapping> = objectMapper.readValue(json)
 }

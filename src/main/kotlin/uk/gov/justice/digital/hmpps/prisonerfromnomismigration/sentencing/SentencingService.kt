@@ -14,21 +14,19 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
     const val LEGACY_CONTENT_TYPE = "application/vnd.nomis-offence+json"
   }
 
-  suspend fun createSentencingAdjustment(sentencingAdjustment: LegacyAdjustment): LegacyAdjustmentCreatedResponse =
-    webClient.post()
-      .uri("/legacy/adjustments")
-      .header("Content-Type", LEGACY_CONTENT_TYPE)
-      .bodyValue(sentencingAdjustment)
-      .retrieve()
-      .awaitBody()
+  suspend fun createSentencingAdjustment(sentencingAdjustment: LegacyAdjustment): LegacyAdjustmentCreatedResponse = webClient.post()
+    .uri("/legacy/adjustments")
+    .header("Content-Type", LEGACY_CONTENT_TYPE)
+    .bodyValue(sentencingAdjustment)
+    .retrieve()
+    .awaitBody()
 
-  suspend fun updateSentencingAdjustment(adjustmentId: String, sentencingAdjustment: LegacyAdjustment): Unit =
-    webClient.put()
-      .uri("/legacy/adjustments/{adjustmentId}", adjustmentId)
-      .header("Content-Type", LEGACY_CONTENT_TYPE)
-      .bodyValue(sentencingAdjustment)
-      .retrieve()
-      .awaitBody()
+  suspend fun updateSentencingAdjustment(adjustmentId: String, sentencingAdjustment: LegacyAdjustment): Unit = webClient.put()
+    .uri("/legacy/adjustments/{adjustmentId}", adjustmentId)
+    .header("Content-Type", LEGACY_CONTENT_TYPE)
+    .bodyValue(sentencingAdjustment)
+    .retrieve()
+    .awaitBody()
 
   suspend fun deleteSentencingAdjustment(adjustmentId: String) {
     webClient.delete()
@@ -38,11 +36,10 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
       .awaitBodyOrNullWhenNotFound<Unit>()
   }
 
-  suspend fun patchSentencingAdjustmentCurrentTerm(adjustmentId: String, sentencingAdjustment: LegacyAdjustment): Unit =
-    webClient.patch()
-      .uri("/legacy/adjustments/{adjustmentId}/current-term", adjustmentId)
-      .header("Content-Type", LEGACY_CONTENT_TYPE)
-      .bodyValue(sentencingAdjustment)
-      .retrieve()
-      .awaitBody()
+  suspend fun patchSentencingAdjustmentCurrentTerm(adjustmentId: String, sentencingAdjustment: LegacyAdjustment): Unit = webClient.patch()
+    .uri("/legacy/adjustments/{adjustmentId}/current-term", adjustmentId)
+    .header("Content-Type", LEGACY_CONTENT_TYPE)
+    .bodyValue(sentencingAdjustment)
+    .retrieve()
+    .awaitBody()
 }

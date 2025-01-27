@@ -420,25 +420,24 @@ internal class CSIPMigrationServiceTest {
       }
 
       @Test
-      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
-        runTest {
-          service.migrateStatusCheck(
-            MigrationContext(
-              type = CSIP,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 100_200,
-              body = MigrationStatusCheck(checkCount = 4),
-            ),
-          )
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runTest {
+        service.migrateStatusCheck(
+          MigrationContext(
+            type = CSIP,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = MigrationStatusCheck(checkCount = 4),
+          ),
+        )
 
-          verify(queueService).sendMessage(
-            message = eq(MIGRATE_STATUS_CHECK),
-            context = check<MigrationContext<MigrationStatusCheck>> {
-              assertThat(it.body.checkCount).isEqualTo(0)
-            },
-            delaySeconds = eq(10),
-          )
-        }
+        verify(queueService).sendMessage(
+          message = eq(MIGRATE_STATUS_CHECK),
+          context = check<MigrationContext<MigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(0)
+          },
+          delaySeconds = eq(10),
+        )
+      }
     }
 
     @Nested
@@ -565,26 +564,25 @@ internal class CSIPMigrationServiceTest {
       }
 
       @Test
-      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
-        runTest {
-          service.cancelMigrateStatusCheck(
-            MigrationContext(
-              type = CSIP,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 100_200,
-              body = MigrationStatusCheck(checkCount = 4),
-            ),
-          )
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runTest {
+        service.cancelMigrateStatusCheck(
+          MigrationContext(
+            type = CSIP,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = MigrationStatusCheck(checkCount = 4),
+          ),
+        )
 
-          verify(queueService).purgeAllMessages(any())
-          verify(queueService).sendMessage(
-            message = eq(CANCEL_MIGRATION),
-            context = check<MigrationContext<MigrationStatusCheck>> {
-              assertThat(it.body.checkCount).isEqualTo(0)
-            },
-            delaySeconds = eq(10),
-          )
-        }
+        verify(queueService).purgeAllMessages(any())
+        verify(queueService).sendMessage(
+          message = eq(CANCEL_MIGRATION),
+          context = check<MigrationContext<MigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(0)
+          },
+          delaySeconds = eq(10),
+        )
+      }
     }
 
     @Nested
@@ -721,77 +719,75 @@ internal class CSIPMigrationServiceTest {
     }
 
     @Test
-    internal fun `will send MIGRATE_CSIP with context for each csip`(): Unit =
-      runTest {
-        service.migrateEntitiesForPage(
-          MigrationContext(
-            type = CSIP,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = MigrationPage(
-              filter = CSIPMigrationFilter(
-                fromDate = LocalDate.parse("2020-01-01"),
-                toDate = LocalDate.parse("2020-01-02"),
-              ),
-              pageNumber = 13,
-              pageSize = 15,
+    internal fun `will send MIGRATE_CSIP with context for each csip`(): Unit = runTest {
+      service.migrateEntitiesForPage(
+        MigrationContext(
+          type = CSIP,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = MigrationPage(
+            filter = CSIPMigrationFilter(
+              fromDate = LocalDate.parse("2020-01-01"),
+              toDate = LocalDate.parse("2020-01-02"),
             ),
+            pageNumber = 13,
+            pageSize = 15,
           ),
-        )
+        ),
+      )
 
-        verify(queueService, times(15)).sendMessageNoTracing(
-          message = eq(MIGRATE_ENTITY),
-          context = check<MigrationContext<CSIPMigrationFilter>> {
-            assertThat(it.estimatedCount).isEqualTo(100_200)
-            assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-          },
-          delaySeconds = eq(0),
-        )
-      }
+      verify(queueService, times(15)).sendMessageNoTracing(
+        message = eq(MIGRATE_ENTITY),
+        context = check<MigrationContext<CSIPMigrationFilter>> {
+          assertThat(it.estimatedCount).isEqualTo(100_200)
+          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+        },
+        delaySeconds = eq(0),
+      )
+    }
 
     @Test
-    internal fun `will send MIGRATE_CSIP with bookingId for each csip`(): Unit =
-      runTest {
-        val context: KArgumentCaptor<MigrationContext<CSIPIdResponse>> = argumentCaptor()
+    internal fun `will send MIGRATE_CSIP with bookingId for each csip`(): Unit = runTest {
+      val context: KArgumentCaptor<MigrationContext<CSIPIdResponse>> = argumentCaptor()
 
-        whenever(nomisApiService.getCSIPIds(any(), any(), any(), any())).thenReturn(
-          pages(
-            15,
-            startId = 1000,
-          ),
-        )
+      whenever(nomisApiService.getCSIPIds(any(), any(), any(), any())).thenReturn(
+        pages(
+          15,
+          startId = 1000,
+        ),
+      )
 
-        service.migrateEntitiesForPage(
-          MigrationContext(
-            type = CSIP,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = MigrationPage(
-              filter = CSIPMigrationFilter(
-                fromDate = LocalDate.parse("2020-01-01"),
-                toDate = LocalDate.parse("2020-01-02"),
-              ),
-              pageNumber = 13,
-              pageSize = 15,
+      service.migrateEntitiesForPage(
+        MigrationContext(
+          type = CSIP,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = MigrationPage(
+            filter = CSIPMigrationFilter(
+              fromDate = LocalDate.parse("2020-01-01"),
+              toDate = LocalDate.parse("2020-01-02"),
             ),
+            pageNumber = 13,
+            pageSize = 15,
           ),
-        )
+        ),
+      )
 
-        verify(queueService, times(15)).sendMessageNoTracing(
-          eq(MIGRATE_ENTITY),
-          context.capture(),
-          delaySeconds = eq(0),
-        )
-        val allContexts: List<MigrationContext<CSIPIdResponse>> = context.allValues
+      verify(queueService, times(15)).sendMessageNoTracing(
+        eq(MIGRATE_ENTITY),
+        context.capture(),
+        delaySeconds = eq(0),
+      )
+      val allContexts: List<MigrationContext<CSIPIdResponse>> = context.allValues
 
-        val (firstPage, secondPage, thirdPage) = allContexts
-        val lastPage = allContexts.last()
+      val (firstPage, secondPage, thirdPage) = allContexts
+      val lastPage = allContexts.last()
 
-        assertThat(firstPage.body.csipId).isEqualTo(1000)
-        assertThat(secondPage.body.csipId).isEqualTo(1001)
-        assertThat(thirdPage.body.csipId).isEqualTo(1002)
-        assertThat(lastPage.body.csipId).isEqualTo(1014)
-      }
+      assertThat(firstPage.body.csipId).isEqualTo(1000)
+      assertThat(secondPage.body.csipId).isEqualTo(1001)
+      assertThat(thirdPage.body.csipId).isEqualTo(1002)
+      assertThat(lastPage.body.csipId).isEqualTo(1014)
+    }
 
     @Test
     internal fun `will not send MIGRATE_CSIP when cancelling`(): Unit = runTest {
@@ -894,70 +890,68 @@ internal class CSIPMigrationServiceTest {
     }
 
     @Test
-    internal fun `will create a mapping between a new csip and a NOMIS csip`(): Unit =
-      runTest {
-        whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReport())
-        whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
+    internal fun `will create a mapping between a new csip and a NOMIS csip`(): Unit = runTest {
+      whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReport())
+      whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
 
-        service.migrateNomisEntity(
-          MigrationContext(
-            type = CSIP,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = CSIPIdResponse(NOMIS_CSIP_ID),
-          ),
-        )
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = CSIP,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = CSIPIdResponse(NOMIS_CSIP_ID),
+        ),
+      )
 
-        verify(csipMappingService).createMapping(
-          CSIPFullMappingDto(
-            dpsCSIPReportId = DPS_CSIP_ID,
-            nomisCSIPReportId = NOMIS_CSIP_ID,
-            label = "2020-05-23T11:30:00",
-            mappingType = MappingType.MIGRATED,
-            attendeeMappings = listOf(),
-            factorMappings = listOf(),
-            interviewMappings = listOf(),
-            planMappings = listOf(),
-            reviewMappings = listOf(),
-          ),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
-        )
-      }
+      verify(csipMappingService).createMapping(
+        CSIPFullMappingDto(
+          dpsCSIPReportId = DPS_CSIP_ID,
+          nomisCSIPReportId = NOMIS_CSIP_ID,
+          label = "2020-05-23T11:30:00",
+          mappingType = MappingType.MIGRATED,
+          attendeeMappings = listOf(),
+          factorMappings = listOf(),
+          interviewMappings = listOf(),
+          planMappings = listOf(),
+          reviewMappings = listOf(),
+        ),
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {},
+      )
+    }
 
     @Test
-    internal fun `will not throw an exception (and place message back on queue) but create a new retry message`(): Unit =
-      runTest {
-        whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReport())
-        whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
+    internal fun `will not throw an exception (and place message back on queue) but create a new retry message`(): Unit = runTest {
+      whenever(nomisApiService.getCSIP(any())).thenReturn(nomisCSIPReport())
+      whenever(csipDpsService.migrateCSIP(any())).thenReturn(dpsCsipReportSyncResponse())
 
-        whenever(
-          csipMappingService.createMapping(
-            any(),
-            eq(object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {}),
-          ),
-        ).thenThrow(
-          RuntimeException("something went wrong"),
-        )
+      whenever(
+        csipMappingService.createMapping(
+          any(),
+          eq(object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {}),
+        ),
+      ).thenThrow(
+        RuntimeException("something went wrong"),
+      )
 
-        service.migrateNomisEntity(
-          MigrationContext(
-            type = CSIP,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = CSIPIdResponse(NOMIS_CSIP_ID),
-          ),
-        )
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = CSIP,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = CSIPIdResponse(NOMIS_CSIP_ID),
+        ),
+      )
 
-        verify(queueService).sendMessage(
-          message = eq(RETRY_MIGRATION_MAPPING),
-          context = check<MigrationContext<CSIPFullMappingDto>> {
-            assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-            assertThat(it.body.nomisCSIPReportId).isEqualTo(NOMIS_CSIP_ID)
-            assertThat(it.body.dpsCSIPReportId).isEqualTo(DPS_CSIP_ID)
-          },
-          delaySeconds = eq(0),
-        )
-      }
+      verify(queueService).sendMessage(
+        message = eq(RETRY_MIGRATION_MAPPING),
+        context = check<MigrationContext<CSIPFullMappingDto>> {
+          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+          assertThat(it.body.nomisCSIPReportId).isEqualTo(NOMIS_CSIP_ID)
+          assertThat(it.body.dpsCSIPReportId).isEqualTo(DPS_CSIP_ID)
+        },
+        delaySeconds = eq(0),
+      )
+    }
 
     @Nested
     @DisplayName("migrateMinimalData")

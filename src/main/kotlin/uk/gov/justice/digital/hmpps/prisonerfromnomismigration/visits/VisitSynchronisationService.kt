@@ -53,6 +53,5 @@ class VisitSynchronisationService(
     }
   }
 
-  private fun NomisVisit.nomisCancellation() =
-    this.modifyUserId != "PRISONER_MANAGER_API" // doesn't originate from VSIP
+  private fun NomisVisit.nomisCancellation() = this.modifyUserId != "PRISONER_MANAGER_API" // doesn't originate from VSIP
 }

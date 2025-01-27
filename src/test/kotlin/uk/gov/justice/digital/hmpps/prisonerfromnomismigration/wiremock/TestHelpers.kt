@@ -9,11 +9,9 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import com.github.tomakehurst.wiremock.matching.StringValuePattern
 import org.junit.jupiter.api.Assertions
 
-fun RequestPatternBuilder.withRequestBodyJsonPath(path: String, pattern: StringValuePattern): RequestPatternBuilder =
-  this.withRequestBody(matchingJsonPath(path, pattern))
+fun RequestPatternBuilder.withRequestBodyJsonPath(path: String, pattern: StringValuePattern): RequestPatternBuilder = this.withRequestBody(matchingJsonPath(path, pattern))
 
-fun RequestPatternBuilder.withRequestBodyJsonPath(path: String, equalTo: Any): RequestPatternBuilder =
-  this.withRequestBody(matchingJsonPath(path, equalTo(equalTo.toString())))
+fun RequestPatternBuilder.withRequestBodyJsonPath(path: String, equalTo: Any): RequestPatternBuilder = this.withRequestBody(matchingJsonPath(path, equalTo(equalTo.toString())))
 
 fun WireMockServer.getRequestBodyAsString(pattern: RequestPatternBuilder): String {
   val allServerEvents = findAll(pattern)
@@ -21,8 +19,7 @@ fun WireMockServer.getRequestBodyAsString(pattern: RequestPatternBuilder): Strin
   return request.bodyAsString
 }
 
-fun WireMockServer.getRequestBodiesAsString(pattern: RequestPatternBuilder): List<String> =
-  findAll(pattern).map { it.bodyAsString }
+fun WireMockServer.getRequestBodiesAsString(pattern: RequestPatternBuilder): List<String> = findAll(pattern).map { it.bodyAsString }
 
 inline fun <reified T> WireMockServer.getRequestBody(pattern: RequestPatternBuilder, objectMapper: ObjectMapper): T = getRequestBodyAsString(pattern).let {
   return objectMapper.readValue<T>(it)

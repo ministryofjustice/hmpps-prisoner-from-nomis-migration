@@ -29,7 +29,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.S
 import java.time.LocalDateTime
 import java.util.UUID
 
-class CaseNotesApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
+class CaseNotesApiExtension :
+  BeforeAllCallback,
+  AfterAllCallback,
+  BeforeEachCallback {
   companion object {
     @JvmField
     val caseNotesApi = CaseNotesApiMockServer()

@@ -12,19 +12,17 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 @Service
 class ActivitiesApiService(@Qualifier("activitiesApiWebClient") private val webClient: WebClient) {
 
-  suspend fun migrateActivity(migrateRequest: ActivityMigrateRequest): ActivityMigrateResponse =
-    webClient.post()
-      .uri("/migrate/activity")
-      .bodyValue(migrateRequest)
-      .retrieve()
-      .bodyToMono(ActivityMigrateResponse::class.java)
-      .awaitSingle()!!
+  suspend fun migrateActivity(migrateRequest: ActivityMigrateRequest): ActivityMigrateResponse = webClient.post()
+    .uri("/migrate/activity")
+    .bodyValue(migrateRequest)
+    .retrieve()
+    .bodyToMono(ActivityMigrateResponse::class.java)
+    .awaitSingle()!!
 
-  suspend fun migrateAllocation(migrateRequest: AllocationMigrateRequest): AllocationMigrateResponse =
-    webClient.post()
-      .uri("/migrate/allocation")
-      .bodyValue(migrateRequest)
-      .retrieve()
-      .bodyToMono(AllocationMigrateResponse::class.java)
-      .awaitSingle()!!
+  suspend fun migrateAllocation(migrateRequest: AllocationMigrateRequest): AllocationMigrateResponse = webClient.post()
+    .uri("/migrate/allocation")
+    .bodyValue(migrateRequest)
+    .retrieve()
+    .bodyToMono(AllocationMigrateResponse::class.java)
+    .awaitSingle()!!
 }

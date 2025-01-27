@@ -58,13 +58,12 @@ class AllocationsMigrationService(
     migrationFilter: AllocationsMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<FindActiveAllocationIdsResponse> =
-    nomisApiService.getAllocationIds(
-      prisonId = migrationFilter.prisonId,
-      courseActivityId = migrationFilter.courseActivityId,
-      pageNumber = pageNumber,
-      pageSize = pageSize,
-    )
+  ): PageImpl<FindActiveAllocationIdsResponse> = nomisApiService.getAllocationIds(
+    prisonId = migrationFilter.prisonId,
+    courseActivityId = migrationFilter.courseActivityId,
+    pageNumber = pageNumber,
+    pageSize = pageSize,
+  )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<FindActiveAllocationIdsResponse>) {
     val allocationId = context.body.allocationId
@@ -101,128 +100,119 @@ class AllocationsMigrationService(
     return this.toAllocationMigrateRequest(activityMapping.activityId, activityMapping.activityId2)
   }
 
-  private suspend fun AllocationMigrationMappingDto.createAllocationMapping(context: MigrationContext<*>) =
-    try {
-      allocationsMappingService.createMapping(this, object : ParameterizedTypeReference<DuplicateErrorResponse<AllocationMigrationMappingDto>>() {})
-        .also { it.handleError(context) }
-    } catch (e: Exception) {
-      log.error(
-        "Failed to create activity mapping for nomisAllocationId: $nomisAllocationId, DPS allocation ID $activityAllocationId for migration ${this.label}",
-        e,
-      )
-      queueService.sendMessage(
-        MigrationMessageType.RETRY_MIGRATION_MAPPING,
-        MigrationContext(
-          context = context,
-          body = this,
+  private suspend fun AllocationMigrationMappingDto.createAllocationMapping(context: MigrationContext<*>) = try {
+    allocationsMappingService.createMapping(this, object : ParameterizedTypeReference<DuplicateErrorResponse<AllocationMigrationMappingDto>>() {})
+      .also { it.handleError(context) }
+  } catch (e: Exception) {
+    log.error(
+      "Failed to create activity mapping for nomisAllocationId: $nomisAllocationId, DPS allocation ID $activityAllocationId for migration ${this.label}",
+      e,
+    )
+    queueService.sendMessage(
+      MigrationMessageType.RETRY_MIGRATION_MAPPING,
+      MigrationContext(
+        context = context,
+        body = this,
+      ),
+    )
+  }
+
+  private suspend fun AllocationMigrationMappingDto.publishTelemetry() = telemetryClient.trackEvent(
+    "${MigrationType.ALLOCATIONS.telemetryName}-migration-entity-migrated",
+    mapOf(
+      "nomisAllocationId" to nomisAllocationId.toString(),
+      "dpsAllocationId" to activityAllocationId.toString(),
+      "dpsActivityId" to activityId.toString(),
+      "migrationId" to this.label,
+    ),
+    null,
+  )
+
+  private suspend fun CreateMappingResult<AllocationMigrationMappingDto>.handleError(context: MigrationContext<*>) = takeIf { it.isError }
+    ?.let { it.errorResponse?.moreInfo }
+    ?.also {
+      telemetryClient.trackEvent(
+        "${MigrationType.ALLOCATIONS.telemetryName}-nomis-migration-duplicate",
+        mapOf(
+          "migrationId" to context.migrationId,
+          "duplicateNomisAllocationId" to it.duplicate.nomisAllocationId.toString(),
+          "duplicateDpsAllocationId" to it.duplicate.activityAllocationId.toString(),
+          "duplicateactivityId" to it.duplicate.activityId.toString(),
+          "existingNomisAllocationId" to it.existing.nomisAllocationId.toString(),
+          "existingDpsAllocationId" to it.existing.activityAllocationId.toString(),
+          "existingactivityId" to it.existing.activityId.toString(),
         ),
+        null,
       )
     }
-
-  private suspend fun AllocationMigrationMappingDto.publishTelemetry() =
-    telemetryClient.trackEvent(
-      "${MigrationType.ALLOCATIONS.telemetryName}-migration-entity-migrated",
-      mapOf(
-        "nomisAllocationId" to nomisAllocationId.toString(),
-        "dpsAllocationId" to activityAllocationId.toString(),
-        "dpsActivityId" to activityId.toString(),
-        "migrationId" to this.label,
-      ),
-      null,
-    )
-
-  private suspend fun CreateMappingResult<AllocationMigrationMappingDto>.handleError(context: MigrationContext<*>) =
-    takeIf { it.isError }
-      ?.let { it.errorResponse?.moreInfo }
-      ?.also {
-        telemetryClient.trackEvent(
-          "${MigrationType.ALLOCATIONS.telemetryName}-nomis-migration-duplicate",
-          mapOf(
-            "migrationId" to context.migrationId,
-            "duplicateNomisAllocationId" to it.duplicate.nomisAllocationId.toString(),
-            "duplicateDpsAllocationId" to it.duplicate.activityAllocationId.toString(),
-            "duplicateactivityId" to it.duplicate.activityId.toString(),
-            "existingNomisAllocationId" to it.existing.nomisAllocationId.toString(),
-            "existingDpsAllocationId" to it.existing.activityAllocationId.toString(),
-            "existingactivityId" to it.existing.activityId.toString(),
-          ),
-          null,
-        )
-      }
 }
 
-private fun GetAllocationResponse.toAllocationMigrateRequest(activityId: Long, splitRegimeActivityId: Long?): AllocationMigrateRequest =
-  AllocationMigrateRequest(
-    prisonCode = prisonId,
-    activityId = activityId,
-    splitRegimeActivityId = splitRegimeActivityId,
-    prisonerNumber = nomisId,
-    bookingId = bookingId,
-    startDate = maxOf(startDate, activityStartDate),
-    endDate = endDate,
-    suspendedFlag = suspended,
-    endComment = endComment,
-    cellLocation = livingUnitDescription,
-    nomisPayBand = payBand,
-    exclusions = exclusions.toDpsExclusions(scheduleRules),
-  )
+private fun GetAllocationResponse.toAllocationMigrateRequest(activityId: Long, splitRegimeActivityId: Long?): AllocationMigrateRequest = AllocationMigrateRequest(
+  prisonCode = prisonId,
+  activityId = activityId,
+  splitRegimeActivityId = splitRegimeActivityId,
+  prisonerNumber = nomisId,
+  bookingId = bookingId,
+  startDate = maxOf(startDate, activityStartDate),
+  endDate = endDate,
+  suspendedFlag = suspended,
+  endComment = endComment,
+  cellLocation = livingUnitDescription,
+  nomisPayBand = payBand,
+  exclusions = exclusions.toDpsExclusions(scheduleRules),
+)
 
-fun List<AllocationExclusion>.toDpsExclusions(scheduleRules: List<ScheduleRulesResponse>): List<Slot> =
-  listOf(AM, PM, ED).map { timeSlot ->
-    this
-      .filter { exclusion ->
-        val slot = exclusion.slot
-        slot == null || slot.value == timeSlot.value
-      }
-      .map { exclusion -> exclusion.findDay() }
-      .filter { day -> scheduleRules.includes(day, timeSlot) }
-      .toSet()
-      .let { daysOfWeek ->
-        Slot(
-          weekNumber = 1,
-          timeSlot = timeSlot,
-          monday = MONDAY in daysOfWeek,
-          tuesday = TUESDAY in daysOfWeek,
-          wednesday = WEDNESDAY in daysOfWeek,
-          thursday = THURSDAY in daysOfWeek,
-          friday = FRIDAY in daysOfWeek,
-          saturday = SATURDAY in daysOfWeek,
-          sunday = SUNDAY in daysOfWeek,
-          daysOfWeek = daysOfWeek,
-        )
-      }
-  }.filter { it.daysOfWeek.isNotEmpty() }
-
-private fun AllocationExclusion.findDay() =
-  Slot.DaysOfWeek.entries.first { day -> day.value.startsWith(this.day.value) }
-
-private fun AllocationMigrateResponse.toAllocationMigrateMappingDto(nomisAllocationId: Long, migrationId: String) =
-  AllocationMigrationMappingDto(
-    nomisAllocationId = nomisAllocationId,
-    activityAllocationId = allocationId,
-    activityId = activityId,
-    label = migrationId,
-  )
-
-private fun List<ScheduleRulesResponse>.includes(day: Slot.DaysOfWeek, slot: Slot.TimeSlot) =
-  any { scheduleRule ->
-    scheduleRule.slot().value == slot.value &&
-      when (day) {
-        MONDAY -> scheduleRule.monday
-        TUESDAY -> scheduleRule.tuesday
-        WEDNESDAY -> scheduleRule.wednesday
-        THURSDAY -> scheduleRule.thursday
-        FRIDAY -> scheduleRule.friday
-        SATURDAY -> scheduleRule.saturday
-        SUNDAY -> scheduleRule.sunday
-      }
-  }
-
-fun ScheduleRulesResponse.slot(): Slot.TimeSlot =
-  LocalTime.parse(startTime).let {
-    when {
-      it.hour < 12 -> AM
-      it.hour < 17 -> PM
-      else -> ED
+fun List<AllocationExclusion>.toDpsExclusions(scheduleRules: List<ScheduleRulesResponse>): List<Slot> = listOf(AM, PM, ED).map { timeSlot ->
+  this
+    .filter { exclusion ->
+      val slot = exclusion.slot
+      slot == null || slot.value == timeSlot.value
     }
+    .map { exclusion -> exclusion.findDay() }
+    .filter { day -> scheduleRules.includes(day, timeSlot) }
+    .toSet()
+    .let { daysOfWeek ->
+      Slot(
+        weekNumber = 1,
+        timeSlot = timeSlot,
+        monday = MONDAY in daysOfWeek,
+        tuesday = TUESDAY in daysOfWeek,
+        wednesday = WEDNESDAY in daysOfWeek,
+        thursday = THURSDAY in daysOfWeek,
+        friday = FRIDAY in daysOfWeek,
+        saturday = SATURDAY in daysOfWeek,
+        sunday = SUNDAY in daysOfWeek,
+        daysOfWeek = daysOfWeek,
+      )
+    }
+}.filter { it.daysOfWeek.isNotEmpty() }
+
+private fun AllocationExclusion.findDay() = Slot.DaysOfWeek.entries.first { day -> day.value.startsWith(this.day.value) }
+
+private fun AllocationMigrateResponse.toAllocationMigrateMappingDto(nomisAllocationId: Long, migrationId: String) = AllocationMigrationMappingDto(
+  nomisAllocationId = nomisAllocationId,
+  activityAllocationId = allocationId,
+  activityId = activityId,
+  label = migrationId,
+)
+
+private fun List<ScheduleRulesResponse>.includes(day: Slot.DaysOfWeek, slot: Slot.TimeSlot) = any { scheduleRule ->
+  scheduleRule.slot().value == slot.value &&
+    when (day) {
+      MONDAY -> scheduleRule.monday
+      TUESDAY -> scheduleRule.tuesday
+      WEDNESDAY -> scheduleRule.wednesday
+      THURSDAY -> scheduleRule.thursday
+      FRIDAY -> scheduleRule.friday
+      SATURDAY -> scheduleRule.saturday
+      SUNDAY -> scheduleRule.sunday
+    }
+}
+
+fun ScheduleRulesResponse.slot(): Slot.TimeSlot = LocalTime.parse(startTime).let {
+  when {
+    it.hour < 12 -> AM
+    it.hour < 17 -> PM
+    else -> ED
   }
+}

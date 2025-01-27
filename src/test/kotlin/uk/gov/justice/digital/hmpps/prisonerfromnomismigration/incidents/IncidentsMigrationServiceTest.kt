@@ -425,25 +425,24 @@ internal class IncidentsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
-        runTest {
-          service.migrateStatusCheck(
-            MigrationContext(
-              type = INCIDENTS,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 100_200,
-              body = MigrationStatusCheck(checkCount = 4),
-            ),
-          )
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runTest {
+        service.migrateStatusCheck(
+          MigrationContext(
+            type = INCIDENTS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = MigrationStatusCheck(checkCount = 4),
+          ),
+        )
 
-          verify(queueService).sendMessage(
-            message = eq(MIGRATE_STATUS_CHECK),
-            context = check<MigrationContext<MigrationStatusCheck>> {
-              assertThat(it.body.checkCount).isEqualTo(0)
-            },
-            delaySeconds = eq(10),
-          )
-        }
+        verify(queueService).sendMessage(
+          message = eq(MIGRATE_STATUS_CHECK),
+          context = check<MigrationContext<MigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(0)
+          },
+          delaySeconds = eq(10),
+        )
+      }
     }
 
     @Nested
@@ -570,26 +569,25 @@ internal class IncidentsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
-        runTest {
-          service.cancelMigrateStatusCheck(
-            MigrationContext(
-              type = INCIDENTS,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 100_200,
-              body = MigrationStatusCheck(checkCount = 4),
-            ),
-          )
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runTest {
+        service.cancelMigrateStatusCheck(
+          MigrationContext(
+            type = INCIDENTS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = MigrationStatusCheck(checkCount = 4),
+          ),
+        )
 
-          verify(queueService).purgeAllMessages(any())
-          verify(queueService).sendMessage(
-            message = eq(CANCEL_MIGRATION),
-            context = check<MigrationContext<MigrationStatusCheck>> {
-              assertThat(it.body.checkCount).isEqualTo(0)
-            },
-            delaySeconds = eq(10),
-          )
-        }
+        verify(queueService).purgeAllMessages(any())
+        verify(queueService).sendMessage(
+          message = eq(CANCEL_MIGRATION),
+          context = check<MigrationContext<MigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(0)
+          },
+          delaySeconds = eq(10),
+        )
+      }
     }
 
     @Nested
@@ -726,77 +724,75 @@ internal class IncidentsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will send MIGRATE_INCIDENT with context for each incident`(): Unit =
-      runTest {
-        service.migrateEntitiesForPage(
-          MigrationContext(
-            type = INCIDENTS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = MigrationPage(
-              filter = IncidentsMigrationFilter(
-                fromDate = LocalDate.parse("2020-01-01"),
-                toDate = LocalDate.parse("2020-01-02"),
-              ),
-              pageNumber = 13,
-              pageSize = 15,
+    internal fun `will send MIGRATE_INCIDENT with context for each incident`(): Unit = runTest {
+      service.migrateEntitiesForPage(
+        MigrationContext(
+          type = INCIDENTS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = MigrationPage(
+            filter = IncidentsMigrationFilter(
+              fromDate = LocalDate.parse("2020-01-01"),
+              toDate = LocalDate.parse("2020-01-02"),
             ),
+            pageNumber = 13,
+            pageSize = 15,
           ),
-        )
+        ),
+      )
 
-        verify(queueService, times(15)).sendMessageNoTracing(
-          message = eq(MIGRATE_ENTITY),
-          context = check<MigrationContext<IncidentsMigrationFilter>> {
-            assertThat(it.estimatedCount).isEqualTo(100_200)
-            assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-          },
-          delaySeconds = eq(0),
-        )
-      }
+      verify(queueService, times(15)).sendMessageNoTracing(
+        message = eq(MIGRATE_ENTITY),
+        context = check<MigrationContext<IncidentsMigrationFilter>> {
+          assertThat(it.estimatedCount).isEqualTo(100_200)
+          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+        },
+        delaySeconds = eq(0),
+      )
+    }
 
     @Test
-    internal fun `will send MIGRATE_INCIDENT with bookingId for each incident`(): Unit =
-      runTest {
-        val context: KArgumentCaptor<MigrationContext<IncidentIdResponse>> = argumentCaptor()
+    internal fun `will send MIGRATE_INCIDENT with bookingId for each incident`(): Unit = runTest {
+      val context: KArgumentCaptor<MigrationContext<IncidentIdResponse>> = argumentCaptor()
 
-        whenever(nomisApiService.getIncidentIds(any(), any(), any(), any())).thenReturn(
-          pages(
-            15,
-            startId = 1000,
-          ),
-        )
+      whenever(nomisApiService.getIncidentIds(any(), any(), any(), any())).thenReturn(
+        pages(
+          15,
+          startId = 1000,
+        ),
+      )
 
-        service.migrateEntitiesForPage(
-          MigrationContext(
-            type = INCIDENTS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = MigrationPage(
-              filter = IncidentsMigrationFilter(
-                fromDate = LocalDate.parse("2020-01-01"),
-                toDate = LocalDate.parse("2020-01-02"),
-              ),
-              pageNumber = 13,
-              pageSize = 15,
+      service.migrateEntitiesForPage(
+        MigrationContext(
+          type = INCIDENTS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = MigrationPage(
+            filter = IncidentsMigrationFilter(
+              fromDate = LocalDate.parse("2020-01-01"),
+              toDate = LocalDate.parse("2020-01-02"),
             ),
+            pageNumber = 13,
+            pageSize = 15,
           ),
-        )
+        ),
+      )
 
-        verify(queueService, times(15)).sendMessageNoTracing(
-          eq(MIGRATE_ENTITY),
-          context.capture(),
-          delaySeconds = eq(0),
-        )
-        val allContexts: List<MigrationContext<IncidentIdResponse>> = context.allValues
+      verify(queueService, times(15)).sendMessageNoTracing(
+        eq(MIGRATE_ENTITY),
+        context.capture(),
+        delaySeconds = eq(0),
+      )
+      val allContexts: List<MigrationContext<IncidentIdResponse>> = context.allValues
 
-        val (firstPage, secondPage, thirdPage) = allContexts
-        val lastPage = allContexts.last()
+      val (firstPage, secondPage, thirdPage) = allContexts
+      val lastPage = allContexts.last()
 
-        assertThat(firstPage.body.incidentId).isEqualTo(1000)
-        assertThat(secondPage.body.incidentId).isEqualTo(1001)
-        assertThat(thirdPage.body.incidentId).isEqualTo(1002)
-        assertThat(lastPage.body.incidentId).isEqualTo(1014)
-      }
+      assertThat(firstPage.body.incidentId).isEqualTo(1000)
+      assertThat(secondPage.body.incidentId).isEqualTo(1001)
+      assertThat(thirdPage.body.incidentId).isEqualTo(1002)
+      assertThat(lastPage.body.incidentId).isEqualTo(1014)
+    }
 
     @Test
     internal fun `will not send MIGRATE_INCIDENT when cancelling`(): Unit = runTest {
@@ -897,123 +893,119 @@ internal class IncidentsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will create a mapping between a new incident and a NOMIS incident`(): Unit =
-      runTest {
-        whenever(nomisApiService.getIncident(any())).thenReturn(aNomisIncidentResponse())
-        whenever(incidentsService.upsertIncident(any())).thenReturn(IncidentsApiMockServer.dpsIncidentReportId(DPS_INCIDENT_ID))
+    internal fun `will create a mapping between a new incident and a NOMIS incident`(): Unit = runTest {
+      whenever(nomisApiService.getIncident(any())).thenReturn(aNomisIncidentResponse())
+      whenever(incidentsService.upsertIncident(any())).thenReturn(IncidentsApiMockServer.dpsIncidentReportId(DPS_INCIDENT_ID))
 
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = INCIDENTS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = IncidentIdResponse(NOMIS_INCIDENT_ID),
+        ),
+      )
+
+      verify(incidentsMappingService).createMapping(
+        IncidentMappingDto(
+          dpsIncidentId = DPS_INCIDENT_ID,
+          nomisIncidentId = NOMIS_INCIDENT_ID,
+          label = "2020-05-23T11:30:00",
+          mappingType = MappingType.MIGRATED,
+        ),
+        object : ParameterizedTypeReference<DuplicateErrorResponse<IncidentMappingDto>>() {},
+      )
+    }
+
+    @Test
+    internal fun `will not throw an exception (and place message back on queue) but create a new retry message`(): Unit = runTest {
+      whenever(nomisApiService.getIncident(any())).thenReturn(aNomisIncidentResponse())
+      whenever(incidentsService.upsertIncident(any())).thenReturn(IncidentsApiMockServer.dpsIncidentReportId(DPS_INCIDENT_ID))
+
+      whenever(
+        incidentsMappingService.createMapping(
+          any(),
+          eq(object : ParameterizedTypeReference<DuplicateErrorResponse<IncidentMappingDto>>() {}),
+        ),
+      ).thenThrow(
+        RuntimeException("something went wrong"),
+      )
+
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = INCIDENTS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = IncidentIdResponse(NOMIS_INCIDENT_ID),
+        ),
+      )
+
+      verify(queueService).sendMessage(
+        message = eq(RETRY_MIGRATION_MAPPING),
+        context = check<MigrationContext<IncidentMappingDto>> {
+          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+          assertThat(it.body.nomisIncidentId).isEqualTo(NOMIS_INCIDENT_ID)
+          assertThat(it.body.dpsIncidentId).isEqualTo(DPS_INCIDENT_ID)
+        },
+        delaySeconds = eq(0),
+      )
+    }
+
+    @Test
+    internal fun `will throw after an error from the incidents api service so the message is rejected and retried`(): Unit = runBlocking {
+      whenever(nomisApiService.getIncident(any())).thenReturn(aNomisIncidentResponse())
+      whenever(incidentsService.upsertIncident(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", HttpHeaders.EMPTY, ByteArray(0), null, null))
+
+      assertThrows<WebClientResponseException.BadGateway> {
         service.migrateNomisEntity(
           MigrationContext(
             type = INCIDENTS,
             migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = IncidentIdResponse(NOMIS_INCIDENT_ID),
+            estimatedCount = 7,
+            body = IncidentIdResponse(123),
           ),
-        )
-
-        verify(incidentsMappingService).createMapping(
-          IncidentMappingDto(
-            dpsIncidentId = DPS_INCIDENT_ID,
-            nomisIncidentId = NOMIS_INCIDENT_ID,
-            label = "2020-05-23T11:30:00",
-            mappingType = MappingType.MIGRATED,
-          ),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<IncidentMappingDto>>() {},
         )
       }
 
+      verify(telemetryClient).trackEvent(
+        eq("incidents-migration-entity-migration-failed"),
+        check<Map<String, String>> {
+          assertThat(it["nomisIncidentId"]).isEqualTo("123")
+          assertThat(it["reason"]).contains("BadGateway")
+          assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+        },
+        isNull(),
+      )
+
+      verifyNoInteractions(queueService)
+    }
+
     @Test
-    internal fun `will not throw an exception (and place message back on queue) but create a new retry message`(): Unit =
-      runTest {
-        whenever(nomisApiService.getIncident(any())).thenReturn(aNomisIncidentResponse())
-        whenever(incidentsService.upsertIncident(any())).thenReturn(IncidentsApiMockServer.dpsIncidentReportId(DPS_INCIDENT_ID))
+    internal fun `will throw after an error retrieving the Nomis entity so the message is rejected and retried`(): Unit = runBlocking {
+      whenever(nomisApiService.getIncident(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", HttpHeaders.EMPTY, ByteArray(0), null, null))
 
-        whenever(
-          incidentsMappingService.createMapping(
-            any(),
-            eq(object : ParameterizedTypeReference<DuplicateErrorResponse<IncidentMappingDto>>() {}),
-          ),
-        ).thenThrow(
-          RuntimeException("something went wrong"),
-        )
-
+      assertThrows<WebClientResponseException.BadGateway> {
         service.migrateNomisEntity(
           MigrationContext(
             type = INCIDENTS,
             migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = IncidentIdResponse(NOMIS_INCIDENT_ID),
+            estimatedCount = 7,
+            body = IncidentIdResponse(123),
           ),
         )
-
-        verify(queueService).sendMessage(
-          message = eq(RETRY_MIGRATION_MAPPING),
-          context = check<MigrationContext<IncidentMappingDto>> {
-            assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-            assertThat(it.body.nomisIncidentId).isEqualTo(NOMIS_INCIDENT_ID)
-            assertThat(it.body.dpsIncidentId).isEqualTo(DPS_INCIDENT_ID)
-          },
-          delaySeconds = eq(0),
-        )
       }
 
-    @Test
-    internal fun `will throw after an error from the incidents api service so the message is rejected and retried`(): Unit =
-      runBlocking {
-        whenever(nomisApiService.getIncident(any())).thenReturn(aNomisIncidentResponse())
-        whenever(incidentsService.upsertIncident(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", HttpHeaders.EMPTY, ByteArray(0), null, null))
-
-        assertThrows<WebClientResponseException.BadGateway> {
-          service.migrateNomisEntity(
-            MigrationContext(
-              type = INCIDENTS,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 7,
-              body = IncidentIdResponse(123),
-            ),
-          )
-        }
-
-        verify(telemetryClient).trackEvent(
-          eq("incidents-migration-entity-migration-failed"),
-          check<Map<String, String>> {
-            assertThat(it["nomisIncidentId"]).isEqualTo("123")
-            assertThat(it["reason"]).contains("BadGateway")
-            assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
-          },
-          isNull(),
-        )
-
-        verifyNoInteractions(queueService)
-      }
-
-    @Test
-    internal fun `will throw after an error retrieving the Nomis entity so the message is rejected and retried`(): Unit =
-      runBlocking {
-        whenever(nomisApiService.getIncident(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", HttpHeaders.EMPTY, ByteArray(0), null, null))
-
-        assertThrows<WebClientResponseException.BadGateway> {
-          service.migrateNomisEntity(
-            MigrationContext(
-              type = INCIDENTS,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 7,
-              body = IncidentIdResponse(123),
-            ),
-          )
-        }
-
-        verifyNoInteractions(queueService)
-        verify(telemetryClient).trackEvent(
-          eq("incidents-migration-entity-migration-failed"),
-          check<Map<String, String>> {
-            assertThat(it["nomisIncidentId"]).isEqualTo("123")
-            assertThat(it["reason"]).contains("BadGateway")
-            assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
-          },
-          isNull(),
-        )
-      }
+      verifyNoInteractions(queueService)
+      verify(telemetryClient).trackEvent(
+        eq("incidents-migration-entity-migration-failed"),
+        check<Map<String, String>> {
+          assertThat(it["nomisIncidentId"]).isEqualTo("123")
+          assertThat(it["reason"]).contains("BadGateway")
+          assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+        },
+        isNull(),
+      )
+    }
 
     @Nested
     inner class WhenMigratedAlready {
@@ -1072,46 +1064,21 @@ internal class IncidentsMigrationServiceTest {
   }
 }
 
-fun aMigrationRequest() =
-  NomisSyncRequest(
-    id = null,
-    initialMigration = true,
-    incidentReport = NomisReport(
-      incidentId = NOMIS_INCIDENT_ID,
-      questionnaireId = 543,
-      title = "There was a fight",
-      description = "On 12/04/2023 approx 16:45 John Smith punched Fred Jones",
-      status = NomisStatus(code = "AWAN", description = "Awaiting Analysis"),
-      type = "ASSAULT",
-      prison = NomisCode(code = "BXI", description = "Brixton"),
-      lockedResponse = false,
-      incidentDateTime = "2023-04-12T16:45:00",
-      reportedDateTime = "2023-04-14T17:55:00",
-      reportingStaff = NomisStaff(username = "BQL16C", staffId = 16288, firstName = "JANE", lastName = "BAKER"),
-      history = listOf(),
-      offenderParties = listOf(),
-      staffParties = listOf(),
-      questions = listOf(),
-      requirements = listOf(),
-      followUpDate = LocalDate.parse("2023-05-16"),
-      createdBy = "JSMITH",
-      createDateTime = "2024-07-15T18:35:00",
-    ),
-  )
-
-fun aNomisIncidentResponse() =
-  IncidentResponse(
+fun aMigrationRequest() = NomisSyncRequest(
+  id = null,
+  initialMigration = true,
+  incidentReport = NomisReport(
     incidentId = NOMIS_INCIDENT_ID,
     questionnaireId = 543,
     title = "There was a fight",
     description = "On 12/04/2023 approx 16:45 John Smith punched Fred Jones",
-    status = IncidentStatus(code = "AWAN", description = "Awaiting Analysis", standardUser = true, enhancedUser = false),
+    status = NomisStatus(code = "AWAN", description = "Awaiting Analysis"),
     type = "ASSAULT",
-    agency = CodeDescription(code = "BXI", description = "Brixton"),
+    prison = NomisCode(code = "BXI", description = "Brixton"),
     lockedResponse = false,
     incidentDateTime = "2023-04-12T16:45:00",
     reportedDateTime = "2023-04-14T17:55:00",
-    reportingStaff = Staff(username = "BQL16C", staffId = 16288, firstName = "JANE", lastName = "BAKER"),
+    reportingStaff = NomisStaff(username = "BQL16C", staffId = 16288, firstName = "JANE", lastName = "BAKER"),
     history = listOf(),
     offenderParties = listOf(),
     staffParties = listOf(),
@@ -1120,7 +1087,30 @@ fun aNomisIncidentResponse() =
     followUpDate = LocalDate.parse("2023-05-16"),
     createdBy = "JSMITH",
     createDateTime = "2024-07-15T18:35:00",
-  )
+  ),
+)
+
+fun aNomisIncidentResponse() = IncidentResponse(
+  incidentId = NOMIS_INCIDENT_ID,
+  questionnaireId = 543,
+  title = "There was a fight",
+  description = "On 12/04/2023 approx 16:45 John Smith punched Fred Jones",
+  status = IncidentStatus(code = "AWAN", description = "Awaiting Analysis", standardUser = true, enhancedUser = false),
+  type = "ASSAULT",
+  agency = CodeDescription(code = "BXI", description = "Brixton"),
+  lockedResponse = false,
+  incidentDateTime = "2023-04-12T16:45:00",
+  reportedDateTime = "2023-04-14T17:55:00",
+  reportingStaff = Staff(username = "BQL16C", staffId = 16288, firstName = "JANE", lastName = "BAKER"),
+  history = listOf(),
+  offenderParties = listOf(),
+  staffParties = listOf(),
+  questions = listOf(),
+  requirements = listOf(),
+  followUpDate = LocalDate.parse("2023-05-16"),
+  createdBy = "JSMITH",
+  createDateTime = "2024-07-15T18:35:00",
+)
 
 fun pages(total: Long, startId: Long = 1): PageImpl<IncidentIdResponse> = PageImpl<IncidentIdResponse>(
   (startId..total - 1 + startId).map { IncidentIdResponse(it) },

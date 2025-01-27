@@ -15,20 +15,18 @@ class VisitsService(@Qualifier("visitsApiWebClient") private val webClient: WebC
   data class VisitCreated(val dpsVisitId: String) : VisitCreateResponse
   data object VisitCreateAborted : VisitCreateResponse
 
-  suspend fun createVisit(createVisitRequest: CreateVsipVisit): VisitCreateResponse =
-    webClient.post()
-      .uri("/migrate-visits")
-      .bodyValue(createVisitRequest)
-      .retrieve()
-      .awaitBodyOrNullWhenUnprocessableEntity<String>()?.let { VisitCreated(it) } ?: VisitCreateAborted
+  suspend fun createVisit(createVisitRequest: CreateVsipVisit): VisitCreateResponse = webClient.post()
+    .uri("/migrate-visits")
+    .bodyValue(createVisitRequest)
+    .retrieve()
+    .awaitBodyOrNullWhenUnprocessableEntity<String>()?.let { VisitCreated(it) } ?: VisitCreateAborted
 
-  suspend fun cancelVisit(visitReference: String, outcome: VsipOutcomeDto) =
-    webClient.put()
-      .uri("/migrate-visits/{visitReference}/cancel", visitReference)
-      .bodyValue(outcome)
-      .retrieve()
-      .bodyToMono(Unit::class.java)
-      .awaitSingleOrNull()
+  suspend fun cancelVisit(visitReference: String, outcome: VsipOutcomeDto) = webClient.put()
+    .uri("/migrate-visits/{visitReference}/cancel", visitReference)
+    .bodyValue(outcome)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .awaitSingleOrNull()
 }
 
 @JsonInclude(JsonInclude.Include.NON_NULL)

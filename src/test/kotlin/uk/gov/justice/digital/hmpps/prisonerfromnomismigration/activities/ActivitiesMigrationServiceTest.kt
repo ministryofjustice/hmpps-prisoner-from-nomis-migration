@@ -709,87 +709,83 @@ class ActivitiesMigrationServiceTest {
     }
 
     @Test
-    internal fun `will throw after an error checking the mapping service so the message is rejected and retried`(): Unit =
-      runBlocking {
-        whenever(mappingService.findNomisMapping(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
+    internal fun `will throw after an error checking the mapping service so the message is rejected and retried`(): Unit = runBlocking {
+      whenever(mappingService.findNomisMapping(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
 
-        assertThrows<WebClientResponseException.BadGateway> {
-          service.migrateNomisEntity(
-            MigrationContext(
-              type = MigrationType.ACTIVITIES,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 7,
-              body = FindActiveActivityIdsResponse(123),
-            ),
-          )
-        }
-
-        verifyNoInteractions(queueService)
-      }
-
-    @Test
-    internal fun `will throw after an error retrieving the Nomis entity so the message is rejected and retried`(): Unit =
-      runBlocking {
-        whenever(nomisApiService.getActivity(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", HttpHeaders.EMPTY, ByteArray(0), null, null))
-
-        assertThrows<WebClientResponseException.BadGateway> {
-          service.migrateNomisEntity(migrationContext())
-        }
-
-        verifyNoInteractions(queueService)
-        verify(telemetryClient).trackEvent(
-          eq("activity-migration-entity-failed"),
-          check<Map<String, String>> {
-            assertThat(it["nomisCourseActivityId"]).isEqualTo("123")
-            assertThat(it["reason"]).contains("BadGateway")
-            assertThat(it["migrationId"]).contains("2020-05-23T11:30:00")
-          },
-          isNull(),
+      assertThrows<WebClientResponseException.BadGateway> {
+        service.migrateNomisEntity(
+          MigrationContext(
+            type = MigrationType.ACTIVITIES,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 7,
+            body = FindActiveActivityIdsResponse(123),
+          ),
         )
       }
 
-    @Test
-    internal fun `will throw after an error creating the Activities entity so the message is rejected and retried`(): Unit =
-      runBlocking {
-        whenever(activitiesApiService.migrateActivity(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", HttpHeaders.EMPTY, ByteArray(0), null, null))
-
-        assertThrows<WebClientResponseException.BadGateway> {
-          service.migrateNomisEntity(migrationContext())
-        }
-
-        verifyNoInteractions(queueService)
-        verify(telemetryClient).trackEvent(
-          eq("activity-migration-entity-failed"),
-          check<Map<String, String>> {
-            assertThat(it["nomisCourseActivityId"]).isEqualTo("123")
-            assertThat(it["reason"]).contains("BadGateway")
-            assertThat(it["migrationId"]).contains("2020-05-23T11:30:00")
-          },
-          isNull(),
-        )
-      }
+      verifyNoInteractions(queueService)
+    }
 
     @Test
-    internal fun `will NOT throw but will publish a retry mapping message after an error creating the new mapping`(): Unit =
-      runBlocking {
-        whenever(mappingService.createMapping(any(), any())).thenThrow(WebClientResponseException(HttpStatus.BAD_GATEWAY, "error", null, null, null, null))
+    internal fun `will throw after an error retrieving the Nomis entity so the message is rejected and retried`(): Unit = runBlocking {
+      whenever(nomisApiService.getActivity(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", HttpHeaders.EMPTY, ByteArray(0), null, null))
 
-        assertDoesNotThrow {
-          service.migrateNomisEntity(migrationContext())
-        }
-
-        verify(queueService).sendMessage(
-          message = eq(MigrationMessageType.RETRY_MIGRATION_MAPPING),
-          context = check<MigrationContext<ActivityMigrationMappingDto>> {
-            assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-            assertThat(it.body.nomisCourseActivityId).isEqualTo(123)
-            assertThat(it.body.activityId).isEqualTo(456)
-            assertThat(it.body.activityId2).isEqualTo(789)
-          },
-          delaySeconds = eq(0),
-        )
-        verify(telemetryClient, never()).trackEvent(eq("activity-migration-entity-failed"), any(), isNull())
+      assertThrows<WebClientResponseException.BadGateway> {
+        service.migrateNomisEntity(migrationContext())
       }
+
+      verifyNoInteractions(queueService)
+      verify(telemetryClient).trackEvent(
+        eq("activity-migration-entity-failed"),
+        check<Map<String, String>> {
+          assertThat(it["nomisCourseActivityId"]).isEqualTo("123")
+          assertThat(it["reason"]).contains("BadGateway")
+          assertThat(it["migrationId"]).contains("2020-05-23T11:30:00")
+        },
+        isNull(),
+      )
+    }
+
+    @Test
+    internal fun `will throw after an error creating the Activities entity so the message is rejected and retried`(): Unit = runBlocking {
+      whenever(activitiesApiService.migrateActivity(any())).thenThrow(WebClientResponseException.create(HttpStatus.BAD_GATEWAY, "error", HttpHeaders.EMPTY, ByteArray(0), null, null))
+
+      assertThrows<WebClientResponseException.BadGateway> {
+        service.migrateNomisEntity(migrationContext())
+      }
+
+      verifyNoInteractions(queueService)
+      verify(telemetryClient).trackEvent(
+        eq("activity-migration-entity-failed"),
+        check<Map<String, String>> {
+          assertThat(it["nomisCourseActivityId"]).isEqualTo("123")
+          assertThat(it["reason"]).contains("BadGateway")
+          assertThat(it["migrationId"]).contains("2020-05-23T11:30:00")
+        },
+        isNull(),
+      )
+    }
+
+    @Test
+    internal fun `will NOT throw but will publish a retry mapping message after an error creating the new mapping`(): Unit = runBlocking {
+      whenever(mappingService.createMapping(any(), any())).thenThrow(WebClientResponseException(HttpStatus.BAD_GATEWAY, "error", null, null, null, null))
+
+      assertDoesNotThrow {
+        service.migrateNomisEntity(migrationContext())
+      }
+
+      verify(queueService).sendMessage(
+        message = eq(MigrationMessageType.RETRY_MIGRATION_MAPPING),
+        context = check<MigrationContext<ActivityMigrationMappingDto>> {
+          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+          assertThat(it.body.nomisCourseActivityId).isEqualTo(123)
+          assertThat(it.body.activityId).isEqualTo(456)
+          assertThat(it.body.activityId2).isEqualTo(789)
+        },
+        delaySeconds = eq(0),
+      )
+      verify(telemetryClient, never()).trackEvent(eq("activity-migration-entity-failed"), any(), isNull())
+    }
 
     @Test
     fun `will do nothing when already migrated`() = runBlocking {
@@ -895,13 +891,12 @@ class ActivitiesMigrationServiceTest {
       slotCategoryCode = slot,
     )
 
-    private fun migrationContext() =
-      MigrationContext(
-        type = MigrationType.ACTIVITIES,
-        migrationId = "2020-05-23T11:30:00",
-        estimatedCount = 7,
-        body = FindActiveActivityIdsResponse(123),
-      )
+    private fun migrationContext() = MigrationContext(
+      type = MigrationType.ACTIVITIES,
+      migrationId = "2020-05-23T11:30:00",
+      estimatedCount = 7,
+      body = FindActiveActivityIdsResponse(123),
+    )
   }
 
   @Nested
@@ -937,25 +932,24 @@ class ActivitiesMigrationServiceTest {
       }
 
       @Test
-      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
-        runBlocking {
-          service.migrateStatusCheck(
-            MigrationContext(
-              type = MigrationType.ACTIVITIES,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 7,
-              body = MigrationStatusCheck(checkCount = 4),
-            ),
-          )
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runBlocking {
+        service.migrateStatusCheck(
+          MigrationContext(
+            type = MigrationType.ACTIVITIES,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 7,
+            body = MigrationStatusCheck(checkCount = 4),
+          ),
+        )
 
-          verify(queueService).sendMessage(
-            message = eq(MigrationMessageType.MIGRATE_STATUS_CHECK),
-            context = check<MigrationContext<MigrationStatusCheck>> {
-              assertThat(it.body.checkCount).isEqualTo(0)
-            },
-            delaySeconds = eq(10),
-          )
-        }
+        verify(queueService).sendMessage(
+          message = eq(MigrationMessageType.MIGRATE_STATUS_CHECK),
+          context = check<MigrationContext<MigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(0)
+          },
+          delaySeconds = eq(10),
+        )
+      }
     }
 
     @Nested
@@ -1079,26 +1073,25 @@ class ActivitiesMigrationServiceTest {
       }
 
       @Test
-      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
-        runBlocking {
-          service.cancelMigrateStatusCheck(
-            MigrationContext(
-              type = MigrationType.ACTIVITIES,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 7,
-              body = MigrationStatusCheck(checkCount = 4),
-            ),
-          )
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runBlocking {
+        service.cancelMigrateStatusCheck(
+          MigrationContext(
+            type = MigrationType.ACTIVITIES,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 7,
+            body = MigrationStatusCheck(checkCount = 4),
+          ),
+        )
 
-          verify(queueService).purgeAllMessages(any())
-          verify(queueService).sendMessage(
-            message = eq(MigrationMessageType.CANCEL_MIGRATION),
-            context = check<MigrationContext<MigrationStatusCheck>> {
-              assertThat(it.body.checkCount).isEqualTo(0)
-            },
-            delaySeconds = eq(10),
-          )
-        }
+        verify(queueService).purgeAllMessages(any())
+        verify(queueService).sendMessage(
+          message = eq(MigrationMessageType.CANCEL_MIGRATION),
+          context = check<MigrationContext<MigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(0)
+          },
+          delaySeconds = eq(10),
+        )
+      }
     }
 
     @Nested

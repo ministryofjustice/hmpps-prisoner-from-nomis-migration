@@ -19,7 +19,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.E
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.LegacyLocation
 import java.util.UUID
 
-class LocationsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
+class LocationsApiExtension :
+  BeforeAllCallback,
+  AfterAllCallback,
+  BeforeEachCallback {
   companion object {
     @JvmField
     val locationsApi = LocationsApiMockServer()
@@ -107,11 +110,9 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createLocationMigrationCount() =
-    findAll(postRequestedFor(urlMatching("/migrate/location"))).count()
+  fun createLocationMigrationCount() = findAll(postRequestedFor(urlMatching("/migrate/location"))).count()
 
-  fun createLocationSynchronisationCount() =
-    findAll(postRequestedFor(urlMatching("/sync/upsert"))).count()
+  fun createLocationSynchronisationCount() = findAll(postRequestedFor(urlMatching("/sync/upsert"))).count()
 
   private fun aLocation(locationId: String) = LegacyLocation(
     id = UUID.fromString(locationId),

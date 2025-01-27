@@ -113,6 +113,5 @@ class MigrationHistoryResource(private val migrationHistoryService: MigrationHis
       ),
     ],
   )
-  suspend fun deleteAll() =
-    migrationHistoryService.deleteAll()
+  suspend fun deleteAll() = migrationHistoryService.deleteAll()
 }

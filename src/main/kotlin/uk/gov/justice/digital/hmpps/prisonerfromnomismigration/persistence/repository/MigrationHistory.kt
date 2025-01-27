@@ -35,9 +35,7 @@ data class MigrationHistory(
     return true
   }
 
-  override fun hashCode(): Int {
-    return migrationId.hashCode()
-  }
+  override fun hashCode(): Int = migrationId.hashCode()
 
   override fun isNew(): Boolean = new
 

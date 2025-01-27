@@ -38,8 +38,7 @@ private fun pageContentWithContent(
   pageNumber: Long,
   totalElements: Long,
   size: Int,
-) =
-  // language=json
+) = // language=json
   """
 {
 

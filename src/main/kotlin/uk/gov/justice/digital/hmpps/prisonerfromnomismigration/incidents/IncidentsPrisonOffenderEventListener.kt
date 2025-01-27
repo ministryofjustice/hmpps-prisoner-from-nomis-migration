@@ -65,8 +65,7 @@ class IncidentsPrisonOffenderEventListener(
     }
   }
 
-  private inline fun <reified T> String.fromJson(): T =
-    objectMapper.readValue(this)
+  private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this)
 }
 
 // Depending on the type of update/delete there will be additional params

@@ -7,16 +7,15 @@ import org.springframework.web.reactive.function.client.awaitBodilessEntity
 
 @Service
 class PrisonPersonNomisSyncApiService(@Qualifier("nomisSyncApiWebClient") private val webClient: WebClient) {
-  suspend fun syncPhysicalAttributes(prisonerNumber: String) =
-    webClient.put()
-      .uri {
-        it.path("/prisonperson/{prisonerNumber}/physical-attributes")
-          // Note that we use the DPS field codes here because the nomis-update service transforms them to NOMIS codes
-          .queryParam("fields", PHYSICAL_ATTRIBUTES_DPS_FIELDS)
-          .build(prisonerNumber)
-      }
-      .retrieve()
-      .awaitBodilessEntity()
+  suspend fun syncPhysicalAttributes(prisonerNumber: String) = webClient.put()
+    .uri {
+      it.path("/prisonperson/{prisonerNumber}/physical-attributes")
+        // Note that we use the DPS field codes here because the nomis-update service transforms them to NOMIS codes
+        .queryParam("fields", PHYSICAL_ATTRIBUTES_DPS_FIELDS)
+        .build(prisonerNumber)
+    }
+    .retrieve()
+    .awaitBodilessEntity()
 }
 
 private val PHYSICAL_ATTRIBUTES_DPS_FIELDS = listOf(

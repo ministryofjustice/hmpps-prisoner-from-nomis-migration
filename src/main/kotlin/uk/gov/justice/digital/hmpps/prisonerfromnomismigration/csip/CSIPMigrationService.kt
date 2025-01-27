@@ -98,46 +98,45 @@ class CSIPMigrationService(
       }
   }
 
-  private suspend fun createMapping(context: MigrationContext<CSIPIdResponse>, fullMappingDto: CSIPFullMappingDto) =
-    try {
-      csipMappingService.createMapping(fullMappingDto, object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {})
-        .also {
-          if (it.isError) {
-            val duplicateErrorDetails = (it.errorResponse!!).moreInfo
-            telemetryClient.trackEvent(
-              "${MigrationType.CSIP.telemetryName}-nomis-migration-duplicate",
-              mapOf(
-                "migrationId" to context.migrationId,
-                "existingNomisCSIPId" to duplicateErrorDetails.existing.nomisCSIPReportId,
-                "duplicateNomisCSIPId" to duplicateErrorDetails.duplicate.nomisCSIPReportId,
-                "existingDPSCSIPId" to duplicateErrorDetails.existing.dpsCSIPReportId,
-                "duplicateDPSCSIPId" to duplicateErrorDetails.duplicate.dpsCSIPReportId,
-                "durationMinutes" to context.durationMinutes(),
-              ),
-            )
-          }
+  private suspend fun createMapping(context: MigrationContext<CSIPIdResponse>, fullMappingDto: CSIPFullMappingDto) = try {
+    csipMappingService.createMapping(fullMappingDto, object : ParameterizedTypeReference<DuplicateErrorResponse<CSIPFullMappingDto>>() {})
+      .also {
+        if (it.isError) {
+          val duplicateErrorDetails = (it.errorResponse!!).moreInfo
+          telemetryClient.trackEvent(
+            "${MigrationType.CSIP.telemetryName}-nomis-migration-duplicate",
+            mapOf(
+              "migrationId" to context.migrationId,
+              "existingNomisCSIPId" to duplicateErrorDetails.existing.nomisCSIPReportId,
+              "duplicateNomisCSIPId" to duplicateErrorDetails.duplicate.nomisCSIPReportId,
+              "existingDPSCSIPId" to duplicateErrorDetails.existing.dpsCSIPReportId,
+              "duplicateDPSCSIPId" to duplicateErrorDetails.duplicate.dpsCSIPReportId,
+              "durationMinutes" to context.durationMinutes(),
+            ),
+          )
         }
-    } catch (e: Exception) {
-      log.error(
-        "Failed to create mapping for nomisCSIPId: ${fullMappingDto.nomisCSIPReportId}, dpsCSIPId ${fullMappingDto.dpsCSIPReportId}" +
-          " or one of its children",
-        e,
-      )
-      queueService.sendMessage(
-        MigrationMessageType.RETRY_MIGRATION_MAPPING,
-        MigrationContext(
-          context = context,
-          body = CSIPFullMappingDto(
-            nomisCSIPReportId = fullMappingDto.nomisCSIPReportId,
-            dpsCSIPReportId = fullMappingDto.dpsCSIPReportId,
-            mappingType = CSIPFullMappingDto.MappingType.MIGRATED,
-            attendeeMappings = listOf(),
-            factorMappings = listOf(),
-            interviewMappings = listOf(),
-            planMappings = listOf(),
-            reviewMappings = listOf(),
-          ),
+      }
+  } catch (e: Exception) {
+    log.error(
+      "Failed to create mapping for nomisCSIPId: ${fullMappingDto.nomisCSIPReportId}, dpsCSIPId ${fullMappingDto.dpsCSIPReportId}" +
+        " or one of its children",
+      e,
+    )
+    queueService.sendMessage(
+      MigrationMessageType.RETRY_MIGRATION_MAPPING,
+      MigrationContext(
+        context = context,
+        body = CSIPFullMappingDto(
+          nomisCSIPReportId = fullMappingDto.nomisCSIPReportId,
+          dpsCSIPReportId = fullMappingDto.dpsCSIPReportId,
+          mappingType = CSIPFullMappingDto.MappingType.MIGRATED,
+          attendeeMappings = listOf(),
+          factorMappings = listOf(),
+          interviewMappings = listOf(),
+          planMappings = listOf(),
+          reviewMappings = listOf(),
         ),
-      )
-    }
+      ),
+    )
+  }
 }

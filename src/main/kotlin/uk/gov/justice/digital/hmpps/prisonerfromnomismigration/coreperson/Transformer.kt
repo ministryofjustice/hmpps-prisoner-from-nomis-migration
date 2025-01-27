@@ -56,35 +56,33 @@ fun Identifier.toMockCprIdentifier() = MockCprIdentifier(
   issuedDate = issuedDate,
   verified = verified,
 )
-fun OffenderAddress.toCprAddress() =
-  MockCprAddress(
-    nomisAddressId = addressId,
-    flat = flat,
-    premise = premise,
-    street = street,
-    locality = locality,
-    postcode = postcode,
-    town = city?.code,
-    county = county?.code,
-    country = country?.code,
-    noFixedAddress = noFixedAddress,
-    isPrimary = primaryAddress,
-    mail = mailAddress,
-    comment = comment,
-    startDate = startDate,
-    endDate = endDate,
-    validatedPAF = validatedPAF,
-    usages = usages?.map { addrUsage -> MockCprAddressUsage(addrUsage.usage.code, addrUsage.active) },
-    phoneNumbers = phoneNumbers?.map { it.toCprPhoneNumber() },
-  )
+fun OffenderAddress.toCprAddress() = MockCprAddress(
+  nomisAddressId = addressId,
+  flat = flat,
+  premise = premise,
+  street = street,
+  locality = locality,
+  postcode = postcode,
+  town = city?.code,
+  county = county?.code,
+  country = country?.code,
+  noFixedAddress = noFixedAddress,
+  isPrimary = primaryAddress,
+  mail = mailAddress,
+  comment = comment,
+  startDate = startDate,
+  endDate = endDate,
+  validatedPAF = validatedPAF,
+  usages = usages?.map { addrUsage -> MockCprAddressUsage(addrUsage.usage.code, addrUsage.active) },
+  phoneNumbers = phoneNumbers?.map { it.toCprPhoneNumber() },
+)
 
-fun OffenderPhoneNumber.toCprPhoneNumber() =
-  MockCprPhoneNumber(
-    nomisPhoneId = phoneId,
-    phoneNumber = number,
-    phoneType = type.code,
-    phoneExtension = extension,
-  )
+fun OffenderPhoneNumber.toCprPhoneNumber() = MockCprPhoneNumber(
+  nomisPhoneId = phoneId,
+  phoneNumber = number,
+  phoneType = type.code,
+  phoneExtension = extension,
+)
 fun OffenderBelief.toCprBelief() = MockCprBelief(
   nomisBeliefId = beliefId,
   religion = belief.code,

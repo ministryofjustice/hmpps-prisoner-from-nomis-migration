@@ -12,23 +12,20 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.U
 
 @Service
 class CaseNotesNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
-  suspend fun getCaseNotesForPrisonerOrNull(offenderNo: String): PrisonerCaseNotesResponse? =
-    webClient.get()
-      .uri("/prisoners/{offenderNo}/casenotes", offenderNo)
-      .retrieve()
-      .awaitBodyOrNullWhenNotFound()
+  suspend fun getCaseNotesForPrisonerOrNull(offenderNo: String): PrisonerCaseNotesResponse? = webClient.get()
+    .uri("/prisoners/{offenderNo}/casenotes", offenderNo)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 
-  suspend fun getCaseNotesForPrisoner(offenderNo: String): PrisonerCaseNotesResponse =
-    webClient.get()
-      .uri("/prisoners/{offenderNo}/casenotes", offenderNo)
-      .retrieve()
-      .awaitBody()
+  suspend fun getCaseNotesForPrisoner(offenderNo: String): PrisonerCaseNotesResponse = webClient.get()
+    .uri("/prisoners/{offenderNo}/casenotes", offenderNo)
+    .retrieve()
+    .awaitBody()
 
-  suspend fun getCaseNote(caseNoteId: Long): CaseNoteResponse =
-    webClient.get()
-      .uri("/casenotes/{caseNoteId}", caseNoteId)
-      .retrieve()
-      .awaitBody()
+  suspend fun getCaseNote(caseNoteId: Long): CaseNoteResponse = webClient.get()
+    .uri("/casenotes/{caseNoteId}", caseNoteId)
+    .retrieve()
+    .awaitBody()
 
   suspend fun updateCaseNote(caseNoteId: Long, nomisCaseNote: UpdateCaseNoteRequest) {
     webClient.put()

@@ -26,12 +26,10 @@ private val nomisStatusToOutcomeMap = mutableMapOf(
   NomisVisitStatus.NORM to VsipOutcome.COMPLETED_NORMALLY,
 )
 
-fun getVsipOutcome(nomisVisit: NomisVisit): VsipOutcome? =
-  nomisVisit.visitOutcome?.let { nomisCancellationOutcomes[NomisCancellationOutcome.valueOf(it.code)] }
-    ?: nomisStatusToOutcomeMap[NomisVisitStatus.valueOf(nomisVisit.visitStatus.code)]
+fun getVsipOutcome(nomisVisit: NomisVisit): VsipOutcome? = nomisVisit.visitOutcome?.let { nomisCancellationOutcomes[NomisCancellationOutcome.valueOf(it.code)] }
+  ?: nomisStatusToOutcomeMap[NomisVisitStatus.valueOf(nomisVisit.visitStatus.code)]
 
-fun getVsipVisitStatus(nomisVisit: NomisVisit): VsipStatus =
-  if (nomisVisit.visitStatus.code == NomisVisitStatus.CANC.name) VsipStatus.CANCELLED else VsipStatus.BOOKED
+fun getVsipVisitStatus(nomisVisit: NomisVisit): VsipStatus = if (nomisVisit.visitStatus.code == NomisVisitStatus.CANC.name) VsipStatus.CANCELLED else VsipStatus.BOOKED
 
 enum class NomisVisitStatus {
   CANC,

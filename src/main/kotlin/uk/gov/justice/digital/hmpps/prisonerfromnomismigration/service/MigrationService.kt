@@ -102,15 +102,14 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
     )
   }
 
-  suspend fun migrateEntitiesForPage(context: MigrationContext<MigrationPage<FILTER>>) =
-    getIds(context.body.filter, context.body.pageSize, context.body.pageNumber).takeUnless {
-      migrationHistoryService.isCancelling(context.migrationId)
-    }?.content?.map {
-      MigrationContext(
-        context = context,
-        body = it,
-      )
-    }?.forEach { queueService.sendMessageNoTracing(MigrationMessageType.MIGRATE_ENTITY, it) }
+  suspend fun migrateEntitiesForPage(context: MigrationContext<MigrationPage<FILTER>>) = getIds(context.body.filter, context.body.pageSize, context.body.pageNumber).takeUnless {
+    migrationHistoryService.isCancelling(context.migrationId)
+  }?.content?.map {
+    MigrationContext(
+      context = context,
+      body = it,
+    )
+  }?.forEach { queueService.sendMessageNoTracing(MigrationMessageType.MIGRATE_ENTITY, it) }
 
   suspend fun migrateStatusCheck(context: MigrationContext<MigrationStatusCheck>) {
     // no need to carry on checking if cancelling
@@ -234,8 +233,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
   }
 }
 
-fun <T> MigrationContext<T>.durationMinutes(): Long =
-  Duration.between(LocalDateTime.parse(this.migrationId), LocalDateTime.now()).toMinutes()
+fun <T> MigrationContext<T>.durationMinutes(): Long = Duration.between(LocalDateTime.parse(this.migrationId), LocalDateTime.now()).toMinutes()
 
 class MigrationPage<FILTER>(val filter: FILTER, val pageNumber: Long, val pageSize: Long)
 

@@ -27,14 +27,13 @@ class IncidentsMappingApiMockServer(private val objectMapper: ObjectMapper) {
     const val INCIDENTS_GET_MAPPING_URL = "/mapping/incidents/nomis-incident-id"
   }
 
-  fun verifyCreateMappingIncidentId(dpsIncidentId: String, times: Int = 1) =
-    verify(
-      times,
-      postRequestedFor(WireMock.urlPathEqualTo("/mapping/incidents"))
-        .withRequestBody(
-          matchingJsonPath("dpsIncidentId", equalTo("$dpsIncidentId")),
-        ),
-    )
+  fun verifyCreateMappingIncidentId(dpsIncidentId: String, times: Int = 1) = verify(
+    times,
+    postRequestedFor(WireMock.urlPathEqualTo("/mapping/incidents"))
+      .withRequestBody(
+        matchingJsonPath("dpsIncidentId", equalTo("$dpsIncidentId")),
+      ),
+  )
 
   fun stubIncidentMappingCreateConflict(
     nomisIncidentId: Long = 1234,

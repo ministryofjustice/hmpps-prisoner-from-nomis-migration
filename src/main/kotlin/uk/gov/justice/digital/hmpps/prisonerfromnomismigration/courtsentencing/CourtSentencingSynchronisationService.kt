@@ -143,8 +143,7 @@ class CourtSentencingSynchronisationService(
     }
   }
 
-  private suspend fun isAppearancePartOfACourtCase(appearanceEvent: CourtAppearanceEvent) =
-    appearanceEvent.caseId?.let { true } ?: false
+  private suspend fun isAppearancePartOfACourtCase(appearanceEvent: CourtAppearanceEvent) = appearanceEvent.caseId?.let { true } ?: false
 
   suspend fun nomisCourtCaseUpdated(event: CourtCaseEvent) {
     val telemetry =
@@ -654,22 +653,20 @@ class CourtSentencingSynchronisationService(
     }
   }
 
-  private suspend fun getDpsChargeMappings(nomisSentence: SentenceResponse): List<String> {
-    return try {
-      nomisSentence.offenderCharges.map {
-        mappingApiService.getOffenderChargeByNomisId(it.id).dpsCourtChargeId
-      }
-    } catch (notFoundException: WebClientResponseException.NotFound) {
-      telemetryClient.trackEvent(
-        name = "charge-mapping-missing",
-        properties = mutableMapOf(
-          "nomisBookingId" to nomisSentence.bookingId.toString(),
-          "nomisSentenceSequence" to nomisSentence.sentenceSeq.toString(),
-        ),
-      )
-      log.error("Unable to find mapping for nomis offender charges in the context of sentence: bookingId= ${nomisSentence.bookingId} sentenceSequence= ${nomisSentence.sentenceSeq}}\nPossible causes: events out of order or offender charge has not been migrated")
-      throw notFoundException
+  private suspend fun getDpsChargeMappings(nomisSentence: SentenceResponse): List<String> = try {
+    nomisSentence.offenderCharges.map {
+      mappingApiService.getOffenderChargeByNomisId(it.id).dpsCourtChargeId
     }
+  } catch (notFoundException: WebClientResponseException.NotFound) {
+    telemetryClient.trackEvent(
+      name = "charge-mapping-missing",
+      properties = mutableMapOf(
+        "nomisBookingId" to nomisSentence.bookingId.toString(),
+        "nomisSentenceSequence" to nomisSentence.sentenceSeq.toString(),
+      ),
+    )
+    log.error("Unable to find mapping for nomis offender charges in the context of sentence: bookingId= ${nomisSentence.bookingId} sentenceSequence= ${nomisSentence.sentenceSeq}}\nPossible causes: events out of order or offender charge has not been migrated")
+    throw notFoundException
   }
 
   private suspend fun tryToDeleteCourtChargeMapping(mapping: CourtChargeMappingDto) = runCatching {

@@ -19,7 +19,6 @@ class CorporateConfiguration(
   fun corporateDpsApiWebClient(
     authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
     builder: WebClient.Builder,
-  ): WebClient =
-    // DPS for corporates is the same as contacts
+  ): WebClient = // DPS for corporates is the same as contacts
     builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "contact-person-api", url = apiBaseUri, timeout)
 }

@@ -250,6 +250,5 @@ class ActivitiesMigrationResource(
   )
   suspend fun endMigratedActivities(
     @Schema(description = "Migration ID", type = "string") @PathVariable migrationId: String,
-  ) =
-    activitiesMigrationService.endMigratedActivities(migrationId)
+  ) = activitiesMigrationService.endMigratedActivities(migrationId)
 }

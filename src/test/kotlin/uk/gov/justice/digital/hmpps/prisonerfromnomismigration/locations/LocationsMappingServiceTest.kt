@@ -147,24 +147,23 @@ internal class LocationsMappingServiceTest {
     }
 
     @Test
-    internal fun `will pass all parameters visit id, migration Id and MIGRATED indicator to mapping service`(): Unit =
-      runBlocking {
-        locationsMappingService.createMapping(
-          LocationMappingDto(
-            dpsLocationId = DPS_LOCATION_ID,
-            nomisLocationId = NOMIS_LOCATION_ID,
-            mappingType = MIGRATED,
-            label = "5678",
-            whenCreated = "2020-01-01T00:00:00",
-          ),
-          errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<LocationMappingDto>>() {},
-        )
+    internal fun `will pass all parameters visit id, migration Id and MIGRATED indicator to mapping service`(): Unit = runBlocking {
+      locationsMappingService.createMapping(
+        LocationMappingDto(
+          dpsLocationId = DPS_LOCATION_ID,
+          nomisLocationId = NOMIS_LOCATION_ID,
+          mappingType = MIGRATED,
+          label = "5678",
+          whenCreated = "2020-01-01T00:00:00",
+        ),
+        errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<LocationMappingDto>>() {},
+      )
 
-        mappingApi.verify(
-          postRequestedFor(urlEqualTo(LOCATIONS_CREATE_MAPPING_URL))
-            .withRequestBody(
-              equalToJson(
-                """
+      mappingApi.verify(
+        postRequestedFor(urlEqualTo(LOCATIONS_CREATE_MAPPING_URL))
+          .withRequestBody(
+            equalToJson(
+              """
                   {
                   "dpsLocationId": "$DPS_LOCATION_ID",
                   "nomisLocationId": $NOMIS_LOCATION_ID,
@@ -172,11 +171,11 @@ internal class LocationsMappingServiceTest {
                   "mappingType": "MIGRATED",
                   "whenCreated": "2020-01-01T00:00:00"
                   }
-                """.trimIndent(),
-              ),
+              """.trimIndent(),
             ),
-        )
-      }
+          ),
+      )
+    }
 
     @Test
     fun `should throw exception for any error`() {

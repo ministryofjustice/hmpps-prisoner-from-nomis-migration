@@ -45,19 +45,18 @@ class SentencingAdjustmentsNomisApiService(@Qualifier("nomisApiWebClient") priva
     toDate: LocalDate? = null,
     pageNumber: Long = 0,
     pageSize: Long = 20,
-  ): PageImpl<AdjustmentIdResponse> =
-    webClient.get()
-      .uri {
-        it.path("/adjustments/ids")
-          .queryParam("fromDate", fromDate)
-          .queryParam("toDate", toDate)
-          .queryParam("page", pageNumber)
-          .queryParam("size", pageSize)
-          .build()
-      }
-      .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<AdjustmentIdResponse>>())
-      .awaitSingle()
+  ): PageImpl<AdjustmentIdResponse> = webClient.get()
+    .uri {
+      it.path("/adjustments/ids")
+        .queryParam("fromDate", fromDate)
+        .queryParam("toDate", toDate)
+        .queryParam("page", pageNumber)
+        .queryParam("size", pageSize)
+        .build()
+    }
+    .retrieve()
+    .bodyToMono(typeReference<RestResponsePage<AdjustmentIdResponse>>())
+    .awaitSingle()
 }
 
 data class NomisAdjustment(

@@ -218,31 +218,29 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun verifyCreateCSIPFullMapping(dpsCSIPId: String, dpsCSIPFactorId: String, times: Int = 1) =
-    verify(
-      times,
-      WireMock.postRequestedFor(WireMock.urlPathEqualTo(CSIP_CREATE_MAPPING_URL))
-        .withRequestBody(
-          WireMock.matchingJsonPath("dpsCSIPReportId", WireMock.equalTo(dpsCSIPId)),
-        )
-        .withRequestBody(
-          WireMock.matchingJsonPath(
-            "factorMappings[0].dpsId",
-            WireMock.equalTo(dpsCSIPFactorId),
-          ),
-        ),
-    )
-
-  fun verifyCreateCSIPReportMapping(dpsCSIPId: String, times: Int = 1) =
-    verify(
-      times,
-      WireMock.postRequestedFor(WireMock.urlPathEqualTo(CSIP_CREATE_MAPPING_URL)).withRequestBody(
+  fun verifyCreateCSIPFullMapping(dpsCSIPId: String, dpsCSIPFactorId: String, times: Int = 1) = verify(
+    times,
+    WireMock.postRequestedFor(WireMock.urlPathEqualTo(CSIP_CREATE_MAPPING_URL))
+      .withRequestBody(
+        WireMock.matchingJsonPath("dpsCSIPReportId", WireMock.equalTo(dpsCSIPId)),
+      )
+      .withRequestBody(
         WireMock.matchingJsonPath(
-          "dpsCSIPReportId",
-          WireMock.equalTo(dpsCSIPId),
+          "factorMappings[0].dpsId",
+          WireMock.equalTo(dpsCSIPFactorId),
         ),
       ),
-    )
+  )
+
+  fun verifyCreateCSIPReportMapping(dpsCSIPId: String, times: Int = 1) = verify(
+    times,
+    WireMock.postRequestedFor(WireMock.urlPathEqualTo(CSIP_CREATE_MAPPING_URL)).withRequestBody(
+      WireMock.matchingJsonPath(
+        "dpsCSIPReportId",
+        WireMock.equalTo(dpsCSIPId),
+      ),
+    ),
+  )
 
   fun stubDeleteCSIPReportMapping(dpsCSIPId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") {
     mappingApi.stubFor(
@@ -335,8 +333,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetFactorByNomisId(status: HttpStatus) =
-    stubGetErrorResponse(status = status, url = "/mapping/csip/factors/nomis-csip-factor-id/.*")
+  fun stubGetFactorByNomisId(status: HttpStatus) = stubGetErrorResponse(status = status, url = "/mapping/csip/factors/nomis-csip-factor-id/.*")
 
   // /////// CSIP Plan
   fun stubGetPlanByNomisId(nomisCSIPPlanId: Long, dpsCSIPPlanId: String, dpsCSIPReportId: String) {
@@ -360,8 +357,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetPlanByNomisId(status: HttpStatus) =
-    stubGetErrorResponse(status = status, url = "/mapping/csip/plans/nomis-csip-plan-id/.*")
+  fun stubGetPlanByNomisId(status: HttpStatus) = stubGetErrorResponse(status = status, url = "/mapping/csip/plans/nomis-csip-plan-id/.*")
 
   // /////// CSIP Review
   fun stubGetReviewByNomisId(nomisCSIPReviewId: Long, dpsCSIPReviewId: String, dpsCSIPReportId: String) {
@@ -385,8 +381,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetReviewByNomisId(status: HttpStatus) =
-    stubGetErrorResponse(status = status, url = "/mapping/csip/reviews/nomis-csip-review-id/.*")
+  fun stubGetReviewByNomisId(status: HttpStatus) = stubGetErrorResponse(status = status, url = "/mapping/csip/reviews/nomis-csip-review-id/.*")
 
   // /////// CSIP Attendee
   fun stubGetAttendeeByNomisId(nomisCSIPAttendeeId: Long, dpsCSIPAttendeeId: String, dpsCSIPReportId: String) {
@@ -410,8 +405,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetAttendeeByNomisId(status: HttpStatus) =
-    stubGetErrorResponse(status = status, url = "/mapping/csip/attendees/nomis-csip-attendee-id/.*")
+  fun stubGetAttendeeByNomisId(status: HttpStatus) = stubGetErrorResponse(status = status, url = "/mapping/csip/attendees/nomis-csip-attendee-id/.*")
 
   // /////// CSIP Interview
   fun stubGetInterviewByNomisId(nomisCSIPInterviewId: Long, dpsCSIPInterviewId: String, dpsCSIPReportId: String) {
@@ -435,8 +429,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetInterviewByNomisId(status: HttpStatus) =
-    stubGetErrorResponse(status = status, url = "/mapping/csip/interviews/nomis-csip-interview-id/.*")
+  fun stubGetInterviewByNomisId(status: HttpStatus) = stubGetErrorResponse(status = status, url = "/mapping/csip/interviews/nomis-csip-interview-id/.*")
 
   // ////
 
@@ -452,8 +445,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder =
-    this.withBody(objectMapper.writeValueAsString(body))
+  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder = this.withBody(objectMapper.writeValueAsString(body))
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)

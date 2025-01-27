@@ -54,9 +54,7 @@ class IncidentsReconciliationResource(
       }
   }
 }
-private fun List<MismatchIncidents>.asMap(): Map<String, String> {
-  return this.associate {
-    it.agencyId to
-      ("open-dps=${it.dpsOpenIncidents}:open-nomis=${it.nomisOpenIncidents}; closed-dps=${it.dpsClosedIncidents}:closed-nomis=${it.nomisClosedIncidents}")
-  }
+private fun List<MismatchIncidents>.asMap(): Map<String, String> = this.associate {
+  it.agencyId to
+    ("open-dps=${it.dpsOpenIncidents}:open-nomis=${it.nomisOpenIncidents}; closed-dps=${it.dpsClosedIncidents}:closed-nomis=${it.nomisClosedIncidents}")
 }

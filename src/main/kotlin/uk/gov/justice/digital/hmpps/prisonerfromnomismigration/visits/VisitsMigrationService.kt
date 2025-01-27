@@ -126,11 +126,9 @@ class VisitsMigrationService(
     )
   }
 
-  private fun isFutureVisit(nomisVisit: NomisVisit) =
-    nomisVisit.startDateTime.toLocalDate() >= LocalDate.now()
+  private fun isFutureVisit(nomisVisit: NomisVisit) = nomisVisit.startDateTime.toLocalDate() >= LocalDate.now()
 
-  private fun isErroneousFutureVisit(nomisVisit: NomisVisit) =
-    nomisVisit.startDateTime.toLocalDate() > LocalDate.now().plusYears(1)
+  private fun isErroneousFutureVisit(nomisVisit: NomisVisit) = nomisVisit.startDateTime.toLocalDate() > LocalDate.now().plusYears(1)
 
   private suspend fun createNomisVisitMapping(
     nomisVisitId: Long,
@@ -268,27 +266,25 @@ class VisitsMigrationService(
     )
   }
 
-  private fun applyPrisonSpecificVisitStartTimeMapping(nomisVisit: NomisVisit) =
-    if (isFutureVisit(nomisVisit) && nomisVisit.prisonId == "HEI") {
-      if (nomisVisit.startDateTime.toLocalTime().isBefore(LocalTime.NOON)) {
-        nomisVisit.startDateTime.toLocalDate().atTime(LocalTime.of(9, 0))
-      } else {
-        nomisVisit.startDateTime.toLocalDate().atTime(LocalTime.of(13, 45))
-      }
+  private fun applyPrisonSpecificVisitStartTimeMapping(nomisVisit: NomisVisit) = if (isFutureVisit(nomisVisit) && nomisVisit.prisonId == "HEI") {
+    if (nomisVisit.startDateTime.toLocalTime().isBefore(LocalTime.NOON)) {
+      nomisVisit.startDateTime.toLocalDate().atTime(LocalTime.of(9, 0))
     } else {
-      nomisVisit.startDateTime
+      nomisVisit.startDateTime.toLocalDate().atTime(LocalTime.of(13, 45))
     }
+  } else {
+    nomisVisit.startDateTime
+  }
 
-  private fun applyPrisonSpecificVisitEndTimeMapping(nomisVisit: NomisVisit) =
-    if (isFutureVisit(nomisVisit) && nomisVisit.prisonId == "HEI") {
-      if (nomisVisit.startDateTime.toLocalTime().isBefore(LocalTime.NOON)) {
-        nomisVisit.endDateTime.toLocalDate().atTime(LocalTime.of(10, 0))
-      } else {
-        nomisVisit.endDateTime.toLocalDate().atTime(LocalTime.of(14, 45))
-      }
+  private fun applyPrisonSpecificVisitEndTimeMapping(nomisVisit: NomisVisit) = if (isFutureVisit(nomisVisit) && nomisVisit.prisonId == "HEI") {
+    if (nomisVisit.startDateTime.toLocalTime().isBefore(LocalTime.NOON)) {
+      nomisVisit.endDateTime.toLocalDate().atTime(LocalTime.of(10, 0))
     } else {
-      nomisVisit.endDateTime
+      nomisVisit.endDateTime.toLocalDate().atTime(LocalTime.of(14, 45))
     }
+  } else {
+    nomisVisit.endDateTime
+  }
 }
 
 sealed interface RoomMappingResponse

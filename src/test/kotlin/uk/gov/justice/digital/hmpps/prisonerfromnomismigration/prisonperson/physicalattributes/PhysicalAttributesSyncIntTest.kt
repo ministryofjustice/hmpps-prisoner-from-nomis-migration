@@ -529,17 +529,16 @@ class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
       modifiedBy: String? = "ANOTHER_USER",
       modifiedDateTime: String? = "$now",
       auditModuleName: String = "MODULE",
-    ) =
-      PhysicalAttributesResponse(
-        attributeSequence = attributeSequence.toLong(),
-        heightCentimetres = heightCentimetres,
-        weightKilograms = weightKilograms,
-        createdBy = createdBy,
-        createDateTime = createDateTime,
-        modifiedBy = modifiedBy,
-        modifiedDateTime = modifiedDateTime,
-        auditModuleName = auditModuleName,
-      )
+    ) = PhysicalAttributesResponse(
+      attributeSequence = attributeSequence.toLong(),
+      heightCentimetres = heightCentimetres,
+      weightKilograms = weightKilograms,
+      createdBy = createdBy,
+      createDateTime = createDateTime,
+      modifiedBy = modifiedBy,
+      modifiedDateTime = modifiedDateTime,
+      auditModuleName = auditModuleName,
+    )
 
     private fun aBookingResponse(
       bookingId: Long = 12345,
@@ -547,33 +546,30 @@ class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
       endDateTime: String? = "2024-10-21T12:34:56",
       latestBooking: Boolean = true,
       physicalAttributes: List<PhysicalAttributesResponse> = listOf(aPhysicalAttributesResponse()),
-    ) =
-      BookingPhysicalAttributesResponse(
-        bookingId = bookingId,
-        startDateTime = startDateTime,
-        endDateTime = endDateTime,
-        latestBooking = latestBooking,
-        physicalAttributes = physicalAttributes,
-      )
+    ) = BookingPhysicalAttributesResponse(
+      bookingId = bookingId,
+      startDateTime = startDateTime,
+      endDateTime = endDateTime,
+      latestBooking = latestBooking,
+      physicalAttributes = physicalAttributes,
+    )
 
     private fun aPrisonerPhysicalAttributesResponse(
       offenderNo: String = "A1234AA",
       bookings: List<BookingPhysicalAttributesResponse> = listOf(aBookingResponse()),
-    ) =
-      PrisonerPhysicalAttributesResponse(
-        offenderNo = offenderNo,
-        bookings = bookings,
-      )
+    ) = PrisonerPhysicalAttributesResponse(
+      offenderNo = offenderNo,
+      bookings = bookings,
+    )
 
     private fun aResponse(ids: List<Long> = listOf(321)) = PhysicalAttributesSyncResponse(ids)
 
     private fun LocalDateTime.toZoned() = atZone(ZoneId.of("Europe/London"))
 
-    private fun sendPhysicalAttributesChangedEvent(bookingId: Int = 12345) =
-      awsSqsPrisonPersonOffenderEventsClient.sendMessage(
-        prisonPersonQueueOffenderEventsUrl,
-        physicalAttributesChangedEvent(bookingId = bookingId),
-      ).also { waitForAnyProcessingToComplete() }
+    private fun sendPhysicalAttributesChangedEvent(bookingId: Int = 12345) = awsSqsPrisonPersonOffenderEventsClient.sendMessage(
+      prisonPersonQueueOffenderEventsUrl,
+      physicalAttributesChangedEvent(bookingId = bookingId),
+    ).also { waitForAnyProcessingToComplete() }
 
     private fun verifyResults(
       type: String = "updated",

@@ -509,25 +509,23 @@ class SentencingMigrationIntTest : SqsIntegrationTestBase() {
     }
   }
 
-  private fun waitUntilCompleted() =
-    await atMost Duration.ofSeconds(60) untilAsserted {
-      verify(telemetryClient).trackEvent(
-        eq("sentencing-adjustments-migration-completed"),
-        any(),
-        isNull(),
-      )
-    }
+  private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
+    verify(telemetryClient).trackEvent(
+      eq("sentencing-adjustments-migration-completed"),
+      any(),
+      isNull(),
+    )
+  }
 
-  private fun WebTestClient.performMigration(body: String = "{ }"): MigrationResult =
-    post().uri("/migrate/sentencing")
-      .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-      .header("Content-Type", "application/json")
-      .body(BodyInserters.fromValue(body))
-      .exchange()
-      .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
-      .also {
-        waitUntilCompleted()
-      }
+  private fun WebTestClient.performMigration(body: String = "{ }"): MigrationResult = post().uri("/migrate/sentencing")
+    .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
+    .header("Content-Type", "application/json")
+    .body(BodyInserters.fromValue(body))
+    .exchange()
+    .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
+    .also {
+      waitUntilCompleted()
+    }
 }
 
 fun someMigrationFilter(): BodyInserter<String, ReactiveHttpOutputMessage> = BodyInserters.fromValue(

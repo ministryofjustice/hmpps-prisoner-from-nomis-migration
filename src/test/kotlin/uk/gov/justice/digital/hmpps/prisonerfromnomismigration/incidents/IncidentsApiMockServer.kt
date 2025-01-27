@@ -42,7 +42,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import java.util.UUID
 import kotlin.math.min
 
-class IncidentsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
+class IncidentsApiExtension :
+  BeforeAllCallback,
+  AfterAllCallback,
+  BeforeEachCallback {
   companion object {
     @JvmField
     val incidentsApi = IncidentsApiMockServer()
@@ -68,144 +71,141 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     private const val WIREMOCK_PORT = 8089
     private const val DPS_INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
 
-    fun dpsIncidentReportId(dpsIncidentId: String) =
-      NomisSyncReportId(id = UUID.fromString(dpsIncidentId))
+    fun dpsIncidentReportId(dpsIncidentId: String) = NomisSyncReportId(id = UUID.fromString(dpsIncidentId))
 
-    fun dpsIncidentReport(nomisIncidentId: String = "1234") =
-      ReportWithDetails(
+    fun dpsIncidentReport(nomisIncidentId: String = "1234") = ReportWithDetails(
+      id = UUID.randomUUID(),
+      reportReference = nomisIncidentId,
+      type = ReportWithDetails.Type.ATTEMPTED_ESCAPE_FROM_ESCORT,
+      incidentDateAndTime = "2021-07-05T10:35:17",
+      prisonId = "ASI",
+      location = "ASI",
+      title = "There was an incident in the exercise yard",
+      description = "Fred and Jimmy were fighting outside.",
+      nomisType = "ATT_ESC_E",
+      nomisStatus = "AWAN",
+      event = Event(
         id = UUID.randomUUID(),
-        reportReference = nomisIncidentId,
-        type = ReportWithDetails.Type.ATTEMPTED_ESCAPE_FROM_ESCORT,
-        incidentDateAndTime = "2021-07-05T10:35:17",
+        eventReference = nomisIncidentId,
+        eventDateAndTime = "2021-07-05T10:35:17",
         prisonId = "ASI",
         location = "ASI",
-        title = "There was an incident in the exercise yard",
-        description = "Fred and Jimmy were fighting outside.",
-        nomisType = "ATT_ESC_E",
-        nomisStatus = "AWAN",
-        event = Event(
-          id = UUID.randomUUID(),
-          eventReference = nomisIncidentId,
-          eventDateAndTime = "2021-07-05T10:35:17",
-          prisonId = "ASI",
-          location = "ASI",
-          title = "There was a problem",
-          description = "Fighting was happening",
-          createdAt = "2021-07-23T10:35:17",
-          modifiedAt = "2021-07-23T10:35:17",
-          modifiedBy = "JSMITH",
-        ),
-        reportedBy = "FSTAFF_GEN",
-        reportedAt = "2021-07-05T10:35:17",
-        status = ReportWithDetails.Status.DRAFT,
-        assignedTo = "BJONES",
-        questions = listOf(
-          Question(
-            code = "1234",
-            question = "Was anybody hurt?",
-            additionalInformation = null,
-            sequence = 1,
-            responses = listOf(
-              Response(
-                response = "Yes",
-                recordedBy = "JSMITH",
-                recordedAt = "2021-07-05T10:35:17",
-                additionalInformation = null,
-                sequence = 1,
-              ),
+        title = "There was a problem",
+        description = "Fighting was happening",
+        createdAt = "2021-07-23T10:35:17",
+        modifiedAt = "2021-07-23T10:35:17",
+        modifiedBy = "JSMITH",
+      ),
+      reportedBy = "FSTAFF_GEN",
+      reportedAt = "2021-07-05T10:35:17",
+      status = ReportWithDetails.Status.DRAFT,
+      assignedTo = "BJONES",
+      questions = listOf(
+        Question(
+          code = "1234",
+          question = "Was anybody hurt?",
+          additionalInformation = null,
+          sequence = 1,
+          responses = listOf(
+            Response(
+              response = "Yes",
+              recordedBy = "JSMITH",
+              recordedAt = "2021-07-05T10:35:17",
+              additionalInformation = null,
+              sequence = 1,
             ),
           ),
         ),
-        history = listOf(
-          History(
-            type = History.Type.ABSCONDER,
-            changedAt = "2021-07-05T10:35:17",
-            changedBy = "JSMITH",
-            questions = listOf(
-              HistoricalQuestion(
-                code = "HQ1",
-                question = "Were tools involved?",
-                responses = listOf(
-                  HistoricalResponse(
-                    response = "Yes",
-                    sequence = 1,
-                    recordedBy = "Fred Jones",
-                    recordedAt = "2021-07-05T10:35:17",
-                    additionalInformation = "more info",
-                  ),
+      ),
+      history = listOf(
+        History(
+          type = History.Type.ABSCONDER,
+          changedAt = "2021-07-05T10:35:17",
+          changedBy = "JSMITH",
+          questions = listOf(
+            HistoricalQuestion(
+              code = "HQ1",
+              question = "Were tools involved?",
+              responses = listOf(
+                HistoricalResponse(
+                  response = "Yes",
+                  sequence = 1,
+                  recordedBy = "Fred Jones",
+                  recordedAt = "2021-07-05T10:35:17",
+                  additionalInformation = "more info",
                 ),
-                additionalInformation = "some info",
-                sequence = 1,
               ),
+              additionalInformation = "some info",
+              sequence = 1,
             ),
           ),
         ),
-        historyOfStatuses = listOf(
-          StatusHistory(
-            status = StatusHistory.Status.DRAFT,
-            changedAt = "2021-07-05T10:35:17",
-            changedBy = "JSMITH",
-          ),
+      ),
+      historyOfStatuses = listOf(
+        StatusHistory(
+          status = StatusHistory.Status.DRAFT,
+          changedAt = "2021-07-05T10:35:17",
+          changedBy = "JSMITH",
         ),
-        staffInvolved = listOf(
-          StaffInvolvement(
-            sequence = 1,
-            staffUsername = "Dave Jones",
-            staffRole = StaffInvolvement.StaffRole.ACTIVELY_INVOLVED,
-            comment = "Dave was hit",
-          ),
+      ),
+      staffInvolved = listOf(
+        StaffInvolvement(
+          sequence = 1,
+          staffUsername = "Dave Jones",
+          staffRole = StaffInvolvement.StaffRole.ACTIVELY_INVOLVED,
+          comment = "Dave was hit",
         ),
-        prisonersInvolved = listOf(
-          PrisonerInvolvement(
-            sequence = 1,
-            prisonerNumber = "A1234BC",
-            prisonerRole = PrisonerInvolvement.PrisonerRole.ABSCONDER,
-            outcome = PrisonerInvolvement.Outcome.PLACED_ON_REPORT,
-            comment = "There were issues",
-          ),
-          PrisonerInvolvement(
-            sequence = 2,
-            prisonerNumber = "A1234BC",
-            prisonerRole = PrisonerInvolvement.PrisonerRole.ABSCONDER,
-            outcome = PrisonerInvolvement.Outcome.PLACED_ON_REPORT,
-          ),
+      ),
+      prisonersInvolved = listOf(
+        PrisonerInvolvement(
+          sequence = 1,
+          prisonerNumber = "A1234BC",
+          prisonerRole = PrisonerInvolvement.PrisonerRole.ABSCONDER,
+          outcome = PrisonerInvolvement.Outcome.PLACED_ON_REPORT,
+          comment = "There were issues",
         ),
-        correctionRequests = listOf(
-          CorrectionRequest(
-            sequence = 1,
-            reason = CorrectionRequest.Reason.MISTAKE,
-            descriptionOfChange = "There was a change",
-            correctionRequestedBy = "Fred Black",
-            correctionRequestedAt = "2021-07-05T10:35:17",
-          ),
+        PrisonerInvolvement(
+          sequence = 2,
+          prisonerNumber = "A1234BC",
+          prisonerRole = PrisonerInvolvement.PrisonerRole.ABSCONDER,
+          outcome = PrisonerInvolvement.Outcome.PLACED_ON_REPORT,
         ),
-        createdAt = "2021-07-05T10:35:17",
-        modifiedAt = "2021-07-15T10:35:17",
-        modifiedBy = "JSMITH",
-        createdInNomis = true,
-        lastModifiedInNomis = true,
-      )
+      ),
+      correctionRequests = listOf(
+        CorrectionRequest(
+          sequence = 1,
+          reason = CorrectionRequest.Reason.MISTAKE,
+          descriptionOfChange = "There was a change",
+          correctionRequestedBy = "Fred Black",
+          correctionRequestedAt = "2021-07-05T10:35:17",
+        ),
+      ),
+      createdAt = "2021-07-05T10:35:17",
+      modifiedAt = "2021-07-15T10:35:17",
+      modifiedBy = "JSMITH",
+      createdInNomis = true,
+      lastModifiedInNomis = true,
+    )
 
-    fun dpsBasicIncidentReport(dpsIncidentId: String = DPS_INCIDENT_ID, prisonId: String = "ASI") =
-      ReportBasic(
-        id = UUID.fromString(dpsIncidentId),
-        reportReference = "1234",
-        type = ReportBasic.Type.SELF_HARM,
-        incidentDateAndTime = "2021-07-05T10:35:17",
-        prisonId = prisonId,
-        location = prisonId,
-        title = "There was an incident in the exercise yard",
-        description = "Fred and Jimmy were fighting outside.",
-        reportedBy = "JSMITH",
-        reportedAt = "2021-07-05T10:35:17",
-        status = ReportBasic.Status.DRAFT,
-        assignedTo = "BJONES",
-        createdAt = "2021-07-05T10:35:17",
-        modifiedAt = "2021-07-05T10:35:17",
-        modifiedBy = "JSMITH",
-        createdInNomis = true,
-        lastModifiedInNomis = true,
-      )
+    fun dpsBasicIncidentReport(dpsIncidentId: String = DPS_INCIDENT_ID, prisonId: String = "ASI") = ReportBasic(
+      id = UUID.fromString(dpsIncidentId),
+      reportReference = "1234",
+      type = ReportBasic.Type.SELF_HARM,
+      incidentDateAndTime = "2021-07-05T10:35:17",
+      prisonId = prisonId,
+      location = prisonId,
+      title = "There was an incident in the exercise yard",
+      description = "Fred and Jimmy were fighting outside.",
+      reportedBy = "JSMITH",
+      reportedAt = "2021-07-05T10:35:17",
+      status = ReportBasic.Status.DRAFT,
+      assignedTo = "BJONES",
+      createdAt = "2021-07-05T10:35:17",
+      modifiedAt = "2021-07-05T10:35:17",
+      modifiedBy = "JSMITH",
+      createdInNomis = true,
+      lastModifiedInNomis = true,
+    )
   }
 
   fun stubHealthPing(status: Int) {
@@ -327,18 +327,13 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyMigrationGetBasicIncident() =
-    verify(getRequestedFor(urlMatching("/incident-reports/reference/[0-9]+")))
+  fun verifyMigrationGetBasicIncident() = verify(getRequestedFor(urlMatching("/incident-reports/reference/[0-9]+")))
 
-  fun verifyGetIncidentCounts(times: Int = 1) =
-    verify(exactly(times), getRequestedFor(urlPathMatching("/incident-reports")))
+  fun verifyGetIncidentCounts(times: Int = 1) = verify(exactly(times), getRequestedFor(urlPathMatching("/incident-reports")))
 
-  fun verifyGetIncidentDetail(times: Int = 1) =
-    verify(exactly(times), getRequestedFor(urlMatching("/incident-reports/reference/[0-9]+/with-details")))
+  fun verifyGetIncidentDetail(times: Int = 1) = verify(exactly(times), getRequestedFor(urlMatching("/incident-reports/reference/[0-9]+/with-details")))
 
-  fun createIncidentUpsertCount() =
-    findAll(postRequestedFor(urlEqualTo("/sync/upsert"))).count()
+  fun createIncidentUpsertCount() = findAll(postRequestedFor(urlEqualTo("/sync/upsert"))).count()
 
-  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder =
-    this.withBody(objectMapper.writeValueAsString(body))
+  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder = this.withBody(objectMapper.writeValueAsString(body))
 }

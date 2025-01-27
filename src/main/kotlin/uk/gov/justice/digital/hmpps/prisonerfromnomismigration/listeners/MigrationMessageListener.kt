@@ -53,11 +53,9 @@ abstract class MigrationMessageListener<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTI
     }
   }
 
-  private fun <T> migrationContextFilter(message: MigrationMessage<*, T>): MigrationContext<T> =
-    message.context
+  private fun <T> migrationContextFilter(message: MigrationMessage<*, T>): MigrationContext<T> = message.context
 
-  private inline fun <reified T> String.fromJson(): T =
-    objectMapper.readValue(this, object : TypeReference<T>() {})
+  private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this, object : TypeReference<T>() {})
 
   abstract fun parseContextFilter(json: String): MigrationMessage<*, FILTER>
   abstract fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<FILTER>>

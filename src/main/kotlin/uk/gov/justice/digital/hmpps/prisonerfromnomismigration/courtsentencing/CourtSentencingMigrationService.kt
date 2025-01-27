@@ -153,11 +153,7 @@ class CourtSentencingMigrationService(
   }
 
   // dependent on court appearance order back from dps to match nomis
-  private fun buildCourtAppearanceMapping(responseMappings: List<MigrationCreateCourtAppearanceResponse>): List<CourtAppearanceMappingDto> {
-    return responseMappings.map { it -> CourtAppearanceMappingDto(nomisCourtAppearanceId = it.eventId.toLong(), dpsCourtAppearanceId = it.lifetimeUuid.toString()) }
-  }
+  private fun buildCourtAppearanceMapping(responseMappings: List<MigrationCreateCourtAppearanceResponse>): List<CourtAppearanceMappingDto> = responseMappings.map { it -> CourtAppearanceMappingDto(nomisCourtAppearanceId = it.eventId.toLong(), dpsCourtAppearanceId = it.lifetimeUuid.toString()) }
 
-  private fun buildCourtChargeMapping(responseMappings: List<MigrationCreateChargeResponse>): List<CourtChargeMappingDto> {
-    return responseMappings.map { it -> CourtChargeMappingDto(nomisCourtChargeId = it.chargeNOMISId.toLong(), dpsCourtChargeId = it.lifetimeChargeUuid.toString()) }
-  }
+  private fun buildCourtChargeMapping(responseMappings: List<MigrationCreateChargeResponse>): List<CourtChargeMappingDto> = responseMappings.map { it -> CourtChargeMappingDto(nomisCourtChargeId = it.chargeNOMISId.toLong(), dpsCourtChargeId = it.lifetimeChargeUuid.toString()) }
 }

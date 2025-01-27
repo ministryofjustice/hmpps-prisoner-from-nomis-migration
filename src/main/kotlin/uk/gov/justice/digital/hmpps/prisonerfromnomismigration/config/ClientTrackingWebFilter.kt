@@ -35,8 +35,7 @@ class ClientTrackingWebFilter : WebFilter {
     return chain.filter(exchange)
   }
 
-  private fun getClaimsFromJWT(token: String): JWTClaimsSet =
-    SignedJWT.parse(token.replace(bearer, "")).jwtClaimsSet
+  private fun getClaimsFromJWT(token: String): JWTClaimsSet = SignedJWT.parse(token.replace(bearer, "")).jwtClaimsSet
 
   private companion object {
     private val log = LoggerFactory.getLogger(ClientTrackingWebFilter::class.java)

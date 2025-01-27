@@ -519,48 +519,44 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
-  fun verifyCreateMappingCourtCaseIds(nomsCourtCaseIds: Array<String>, times: Int = 1) =
-    nomsCourtCaseIds.forEach {
-      verify(
-        times,
-        WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/court-sentencing/court-cases")).withRequestBody(
-          WireMock.matchingJsonPath(
-            "nomisCourtCaseId",
-            WireMock.equalTo(it),
-          ),
+  fun verifyCreateMappingCourtCaseIds(nomsCourtCaseIds: Array<String>, times: Int = 1) = nomsCourtCaseIds.forEach {
+    verify(
+      times,
+      WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/court-sentencing/court-cases")).withRequestBody(
+        WireMock.matchingJsonPath(
+          "nomisCourtCaseId",
+          WireMock.equalTo(it),
         ),
-      )
-    }
+      ),
+    )
+  }
 
   fun verifyCreateMappingCourtCaseIds(
     migrationId: String,
     nomsCourtCaseIds: Array<String>,
     times: Int = 1,
-  ) =
-    nomsCourtCaseIds.forEach {
-      verify(
-        times,
-        WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/court-sentencing/court-cases"))
-          .withRequestBody(
-            WireMock.matchingJsonPath(
-              "nomisCourtCaseId",
-              WireMock.equalTo(it),
-            ),
-          )
-          .withRequestBody(
-            WireMock.matchingJsonPath(
-              "label",
-              WireMock.equalTo(migrationId),
-            ),
+  ) = nomsCourtCaseIds.forEach {
+    verify(
+      times,
+      WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/court-sentencing/court-cases"))
+        .withRequestBody(
+          WireMock.matchingJsonPath(
+            "nomisCourtCaseId",
+            WireMock.equalTo(it),
           ),
-      )
-    }
+        )
+        .withRequestBody(
+          WireMock.matchingJsonPath(
+            "label",
+            WireMock.equalTo(migrationId),
+          ),
+        ),
+    )
+  }
 
-  fun createCourtCaseMappingCount() =
-    createMappingCount("/mapping/court-sentencing/court-cases")
+  fun createCourtCaseMappingCount() = createMappingCount("/mapping/court-sentencing/court-cases")
 
-  fun createMappingCount(url: String) =
-    mappingApi.findAll(WireMock.postRequestedFor(WireMock.urlPathEqualTo(url))).count()
+  fun createMappingCount(url: String) = mappingApi.findAll(WireMock.postRequestedFor(WireMock.urlPathEqualTo(url))).count()
 
   fun verifyCreateMappingCourtCase(
     dpsCourtCaseId: String,

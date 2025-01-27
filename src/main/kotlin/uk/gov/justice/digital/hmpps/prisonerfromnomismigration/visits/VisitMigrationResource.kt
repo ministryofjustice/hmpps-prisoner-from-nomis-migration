@@ -64,8 +64,7 @@ class VisitMigrationResource(
   suspend fun migrateVisits(
     @RequestBody @Valid
     migrationFilter: VisitsMigrationFilter,
-  ) =
-    visitsMigrationService.startMigration(migrationFilter)
+  ) = visitsMigrationService.startMigration(migrationFilter)
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_VISITS')")
   @GetMapping("/visits/history")
@@ -204,17 +203,16 @@ class VisitMigrationResource(
       example = "2021-11-03T09:00:00",
     )
     toDateTime: LocalDateTime?,
-  ): List<VisitRoomUsageResponse> =
-    visitsMigrationService.findRoomUsageByFilter(
-      VisitsMigrationFilter(
-        visitTypes = visitTypes ?: listOf(),
-        prisonIds = prisonIds ?: listOf(),
-        toDateTime = toDateTime,
-        fromDateTime = fromDateTime,
-        // not used
-        ignoreMissingRoom = false,
-      ),
-    )
+  ): List<VisitRoomUsageResponse> = visitsMigrationService.findRoomUsageByFilter(
+    VisitsMigrationFilter(
+      visitTypes = visitTypes ?: listOf(),
+      prisonIds = prisonIds ?: listOf(),
+      toDateTime = toDateTime,
+      fromDateTime = fromDateTime,
+      // not used
+      ignoreMissingRoom = false,
+    ),
+  )
 
   @PreAuthorize("hasRole('ROLE_MIGRATE_VISITS')")
   @PostMapping("/visits/{migrationId}/cancel")

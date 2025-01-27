@@ -23,8 +23,7 @@ class CSIPConfiguration(
   fun csipApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.reactiveHealthWebClient(csipApiBaseUri, healthTimeout)
 
   @Bean
-  fun csipApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient =
-    builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "csip-api", url = csipApiBaseUri, timeout)
+  fun csipApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "csip-api", url = csipApiBaseUri, timeout)
 
   @Component("csipApi")
   class CSIPApiHealth(@Qualifier("csipApiHealthWebClient") webClient: WebClient) : ReactiveHealthPingCheck(webClient)

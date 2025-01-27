@@ -26,13 +26,12 @@ class DistinguishingMarksDpsApiService(@Qualifier("prisonPersonApiWebClient") pr
     latestBooking: Boolean,
     createdAt: LocalDateTime,
     createdBy: String,
-  ): DistinguishingMarkSyncResponse =
-    webClient
-      .post()
-      .uri("/sync/prisoners/{prisonerNumber}/distinguishing-marks", prisonerNumber)
-      .bodyValue(syncCreateDistinguishingMarkRequest(markType, bodyPart, side, partOrientation, comment, appliesFrom, appliesTo, latestBooking, createdAt, createdBy))
-      .retrieve()
-      .awaitBody()
+  ): DistinguishingMarkSyncResponse = webClient
+    .post()
+    .uri("/sync/prisoners/{prisonerNumber}/distinguishing-marks", prisonerNumber)
+    .bodyValue(syncCreateDistinguishingMarkRequest(markType, bodyPart, side, partOrientation, comment, appliesFrom, appliesTo, latestBooking, createdAt, createdBy))
+    .retrieve()
+    .awaitBody()
 
   private fun syncCreateDistinguishingMarkRequest(
     markType: String,
@@ -45,19 +44,18 @@ class DistinguishingMarksDpsApiService(@Qualifier("prisonPersonApiWebClient") pr
     latestBooking: Boolean,
     createdAt: LocalDateTime,
     createdBy: String,
-  ) =
-    DistinguishingMarkCreationSyncRequest(
-      markType = markType,
-      bodyPart = bodyPart,
-      side = side,
-      partOrientation = partOrientation,
-      comment = comment,
-      appliesFrom = appliesFrom.atPrisonPersonZone(),
-      appliesTo = appliesTo?.atPrisonPersonZone(),
-      latestBooking = latestBooking,
-      createdAt = createdAt.atPrisonPersonZone(),
-      createdBy = createdBy,
-    )
+  ) = DistinguishingMarkCreationSyncRequest(
+    markType = markType,
+    bodyPart = bodyPart,
+    side = side,
+    partOrientation = partOrientation,
+    comment = comment,
+    appliesFrom = appliesFrom.atPrisonPersonZone(),
+    appliesTo = appliesTo?.atPrisonPersonZone(),
+    latestBooking = latestBooking,
+    createdAt = createdAt.atPrisonPersonZone(),
+    createdBy = createdBy,
+  )
 
   suspend fun syncUpdateDistinguishingMark(
     prisonerNumber: String,
@@ -72,13 +70,12 @@ class DistinguishingMarksDpsApiService(@Qualifier("prisonPersonApiWebClient") pr
     latestBooking: Boolean,
     createdAt: LocalDateTime,
     createdBy: String,
-  ): DistinguishingMarkSyncResponse =
-    webClient
-      .put()
-      .uri("/sync/prisoners/{prisonerNumber}/distinguishing-marks/{dpsId}", prisonerNumber, dpsId)
-      .bodyValue(syncUpdateDistinguishingMarkRequest(dpsId, markType, bodyPart, side, partOrientation, comment, appliesFrom, appliesTo, latestBooking, createdAt, createdBy))
-      .retrieve()
-      .awaitBody()
+  ): DistinguishingMarkSyncResponse = webClient
+    .put()
+    .uri("/sync/prisoners/{prisonerNumber}/distinguishing-marks/{dpsId}", prisonerNumber, dpsId)
+    .bodyValue(syncUpdateDistinguishingMarkRequest(dpsId, markType, bodyPart, side, partOrientation, comment, appliesFrom, appliesTo, latestBooking, createdAt, createdBy))
+    .retrieve()
+    .awaitBody()
 
   private fun syncUpdateDistinguishingMarkRequest(
     dpsId: UUID,
@@ -92,28 +89,26 @@ class DistinguishingMarksDpsApiService(@Qualifier("prisonPersonApiWebClient") pr
     latestBooking: Boolean,
     createdAt: LocalDateTime,
     createdBy: String,
-  ) =
-    DistinguishingMarkUpdateSyncRequest(
-      uuid = dpsId,
-      markType = markType,
-      bodyPart = bodyPart,
-      side = side,
-      partOrientation = partOrientation,
-      comment = comment,
-      appliesFrom = appliesFrom.atPrisonPersonZone(),
-      appliesTo = appliesTo?.atPrisonPersonZone(),
-      latestBooking = latestBooking,
-      createdAt = createdAt.atPrisonPersonZone(),
-      createdBy = createdBy,
-    )
+  ) = DistinguishingMarkUpdateSyncRequest(
+    uuid = dpsId,
+    markType = markType,
+    bodyPart = bodyPart,
+    side = side,
+    partOrientation = partOrientation,
+    comment = comment,
+    appliesFrom = appliesFrom.atPrisonPersonZone(),
+    appliesTo = appliesTo?.atPrisonPersonZone(),
+    latestBooking = latestBooking,
+    createdAt = createdAt.atPrisonPersonZone(),
+    createdBy = createdBy,
+  )
 
   suspend fun syncDeleteDistinguishingMark(
     prisonerNumber: String,
     dpsId: UUID,
-  ): DistinguishingMarkSyncResponse =
-    webClient
-      .delete()
-      .uri("/sync/prisoners/{prisonerNumber}/distinguishing-marks/{dpsId}", prisonerNumber, dpsId)
-      .retrieve()
-      .awaitBody()
+  ): DistinguishingMarkSyncResponse = webClient
+    .delete()
+    .uri("/sync/prisoners/{prisonerNumber}/distinguishing-marks/{dpsId}", prisonerNumber, dpsId)
+    .retrieve()
+    .awaitBody()
 }
