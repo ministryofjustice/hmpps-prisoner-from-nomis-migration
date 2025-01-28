@@ -5,12 +5,17 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.AddressId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.CreateResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.EmailId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PhoneId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingIdDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingIdDto.CprPhoneType.CORE_PERSON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonSimpleMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
@@ -42,7 +47,7 @@ class CorePersonMigrationService(
     pageSize: Long,
     pageNumber: Long,
   ): PageImpl<PrisonerId> = nomisApiService.getPrisonerIds(
-    // TODO add filter
+    // TODO add filter - if required
     pageNumber = pageNumber,
     pageSize = pageSize,
   )
@@ -55,7 +60,7 @@ class CorePersonMigrationService(
       log.info("Will not migrate the nomis core person=$nomisPrisonNumber since it was already mapped to CPR core person ${this.cprId} during migration ${this.label}")
     } ?: run {
       val corePerson = corePersonNomisApiService.getCorePerson(nomisPrisonNumber = nomisPrisonNumber)
-      val mapping = cprApiService.migrateCorePerson(corePerson.toMigrateCorePersonRequest()).toCorePersonMappingsDto(context.migrationId)
+      val mapping = cprApiService.migrateCorePerson(nomisPrisonNumber, corePerson.toCprPrisoner()).toCorePersonMappingsDto(nomisPrisonNumber, context.migrationId)
       createMappingOrOnFailureDo(context, mapping) {
         queueService.sendMessage(
           MigrationMessageType.RETRY_MIGRATION_MAPPING,
@@ -108,16 +113,18 @@ class CorePersonMigrationService(
   }
 }
 
-private fun MigrateCorePersonResponse.toCorePersonMappingsDto(migrationId: String) = CorePersonMappingsDto(
+private fun CreateResponse.toCorePersonMappingsDto(nomisPrisonNumber: String, migrationId: String) = CorePersonMappingsDto(
   mappingType = CorePersonMappingsDto.MappingType.MIGRATED,
   label = migrationId,
-  personMapping = toCorePersonMappingIdDto(),
-  addressMappings = addressIds?.map { it.toCorePersonSimpleMappingIdDto() } ?: emptyList(),
-  phoneMappings = phoneIds?.map { it.toCorePersonPhoneMappingIdDto(CorePersonPhoneMappingIdDto.CprPhoneType.CORE_PERSON) } ?: emptyList(),
-  emailMappings = emailAddressIds?.map { it.toCorePersonSimpleMappingIdDto() } ?: emptyList(),
+  personMapping = CorePersonMappingIdDto(cprId = nomisPrisonNumber, nomisPrisonNumber = nomisPrisonNumber),
+  // TODO check if following lists can send null rather than emptyList
+  addressMappings = addressIds.map { it.toCorePersonSimpleMappingIdDto() },
+  phoneMappings = phoneIds.map { it.toCorePersonPhoneMappingIdDto() },
+  emailMappings = emailIds.map { it.toCorePersonSimpleMappingIdDto() },
   // TODO set other mappings beliefs etc
 )
 
-private fun MigrateCorePersonResponse.toCorePersonMappingIdDto() = CorePersonMappingIdDto(cprId = this.cprId, nomisPrisonNumber = this.nomisPrisonNumber)
-private fun IdPair.toCorePersonSimpleMappingIdDto() = CorePersonSimpleMappingIdDto(cprId = this.cprId, nomisId = this.nomisId)
-private fun IdPair.toCorePersonPhoneMappingIdDto(phoneType: CorePersonPhoneMappingIdDto.CprPhoneType) = CorePersonPhoneMappingIdDto(cprId = this.cprId, cprPhoneType = phoneType, nomisId = this.nomisId)
+// TODO check why these are nullable fields in the Id pairs
+private fun AddressId.toCorePersonSimpleMappingIdDto() = CorePersonSimpleMappingIdDto(cprId = this.cprAddressId!!, nomisId = this.prisonAddressId!!)
+private fun PhoneId.toCorePersonPhoneMappingIdDto() = CorePersonPhoneMappingIdDto(cprId = this.cprPhoneId!!, nomisId = this.prisonPhoneId!!, cprPhoneType = CORE_PERSON)
+private fun EmailId.toCorePersonSimpleMappingIdDto() = CorePersonSimpleMappingIdDto(cprId = this.cprEmailId!!, nomisId = this.prisonEmailId!!)

@@ -1,132 +1,129 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Address
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Email
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Names
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Religion
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorePerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Identifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderBelief
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderDisability
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderInterestToImmigration
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderNationality
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderNationalityDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderPhoneNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderSexualOrientation
-import java.time.LocalDateTime
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Identifier as CprIdentifier
 
-// This method is subject to change once the CPR endpoint is available
-fun CorePerson.toMigrateCorePersonRequest(): MigrateCorePersonRequest = MigrateCorePersonRequest(
-  nomisPrisonNumber = prisonNumber,
-  activeFlag = activeFlag,
-  inOutStatus = inOutStatus,
-  offenders = offenders?.map { it.toMockCprOffender() },
-  addresses = addresses?.map { it.toCprAddress() },
-  phoneNumbers = phoneNumbers?.map { it.toCprPhoneNumber() },
-  emailAddresses = emailAddresses?.map { MockCprEmailAddress(it.emailAddressId, it.email) },
-  religions = beliefs?.map { it.toCprBelief() },
-  sentenceStartDates = sentenceStartDates,
-  nationalities = nationalities?.map { it.toCprNationality() },
-  nationalityDetails = nationalityDetails?.map { it.toCprNationalityDetails() },
-  sexualOrientations = sexualOrientations?.map { it.toCprSexualOrientation() },
-  disabilities = disabilities?.map { it.toCprDisability() },
-  interestsToImmigration = interestsToImmigration?.map { it.toCprInterestToImmigration() },
+fun CorePerson.toCprPrisoner() = Prisoner(
+  religion = beliefs?.map { it.toCprReligion() } ?: emptyList(),
+  sentenceStartDates = sentenceStartDates ?: emptyList(),
+  phoneNumbers = phoneNumbers?.map { it.toCprPhoneNumber() } ?: emptyList(),
+  emails = emailAddresses?.map { Email(it.emailAddressId, it.email) } ?: emptyList(),
+  offenders = offenders?.map { it.toCprNames() } ?: emptyList(),
+  addresses = addresses?.map { it.toCprAddress() } ?: emptyList(),
+  nationality = nationalities?.find { it.latestBooking }?.nationality?.code,
+  secondaryNationality = nationalityDetails?.find { it.latestBooking }?.details,
+  sexualOrientation = sexualOrientations?.find { it.latestBooking }?.sexualOrientation?.code,
+  interestToImmigration = interestsToImmigration?.find { it.latestBooking }?.interestToImmigration,
+  disability = disabilities?.find { it.latestBooking }?.disability,
+  // TODO Check this - and why is this nullable?
+  status = if (activeFlag) "ACTIVE" else "INACTIVE",
 )
 
-fun CoreOffender.toMockCprOffender() = MockCprOffender(
-  nomisOffenderId = offenderId,
+fun CoreOffender.toCprNames() = Names(
+  // TODO - this is a long in the model
+  offenderId = offenderId.toString(),
   title = title?.code,
   firstName = firstName,
   middleName1 = middleName1,
   middleName2 = middleName2,
   lastName = lastName,
+  // TODO we should really just pass in the code (like we do for others)
+  nameType = nameType?.toCprNameType(),
   dateOfBirth = dateOfBirth,
   birthPlace = birthPlace,
   birthCountry = birthCountry?.code,
-  race = ethnicity?.code,
-  sex = sex?.code,
+  raceCode = ethnicity?.code,
+  // TODO we should really just pass in the code (like we do for others)
+  sex = sex?.toCprSexType(),
   workingName = workingName,
-  nameType = nameType?.code,
-  createDate = createDate,
-  identifiers = identifiers.map { it.toMockCprIdentifier() },
+  created = createDate,
+  identifiers = identifiers.map { it.toCprIdentifier() },
 )
-fun Identifier.toMockCprIdentifier() = MockCprIdentifier(
-  nomisSequence = sequence,
-  identifier = identifier,
+
+fun Identifier.toCprIdentifier() = CprIdentifier(
   type = type.code,
-  issuedBy = issuedAuthority,
-  issuedDate = issuedDate,
-  verified = verified,
+  // TODO cpr value is nullable but nomis identifier is not - CPR to update to non-nullable
+  value = identifier,
 )
-fun OffenderAddress.toCprAddress() = MockCprAddress(
-  nomisAddressId = addressId,
+
+fun OffenderAddress.toCprAddress() = Address(
+  id = addressId,
+  // TODO Check - type is always null in NOMIS - not required as part of Cpr Address?
+  type = null,
   flat = flat,
   premise = premise,
   street = street,
   locality = locality,
-  postcode = postcode,
   town = city?.code,
+  postcode = postcode,
   county = county?.code,
   country = country?.code,
-  noFixedAddress = noFixedAddress,
-  isPrimary = primaryAddress,
-  mail = mailAddress,
-  comment = comment,
+  // TODO this is a boolean - should the CprAddress noFixedAddress field also be a boolean?
+  noFixedAddress = noFixedAddress?.toString(),
   startDate = startDate,
   endDate = endDate,
-  validatedPAF = validatedPAF,
-  usages = usages?.map { addrUsage -> MockCprAddressUsage(addrUsage.usage.code, addrUsage.active) },
-  phoneNumbers = phoneNumbers?.map { it.toCprPhoneNumber() },
+  comment = comment,
+  isPrimary = primaryAddress,
+  // TODO check - this is non-nullable in NOMIS but nullable in CPR
+  mail = mailAddress,
 )
 
-fun OffenderPhoneNumber.toCprPhoneNumber() = MockCprPhoneNumber(
-  nomisPhoneId = phoneId,
+fun OffenderPhoneNumber.toCprPhoneNumber() = PhoneNumber(
+  phoneId = phoneId,
   phoneNumber = number,
-  phoneType = type.code,
+  // TODO check this should be a code
+  phoneType = type.toCprPhoneType(),
   phoneExtension = extension,
 )
-fun OffenderBelief.toCprBelief() = MockCprBelief(
-  nomisBeliefId = beliefId,
+
+fun OffenderBelief.toCprReligion() = Religion(
   religion = belief.code,
   startDate = startDate,
   endDate = endDate,
-  changeReason = changeReason,
-  comment = comments,
-  createdByDisplayName = audit.createDisplayName,
-  updatedDisplayName = audit.modifyDisplayName,
-)
-fun OffenderNationality.toCprNationality() = MockCprNationality(
-  nomisBookingId = bookingId,
-  nationality = nationality.code,
-  startDateTime = startDateTime.toDateTime()!!,
-  endDateTime = endDateTime.toDateTime(),
-  latestBooking = latestBooking,
-)
-fun OffenderNationalityDetails.toCprNationalityDetails() = MockCprNationalityDetails(
-  nomisBookingId = bookingId,
-  details = details,
-  startDateTime = startDateTime.toDateTime()!!,
-  endDateTime = endDateTime.toDateTime(),
-  latestBooking = latestBooking,
-)
-fun OffenderSexualOrientation.toCprSexualOrientation() = MockCprSexualOrientation(
-  nomisBookingId = bookingId,
-  sexualOrientation = sexualOrientation.code,
-  startDateTime = startDateTime.toDateTime()!!,
-  endDateTime = endDateTime.toDateTime(),
-  latestBooking = latestBooking,
-)
-fun OffenderDisability.toCprDisability() = MockCprDisability(
-  nomisBookingId = bookingId,
-  disability = disability,
-  startDateTime = startDateTime.toDateTime()!!,
-  endDateTime = endDateTime.toDateTime(),
-  latestBooking = latestBooking,
-)
-fun OffenderInterestToImmigration.toCprInterestToImmigration() = MockCprInterestToImmigration(
-  nomisBookingId = bookingId,
-  interestToImmigration = interestToImmigration,
-  startDateTime = startDateTime.toDateTime()!!,
-  endDateTime = endDateTime.toDateTime(),
-  latestBooking = latestBooking,
+  // TODO check this- should this be boolean? ask CPR- derived from if end date null -> ACTIVE or INACTIVE and should also be non-nullable
+  status = endDate?. let { "INACTIVE" } ?: "ACTIVE",
+  // TODO Check Created and Updated should be displayNames
+  createdUserId = audit.createUsername,
+  updatedUserId = audit.modifyUserId,
 )
 
-private fun String?.toDateTime() = this?.let { LocalDateTime.parse(it) }
+fun CodeDescription.toCprPhoneType() = when (this.code) {
+  "HOME" -> PhoneNumber.PhoneType.HOME
+  "MOB" -> PhoneNumber.PhoneType.MOBILE
+  "BUS" -> PhoneNumber.PhoneType.BUSINESS
+  // TODO Not all codes are catered for here
+  "FAX" -> PhoneNumber.PhoneType.HOME
+  "ALTB" -> PhoneNumber.PhoneType.HOME
+  "ALTH" -> PhoneNumber.PhoneType.HOME
+  "VISIT" -> PhoneNumber.PhoneType.HOME
+  else -> throw IllegalArgumentException("Invalid phone Type ${this.code} found in NOMIS data")
+}
+
+fun CodeDescription.toCprSexType() = when (this.code) {
+  "F" -> Names.Sex.FEMALE
+  "M" -> Names.Sex.MALE
+  "NK" -> Names.Sex.NOT_KNOWN
+  "NS" -> Names.Sex.NOT_SPECIFIED
+  "REF" -> Names.Sex.REFUSED
+  else -> throw IllegalArgumentException("Invalid Sex Type ${this.code} found in NOMIS data")
+}
+
+fun CodeDescription.toCprNameType() = when (this.code) {
+  "A" -> Names.NameType.ALIAS
+  "CN" -> Names.NameType.CURRENT
+  "MAID" -> Names.NameType.MAIDEN
+  "NICK" -> Names.NameType.NICKNAME
+  else -> throw IllegalArgumentException("Invalid Name Type ${this.code} found in NOMIS data")
+}

@@ -2,7 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
-import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
@@ -25,22 +25,22 @@ class CorePersonCprApiServiceTest {
     internal fun `will pass oath2 token to core endpoint`() = runTest {
       cprCorePersonServer.stubMigrateCorePerson()
 
-      apiService.migrateCorePerson(migrateCorePersonRequest())
+      apiService.migrateCorePerson("A1234BC", migrateCorePersonRequest())
 
       cprCorePersonServer.verify(
-        postRequestedFor(anyUrl())
+        putRequestedFor(anyUrl())
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
     @Test
     fun `will call the migrate endpoint`() = runTest {
-      cprCorePersonServer.stubMigrateCorePerson()
+      cprCorePersonServer.stubMigrateCorePerson("A4321BC")
 
-      apiService.migrateCorePerson(migrateCorePersonRequest())
+      apiService.migrateCorePerson("A4321BC", migrateCorePersonRequest())
 
       cprCorePersonServer.verify(
-        postRequestedFor(urlPathEqualTo("/syscon-sync")),
+        putRequestedFor(urlPathEqualTo("/syscon-sync/A4321BC")),
       )
     }
   }
