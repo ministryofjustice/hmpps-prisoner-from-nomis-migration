@@ -23,8 +23,7 @@ class SentencingConfiguration(
   fun sentencingApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.reactiveHealthWebClient(sentencingApiBaseUri, healthTimeout)
 
   @Bean
-  fun sentencingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient =
-    builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "sentencing-api", url = sentencingApiBaseUri, timeout)
+  fun sentencingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "sentencing-api", url = sentencingApiBaseUri, timeout)
 
   @Component("sentencingApi")
   class SentencingApiHealth(@Qualifier("sentencingApiHealthWebClient") webClient: WebClient) : ReactiveHealthPingCheck(webClient)

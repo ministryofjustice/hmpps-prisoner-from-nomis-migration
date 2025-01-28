@@ -27,23 +27,13 @@ class AllocationsMigrationMessageListener(
 
   @SqsListener(ALLOCATIONS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy")
   @WithSpan(value = "dps-syscon-migration_allocations_queue", kind = SpanKind.SERVER)
-  fun onActivitiesMessage(message: String, rawMessage: Message): CompletableFuture<Void?> {
-    return onMessage(message, rawMessage)
-  }
+  fun onActivitiesMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
 
-  override fun parseContextFilter(json: String): MigrationMessage<*, AllocationsMigrationFilter> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextFilter(json: String): MigrationMessage<*, AllocationsMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<AllocationsMigrationFilter>> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<AllocationsMigrationFilter>> = objectMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, FindActiveAllocationIdsResponse> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextNomisId(json: String): MigrationMessage<*, FindActiveAllocationIdsResponse> = objectMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, AllocationMigrationMappingDto> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextMapping(json: String): MigrationMessage<*, AllocationMigrationMappingDto> = objectMapper.readValue(json)
 }

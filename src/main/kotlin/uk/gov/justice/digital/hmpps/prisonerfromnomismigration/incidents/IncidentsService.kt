@@ -18,42 +18,37 @@ class IncidentsService(@Qualifier("incidentsApiWebClient") private val webClient
     val closedStatusValues = listOf("CLOSED", "DUPLICATE")
   }
 
-  suspend fun upsertIncident(syncRequest: NomisSyncRequest): NomisSyncReportId =
-    webClient.post()
-      .uri("/sync/upsert")
-      .bodyValue(syncRequest)
-      .retrieve()
-      .awaitBody()
+  suspend fun upsertIncident(syncRequest: NomisSyncRequest): NomisSyncReportId = webClient.post()
+    .uri("/sync/upsert")
+    .bodyValue(syncRequest)
+    .retrieve()
+    .awaitBody()
 
-  suspend fun deleteIncident(incidentId: String) =
-    webClient.delete()
-      .uri("/incident-reports/{incidentId}", incidentId)
-      .retrieve()
-      .awaitBodyOrNullWhenNotFound<Unit>()
+  suspend fun deleteIncident(incidentId: String) = webClient.delete()
+    .uri("/incident-reports/{incidentId}", incidentId)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound<Unit>()
 
-  suspend fun getIncidentByNomisId(nomisIncidentId: Long): ReportBasic =
-    webClient.get()
-      .uri("/incident-reports/reference/{nomisIncidentId}", nomisIncidentId)
-      .retrieve()
-      .awaitBody()
+  suspend fun getIncidentByNomisId(nomisIncidentId: Long): ReportBasic = webClient.get()
+    .uri("/incident-reports/reference/{nomisIncidentId}", nomisIncidentId)
+    .retrieve()
+    .awaitBody()
 
-  suspend fun getIncidentDetailsByNomisId(nomisIncidentId: Long): ReportWithDetails =
-    webClient.get()
-      .uri("/incident-reports/reference/{nomisIncidentId}/with-details", nomisIncidentId)
-      .retrieve()
-      .awaitBody()
+  suspend fun getIncidentDetailsByNomisId(nomisIncidentId: Long): ReportWithDetails = webClient.get()
+    .uri("/incident-reports/reference/{nomisIncidentId}/with-details", nomisIncidentId)
+    .retrieve()
+    .awaitBody()
 
-  suspend fun getIncidentsForAgencyAndStatus(agencyId: String, statusValues: List<String>): SimplePageReportBasic =
-    webClient.get()
-      .uri {
-        it.path("/incident-reports")
-          .queryParam("prisonId", agencyId)
-          .queryParam("status", statusValues)
-          .queryParam("size", 1)
-          .build()
-      }
-      .retrieve()
-      .awaitBody()
+  suspend fun getIncidentsForAgencyAndStatus(agencyId: String, statusValues: List<String>): SimplePageReportBasic = webClient.get()
+    .uri {
+      it.path("/incident-reports")
+        .queryParam("prisonId", agencyId)
+        .queryParam("status", statusValues)
+        .queryParam("size", 1)
+        .build()
+    }
+    .retrieve()
+    .awaitBody()
 
   suspend fun getOpenIncidentsCount(agencyId: String) = getIncidentsForAgencyAndStatus(agencyId, openStatusValues).totalElements
   suspend fun getClosedIncidentsCount(agencyId: String) = getIncidentsForAgencyAndStatus(agencyId, closedStatusValues).totalElements

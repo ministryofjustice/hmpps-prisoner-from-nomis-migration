@@ -414,25 +414,24 @@ class LocationsMigrationServiceTest {
       }
 
       @Test
-      fun `will check again in 10 second and reset even when previously started finishing up phase`() =
-        runTest {
-          service.migrateStatusCheck(
-            MigrationContext(
-              type = LOCATIONS,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 100_200,
-              body = MigrationStatusCheck(checkCount = 4),
-            ),
-          )
+      fun `will check again in 10 second and reset even when previously started finishing up phase`() = runTest {
+        service.migrateStatusCheck(
+          MigrationContext(
+            type = LOCATIONS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = MigrationStatusCheck(checkCount = 4),
+          ),
+        )
 
-          verify(queueService).sendMessage(
-            message = eq(MIGRATE_STATUS_CHECK),
-            context = check<MigrationContext<MigrationStatusCheck>> {
-              assertThat(it.body.checkCount).isEqualTo(0)
-            },
-            delaySeconds = eq(10),
-          )
-        }
+        verify(queueService).sendMessage(
+          message = eq(MIGRATE_STATUS_CHECK),
+          context = check<MigrationContext<MigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(0)
+          },
+          delaySeconds = eq(10),
+        )
+      }
     }
 
     @Nested
@@ -559,26 +558,25 @@ class LocationsMigrationServiceTest {
       }
 
       @Test
-      fun `will check again in 10 second and reset even when previously started finishing up phase`() =
-        runTest {
-          service.cancelMigrateStatusCheck(
-            MigrationContext(
-              type = LOCATIONS,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 100_200,
-              body = MigrationStatusCheck(checkCount = 4),
-            ),
-          )
+      fun `will check again in 10 second and reset even when previously started finishing up phase`() = runTest {
+        service.cancelMigrateStatusCheck(
+          MigrationContext(
+            type = LOCATIONS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = MigrationStatusCheck(checkCount = 4),
+          ),
+        )
 
-          verify(queueService).purgeAllMessages(any())
-          verify(queueService).sendMessage(
-            message = eq(CANCEL_MIGRATION),
-            context = check<MigrationContext<MigrationStatusCheck>> {
-              assertThat(it.body.checkCount).isEqualTo(0)
-            },
-            delaySeconds = eq(10),
-          )
-        }
+        verify(queueService).purgeAllMessages(any())
+        verify(queueService).sendMessage(
+          message = eq(CANCEL_MIGRATION),
+          context = check<MigrationContext<MigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(0)
+          },
+          delaySeconds = eq(10),
+        )
+      }
     }
 
     @Nested
@@ -713,77 +711,75 @@ class LocationsMigrationServiceTest {
     }
 
     @Test
-    fun `will send MIGRATE_LOCATION with context for each location`() =
-      runTest {
-        service.migrateEntitiesForPage(
-          MigrationContext(
-            type = LOCATIONS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = MigrationPage(
-              filter = LocationsMigrationFilter(
-                fromDate = LocalDate.parse("2020-01-01"),
-                toDate = LocalDate.parse("2020-01-02"),
-              ),
-              pageNumber = 13,
-              pageSize = 15,
+    fun `will send MIGRATE_LOCATION with context for each location`() = runTest {
+      service.migrateEntitiesForPage(
+        MigrationContext(
+          type = LOCATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = MigrationPage(
+            filter = LocationsMigrationFilter(
+              fromDate = LocalDate.parse("2020-01-01"),
+              toDate = LocalDate.parse("2020-01-02"),
             ),
+            pageNumber = 13,
+            pageSize = 15,
           ),
-        )
+        ),
+      )
 
-        verify(queueService, times(15)).sendMessageNoTracing(
-          message = eq(MIGRATE_ENTITY),
-          context = check<MigrationContext<LocationsMigrationFilter>> {
-            assertThat(it.estimatedCount).isEqualTo(100_200)
-            assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-          },
-          delaySeconds = eq(0),
-        )
-      }
+      verify(queueService, times(15)).sendMessageNoTracing(
+        message = eq(MIGRATE_ENTITY),
+        context = check<MigrationContext<LocationsMigrationFilter>> {
+          assertThat(it.estimatedCount).isEqualTo(100_200)
+          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+        },
+        delaySeconds = eq(0),
+      )
+    }
 
     @Test
-    fun `will send MIGRATE_LOCATION with id for each location`() =
-      runTest {
-        val context: KArgumentCaptor<MigrationContext<LocationIdResponse>> = argumentCaptor()
+    fun `will send MIGRATE_LOCATION with id for each location`() = runTest {
+      val context: KArgumentCaptor<MigrationContext<LocationIdResponse>> = argumentCaptor()
 
-        whenever(nomisApiService.getLocationIds(any(), any())).thenReturn(
-          pages(
-            15,
-            startId = 1000,
-          ),
-        )
+      whenever(nomisApiService.getLocationIds(any(), any())).thenReturn(
+        pages(
+          15,
+          startId = 1000,
+        ),
+      )
 
-        service.migrateEntitiesForPage(
-          MigrationContext(
-            type = LOCATIONS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = MigrationPage(
-              filter = LocationsMigrationFilter(
-                fromDate = LocalDate.parse("2020-01-01"),
-                toDate = LocalDate.parse("2020-01-02"),
-              ),
-              pageNumber = 13,
-              pageSize = 15,
+      service.migrateEntitiesForPage(
+        MigrationContext(
+          type = LOCATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = MigrationPage(
+            filter = LocationsMigrationFilter(
+              fromDate = LocalDate.parse("2020-01-01"),
+              toDate = LocalDate.parse("2020-01-02"),
             ),
+            pageNumber = 13,
+            pageSize = 15,
           ),
-        )
+        ),
+      )
 
-        verify(queueService, times(15)).sendMessageNoTracing(
-          eq(MIGRATE_ENTITY),
-          context.capture(),
-          delaySeconds = eq(0),
-        )
-        val allContexts: List<MigrationContext<LocationIdResponse>> = context.allValues
+      verify(queueService, times(15)).sendMessageNoTracing(
+        eq(MIGRATE_ENTITY),
+        context.capture(),
+        delaySeconds = eq(0),
+      )
+      val allContexts: List<MigrationContext<LocationIdResponse>> = context.allValues
 
-        val (firstPage, secondPage, thirdPage) = allContexts
-        val lastPage = allContexts.last()
+      val (firstPage, secondPage, thirdPage) = allContexts
+      val lastPage = allContexts.last()
 
-        assertThat(firstPage.body.locationId).isEqualTo(1000L)
-        assertThat(secondPage.body.locationId).isEqualTo(1001L)
-        assertThat(thirdPage.body.locationId).isEqualTo(1002L)
-        assertThat(lastPage.body.locationId).isEqualTo(1014L)
-      }
+      assertThat(firstPage.body.locationId).isEqualTo(1000L)
+      assertThat(secondPage.body.locationId).isEqualTo(1001L)
+      assertThat(thirdPage.body.locationId).isEqualTo(1002L)
+      assertThat(lastPage.body.locationId).isEqualTo(1014L)
+    }
 
     @Test
     fun `will not send MIGRATE_LOCATION when cancelling`() = runTest {
@@ -989,91 +985,88 @@ class LocationsMigrationServiceTest {
     }
 
     @Test
-    fun `will create a mapping between a new Location and a NOMIS Location`() =
-      runTest {
-        whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
-        whenever(locationsService.migrateLocation(any())).thenReturn(aDpsLocation())
+    fun `will create a mapping between a new Location and a NOMIS Location`() = runTest {
+      whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
+      whenever(locationsService.migrateLocation(any())).thenReturn(aDpsLocation())
 
-        service.migrateNomisEntity(
-          MigrationContext(
-            type = LOCATIONS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = LocationIdResponse(12345L),
-          ),
-        )
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = LOCATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = LocationIdResponse(12345L),
+        ),
+      )
 
-        verify(locationsMappingService).createMapping(
-          LocationMappingDto(
-            dpsLocationId = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e",
-            nomisLocationId = 12345L,
-            label = "2020-05-23T11:30:00",
-            mappingType = LocationMappingDto.MappingType.MIGRATED,
-          ),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<LocationMappingDto>>() {},
-        )
-      }
-
-    @Test
-    fun `will skip an invalid attribute`() =
-      runTest {
-        whenever(nomisApiService.getLocation(any())).thenReturn(
-          aNomisLocationResponse().copy(
-            profiles = listOf(ProfileRequest(ProfileRequest.ProfileType.SUP_LVL_TYPE, "DUFF")),
-          ),
-        )
-        whenever(locationsService.migrateLocation(any())).thenReturn(aDpsLocation())
-
-        service.migrateNomisEntity(
-          MigrationContext(
-            type = LOCATIONS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = LocationIdResponse(12345L),
-          ),
-        )
-
-        verify(locationsService).migrateLocation(
-          argThat {
-            attributes!!.isEmpty()
-          },
-        )
-      }
+      verify(locationsMappingService).createMapping(
+        LocationMappingDto(
+          dpsLocationId = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e",
+          nomisLocationId = 12345L,
+          label = "2020-05-23T11:30:00",
+          mappingType = LocationMappingDto.MappingType.MIGRATED,
+        ),
+        object : ParameterizedTypeReference<DuplicateErrorResponse<LocationMappingDto>>() {},
+      )
+    }
 
     @Test
-    fun `will not throw an exception (and place message back on queue) but create a new retry message`() =
-      runTest {
-        whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
-        whenever(locationsService.migrateLocation(any())).thenReturn(aDpsLocation())
+    fun `will skip an invalid attribute`() = runTest {
+      whenever(nomisApiService.getLocation(any())).thenReturn(
+        aNomisLocationResponse().copy(
+          profiles = listOf(ProfileRequest(ProfileRequest.ProfileType.SUP_LVL_TYPE, "DUFF")),
+        ),
+      )
+      whenever(locationsService.migrateLocation(any())).thenReturn(aDpsLocation())
 
-        whenever(
-          locationsMappingService.createMapping(
-            any(),
-            eq(object : ParameterizedTypeReference<DuplicateErrorResponse<LocationMappingDto>>() {}),
-          ),
-        ).thenThrow(
-          RuntimeException("something went wrong"),
-        )
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = LOCATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = LocationIdResponse(12345L),
+        ),
+      )
 
-        service.migrateNomisEntity(
-          MigrationContext(
-            type = LOCATIONS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = LocationIdResponse(12345L),
-          ),
-        )
+      verify(locationsService).migrateLocation(
+        argThat {
+          attributes!!.isEmpty()
+        },
+      )
+    }
 
-        verify(queueService).sendMessage(
-          message = eq(RETRY_MIGRATION_MAPPING),
-          context = check<MigrationContext<LocationMappingDto>> {
-            assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-            assertThat(it.body.dpsLocationId).isEqualTo("f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e")
-            assertThat(it.body.nomisLocationId).isEqualTo(12345L)
-          },
-          delaySeconds = eq(0),
-        )
-      }
+    @Test
+    fun `will not throw an exception (and place message back on queue) but create a new retry message`() = runTest {
+      whenever(nomisApiService.getLocation(any())).thenReturn(aNomisLocationResponse())
+      whenever(locationsService.migrateLocation(any())).thenReturn(aDpsLocation())
+
+      whenever(
+        locationsMappingService.createMapping(
+          any(),
+          eq(object : ParameterizedTypeReference<DuplicateErrorResponse<LocationMappingDto>>() {}),
+        ),
+      ).thenThrow(
+        RuntimeException("something went wrong"),
+      )
+
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = LOCATIONS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = LocationIdResponse(12345L),
+        ),
+      )
+
+      verify(queueService).sendMessage(
+        message = eq(RETRY_MIGRATION_MAPPING),
+        context = check<MigrationContext<LocationMappingDto>> {
+          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+          assertThat(it.body.dpsLocationId).isEqualTo("f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e")
+          assertThat(it.body.nomisLocationId).isEqualTo(12345L)
+        },
+        delaySeconds = eq(0),
+      )
+    }
 
     @Nested
     inner class WhenMigratedAlready {

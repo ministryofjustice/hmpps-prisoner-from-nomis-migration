@@ -16,8 +16,7 @@ fun validVisitCancellationMessage() = """{
 fun mergeNomisEvent(
   eventType: String = "BOOKING_NUMBER-CHANGED",
   bookingId: Long = 1234567,
-) =
-  //language=JSON
+) = //language=JSON
   """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
     "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"nomisEventType\":\"BOOK_UPD_OASYS\",\"offenderId\":\"1234\",\"previousBookingNumber\":\"43719F\" }",
@@ -37,8 +36,7 @@ fun mergeDomainEvent(
   offenderNo: String = "A1234KT",
   removedOffenderNo: String = "A1000KT",
   occurredAt: String = "2024-10-21T15:00:25.000Z",
-) =
-  //language=JSON
+) = //language=JSON
   """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
     "Message": "{\"eventType\":\"$eventType\", \"occurredAt\": \"$occurredAt\",  \"description\": \"some desc\", \"additionalInformation\": {\"nomsNumber\":\"$offenderNo\", \"removedNomsNumber\":\"$removedOffenderNo\", \"bookingId\":\"$bookingId\"}}",
@@ -57,8 +55,7 @@ fun bookingMovedDomainEvent(
   bookingId: Long = 1234567,
   movedToNomsNumber: String = "A1234KT",
   movedFromNomsNumber: String = "A1000KT",
-) =
-  //language=JSON
+) = //language=JSON
   """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
     "Message": "{\"eventType\":\"$eventType\", \"description\": \"some desc\", \"additionalInformation\": {\"movedToNomsNumber\":\"$movedToNomsNumber\", \"movedFromNomsNumber\":\"$movedFromNomsNumber\", \"bookingId\":\"$bookingId\"}}",
@@ -75,8 +72,7 @@ fun prisonerReceivedDomainEvent(
   eventType: String = "prisoner-offender-search.prisoner.received",
   offenderNo: String = "A1234KT",
   reason: String = "READMISSION_SWITCH_BOOKING",
-) =
-  //language=JSON
+) = //language=JSON
   """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
     "Message": "{\"eventType\":\"$eventType\", \"description\": \"some desc\", \"additionalInformation\": {\"nomsNumber\":\"$offenderNo\", \"reason\":\"$reason\"}}",

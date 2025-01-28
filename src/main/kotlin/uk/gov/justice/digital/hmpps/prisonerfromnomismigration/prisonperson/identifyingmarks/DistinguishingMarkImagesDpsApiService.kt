@@ -26,22 +26,21 @@ class DistinguishingMarkImagesDpsApiService(@Qualifier("prisonPersonApiWebClient
     createdAt: LocalDateTime,
     createdBy: String,
     image: ByteArray,
-  ): DistinguishingMarkImageSyncResponse =
-    webClient
-      .post()
-      .uri { builder ->
-        builder.path("/sync/prisoners/{prisonerNumber}/distinguishing-marks/{markId}/images")
-          .queryParam("imageSource", imageSource)
-          .queryParam("appliesFrom", appliesFrom)
-          .queryParam("appliesTo", appliesTo)
-          .queryParam("createdAt", createdAt)
-          .queryParam("createdBy", createdBy)
-          .queryParam("latestBooking", latestBooking)
-          .build(prisonerNumber, markId)
-      }
-      .body(BodyInserters.fromMultipartData(MultipartBodyBuilder().apply { part("file", image) }.build()))
-      .retrieve()
-      .awaitBody()
+  ): DistinguishingMarkImageSyncResponse = webClient
+    .post()
+    .uri { builder ->
+      builder.path("/sync/prisoners/{prisonerNumber}/distinguishing-marks/{markId}/images")
+        .queryParam("imageSource", imageSource)
+        .queryParam("appliesFrom", appliesFrom)
+        .queryParam("appliesTo", appliesTo)
+        .queryParam("createdAt", createdAt)
+        .queryParam("createdBy", createdBy)
+        .queryParam("latestBooking", latestBooking)
+        .build(prisonerNumber, markId)
+    }
+    .body(BodyInserters.fromMultipartData(MultipartBodyBuilder().apply { part("file", image) }.build()))
+    .retrieve()
+    .awaitBody()
 
   suspend fun syncUpdateDistinguishingMarkImage(
     prisonerNumber: String,
@@ -53,13 +52,12 @@ class DistinguishingMarkImagesDpsApiService(@Qualifier("prisonPersonApiWebClient
     latestBooking: Boolean,
     createdAt: LocalDateTime,
     createdBy: String,
-  ): DistinguishingMarkImageSyncResponse =
-    webClient
-      .put()
-      .uri("/sync/prisoners/{prisonerNumber}/distinguishing-marks/{markId}/images/{imageId}", prisonerNumber, markId, imageId)
-      .bodyValue(syncUpdateDistinguishingMarkRequest(default, appliesFrom, appliesTo, latestBooking, createdAt, createdBy))
-      .retrieve()
-      .awaitBody()
+  ): DistinguishingMarkImageSyncResponse = webClient
+    .put()
+    .uri("/sync/prisoners/{prisonerNumber}/distinguishing-marks/{markId}/images/{imageId}", prisonerNumber, markId, imageId)
+    .bodyValue(syncUpdateDistinguishingMarkRequest(default, appliesFrom, appliesTo, latestBooking, createdAt, createdBy))
+    .retrieve()
+    .awaitBody()
 
   private fun syncUpdateDistinguishingMarkRequest(
     default: Boolean,
@@ -68,24 +66,22 @@ class DistinguishingMarkImagesDpsApiService(@Qualifier("prisonPersonApiWebClient
     latestBooking: Boolean,
     createdAt: LocalDateTime,
     createdBy: String,
-  ) =
-    DistinguishingMarkImageUpdateSyncRequest(
-      default = default,
-      appliesFrom = appliesFrom.atPrisonPersonZone(),
-      appliesTo = appliesTo?.atPrisonPersonZone(),
-      latestBooking = latestBooking,
-      createdAt = createdAt.atPrisonPersonZone(),
-      createdBy = createdBy,
-    )
+  ) = DistinguishingMarkImageUpdateSyncRequest(
+    default = default,
+    appliesFrom = appliesFrom.atPrisonPersonZone(),
+    appliesTo = appliesTo?.atPrisonPersonZone(),
+    latestBooking = latestBooking,
+    createdAt = createdAt.atPrisonPersonZone(),
+    createdBy = createdBy,
+  )
 
   suspend fun syncDeleteDistinguishingMarkImage(
     prisonerNumber: String,
     markId: UUID,
     imageId: UUID,
-  ): DistinguishingMarkSyncResponse =
-    webClient
-      .delete()
-      .uri("/sync/prisoners/{prisonerNumber}/distinguishing-marks/{markId}/images/{imageId}", prisonerNumber, markId, imageId)
-      .retrieve()
-      .awaitBody()
+  ): DistinguishingMarkSyncResponse = webClient
+    .delete()
+    .uri("/sync/prisoners/{prisonerNumber}/distinguishing-marks/{markId}/images/{imageId}", prisonerNumber, markId, imageId)
+    .retrieve()
+    .awaitBody()
 }

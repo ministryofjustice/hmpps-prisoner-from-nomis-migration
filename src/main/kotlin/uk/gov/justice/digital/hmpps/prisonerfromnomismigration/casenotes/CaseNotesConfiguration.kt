@@ -23,8 +23,7 @@ class CaseNotesConfiguration(
   fun caseNotesApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.reactiveHealthWebClient(caseNotesApiBaseUri, healthTimeout)
 
   @Bean
-  fun caseNotesApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient =
-    builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "casenotes-api", url = caseNotesApiBaseUri, timeout)
+  fun caseNotesApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "casenotes-api", url = caseNotesApiBaseUri, timeout)
 
   @Component("caseNotesApi")
   class CaseNotesApiHealth(@Qualifier("caseNotesApiHealthWebClient") webClient: WebClient) : ReactiveHealthPingCheck(webClient)

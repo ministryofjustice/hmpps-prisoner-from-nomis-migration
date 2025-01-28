@@ -66,19 +66,18 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     .retrieve()
     .awaitBody()
 
-  suspend fun getOffenderChargeOrNull(offenderNo: String, offenderChargeId: Long): OffenderChargeResponse? =
-    webClient.get()
-      .uri(
-        "/prisoners/{offenderNo}/sentencing/offender-charges/{offenderChargeId}",
-        offenderNo,
-        offenderChargeId,
-      )
-      .retrieve()
-      .bodyToMono(OffenderChargeResponse::class.java)
-      .onErrorResume(WebClientResponseException.NotFound::class.java) {
-        Mono.empty()
-      }
-      .awaitSingleOrNull()
+  suspend fun getOffenderChargeOrNull(offenderNo: String, offenderChargeId: Long): OffenderChargeResponse? = webClient.get()
+    .uri(
+      "/prisoners/{offenderNo}/sentencing/offender-charges/{offenderChargeId}",
+      offenderNo,
+      offenderChargeId,
+    )
+    .retrieve()
+    .bodyToMono(OffenderChargeResponse::class.java)
+    .onErrorResume(WebClientResponseException.NotFound::class.java) {
+      Mono.empty()
+    }
+    .awaitSingleOrNull()
 
   suspend fun getOffenderSentence(bookingId: Long, sentenceSequence: Int): SentenceResponse = webClient.get()
     .uri(
@@ -94,17 +93,16 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     toDate: LocalDate?,
     pageNumber: Long,
     pageSize: Long,
-  ): PageImpl<CourtCaseIdResponse> =
-    webClient.get()
-      .uri {
-        it.path("/court-cases/ids")
-          .queryParam("fromDate", fromDate)
-          .queryParam("toDate", toDate)
-          .queryParam("page", pageNumber)
-          .queryParam("size", pageSize)
-          .build()
-      }
-      .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<CourtCaseIdResponse>>())
-      .awaitSingle()
+  ): PageImpl<CourtCaseIdResponse> = webClient.get()
+    .uri {
+      it.path("/court-cases/ids")
+        .queryParam("fromDate", fromDate)
+        .queryParam("toDate", toDate)
+        .queryParam("page", pageNumber)
+        .queryParam("size", pageSize)
+        .build()
+    }
+    .retrieve()
+    .bodyToMono(typeReference<RestResponsePage<CourtCaseIdResponse>>())
+    .awaitSingle()
 }

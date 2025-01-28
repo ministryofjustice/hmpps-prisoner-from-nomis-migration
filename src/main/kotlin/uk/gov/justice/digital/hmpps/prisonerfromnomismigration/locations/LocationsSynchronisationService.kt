@@ -82,8 +82,9 @@ class LocationsSynchronisationService(
     }
   }
 
-  private fun isVsipVisitRoomCreation(event: LocationsOffenderEvent): Boolean =
-    event.oldDescription == null && event.description != null && (
+  private fun isVsipVisitRoomCreation(event: LocationsOffenderEvent): Boolean = event.oldDescription == null &&
+    event.description != null &&
+    (
       event.description.endsWith("-VISITS-VSIP_CLO") ||
         event.description.endsWith("-VISITS-VSIP_SOC")
       )
@@ -273,266 +274,259 @@ private fun LocationsOffenderEvent.toTelemetryProperties(
 
 private val warningLogger = LoggerFactory.getLogger(LocationsMigrationService::class.java)
 
-fun toUpsertSyncRequest(id: UUID, nomisLocationResponse: LocationResponse, parentId: String?) =
-  toUpsertSyncRequest(nomisLocationResponse, parentId).copy(id = id)
+fun toUpsertSyncRequest(id: UUID, nomisLocationResponse: LocationResponse, parentId: String?) = toUpsertSyncRequest(nomisLocationResponse, parentId).copy(id = id)
 
-fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse, parentId: String?) =
-  NomisSyncLocationRequest(
-    prisonId = nomisLocationResponse.prisonId,
-    code = nomisLocationResponse.locationCode,
-    locationType = toLocationType(nomisLocationResponse.locationType),
-    lastUpdatedBy = nomisLocationResponse.modifyUsername ?: nomisLocationResponse.createUsername,
-    localName = nomisLocationResponse.userDescription,
-    comments = nomisLocationResponse.comment,
-    orderWithinParentLocation = nomisLocationResponse.listSequence,
-    residentialHousingType = toResidentialHousingType(nomisLocationResponse.unitType),
-    parentId = parentId?.let { UUID.fromString(parentId) },
-    capacity = if (nomisLocationResponse.capacity != null || nomisLocationResponse.operationalCapacity != null) {
-      Capacity(
-        nomisLocationResponse.capacity ?: 0,
-        nomisLocationResponse.operationalCapacity ?: 0,
-      )
-    } else {
-      null
-    },
-    certification = if (nomisLocationResponse.certified != null || nomisLocationResponse.cnaCapacity != null) {
-      Certification(nomisLocationResponse.certified ?: false, nomisLocationResponse.cnaCapacity ?: 0)
-    } else {
-      null
-    },
-    attributes = nomisLocationResponse.profiles
-      ?.mapNotNull { toAttribute(it.profileType.name, it.profileCode) }
-      ?.toSet(),
-    usage = nomisLocationResponse.usages?.map { toUsage(it) }?.toSet(),
+fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse, parentId: String?) = NomisSyncLocationRequest(
+  prisonId = nomisLocationResponse.prisonId,
+  code = nomisLocationResponse.locationCode,
+  locationType = toLocationType(nomisLocationResponse.locationType),
+  lastUpdatedBy = nomisLocationResponse.modifyUsername ?: nomisLocationResponse.createUsername,
+  localName = nomisLocationResponse.userDescription,
+  comments = nomisLocationResponse.comment,
+  orderWithinParentLocation = nomisLocationResponse.listSequence,
+  residentialHousingType = toResidentialHousingType(nomisLocationResponse.unitType),
+  parentId = parentId?.let { UUID.fromString(parentId) },
+  capacity = if (nomisLocationResponse.capacity != null || nomisLocationResponse.operationalCapacity != null) {
+    Capacity(
+      nomisLocationResponse.capacity ?: 0,
+      nomisLocationResponse.operationalCapacity ?: 0,
+    )
+  } else {
+    null
+  },
+  certification = if (nomisLocationResponse.certified != null || nomisLocationResponse.cnaCapacity != null) {
+    Certification(nomisLocationResponse.certified ?: false, nomisLocationResponse.cnaCapacity ?: 0)
+  } else {
+    null
+  },
+  attributes = nomisLocationResponse.profiles
+    ?.mapNotNull { toAttribute(it.profileType.name, it.profileCode) }
+    ?.toSet(),
+  usage = nomisLocationResponse.usages?.map { toUsage(it) }?.toSet(),
 
-    createDate = nomisLocationResponse.createDatetime,
-    // lastModifiedDate - no value available as it changes with occupancy
-    deactivatedDate = if (nomisLocationResponse.active) {
-      null
-    } else {
-      nomisLocationResponse.deactivateDate
-    },
-    deactivationReason = if (nomisLocationResponse.active) {
-      null
-    } else {
-      toReason(nomisLocationResponse.reasonCode)
-    },
-    proposedReactivationDate = if (nomisLocationResponse.active) {
-      null
-    } else {
-      nomisLocationResponse.reactivateDate
-    },
-    isDeactivated = !nomisLocationResponse.active,
-  )
+  createDate = nomisLocationResponse.createDatetime,
+  // lastModifiedDate - no value available as it changes with occupancy
+  deactivatedDate = if (nomisLocationResponse.active) {
+    null
+  } else {
+    nomisLocationResponse.deactivateDate
+  },
+  deactivationReason = if (nomisLocationResponse.active) {
+    null
+  } else {
+    toReason(nomisLocationResponse.reasonCode)
+  },
+  proposedReactivationDate = if (nomisLocationResponse.active) {
+    null
+  } else {
+    nomisLocationResponse.reactivateDate
+  },
+  isDeactivated = !nomisLocationResponse.active,
+)
 
-private fun toLocationType(locationType: String): NomisSyncLocationRequest.LocationType =
-  when (locationType) {
-    "WING", "BLK" -> NomisSyncLocationRequest.LocationType.WING
-    "SPUR" -> NomisSyncLocationRequest.LocationType.SPUR
-    "LAND", "TIER", "LAN" -> NomisSyncLocationRequest.LocationType.LANDING
-    "CELL" -> NomisSyncLocationRequest.LocationType.CELL
-    "ADJU" -> NomisSyncLocationRequest.LocationType.ADJUDICATION_ROOM
-    "ADMI" -> NomisSyncLocationRequest.LocationType.ADMINISTRATION_AREA
-    "APP" -> NomisSyncLocationRequest.LocationType.APPOINTMENTS
-    "AREA" -> NomisSyncLocationRequest.LocationType.AREA
-    "ASSO" -> NomisSyncLocationRequest.LocationType.ASSOCIATION
-    "BOOT" -> NomisSyncLocationRequest.LocationType.BOOTH
-    "BOX" -> NomisSyncLocationRequest.LocationType.BOX
-    "CLAS" -> NomisSyncLocationRequest.LocationType.CLASSROOM
-    "EXER" -> NomisSyncLocationRequest.LocationType.EXERCISE_AREA
-    "EXTE" -> NomisSyncLocationRequest.LocationType.EXTERNAL_GROUNDS
-    "FAIT" -> NomisSyncLocationRequest.LocationType.FAITH_AREA
-    "GROU" -> NomisSyncLocationRequest.LocationType.GROUP
-    "HCEL" -> NomisSyncLocationRequest.LocationType.HOLDING_CELL
-    "HOLD" -> NomisSyncLocationRequest.LocationType.HOLDING_AREA
-    "IGRO" -> NomisSyncLocationRequest.LocationType.INTERNAL_GROUNDS
-    "INSI" -> NomisSyncLocationRequest.LocationType.INSIDE_PARTY
-    "INTE" -> NomisSyncLocationRequest.LocationType.INTERVIEW
-    "LOCA" -> NomisSyncLocationRequest.LocationType.LOCATION
-    "MEDI" -> NomisSyncLocationRequest.LocationType.MEDICAL
-    "MOVE" -> NomisSyncLocationRequest.LocationType.MOVEMENT_AREA
-    "OFFI" -> NomisSyncLocationRequest.LocationType.OFFICE
-    "OUTS" -> NomisSyncLocationRequest.LocationType.OUTSIDE_PARTY
-    "POSI" -> NomisSyncLocationRequest.LocationType.POSITION
-    "RESI" -> NomisSyncLocationRequest.LocationType.RESIDENTIAL_UNIT
-    "ROOM" -> NomisSyncLocationRequest.LocationType.ROOM
-    "RTU" -> NomisSyncLocationRequest.LocationType.RETURN_TO_UNIT
-    "SHEL" -> NomisSyncLocationRequest.LocationType.SHELF
-    "SPOR" -> NomisSyncLocationRequest.LocationType.SPORTS
-    "STOR" -> NomisSyncLocationRequest.LocationType.STORE
-    "TABL" -> NomisSyncLocationRequest.LocationType.TABLE
-    "TRAI" -> NomisSyncLocationRequest.LocationType.TRAINING_AREA
-    "TRRM" -> NomisSyncLocationRequest.LocationType.TRAINING_ROOM
-    "VIDE" -> NomisSyncLocationRequest.LocationType.VIDEO_LINK
-    "VISIT" -> NomisSyncLocationRequest.LocationType.VISITS
-    "WORK" -> NomisSyncLocationRequest.LocationType.WORKSHOP
-    else -> throw IllegalArgumentException("Unknown location type $locationType")
-  }
+private fun toLocationType(locationType: String): NomisSyncLocationRequest.LocationType = when (locationType) {
+  "WING", "BLK" -> NomisSyncLocationRequest.LocationType.WING
+  "SPUR" -> NomisSyncLocationRequest.LocationType.SPUR
+  "LAND", "TIER", "LAN" -> NomisSyncLocationRequest.LocationType.LANDING
+  "CELL" -> NomisSyncLocationRequest.LocationType.CELL
+  "ADJU" -> NomisSyncLocationRequest.LocationType.ADJUDICATION_ROOM
+  "ADMI" -> NomisSyncLocationRequest.LocationType.ADMINISTRATION_AREA
+  "APP" -> NomisSyncLocationRequest.LocationType.APPOINTMENTS
+  "AREA" -> NomisSyncLocationRequest.LocationType.AREA
+  "ASSO" -> NomisSyncLocationRequest.LocationType.ASSOCIATION
+  "BOOT" -> NomisSyncLocationRequest.LocationType.BOOTH
+  "BOX" -> NomisSyncLocationRequest.LocationType.BOX
+  "CLAS" -> NomisSyncLocationRequest.LocationType.CLASSROOM
+  "EXER" -> NomisSyncLocationRequest.LocationType.EXERCISE_AREA
+  "EXTE" -> NomisSyncLocationRequest.LocationType.EXTERNAL_GROUNDS
+  "FAIT" -> NomisSyncLocationRequest.LocationType.FAITH_AREA
+  "GROU" -> NomisSyncLocationRequest.LocationType.GROUP
+  "HCEL" -> NomisSyncLocationRequest.LocationType.HOLDING_CELL
+  "HOLD" -> NomisSyncLocationRequest.LocationType.HOLDING_AREA
+  "IGRO" -> NomisSyncLocationRequest.LocationType.INTERNAL_GROUNDS
+  "INSI" -> NomisSyncLocationRequest.LocationType.INSIDE_PARTY
+  "INTE" -> NomisSyncLocationRequest.LocationType.INTERVIEW
+  "LOCA" -> NomisSyncLocationRequest.LocationType.LOCATION
+  "MEDI" -> NomisSyncLocationRequest.LocationType.MEDICAL
+  "MOVE" -> NomisSyncLocationRequest.LocationType.MOVEMENT_AREA
+  "OFFI" -> NomisSyncLocationRequest.LocationType.OFFICE
+  "OUTS" -> NomisSyncLocationRequest.LocationType.OUTSIDE_PARTY
+  "POSI" -> NomisSyncLocationRequest.LocationType.POSITION
+  "RESI" -> NomisSyncLocationRequest.LocationType.RESIDENTIAL_UNIT
+  "ROOM" -> NomisSyncLocationRequest.LocationType.ROOM
+  "RTU" -> NomisSyncLocationRequest.LocationType.RETURN_TO_UNIT
+  "SHEL" -> NomisSyncLocationRequest.LocationType.SHELF
+  "SPOR" -> NomisSyncLocationRequest.LocationType.SPORTS
+  "STOR" -> NomisSyncLocationRequest.LocationType.STORE
+  "TABL" -> NomisSyncLocationRequest.LocationType.TABLE
+  "TRAI" -> NomisSyncLocationRequest.LocationType.TRAINING_AREA
+  "TRRM" -> NomisSyncLocationRequest.LocationType.TRAINING_ROOM
+  "VIDE" -> NomisSyncLocationRequest.LocationType.VIDEO_LINK
+  "VISIT" -> NomisSyncLocationRequest.LocationType.VISITS
+  "WORK" -> NomisSyncLocationRequest.LocationType.WORKSHOP
+  else -> throw IllegalArgumentException("Unknown location type $locationType")
+}
 
-private fun toResidentialHousingType(unitType: LocationResponse.UnitType?): NomisSyncLocationRequest.ResidentialHousingType? =
-  when (unitType) {
-    LocationResponse.UnitType.HC -> NomisSyncLocationRequest.ResidentialHousingType.HEALTHCARE
-    LocationResponse.UnitType.HOLC -> NomisSyncLocationRequest.ResidentialHousingType.HOLDING_CELL
-    LocationResponse.UnitType.NA -> NomisSyncLocationRequest.ResidentialHousingType.NORMAL_ACCOMMODATION
-    LocationResponse.UnitType.OU -> NomisSyncLocationRequest.ResidentialHousingType.OTHER_USE
-    LocationResponse.UnitType.REC -> NomisSyncLocationRequest.ResidentialHousingType.RECEPTION
-    LocationResponse.UnitType.SEG -> NomisSyncLocationRequest.ResidentialHousingType.SEGREGATION
-    LocationResponse.UnitType.SPLC -> NomisSyncLocationRequest.ResidentialHousingType.SPECIALIST_CELL
-    null -> null
-  }
+private fun toResidentialHousingType(unitType: LocationResponse.UnitType?): NomisSyncLocationRequest.ResidentialHousingType? = when (unitType) {
+  LocationResponse.UnitType.HC -> NomisSyncLocationRequest.ResidentialHousingType.HEALTHCARE
+  LocationResponse.UnitType.HOLC -> NomisSyncLocationRequest.ResidentialHousingType.HOLDING_CELL
+  LocationResponse.UnitType.NA -> NomisSyncLocationRequest.ResidentialHousingType.NORMAL_ACCOMMODATION
+  LocationResponse.UnitType.OU -> NomisSyncLocationRequest.ResidentialHousingType.OTHER_USE
+  LocationResponse.UnitType.REC -> NomisSyncLocationRequest.ResidentialHousingType.RECEPTION
+  LocationResponse.UnitType.SEG -> NomisSyncLocationRequest.ResidentialHousingType.SEGREGATION
+  LocationResponse.UnitType.SPLC -> NomisSyncLocationRequest.ResidentialHousingType.SPECIALIST_CELL
+  null -> null
+}
 
-private fun toReason(reasonCode: LocationResponse.ReasonCode?): NomisSyncLocationRequest.DeactivationReason =
-  when (reasonCode) {
-    LocationResponse.ReasonCode.A -> NomisSyncLocationRequest.DeactivationReason.NEW_BUILDING
-    LocationResponse.ReasonCode.B -> NomisSyncLocationRequest.DeactivationReason.CELL_RECLAIMS
-    LocationResponse.ReasonCode.C -> NomisSyncLocationRequest.DeactivationReason.CHANGE_OF_USE
-    LocationResponse.ReasonCode.D -> NomisSyncLocationRequest.DeactivationReason.REFURBISHMENT
-    LocationResponse.ReasonCode.E -> NomisSyncLocationRequest.DeactivationReason.CLOSURE
-    null, LocationResponse.ReasonCode.F -> NomisSyncLocationRequest.DeactivationReason.OTHER
-    LocationResponse.ReasonCode.G -> NomisSyncLocationRequest.DeactivationReason.LOCAL_WORK
-    LocationResponse.ReasonCode.H -> NomisSyncLocationRequest.DeactivationReason.STAFF_SHORTAGE
-    LocationResponse.ReasonCode.I -> NomisSyncLocationRequest.DeactivationReason.MOTHBALLED
-    LocationResponse.ReasonCode.J -> NomisSyncLocationRequest.DeactivationReason.DAMAGED
-    LocationResponse.ReasonCode.K -> NomisSyncLocationRequest.DeactivationReason.OUT_OF_USE
-    LocationResponse.ReasonCode.L -> NomisSyncLocationRequest.DeactivationReason.CELLS_RETURNING_TO_USE
-  }
+private fun toReason(reasonCode: LocationResponse.ReasonCode?): NomisSyncLocationRequest.DeactivationReason = when (reasonCode) {
+  LocationResponse.ReasonCode.A -> NomisSyncLocationRequest.DeactivationReason.NEW_BUILDING
+  LocationResponse.ReasonCode.B -> NomisSyncLocationRequest.DeactivationReason.CELL_RECLAIMS
+  LocationResponse.ReasonCode.C -> NomisSyncLocationRequest.DeactivationReason.CHANGE_OF_USE
+  LocationResponse.ReasonCode.D -> NomisSyncLocationRequest.DeactivationReason.REFURBISHMENT
+  LocationResponse.ReasonCode.E -> NomisSyncLocationRequest.DeactivationReason.CLOSURE
+  null, LocationResponse.ReasonCode.F -> NomisSyncLocationRequest.DeactivationReason.OTHER
+  LocationResponse.ReasonCode.G -> NomisSyncLocationRequest.DeactivationReason.LOCAL_WORK
+  LocationResponse.ReasonCode.H -> NomisSyncLocationRequest.DeactivationReason.STAFF_SHORTAGE
+  LocationResponse.ReasonCode.I -> NomisSyncLocationRequest.DeactivationReason.MOTHBALLED
+  LocationResponse.ReasonCode.J -> NomisSyncLocationRequest.DeactivationReason.DAMAGED
+  LocationResponse.ReasonCode.K -> NomisSyncLocationRequest.DeactivationReason.OUT_OF_USE
+  LocationResponse.ReasonCode.L -> NomisSyncLocationRequest.DeactivationReason.CELLS_RETURNING_TO_USE
+}
 
-private fun toAttribute(type: String, code: String): NomisSyncLocationRequest.Attributes? =
-  when (type) {
-    "HOU_SANI_FIT" ->
-      when (code) {
-        "ABD" -> NomisSyncLocationRequest.Attributes.ANTI_BARRICADE_DOOR
-        "ACB" -> NomisSyncLocationRequest.Attributes.AUDITABLE_CELL_BELL
-        "FIB" -> NomisSyncLocationRequest.Attributes.FIXED_BED
-        "MD" -> NomisSyncLocationRequest.Attributes.METAL_DOOR
-        "MOB" -> NomisSyncLocationRequest.Attributes.MOVABLE_BED
-        "PC" -> NomisSyncLocationRequest.Attributes.PRIVACY_CURTAIN
-        "PS" -> NomisSyncLocationRequest.Attributes.PRIVACY_SCREEN
-        "SCB" -> NomisSyncLocationRequest.Attributes.STANDARD_CELL_BELL
-        "SETO" -> NomisSyncLocationRequest.Attributes.SEPARATE_TOILET
-        "WD" -> NomisSyncLocationRequest.Attributes.WOODEN_DOOR
-        else -> {
-          warningLogger.warn("Unknown location attribute type $type, code $code")
-          null
-        }
+private fun toAttribute(type: String, code: String): NomisSyncLocationRequest.Attributes? = when (type) {
+  "HOU_SANI_FIT" ->
+    when (code) {
+      "ABD" -> NomisSyncLocationRequest.Attributes.ANTI_BARRICADE_DOOR
+      "ACB" -> NomisSyncLocationRequest.Attributes.AUDITABLE_CELL_BELL
+      "FIB" -> NomisSyncLocationRequest.Attributes.FIXED_BED
+      "MD" -> NomisSyncLocationRequest.Attributes.METAL_DOOR
+      "MOB" -> NomisSyncLocationRequest.Attributes.MOVABLE_BED
+      "PC" -> NomisSyncLocationRequest.Attributes.PRIVACY_CURTAIN
+      "PS" -> NomisSyncLocationRequest.Attributes.PRIVACY_SCREEN
+      "SCB" -> NomisSyncLocationRequest.Attributes.STANDARD_CELL_BELL
+      "SETO" -> NomisSyncLocationRequest.Attributes.SEPARATE_TOILET
+      "WD" -> NomisSyncLocationRequest.Attributes.WOODEN_DOOR
+      else -> {
+        warningLogger.warn("Unknown location attribute type $type, code $code")
+        null
       }
-
-    "HOU_UNIT_ATT" ->
-      when (code) {
-        "A" -> NomisSyncLocationRequest.Attributes.CAT_A_CELL
-        "DO" -> NomisSyncLocationRequest.Attributes.DOUBLE_OCCUPANCY
-        "ELC" -> NomisSyncLocationRequest.Attributes.E_LIST_CELL
-        "GC" -> NomisSyncLocationRequest.Attributes.GATED_CELL
-        "LC" -> NomisSyncLocationRequest.Attributes.LISTENER_CELL
-        "LF" -> NomisSyncLocationRequest.Attributes.LOCATE_FLAT
-        "MO" -> NomisSyncLocationRequest.Attributes.MULTIPLE_OCCUPANCY
-        "NSMC" -> NomisSyncLocationRequest.Attributes.NON_SMOKER_CELL
-        "OC" -> NomisSyncLocationRequest.Attributes.OBSERVATION_CELL
-        "SC" -> NomisSyncLocationRequest.Attributes.SAFE_CELL
-        "SO" -> NomisSyncLocationRequest.Attributes.SINGLE_OCCUPANCY
-        "SPC" -> NomisSyncLocationRequest.Attributes.SPECIAL_CELL
-        "WA" -> NomisSyncLocationRequest.Attributes.WHEELCHAIR_ACCESS
-        else -> {
-          warningLogger.warn("Unknown location attribute type $type, code $code")
-          null
-        }
-      }
-
-    "HOU_USED_FOR" ->
-      when (code) {
-        "1" -> NomisSyncLocationRequest.Attributes.UNCONVICTED_JUVENILES
-        "2" -> NomisSyncLocationRequest.Attributes.SENTENCED_JUVENILES
-        "3" -> NomisSyncLocationRequest.Attributes.UNCONVICTED_18_20
-        "4" -> NomisSyncLocationRequest.Attributes.SENTENCED_18_20
-        "5" -> NomisSyncLocationRequest.Attributes.UNCONVICTED_ADULTS
-        "6" -> NomisSyncLocationRequest.Attributes.SENTENCED_ADULTS
-        "7", "V" -> NomisSyncLocationRequest.Attributes.VULNERABLE_PRISONER_UNIT
-        "8" -> NomisSyncLocationRequest.Attributes.SPECIAL_UNIT
-        "9" -> NomisSyncLocationRequest.Attributes.RESETTLEMENT_HOSTEL
-        "10" -> NomisSyncLocationRequest.Attributes.HEALTHCARE_CENTRE
-        "11" -> NomisSyncLocationRequest.Attributes.NATIONAL_RESOURCE_HOSPITAL
-        "12" -> NomisSyncLocationRequest.Attributes.OTHER_SPECIFIED
-        "A" -> NomisSyncLocationRequest.Attributes.REMAND_CENTRE
-        "B" -> NomisSyncLocationRequest.Attributes.LOCAL_PRISON
-        "C" -> NomisSyncLocationRequest.Attributes.CLOSED_PRISON
-        "D" -> NomisSyncLocationRequest.Attributes.OPEN_TRAINING
-        "E" -> NomisSyncLocationRequest.Attributes.HOSTEL
-        "H" -> NomisSyncLocationRequest.Attributes.NATIONAL_RESOURCE_HOSPITAL
-        "I" -> NomisSyncLocationRequest.Attributes.CLOSED_YOUNG_OFFENDER
-        "J" -> NomisSyncLocationRequest.Attributes.OPEN_YOUNG_OFFENDER
-        "K" -> NomisSyncLocationRequest.Attributes.REMAND_UNDER_18
-        "L" -> NomisSyncLocationRequest.Attributes.SENTENCED_UNDER_18
-        "R" -> NomisSyncLocationRequest.Attributes.ECL_COMPONENT
-        "T" -> NomisSyncLocationRequest.Attributes.ADDITIONAL_SPECIAL_UNIT
-        "Y" -> NomisSyncLocationRequest.Attributes.SECOND_CLOSED_TRAINER
-        "Z" -> NomisSyncLocationRequest.Attributes.IMMIGRATION_DETAINEES
-        else -> {
-          warningLogger.warn("Unknown location attribute type $type, code $code")
-          null
-        }
-      }
-
-    "SUP_LVL_TYPE" ->
-      when (code) {
-        "A" -> NomisSyncLocationRequest.Attributes.CAT_A
-        "E" -> NomisSyncLocationRequest.Attributes.CAT_A_EX
-        "H" -> NomisSyncLocationRequest.Attributes.CAT_A_HI
-        "B" -> NomisSyncLocationRequest.Attributes.CAT_B
-        "C" -> NomisSyncLocationRequest.Attributes.CAT_C
-        "D" -> NomisSyncLocationRequest.Attributes.CAT_D
-        "GRANTED" -> NomisSyncLocationRequest.Attributes.PAROLE_GRANTED
-        "I" -> NomisSyncLocationRequest.Attributes.YOI_CLOSED
-        "J" -> NomisSyncLocationRequest.Attributes.YOI_OPEN
-        "V" -> NomisSyncLocationRequest.Attributes.YOI_RESTRICTED
-        "K" -> NomisSyncLocationRequest.Attributes.YOI_SHORT_SENTENCE
-        "L" -> NomisSyncLocationRequest.Attributes.YOI_LONG_TERM_CLOSED
-        "Z" -> NomisSyncLocationRequest.Attributes.UNCLASSIFIED
-        "X" -> NomisSyncLocationRequest.Attributes.UNCATEGORISED_SENTENCED_MALE
-        "LOW" -> NomisSyncLocationRequest.Attributes.LOW
-        "MED" -> NomisSyncLocationRequest.Attributes.MEDIUM
-        "HI" -> NomisSyncLocationRequest.Attributes.HIGH
-        "N/A", "NA" -> NomisSyncLocationRequest.Attributes.NOT_APPLICABLE
-        "P" -> NomisSyncLocationRequest.Attributes.PROV_A
-        "PEND" -> NomisSyncLocationRequest.Attributes.PENDING
-        "REF/REVIEW" -> NomisSyncLocationRequest.Attributes.REF_REVIEW
-        "REFUSED" -> NomisSyncLocationRequest.Attributes.REFUSED_NO_REVIEW
-        "STANDARD" -> NomisSyncLocationRequest.Attributes.STANDARD
-        "Q" -> NomisSyncLocationRequest.Attributes.FEMALE_RESTRICTED
-        "R" -> NomisSyncLocationRequest.Attributes.FEMALE_CLOSED
-        "S" -> NomisSyncLocationRequest.Attributes.FEMALE_SEMI
-        "T" -> NomisSyncLocationRequest.Attributes.FEMALE_OPEN
-        "U" -> NomisSyncLocationRequest.Attributes.UN_SENTENCED
-        "Y" -> NomisSyncLocationRequest.Attributes.YES
-        "N" -> NomisSyncLocationRequest.Attributes.NO
-        else -> {
-          warningLogger.warn("Unknown location attribute type $type, code $code")
-          null
-        }
-      }
-
-    "NON_ASSO_TYP" -> {
-      warningLogger.warn("Ignoring location attribute type $type, code $code")
-      null
     }
 
-    else -> {
-      warningLogger.warn("Unknown location attribute type $type, code $code")
-      null
+  "HOU_UNIT_ATT" ->
+    when (code) {
+      "A" -> NomisSyncLocationRequest.Attributes.CAT_A_CELL
+      "DO" -> NomisSyncLocationRequest.Attributes.DOUBLE_OCCUPANCY
+      "ELC" -> NomisSyncLocationRequest.Attributes.E_LIST_CELL
+      "GC" -> NomisSyncLocationRequest.Attributes.GATED_CELL
+      "LC" -> NomisSyncLocationRequest.Attributes.LISTENER_CELL
+      "LF" -> NomisSyncLocationRequest.Attributes.LOCATE_FLAT
+      "MO" -> NomisSyncLocationRequest.Attributes.MULTIPLE_OCCUPANCY
+      "NSMC" -> NomisSyncLocationRequest.Attributes.NON_SMOKER_CELL
+      "OC" -> NomisSyncLocationRequest.Attributes.OBSERVATION_CELL
+      "SC" -> NomisSyncLocationRequest.Attributes.SAFE_CELL
+      "SO" -> NomisSyncLocationRequest.Attributes.SINGLE_OCCUPANCY
+      "SPC" -> NomisSyncLocationRequest.Attributes.SPECIAL_CELL
+      "WA" -> NomisSyncLocationRequest.Attributes.WHEELCHAIR_ACCESS
+      else -> {
+        warningLogger.warn("Unknown location attribute type $type, code $code")
+        null
+      }
     }
+
+  "HOU_USED_FOR" ->
+    when (code) {
+      "1" -> NomisSyncLocationRequest.Attributes.UNCONVICTED_JUVENILES
+      "2" -> NomisSyncLocationRequest.Attributes.SENTENCED_JUVENILES
+      "3" -> NomisSyncLocationRequest.Attributes.UNCONVICTED_18_20
+      "4" -> NomisSyncLocationRequest.Attributes.SENTENCED_18_20
+      "5" -> NomisSyncLocationRequest.Attributes.UNCONVICTED_ADULTS
+      "6" -> NomisSyncLocationRequest.Attributes.SENTENCED_ADULTS
+      "7", "V" -> NomisSyncLocationRequest.Attributes.VULNERABLE_PRISONER_UNIT
+      "8" -> NomisSyncLocationRequest.Attributes.SPECIAL_UNIT
+      "9" -> NomisSyncLocationRequest.Attributes.RESETTLEMENT_HOSTEL
+      "10" -> NomisSyncLocationRequest.Attributes.HEALTHCARE_CENTRE
+      "11" -> NomisSyncLocationRequest.Attributes.NATIONAL_RESOURCE_HOSPITAL
+      "12" -> NomisSyncLocationRequest.Attributes.OTHER_SPECIFIED
+      "A" -> NomisSyncLocationRequest.Attributes.REMAND_CENTRE
+      "B" -> NomisSyncLocationRequest.Attributes.LOCAL_PRISON
+      "C" -> NomisSyncLocationRequest.Attributes.CLOSED_PRISON
+      "D" -> NomisSyncLocationRequest.Attributes.OPEN_TRAINING
+      "E" -> NomisSyncLocationRequest.Attributes.HOSTEL
+      "H" -> NomisSyncLocationRequest.Attributes.NATIONAL_RESOURCE_HOSPITAL
+      "I" -> NomisSyncLocationRequest.Attributes.CLOSED_YOUNG_OFFENDER
+      "J" -> NomisSyncLocationRequest.Attributes.OPEN_YOUNG_OFFENDER
+      "K" -> NomisSyncLocationRequest.Attributes.REMAND_UNDER_18
+      "L" -> NomisSyncLocationRequest.Attributes.SENTENCED_UNDER_18
+      "R" -> NomisSyncLocationRequest.Attributes.ECL_COMPONENT
+      "T" -> NomisSyncLocationRequest.Attributes.ADDITIONAL_SPECIAL_UNIT
+      "Y" -> NomisSyncLocationRequest.Attributes.SECOND_CLOSED_TRAINER
+      "Z" -> NomisSyncLocationRequest.Attributes.IMMIGRATION_DETAINEES
+      else -> {
+        warningLogger.warn("Unknown location attribute type $type, code $code")
+        null
+      }
+    }
+
+  "SUP_LVL_TYPE" ->
+    when (code) {
+      "A" -> NomisSyncLocationRequest.Attributes.CAT_A
+      "E" -> NomisSyncLocationRequest.Attributes.CAT_A_EX
+      "H" -> NomisSyncLocationRequest.Attributes.CAT_A_HI
+      "B" -> NomisSyncLocationRequest.Attributes.CAT_B
+      "C" -> NomisSyncLocationRequest.Attributes.CAT_C
+      "D" -> NomisSyncLocationRequest.Attributes.CAT_D
+      "GRANTED" -> NomisSyncLocationRequest.Attributes.PAROLE_GRANTED
+      "I" -> NomisSyncLocationRequest.Attributes.YOI_CLOSED
+      "J" -> NomisSyncLocationRequest.Attributes.YOI_OPEN
+      "V" -> NomisSyncLocationRequest.Attributes.YOI_RESTRICTED
+      "K" -> NomisSyncLocationRequest.Attributes.YOI_SHORT_SENTENCE
+      "L" -> NomisSyncLocationRequest.Attributes.YOI_LONG_TERM_CLOSED
+      "Z" -> NomisSyncLocationRequest.Attributes.UNCLASSIFIED
+      "X" -> NomisSyncLocationRequest.Attributes.UNCATEGORISED_SENTENCED_MALE
+      "LOW" -> NomisSyncLocationRequest.Attributes.LOW
+      "MED" -> NomisSyncLocationRequest.Attributes.MEDIUM
+      "HI" -> NomisSyncLocationRequest.Attributes.HIGH
+      "N/A", "NA" -> NomisSyncLocationRequest.Attributes.NOT_APPLICABLE
+      "P" -> NomisSyncLocationRequest.Attributes.PROV_A
+      "PEND" -> NomisSyncLocationRequest.Attributes.PENDING
+      "REF/REVIEW" -> NomisSyncLocationRequest.Attributes.REF_REVIEW
+      "REFUSED" -> NomisSyncLocationRequest.Attributes.REFUSED_NO_REVIEW
+      "STANDARD" -> NomisSyncLocationRequest.Attributes.STANDARD
+      "Q" -> NomisSyncLocationRequest.Attributes.FEMALE_RESTRICTED
+      "R" -> NomisSyncLocationRequest.Attributes.FEMALE_CLOSED
+      "S" -> NomisSyncLocationRequest.Attributes.FEMALE_SEMI
+      "T" -> NomisSyncLocationRequest.Attributes.FEMALE_OPEN
+      "U" -> NomisSyncLocationRequest.Attributes.UN_SENTENCED
+      "Y" -> NomisSyncLocationRequest.Attributes.YES
+      "N" -> NomisSyncLocationRequest.Attributes.NO
+      else -> {
+        warningLogger.warn("Unknown location attribute type $type, code $code")
+        null
+      }
+    }
+
+  "NON_ASSO_TYP" -> {
+    warningLogger.warn("Ignoring location attribute type $type, code $code")
+    null
   }
 
-private fun toUsage(it: UsageRequest) =
-  NonResidentialUsageDto(
-    when (it.internalLocationUsageType) {
-      UsageRequest.InternalLocationUsageType.APP -> NonResidentialUsageDto.UsageType.APPOINTMENT
-      UsageRequest.InternalLocationUsageType.VISIT -> NonResidentialUsageDto.UsageType.VISIT
-      UsageRequest.InternalLocationUsageType.MOVEMENT -> NonResidentialUsageDto.UsageType.MOVEMENT
-      UsageRequest.InternalLocationUsageType.OCCUR -> NonResidentialUsageDto.UsageType.OCCURRENCE
-      UsageRequest.InternalLocationUsageType.OIC -> NonResidentialUsageDto.UsageType.ADJUDICATION_HEARING
-      UsageRequest.InternalLocationUsageType.OTHER, UsageRequest.InternalLocationUsageType.OTH -> NonResidentialUsageDto.UsageType.OTHER
-      UsageRequest.InternalLocationUsageType.PROG -> NonResidentialUsageDto.UsageType.PROGRAMMES_ACTIVITIES
-      UsageRequest.InternalLocationUsageType.PROP -> NonResidentialUsageDto.UsageType.PROPERTY
-    },
-    it.sequence ?: 0,
-    it.capacity,
-  )
+  else -> {
+    warningLogger.warn("Unknown location attribute type $type, code $code")
+    null
+  }
+}
+
+private fun toUsage(it: UsageRequest) = NonResidentialUsageDto(
+  when (it.internalLocationUsageType) {
+    UsageRequest.InternalLocationUsageType.APP -> NonResidentialUsageDto.UsageType.APPOINTMENT
+    UsageRequest.InternalLocationUsageType.VISIT -> NonResidentialUsageDto.UsageType.VISIT
+    UsageRequest.InternalLocationUsageType.MOVEMENT -> NonResidentialUsageDto.UsageType.MOVEMENT
+    UsageRequest.InternalLocationUsageType.OCCUR -> NonResidentialUsageDto.UsageType.OCCURRENCE
+    UsageRequest.InternalLocationUsageType.OIC -> NonResidentialUsageDto.UsageType.ADJUDICATION_HEARING
+    UsageRequest.InternalLocationUsageType.OTHER, UsageRequest.InternalLocationUsageType.OTH -> NonResidentialUsageDto.UsageType.OTHER
+    UsageRequest.InternalLocationUsageType.PROG -> NonResidentialUsageDto.UsageType.PROGRAMMES_ACTIVITIES
+    UsageRequest.InternalLocationUsageType.PROP -> NonResidentialUsageDto.UsageType.PROPERTY
+  },
+  it.sequence ?: 0,
+  it.capacity,
+)

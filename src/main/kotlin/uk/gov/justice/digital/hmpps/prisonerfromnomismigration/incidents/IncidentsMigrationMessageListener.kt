@@ -27,23 +27,13 @@ class IncidentsMigrationMessageListener(
 
   @SqsListener(INCIDENTS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy", maxConcurrentMessages = "8", maxMessagesPerPoll = "8")
   @WithSpan(value = "dps-syscon-migration_incidents_queue", kind = SpanKind.SERVER)
-  fun onIncidentMessage(message: String, rawMessage: Message): CompletableFuture<Void?> {
-    return onMessage(message, rawMessage)
-  }
+  fun onIncidentMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
 
-  override fun parseContextFilter(json: String): MigrationMessage<*, IncidentsMigrationFilter> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextFilter(json: String): MigrationMessage<*, IncidentsMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<IncidentsMigrationFilter>> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<IncidentsMigrationFilter>> = objectMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, IncidentIdResponse> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextNomisId(json: String): MigrationMessage<*, IncidentIdResponse> = objectMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, IncidentMappingDto> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextMapping(json: String): MigrationMessage<*, IncidentMappingDto> = objectMapper.readValue(json)
 }

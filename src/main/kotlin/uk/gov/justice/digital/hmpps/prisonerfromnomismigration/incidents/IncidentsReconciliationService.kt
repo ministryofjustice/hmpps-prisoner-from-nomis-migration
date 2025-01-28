@@ -30,12 +30,11 @@ class IncidentsReconciliationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  suspend fun generateReconciliationReport(agencies: List<IncidentAgencyId>): List<MismatchIncidents> =
-    agencies.chunked(pageSize.toInt()).flatMap { pagedAgencies ->
-      withContext(Dispatchers.Unconfined) {
-        pagedAgencies.map { async { checkIncidentsMatch(it.agencyId) } }
-      }.awaitAll().filterNotNull()
-    }
+  suspend fun generateReconciliationReport(agencies: List<IncidentAgencyId>): List<MismatchIncidents> = agencies.chunked(pageSize.toInt()).flatMap { pagedAgencies ->
+    withContext(Dispatchers.Unconfined) {
+      pagedAgencies.map { async { checkIncidentsMatch(it.agencyId) } }
+    }.awaitAll().filterNotNull()
+  }
 
   suspend fun checkIncidentsMatch(agencyId: String): MismatchIncidents? = runCatching {
     val nomisIncidents = doApiCallWithRetries { nomisIncidentsApiService.getIncidentsReconciliation(agencyId) }
@@ -98,27 +97,23 @@ class IncidentsReconciliationService(
     )
   }.getOrNull()
 
-  suspend fun checkOpenIncidentsMatch(agencyId: String, openIncidentCount: Long): List<MismatchOpenIncident> {
-    return openIncidentCount.asPages(pageSize).flatMap { page ->
-      val openIncidentIds = getOpenIncidentsForPage(agencyId, page)
-      openIncidentIds.mapNotNull { checkOpenIncidentMatch(it.incidentId) }
-    }
+  suspend fun checkOpenIncidentsMatch(agencyId: String, openIncidentCount: Long): List<MismatchOpenIncident> = openIncidentCount.asPages(pageSize).flatMap { page ->
+    val openIncidentIds = getOpenIncidentsForPage(agencyId, page)
+    openIncidentIds.mapNotNull { checkOpenIncidentMatch(it.incidentId) }
   }
 
-  private suspend fun getOpenIncidentsForPage(agencyId: String, page: Pair<Long, Long>) =
-
-    runCatching { nomisIncidentsApiService.getOpenIncidentIds(agencyId, page.first, page.second).content }
-      .onFailure {
-        telemetryClient.trackEvent(
-          "incidents-reports-reconciliation-mismatch-page-error",
-          mapOf(
-            "page" to page.first.toString(),
-          ),
-        )
-        log.error("Unable to match entire page of incidents: $page", it)
-      }
-      .getOrElse { emptyList() }
-      .also { log.info("Page requested: $page, with ${it.size} open incidents") }
+  private suspend fun getOpenIncidentsForPage(agencyId: String, page: Pair<Long, Long>) = runCatching { nomisIncidentsApiService.getOpenIncidentIds(agencyId, page.first, page.second).content }
+    .onFailure {
+      telemetryClient.trackEvent(
+        "incidents-reports-reconciliation-mismatch-page-error",
+        mapOf(
+          "page" to page.first.toString(),
+        ),
+      )
+      log.error("Unable to match entire page of incidents: $page", it)
+    }
+    .getOrElse { emptyList() }
+    .also { log.info("Page requested: $page, with ${it.size} open incidents") }
 
   private suspend fun checkOpenIncidentMatch(nomisOpenIncidentId: Long): MismatchOpenIncident? = runCatching {
     val (nomisOpenIncident, dpsOpenIncident) =
@@ -231,26 +226,24 @@ data class IncidentReportDetail(
   val totalResponses: Int? = null,
 )
 
-fun IncidentResponse.toReportDetail() =
-  IncidentReportDetail(
-    type,
-    status.code,
-    reportingStaff.username,
-    offenderParties.map { it.offender.offenderNo },
-    staffParties.size,
-    questions.size,
-    requirements.size,
-    questions.flatMap { it.answers }.size,
-  )
+fun IncidentResponse.toReportDetail() = IncidentReportDetail(
+  type,
+  status.code,
+  reportingStaff.username,
+  offenderParties.map { it.offender.offenderNo },
+  staffParties.size,
+  questions.size,
+  requirements.size,
+  questions.flatMap { it.answers }.size,
+)
 
-fun ReportWithDetails.toReportDetail() =
-  IncidentReportDetail(
-    nomisType,
-    nomisStatus,
-    reportedBy,
-    prisonersInvolved.map { it.prisonerNumber },
-    staffInvolved.size,
-    questions.size,
-    correctionRequests.size,
-    questions.flatMap { it.responses }.size,
-  )
+fun ReportWithDetails.toReportDetail() = IncidentReportDetail(
+  nomisType,
+  nomisStatus,
+  reportedBy,
+  prisonersInvolved.map { it.prisonerNumber },
+  staffInvolved.size,
+  questions.size,
+  correctionRequests.size,
+  questions.flatMap { it.responses }.size,
+)

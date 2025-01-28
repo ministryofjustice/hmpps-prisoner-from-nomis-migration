@@ -64,20 +64,18 @@ internal class VisitMapperTest {
     assertThat(thrown.message).isEqualTo("No enum constant uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.NomisCancellationOutcome.Not a valid outcome")
   }
 
-  fun createNomisVisit(nomisStatusCode: String, nomisOutcomeCode: String?): NomisVisit {
-    return NomisVisit(
-      visitId = 1L,
-      offenderNo = "123",
-      startDateTime = LocalDateTime.now(),
-      endDateTime = LocalDateTime.now(),
-      prisonId = "LEI",
-      visitors = listOf(),
-      visitType = NomisCodeDescription("SCON", "Social"),
-      visitStatus = NomisCodeDescription(nomisStatusCode, nomisStatusCode),
-      visitOutcome = nomisOutcomeCode?.let { NomisCodeDescription(nomisOutcomeCode, nomisOutcomeCode) },
-      agencyInternalLocation = NomisCodeDescription("LEI", "desc"),
-      createUserId = "user1",
-      whenCreated = LocalDateTime.now().plusDays(1),
-    )
-  }
+  fun createNomisVisit(nomisStatusCode: String, nomisOutcomeCode: String?): NomisVisit = NomisVisit(
+    visitId = 1L,
+    offenderNo = "123",
+    startDateTime = LocalDateTime.now(),
+    endDateTime = LocalDateTime.now(),
+    prisonId = "LEI",
+    visitors = listOf(),
+    visitType = NomisCodeDescription("SCON", "Social"),
+    visitStatus = NomisCodeDescription(nomisStatusCode, nomisStatusCode),
+    visitOutcome = nomisOutcomeCode?.let { NomisCodeDescription(nomisOutcomeCode, nomisOutcomeCode) },
+    agencyInternalLocation = NomisCodeDescription("LEI", "desc"),
+    createUserId = "user1",
+    whenCreated = LocalDateTime.now().plusDays(1),
+  )
 }

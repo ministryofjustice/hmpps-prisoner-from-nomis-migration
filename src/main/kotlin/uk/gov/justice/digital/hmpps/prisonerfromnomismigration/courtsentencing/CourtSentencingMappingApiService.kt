@@ -21,8 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 
 @Service
-class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
-  MigrationMapping<CourtCaseAllMappingDto>(domainUrl = "/mapping/court-sentencing/court-cases", webClient) {
+class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CourtCaseAllMappingDto>(domainUrl = "/mapping/court-sentencing/court-cases", webClient) {
   suspend fun getCourtCaseOrNullByNomisId(courtCaseId: Long): CourtCaseMappingDto? = webClient.get()
     .uri(
       "/mapping/court-sentencing/court-cases/nomis-court-case-id/{courtCase}",
@@ -49,20 +48,18 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
 
   suspend fun createCourtAppearanceMapping(
     mapping: CourtAppearanceAllMappingDto,
-  ): CreateMappingResult<CourtAppearanceAllMappingDto> {
-    return webClient.post()
-      .uri("/mapping/court-sentencing/court-appearances")
-      .bodyValue(
-        mapping,
-      )
-      .retrieve()
-      .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<CourtAppearanceAllMappingDto>() }
-      .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CourtAppearanceAllMappingDto>>() {})))
-      }
-      .awaitFirstOrDefault(CreateMappingResult<CourtAppearanceAllMappingDto>())
-  }
+  ): CreateMappingResult<CourtAppearanceAllMappingDto> = webClient.post()
+    .uri("/mapping/court-sentencing/court-appearances")
+    .bodyValue(
+      mapping,
+    )
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<CourtAppearanceAllMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CourtAppearanceAllMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult<CourtAppearanceAllMappingDto>())
 
   suspend fun deleteCourtAppearanceMappingByDpsId(courtAppearanceId: String) = webClient.delete()
     .uri(
@@ -74,20 +71,18 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
 
   suspend fun createCourtChargeMapping(
     mapping: CourtChargeMappingDto,
-  ): CreateMappingResult<CourtChargeMappingDto> {
-    return webClient.post()
-      .uri("/mapping/court-sentencing/court-charges")
-      .bodyValue(
-        mapping,
-      )
-      .retrieve()
-      .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<CourtChargeMappingDto>() }
-      .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CourtChargeMappingDto>>() {})))
-      }
-      .awaitFirstOrDefault(CreateMappingResult())
-  }
+  ): CreateMappingResult<CourtChargeMappingDto> = webClient.post()
+    .uri("/mapping/court-sentencing/court-charges")
+    .bodyValue(
+      mapping,
+    )
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<CourtChargeMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CourtChargeMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
 
   suspend fun getOffenderChargeOrNullByNomisId(offenderChargeId: Long): CourtChargeMappingDto? = webClient.get()
     .uri(
@@ -113,39 +108,36 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     .retrieve()
     .awaitBodilessEntity()
 
-  suspend fun getSentenceOrNullByNomisId(bookingId: Long, sentenceSequence: Int): SentenceMappingDto? =
-    webClient.get()
-      .uri(
-        "/mapping/court-sentencing/sentences/nomis-booking-id/{bookingId}/nomis-sentence-sequence/{sentenceSequence}",
-        bookingId,
-        sentenceSequence,
-      )
-      .retrieve()
-      .awaitBodyOrNullWhenNotFound()
+  suspend fun getSentenceOrNullByNomisId(bookingId: Long, sentenceSequence: Int): SentenceMappingDto? = webClient.get()
+    .uri(
+      "/mapping/court-sentencing/sentences/nomis-booking-id/{bookingId}/nomis-sentence-sequence/{sentenceSequence}",
+      bookingId,
+      sentenceSequence,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 
   suspend fun createSentenceMapping(
     mapping: SentenceMappingDto,
-  ): CreateMappingResult<SentenceMappingDto> {
-    return webClient.post()
-      .uri("/mapping/court-sentencing/sentences")
-      .bodyValue(
-        mapping,
-      )
-      .retrieve()
-      .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<SentenceMappingDto>() }
-      .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(
-          CreateMappingResult(
-            it.getResponseBodyAs(
-              object :
-                ParameterizedTypeReference<DuplicateErrorResponse<SentenceMappingDto>>() {},
-            ),
+  ): CreateMappingResult<SentenceMappingDto> = webClient.post()
+    .uri("/mapping/court-sentencing/sentences")
+    .bodyValue(
+      mapping,
+    )
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<SentenceMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(
+        CreateMappingResult(
+          it.getResponseBodyAs(
+            object :
+              ParameterizedTypeReference<DuplicateErrorResponse<SentenceMappingDto>>() {},
           ),
-        )
-      }
-      .awaitFirstOrDefault(CreateMappingResult<SentenceMappingDto>())
-  }
+        ),
+      )
+    }
+    .awaitFirstOrDefault(CreateMappingResult<SentenceMappingDto>())
 
   suspend fun deleteSentenceMappingByDpsId(sentenceId: String) = webClient.delete()
     .uri(

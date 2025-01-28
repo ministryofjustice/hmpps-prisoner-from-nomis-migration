@@ -480,19 +480,17 @@ class AlertsSynchronisationService(
   private suspend fun replaceMappingsBatch(
     offenderNo: String,
     prisonerMappings: PrisonerAlertMappingsDto,
-  ) =
-    mappingApiService.replaceMappings(
-      offenderNo,
-      prisonerMappings,
-    )
+  ) = mappingApiService.replaceMappings(
+    offenderNo,
+    prisonerMappings,
+  )
   private suspend fun replaceMergedMappingsBatch(
     offenderNo: String,
     mergedPrisonerMapping: MergedPrisonerAlertMappingsDto,
-  ) =
-    mappingApiService.replaceMappingsForMerge(
-      offenderNo,
-      mergedPrisonerMapping,
-    )
+  ) = mappingApiService.replaceMappingsForMerge(
+    offenderNo,
+    mergedPrisonerMapping,
+  )
 }
 
 private enum class MappingResponse {

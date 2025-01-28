@@ -116,24 +116,23 @@ internal class CSIPPlanMappingServiceTest {
       }
 
       @Test
-      internal fun `will pass all parameters dps csip plan id, nomis csip plan id, migration Id and MIGRATED indicator to mapping service`(): Unit =
-        runTest {
-          csipMappingService.createCSIPPlanMapping(
-            CSIPChildMappingDto(
-              dpsId = dpsCsipPlanId,
-              nomisId = nomisCsipPlanId,
-              dpsCSIPReportId = dpsCsipReportId,
-              mappingType = CSIPChildMappingDto.MappingType.MIGRATED,
-              label = "5678",
-              whenCreated = "2020-01-01T00:00:00",
-            ),
-          )
+      internal fun `will pass all parameters dps csip plan id, nomis csip plan id, migration Id and MIGRATED indicator to mapping service`(): Unit = runTest {
+        csipMappingService.createCSIPPlanMapping(
+          CSIPChildMappingDto(
+            dpsId = dpsCsipPlanId,
+            nomisId = nomisCsipPlanId,
+            dpsCSIPReportId = dpsCsipReportId,
+            mappingType = CSIPChildMappingDto.MappingType.MIGRATED,
+            label = "5678",
+            whenCreated = "2020-01-01T00:00:00",
+          ),
+        )
 
-          mappingApi.verify(
-            postRequestedFor(urlEqualTo("/mapping/csip/plans"))
-              .withRequestBody(
-                equalToJson(
-                  """
+        mappingApi.verify(
+          postRequestedFor(urlEqualTo("/mapping/csip/plans"))
+            .withRequestBody(
+              equalToJson(
+                """
                   {
                     "dpsId": "$dpsCsipPlanId",
                     "nomisId": $nomisCsipPlanId,                                       
@@ -142,11 +141,11 @@ internal class CSIPPlanMappingServiceTest {
                     "mappingType": "MIGRATED",
                     "whenCreated": "2020-01-01T00:00:00"
                   }
-                  """.trimIndent(),
-                ),
+                """.trimIndent(),
               ),
-          )
-        }
+            ),
+        )
+      }
 
       @Test
       fun `should throw exception for any error`() = runTest {

@@ -407,18 +407,16 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
     prisonerNumber: String = "A1234AA",
     bookingId: Int = 1,
     profileType: String = "HAIR",
-  ) =
-    awsSqsPrisonPersonOffenderEventsClient.sendMessage(
-      prisonPersonQueueOffenderEventsUrl,
-      profileDetailsChangedEvent(prisonerNumber, bookingId, profileType),
-    ).also { waitForAnyProcessingToComplete() }
+  ) = awsSqsPrisonPersonOffenderEventsClient.sendMessage(
+    prisonPersonQueueOffenderEventsUrl,
+    profileDetailsChangedEvent(prisonerNumber, bookingId, profileType),
+  ).also { waitForAnyProcessingToComplete() }
 
-  private fun waitForDlqMessage() =
-    await untilAsserted {
-      assertThat(
-        awsSqsPrisonPersonOffenderEventDlqClient.countAllMessagesOnQueue(prisonPersonQueueOffenderEventsDlqUrl).get(),
-      ).isEqualTo(1)
-    }
+  private fun waitForDlqMessage() = await untilAsserted {
+    assertThat(
+      awsSqsPrisonPersonOffenderEventDlqClient.countAllMessagesOnQueue(prisonPersonQueueOffenderEventsDlqUrl).get(),
+    ).isEqualTo(1)
+  }
   private fun profileDetails(
     type: String = "SHOESIZE",
     code: String? = "8.5",
@@ -427,16 +425,15 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
     modifiedDateTime: String? = null,
     modifiedBy: String? = null,
     auditModuleName: String = "NOMIS",
-  ) =
-    ProfileDetailsResponse(
-      type = type,
-      code = code,
-      createDateTime = createDateTime,
-      createdBy = createdBy,
-      modifiedDateTime = modifiedDateTime,
-      modifiedBy = modifiedBy,
-      auditModuleName = auditModuleName,
-    )
+  ) = ProfileDetailsResponse(
+    type = type,
+    code = code,
+    createDateTime = createDateTime,
+    createdBy = createdBy,
+    modifiedDateTime = modifiedDateTime,
+    modifiedBy = modifiedBy,
+    auditModuleName = auditModuleName,
+  )
 
   private fun booking(
     bookingId: Long = 12345,
@@ -489,19 +486,18 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
     telemetryType: String = "updated",
     ignoreReason: String? = null,
     errorReason: String? = null,
-  ) =
-    verify(telemetryClient).trackEvent(
-      eq("profile-details-physical-attributes-synchronisation-$telemetryType"),
-      check {
-        assertThat(it["offenderNo"]).isEqualTo(offenderNo)
-        assertThat(it["bookingId"]).isEqualTo("$bookingId")
-        assertThat(it["profileType"]).isEqualTo(profileType)
-        ignoreReason?.run { assertThat(it["reason"]).isEqualTo(this) }
-        errorReason?.run { assertThat(it["error"]).isEqualTo(this) }
-        if (ignoreReason == null && errorReason == null) {
-          assertThat(it["physicalAttributesHistoryId"]).isEqualTo("[321]")
-        }
-      },
-      isNull(),
-    )
+  ) = verify(telemetryClient).trackEvent(
+    eq("profile-details-physical-attributes-synchronisation-$telemetryType"),
+    check {
+      assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+      assertThat(it["bookingId"]).isEqualTo("$bookingId")
+      assertThat(it["profileType"]).isEqualTo(profileType)
+      ignoreReason?.run { assertThat(it["reason"]).isEqualTo(this) }
+      errorReason?.run { assertThat(it["error"]).isEqualTo(this) }
+      if (ignoreReason == null && errorReason == null) {
+        assertThat(it["physicalAttributesHistoryId"]).isEqualTo("[321]")
+      }
+    },
+    isNull(),
+  )
 }

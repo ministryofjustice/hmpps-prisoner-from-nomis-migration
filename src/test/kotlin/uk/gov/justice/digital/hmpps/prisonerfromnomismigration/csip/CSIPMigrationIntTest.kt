@@ -64,25 +64,23 @@ class CSIPMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().is2xxSuccessful
     }
 
-    private fun WebTestClient.performMigration(body: String = "{ }") =
-      post().uri("/migrate/csip")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CSIP")))
-        .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue(body))
-        .exchange()
-        .expectStatus().isAccepted
-        .also {
-          waitUntilCompleted()
-        }
-
-    private fun waitUntilCompleted() =
-      await atMost Duration.ofSeconds(60) untilAsserted {
-        verify(telemetryClient).trackEvent(
-          eq("csip-migration-completed"),
-          any(),
-          isNull(),
-        )
+    private fun WebTestClient.performMigration(body: String = "{ }") = post().uri("/migrate/csip")
+      .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CSIP")))
+      .header("Content-Type", "application/json")
+      .body(BodyInserters.fromValue(body))
+      .exchange()
+      .expectStatus().isAccepted
+      .also {
+        waitUntilCompleted()
       }
+
+    private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
+      verify(telemetryClient).trackEvent(
+        eq("csip-migration-completed"),
+        any(),
+        isNull(),
+      )
+    }
 
     @Test
     internal fun `must have valid token to start migration`() {

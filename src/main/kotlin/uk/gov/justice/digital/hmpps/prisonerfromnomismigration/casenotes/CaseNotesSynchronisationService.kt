@@ -116,16 +116,15 @@ class CaseNotesSynchronisationService(
   private suspend fun updateDps(
     event: CaseNotesEvent,
     nomisCaseNote: CaseNoteResponse,
-  ): CaseNoteMappingDto? =
-    caseNotesMappingService.getMappingGivenNomisIdOrNull(event.caseNoteId)
-      ?.also { mapping ->
-        caseNotesService.upsertCaseNote(
-          nomisCaseNote.toDPSSyncCaseNote(
-            event.offenderIdDisplay!!,
-            UUID.fromString(mapping.dpsCaseNoteId),
-          ),
-        )
-      }
+  ): CaseNoteMappingDto? = caseNotesMappingService.getMappingGivenNomisIdOrNull(event.caseNoteId)
+    ?.also { mapping ->
+      caseNotesService.upsertCaseNote(
+        nomisCaseNote.toDPSSyncCaseNote(
+          event.offenderIdDisplay!!,
+          UUID.fromString(mapping.dpsCaseNoteId),
+        ),
+      )
+    }
 
   private suspend fun updateRelatedNomisCaseNotes(
     mapping: CaseNoteMappingDto,
@@ -188,7 +187,8 @@ class CaseNotesSynchronisationService(
           )
         }
         ?: telemetryClient.trackEvent(
-          "casenotes-deleted-synchronisation-skipped", event.toTelemetryProperties(),
+          "casenotes-deleted-synchronisation-skipped",
+          event.toTelemetryProperties(),
         )
     } catch (e: Exception) {
       telemetryClient.trackEvent(
@@ -311,10 +311,9 @@ Also add new mappings for the new booking id for the copied case notes, which po
   private fun isMergeCaseNoteRecentlyCreated(
     response: CaseNoteResponse,
     prisonerMergeEvent: PrisonerMergeDomainEvent,
-  ): Boolean =
-    response.auditModuleName == "MERGE" &&
-      LocalDateTime.parse(response.createdDatetime)
-        .isAfter(prisonerMergeEvent.occurredAt.toLocalDateTime().minusMinutes(30))
+  ): Boolean = response.auditModuleName == "MERGE" &&
+    LocalDateTime.parse(response.createdDatetime)
+      .isAfter(prisonerMergeEvent.occurredAt.toLocalDateTime().minusMinutes(30))
 
   suspend fun synchronisePrisonerBookingMoved(prisonerMergeEvent: PrisonerBookingMovedDomainEvent) {
     val (movedToNomsNumber, movedFromNomsNumber, bookingId) = prisonerMergeEvent.additionalInformation

@@ -129,15 +129,13 @@ fun SentenceResponse.toDpsSentence(offenderNo: String, sentenceChargeIds: List<S
 )
 
 // TODO confirm that DPS are no longer using ZoneTimeDate  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-fun CaseIdentifierResponse.toDpsCaseReference() =
-  CaseReferenceLegacyData(offenderCaseReference = this.reference, updatedDate = LocalDateTime.parse(this.createDateTime))
+fun CaseIdentifierResponse.toDpsCaseReference() = CaseReferenceLegacyData(offenderCaseReference = this.reference, updatedDate = LocalDateTime.parse(this.createDateTime))
 
 const val VIDEO_LINK_DPS_APPEARANCE_TYPE_UUID = "1da09b6e-55cb-4838-a157-ee6944f2094c"
 const val COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID = "63e8fce0-033c-46ad-9edf-391b802d547a"
 
-private fun CodeDescription.toDpsAppearanceTypeId(): UUID =
-  if (this.code.startsWith("VL")) {
-    UUID.fromString(VIDEO_LINK_DPS_APPEARANCE_TYPE_UUID)
-  } else {
-    UUID.fromString(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID)
-  }
+private fun CodeDescription.toDpsAppearanceTypeId(): UUID = if (this.code.startsWith("VL")) {
+  UUID.fromString(VIDEO_LINK_DPS_APPEARANCE_TYPE_UUID)
+} else {
+  UUID.fromString(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID)
+}

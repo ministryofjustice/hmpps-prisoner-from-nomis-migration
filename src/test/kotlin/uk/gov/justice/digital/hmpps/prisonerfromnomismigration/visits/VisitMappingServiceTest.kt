@@ -114,29 +114,28 @@ internal class VisitMappingServiceTest {
     }
 
     @Test
-    internal fun `will pass VSIP visit id, migration Id and MIGRATED indicator to mapping service`(): Unit =
-      runBlocking {
-        visitMappingService.createMapping(
-          VisitNomisMapping(1234, "5678", "2020-01-01T00:00:00", mappingType = "MIGRATED"),
-          errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<VisitNomisMapping>>() {},
-        )
+    internal fun `will pass VSIP visit id, migration Id and MIGRATED indicator to mapping service`(): Unit = runBlocking {
+      visitMappingService.createMapping(
+        VisitNomisMapping(1234, "5678", "2020-01-01T00:00:00", mappingType = "MIGRATED"),
+        errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<VisitNomisMapping>>() {},
+      )
 
-        mappingApi.verify(
-          postRequestedFor(urlEqualTo("/mapping/visits"))
-            .withRequestBody(
-              equalToJson(
-                """
+      mappingApi.verify(
+        postRequestedFor(urlEqualTo("/mapping/visits"))
+          .withRequestBody(
+            equalToJson(
+              """
             {
               "nomisId": 1234,
               "vsipId": "5678",
               "label": "2020-01-01T00:00:00",
               "mappingType": "MIGRATED"
             }
-                """.trimIndent(),
-              ),
+              """.trimIndent(),
             ),
-        )
-      }
+          ),
+      )
+    }
   }
 
   @Nested

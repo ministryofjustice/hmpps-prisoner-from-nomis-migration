@@ -57,25 +57,23 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().is2xxSuccessful
     }
 
-    private fun WebTestClient.performMigration(body: String = "{ }") =
-      post().uri("/migrate/appointments")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_APPOINTMENTS")))
-        .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue(body))
-        .exchange()
-        .expectStatus().isAccepted
-        .also {
-          waitUntilCompleted()
-        }
-
-    private fun waitUntilCompleted() =
-      await atMost Duration.ofSeconds(60) untilAsserted {
-        verify(telemetryClient).trackEvent(
-          eq("appointments-migration-completed"),
-          any(),
-          isNull(),
-        )
+    private fun WebTestClient.performMigration(body: String = "{ }") = post().uri("/migrate/appointments")
+      .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_APPOINTMENTS")))
+      .header("Content-Type", "application/json")
+      .body(BodyInserters.fromValue(body))
+      .exchange()
+      .expectStatus().isAccepted
+      .also {
+        waitUntilCompleted()
       }
+
+    private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
+      verify(telemetryClient).trackEvent(
+        eq("appointments-migration-completed"),
+        any(),
+        isNull(),
+      )
+    }
 
     @Test
     fun `must have valid token to start migration`() {

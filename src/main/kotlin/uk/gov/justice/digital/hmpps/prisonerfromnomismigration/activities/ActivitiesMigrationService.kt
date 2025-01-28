@@ -50,13 +50,12 @@ class ActivitiesMigrationService(
     migrationFilter: ActivitiesMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<FindActiveActivityIdsResponse> =
-    nomisApiService.getActivityIds(
-      prisonId = migrationFilter.prisonId,
-      courseActivityId = migrationFilter.courseActivityId,
-      pageNumber = pageNumber,
-      pageSize = pageSize,
-    )
+  ): PageImpl<FindActiveActivityIdsResponse> = nomisApiService.getActivityIds(
+    prisonId = migrationFilter.prisonId,
+    courseActivityId = migrationFilter.courseActivityId,
+    pageNumber = pageNumber,
+    pageSize = pageSize,
+  )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<FindActiveActivityIdsResponse>) {
     val courseActivityId = context.body.courseActivityId
@@ -96,101 +95,94 @@ class ActivitiesMigrationService(
     nomisApiService.endActivities(allActivityIds)
   }
 
-  private suspend fun ActivityMigrationMappingDto.createActivityMapping(context: MigrationContext<*>) =
-    try {
-      activitiesMappingService.createMapping(this, object : ParameterizedTypeReference<DuplicateErrorResponse<ActivityMigrationMappingDto>>() {})
-        .also { it.handleError(context) }
-    } catch (e: Exception) {
-      log.error(
-        "Failed to create activity mapping for nomisCourseActivityId: $nomisCourseActivityId, activityIds $activityId and $activityId2 for migration ${this.label}",
-        e,
-      )
-      queueService.sendMessage(
-        MigrationMessageType.RETRY_MIGRATION_MAPPING,
-        MigrationContext(
-          context = context,
-          body = this,
+  private suspend fun ActivityMigrationMappingDto.createActivityMapping(context: MigrationContext<*>) = try {
+    activitiesMappingService.createMapping(this, object : ParameterizedTypeReference<DuplicateErrorResponse<ActivityMigrationMappingDto>>() {})
+      .also { it.handleError(context) }
+  } catch (e: Exception) {
+    log.error(
+      "Failed to create activity mapping for nomisCourseActivityId: $nomisCourseActivityId, activityIds $activityId and $activityId2 for migration ${this.label}",
+      e,
+    )
+    queueService.sendMessage(
+      MigrationMessageType.RETRY_MIGRATION_MAPPING,
+      MigrationContext(
+        context = context,
+        body = this,
+      ),
+    )
+  }
+
+  private suspend fun ActivityMigrationMappingDto.publishTelemetry() = telemetryClient.trackEvent(
+    "${ACTIVITIES.telemetryName}-migration-entity-migrated",
+    mapOf(
+      "nomisCourseActivityId" to nomisCourseActivityId.toString(),
+      "dpsActivityId" to activityId.toString(),
+      "dpsActivityId2" to activityId2?.toString(),
+      "migrationId" to this.label,
+    ),
+    null,
+  )
+
+  private suspend fun CreateMappingResult<ActivityMigrationMappingDto>.handleError(context: MigrationContext<*>) = takeIf { it.isError }
+    ?.let { it.errorResponse?.moreInfo }
+    ?.also {
+      telemetryClient.trackEvent(
+        "${ACTIVITIES.telemetryName}-nomis-migration-duplicate",
+        mapOf(
+          "migrationId" to context.migrationId,
+          "duplicateNomisCourseActivityId" to it.duplicate.nomisCourseActivityId.toString(),
+          "duplicateActivityId" to it.duplicate.activityId.toString(),
+          "duplicateActivityId2" to it.duplicate.activityId2.toString(),
+          "existingNomisCourseActivityId" to it.existing.nomisCourseActivityId.toString(),
+          "existingActivityId" to it.existing.activityId.toString(),
+          "existingActivityId2" to it.existing.activityId2.toString(),
         ),
+        null,
       )
     }
-
-  private suspend fun ActivityMigrationMappingDto.publishTelemetry() =
-    telemetryClient.trackEvent(
-      "${ACTIVITIES.telemetryName}-migration-entity-migrated",
-      mapOf(
-        "nomisCourseActivityId" to nomisCourseActivityId.toString(),
-        "dpsActivityId" to activityId.toString(),
-        "dpsActivityId2" to activityId2?.toString(),
-        "migrationId" to this.label,
-      ),
-      null,
-    )
-
-  private suspend fun CreateMappingResult<ActivityMigrationMappingDto>.handleError(context: MigrationContext<*>) =
-    takeIf { it.isError }
-      ?.let { it.errorResponse?.moreInfo }
-      ?.also {
-        telemetryClient.trackEvent(
-          "${ACTIVITIES.telemetryName}-nomis-migration-duplicate",
-          mapOf(
-            "migrationId" to context.migrationId,
-            "duplicateNomisCourseActivityId" to it.duplicate.nomisCourseActivityId.toString(),
-            "duplicateActivityId" to it.duplicate.activityId.toString(),
-            "duplicateActivityId2" to it.duplicate.activityId2.toString(),
-            "existingNomisCourseActivityId" to it.existing.nomisCourseActivityId.toString(),
-            "existingActivityId" to it.existing.activityId.toString(),
-            "existingActivityId2" to it.existing.activityId2.toString(),
-          ),
-          null,
-        )
-      }
 }
 
-private fun GetActivityResponse.toActivityMigrateRequest(): ActivityMigrateRequest =
-  ActivityMigrateRequest(
-    programServiceCode = programCode,
-    prisonCode = prisonId,
-    startDate = startDate,
-    endDate = endDate,
-    capacity = max(1, capacity),
-    description = description,
-    payPerSession = ActivityMigrateRequest.PayPerSession.valueOf(payPerSession),
-    runsOnBankHoliday = !excludeBankHolidays,
-    internalLocationCode = internalLocationCode,
-    internalLocationId = internalLocationId,
-    internalLocationDescription = internalLocationDescription,
-    scheduleRules = scheduleRules.toNomisScheduleRules(),
-    payRates = payRates.map { it.toNomisPayRate() },
-    outsideWork = outsideWork,
-  )
+private fun GetActivityResponse.toActivityMigrateRequest(): ActivityMigrateRequest = ActivityMigrateRequest(
+  programServiceCode = programCode,
+  prisonCode = prisonId,
+  startDate = startDate,
+  endDate = endDate,
+  capacity = max(1, capacity),
+  description = description,
+  payPerSession = ActivityMigrateRequest.PayPerSession.valueOf(payPerSession),
+  runsOnBankHoliday = !excludeBankHolidays,
+  internalLocationCode = internalLocationCode,
+  internalLocationId = internalLocationId,
+  internalLocationDescription = internalLocationDescription,
+  scheduleRules = scheduleRules.toNomisScheduleRules(),
+  payRates = payRates.map { it.toNomisPayRate() },
+  outsideWork = outsideWork,
+)
 
-private fun List<ScheduleRulesResponse>.toNomisScheduleRules(): List<NomisScheduleRule> =
-  map {
-    NomisScheduleRule(
-      startTime = it.startTime,
-      endTime = it.endTime,
-      monday = it.monday,
-      tuesday = it.tuesday,
-      wednesday = it.wednesday,
-      thursday = it.thursday,
-      friday = it.friday,
-      saturday = it.saturday,
-      sunday = it.sunday,
-      timeSlot = it.slot().value.let { slotValue -> NomisScheduleRule.TimeSlot.valueOf(slotValue) },
-    )
-  }.distinct()
-
-private fun PayRatesResponse.toNomisPayRate(): NomisPayRate =
-  NomisPayRate(
-    incentiveLevel = incentiveLevelCode,
-    rate = rate.multiply(BigDecimal.valueOf(100)).toInt(),
-    nomisPayBand = payBand,
+private fun List<ScheduleRulesResponse>.toNomisScheduleRules(): List<NomisScheduleRule> = map {
+  NomisScheduleRule(
+    startTime = it.startTime,
+    endTime = it.endTime,
+    monday = it.monday,
+    tuesday = it.tuesday,
+    wednesday = it.wednesday,
+    thursday = it.thursday,
+    friday = it.friday,
+    saturday = it.saturday,
+    sunday = it.sunday,
+    timeSlot = it.slot().value.let { slotValue -> NomisScheduleRule.TimeSlot.valueOf(slotValue) },
   )
+}.distinct()
 
-private fun ActivityMigrateResponse.toActivityMigrateMappingDto(courseActivityId: Long, migrationId: String) =
-  ActivityMigrationMappingDto(
-    nomisCourseActivityId = courseActivityId,
-    activityId = activityId,
-    activityId2 = splitRegimeActivityId,
-    label = migrationId,
-  )
+private fun PayRatesResponse.toNomisPayRate(): NomisPayRate = NomisPayRate(
+  incentiveLevel = incentiveLevelCode,
+  rate = rate.multiply(BigDecimal.valueOf(100)).toInt(),
+  nomisPayBand = payBand,
+)
+
+private fun ActivityMigrateResponse.toActivityMigrateMappingDto(courseActivityId: Long, migrationId: String) = ActivityMigrationMappingDto(
+  nomisCourseActivityId = courseActivityId,
+  activityId = activityId,
+  activityId2 = splitRegimeActivityId,
+  label = migrationId,
+)

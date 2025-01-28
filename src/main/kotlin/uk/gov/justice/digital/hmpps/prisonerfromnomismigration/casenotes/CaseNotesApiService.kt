@@ -17,13 +17,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 
 @Service
 class CaseNotesApiService(@Qualifier("caseNotesApiWebClient") private val webClient: WebClient) {
-  suspend fun upsertCaseNote(upsertRequest: SyncCaseNoteRequest): SyncResult =
-    webClient.put()
-      .uri("/sync/case-notes")
-      .contentType(MediaType.APPLICATION_JSON)
-      .bodyValue(upsertRequest)
-      .retrieve()
-      .awaitBodyOrLogAndRethrowBadRequest()
+  suspend fun upsertCaseNote(upsertRequest: SyncCaseNoteRequest): SyncResult = webClient.put()
+    .uri("/sync/case-notes")
+    .contentType(MediaType.APPLICATION_JSON)
+    .bodyValue(upsertRequest)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
 
   suspend fun deleteCaseNote(id: String) {
     webClient.delete()
@@ -32,13 +31,12 @@ class CaseNotesApiService(@Qualifier("caseNotesApiWebClient") private val webCli
       .awaitBodilessEntity()
   }
 
-  suspend fun migrateCaseNotes(offenderNo: String, dpsCaseNotes: List<MigrateCaseNoteRequest>): List<MigrationResult> =
-    webClient.post()
-      .uri("/migrate/case-notes/{offenderNo}", offenderNo)
-      .contentType(MediaType.APPLICATION_JSON)
-      .bodyValue(dpsCaseNotes)
-      .retrieve()
-      .awaitBodyOrLogAndRethrowBadRequest()
+  suspend fun migrateCaseNotes(offenderNo: String, dpsCaseNotes: List<MigrateCaseNoteRequest>): List<MigrationResult> = webClient.post()
+    .uri("/migrate/case-notes/{offenderNo}", offenderNo)
+    .contentType(MediaType.APPLICATION_JSON)
+    .bodyValue(dpsCaseNotes)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
 
   suspend fun moveCaseNotes(request: MoveCaseNotesRequest) {
     webClient.put()
@@ -49,9 +47,8 @@ class CaseNotesApiService(@Qualifier("caseNotesApiWebClient") private val webCli
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
   }
 
-  suspend fun getCaseNotesForPrisoner(offenderIdentifier: String): List<CaseNote> =
-    webClient.get()
-      .uri("/sync/case-notes/{offenderIdentifier}", offenderIdentifier)
-      .retrieve()
-      .awaitBody()
+  suspend fun getCaseNotesForPrisoner(offenderIdentifier: String): List<CaseNote> = webClient.get()
+    .uri("/sync/case-notes/{offenderIdentifier}", offenderIdentifier)
+    .retrieve()
+    .awaitBody()
 }

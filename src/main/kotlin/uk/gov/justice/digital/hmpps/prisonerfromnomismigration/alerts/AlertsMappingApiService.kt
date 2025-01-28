@@ -17,8 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerAlertMappingsDto
 
 @Service
-class AlertsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
-  MigrationMapping<AlertMappingDto>(domainUrl = "/mapping/alerts", webClient) {
+class AlertsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<AlertMappingDto>(domainUrl = "/mapping/alerts", webClient) {
   suspend fun getOrNullByNomisId(bookingId: Long, alertSequence: Long): AlertMappingDto? = webClient.get()
     .uri(
       "/mapping/alerts/nomis-booking-id/{bookingId}/nomis-alert-sequence/{alertSequence}",
@@ -36,17 +35,16 @@ class AlertsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebCl
       .awaitBodilessEntity()
   }
 
-  suspend fun createMappingsBatch(mappings: List<AlertMappingDto>): CreateMappingResult<AlertMappingDto> =
-    webClient.post()
-      .uri("/mapping/alerts/batch")
-      .bodyValue(mappings)
-      .retrieve()
-      .bodyToMono(Unit::class.java)
-      .map { CreateMappingResult<AlertMappingDto>() }
-      .onErrorResume(WebClientResponseException.Conflict::class.java) {
-        Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<AlertMappingDto>>() {})))
-      }
-      .awaitFirstOrDefault(CreateMappingResult())
+  suspend fun createMappingsBatch(mappings: List<AlertMappingDto>): CreateMappingResult<AlertMappingDto> = webClient.post()
+    .uri("/mapping/alerts/batch")
+    .bodyValue(mappings)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<AlertMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<AlertMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
 
   suspend fun deleteMappingByDpsId(dpsAlertId: String) {
     webClient.delete()

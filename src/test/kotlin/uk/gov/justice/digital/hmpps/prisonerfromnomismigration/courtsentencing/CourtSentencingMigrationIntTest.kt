@@ -91,25 +91,23 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().is2xxSuccessful
     }
 
-    private fun WebTestClient.performMigration(body: String = "{ }"): MigrationResult =
-      post().uri("/migrate/court-sentencing")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue(body))
-        .exchange()
-        .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
-        .also {
-          waitUntilCompleted()
-        }
-
-    private fun waitUntilCompleted() =
-      await atMost Duration.ofSeconds(60) untilAsserted {
-        verify(telemetryClient).trackEvent(
-          eq("court-sentencing-migration-completed"),
-          any(),
-          isNull(),
-        )
+    private fun WebTestClient.performMigration(body: String = "{ }"): MigrationResult = post().uri("/migrate/court-sentencing")
+      .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
+      .header("Content-Type", "application/json")
+      .body(BodyInserters.fromValue(body))
+      .exchange()
+      .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
+      .also {
+        waitUntilCompleted()
       }
+
+    private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
+      verify(telemetryClient).trackEvent(
+        eq("court-sentencing-migration-completed"),
+        any(),
+        isNull(),
+      )
+    }
 
     @Test
     internal fun `must have valid token to start migration`() {
@@ -1008,8 +1006,7 @@ fun dpsCourtCaseCreateResponseWithTwoAppearancesAndTwoCharges(): MigrationCreate
   )
 }
 
-fun buildCaseIdentifierResponse(reference: String = "AB12345678"): CaseIdentifierResponse =
-  CaseIdentifierResponse(type = "CASE/INFO#", reference = reference, createDateTime = "2020-01-01T00:00:00")
+fun buildCaseIdentifierResponse(reference: String = "AB12345678"): CaseIdentifierResponse = CaseIdentifierResponse(type = "CASE/INFO#", reference = reference, createDateTime = "2020-01-01T00:00:00")
 
 fun buildCourtEventResponseCourtEventResponse(
   courtAppearanceId: Long = NOMIS_APPEARANCE_1_ID,
@@ -1046,24 +1043,23 @@ fun buildCourtEventResponseCourtEventResponse(
       ),
     ),
   ),
-): CourtEventResponse =
-  CourtEventResponse(
-    id = courtAppearanceId,
-    offenderNo = offenderNo,
-    caseId = courtCaseId,
-    courtId = courtId,
-    courtEventCharges = courtEventCharges,
-    createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-    createdByUsername = "Q1251T",
-    courtEventType = CodeDescription("CRT", "Court Appearance"),
-    outcomeReasonCode = OffenceResultCodeResponse(
-      chargeStatus = "A",
-      code = "4506",
-      description = "Adjournment",
-      dispositionCode = "I",
-    ),
-    eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
-    eventDateTime = eventDateTime,
-    courtOrders = emptyList(),
-    nextEventDateTime = nextEventDateTime,
-  )
+): CourtEventResponse = CourtEventResponse(
+  id = courtAppearanceId,
+  offenderNo = offenderNo,
+  caseId = courtCaseId,
+  courtId = courtId,
+  courtEventCharges = courtEventCharges,
+  createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+  createdByUsername = "Q1251T",
+  courtEventType = CodeDescription("CRT", "Court Appearance"),
+  outcomeReasonCode = OffenceResultCodeResponse(
+    chargeStatus = "A",
+    code = "4506",
+    description = "Adjournment",
+    dispositionCode = "I",
+  ),
+  eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
+  eventDateTime = eventDateTime,
+  courtOrders = emptyList(),
+  nextEventDateTime = nextEventDateTime,
+)

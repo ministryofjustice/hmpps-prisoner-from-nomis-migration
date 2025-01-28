@@ -9,10 +9,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 
 @Service
 class AppointmentsService(@Qualifier("activitiesApiWebClient") private val webClient: WebClient) {
-  suspend fun createAppointment(appointmentMigrateRequest: AppointmentMigrateRequest): AppointmentInstance =
-    webClient.post()
-      .uri("/migrate-appointment")
-      .bodyValue(appointmentMigrateRequest)
-      .retrieve()
-      .awaitBody()
+  suspend fun createAppointment(appointmentMigrateRequest: AppointmentMigrateRequest): AppointmentInstance = webClient.post()
+    .uri("/migrate-appointment")
+    .bodyValue(appointmentMigrateRequest)
+    .retrieve()
+    .awaitBody()
 }

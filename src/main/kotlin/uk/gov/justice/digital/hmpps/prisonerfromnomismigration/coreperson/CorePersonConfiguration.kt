@@ -26,8 +26,7 @@ class CorePersonConfiguration(
   fun corePersonApiWebClient(
     authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
     builder: WebClient.Builder,
-  ): WebClient =
-    builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "core-person-api", url = apiBaseUri, timeout)
+  ): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "core-person-api", url = apiBaseUri, timeout)
 
   @Component("corePersonApi")
   class CorePersonApiHealth(@Qualifier("corePersonApiHealthWebClient") webClient: WebClient) : ReactiveHealthPingCheck(webClient)

@@ -256,8 +256,7 @@ class SqsIntegrationTestBase : TestBase() {
   }
 }
 
-internal fun SqsAsyncClient.sendMessage(queueOffenderEventsUrl: String, message: String) =
-  sendMessage(SendMessageRequest.builder().queueUrl(queueOffenderEventsUrl).messageBody(message).build()).get()
+internal fun SqsAsyncClient.sendMessage(queueOffenderEventsUrl: String, message: String) = sendMessage(SendMessageRequest.builder().queueUrl(queueOffenderEventsUrl).messageBody(message).build()).get()
 
 internal fun String.purgeQueueRequest() = PurgeQueueRequest.builder().queueUrl(this).build()
 private fun SqsAsyncClient.purgeQueue(queueUrl: String?) = purgeQueue(queueUrl?.purgeQueueRequest())

@@ -116,24 +116,23 @@ internal class CSIPAttendeeMappingServiceTest {
       }
 
       @Test
-      internal fun `will pass all parameters dps csip attendee id, nomis csip attendee id, migration Id and MIGRATED indicator to mapping service`(): Unit =
-        runTest {
-          csipMappingService.createCSIPAttendeeMapping(
-            CSIPChildMappingDto(
-              dpsId = dpsCsipAttendeeId,
-              nomisId = nomisCsipAttendeeId,
-              dpsCSIPReportId = dpsCsipReportId,
-              mappingType = CSIPChildMappingDto.MappingType.MIGRATED,
-              label = "5678",
-              whenCreated = "2020-01-01T00:00:00",
-            ),
-          )
+      internal fun `will pass all parameters dps csip attendee id, nomis csip attendee id, migration Id and MIGRATED indicator to mapping service`(): Unit = runTest {
+        csipMappingService.createCSIPAttendeeMapping(
+          CSIPChildMappingDto(
+            dpsId = dpsCsipAttendeeId,
+            nomisId = nomisCsipAttendeeId,
+            dpsCSIPReportId = dpsCsipReportId,
+            mappingType = CSIPChildMappingDto.MappingType.MIGRATED,
+            label = "5678",
+            whenCreated = "2020-01-01T00:00:00",
+          ),
+        )
 
-          mappingApi.verify(
-            postRequestedFor(urlEqualTo("/mapping/csip/attendees"))
-              .withRequestBody(
-                equalToJson(
-                  """
+        mappingApi.verify(
+          postRequestedFor(urlEqualTo("/mapping/csip/attendees"))
+            .withRequestBody(
+              equalToJson(
+                """
                   {
                     "dpsId": "$dpsCsipAttendeeId",
                     "nomisId": $nomisCsipAttendeeId,                                       
@@ -142,11 +141,11 @@ internal class CSIPAttendeeMappingServiceTest {
                     "mappingType": "MIGRATED",
                     "whenCreated": "2020-01-01T00:00:00"
                   }
-                  """.trimIndent(),
-                ),
+                """.trimIndent(),
               ),
-          )
-        }
+            ),
+        )
+      }
 
       @Test
       fun `should throw exception for any error`() = runTest {

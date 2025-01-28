@@ -10,17 +10,15 @@ import java.util.UUID
 
 @Service
 class IdentifyingMarkImagesMappingApiService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
-  suspend fun getByNomisId(offenderImageId: Long): IdentifyingMarkImageMappingDto? =
-    webClient.get()
-      .uri("/mapping/prisonperson/nomis-offender-image-id/{nomisImageId}", offenderImageId)
-      .retrieve()
-      .awaitBodyOrNullWhenNotFound()
+  suspend fun getByNomisId(offenderImageId: Long): IdentifyingMarkImageMappingDto? = webClient.get()
+    .uri("/mapping/prisonperson/nomis-offender-image-id/{nomisImageId}", offenderImageId)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 
-  suspend fun getByDpsId(dpsId: UUID): IdentifyingMarkImageMappingDto? =
-    webClient.get()
-      .uri("/mapping/prisonperson/dps-image-id/{dpsId}", dpsId)
-      .retrieve()
-      .awaitBodyOrNullWhenNotFound()
+  suspend fun getByDpsId(dpsId: UUID): IdentifyingMarkImageMappingDto? = webClient.get()
+    .uri("/mapping/prisonperson/dps-image-id/{dpsId}", dpsId)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 
   suspend fun createMapping(mapping: IdentifyingMarkImageMappingDto) {
     webClient.post()

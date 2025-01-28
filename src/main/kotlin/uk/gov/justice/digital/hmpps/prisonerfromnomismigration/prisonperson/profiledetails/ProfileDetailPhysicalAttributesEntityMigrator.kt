@@ -16,47 +16,42 @@ class ProfileDetailPhysicalAttributesEntityMigrator(
   private val dpsApiService: ProfileDetailPhysicalAttributesDpsApiService,
 ) : PrisonPersonEntityMigrator {
 
-  override suspend fun migrate(offenderNo: String): DpsResponse =
-    getNomisEntity(offenderNo)
-      .toDpsMigrationRequests()
-      .migrate(offenderNo)
-      .let { DpsResponse(it) }
+  override suspend fun migrate(offenderNo: String): DpsResponse = getNomisEntity(offenderNo)
+    .toDpsMigrationRequests()
+    .migrate(offenderNo)
+    .let { DpsResponse(it) }
 
   private suspend fun getNomisEntity(offenderNo: String) = nomisApiService.getProfileDetails(offenderNo)
 
-  private suspend fun PrisonerProfileDetailsResponse.toDpsMigrationRequests() =
-    bookings.map { booking ->
-      with(booking) {
-        ProfileDetailsPhysicalAttributesMigrationRequest(
-          appliesFrom = startDateTime.toLocalDateTime().atPrisonPersonZone(),
-          appliesTo = endDateTime?.toLocalDateTime()?.atPrisonPersonZone(),
-          build = profileDetails.toDpsRequest("BUILD"),
-          shoeSize = profileDetails.toDpsRequest("SHOESIZE"),
-          hair = profileDetails.toDpsRequest("HAIR"),
-          facialHair = profileDetails.toDpsRequest("FACIAL_HAIR"),
-          face = profileDetails.toDpsRequest("FACE"),
-          leftEyeColour = profileDetails.toDpsRequest("L_EYE_C"),
-          rightEyeColour = profileDetails.toDpsRequest("R_EYE_C"),
-          latestBooking = booking.latestBooking,
-        )
-      }
-    }
-
-  private fun List<ProfileDetailsResponse>.toDpsRequest(nomisType: String) =
-    find { it.type == nomisType }?.let {
-      val (lastModifiedAt, lastModifiedBy) = it.lastModified()
-      MigrationValueWithMetadataString(
-        value = it.code,
-        lastModifiedAt = lastModifiedAt.atPrisonPersonZone(),
-        lastModifiedBy = lastModifiedBy,
+  private suspend fun PrisonerProfileDetailsResponse.toDpsMigrationRequests() = bookings.map { booking ->
+    with(booking) {
+      ProfileDetailsPhysicalAttributesMigrationRequest(
+        appliesFrom = startDateTime.toLocalDateTime().atPrisonPersonZone(),
+        appliesTo = endDateTime?.toLocalDateTime()?.atPrisonPersonZone(),
+        build = profileDetails.toDpsRequest("BUILD"),
+        shoeSize = profileDetails.toDpsRequest("SHOESIZE"),
+        hair = profileDetails.toDpsRequest("HAIR"),
+        facialHair = profileDetails.toDpsRequest("FACIAL_HAIR"),
+        face = profileDetails.toDpsRequest("FACE"),
+        leftEyeColour = profileDetails.toDpsRequest("L_EYE_C"),
+        rightEyeColour = profileDetails.toDpsRequest("R_EYE_C"),
+        latestBooking = booking.latestBooking,
       )
     }
+  }
 
-  private fun ProfileDetailsResponse.lastModified(): Pair<LocalDateTime, String> =
-    (modifiedDateTime ?: createDateTime).toLocalDateTime() to (modifiedBy ?: createdBy)
+  private fun List<ProfileDetailsResponse>.toDpsRequest(nomisType: String) = find { it.type == nomisType }?.let {
+    val (lastModifiedAt, lastModifiedBy) = it.lastModified()
+    MigrationValueWithMetadataString(
+      value = it.code,
+      lastModifiedAt = lastModifiedAt.atPrisonPersonZone(),
+      lastModifiedBy = lastModifiedBy,
+    )
+  }
 
-  private suspend fun List<ProfileDetailsPhysicalAttributesMigrationRequest>.migrate(offenderNo: String) =
-    dpsApiService.migrateProfileDetailsPhysicalAttributes(offenderNo, this).fieldHistoryInserted
+  private fun ProfileDetailsResponse.lastModified(): Pair<LocalDateTime, String> = (modifiedDateTime ?: createDateTime).toLocalDateTime() to (modifiedBy ?: createdBy)
+
+  private suspend fun List<ProfileDetailsPhysicalAttributesMigrationRequest>.migrate(offenderNo: String) = dpsApiService.migrateProfileDetailsPhysicalAttributes(offenderNo, this).fieldHistoryInserted
 
   private fun String.toLocalDateTime() = LocalDateTime.parse(this)
 }

@@ -650,34 +650,28 @@ class PrisonPersonMoveBookingIntTest : SqsIntegrationTestBase() {
       }
     }
 
-    private fun sendBookingMovedEvent(): SendMessageResponse? =
-      awsSqsSentencingOffenderEventsClient.sendMessage(
-        prisonPersonQueueOffenderEventsUrl,
-        bookingMovedDomainEvent(
-          eventType = "prison-offender-events.prisoner.booking.moved",
-          bookingId = movedBookingId,
-          movedFromNomsNumber = fromOffenderNo,
-          movedToNomsNumber = toOffenderNo,
-        ),
-      )
+    private fun sendBookingMovedEvent(): SendMessageResponse? = awsSqsSentencingOffenderEventsClient.sendMessage(
+      prisonPersonQueueOffenderEventsUrl,
+      bookingMovedDomainEvent(
+        eventType = "prison-offender-events.prisoner.booking.moved",
+        bookingId = movedBookingId,
+        movedFromNomsNumber = fromOffenderNo,
+        movedToNomsNumber = toOffenderNo,
+      ),
+    )
 
-    private fun stubGetPhysicalAttributesMissing(offenderNo: String) =
-      physicalAttributesNomisApi.stubGetPhysicalAttributes(offenderNo, PrisonerPhysicalAttributesResponse(offenderNo, listOf()))
-    private fun stubGetProfileDetailsMissing(offenderNo: String) =
-      profileDetailsNomisApi.stubGetProfileDetails(offenderNo, PrisonerProfileDetailsResponse(offenderNo, listOf()))
-    private fun stubGetPhysicalAttributes(offenderNo: String, prisonerPhysicalAttribute: PrisonerPhysicalAttributesResponse) =
-      physicalAttributesNomisApi.stubGetPhysicalAttributes(offenderNo, prisonerPhysicalAttribute)
-    private fun stubGetProfileDetails(offenderNo: String, prisonerProfileDetails: PrisonerProfileDetailsResponse) =
-      profileDetailsNomisApi.stubGetProfileDetails(offenderNo, prisonerProfileDetails)
+    private fun stubGetPhysicalAttributesMissing(offenderNo: String) = physicalAttributesNomisApi.stubGetPhysicalAttributes(offenderNo, PrisonerPhysicalAttributesResponse(offenderNo, listOf()))
+    private fun stubGetProfileDetailsMissing(offenderNo: String) = profileDetailsNomisApi.stubGetProfileDetails(offenderNo, PrisonerProfileDetailsResponse(offenderNo, listOf()))
+    private fun stubGetPhysicalAttributes(offenderNo: String, prisonerPhysicalAttribute: PrisonerPhysicalAttributesResponse) = physicalAttributesNomisApi.stubGetPhysicalAttributes(offenderNo, prisonerPhysicalAttribute)
+    private fun stubGetProfileDetails(offenderNo: String, prisonerProfileDetails: PrisonerProfileDetailsResponse) = profileDetailsNomisApi.stubGetProfileDetails(offenderNo, prisonerProfileDetails)
     private fun syncPhysicalAttributesResponse(ids: List<Long> = listOf(321)) = PhysicalAttributesSyncResponse(ids)
     private fun syncProfileDetailsResponse(ids: List<Long> = listOf(321)) = ProfileDetailsPhysicalAttributesSyncResponse(ids)
 
-    private fun waitForDlqMessage() =
-      await untilAsserted {
-        assertThat(
-          awsSqsPrisonPersonOffenderEventDlqClient.countAllMessagesOnQueue(prisonPersonQueueOffenderEventsDlqUrl).get(),
-        ).isEqualTo(1)
-      }
+    private fun waitForDlqMessage() = await untilAsserted {
+      assertThat(
+        awsSqsPrisonPersonOffenderEventDlqClient.countAllMessagesOnQueue(prisonPersonQueueOffenderEventsDlqUrl).get(),
+      ).isEqualTo(1)
+    }
   }
 }
 
@@ -685,111 +679,108 @@ fun nomisPhysicalAttributesFromOffender(
   offenderNo: String,
   updatedInNomis: Boolean = true,
   bookingStartTime: LocalDateTime = LocalDateTime.now().minusDays(1),
-) =
-  prisonerPhysicalAttributes(
-    offenderNo = offenderNo,
-    bookings = listOf(
-      // The from offender has a single booking - the new booking has been copied to the to offender
-      bookingPhysicalAttributes(
-        bookingId = 2345L,
-        activeBooking = false,
-        latestBooking = true,
-        physicalAttributes = listOf(
-          physicalAttributes(
-            height = 180,
-            weight = 80,
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = null,
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
+) = prisonerPhysicalAttributes(
+  offenderNo = offenderNo,
+  bookings = listOf(
+    // The from offender has a single booking - the new booking has been copied to the to offender
+    bookingPhysicalAttributes(
+      bookingId = 2345L,
+      activeBooking = false,
+      latestBooking = true,
+      physicalAttributes = listOf(
+        physicalAttributes(
+          height = 180,
+          weight = 80,
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = null,
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
         ),
       ),
     ),
-  )
+  ),
+)
 
 fun nomisPhysicalAttributesToOffenderNotRemeasured(
   offenderNo: String,
   movedBookingId: Long,
   updatedInNomis: Boolean = true,
   bookingStartTime: LocalDateTime = LocalDateTime.now().minusDays(1),
-) =
-  PrisonerPhysicalAttributesResponse(
-    offenderNo = offenderNo,
-    bookings = listOf(
-      // The to offender's old booking
-      bookingPhysicalAttributes(
-        bookingId = 3456L,
-        activeBooking = false,
-        latestBooking = false,
-        physicalAttributes = listOf(
-          physicalAttributes(
-            height = 170,
-            weight = 70,
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = null,
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
-        ),
-      ),
-      // The to offender's new booking has height and weight copied from the from offender
-      bookingPhysicalAttributes(
-        bookingId = movedBookingId,
-        activeBooking = true,
-        latestBooking = true,
-        physicalAttributes = listOf(
-          physicalAttributes(
-            height = 180,
-            weight = 80,
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = null,
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
+) = PrisonerPhysicalAttributesResponse(
+  offenderNo = offenderNo,
+  bookings = listOf(
+    // The to offender's old booking
+    bookingPhysicalAttributes(
+      bookingId = 3456L,
+      activeBooking = false,
+      latestBooking = false,
+      physicalAttributes = listOf(
+        physicalAttributes(
+          height = 170,
+          weight = 70,
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = null,
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
         ),
       ),
     ),
-  )
+    // The to offender's new booking has height and weight copied from the from offender
+    bookingPhysicalAttributes(
+      bookingId = movedBookingId,
+      activeBooking = true,
+      latestBooking = true,
+      physicalAttributes = listOf(
+        physicalAttributes(
+          height = 180,
+          weight = 80,
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = null,
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
+        ),
+      ),
+    ),
+  ),
+)
 
 fun nomisPhysicalAttributesToOffenderRemeasured(
   offenderNo: String,
   bookingId: Long,
   updatedInNomis: Boolean = true,
   bookingStartTime: LocalDateTime = LocalDateTime.now().minusDays(1),
-) =
-  prisonerPhysicalAttributes(
-    offenderNo = offenderNo,
-    bookings = listOf(
-      // The to offender's old booking
-      bookingPhysicalAttributes(
-        bookingId = 3456L,
-        activeBooking = false,
-        latestBooking = false,
-        physicalAttributes = listOf(
-          physicalAttributes(
-            height = 170,
-            weight = 70,
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = null,
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
-        ),
-      ),
-      // The to offender's new booking has weight re-entered hence new weight and modified time after booking start time
-      bookingPhysicalAttributes(
-        bookingId = bookingId,
-        activeBooking = true,
-        latestBooking = true,
-        physicalAttributes = listOf(
-          physicalAttributes(
-            height = 170,
-            weight = 90,
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = bookingStartTime.plusDays(1),
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
+) = prisonerPhysicalAttributes(
+  offenderNo = offenderNo,
+  bookings = listOf(
+    // The to offender's old booking
+    bookingPhysicalAttributes(
+      bookingId = 3456L,
+      activeBooking = false,
+      latestBooking = false,
+      physicalAttributes = listOf(
+        physicalAttributes(
+          height = 170,
+          weight = 70,
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = null,
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
         ),
       ),
     ),
-  )
+    // The to offender's new booking has weight re-entered hence new weight and modified time after booking start time
+    bookingPhysicalAttributes(
+      bookingId = bookingId,
+      activeBooking = true,
+      latestBooking = true,
+      physicalAttributes = listOf(
+        physicalAttributes(
+          height = 170,
+          weight = 90,
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = bookingStartTime.plusDays(1),
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
+        ),
+      ),
+    ),
+  ),
+)
 
 fun physicalAttributes(
   height: Int,
@@ -830,215 +821,210 @@ fun nomisProfileDetailsFromOffender(
   offenderNo: String,
   updatedInNomis: Boolean = true,
   bookingStartTime: LocalDateTime = LocalDateTime.now().minusDays(1),
-) =
-  prisonerProfileDetails(
-    offenderNo,
-    listOf(
-      bookingProfileDetails(
-        bookingId = 2345L,
-        activeBooking = false,
-        latestBooking = true,
-        profileDetails = listOf(
-          profileDetails(
-            type = "BUILD",
-            code = "MEDIUM",
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = null,
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
+) = prisonerProfileDetails(
+  offenderNo,
+  listOf(
+    bookingProfileDetails(
+      bookingId = 2345L,
+      activeBooking = false,
+      latestBooking = true,
+      profileDetails = listOf(
+        profileDetails(
+          type = "BUILD",
+          code = "MEDIUM",
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = null,
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
         ),
       ),
     ),
-  )
+  ),
+)
 
 fun nomisProfileDetailsToOffenderNotReentered(
   offenderNo: String,
   bookingId: Long,
   bookingStartTime: LocalDateTime = LocalDateTime.now().minusDays(1),
-) =
-  prisonerProfileDetails(
-    offenderNo = offenderNo,
-    bookings = listOf(
-      // The to offender's old booking
-      bookingProfileDetails(
-        bookingId = 3456L,
-        activeBooking = false,
-        latestBooking = false,
-        profileDetails = listOf(
-          profileDetails(
-            type = "BUILD",
-            code = "MEDIUM",
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = null,
-          ),
-        ),
-      ),
-      // The to offender's new booking has build copied from the from offender
-      bookingProfileDetails(
-        bookingId = bookingId,
-        activeBooking = true,
-        latestBooking = true,
-        profileDetails = listOf(
-          profileDetails(
-            type = "BUILD",
-            code = "LARGE",
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = null,
-          ),
+) = prisonerProfileDetails(
+  offenderNo = offenderNo,
+  bookings = listOf(
+    // The to offender's old booking
+    bookingProfileDetails(
+      bookingId = 3456L,
+      activeBooking = false,
+      latestBooking = false,
+      profileDetails = listOf(
+        profileDetails(
+          type = "BUILD",
+          code = "MEDIUM",
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = null,
         ),
       ),
     ),
-  )
+    // The to offender's new booking has build copied from the from offender
+    bookingProfileDetails(
+      bookingId = bookingId,
+      activeBooking = true,
+      latestBooking = true,
+      profileDetails = listOf(
+        profileDetails(
+          type = "BUILD",
+          code = "LARGE",
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = null,
+        ),
+      ),
+    ),
+  ),
+)
 
 fun nomisProfileDetailsToOffenderReentered(
   offenderNo: String,
   bookingId: Long,
   updatedInNomis: Boolean = true,
   bookingStartTime: LocalDateTime = LocalDateTime.now().minusDays(1),
-) =
-  prisonerProfileDetails(
-    offenderNo = offenderNo,
-    bookings = listOf(
-      // The to offender's old booking
-      bookingProfileDetails(
-        bookingId = 3456L,
-        activeBooking = false,
-        latestBooking = false,
-        profileDetails = listOf(
-          profileDetails(
-            type = "BUILD",
-            code = "MEDIUM",
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = null,
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
-        ),
-      ),
-      // The to offender's new booking has build changed hence modified time after booking start time
-      bookingProfileDetails(
-        bookingId = bookingId,
-        activeBooking = true,
-        latestBooking = true,
-        profileDetails = listOf(
-          profileDetails(
-            type = "BUILD",
-            code = "LARGE",
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = bookingStartTime.plusDays(1),
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
+) = prisonerProfileDetails(
+  offenderNo = offenderNo,
+  bookings = listOf(
+    // The to offender's old booking
+    bookingProfileDetails(
+      bookingId = 3456L,
+      activeBooking = false,
+      latestBooking = false,
+      profileDetails = listOf(
+        profileDetails(
+          type = "BUILD",
+          code = "MEDIUM",
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = null,
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
         ),
       ),
     ),
-  )
+    // The to offender's new booking has build changed hence modified time after booking start time
+    bookingProfileDetails(
+      bookingId = bookingId,
+      activeBooking = true,
+      latestBooking = true,
+      profileDetails = listOf(
+        profileDetails(
+          type = "BUILD",
+          code = "LARGE",
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = bookingStartTime.plusDays(1),
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
+        ),
+      ),
+    ),
+  ),
+)
 
 fun nomisProfileDetailsFromOffenderSomeReentered(
   offenderNo: String,
   updatedInNomis: Boolean = true,
   bookingStartTime: LocalDateTime = LocalDateTime.now().minusDays(1),
-) =
-  prisonerProfileDetails(
-    offenderNo,
-    listOf(
-      bookingProfileDetails(
-        bookingId = 2345L,
-        activeBooking = false,
-        latestBooking = true,
-        profileDetails = listOf(
-          profileDetails(
-            type = "BUILD",
-            code = "MEDIUM",
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = null,
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
-          profileDetails(
-            type = "FACE",
-            code = "OVAL",
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = null,
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
-          profileDetails(
-            type = "SHOESIZE",
-            code = "8.5",
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = null,
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
+) = prisonerProfileDetails(
+  offenderNo,
+  listOf(
+    bookingProfileDetails(
+      bookingId = 2345L,
+      activeBooking = false,
+      latestBooking = true,
+      profileDetails = listOf(
+        profileDetails(
+          type = "BUILD",
+          code = "MEDIUM",
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = null,
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
+        ),
+        profileDetails(
+          type = "FACE",
+          code = "OVAL",
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = null,
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
+        ),
+        profileDetails(
+          type = "SHOESIZE",
+          code = "8.5",
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = null,
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
         ),
       ),
     ),
-  )
+  ),
+)
 
 fun nomisProfileDetailsToOffenderSomeReentered(
   offenderNo: String,
   bookingId: Long,
   updatedInNomis: Boolean = true,
   bookingStartTime: LocalDateTime = LocalDateTime.now().minusDays(1),
-) =
-  prisonerProfileDetails(
-    offenderNo = offenderNo,
-    bookings = listOf(
-      // The to offender's old booking
-      bookingProfileDetails(
-        bookingId = 3456L,
-        activeBooking = false,
-        latestBooking = false,
-        profileDetails = listOf(
-          profileDetails(
-            type = "BUILD",
-            code = "MEDIUM",
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = null,
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
-          profileDetails(
-            type = "FACE",
-            code = "OVAL",
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = null,
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
-          profileDetails(
-            type = "SHOESIZE",
-            code = "8.5",
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = null,
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
+) = prisonerProfileDetails(
+  offenderNo = offenderNo,
+  bookings = listOf(
+    // The to offender's old booking
+    bookingProfileDetails(
+      bookingId = 3456L,
+      activeBooking = false,
+      latestBooking = false,
+      profileDetails = listOf(
+        profileDetails(
+          type = "BUILD",
+          code = "MEDIUM",
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = null,
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
         ),
-      ),
-      // The to offender's new booking has build changed in NOMIS but show size not
-      bookingProfileDetails(
-        bookingId = bookingId,
-        activeBooking = true,
-        latestBooking = true,
-        profileDetails = listOf(
-          profileDetails(
-            type = "BUILD",
-            code = "LARGE",
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = bookingStartTime.plusDays(1),
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
-          profileDetails(
-            type = "FACE",
-            code = "ROUND",
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = bookingStartTime.plusDays(1),
-            auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
-          ),
-          profileDetails(
-            type = "SHOESIZE",
-            code = "8.5",
-            createDateTime = bookingStartTime.minusDays(7),
-            modifiedDateTime = null,
-          ),
+        profileDetails(
+          type = "FACE",
+          code = "OVAL",
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = null,
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
+        ),
+        profileDetails(
+          type = "SHOESIZE",
+          code = "8.5",
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = null,
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
         ),
       ),
     ),
-  )
+    // The to offender's new booking has build changed in NOMIS but show size not
+    bookingProfileDetails(
+      bookingId = bookingId,
+      activeBooking = true,
+      latestBooking = true,
+      profileDetails = listOf(
+        profileDetails(
+          type = "BUILD",
+          code = "LARGE",
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = bookingStartTime.plusDays(1),
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
+        ),
+        profileDetails(
+          type = "FACE",
+          code = "ROUND",
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = bookingStartTime.plusDays(1),
+          auditModuleName = if (updatedInNomis) "A_NOMIS_USER" else "DPS_SYNCHRONISATION",
+        ),
+        profileDetails(
+          type = "SHOESIZE",
+          code = "8.5",
+          createDateTime = bookingStartTime.minusDays(7),
+          modifiedDateTime = null,
+        ),
+      ),
+    ),
+  ),
+)
 
 private fun profileDetails(
   type: String,

@@ -21,7 +21,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import java.util.UUID
 
-class CourtSentencingDpsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
+class CourtSentencingDpsApiExtension :
+  BeforeAllCallback,
+  AfterAllCallback,
+  BeforeEachCallback {
   companion object {
     @JvmField
     val dpsCourtSentencingServer = CourtSentencingDpsApiMockServer()
@@ -312,9 +315,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createCourtCaseMigrationCount() =
-    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/court-case/migration"))).count()
+  fun createCourtCaseMigrationCount() = findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/court-case/migration"))).count()
 
-  fun createCourtCaseForSynchronisationCount() =
-    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/court-case"))).count()
+  fun createCourtCaseForSynchronisationCount() = findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/court-case"))).count()
 }

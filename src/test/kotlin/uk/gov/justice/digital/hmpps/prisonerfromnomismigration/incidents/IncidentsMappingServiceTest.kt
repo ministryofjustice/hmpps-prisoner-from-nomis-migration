@@ -156,24 +156,23 @@ internal class IncidentsMappingServiceTest {
     }
 
     @Test
-    internal fun `will pass all parameters incident id, migration Id and MIGRATED indicator to mapping service`(): Unit =
-      runBlocking {
-        incidentsMappingService.createMapping(
-          IncidentMappingDto(
-            dpsIncidentId = DPS_INCIDENT_ID,
-            nomisIncidentId = NOMIS_INCIDENT_ID,
-            mappingType = MIGRATED,
-            label = "5678",
-            whenCreated = "2020-01-01T00:00:00",
-          ),
-          errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<IncidentMappingDto>>() {},
-        )
+    internal fun `will pass all parameters incident id, migration Id and MIGRATED indicator to mapping service`(): Unit = runBlocking {
+      incidentsMappingService.createMapping(
+        IncidentMappingDto(
+          dpsIncidentId = DPS_INCIDENT_ID,
+          nomisIncidentId = NOMIS_INCIDENT_ID,
+          mappingType = MIGRATED,
+          label = "5678",
+          whenCreated = "2020-01-01T00:00:00",
+        ),
+        errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<IncidentMappingDto>>() {},
+      )
 
-        mappingApi.verify(
-          postRequestedFor(urlEqualTo(INCIDENTS_CREATE_MAPPING_URL))
-            .withRequestBody(
-              equalToJson(
-                """
+      mappingApi.verify(
+        postRequestedFor(urlEqualTo(INCIDENTS_CREATE_MAPPING_URL))
+          .withRequestBody(
+            equalToJson(
+              """
                   {
                   "dpsIncidentId": "$DPS_INCIDENT_ID",
                   "nomisIncidentId": $NOMIS_INCIDENT_ID,                                       
@@ -181,11 +180,11 @@ internal class IncidentsMappingServiceTest {
                   "mappingType": "MIGRATED",
                   "whenCreated": "2020-01-01T00:00:00"
                   }
-                """.trimIndent(),
-              ),
+              """.trimIndent(),
             ),
-        )
-      }
+          ),
+      )
+    }
 
     @Test
     fun `should throw exception for any error`() {

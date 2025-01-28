@@ -31,22 +31,21 @@ class GeneralMappingService(
   private val contactPersonMappingApiService: ContactPersonMappingApiService,
   private val corporateMappingApiService: CorporateMappingApiService,
 ) {
-  suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long? =
-    when (migrationType) {
-      MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
-      MigrationType.VISITS -> visitMappingService.getMigrationCount(migrationId)
-      MigrationType.ACTIVITIES -> activityMappingService.getMigrationCount(migrationId)
-      MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
-      MigrationType.CORE_PERSON -> corePersonMappingApiService.getMigrationCount(migrationId)
-      MigrationType.CSIP -> csipMappingService.getMigrationCount(migrationId)
-      MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
-      MigrationType.LOCATIONS -> locationsMappingService.getMigrationCount(migrationId)
-      MigrationType.CASENOTES -> caseNotesMappingService.getMigrationCount(migrationId)
-      MigrationType.PRISONPERSON -> prisonPersonMappingService.getMigrationCount(migrationId)
-      MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
-      MigrationType.CONTACTPERSON -> contactPersonMappingApiService.getMigrationCount(migrationId)
-      MigrationType.CORPORATE -> corporateMappingApiService.getMigrationCount(migrationId)
-      // since this is a patch we cannot count mappings created since none are created - it will have to be manual Telemetry
-      MigrationType.SENTENCING_ADJUSTMENTS -> 0
-    }
+  suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long? = when (migrationType) {
+    MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
+    MigrationType.VISITS -> visitMappingService.getMigrationCount(migrationId)
+    MigrationType.ACTIVITIES -> activityMappingService.getMigrationCount(migrationId)
+    MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
+    MigrationType.CORE_PERSON -> corePersonMappingApiService.getMigrationCount(migrationId)
+    MigrationType.CSIP -> csipMappingService.getMigrationCount(migrationId)
+    MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
+    MigrationType.LOCATIONS -> locationsMappingService.getMigrationCount(migrationId)
+    MigrationType.CASENOTES -> caseNotesMappingService.getMigrationCount(migrationId)
+    MigrationType.PRISONPERSON -> prisonPersonMappingService.getMigrationCount(migrationId)
+    MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
+    MigrationType.CONTACTPERSON -> contactPersonMappingApiService.getMigrationCount(migrationId)
+    MigrationType.CORPORATE -> corporateMappingApiService.getMigrationCount(migrationId)
+    // since this is a patch we cannot count mappings created since none are created - it will have to be manual Telemetry
+    MigrationType.SENTENCING_ADJUSTMENTS -> 0
+  }
 }

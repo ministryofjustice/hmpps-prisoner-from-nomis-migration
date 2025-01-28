@@ -17,8 +17,7 @@ class PhysicalAttributesSyncService(
   private val telemetryClient: TelemetryClient,
 ) {
 
-  suspend fun physicalAttributesChangedEvent(event: PhysicalAttributesChangedEvent) =
-    physicalAttributesChanged(event.offenderIdDisplay, event.bookingId)
+  suspend fun physicalAttributesChangedEvent(event: PhysicalAttributesChangedEvent) = physicalAttributesChanged(event.offenderIdDisplay, event.bookingId)
 
   suspend fun physicalAttributesChanged(
     offenderNo: String,
@@ -70,35 +69,31 @@ class PhysicalAttributesSyncService(
   private fun getIgnoreReason(
     nomisResponse: PrisonerPhysicalAttributesResponse,
     physicalAttributes: PhysicalAttributesResponse,
-  ): String? =
-    if (nomisResponse.isNewAndEmpty()) {
-      "New physical attributes are empty"
-    } else if (physicalAttributes.updatedBySync()) {
-      "The physical attributes were created by $synchronisationUser"
-    } else {
-      null
-    }
+  ): String? = if (nomisResponse.isNewAndEmpty()) {
+    "New physical attributes are empty"
+  } else if (physicalAttributes.updatedBySync()) {
+    "The physical attributes were created by $synchronisationUser"
+  } else {
+    null
+  }
 
-  private fun PrisonerPhysicalAttributesResponse.isNew() =
-    bookings.size == 1 &&
-      bookings.first().physicalAttributes.size == 1 &&
-      bookings.first().physicalAttributes.first().modifiedDateTime == null
+  private fun PrisonerPhysicalAttributesResponse.isNew() = bookings.size == 1 &&
+    bookings.first().physicalAttributes.size == 1 &&
+    bookings.first().physicalAttributes.first().modifiedDateTime == null
 
-  private fun PrisonerPhysicalAttributesResponse.isNewAndEmpty() =
-    isNew() &&
-      bookings.first().physicalAttributes.first().heightCentimetres == null &&
-      bookings.first().physicalAttributes.first().weightKilograms == null
+  private fun PrisonerPhysicalAttributesResponse.isNewAndEmpty() = isNew() &&
+    bookings.first().physicalAttributes.first().heightCentimetres == null &&
+    bookings.first().physicalAttributes.first().weightKilograms == null
 
   private fun PhysicalAttributesResponse.updatedBySync() = auditModuleName == synchronisationUser
 }
 
 class PhysicalAttributesChangedException(message: String) : IllegalArgumentException(message)
 
-internal fun BookingPhysicalAttributesResponse.findLastModifiedPhysicalAttributes() =
-  physicalAttributes
-    .maxBy {
-      (it.modifiedDateTime ?: it.createDateTime).toLocalDateTime()
-    }
+internal fun BookingPhysicalAttributesResponse.findLastModifiedPhysicalAttributes() = physicalAttributes
+  .maxBy {
+    (it.modifiedDateTime ?: it.createDateTime).toLocalDateTime()
+  }
 
 internal fun String.toLocalDateTime() = LocalDateTime.parse(this)
 

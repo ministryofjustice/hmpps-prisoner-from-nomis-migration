@@ -19,11 +19,10 @@ import java.util.concurrent.CompletableFuture
 class CaseNotesMigrationMessageListener(
   objectMapper: ObjectMapper,
   caseNotesMigrationService: CaseNotesByPrisonerMigrationService,
-) :
-  MigrationMessageListener<CaseNotesMigrationFilter, PrisonerId, List<MigrationResult>, CaseNoteMigrationMapping>(
-    objectMapper,
-    caseNotesMigrationService,
-  ) {
+) : MigrationMessageListener<CaseNotesMigrationFilter, PrisonerId, List<MigrationResult>, CaseNoteMigrationMapping>(
+  objectMapper,
+  caseNotesMigrationService,
+) {
 
   @SqsListener(
     CASENOTES_QUEUE_ID,
@@ -32,23 +31,13 @@ class CaseNotesMigrationMessageListener(
     maxMessagesPerPoll = "8",
   )
   @WithSpan(value = "dps-syscon-migration_casenotes_queue", kind = SpanKind.SERVER)
-  fun onCaseNoteMessage(message: String, rawMessage: Message): CompletableFuture<Void?> {
-    return onMessage(message, rawMessage)
-  }
+  fun onCaseNoteMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
 
-  override fun parseContextFilter(json: String): MigrationMessage<*, CaseNotesMigrationFilter> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextFilter(json: String): MigrationMessage<*, CaseNotesMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<CaseNotesMigrationFilter>> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<CaseNotesMigrationFilter>> = objectMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = objectMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, CaseNoteMigrationMapping> {
-    return objectMapper.readValue(json)
-  }
+  override fun parseContextMapping(json: String): MigrationMessage<*, CaseNoteMigrationMapping> = objectMapper.readValue(json)
 }

@@ -103,6 +103,5 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createSentenceAdjustmentForSynchronisationCount() =
-    findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/adjustments"))).count()
+  fun createSentenceAdjustmentForSynchronisationCount() = findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/adjustments"))).count()
 }

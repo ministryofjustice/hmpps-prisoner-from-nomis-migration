@@ -46,22 +46,21 @@ class PrisonPersonMigrationService(
     migrationFilter: PrisonPersonMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<MigrationRequest> =
-    if (migrationFilter.prisonerNumber.isNullOrEmpty()) {
-      nomisService.getPrisonerIds(
-        pageNumber = pageNumber,
-        pageSize = pageSize,
-      ).let {
-        PageImpl<MigrationRequest>(
-          it.content.map { MigrationRequest(it.offenderNo, migrationFilter.migrationType) },
-          it.pageable,
-          it.totalElements,
-        )
-      }
-    } else {
-      // If a single prisoner migration is requested then we must be testing. Pretend that we called nomis-prisoner-api which found a single prisoner.
-      PageImpl<MigrationRequest>(mutableListOf(MigrationRequest(migrationFilter.prisonerNumber, migrationFilter.migrationType)), Pageable.ofSize(1), 1)
+  ): PageImpl<MigrationRequest> = if (migrationFilter.prisonerNumber.isNullOrEmpty()) {
+    nomisService.getPrisonerIds(
+      pageNumber = pageNumber,
+      pageSize = pageSize,
+    ).let {
+      PageImpl<MigrationRequest>(
+        it.content.map { MigrationRequest(it.offenderNo, migrationFilter.migrationType) },
+        it.pageable,
+        it.totalElements,
+      )
     }
+  } else {
+    // If a single prisoner migration is requested then we must be testing. Pretend that we called nomis-prisoner-api which found a single prisoner.
+    PageImpl<MigrationRequest>(mutableListOf(MigrationRequest(migrationFilter.prisonerNumber, migrationFilter.migrationType)), Pageable.ofSize(1), 1)
+  }
 
   override suspend fun migrateNomisEntity(context: MigrationContext<MigrationRequest>) {
     log.info("attempting to migrate ${context.body}")
@@ -92,40 +91,38 @@ class PrisonPersonMigrationService(
     }
   }
 
-  private suspend fun PrisonPersonMigrationMappingRequest.createMapping(context: MigrationContext<*>) =
-    try {
-      mappingApiService.createMapping(this, object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonPersonMigrationMappingRequest>>() {})
-        .also { it.handleError(context) }
-    } catch (e: Exception) {
-      log.error(
-        "Failed to create prison person mapping for nomisPrisonerNumber: $nomisPrisonerNumber, migrationType $migrationType, dpsIds $dpsIds for migration  ID $label",
-        e,
-      )
-      queueService.sendMessage(
-        MigrationMessageType.RETRY_MIGRATION_MAPPING,
-        MigrationContext(
-          context = context,
-          body = this,
+  private suspend fun PrisonPersonMigrationMappingRequest.createMapping(context: MigrationContext<*>) = try {
+    mappingApiService.createMapping(this, object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonPersonMigrationMappingRequest>>() {})
+      .also { it.handleError(context) }
+  } catch (e: Exception) {
+    log.error(
+      "Failed to create prison person mapping for nomisPrisonerNumber: $nomisPrisonerNumber, migrationType $migrationType, dpsIds $dpsIds for migration  ID $label",
+      e,
+    )
+    queueService.sendMessage(
+      MigrationMessageType.RETRY_MIGRATION_MAPPING,
+      MigrationContext(
+        context = context,
+        body = this,
+      ),
+    )
+  }
+
+  private fun CreateMappingResult<PrisonPersonMigrationMappingRequest>.handleError(context: MigrationContext<*>) = takeIf { it.isError }
+    ?.let { it.errorResponse?.moreInfo }
+    ?.also {
+      telemetryClient.trackEvent(
+        "prisonperson-nomis-migration-duplicate",
+        mapOf(
+          "migrationId" to context.migrationId,
+          "duplicateNomisPrisonerNumber" to it.duplicate.nomisPrisonerNumber,
+          "duplicateDpsIds" to it.duplicate.dpsIds.toString(),
+          "existingNomisPrisonerNumber" to it.existing.nomisPrisonerNumber,
+          "existingDpsIds" to it.existing.dpsIds.toString(),
         ),
+        null,
       )
     }
-
-  private fun CreateMappingResult<PrisonPersonMigrationMappingRequest>.handleError(context: MigrationContext<*>) =
-    takeIf { it.isError }
-      ?.let { it.errorResponse?.moreInfo }
-      ?.also {
-        telemetryClient.trackEvent(
-          "prisonperson-nomis-migration-duplicate",
-          mapOf(
-            "migrationId" to context.migrationId,
-            "duplicateNomisPrisonerNumber" to it.duplicate.nomisPrisonerNumber,
-            "duplicateDpsIds" to it.duplicate.dpsIds.toString(),
-            "existingNomisPrisonerNumber" to it.existing.nomisPrisonerNumber,
-            "existingDpsIds" to it.existing.dpsIds.toString(),
-          ),
-          null,
-        )
-      }
 
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)

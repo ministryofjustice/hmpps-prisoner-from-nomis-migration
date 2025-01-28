@@ -13,25 +13,23 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Upda
 
 @Service
 class AlertsDpsApiService(@Qualifier("alertsApiWebClient") private val webClient: WebClient) {
-  suspend fun createAlert(offenderNo: String, alert: CreateAlert, createdByUsername: String): Alert =
-    webClient
-      .post()
-      .uri("/prisoners/{prisonNumber}/alerts", offenderNo)
-      .bodyValue(alert)
-      .header("Source", "NOMIS")
-      .header("Username", createdByUsername)
-      .retrieve()
-      .awaitBody()
+  suspend fun createAlert(offenderNo: String, alert: CreateAlert, createdByUsername: String): Alert = webClient
+    .post()
+    .uri("/prisoners/{prisonNumber}/alerts", offenderNo)
+    .bodyValue(alert)
+    .header("Source", "NOMIS")
+    .header("Username", createdByUsername)
+    .retrieve()
+    .awaitBody()
 
-  suspend fun updateAlert(alertId: String, alert: UpdateAlert, updatedByUsername: String): Alert =
-    webClient
-      .put()
-      .uri("/alerts/{alertId}", alertId)
-      .bodyValue(alert)
-      .header("Source", "NOMIS")
-      .header("Username", updatedByUsername)
-      .retrieve()
-      .awaitBody()
+  suspend fun updateAlert(alertId: String, alert: UpdateAlert, updatedByUsername: String): Alert = webClient
+    .put()
+    .uri("/alerts/{alertId}", alertId)
+    .bodyValue(alert)
+    .header("Source", "NOMIS")
+    .header("Username", updatedByUsername)
+    .retrieve()
+    .awaitBody()
 
   suspend fun deleteAlert(alertId: String) {
     webClient

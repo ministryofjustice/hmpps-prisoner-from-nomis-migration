@@ -41,11 +41,10 @@ class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") webC
 
   suspend fun deleteNomisSentenceAdjustmentMapping(
     adjustmentId: String,
-  ): Unit =
-    webClient.delete()
-      .uri("/mapping/sentencing/adjustments/adjustment-id/{adjustmentId}", adjustmentId)
-      .retrieve()
-      .awaitBody()
+  ): Unit = webClient.delete()
+    .uri("/mapping/sentencing/adjustments/adjustment-id/{adjustmentId}", adjustmentId)
+    .retrieve()
+    .awaitBody()
 }
 
 data class SentencingAdjustmentNomisMapping(

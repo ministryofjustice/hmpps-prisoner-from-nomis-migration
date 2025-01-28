@@ -307,16 +307,14 @@ class SentencingAdjustmentsSynchronisationService(
     )
   }
 
-  private suspend fun doesNotExist(adjustment: SentenceAdjustmentResponse) =
-    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
-      nomisAdjustmentId = adjustment.id,
-      nomisAdjustmentCategory = "SENTENCE",
-    ) == null
-  private suspend fun doesNotExist(adjustment: KeyDateAdjustmentResponse) =
-    sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
-      nomisAdjustmentId = adjustment.id,
-      nomisAdjustmentCategory = "KEY-DATE",
-    ) == null
+  private suspend fun doesNotExist(adjustment: SentenceAdjustmentResponse) = sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
+    nomisAdjustmentId = adjustment.id,
+    nomisAdjustmentCategory = "SENTENCE",
+  ) == null
+  private suspend fun doesNotExist(adjustment: KeyDateAdjustmentResponse) = sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
+    nomisAdjustmentId = adjustment.id,
+    nomisAdjustmentCategory = "KEY-DATE",
+  ) == null
 }
 
 private fun SentenceAdjustmentOffenderEvent.toTelemetryProperties(

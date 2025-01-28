@@ -1157,11 +1157,10 @@ class CSIPSynchronisationIntTest : SqsIntegrationTestBase() {
   }
 }
 
-fun SqsAsyncClient.waitForMessageCountOnQueue(queueUrl: String, messageCount: Int) =
-  await untilCallTo {
-    countAllMessagesOnQueue(queueUrl)
-      .get()
-  } matches { it == messageCount }
+fun SqsAsyncClient.waitForMessageCountOnQueue(queueUrl: String, messageCount: Int) = await untilCallTo {
+  countAllMessagesOnQueue(queueUrl)
+    .get()
+} matches { it == messageCount }
 
 fun csipEvent(
   eventType: String = "CSIP_REPORTS-INSERTED",

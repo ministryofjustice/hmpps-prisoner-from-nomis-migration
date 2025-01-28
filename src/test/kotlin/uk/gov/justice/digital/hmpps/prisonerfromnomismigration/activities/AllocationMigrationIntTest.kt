@@ -76,25 +76,23 @@ class AllocationMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().is2xxSuccessful
     }
 
-    private fun WebTestClient.performMigration(body: String = """{ "prisonId": "BXI" }""") =
-      post().uri("/migrate/allocations")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue(body))
-        .exchange()
-        .expectStatus().isAccepted
-        .also {
-          waitUntilCompleted()
-        }
-
-    private fun waitUntilCompleted() =
-      await atMost Duration.ofSeconds(31) untilAsserted {
-        verify(telemetryClient).trackEvent(
-          eq("activity-allocation-migration-completed"),
-          any(),
-          isNull(),
-        )
+    private fun WebTestClient.performMigration(body: String = """{ "prisonId": "BXI" }""") = post().uri("/migrate/allocations")
+      .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+      .header("Content-Type", "application/json")
+      .body(BodyInserters.fromValue(body))
+      .exchange()
+      .expectStatus().isAccepted
+      .also {
+        waitUntilCompleted()
       }
+
+    private fun waitUntilCompleted() = await atMost Duration.ofSeconds(31) untilAsserted {
+      verify(telemetryClient).trackEvent(
+        eq("activity-allocation-migration-completed"),
+        any(),
+        isNull(),
+      )
+    }
 
     @Test
     fun `must have valid token to start migration`() {

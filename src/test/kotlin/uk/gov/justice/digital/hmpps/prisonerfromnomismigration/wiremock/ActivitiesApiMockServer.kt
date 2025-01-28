@@ -20,7 +20,10 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.sampleAppointmentInstance
 
-class ActivitiesApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
+class ActivitiesApiExtension :
+  BeforeAllCallback,
+  AfterAllCallback,
+  BeforeEachCallback {
   companion object {
     @JvmField
     val activitiesApi = ActivitiesApiMockServer()
@@ -72,15 +75,13 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyCreatedDate(createdValue: String, updatedValue: String) =
-    verify(
-      postRequestedFor(urlPathEqualTo("/migrate-appointment"))
-        .withRequestBody(matchingJsonPath("created", equalTo(createdValue)))
-        .withRequestBody(matchingJsonPath("updated", equalTo(updatedValue))),
-    )
+  fun verifyCreatedDate(createdValue: String, updatedValue: String) = verify(
+    postRequestedFor(urlPathEqualTo("/migrate-appointment"))
+      .withRequestBody(matchingJsonPath("created", equalTo(createdValue)))
+      .withRequestBody(matchingJsonPath("updated", equalTo(updatedValue))),
+  )
 
-  fun createAppointmentCount() =
-    findAll(postRequestedFor(urlMatching("/migrate-appointment"))).count()
+  fun createAppointmentCount() = findAll(postRequestedFor(urlMatching("/migrate-appointment"))).count()
 
   fun stubCreateActivityForMigration(activityScheduleId: Long = 4444, activityScheduleId2: Long? = 5555) {
     stubFor(
@@ -170,9 +171,7 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createActivitiesCount() =
-    findAll(postRequestedFor(urlMatching("/migrate/activity"))).count()
+  fun createActivitiesCount() = findAll(postRequestedFor(urlMatching("/migrate/activity"))).count()
 
-  fun createAllocationsCount() =
-    findAll(postRequestedFor(urlMatching("/migrate/allocation"))).count()
+  fun createAllocationsCount() = findAll(postRequestedFor(urlMatching("/migrate/allocation"))).count()
 }

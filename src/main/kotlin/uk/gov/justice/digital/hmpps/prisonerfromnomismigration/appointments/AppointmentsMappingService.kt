@@ -10,19 +10,16 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import java.time.LocalDateTime
 
 @Service
-class AppointmentsMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
-  MigrationMapping<AppointmentMapping>(domainUrl = "/mapping/appointments", webClient) {
+class AppointmentsMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<AppointmentMapping>(domainUrl = "/mapping/appointments", webClient) {
 
-  suspend fun findNomisMapping(eventId: Long): AppointmentMapping? {
-    return webClient.get()
-      .uri("/mapping/appointments/nomis-event-id/{eventId}", eventId)
-      .retrieve()
-      .bodyToMono(AppointmentMapping::class.java)
-      .onErrorResume(WebClientResponseException.NotFound::class.java) {
-        Mono.empty()
-      }
-      .awaitSingleOrNull()
-  }
+  suspend fun findNomisMapping(eventId: Long): AppointmentMapping? = webClient.get()
+    .uri("/mapping/appointments/nomis-event-id/{eventId}", eventId)
+    .retrieve()
+    .bodyToMono(AppointmentMapping::class.java)
+    .onErrorResume(WebClientResponseException.NotFound::class.java) {
+      Mono.empty()
+    }
+    .awaitSingleOrNull()
 }
 
 data class AppointmentMapping(

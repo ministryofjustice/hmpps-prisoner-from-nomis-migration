@@ -9,8 +9,7 @@ import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 
 @Service
-class VisitMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
-  MigrationMapping<VisitNomisMapping>(domainUrl = "/mapping/visits", webClient) {
+class VisitMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<VisitNomisMapping>(domainUrl = "/mapping/visits", webClient) {
   suspend fun findNomisVisitMapping(nomisVisitId: Long): VisitNomisMapping? = webClient.get()
     .uri("/mapping/visits/nomisId/{nomisVisitId}", nomisVisitId)
     .retrieve()
@@ -19,16 +18,14 @@ class VisitMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient
       Mono.empty()
     }.awaitSingleOrNull()
 
-  suspend fun findRoomMapping(agencyInternalLocationCode: String, prisonId: String): RoomMapping? {
-    return webClient.get()
-      .uri("/prison/{prisonId}/room/nomis-room-id/{agencyInternalLocationCode}", prisonId, agencyInternalLocationCode)
-      .retrieve()
-      .bodyToMono(RoomMapping::class.java)
-      .onErrorResume(WebClientResponseException.NotFound::class.java) {
-        Mono.empty()
-      }
-      .awaitSingleOrNull()
-  }
+  suspend fun findRoomMapping(agencyInternalLocationCode: String, prisonId: String): RoomMapping? = webClient.get()
+    .uri("/prison/{prisonId}/room/nomis-room-id/{agencyInternalLocationCode}", prisonId, agencyInternalLocationCode)
+    .retrieve()
+    .bodyToMono(RoomMapping::class.java)
+    .onErrorResume(WebClientResponseException.NotFound::class.java) {
+      Mono.empty()
+    }
+    .awaitSingleOrNull()
 }
 
 data class VisitNomisMapping(val nomisId: Long, val vsipId: String, val label: String?, val mappingType: String)

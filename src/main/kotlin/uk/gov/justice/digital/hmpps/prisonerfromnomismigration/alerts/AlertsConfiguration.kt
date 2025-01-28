@@ -26,8 +26,7 @@ class AlertsConfiguration(
   fun alertsApiWebClient(
     authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
     builder: WebClient.Builder,
-  ): WebClient =
-    builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "alerts-api", url = apiBaseUri, timeout)
+  ): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "alerts-api", url = apiBaseUri, timeout)
 
   @Component("alertsApi")
   class AlertsApiHealth(@Qualifier("alertsApiHealthWebClient") webClient: WebClient) : ReactiveHealthPingCheck(webClient)

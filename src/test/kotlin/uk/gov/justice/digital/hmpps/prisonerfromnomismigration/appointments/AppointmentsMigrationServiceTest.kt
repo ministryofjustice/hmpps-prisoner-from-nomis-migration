@@ -418,25 +418,24 @@ internal class AppointmentsMigrationServiceTest {
       }
 
       @Test
-      fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
-        runBlocking {
-          service.migrateStatusCheck(
-            MigrationContext(
-              type = APPOINTMENTS,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 100_200,
-              body = MigrationStatusCheck(checkCount = 4),
-            ),
-          )
+      fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runBlocking {
+        service.migrateStatusCheck(
+          MigrationContext(
+            type = APPOINTMENTS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = MigrationStatusCheck(checkCount = 4),
+          ),
+        )
 
-          verify(queueService).sendMessage(
-            message = eq(MIGRATE_STATUS_CHECK),
-            context = check<MigrationContext<MigrationStatusCheck>> {
-              assertThat(it.body.checkCount).isEqualTo(0)
-            },
-            delaySeconds = eq(10),
-          )
-        }
+        verify(queueService).sendMessage(
+          message = eq(MIGRATE_STATUS_CHECK),
+          context = check<MigrationContext<MigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(0)
+          },
+          delaySeconds = eq(10),
+        )
+      }
     }
 
     @Nested
@@ -562,26 +561,25 @@ internal class AppointmentsMigrationServiceTest {
       }
 
       @Test
-      fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
-        runBlocking {
-          service.cancelMigrateStatusCheck(
-            MigrationContext(
-              type = APPOINTMENTS,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 100_200,
-              body = MigrationStatusCheck(checkCount = 4),
-            ),
-          )
+      fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runBlocking {
+        service.cancelMigrateStatusCheck(
+          MigrationContext(
+            type = APPOINTMENTS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = MigrationStatusCheck(checkCount = 4),
+          ),
+        )
 
-          verify(queueService).purgeAllMessages(any())
-          verify(queueService).sendMessage(
-            message = eq(CANCEL_MIGRATION),
-            context = check<MigrationContext<MigrationStatusCheck>> {
-              assertThat(it.body.checkCount).isEqualTo(0)
-            },
-            delaySeconds = eq(10),
-          )
-        }
+        verify(queueService).purgeAllMessages(any())
+        verify(queueService).sendMessage(
+          message = eq(CANCEL_MIGRATION),
+          context = check<MigrationContext<MigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(0)
+          },
+          delaySeconds = eq(10),
+        )
+      }
     }
 
     @Nested
@@ -719,79 +717,77 @@ internal class AppointmentsMigrationServiceTest {
     }
 
     @Test
-    fun `will send MIGRATE_ENTITY with context for each appointment`(): Unit =
-      runBlocking {
-        service.migrateEntitiesForPage(
-          MigrationContext(
-            type = APPOINTMENTS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = MigrationPage(
-              filter = AppointmentsMigrationFilter(
-                fromDate = LocalDate.parse("2020-01-01"),
-                toDate = LocalDate.parse("2020-01-02"),
-                prisonIds = listOf("MDI"),
-              ),
-              pageNumber = 13,
-              pageSize = 15,
+    fun `will send MIGRATE_ENTITY with context for each appointment`(): Unit = runBlocking {
+      service.migrateEntitiesForPage(
+        MigrationContext(
+          type = APPOINTMENTS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = MigrationPage(
+            filter = AppointmentsMigrationFilter(
+              fromDate = LocalDate.parse("2020-01-01"),
+              toDate = LocalDate.parse("2020-01-02"),
+              prisonIds = listOf("MDI"),
             ),
+            pageNumber = 13,
+            pageSize = 15,
           ),
-        )
+        ),
+      )
 
-        verify(queueService, times(15)).sendMessageNoTracing(
-          message = eq(MIGRATE_ENTITY),
-          context = check<MigrationContext<AppointmentsMigrationFilter>> {
-            assertThat(it.estimatedCount).isEqualTo(100_200)
-            assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-          },
-          delaySeconds = eq(0),
-        )
-      }
+      verify(queueService, times(15)).sendMessageNoTracing(
+        message = eq(MIGRATE_ENTITY),
+        context = check<MigrationContext<AppointmentsMigrationFilter>> {
+          assertThat(it.estimatedCount).isEqualTo(100_200)
+          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+        },
+        delaySeconds = eq(0),
+      )
+    }
 
     @Test
-    fun `will send MIGRATE_ENTITY with bookingId for each appointment`(): Unit =
-      runBlocking {
-        val context: KArgumentCaptor<MigrationContext<AppointmentIdResponse>> = argumentCaptor()
+    fun `will send MIGRATE_ENTITY with bookingId for each appointment`(): Unit = runBlocking {
+      val context: KArgumentCaptor<MigrationContext<AppointmentIdResponse>> = argumentCaptor()
 
-        whenever(nomisApiService.getAppointmentIds(any(), any(), any(), any(), any())).thenReturn(
-          pages(
-            15,
-            startId = 1000,
-          ),
-        )
+      whenever(nomisApiService.getAppointmentIds(any(), any(), any(), any(), any())).thenReturn(
+        pages(
+          15,
+          startId = 1000,
+        ),
+      )
 
-        service.migrateEntitiesForPage(
-          MigrationContext(
-            type = APPOINTMENTS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = MigrationPage(
-              filter = AppointmentsMigrationFilter(
-                fromDate = LocalDate.parse("2020-01-01"),
-                toDate = LocalDate.parse("2020-01-02"),
-                prisonIds = listOf("MDI"),
-              ),
-              pageNumber = 13,
-              pageSize = 15,
+      service.migrateEntitiesForPage(
+        MigrationContext(
+          type = APPOINTMENTS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = MigrationPage(
+            filter = AppointmentsMigrationFilter(
+              fromDate = LocalDate.parse("2020-01-01"),
+              toDate = LocalDate.parse("2020-01-02"),
+              prisonIds = listOf("MDI"),
             ),
+            pageNumber = 13,
+            pageSize = 15,
           ),
-        )
+        ),
+      )
 
-        verify(queueService, times(15)).sendMessageNoTracing(
-          eq(MIGRATE_ENTITY),
-          context.capture(),
-          delaySeconds = eq(0),
-        )
-        val allContexts: List<MigrationContext<AppointmentIdResponse>> = context.allValues
+      verify(queueService, times(15)).sendMessageNoTracing(
+        eq(MIGRATE_ENTITY),
+        context.capture(),
+        delaySeconds = eq(0),
+      )
+      val allContexts: List<MigrationContext<AppointmentIdResponse>> = context.allValues
 
-        val (firstPage, secondPage, thirdPage) = allContexts
-        val lastPage = allContexts.last()
+      val (firstPage, secondPage, thirdPage) = allContexts
+      val lastPage = allContexts.last()
 
-        assertThat(firstPage.body.eventId).isEqualTo(1000)
-        assertThat(secondPage.body.eventId).isEqualTo(1001)
-        assertThat(thirdPage.body.eventId).isEqualTo(1002)
-        assertThat(lastPage.body.eventId).isEqualTo(1014)
-      }
+      assertThat(firstPage.body.eventId).isEqualTo(1000)
+      assertThat(secondPage.body.eventId).isEqualTo(1001)
+      assertThat(thirdPage.body.eventId).isEqualTo(1002)
+      assertThat(lastPage.body.eventId).isEqualTo(1014)
+    }
 
     @Test
     fun `will not send MIGRATE_ENTITY when cancelling`(): Unit = runBlocking {
@@ -889,67 +885,65 @@ internal class AppointmentsMigrationServiceTest {
     }
 
     @Test
-    fun `will create a mapping between a new appointment and a NOMIS appointment`(): Unit =
-      runBlocking {
-        whenever(nomisApiService.getAppointment(any())).thenReturn(
-          aNomisAppointmentResponse(),
-        )
-        whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointmentInstance(999))
+    fun `will create a mapping between a new appointment and a NOMIS appointment`(): Unit = runBlocking {
+      whenever(nomisApiService.getAppointment(any())).thenReturn(
+        aNomisAppointmentResponse(),
+      )
+      whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointmentInstance(999))
 
-        service.migrateNomisEntity(
-          MigrationContext(
-            type = APPOINTMENTS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = AppointmentIdResponse(123),
-          ),
-        )
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = APPOINTMENTS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = AppointmentIdResponse(123),
+        ),
+      )
 
-        verify(appointmentsMappingService).createMapping(
-          AppointmentMapping(
-            nomisEventId = 123,
-            appointmentInstanceId = 999,
-            label = "2020-05-23T11:30:00",
-            mappingType = "MIGRATED",
-          ),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<AppointmentMapping>>() {},
-        )
-      }
+      verify(appointmentsMappingService).createMapping(
+        AppointmentMapping(
+          nomisEventId = 123,
+          appointmentInstanceId = 999,
+          label = "2020-05-23T11:30:00",
+          mappingType = "MIGRATED",
+        ),
+        object : ParameterizedTypeReference<DuplicateErrorResponse<AppointmentMapping>>() {},
+      )
+    }
 
     @Test
-    fun `will not throw exception (and place message back on queue) but create a new retry message`(): Unit =
-      runBlocking {
-        whenever(nomisApiService.getAppointment(any())).thenReturn(aNomisAppointmentResponse())
-        whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointmentInstance(999))
+    fun `will not throw exception (and place message back on queue) but create a new retry message`(): Unit = runBlocking {
+      whenever(nomisApiService.getAppointment(any())).thenReturn(aNomisAppointmentResponse())
+      whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointmentInstance(999))
 
-        whenever(
-          appointmentsMappingService.createMapping(
-            any(),
-            eq(object : ParameterizedTypeReference<DuplicateErrorResponse<AppointmentMapping>>() {}),
-          ),
-        ).thenThrow(
-          RuntimeException("something went wrong"),
-        )
+      whenever(
+        appointmentsMappingService.createMapping(
+          any(),
+          eq(object : ParameterizedTypeReference<DuplicateErrorResponse<AppointmentMapping>>() {}),
+        ),
+      ).thenThrow(
+        RuntimeException("something went wrong"),
+      )
 
-        service.migrateNomisEntity(
-          MigrationContext(
-            type = APPOINTMENTS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = AppointmentIdResponse(123),
-          ),
-        )
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = APPOINTMENTS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = AppointmentIdResponse(123),
+        ),
+      )
 
-        verify(queueService).sendMessage(
-          message = eq(RETRY_MIGRATION_MAPPING),
-          context = check<MigrationContext<AppointmentMapping>> {
-            assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-            assertThat(it.body.nomisEventId).isEqualTo(123)
-            assertThat(it.body.appointmentInstanceId).isEqualTo(999)
-          },
-          delaySeconds = eq(0),
-        )
-      }
+      verify(queueService).sendMessage(
+        message = eq(RETRY_MIGRATION_MAPPING),
+        context = check<MigrationContext<AppointmentMapping>> {
+          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+          assertThat(it.body.nomisEventId).isEqualTo(123)
+          assertThat(it.body.appointmentInstanceId).isEqualTo(999)
+        },
+        delaySeconds = eq(0),
+      )
+    }
 
     @Nested
     inner class WhenMigratedAlready {

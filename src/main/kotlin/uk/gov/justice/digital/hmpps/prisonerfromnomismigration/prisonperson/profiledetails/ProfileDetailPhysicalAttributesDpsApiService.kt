@@ -14,22 +14,20 @@ class ProfileDetailPhysicalAttributesDpsApiService(@Qualifier("prisonPersonApiWe
   suspend fun migrateProfileDetailsPhysicalAttributes(
     prisonerNumber: String,
     requests: List<ProfileDetailsPhysicalAttributesMigrationRequest>,
-  ): ProfileDetailsPhysicalAttributesMigrationResponse =
-    webClient
-      .put()
-      .uri("/migration/prisoners/{prisonerNumber}/profile-details-physical-attributes", prisonerNumber)
-      .bodyValue(requests)
-      .retrieve()
-      .awaitBody()
+  ): ProfileDetailsPhysicalAttributesMigrationResponse = webClient
+    .put()
+    .uri("/migration/prisoners/{prisonerNumber}/profile-details-physical-attributes", prisonerNumber)
+    .bodyValue(requests)
+    .retrieve()
+    .awaitBody()
 
   suspend fun syncProfileDetailsPhysicalAttributes(
     prisonerNumber: String,
     request: ProfileDetailsPhysicalAttributesSyncRequest,
-  ): ProfileDetailsPhysicalAttributesSyncResponse =
-    webClient
-      .put()
-      .uri("/sync/prisoners/{prisonerNumber}/profile-details-physical-attributes", prisonerNumber)
-      .bodyValue(request)
-      .retrieve()
-      .awaitBody()
+  ): ProfileDetailsPhysicalAttributesSyncResponse = webClient
+    .put()
+    .uri("/sync/prisoners/{prisonerNumber}/profile-details-physical-attributes", prisonerNumber)
+    .bodyValue(request)
+    .retrieve()
+    .awaitBody()
 }

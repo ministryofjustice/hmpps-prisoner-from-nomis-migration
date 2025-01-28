@@ -17,19 +17,17 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 @Service
 class CSIPDpsApiService(@Qualifier("csipApiWebClient") private val webClient: WebClient) {
 
-  suspend fun migrateCSIP(syncRequest: SyncCsipRequest): SyncResponse =
-    webClient.put()
-      .uri("/sync/csip-records")
-      .bodyValue(syncRequest)
-      .retrieve()
-      .awaitBodyOrLogAndRethrowBadRequest()
+  suspend fun migrateCSIP(syncRequest: SyncCsipRequest): SyncResponse = webClient.put()
+    .uri("/sync/csip-records")
+    .bodyValue(syncRequest)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncCSIP(syncRequest: SyncCsipRequest): SyncResponse =
-    webClient.put()
-      .uri("/sync/csip-records")
-      .bodyValue(syncRequest)
-      .retrieve()
-      .awaitBodyOrLogAndRethrowBadRequest()
+  suspend fun syncCSIP(syncRequest: SyncCsipRequest): SyncResponse = webClient.put()
+    .uri("/sync/csip-records")
+    .bodyValue(syncRequest)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
 
   suspend fun deleteCSIP(csipReportId: String, deleteActioned: DefaultLegacyActioned) {
     webClient

@@ -37,7 +37,10 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
-class CSIPDpsApiExtension : BeforeAllCallback, AfterAllCallback, BeforeEachCallback {
+class CSIPDpsApiExtension :
+  BeforeAllCallback,
+  AfterAllCallback,
+  BeforeEachCallback {
   companion object {
     @JvmField
     val csipDpsApi = CSIPDpsApiMockServer()
@@ -62,179 +65,173 @@ class CSIPDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8088
 
-    fun dpsSyncCsipRequest() =
-      SyncCsipRequest(
-        legacyId = 1234,
-        id = null,
-        logCode = "ASI-001",
-        prisonNumber = "A1234BC",
-        prisonCodeWhenRecorded = "MDI",
-        activeCaseloadId = "MDI",
-        actionedAt = LocalDateTime.parse("2024-04-01T10:32:12.867081"),
-        actionedBy = "JSMITH",
-        referral = SyncReferralRequest(
-          incidentDate = LocalDate.parse("2024-06-12"),
-          incidentTypeCode = "INT",
-          incidentLocationCode = "LIB",
-          referredBy = "JIM_ADM",
-          referralDate = LocalDate.parse("2024-04-04"),
-          refererAreaCode = "EDU",
-          isSaferCustodyTeamInformed = SyncReferralRequest.IsSaferCustodyTeamInformed.NO,
-          contributoryFactors = listOf(
-            SyncContributoryFactorRequest(
-              factorTypeCode = "BUL",
-              legacyId = 43,
-              comment = "Offender causes trouble",
+    fun dpsSyncCsipRequest() = SyncCsipRequest(
+      legacyId = 1234,
+      id = null,
+      logCode = "ASI-001",
+      prisonNumber = "A1234BC",
+      prisonCodeWhenRecorded = "MDI",
+      activeCaseloadId = "MDI",
+      actionedAt = LocalDateTime.parse("2024-04-01T10:32:12.867081"),
+      actionedBy = "JSMITH",
+      referral = SyncReferralRequest(
+        incidentDate = LocalDate.parse("2024-06-12"),
+        incidentTypeCode = "INT",
+        incidentLocationCode = "LIB",
+        referredBy = "JIM_ADM",
+        referralDate = LocalDate.parse("2024-04-04"),
+        refererAreaCode = "EDU",
+        isSaferCustodyTeamInformed = SyncReferralRequest.IsSaferCustodyTeamInformed.NO,
+        contributoryFactors = listOf(
+          SyncContributoryFactorRequest(
+            factorTypeCode = "BUL",
+            legacyId = 43,
+            comment = "Offender causes trouble",
+            id = null,
+          ),
+        ),
+        incidentTime = "10:32:12",
+        isProactiveReferral = true,
+        isStaffAssaulted = true,
+        assaultedStaffName = "Fred Jones",
+        incidentInvolvementCode = "PER",
+        descriptionOfConcern = "There was a worry about the offender",
+        knownReasons = "known reasons details go in here",
+        otherInformation = "other information goes in here",
+        isReferralComplete = true,
+        completedDate = LocalDate.parse("2024-04-04"),
+        completedBy = "JIM_ADM",
+        completedByDisplayName = "",
+        saferCustodyScreeningOutcome = SyncScreeningOutcomeRequest(
+          outcomeTypeCode = "CUR",
+          reasonForDecision = "There is a reason for the decision - it goes here",
+          date = LocalDate.parse("2024-04-08"),
+          recordedBy = "FRED_ADM",
+          recordedByDisplayName = "Fred Admin",
+        ),
+        investigation = SyncInvestigationRequest(
+          interviews = listOf(
+            SyncInterviewRequest(
+              legacyId = 3343,
               id = null,
+              interviewee = "Bill Black",
+              interviewDate = LocalDate.parse("2024-06-06"),
+              intervieweeRoleCode = "WITNESS",
+              interviewText = "Saw a pipe in his hand",
             ),
           ),
-          incidentTime = "10:32:12",
-          isProactiveReferral = true,
-          isStaffAssaulted = true,
-          assaultedStaffName = "Fred Jones",
-          incidentInvolvementCode = "PER",
-          descriptionOfConcern = "There was a worry about the offender",
-          knownReasons = "known reasons details go in here",
-          otherInformation = "other information goes in here",
-          isReferralComplete = true,
-          completedDate = LocalDate.parse("2024-04-04"),
-          completedBy = "JIM_ADM",
-          completedByDisplayName = "",
-          saferCustodyScreeningOutcome = SyncScreeningOutcomeRequest(
-            outcomeTypeCode = "CUR",
-            reasonForDecision = "There is a reason for the decision - it goes here",
-            date = LocalDate.parse("2024-04-08"),
-            recordedBy = "FRED_ADM",
-            recordedByDisplayName = "Fred Admin",
+          staffInvolved = "some people",
+          evidenceSecured = "A piece of pipe",
+          occurrenceReason = "bad behaviour",
+          personsUsualBehaviour = "Good person",
+          personsTrigger = "missed meal",
+          protectiveFactors = "ensure taken to canteen",
+        ),
+        decisionAndActions =
+        SyncDecisionAndActionsRequest(
+          outcomeTypeCode = "OPE",
+          actions = setOf(
+            SyncDecisionAndActionsRequest.Actions.NON_ASSOCIATIONS_UPDATED,
+            SyncDecisionAndActionsRequest.Actions.OBSERVATION_BOOK,
+            SyncDecisionAndActionsRequest.Actions.SERVICE_REFERRAL,
           ),
-          investigation = SyncInvestigationRequest(
-            interviews = listOf(
-              SyncInterviewRequest(
-                legacyId = 3343,
-                id = null,
-                interviewee = "Bill Black",
-                interviewDate = LocalDate.parse("2024-06-06"),
-                intervieweeRoleCode = "WITNESS",
-                interviewText = "Saw a pipe in his hand",
-              ),
-            ),
-            staffInvolved = "some people",
-            evidenceSecured = "A piece of pipe",
-            occurrenceReason = "bad behaviour",
-            personsUsualBehaviour = "Good person",
-            personsTrigger = "missed meal",
-            protectiveFactors = "ensure taken to canteen",
+          conclusion = "Offender needs help",
+          signedOffByRoleCode = "CUSTMAN",
+          date = LocalDate.parse("2024-04-08"),
+          recordedBy = "FRED_ADM",
+          recordedByDisplayName = "Fred Admin",
+          nextSteps = null,
+          actionOther = "Some other info here",
+        ),
+      ),
+      plan = SyncPlanRequest(
+        caseManager = "C Jones",
+        reasonForPlan = "helper",
+        firstCaseReviewDate = LocalDate.parse("2024-04-15"),
+        identifiedNeeds = listOf(
+          SyncNeedRequest(
+            id = null,
+            legacyId = 65,
+            identifiedNeed = "they need help",
+            responsiblePerson = "Jason", intervention = "dd",
+            progression = "there was some improvement",
+            targetDate = LocalDate.parse("2024-08-20"),
+            closedDate = LocalDate.parse("2024-04-17"),
+            createdDate = LocalDate.parse("2024-04-16"),
           ),
-          decisionAndActions =
-          SyncDecisionAndActionsRequest(
-            outcomeTypeCode = "OPE",
+        ),
+        reviews = listOf(
+          SyncReviewRequest(
+            legacyId = 67,
+            id = null,
+            reviewDate = LocalDate.parse("2024-04-01"),
+            nextReviewDate = null,
+            csipClosedDate = LocalDate.parse("2024-04-16"),
+            summary = null,
+            recordedBy = "JSMITH",
+            recordedByDisplayName = "JOHN SMITH",
+
             actions = setOf(
-              SyncDecisionAndActionsRequest.Actions.NON_ASSOCIATIONS_UPDATED,
-              SyncDecisionAndActionsRequest.Actions.OBSERVATION_BOOK,
-              SyncDecisionAndActionsRequest.Actions.SERVICE_REFERRAL,
+              SyncReviewRequest.Actions.REMAIN_ON_CSIP,
+              SyncReviewRequest.Actions.CLOSE_CSIP,
             ),
-            conclusion = "Offender needs help",
-            signedOffByRoleCode = "CUSTMAN",
-            date = LocalDate.parse("2024-04-08"),
-            recordedBy = "FRED_ADM",
-            recordedByDisplayName = "Fred Admin",
-            nextSteps = null,
-            actionOther = "Some other info here",
-          ),
-        ),
-        plan = SyncPlanRequest(
-          caseManager = "C Jones",
-          reasonForPlan = "helper",
-          firstCaseReviewDate = LocalDate.parse("2024-04-15"),
-          identifiedNeeds = listOf(
-            SyncNeedRequest(
-              id = null,
-              legacyId = 65,
-              identifiedNeed = "they need help",
-              responsiblePerson = "Jason", intervention = "dd",
-              progression = "there was some improvement",
-              targetDate = LocalDate.parse("2024-08-20"),
-              closedDate = LocalDate.parse("2024-04-17"),
-              createdDate = LocalDate.parse("2024-04-16"),
-            ),
-          ),
-          reviews = listOf(
-            SyncReviewRequest(
-              legacyId = 67,
-              id = null,
-              reviewDate = LocalDate.parse("2024-04-01"),
-              nextReviewDate = null,
-              csipClosedDate = LocalDate.parse("2024-04-16"),
-              summary = null,
-              recordedBy = "JSMITH",
-              recordedByDisplayName = "JOHN SMITH",
-
-              actions = setOf(
-                SyncReviewRequest.Actions.REMAIN_ON_CSIP,
-                SyncReviewRequest.Actions.CLOSE_CSIP,
-              ),
-              attendees = listOf(
-                SyncAttendeeRequest(
-                  legacyId = 221,
-                  name = "same jones",
-                  role = "person",
-                  isAttended = true,
-                  contribution = "talked about things",
-                ),
+            attendees = listOf(
+              SyncAttendeeRequest(
+                legacyId = 221,
+                name = "same jones",
+                role = "person",
+                isAttended = true,
+                contribution = "talked about things",
               ),
             ),
           ),
         ),
-      )
+      ),
+    )
 
-    fun dpsSyncCsipRequestMinimal() =
-      SyncCsipRequest(
-        legacyId = 1234,
-        logCode = "ASI-001",
-        prisonNumber = "A1234BC",
-        prisonCodeWhenRecorded = "MDI",
-        activeCaseloadId = "MDI",
-        actionedAt = LocalDateTime.parse("2024-04-01T10:32:12.867081"),
-        actionedBy = "JSMITH",
-        referral = SyncReferralRequest(
-          incidentDate = LocalDate.parse("2024-06-12"),
-          incidentTypeCode = "INT",
-          incidentLocationCode = "LIB",
-          referredBy = "JIM_ADM",
-          referralDate = LocalDate.parse("2024-04-04"),
-          refererAreaCode = "EDU",
-          isSaferCustodyTeamInformed = SyncReferralRequest.IsSaferCustodyTeamInformed.NO,
-          contributoryFactors = listOf(),
-          isProactiveReferral = false,
-          isStaffAssaulted = false,
-          isReferralComplete = false,
-        ),
-      )
+    fun dpsSyncCsipRequestMinimal() = SyncCsipRequest(
+      legacyId = 1234,
+      logCode = "ASI-001",
+      prisonNumber = "A1234BC",
+      prisonCodeWhenRecorded = "MDI",
+      activeCaseloadId = "MDI",
+      actionedAt = LocalDateTime.parse("2024-04-01T10:32:12.867081"),
+      actionedBy = "JSMITH",
+      referral = SyncReferralRequest(
+        incidentDate = LocalDate.parse("2024-06-12"),
+        incidentTypeCode = "INT",
+        incidentLocationCode = "LIB",
+        referredBy = "JIM_ADM",
+        referralDate = LocalDate.parse("2024-04-04"),
+        refererAreaCode = "EDU",
+        isSaferCustodyTeamInformed = SyncReferralRequest.IsSaferCustodyTeamInformed.NO,
+        contributoryFactors = listOf(),
+        isProactiveReferral = false,
+        isStaffAssaulted = false,
+        isReferralComplete = false,
+      ),
+    )
 
-    private fun dpsCSIPReportResponseMapping(dpsCSIPReportId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") =
-      ResponseMapping(
-        ResponseMapping.Component.RECORD,
-        id = 1234L,
-        uuid = UUID.fromString(dpsCSIPReportId),
-      )
+    private fun dpsCSIPReportResponseMapping(dpsCSIPReportId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") = ResponseMapping(
+      ResponseMapping.Component.RECORD,
+      id = 1234L,
+      uuid = UUID.fromString(dpsCSIPReportId),
+    )
 
-    private fun dpsCSIPFactorResponseMapping(dpsCSIPFactorId: String) =
-      ResponseMapping(
-        ResponseMapping.Component.CONTRIBUTORY_FACTOR,
-        id = 1234L,
-        uuid = UUID.fromString(dpsCSIPFactorId),
-      )
+    private fun dpsCSIPFactorResponseMapping(dpsCSIPFactorId: String) = ResponseMapping(
+      ResponseMapping.Component.CONTRIBUTORY_FACTOR,
+      id = 1234L,
+      uuid = UUID.fromString(dpsCSIPFactorId),
+    )
 
-    fun dpsCsipReportSyncResponse(dpsCSIPReportId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") =
-      SyncResponse(mappings = setOf(dpsCSIPReportResponseMapping(dpsCSIPReportId)))
+    fun dpsCsipReportSyncResponse(dpsCSIPReportId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e5") = SyncResponse(mappings = setOf(dpsCSIPReportResponseMapping(dpsCSIPReportId)))
 
-    fun dpsCsipReportSyncResponseWithFactor(dpsCSIPFactorId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e6") =
-      SyncResponse(
-        mappings = setOf(
-          dpsCSIPReportResponseMapping(),
-          dpsCSIPFactorResponseMapping(dpsCSIPFactorId),
-        ),
-      )
+    fun dpsCsipReportSyncResponseWithFactor(dpsCSIPFactorId: String = "a1b2c3d4-e5f6-1234-5678-90a1b2c3d4e6") = SyncResponse(
+      mappings = setOf(
+        dpsCSIPReportResponseMapping(),
+        dpsCSIPFactorResponseMapping(dpsCSIPFactorId),
+      ),
+    )
   }
 
   fun stubHealthPing(status: Int) {
@@ -392,9 +389,7 @@ class CSIPDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun syncCSIPCount() =
-    findAll(putRequestedFor(urlMatching("/sync/csip-records"))).count()
+  fun syncCSIPCount() = findAll(putRequestedFor(urlMatching("/sync/csip-records"))).count()
 
-  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder =
-    this.withBody(objectMapper.writeValueAsString(body))
+  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder = this.withBody(objectMapper.writeValueAsString(body))
 }

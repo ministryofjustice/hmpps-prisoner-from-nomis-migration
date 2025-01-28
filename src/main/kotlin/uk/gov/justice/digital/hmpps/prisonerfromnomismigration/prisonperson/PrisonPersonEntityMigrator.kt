@@ -15,10 +15,9 @@ interface PrisonPersonEntityMigrator {
 class PrisonPersonEntityMigratorService(
   private val entityMigrators: List<PrisonPersonEntityMigrator>,
 ) {
-  fun migrator(migrationType: PrisonPersonMigrationMappingRequest.MigrationType): PrisonPersonEntityMigrator =
-    when (migrationType) {
-      PHYSICAL_ATTRIBUTES -> entityMigrators.find { it is PhysicalAttributesMigrator }
-      PROFILE_DETAILS_PHYSICAL_ATTRIBUTES -> entityMigrators.find { it is ProfileDetailPhysicalAttributesEntityMigrator }
-    }
-      ?: error("No Entity Migrator found for migrationType=$migrationType")
+  fun migrator(migrationType: PrisonPersonMigrationMappingRequest.MigrationType): PrisonPersonEntityMigrator = when (migrationType) {
+    PHYSICAL_ATTRIBUTES -> entityMigrators.find { it is PhysicalAttributesMigrator }
+    PROFILE_DETAILS_PHYSICAL_ATTRIBUTES -> entityMigrators.find { it is ProfileDetailPhysicalAttributesEntityMigrator }
+  }
+    ?: error("No Entity Migrator found for migrationType=$migrationType")
 }

@@ -10,16 +10,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
 
 @Service
-class CaseNotesMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
-  MigrationMapping<CaseNoteMappingDto>(domainUrl = "/mapping/casenotes", webClient) {
+class CaseNotesMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CaseNoteMappingDto>(domainUrl = "/mapping/casenotes", webClient) {
   suspend fun getMappings(
     ids: List<Long>,
-  ): List<CaseNoteMappingDto> =
-    webClient.post()
-      .uri("/mapping/casenotes/nomis-casenote-id")
-      .bodyValue(ids)
-      .retrieve()
-      .awaitBody()
+  ): List<CaseNoteMappingDto> = webClient.post()
+    .uri("/mapping/casenotes/nomis-casenote-id")
+    .bodyValue(ids)
+    .retrieve()
+    .awaitBody()
 
   suspend fun deleteMappingGivenDpsId(dpsCaseNoteId: String) {
     webClient.delete()
@@ -33,11 +31,10 @@ class CaseNotesMappingApiService(@Qualifier("mappingApiWebClient") webClient: We
     .retrieve()
     .awaitBody()
 
-  suspend fun getMappingGivenNomisIdOrNull(caseNoteId: Long): CaseNoteMappingDto? =
-    webClient.get()
-      .uri("/mapping/casenotes/nomis-casenote-id/{caseNoteId}", caseNoteId)
-      .retrieve()
-      .awaitBodyOrNullWhenNotFound()
+  suspend fun getMappingGivenNomisIdOrNull(caseNoteId: Long): CaseNoteMappingDto? = webClient.get()
+    .uri("/mapping/casenotes/nomis-casenote-id/{caseNoteId}", caseNoteId)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 
   suspend fun updateMappingsByNomisId(oldOffenderNo: String, newOffenderNo: String) {
     webClient.put()
@@ -46,9 +43,8 @@ class CaseNotesMappingApiService(@Qualifier("mappingApiWebClient") webClient: We
       .awaitBodilessEntity()
   }
 
-  suspend fun updateMappingsByBookingId(bookingId: Long, newOffenderNo: String): List<CaseNoteMappingDto> =
-    webClient.put()
-      .uri("/mapping/casenotes/merge/booking-id/{bookingId}/to/{newOffenderNo}", bookingId, newOffenderNo)
-      .retrieve()
-      .awaitBody()
+  suspend fun updateMappingsByBookingId(bookingId: Long, newOffenderNo: String): List<CaseNoteMappingDto> = webClient.put()
+    .uri("/mapping/casenotes/merge/booking-id/{bookingId}/to/{newOffenderNo}", bookingId, newOffenderNo)
+    .retrieve()
+    .awaitBody()
 }

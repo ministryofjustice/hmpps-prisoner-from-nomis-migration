@@ -43,207 +43,188 @@ import java.time.LocalDate
 @Service
 class IncidentsNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
 
-  suspend fun getIncident(incidentId: Long): IncidentResponse =
-    webClient.get()
-      .uri("/incidents/{incidentId}", incidentId)
-      .retrieve()
-      .bodyToMono(IncidentResponse::class.java)
-      .awaitSingle()
+  suspend fun getIncident(incidentId: Long): IncidentResponse = webClient.get()
+    .uri("/incidents/{incidentId}", incidentId)
+    .retrieve()
+    .bodyToMono(IncidentResponse::class.java)
+    .awaitSingle()
 
-  suspend fun getIncidentOrNull(incidentId: Long): IncidentResponse? =
-    webClient.get()
-      .uri("/incidents/{incidentId}", incidentId)
-      .retrieve()
-      .awaitBodyOrNullWhenNotFound()
+  suspend fun getIncidentOrNull(incidentId: Long): IncidentResponse? = webClient.get()
+    .uri("/incidents/{incidentId}", incidentId)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 
   suspend fun getIncidentIds(
     fromDate: LocalDate?,
     toDate: LocalDate?,
     pageNumber: Long,
     pageSize: Long,
-  ): PageImpl<IncidentIdResponse> =
-    webClient.get()
-      .uri {
-        it.path("/incidents/ids")
-          .queryParam("fromDate", fromDate)
-          .queryParam("toDate", toDate)
-          .queryParam("page", pageNumber)
-          .queryParam("size", pageSize)
-          .build()
-      }
-      .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<IncidentIdResponse>>())
-      .awaitSingle()
+  ): PageImpl<IncidentIdResponse> = webClient.get()
+    .uri {
+      it.path("/incidents/ids")
+        .queryParam("fromDate", fromDate)
+        .queryParam("toDate", toDate)
+        .queryParam("page", pageNumber)
+        .queryParam("size", pageSize)
+        .build()
+    }
+    .retrieve()
+    .bodyToMono(typeReference<RestResponsePage<IncidentIdResponse>>())
+    .awaitSingle()
 
-  suspend fun getAllAgencies(): List<IncidentAgencyId> =
-    webClient.get()
-      .uri("/incidents/reconciliation/agencies")
-      .retrieve()
-      .awaitBody()
+  suspend fun getAllAgencies(): List<IncidentAgencyId> = webClient.get()
+    .uri("/incidents/reconciliation/agencies")
+    .retrieve()
+    .awaitBody()
 
-  suspend fun getIncidentsReconciliation(agencyId: String): IncidentsReconciliationResponse =
-    webClient.get()
-      .uri("/incidents/reconciliation/agency/{agencyId}/counts", agencyId)
-      .retrieve()
-      .awaitBody()
+  suspend fun getIncidentsReconciliation(agencyId: String): IncidentsReconciliationResponse = webClient.get()
+    .uri("/incidents/reconciliation/agency/{agencyId}/counts", agencyId)
+    .retrieve()
+    .awaitBody()
 
   suspend fun getOpenIncidentIds(
     agencyId: String,
     pageNumber: Long,
     pageSize: Long,
-  ): PageImpl<IncidentIdResponse> =
-    webClient.get()
-      .uri {
-        it.path("/incidents/reconciliation/agency/{agencyId}/ids")
-          .queryParam("page", pageNumber)
-          .queryParam("size", pageSize)
-          .build(agencyId)
-      }
-      .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<IncidentIdResponse>>())
-      .awaitSingle()
+  ): PageImpl<IncidentIdResponse> = webClient.get()
+    .uri {
+      it.path("/incidents/reconciliation/agency/{agencyId}/ids")
+        .queryParam("page", pageNumber)
+        .queryParam("size", pageSize)
+        .build(agencyId)
+    }
+    .retrieve()
+    .bodyToMono(typeReference<RestResponsePage<IncidentIdResponse>>())
+    .awaitSingle()
 }
 
-fun IncidentResponse.toMigrateUpsertNomisIncident() =
-  NomisSyncRequest(
-    id = null,
-    initialMigration = true,
-    incidentReport = toNomisIncidentReport(),
-  )
+fun IncidentResponse.toMigrateUpsertNomisIncident() = NomisSyncRequest(
+  id = null,
+  initialMigration = true,
+  incidentReport = toNomisIncidentReport(),
+)
 
-fun IncidentResponse.toNomisIncidentReport() =
-  NomisReport(
-    incidentId = incidentId,
-    questionnaireId = questionnaireId,
-    prison = agency.toUpsertCodeDescription(),
-    status = NomisStatus(status.code, status.description),
-    type = type,
-    lockedResponse = lockedResponse,
-    incidentDateTime = incidentDateTime,
-    reportingStaff = reportingStaff.toUpsertStaff(),
-    reportedDateTime = reportedDateTime,
-    staffParties = staffParties.map { it.toUpsertStaffParty() },
-    offenderParties = offenderParties.map { it.toUpsertOffenderParty() },
-    requirements = requirements.map { it.toUpsertRequirement() },
-    questions = questions.map { it.toUpsertQuestion() },
-    history = history.map { it.toUpsertHistory() },
-    title = title,
-    description = description,
-    followUpDate = followUpDate,
-    createdBy = createdBy,
-    createDateTime = createDateTime,
-    lastModifiedBy = lastModifiedBy,
-    lastModifiedDateTime = lastModifiedDateTime,
-  )
+fun IncidentResponse.toNomisIncidentReport() = NomisReport(
+  incidentId = incidentId,
+  questionnaireId = questionnaireId,
+  prison = agency.toUpsertCodeDescription(),
+  status = NomisStatus(status.code, status.description),
+  type = type,
+  lockedResponse = lockedResponse,
+  incidentDateTime = incidentDateTime,
+  reportingStaff = reportingStaff.toUpsertStaff(),
+  reportedDateTime = reportedDateTime,
+  staffParties = staffParties.map { it.toUpsertStaffParty() },
+  offenderParties = offenderParties.map { it.toUpsertOffenderParty() },
+  requirements = requirements.map { it.toUpsertRequirement() },
+  questions = questions.map { it.toUpsertQuestion() },
+  history = history.map { it.toUpsertHistory() },
+  title = title,
+  description = description,
+  followUpDate = followUpDate,
+  createdBy = createdBy,
+  createDateTime = createDateTime,
+  lastModifiedBy = lastModifiedBy,
+  lastModifiedDateTime = lastModifiedDateTime,
+)
 
-fun CodeDescription.toUpsertCodeDescription() =
-  NomisCode(
-    code = code,
-    description = description,
-  )
+fun CodeDescription.toUpsertCodeDescription() = NomisCode(
+  code = code,
+  description = description,
+)
 
-fun Staff.toUpsertStaff() =
-  NomisStaff(
-    username = username,
-    staffId = staffId,
-    firstName = firstName,
-    lastName = lastName,
-  )
+fun Staff.toUpsertStaff() = NomisStaff(
+  username = username,
+  staffId = staffId,
+  firstName = firstName,
+  lastName = lastName,
+)
 
-fun StaffParty.toUpsertStaffParty() =
-  NomisStaffParty(
-    staff = staff.toUpsertStaff(),
-    sequence = sequence,
-    role = role.toUpsertCodeDescription(),
-    comment = comment,
-    createdBy = createdBy,
-    createDateTime = createDateTime,
-    lastModifiedBy = lastModifiedBy,
-    lastModifiedDateTime = lastModifiedDateTime,
-  )
+fun StaffParty.toUpsertStaffParty() = NomisStaffParty(
+  staff = staff.toUpsertStaff(),
+  sequence = sequence,
+  role = role.toUpsertCodeDescription(),
+  comment = comment,
+  createdBy = createdBy,
+  createDateTime = createDateTime,
+  lastModifiedBy = lastModifiedBy,
+  lastModifiedDateTime = lastModifiedDateTime,
+)
 
-fun OffenderParty.toUpsertOffenderParty() =
-  NomisOffenderParty(
-    offender = offender.toUpsertOffender(),
-    sequence = sequence,
-    role = role.toUpsertCodeDescription(),
-    outcome = outcome?.toUpsertCodeDescription(),
-    comment = comment,
-    createdBy = createdBy,
-    createDateTime = createDateTime,
-    lastModifiedBy = lastModifiedBy,
-    lastModifiedDateTime = lastModifiedDateTime,
-  )
+fun OffenderParty.toUpsertOffenderParty() = NomisOffenderParty(
+  offender = offender.toUpsertOffender(),
+  sequence = sequence,
+  role = role.toUpsertCodeDescription(),
+  outcome = outcome?.toUpsertCodeDescription(),
+  comment = comment,
+  createdBy = createdBy,
+  createDateTime = createDateTime,
+  lastModifiedBy = lastModifiedBy,
+  lastModifiedDateTime = lastModifiedDateTime,
+)
 
-fun Offender.toUpsertOffender() =
-  NomisOffender(
-    offenderNo = offenderNo,
-    firstName = firstName,
-    lastName = lastName,
-  )
+fun Offender.toUpsertOffender() = NomisOffender(
+  offenderNo = offenderNo,
+  firstName = firstName,
+  lastName = lastName,
+)
 
-fun Requirement.toUpsertRequirement() =
-  NomisRequirement(
-    date = date,
-    staff = staff.toUpsertStaff(),
-    prisonId = agencyId,
-    comment = comment,
-    sequence = sequence,
-    createdBy = createdBy,
-    createDateTime = createDateTime,
-    lastModifiedBy = lastModifiedBy,
-    lastModifiedDateTime = lastModifiedDateTime,
-  )
+fun Requirement.toUpsertRequirement() = NomisRequirement(
+  date = date,
+  staff = staff.toUpsertStaff(),
+  prisonId = agencyId,
+  comment = comment,
+  sequence = sequence,
+  createdBy = createdBy,
+  createDateTime = createDateTime,
+  lastModifiedBy = lastModifiedBy,
+  lastModifiedDateTime = lastModifiedDateTime,
+)
 
-fun Question.toUpsertQuestion() =
-  NomisQuestion(
-    questionId = questionId,
-    sequence = sequence,
-    question = question,
-    answers = answers.map { it.toUpsertResponse() },
-    createdBy = createdBy,
-    createDateTime = createDateTime,
-  )
+fun Question.toUpsertQuestion() = NomisQuestion(
+  questionId = questionId,
+  sequence = sequence,
+  question = question,
+  answers = answers.map { it.toUpsertResponse() },
+  createdBy = createdBy,
+  createDateTime = createDateTime,
+)
 
-fun Response.toUpsertResponse() =
-  NomisResponse(
-    sequence = sequence,
-    recordingStaff = recordingStaff.toUpsertStaff(),
-    questionResponseId = questionResponseId,
-    answer = answer,
-    comment = comment,
-    responseDate = responseDate,
-    createdBy = createdBy,
-    createDateTime = createDateTime,
-    lastModifiedBy = lastModifiedBy,
-    lastModifiedDateTime = lastModifiedDateTime,
-  )
+fun Response.toUpsertResponse() = NomisResponse(
+  sequence = sequence,
+  recordingStaff = recordingStaff.toUpsertStaff(),
+  questionResponseId = questionResponseId,
+  answer = answer,
+  comment = comment,
+  responseDate = responseDate,
+  createdBy = createdBy,
+  createDateTime = createDateTime,
+  lastModifiedBy = lastModifiedBy,
+  lastModifiedDateTime = lastModifiedDateTime,
+)
 
-fun History.toUpsertHistory() =
-  NomisHistory(
-    questionnaireId = questionnaireId,
-    type = type,
-    questions = questions.map { it.toUpsertHistoryQuestion() },
-    incidentChangeDateTime = incidentChangeDateTime,
-    incidentChangeStaff = incidentChangeStaff.toUpsertStaff(),
-    description = description,
-    createdBy = createdBy,
-    createDateTime = createDateTime,
-  )
+fun History.toUpsertHistory() = NomisHistory(
+  questionnaireId = questionnaireId,
+  type = type,
+  questions = questions.map { it.toUpsertHistoryQuestion() },
+  incidentChangeDateTime = incidentChangeDateTime,
+  incidentChangeStaff = incidentChangeStaff.toUpsertStaff(),
+  description = description,
+  createdBy = createdBy,
+  createDateTime = createDateTime,
+)
 
-fun HistoryQuestion.toUpsertHistoryQuestion() =
-  NomisHistoryQuestion(
-    questionId = questionId,
-    sequence = sequence,
-    question = question,
-    answers = answers.map { it.toUpsertHistoryResponse() },
-  )
+fun HistoryQuestion.toUpsertHistoryQuestion() = NomisHistoryQuestion(
+  questionId = questionId,
+  sequence = sequence,
+  question = question,
+  answers = answers.map { it.toUpsertHistoryResponse() },
+)
 
-fun HistoryResponse.toUpsertHistoryResponse() =
-  NomisHistoryResponse(
-    responseSequence = responseSequence,
-    recordingStaff = recordingStaff.toUpsertStaff(),
-    questionResponseId = questionResponseId,
-    answer = answer,
-    comment = comment,
-  )
+fun HistoryResponse.toUpsertHistoryResponse() = NomisHistoryResponse(
+  responseSequence = responseSequence,
+  recordingStaff = recordingStaff.toUpsertStaff(),
+  questionResponseId = questionResponseId,
+  answer = answer,
+  comment = comment,
+)

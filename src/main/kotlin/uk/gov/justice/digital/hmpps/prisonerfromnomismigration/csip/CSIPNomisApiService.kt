@@ -16,40 +16,36 @@ import java.time.LocalDate
 @Service
 class CSIPNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
 
-  suspend fun getCSIP(csipId: Long): CSIPResponse =
-    webClient.get()
-      .uri("/csip/{csipId}", csipId)
-      .retrieve()
-      .awaitBody()
+  suspend fun getCSIP(csipId: Long): CSIPResponse = webClient.get()
+    .uri("/csip/{csipId}", csipId)
+    .retrieve()
+    .awaitBody()
 
-  suspend fun getCSIPFactor(csipFactorId: Long): CSIPFactorResponse =
-    webClient.get()
-      .uri("/csip/factors/{csipFactorId}", csipFactorId)
-      .retrieve()
-      .awaitBody()
+  suspend fun getCSIPFactor(csipFactorId: Long): CSIPFactorResponse = webClient.get()
+    .uri("/csip/factors/{csipFactorId}", csipFactorId)
+    .retrieve()
+    .awaitBody()
 
-  suspend fun getCSIPsForBooking(bookingId: Long): List<CSIPIdResponse> =
-    webClient.get()
-      .uri("/csip/booking/{bookingId}", bookingId)
-      .retrieve()
-      .awaitBody()
+  suspend fun getCSIPsForBooking(bookingId: Long): List<CSIPIdResponse> = webClient.get()
+    .uri("/csip/booking/{bookingId}", bookingId)
+    .retrieve()
+    .awaitBody()
 
   suspend fun getCSIPIds(
     fromDate: LocalDate?,
     toDate: LocalDate?,
     pageNumber: Long,
     pageSize: Long,
-  ): PageImpl<CSIPIdResponse> =
-    webClient.get()
-      .uri {
-        it.path("/csip/ids")
-          .queryParam("fromDate", fromDate)
-          .queryParam("toDate", toDate)
-          .queryParam("page", pageNumber)
-          .queryParam("size", pageSize)
-          .build()
-      }
-      .retrieve()
-      .bodyToMono(typeReference<RestResponsePage<CSIPIdResponse>>())
-      .awaitSingle()
+  ): PageImpl<CSIPIdResponse> = webClient.get()
+    .uri {
+      it.path("/csip/ids")
+        .queryParam("fromDate", fromDate)
+        .queryParam("toDate", toDate)
+        .queryParam("page", pageNumber)
+        .queryParam("size", pageSize)
+        .build()
+    }
+    .retrieve()
+    .bodyToMono(typeReference<RestResponsePage<CSIPIdResponse>>())
+    .awaitSingle()
 }

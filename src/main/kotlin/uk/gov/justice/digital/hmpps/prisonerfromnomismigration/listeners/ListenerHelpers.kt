@@ -14,8 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import java.util.concurrent.CompletableFuture
 
-inline fun <reified T> migrationContext(message: MigrationMessage<*, T>): MigrationContext<T> =
-  message.context
+inline fun <reified T> migrationContext(message: MigrationMessage<*, T>): MigrationContext<T> = message.context
 
 @JsonNaming(value = PropertyNamingStrategies.UpperCamelCaseStrategy::class)
 @JsonInclude(NON_NULL)
@@ -23,8 +22,7 @@ data class SQSMessage(val Type: String, val Message: String, val MessageId: Stri
 data class MessageAttributes(val eventType: EventType)
 data class EventType(val Value: String, val Type: String)
 
-fun asCompletableFuture(process: suspend () -> Unit): CompletableFuture<Void?> =
-  CoroutineScope(Context.current().asContextElement()).future {
-    process()
-    null
-  }
+fun asCompletableFuture(process: suspend () -> Unit): CompletableFuture<Void?> = CoroutineScope(Context.current().asContextElement()).future {
+  process()
+  null
+}

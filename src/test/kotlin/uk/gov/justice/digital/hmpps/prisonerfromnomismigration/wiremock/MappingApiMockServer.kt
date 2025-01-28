@@ -357,18 +357,17 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyCreateMappingSentenceAdjustmentIds(nomsSentenceAdjustmentIds: Array<String>, times: Int = 1) =
-    nomsSentenceAdjustmentIds.forEach {
-      verify(
-        times,
-        postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments")).withRequestBody(
-          matchingJsonPath(
-            "adjustmentId",
-            equalTo(it),
-          ),
+  fun verifyCreateMappingSentenceAdjustmentIds(nomsSentenceAdjustmentIds: Array<String>, times: Int = 1) = nomsSentenceAdjustmentIds.forEach {
+    verify(
+      times,
+      postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments")).withRequestBody(
+        matchingJsonPath(
+          "adjustmentId",
+          equalTo(it),
         ),
-      )
-    }
+      ),
+    )
+  }
 
   fun stubNomisAppointmentsMappingFound(id: Long) {
     val content = """{
@@ -436,18 +435,17 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyCreateMappingAppointmentIds(nomisAppointmentIds: Array<String>, times: Int = 1) =
-    nomisAppointmentIds.forEach {
-      verify(
-        times,
-        postRequestedFor(urlPathEqualTo("/mapping/appointments")).withRequestBody(
-          matchingJsonPath(
-            "appointmentInstanceId",
-            equalTo(it),
-          ),
+  fun verifyCreateMappingAppointmentIds(nomisAppointmentIds: Array<String>, times: Int = 1) = nomisAppointmentIds.forEach {
+    verify(
+      times,
+      postRequestedFor(urlPathEqualTo("/mapping/appointments")).withRequestBody(
+        matchingJsonPath(
+          "appointmentInstanceId",
+          equalTo(it),
         ),
-      )
-    }
+      ),
+    )
+  }
 
   fun stubActivitiesMappingByMigrationId(
     whenCreated: String = "2020-01-01T11:10:00",
@@ -512,24 +510,22 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyCreateActivityMappings(count: Int, times: Int = 1) =
-    repeat(count) { offset ->
-      verify(
-        times,
-        postRequestedFor(urlPathEqualTo("/mapping/activities/migration")).withRequestBody(
-          matchingJsonPath("nomisCourseActivityId", equalTo((offset + 1).toString())),
-        ),
-      )
-    }
+  fun verifyCreateActivityMappings(count: Int, times: Int = 1) = repeat(count) { offset ->
+    verify(
+      times,
+      postRequestedFor(urlPathEqualTo("/mapping/activities/migration")).withRequestBody(
+        matchingJsonPath("nomisCourseActivityId", equalTo((offset + 1).toString())),
+      ),
+    )
+  }
 
-  fun verifyCreateAllocationMappings(count: Int, times: Int = 1) =
-    repeat(count) { offset ->
-      verify(
-        times,
-        postRequestedFor(urlPathEqualTo("/mapping/allocations/migration"))
-          .withRequestBody(matchingJsonPath("nomisAllocationId", equalTo((offset + 1).toString()))),
-      )
-    }
+  fun verifyCreateAllocationMappings(count: Int, times: Int = 1) = repeat(count) { offset ->
+    verify(
+      times,
+      postRequestedFor(urlPathEqualTo("/mapping/allocations/migration"))
+        .withRequestBody(matchingJsonPath("nomisAllocationId", equalTo((offset + 1).toString()))),
+    )
+  }
 
   fun pageContent(content: String, count: Int) = """
   {
@@ -725,18 +721,17 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyCreateMappingLocationIds(locationIds: Array<String>, times: Int = 1) =
-    locationIds.forEach {
-      verify(
-        times,
-        postRequestedFor(urlPathEqualTo("/mapping/locations")).withRequestBody(
-          matchingJsonPath(
-            "dpsLocationId",
-            equalTo(it),
-          ),
+  fun verifyCreateMappingLocationIds(locationIds: Array<String>, times: Int = 1) = locationIds.forEach {
+    verify(
+      times,
+      postRequestedFor(urlPathEqualTo("/mapping/locations")).withRequestBody(
+        matchingJsonPath(
+          "dpsLocationId",
+          equalTo(it),
         ),
-      )
-    }
+      ),
+    )
+  }
 
   fun stubLocationMappingCreateConflict(
     nomisLocationId: Long = 1234,
@@ -850,6 +845,5 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createMappingCount(url: String) =
-    findAll(postRequestedFor(urlPathEqualTo(url))).count()
+  fun createMappingCount(url: String) = findAll(postRequestedFor(urlPathEqualTo(url))).count()
 }

@@ -986,25 +986,23 @@ class CaseNotesByPrisonerMigrationIntTest : SqsIntegrationTestBase() {
     }
   }
 
-  private fun performMigration(body: CaseNotesMigrationFilter = CaseNotesMigrationFilter()): MigrationResult =
-    webTestClient.post().uri("/migrate/casenotes")
-      .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CASENOTES")))
-      .contentType(MediaType.APPLICATION_JSON)
-      .bodyValue(body)
-      .exchange()
-      .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
-      .also {
-        waitUntilCompleted()
-      }
-
-  private fun waitUntilCompleted() =
-    await atMost Duration.ofSeconds(60) untilAsserted {
-      verify(telemetryClient).trackEvent(
-        eq("casenotes-migration-completed"),
-        any(),
-        isNull(),
-      )
+  private fun performMigration(body: CaseNotesMigrationFilter = CaseNotesMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/casenotes")
+    .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CASENOTES")))
+    .contentType(MediaType.APPLICATION_JSON)
+    .bodyValue(body)
+    .exchange()
+    .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
+    .also {
+      waitUntilCompleted()
     }
+
+  private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
+    verify(telemetryClient).trackEvent(
+      eq("casenotes-migration-completed"),
+      any(),
+      isNull(),
+    )
+  }
 }
 
 fun caseNoteTemplate(

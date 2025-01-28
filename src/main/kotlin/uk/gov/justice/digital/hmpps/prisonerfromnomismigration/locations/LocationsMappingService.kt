@@ -11,8 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
 
 @Service
-class LocationsMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) :
-  MigrationMapping<LocationMappingDto>(domainUrl = "/mapping/locations", webClient) {
+class LocationsMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<LocationMappingDto>(domainUrl = "/mapping/locations", webClient) {
 
   suspend fun createMapping(request: LocationMappingDto) {
     webClient.post()
@@ -22,15 +21,14 @@ class LocationsMappingService(@Qualifier("mappingApiWebClient") webClient: WebCl
       .awaitBodilessEntity()
   }
 
-  suspend fun getMappingGivenNomisId(id: Long): LocationMappingDto? =
-    webClient.get()
-      .uri("/mapping/locations/nomis/{id}", id)
-      .retrieve()
-      .bodyToMono(LocationMappingDto::class.java)
-      .onErrorResume(WebClientResponseException.NotFound::class.java) {
-        Mono.empty()
-      }
-      .awaitSingleOrNull()
+  suspend fun getMappingGivenNomisId(id: Long): LocationMappingDto? = webClient.get()
+    .uri("/mapping/locations/nomis/{id}", id)
+    .retrieve()
+    .bodyToMono(LocationMappingDto::class.java)
+    .onErrorResume(WebClientResponseException.NotFound::class.java) {
+      Mono.empty()
+    }
+    .awaitSingleOrNull()
 
   suspend fun deleteMappingGivenDpsId(id: String) {
     webClient.delete()

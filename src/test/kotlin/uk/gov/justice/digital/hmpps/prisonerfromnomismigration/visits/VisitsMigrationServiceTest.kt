@@ -446,25 +446,24 @@ internal class VisitsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
-        runBlocking {
-          service.migrateStatusCheck(
-            MigrationContext(
-              type = VISITS,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 100_200,
-              body = MigrationStatusCheck(checkCount = 4),
-            ),
-          )
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runBlocking {
+        service.migrateStatusCheck(
+          MigrationContext(
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = MigrationStatusCheck(checkCount = 4),
+          ),
+        )
 
-          verify(queueService).sendMessage(
-            message = eq(MIGRATE_STATUS_CHECK),
-            context = check<MigrationContext<MigrationStatusCheck>> {
-              assertThat(it.body.checkCount).isEqualTo(0)
-            },
-            delaySeconds = eq(10),
-          )
-        }
+        verify(queueService).sendMessage(
+          message = eq(MIGRATE_STATUS_CHECK),
+          context = check<MigrationContext<MigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(0)
+          },
+          delaySeconds = eq(10),
+        )
+      }
     }
 
     @Nested
@@ -591,26 +590,25 @@ internal class VisitsMigrationServiceTest {
       }
 
       @Test
-      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit =
-        runBlocking {
-          service.cancelMigrateStatusCheck(
-            MigrationContext(
-              type = VISITS,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 100_200,
-              body = MigrationStatusCheck(checkCount = 4),
-            ),
-          )
+      internal fun `will check again in 10 second and reset even when previously started finishing up phase`(): Unit = runBlocking {
+        service.cancelMigrateStatusCheck(
+          MigrationContext(
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = MigrationStatusCheck(checkCount = 4),
+          ),
+        )
 
-          verify(queueService).purgeAllMessages(any())
-          verify(queueService).sendMessage(
-            message = eq(CANCEL_MIGRATION),
-            context = check<MigrationContext<MigrationStatusCheck>> {
-              assertThat(it.body.checkCount).isEqualTo(0)
-            },
-            delaySeconds = eq(10),
-          )
-        }
+        verify(queueService).purgeAllMessages(any())
+        verify(queueService).sendMessage(
+          message = eq(CANCEL_MIGRATION),
+          context = check<MigrationContext<MigrationStatusCheck>> {
+            assertThat(it.body.checkCount).isEqualTo(0)
+          },
+          delaySeconds = eq(10),
+        )
+      }
     }
 
     @Nested
@@ -930,31 +928,30 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will retrieve room for NOMIS room id using internal agency description (future visits)`(): Unit =
-      runBlocking {
-        whenever(nomisApiService.getVisit(any())).thenReturn(
-          aVisit(
-            prisonId = "BXI",
-            agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
-            prisonerId = "A1234AA",
-            startDateTime = LocalDateTime.now().plusDays(5),
-          ),
-        )
-
-        service.migrateNomisEntity(
-          MigrationContext(
-            type = VISITS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = VisitId(123),
-          ),
-        )
-
-        verify(visitMappingService).findRoomMapping(
+    internal fun `will retrieve room for NOMIS room id using internal agency description (future visits)`(): Unit = runBlocking {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
           prisonId = "BXI",
-          agencyInternalLocationCode = "MDI-VISITS-OFF_VIS",
-        )
-      }
+          agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+          prisonerId = "A1234AA",
+          startDateTime = LocalDateTime.now().plusDays(5),
+        ),
+      )
+
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = VISITS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123),
+        ),
+      )
+
+      verify(visitMappingService).findRoomMapping(
+        prisonId = "BXI",
+        agencyInternalLocationCode = "MDI-VISITS-OFF_VIS",
+      )
+    }
 
     @Test
     internal fun `migration abandoned due to room mapping missing - future date`(): Unit = runBlocking {
@@ -1040,104 +1037,101 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal fun `migration does not look up room mapping for bad visit data - defined as more than a year in the future`(): Unit =
-      runBlocking {
-        whenever(nomisApiService.getVisit(any())).thenReturn(
-          aVisit(
-            prisonId = "BXI",
-            agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
-            prisonerId = "A1234AA",
-            visitId = 123456,
-            startDateTime = inTwoYearsDateTime,
-          ),
-        )
+    internal fun `migration does not look up room mapping for bad visit data - defined as more than a year in the future`(): Unit = runBlocking {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
+          prisonId = "BXI",
+          agencyInternalLocation = NomisCodeDescription("OFF_VIS", "MDI-VISITS-OFF_VIS"),
+          prisonerId = "A1234AA",
+          visitId = 123456,
+          startDateTime = inTwoYearsDateTime,
+        ),
+      )
 
-        whenever(visitsService.createVisit(any())).thenReturn(
-          VisitCreated("654321"),
-        )
+      whenever(visitsService.createVisit(any())).thenReturn(
+        VisitCreated("654321"),
+      )
 
-        service.migrateNomisEntity(
-          MigrationContext(
-            type = VISITS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = VisitId(123),
-          ),
-        )
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = VISITS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123),
+        ),
+      )
 
-        verify(telemetryClient).trackEvent(
-          eq("visits-migration-entity-migrated"),
-          check {
-            assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
-            assertThat(it["prisonId"]).isEqualTo("BXI")
-            assertThat(it["offenderNo"]).isEqualTo("A1234AA")
-            assertThat(it["visitId"]).isEqualTo("123456")
-            assertThat(it["vsipVisitId"]).isEqualTo("654321")
-            assertThat(LocalDateTime.parse(it["startDateTime"])).isEqualTo(inTwoYearsDateTime)
-            assertThat(it["room"]).isEqualTo("MDI-VISITS-OFF_VIS")
-          },
-          eq(null),
-        )
+      verify(telemetryClient).trackEvent(
+        eq("visits-migration-entity-migrated"),
+        check {
+          assertThat(it["migrationId"]).isEqualTo("2020-05-23T11:30:00")
+          assertThat(it["prisonId"]).isEqualTo("BXI")
+          assertThat(it["offenderNo"]).isEqualTo("A1234AA")
+          assertThat(it["visitId"]).isEqualTo("123456")
+          assertThat(it["vsipVisitId"]).isEqualTo("654321")
+          assertThat(LocalDateTime.parse(it["startDateTime"])).isEqualTo(inTwoYearsDateTime)
+          assertThat(it["room"]).isEqualTo("MDI-VISITS-OFF_VIS")
+        },
+        eq(null),
+      )
 
-        verify(visitMappingService, never()).findRoomMapping(any(), any())
-      }
-
-    @Test
-    internal fun `when no room found in NOMIS, migration for this visit is abandoned (future visits)`(): Unit =
-      runBlocking {
-        whenever(nomisApiService.getVisit(any())).thenReturn(
-          aVisit(
-            agencyInternalLocation = null,
-            startDateTime = tomorrowDateTime,
-          ),
-        )
-
-        assertThatThrownBy {
-          runBlocking {
-            service.migrateNomisEntity(
-              MigrationContext(
-                type = VISITS,
-                migrationId = "2020-05-23T11:30:00",
-                estimatedCount = 100_200,
-                body = VisitId(123),
-              ),
-            )
-          }
-        }.isInstanceOf(NoRoomMappingFoundException::class.java)
-      }
+      verify(visitMappingService, never()).findRoomMapping(any(), any())
+    }
 
     @Test
-    internal fun `when no room found in NOMIS, migration for this visit is allowed (historical visits)`(): Unit =
-      runBlocking {
-        whenever(nomisApiService.getVisit(any())).thenReturn(
-          aVisit(
-            agencyInternalLocation = null,
-            startDateTime = yesterdayDateTime,
-          ),
-        )
+    internal fun `when no room found in NOMIS, migration for this visit is abandoned (future visits)`(): Unit = runBlocking {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
+          agencyInternalLocation = null,
+          startDateTime = tomorrowDateTime,
+        ),
+      )
 
-        whenever(visitsService.createVisit(any())).thenReturn(
-          VisitCreated("654321"),
-        )
+      assertThatThrownBy {
+        runBlocking {
+          service.migrateNomisEntity(
+            MigrationContext(
+              type = VISITS,
+              migrationId = "2020-05-23T11:30:00",
+              estimatedCount = 100_200,
+              body = VisitId(123),
+            ),
+          )
+        }
+      }.isInstanceOf(NoRoomMappingFoundException::class.java)
+    }
 
-        service.migrateNomisEntity(
-          MigrationContext(
-            type = VISITS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = VisitId(123),
-          ),
-        )
+    @Test
+    internal fun `when no room found in NOMIS, migration for this visit is allowed (historical visits)`(): Unit = runBlocking {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
+          agencyInternalLocation = null,
+          startDateTime = yesterdayDateTime,
+        ),
+      )
 
-        verify(telemetryClient).trackEvent(
-          eq("visits-migration-entity-migrated"),
-          check {
-            assertThat(LocalDateTime.parse(it["startDateTime"])).isEqualTo(yesterdayDateTime)
-            assertThat(it["room"]).isEqualTo("UNKNOWN")
-          },
-          eq(null),
-        )
-      }
+      whenever(visitsService.createVisit(any())).thenReturn(
+        VisitCreated("654321"),
+      )
+
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = VISITS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123),
+        ),
+      )
+
+      verify(telemetryClient).trackEvent(
+        eq("visits-migration-entity-migrated"),
+        check {
+          assertThat(LocalDateTime.parse(it["startDateTime"])).isEqualTo(yesterdayDateTime)
+          assertThat(it["room"]).isEqualTo("UNKNOWN")
+        },
+        eq(null),
+      )
+    }
 
     @Test
     internal fun `will create a visit in VSIP`(): Unit = runBlocking {
@@ -1464,75 +1458,73 @@ internal class VisitsMigrationServiceTest {
       }
 
       @Test
-      internal fun `visit restriction is set to correct value for a visit booked with a future date`(): Unit =
-        runBlocking {
-          whenever(nomisApiService.getVisit(any())).thenReturn(
-            aVisit(
-              agencyInternalLocation = NomisCodeDescription("VSIP-ROOM-ID", "A closed room"),
-              startDateTime = LocalDateTime.now().plusDays(5),
-              endDateTime = LocalDateTime.now().plusDays(5).plusHours(1),
-            ),
-          )
+      internal fun `visit restriction is set to correct value for a visit booked with a future date`(): Unit = runBlocking {
+        whenever(nomisApiService.getVisit(any())).thenReturn(
+          aVisit(
+            agencyInternalLocation = NomisCodeDescription("VSIP-ROOM-ID", "A closed room"),
+            startDateTime = LocalDateTime.now().plusDays(5),
+            endDateTime = LocalDateTime.now().plusDays(5).plusHours(1),
+          ),
+        )
 
-          whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
-            RoomMapping(
-              vsipId = "VSIP-ROOM-ID",
-              isOpen = false,
-            ),
-          )
+        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+          RoomMapping(
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = false,
+          ),
+        )
 
-          service.migrateNomisEntity(
-            MigrationContext(
-              type = VISITS,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 100_200,
-              body = VisitId(123),
-            ),
-          )
+        service.migrateNomisEntity(
+          MigrationContext(
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
+        )
 
-          verify(visitsService).createVisit(
-            check {
-              assertThat(it.visitRestriction).isEqualTo(VisitRestriction.CLOSED)
-            },
-          )
-        }
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.visitRestriction).isEqualTo(VisitRestriction.CLOSED)
+          },
+        )
+      }
     }
 
     @Nested
     @DisplayName("Visit comments mapping")
     inner class NomisToVisitCommentsMapping {
       @Test
-      internal fun `visit comments are excluded from migration for historical visits (prior to today)`(): Unit =
-        runBlocking {
-          whenever(nomisApiService.getVisit(any())).thenReturn(
-            aVisit(
-              startDateTime = LocalDateTime.now().minusDays(1),
-              endDateTime = LocalDateTime.now().minusDays(1).plusHours(1),
-            ),
-          )
+      internal fun `visit comments are excluded from migration for historical visits (prior to today)`(): Unit = runBlocking {
+        whenever(nomisApiService.getVisit(any())).thenReturn(
+          aVisit(
+            startDateTime = LocalDateTime.now().minusDays(1),
+            endDateTime = LocalDateTime.now().minusDays(1).plusHours(1),
+          ),
+        )
 
-          whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
-            RoomMapping(
-              vsipId = "VSIP-ROOM-ID",
-              isOpen = true,
-            ),
-          )
+        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+          RoomMapping(
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = true,
+          ),
+        )
 
-          service.migrateNomisEntity(
-            MigrationContext(
-              type = VISITS,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 100_200,
-              body = VisitId(123),
-            ),
-          )
+        service.migrateNomisEntity(
+          MigrationContext(
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
+        )
 
-          verify(visitsService).createVisit(
-            check {
-              assertThat(it.visitNotes).isEmpty()
-            },
-          )
-        }
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.visitNotes).isEmpty()
+          },
+        )
+      }
 
       @Test
       internal fun `visit comments are included in the migration for a visit with today's date`(): Unit = runBlocking {
@@ -1573,82 +1565,80 @@ internal class VisitsMigrationServiceTest {
       }
 
       @Test
-      internal fun `visit comments are included in the migration for a visit booked with a future date`(): Unit =
-        runBlocking {
-          whenever(nomisApiService.getVisit(any())).thenReturn(
-            aVisit(
-              startDateTime = LocalDateTime.now().plusDays(5),
-              endDateTime = LocalDateTime.now().plusDays(5).plusHours(1),
-            ),
-          )
+      internal fun `visit comments are included in the migration for a visit booked with a future date`(): Unit = runBlocking {
+        whenever(nomisApiService.getVisit(any())).thenReturn(
+          aVisit(
+            startDateTime = LocalDateTime.now().plusDays(5),
+            endDateTime = LocalDateTime.now().plusDays(5).plusHours(1),
+          ),
+        )
 
-          whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
-            RoomMapping(
-              vsipId = "VSIP-ROOM-ID",
-              isOpen = false,
-            ),
-          )
+        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+          RoomMapping(
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = false,
+          ),
+        )
 
-          service.migrateNomisEntity(
-            MigrationContext(
-              type = VISITS,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 100_200,
-              body = VisitId(123),
-            ),
-          )
+        service.migrateNomisEntity(
+          MigrationContext(
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
+        )
 
-          verify(visitsService).createVisit(
-            check {
-              assertThat(it.visitNotes).extracting("text", "type").contains(
-                tuple(
-                  "This is a comment",
-                  VsipVisitNoteType.VISIT_COMMENT,
-                ),
-                tuple("this is concerning", VsipVisitNoteType.VISITOR_CONCERN),
-              )
-            },
-          )
-        }
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.visitNotes).extracting("text", "type").contains(
+              tuple(
+                "This is a comment",
+                VsipVisitNoteType.VISIT_COMMENT,
+              ),
+              tuple("this is concerning", VsipVisitNoteType.VISITOR_CONCERN),
+            )
+          },
+        )
+      }
     }
 
     @Nested
     @DisplayName("Visit room mapping (date dependent)")
     inner class NomisToVisitRoomMapping {
       @Test
-      internal fun `visit room is set to the nomis description, ignoring the VSIP mapping for historical visits (prior to today)`(): Unit =
-        runBlocking {
-          val aVisit = aVisit(
-            agencyInternalLocation = NomisCodeDescription("NOMIS-ROOM-CODE", "NOMIS-ROOM-DESC"),
-            startDateTime = LocalDateTime.now().minusDays(1),
-            endDateTime = LocalDateTime.now().minusDays(1).plusHours(1),
-          )
-          whenever(nomisApiService.getVisit(any())).thenReturn(
-            aVisit,
-          )
+      internal fun `visit room is set to the nomis description, ignoring the VSIP mapping for historical visits (prior to today)`(): Unit = runBlocking {
+        val aVisit = aVisit(
+          agencyInternalLocation = NomisCodeDescription("NOMIS-ROOM-CODE", "NOMIS-ROOM-DESC"),
+          startDateTime = LocalDateTime.now().minusDays(1),
+          endDateTime = LocalDateTime.now().minusDays(1).plusHours(1),
+        )
+        whenever(nomisApiService.getVisit(any())).thenReturn(
+          aVisit,
+        )
 
-          whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
-            RoomMapping(
-              vsipId = "VSIP-ROOM-ID",
-              isOpen = true,
-            ),
-          )
+        whenever(visitMappingService.findRoomMapping(any(), any())).thenReturn(
+          RoomMapping(
+            vsipId = "VSIP-ROOM-ID",
+            isOpen = true,
+          ),
+        )
 
-          service.migrateNomisEntity(
-            MigrationContext(
-              type = VISITS,
-              migrationId = "2020-05-23T11:30:00",
-              estimatedCount = 100_200,
-              body = VisitId(123),
-            ),
-          )
+        service.migrateNomisEntity(
+          MigrationContext(
+            type = VISITS,
+            migrationId = "2020-05-23T11:30:00",
+            estimatedCount = 100_200,
+            body = VisitId(123),
+          ),
+        )
 
-          verify(visitsService).createVisit(
-            check {
-              assertThat(it.visitRoom).isEqualTo("NOMIS-ROOM-DESC")
-            },
-          )
-        }
+        verify(visitsService).createVisit(
+          check {
+            assertThat(it.visitRoom).isEqualTo("NOMIS-ROOM-DESC")
+          },
+        )
+      }
 
       @Test
       internal fun `visit room is set to correct value for a visit with today's date`(): Unit = runBlocking {
@@ -1897,40 +1887,39 @@ internal class VisitsMigrationServiceTest {
     }
 
     @Test
-    internal fun `will not throw exception (and place message back on queue) but create a new retry message`(): Unit =
-      runBlocking {
-        whenever(nomisApiService.getVisit(any())).thenReturn(
-          aVisit(
-            visitId = 123456,
-          ),
-        )
-        whenever(visitsService.createVisit(any())).thenReturn(
-          VisitCreated("654321"),
-        )
+    internal fun `will not throw exception (and place message back on queue) but create a new retry message`(): Unit = runBlocking {
+      whenever(nomisApiService.getVisit(any())).thenReturn(
+        aVisit(
+          visitId = 123456,
+        ),
+      )
+      whenever(visitsService.createVisit(any())).thenReturn(
+        VisitCreated("654321"),
+      )
 
-        whenever(visitMappingService.createMapping(any(), any())).thenThrow(
-          RuntimeException("something went wrong"),
-        )
+      whenever(visitMappingService.createMapping(any(), any())).thenThrow(
+        RuntimeException("something went wrong"),
+      )
 
-        service.migrateNomisEntity(
-          MigrationContext(
-            type = VISITS,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 100_200,
-            body = VisitId(123456),
-          ),
-        )
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = VISITS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = VisitId(123456),
+        ),
+      )
 
-        verify(queueService).sendMessage(
-          message = eq(RETRY_MIGRATION_MAPPING),
-          context = check<MigrationContext<VisitNomisMapping>> {
-            assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
-            assertThat(it.body.nomisId).isEqualTo(123456)
-            assertThat(it.body.vsipId).isEqualTo("654321")
-          },
-          delaySeconds = eq(0),
-        )
-      }
+      verify(queueService).sendMessage(
+        message = eq(RETRY_MIGRATION_MAPPING),
+        context = check<MigrationContext<VisitNomisMapping>> {
+          assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
+          assertThat(it.body.nomisId).isEqualTo(123456)
+          assertThat(it.body.vsipId).isEqualTo("654321")
+        },
+        delaySeconds = eq(0),
+      )
+    }
 
     @Nested
     inner class Analytics {

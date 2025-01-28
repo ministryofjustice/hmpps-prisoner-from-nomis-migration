@@ -732,11 +732,10 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
   }
 }
 
-fun SqsAsyncClient.waitForMessageCountOnQueue(queueUrl: String, messageCount: Int) =
-  await untilCallTo {
-    countAllMessagesOnQueue(queueUrl)
-      .get()
-  } matches { it == messageCount }
+fun SqsAsyncClient.waitForMessageCountOnQueue(queueUrl: String, messageCount: Int) = await untilCallTo {
+  countAllMessagesOnQueue(queueUrl)
+    .get()
+} matches { it == messageCount }
 
 fun incidentEvent(
   eventType: String,
