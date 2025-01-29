@@ -252,9 +252,9 @@ class IncidentsSynchronisationService(
       }
       return MappingResponse.MAPPING_CREATED
     } catch (e: Exception) {
-      log.error(
+      log.info(
         "Failed to create mapping for dpsIncidentId $dpsIncidentId, nomisIncidentId ${event.incidentCaseId}",
-        e,
+        e.message,
       )
       queueService.sendMessage(
         messageType = RETRY_SYNCHRONISATION_MAPPING.name,
