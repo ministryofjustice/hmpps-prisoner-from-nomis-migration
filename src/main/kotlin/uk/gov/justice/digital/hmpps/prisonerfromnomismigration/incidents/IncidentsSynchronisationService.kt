@@ -5,7 +5,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -37,32 +39,70 @@ class IncidentsSynchronisationService(
       )
       return
     }
-
-    val nomisIncident = nomisApiService.getIncident(event.incidentCaseId)
-    incidentsMappingService.findByNomisId(nomisIncidentId = event.incidentCaseId)
+    val nomisIncidentId = event.incidentCaseId
+    val nomisIncident = nomisApiService.getIncident(nomisIncidentId)
+    incidentsMappingService.findByNomisId(nomisIncidentId = nomisIncidentId)
       ?.let {
         // Should never happen - it shouldn't exist in the mapping table
         telemetryClient.trackEvent(
           "incidents-synchronisation-created-ignored",
           event.toTelemetryProperties(),
         )
-      } ?: let {
-      incidentsService.upsertIncident(
-        NomisSyncRequest(
-          id = null,
-          initialMigration = false,
-          incidentReport = nomisIncident.toNomisIncidentReport(),
-        ),
-      ).also { dpsIncident ->
-        tryToCreateIncidentMapping(event, dpsIncident.id.toString()).also { result ->
-          telemetryClient.trackEvent(
-            "incidents-synchronisation-created-success",
-            event.toTelemetryProperties(
-              dpsIncident.id.toString(),
-              result == MAPPING_FAILED,
-            ),
-          )
+      }
+      ?: try {
+        incidentsService.upsertIncident(
+          NomisSyncRequest(
+            id = null,
+            initialMigration = false,
+            incidentReport = nomisIncident.toNomisIncidentReport(),
+          ),
+        ).also { dpsIncident ->
+          tryToCreateIncidentMapping(event, dpsIncident.id.toString()).also { result ->
+            telemetryClient.trackEvent(
+              "incidents-synchronisation-created-success",
+              event.toTelemetryProperties(
+                dpsIncident.id.toString(),
+                result == MAPPING_FAILED,
+              ),
+            )
+          }
         }
+      } catch (e: WebClientResponseException.Conflict) {
+        // We have a conflict - this should only ever happen if the incident was stored in DPS, but we didn't receive a response in time
+        // so is never added to the incidents mapping table
+        log.error("Conflict received from DPS for nomisIncidentId: $nomisIncidentId, attempting to recover.", e)
+        telemetryClient.trackEvent(
+          "incidents-synchronisation-created-conflict",
+          mapOf(
+            "nomisIncidentId" to nomisIncidentId,
+            "reason" to e.toString(),
+          ),
+        )
+        recoverFromDPSConflict(nomisIncidentId)
+      } catch (e: Exception) {
+        telemetryClient.trackEvent(
+          "incidents-synchronisation-created-failed",
+          mapOf(
+            "nomisIncidentId" to nomisIncidentId,
+            "reason" to e.toString(),
+          ),
+        )
+        throw e
+      }
+  }
+
+  private suspend fun recoverFromDPSConflict(
+    nomisIncidentId: Long,
+  ) {
+    incidentsService.getIncidentByNomisId(nomisIncidentId).also {
+      tryToCreateIncidentMapping(event = IncidentsOffenderEvent(nomisIncidentId, "DPS_SYNCHRONISATION"), dpsIncidentId = it.id.toString()).also { result ->
+        telemetryClient.trackEvent(
+          "incidents-synchronisation-created-conflict-recovered",
+          mapOf(
+            "nomisIncidentId" to nomisIncidentId,
+            "dpsIncidentId" to it.id,
+          ),
+        )
       }
     }
   }
@@ -201,9 +241,9 @@ class IncidentsSynchronisationService(
           val duplicateErrorDetails = (it.errorResponse!!).moreInfo
           telemetryClient.trackEvent(
             "incidents-synchronisation-nomis-duplicate",
-            mapOf<String, String>(
-              "existingNomisIncidentId" to duplicateErrorDetails.existing.nomisIncidentId.toString(),
-              "duplicateNomisIncidentId" to duplicateErrorDetails.duplicate.nomisIncidentId.toString(),
+            mapOf(
+              "existingNomisIncidentId" to duplicateErrorDetails.existing.nomisIncidentId,
+              "duplicateNomisIncidentId" to duplicateErrorDetails.duplicate.nomisIncidentId,
               "existingDPSIncidentId" to duplicateErrorDetails.existing.dpsIncidentId,
               "duplicateDPSIncidentId" to duplicateErrorDetails.duplicate.dpsIncidentId,
             ),

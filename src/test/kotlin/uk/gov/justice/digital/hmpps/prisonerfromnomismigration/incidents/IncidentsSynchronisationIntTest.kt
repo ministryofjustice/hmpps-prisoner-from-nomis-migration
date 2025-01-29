@@ -25,6 +25,7 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.incidentsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingApiMockServer.Companion.INCIDENTS_CREATE_MAPPING_URL
@@ -195,6 +196,51 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
               check {
                 assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
                 assertThat(it["migrationId"]).isNull()
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      inner class WhenIncidentAlreadyExistsInDps {
+
+        @Test
+        internal fun `it will not retry after a 409 (duplicate incident written to Incident API)`() {
+          incidentsNomisApi.stubGetIncident()
+          incidentsMappingApi.stubGetAnyIncidentNotFound()
+          incidentsApi.stubIncidentUpsert(status = HttpStatus.CONFLICT)
+          incidentsApi.stubGetBasicIncident()
+          incidentsMappingApi.stubMappingCreate()
+
+          awsSqsIncidentsOffenderEventsClient.sendMessage(
+            incidentsQueueOffenderEventsUrl,
+            incidentEvent(eventType = "INCIDENT-INSERTED"),
+          )
+
+          // wait for mapping to be created before verifying
+          await untilCallTo { mappingApi.createMappingCount(INCIDENTS_CREATE_MAPPING_URL) } matches { it == 1 }
+
+          assertThat(incidentsApi.createIncidentUpsertCount()).isEqualTo(1)
+
+          incidentsApi.verifyMigrationGetBasicIncident()
+          incidentsMappingApi.verifyCreateMappingIncidentId(dpsIncidentId = DPS_INCIDENT_ID)
+
+          verify(telemetryClient).trackEvent(
+            eq("incidents-synchronisation-created-conflict"),
+            check {
+              assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
+              assertThat(it["reason"]).contains("Conflict: 409 Conflict from POST")
+            },
+            isNull(),
+          )
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("incidents-synchronisation-created-conflict-recovered"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
+                assertThat(it["dpsIncidentId"]).isEqualTo(DPS_INCIDENT_ID)
               },
               isNull(),
             )
