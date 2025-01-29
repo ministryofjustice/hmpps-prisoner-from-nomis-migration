@@ -1,12 +1,12 @@
 {
-  "openapi": "3.0.1",
+  "openapi": "3.1.0",
   "info": {
     "title": "HMPPS Core Person Record",
     "contact": {
       "name": "HMPPS Person Record",
       "email": "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version": "2025-01-06.12162.880c457"
+    "version": "2025-01-28.12831.270a9a4"
   },
   "servers": [
     {
@@ -37,10 +37,6 @@
     {
       "name": "Search",
       "description": "APIs for person search"
-    },
-    {
-      "name": "Jobs",
-      "description": "Batch job endpoints"
     }
   ],
   "paths": {
@@ -83,12 +79,12 @@
               }
             }
           },
-          "201": {
-            "description": "CREATED",
+          "200": {
+            "description": "Data created in CPR",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/CreateResponse"
                 }
               }
             }
@@ -189,12 +185,23 @@
         }
       }
     },
-    "/jobs/generatetermfrequencies": {
+    "/updatefromprobation": {
       "post": {
         "tags": [
-          "Jobs"
+          "update-from-probation"
         ],
-        "operationId": "generate",
+        "operationId": "populate",
+        "parameters": [
+          {
+            "name": "startPage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -418,13 +425,11 @@
   "components": {
     "schemas": {
       "Address": {
-        "required": [
-          "isPrimary"
-        ],
         "type": "object",
         "properties": {
           "id": {
-            "type": "string"
+            "type": "integer",
+            "format": "int64"
           },
           "type": {
             "type": "string"
@@ -471,49 +476,18 @@
             "type": "boolean"
           },
           "mail": {
-            "type": "string"
+            "type": "boolean"
           }
         }
       },
-      "Alias": {
+      "Email": {
         "type": "object",
         "properties": {
-          "title": {
-            "type": "string"
+          "id": {
+            "type": "integer",
+            "format": "int64"
           },
-          "firstName": {
-            "type": "string"
-          },
-          "middleName1": {
-            "type": "string"
-          },
-          "middleName2": {
-            "type": "string"
-          },
-          "lastName": {
-            "type": "string"
-          },
-          "dateOfBirth": {
-            "type": "string",
-            "format": "date"
-          },
-          "type": {
-            "type": "string"
-          },
-          "sex": {
-            "type": "string"
-          },
-          "ethnicity": {
-            "type": "string"
-          },
-          "race": {
-            "type": "string"
-          },
-          "created": {
-            "type": "string",
-            "format": "date"
-          },
-          "offenderId": {
+          "emailAddress": {
             "type": "string"
           }
         }
@@ -526,39 +500,10 @@
           },
           "value": {
             "type": "string"
-          },
-          "offenderId": {
-            "type": "string"
           }
         }
       },
-      "PhoneNumber": {
-        "type": "object",
-        "properties": {
-          "phoneId": {
-            "type": "string"
-          },
-          "phoneNumber": {
-            "type": "string"
-          },
-          "phoneType": {
-            "type": "string"
-          },
-          "phoneExtension": {
-            "type": "string"
-          }
-        }
-      },
-      "Prisoner": {
-        "required": [
-          "addresses",
-          "aliases",
-          "emails",
-          "identifiers",
-          "multipleNationalities",
-          "phoneNumbers",
-          "religions"
-        ],
+      "Names": {
         "type": "object",
         "properties": {
           "title": {
@@ -580,40 +525,94 @@
             "type": "string",
             "format": "date"
           },
-          "birthplace": {
+          "birthPlace": {
             "type": "string"
           },
+          "birthCountry": {
+            "type": "string"
+          },
+          "nameType": {
+            "type": "string",
+            "enum": [
+              "CURRENT",
+              "ALIAS",
+              "NICKNAME",
+              "MAIDEN"
+            ]
+          },
+          "sex": {
+            "type": "string",
+            "enum": [
+              "MALE",
+              "FEMALE",
+              "NOT_KNOWN",
+              "NOT_SPECIFIED",
+              "REFUSED"
+            ]
+          },
+          "raceCode": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string",
+            "format": "date"
+          },
+          "offenderId": {
+            "type": "string"
+          },
+          "workingName": {
+            "type": "boolean"
+          },
+          "identifiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          }
+        },
+        "required": [
+          "identifiers"
+        ]
+      },
+      "PhoneNumber": {
+        "type": "object",
+        "properties": {
+          "phoneId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "phoneNumber": {
+            "type": "string"
+          },
+          "phoneType": {
+            "type": "string",
+            "enum": [
+              "HOME",
+              "MOBILE",
+              "BUSINESS"
+            ]
+          },
+          "phoneExtension": {
+            "type": "string"
+          }
+        }
+      },
+      "Prisoner": {
+        "type": "object",
+        "properties": {
           "nationality": {
             "type": "string"
           },
-          "multipleNationalities": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+          "secondaryNationality": {
+            "type": "string"
           },
-          "religions": {
+          "religion": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Religion"
             }
           },
-          "crn": {
-            "type": "string"
-          },
-          "prisonNumber": {
-            "type": "string"
-          },
-          "ethnicity": {
-            "type": "string"
-          },
-          "race": {
-            "type": "string"
-          },
           "sexualOrientation": {
-            "type": "string"
-          },
-          "sex": {
             "type": "string"
           },
           "interestToImmigration": {
@@ -622,12 +621,15 @@
           "disability": {
             "type": "boolean"
           },
-          "currentlyManaged": {
-            "type": "boolean"
+          "status": {
+            "type": "string"
           },
-          "sentenceStartDate": {
-            "type": "string",
-            "format": "date"
+          "sentenceStartDates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date"
+            }
           },
           "phoneNumbers": {
             "type": "array",
@@ -638,13 +640,13 @@
           "emails": {
             "type": "array",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/Email"
             }
           },
-          "aliases": {
+          "offenders": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Alias"
+              "$ref": "#/components/schemas/Names"
             }
           },
           "addresses": {
@@ -652,19 +654,21 @@
             "items": {
               "$ref": "#/components/schemas/Address"
             }
-          },
-          "identifiers": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Identifier"
-            }
           }
-        }
+        },
+        "required": [
+          "addresses",
+          "emails",
+          "offenders",
+          "phoneNumbers",
+          "religion",
+          "sentenceStartDates"
+        ]
       },
       "Religion": {
         "type": "object",
         "properties": {
-          "effectiveDate": {
+          "startDate": {
             "type": "string",
             "format": "date"
           },
@@ -672,18 +676,21 @@
             "type": "string",
             "format": "date"
           },
+          "religion": {
+            "type": "string"
+          },
           "status": {
             "type": "string"
           },
-          "userId": {
+          "createdUserId": {
+            "type": "string"
+          },
+          "updatedUserId": {
             "type": "string"
           }
         }
       },
       "ErrorResponse": {
-        "required": [
-          "status"
-        ],
         "type": "object",
         "properties": {
           "status": {
@@ -702,37 +709,100 @@
           "moreInfo": {
             "type": "string"
           }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "AddressId": {
+        "type": "object",
+        "properties": {
+          "prisonAddressId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cprAddressId": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateResponse": {
+        "type": "object",
+        "properties": {
+          "addressIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AddressId"
+            }
+          },
+          "phoneIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhoneId"
+            }
+          },
+          "emailIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmailId"
+            }
+          }
+        },
+        "required": [
+          "addressIds",
+          "emailIds",
+          "phoneIds"
+        ]
+      },
+      "EmailId": {
+        "type": "object",
+        "properties": {
+          "prisonEmailId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cprEmailId": {
+            "type": "string"
+          }
+        }
+      },
+      "PhoneId": {
+        "type": "object",
+        "properties": {
+          "prisonPhoneId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cprPhoneId": {
+            "type": "string"
+          }
         }
       },
       "RetryDlqResult": {
-        "required": [
-          "messagesFoundCount"
-        ],
         "type": "object",
         "properties": {
           "messagesFoundCount": {
             "type": "integer",
             "format": "int32"
           }
-        }
+        },
+        "required": [
+          "messagesFoundCount"
+        ]
       },
       "PurgeQueueResult": {
-        "required": [
-          "messagesFoundCount"
-        ],
         "type": "object",
         "properties": {
           "messagesFoundCount": {
             "type": "integer",
             "format": "int32"
           }
-        }
+        },
+        "required": [
+          "messagesFoundCount"
+        ]
       },
       "PersonIdentifierRecord": {
-        "required": [
-          "id",
-          "sourceSystem"
-        ],
         "type": "object",
         "properties": {
           "id": {
@@ -745,13 +815,13 @@
             "description": "The source system",
             "example": "NOMIS"
           }
-        }
+        },
+        "required": [
+          "id",
+          "sourceSystem"
+        ]
       },
       "DlqMessage": {
-        "required": [
-          "body",
-          "messageId"
-        ],
         "type": "object",
         "properties": {
           "body": {
@@ -763,14 +833,13 @@
           "messageId": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "body",
+          "messageId"
+        ]
       },
       "GetDlqResult": {
-        "required": [
-          "messages",
-          "messagesFoundCount",
-          "messagesReturnedCount"
-        ],
         "type": "object",
         "properties": {
           "messagesFoundCount": {
@@ -787,7 +856,12 @@
               "$ref": "#/components/schemas/DlqMessage"
             }
           }
-        }
+        },
+        "required": [
+          "messages",
+          "messagesFoundCount",
+          "messagesReturnedCount"
+        ]
       }
     },
     "securitySchemes": {
