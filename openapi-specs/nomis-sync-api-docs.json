@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-01-28.11040.06c1ffb"
+    "version": "2025-01-29.11092.5ab825c"
   },
   "servers": [
     {
@@ -794,7 +794,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CourtAppearanceRequest"
+                "$ref": "#/components/schemas/OffenderChargeRequest"
               }
             }
           },
@@ -4590,6 +4590,69 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "corporate-resource"
+        ],
+        "summary": "Delete a corporate address",
+        "description": "Deletes a corporate address record. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "deleteCorporateAddress",
+        "parameters": [
+          {
+            "name": "corporateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "addressId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Corporate address deleted"
+          },
+          "400": {
+            "description": "The address exists but not for the supplied corporate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSONS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/casenotes/{caseNoteId}": {
@@ -7285,7 +7348,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateCourtCaseRequest"
+                "$ref": "#/components/schemas/OffenderChargeRequest"
               }
             }
           },
@@ -9448,6 +9511,98 @@
           },
           "404": {
             "description": "Corporate does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/corporates/{corporateId}/address/{addressId}/phone": {
+      "post": {
+        "tags": [
+          "corporate-resource"
+        ],
+        "summary": "Creates a corporate address phone",
+        "description": "Creates a new corporate address phone record. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "createCorporateAddressPhone",
+        "parameters": [
+          {
+            "name": "corporateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "addressId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCorporatePhoneRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Corporate address phone created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateCorporatePhoneResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request contains bad data for example type code does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSONS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Corporate or address does not exist",
             "content": {
               "application/json": {
                 "schema": {
@@ -16560,16 +16715,11 @@
             "example": "2021-07-05T10:35:17",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
           },
-          "courtEventChargesToUpdate": {
+          "courtEventCharges": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ExistingOffenderChargeRequest"
-            }
-          },
-          "courtEventChargesToCreate": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OffenderChargeRequest"
+              "type": "integer",
+              "format": "int64"
             }
           },
           "nextCourtId": {
@@ -16577,62 +16727,10 @@
           }
         },
         "required": [
-          "courtEventChargesToCreate",
-          "courtEventChargesToUpdate",
+          "courtEventCharges",
           "courtEventType",
           "courtId",
           "eventDateTime"
-        ]
-      },
-      "ExistingOffenderChargeRequest": {
-        "type": "object",
-        "description": "Court Event",
-        "properties": {
-          "offenderChargeId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "offenceCode": {
-            "type": "string"
-          },
-          "offenceDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "offenceEndDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "resultCode1": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "offenceCode",
-          "offenderChargeId"
-        ]
-      },
-      "OffenderChargeRequest": {
-        "type": "object",
-        "description": "Court Charge",
-        "properties": {
-          "offenceCode": {
-            "type": "string"
-          },
-          "offenceDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "offenceEndDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "resultCode1": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "offenceCode"
         ]
       },
       "OffenderChargeIdResponse": {
@@ -16668,6 +16766,29 @@
         "required": [
           "createdCourtEventChargesIds",
           "deletedOffenderChargesIds"
+        ]
+      },
+      "OffenderChargeRequest": {
+        "type": "object",
+        "description": "Court Charge",
+        "properties": {
+          "offenceCode": {
+            "type": "string"
+          },
+          "offenceDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "offenceEndDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "resultCode1": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "offenceCode"
         ]
       },
       "UpsertProfileDetailsRequest": {
@@ -21667,6 +21788,43 @@
           "startDate"
         ]
       },
+      "CreateCorporatePhoneResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Unique NOMIS Id of phone"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "CreateCorporatePhoneRequest": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "string",
+            "description": "The number",
+            "example": "0114 555 555"
+          },
+          "extension": {
+            "type": "string",
+            "description": "Extension",
+            "example": "x432"
+          },
+          "typeCode": {
+            "type": "string",
+            "description": "Phone type code",
+            "example": "MOB"
+          }
+        },
+        "required": [
+          "number",
+          "typeCode"
+        ]
+      },
       "CreateAppointmentRequest": {
         "type": "object",
         "description": "Offender individual schedule creation request",
@@ -22085,42 +22243,15 @@
           },
           "visitType": {
             "$ref": "#/components/schemas/CodeDescription",
-            "description": "Visit type, whether social or official",
-            "enum": [
-              "SCON",
-              "OFFI"
-            ]
+            "description": "Visit type, whether social or official"
           },
           "visitStatus": {
             "$ref": "#/components/schemas/CodeDescription",
-            "description": "The status of the visit",
-            "enum": [
-              "CANC",
-              "EXP",
-              "HMPOP",
-              "NORM",
-              "OFFEND",
-              "SCH",
-              "VISITOR",
-              "VDE"
-            ]
+            "description": "The status of the visit"
           },
           "visitOutcome": {
             "$ref": "#/components/schemas/CodeDescription",
-            "description": "The outcome of the visit",
-            "enum": [
-              "ADMIN",
-              "HMP",
-              "NO_ID",
-              "NO_VO",
-              "NSHOW",
-              "OFFCANC",
-              "REFUSED",
-              "VISCANC",
-              "VO_CANCEL",
-              "BATCH_CANC",
-              "ADMIN_CANCEL"
-            ]
+            "description": "The outcome of the visit"
           },
           "agencyInternalLocation": {
             "$ref": "#/components/schemas/CodeDescription",
@@ -22267,12 +22398,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -22784,12 +22915,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -24634,12 +24765,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -24701,12 +24832,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -25757,12 +25888,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -25910,12 +26041,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -26165,12 +26296,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -26767,12 +26898,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -26888,12 +27019,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -27125,12 +27256,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -27185,12 +27316,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -27526,12 +27657,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -28500,12 +28631,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -28839,12 +28970,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -28904,12 +29035,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -28975,12 +29106,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -29306,12 +29437,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
