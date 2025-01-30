@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2024-12-17.4338.2f4e3f4"
+    "version": "2025-01-29.4645.a9a6553"
   },
   "servers": [
     {
@@ -487,6 +487,15 @@
             }
           },
           {
+            "name": "currentPeriodOfCustody",
+            "in": "query",
+            "description": "Only get the adjustments linked to the current period of custody. Defaults to true",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
             "name": "sentenceEnvelopeDate",
             "in": "query",
             "description": "The earliest sentence date to filter adjustments by. Defaults to earliest active sentence date",
@@ -789,6 +798,49 @@
         }
       }
     },
+    "/legacy/adjustments/{adjustmentId}/current-term": {
+      "patch": {
+        "tags": [
+          "legacy-controller"
+        ],
+        "summary": "Set the current term of an adjustment",
+        "description": "Temporary endpoint to migrate the current term value of an adjustment.",
+        "operationId": "setCurrentTerm",
+        "parameters": [
+          {
+            "name": "adjustmentId",
+            "in": "path",
+            "description": "The adjustment UUID",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/vnd.nomis-offence+json": {
+              "schema": {
+                "$ref": "#/components/schemas/LegacyAdjustment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Adjustment updated"
+          },
+          "401": {
+            "description": "Unauthorised, requires a valid Oauth2 token"
+          },
+          "404": {
+            "description": "Adjustment not found"
+          }
+        }
+      }
+    },
     "/things-to-do/prisoner/{prisonerId}": {
       "get": {
         "tags": [
@@ -1036,6 +1088,7 @@
           "adjustmentType",
           "bookingId",
           "bookingReleased",
+          "currentTerm",
           "offenderNo"
         ],
         "type": "object",
@@ -1067,7 +1120,8 @@
               "RST",
               "RX",
               "S240A",
-              "UR"
+              "UR",
+              "TCA"
             ]
           },
           "adjustmentDate": {
@@ -1162,7 +1216,8 @@
               "ADDITIONAL_DAYS_AWARDED",
               "RESTORATION_OF_ADDITIONAL_DAYS_AWARDED",
               "SPECIAL_REMISSION",
-              "UNUSED_DEDUCTIONS"
+              "UNUSED_DEDUCTIONS",
+              "CUSTODY_ABROAD"
             ]
           },
           "toDate": {
@@ -1197,6 +1252,9 @@
           },
           "taggedBail": {
             "$ref": "#/components/schemas/TaggedBailDto"
+          },
+          "timeSpentInCustodyAbroad": {
+            "$ref": "#/components/schemas/TimeSpentInCustodyAbroadDto"
           },
           "sentenceSequence": {
             "type": "integer",
@@ -1339,6 +1397,20 @@
         },
         "description": "The details of the tagged bail adjustment"
       },
+      "TimeSpentInCustodyAbroadDto": {
+        "type": "object",
+        "properties": {
+          "documentationSource": {
+            "type": "string",
+            "description": "The source document for the time spent in custody abroad information",
+            "enum": [
+              "COURT_WARRANT",
+              "PPCS_LETTER"
+            ]
+          }
+        },
+        "description": "The details of the time spent in custody abroad adjustment"
+      },
       "UnlawfullyAtLargeDto": {
         "type": "object",
         "properties": {
@@ -1441,7 +1513,8 @@
               "LAL_FIRST_DATE_CANNOT_BE_FUTURE",
               "LAL_LAST_DATE_CANNOT_BE_FUTURE",
               "LAL_DATE_MUST_BE_AFTER_SENTENCE_DATE",
-              "SREM_TYPE_NOT_NULL"
+              "SREM_TYPE_NOT_NULL",
+              "TSICA_DOCUMENTATION_SOURCE_NOT_NULL"
             ]
           },
           "arguments": {
@@ -1533,8 +1606,10 @@
             "type": "string",
             "enum": [
               "NONE",
+              "FIRST_TIME_WITH_NO_ADJUDICATION",
               "FIRST_TIME",
               "UPDATE",
+              "PADAS",
               "PADA"
             ]
           },
