@@ -235,6 +235,18 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
                 WireMock.equalTo("4506"),
               ),
             )
+            .withRequestBody(
+              WireMock.matchingJsonPath(
+                "appearances[0].legacyData.outcomeConvictionFlag",
+                WireMock.equalTo("true"),
+              ),
+            )
+            .withRequestBody(
+              WireMock.matchingJsonPath(
+                "appearances[0].legacyData.outcomeDispositionCode",
+                WireMock.equalTo("I"),
+              ),
+            )
             .withRequestBody(WireMock.matchingJsonPath("appearances[0].legacyData.caseId", WireMock.equalTo("1")))
             .withRequestBody(
               WireMock.matchingJsonPath(
@@ -1003,6 +1015,7 @@ fun dpsCourtCaseCreateResponseWithTwoAppearancesAndTwoCharges(): MigrationCreate
     courtCaseUuid = courtCaseUUID,
     appearances = courtAppearancesIds,
     charges = courtChargesIds,
+    sentences = emptyList(),
   )
 }
 
@@ -1032,6 +1045,7 @@ fun buildCourtEventResponseCourtEventResponse(
           code = "1081",
           description = "Detention and Training Order",
           dispositionCode = "F",
+          conviction = true,
         ),
       ),
       mostSeriousFlag = false,
@@ -1040,6 +1054,7 @@ fun buildCourtEventResponseCourtEventResponse(
         code = "1081",
         description = "Detention and Training Order",
         dispositionCode = "F",
+        conviction = true,
       ),
     ),
   ),
@@ -1057,6 +1072,7 @@ fun buildCourtEventResponseCourtEventResponse(
     code = "4506",
     description = "Adjournment",
     dispositionCode = "I",
+    conviction = true,
   ),
   eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
   eventDateTime = eventDateTime,
