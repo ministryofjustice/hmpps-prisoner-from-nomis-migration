@@ -40,7 +40,7 @@ fun CourtCaseResponse.toMigrationDpsCourtCase() = MigrationCreateCourtCase(
 
 fun CourtCaseResponse.toLegacyDpsCourtCase() = LegacyCreateCourtCase(
   prisonerId = this.offenderNo,
-  active = true,
+  active = this.caseStatus.code == "A",
 )
 
 private const val WARRANT_TYPE_DEFAULT = "REMAND"
@@ -60,6 +60,8 @@ fun CourtEventResponse.toDpsCourtAppearance(
     caseId = this.caseId?.toString(),
     postedDate = LocalDate.now().toString(),
     outcomeDescription = this.outcomeReasonCode?.description,
+    outcomeConvictionFlag = this.outcomeReasonCode?.conviction,
+    outcomeDispositionCode = this.outcomeReasonCode?.dispositionCode,
     nomisOutcomeCode = this.outcomeReasonCode?.code,
     nextEventDateTime = this.nextEventDateTime?.let { LocalDateTime.parse(this.nextEventDateTime) },
     appearanceTime = LocalDateTime.parse(this.eventDateTime).toLocalTime().toString(),
@@ -77,6 +79,8 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance() = MigrationCreateCourtApp
     postedDate = LocalDate.now().toString(),
     outcomeDescription = this.outcomeReasonCode?.description,
     nomisOutcomeCode = this.outcomeReasonCode?.code,
+    outcomeConvictionFlag = this.outcomeReasonCode?.conviction,
+    outcomeDispositionCode = this.outcomeReasonCode?.dispositionCode,
     nextEventDateTime = this.nextEventDateTime?.let { LocalDateTime.parse(this.nextEventDateTime) },
     appearanceTime = LocalDateTime.parse(this.eventDateTime).toLocalTime().toString(),
   ),

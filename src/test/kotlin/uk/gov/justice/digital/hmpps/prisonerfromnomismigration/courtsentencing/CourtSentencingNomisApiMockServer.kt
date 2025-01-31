@@ -146,7 +146,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
       createdByUsername = "Q1251T",
       courtEventType = CodeDescription("CRT", "Court Appearance"),
-      outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournment", dispositionCode = "I"),
+      outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournment", dispositionCode = "I", conviction = false),
       eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
       eventDateTime = eventDateTime,
       courtOrders = emptyList(),
@@ -184,7 +184,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       mostSeriousFlag = true,
       offenceDate = LocalDate.of(2024, 4, 4),
       plea = CodeDescription("NG", "Not Guilty"),
-      resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F"),
+      resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F", conviction = false),
     ),
   ) {
     nomisApi.stubFor(
@@ -217,7 +217,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       offence = OffenceResponse(offenceCode = "RI64006", statuteCode = "RI64", description = "Offender description"),
       mostSeriousFlag = true,
       offenceDate = LocalDate.of(2024, 2, 2),
-      resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F"),
+      resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F", conviction = false),
       plea = CodeDescription("NG", "Not Guilty"),
     ),
     response: CourtEventChargeResponse = CourtEventChargeResponse(
@@ -226,7 +226,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       offenceDate = LocalDate.of(2024, 3, 3),
       plea = CodeDescription("NG", "Not Guilty"),
       eventId = courtAppearanceId,
-      resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F"),
+      resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F", conviction = false),
     ),
   ) {
     nomisApi.stubFor(
@@ -274,7 +274,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         id = 101,
         chargeStatus = CodeDescription("A", "Active"),
         offenceDate = LocalDate.of(2024, 1, 1),
-        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F"),
+        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F", conviction = false),
         offence = OffenceResponse(
           offenceCode = "AN16094",
           statuteCode = "AN16",
@@ -286,7 +286,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         id = 102,
         chargeStatus = CodeDescription("A", "Active"),
         offenceDate = LocalDate.of(2024, 4, 1),
-        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F"),
+        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F", conviction = false),
         offence = OffenceResponse(
           offenceCode = "AN10020",
           statuteCode = "AN10",
@@ -397,7 +397,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
         directionCode = CodeDescription("OUT", "Out"),
         courtId = courtId,
-        outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournment", dispositionCode = "I"),
+        outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournment", dispositionCode = "I", conviction = false),
         createdDateTime = "2024-02-08T14:36:16.485181",
         createdByUsername = "PRISONER_MANAGER_API",
         courtEventCharges = listOf(
@@ -405,7 +405,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
             eventId = 528456562,
             offencesCount = 1,
             offenceDate = LocalDate.parse("2024-01-02"),
-            resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F"),
+            resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F", conviction = false),
             mostSeriousFlag = false,
             offenderCharge = OffenderChargeResponse(
               id = 3934645,
@@ -417,7 +417,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
               offencesCount = 1,
               offenceDate = LocalDate.parse("2024-01-02"),
               chargeStatus = CodeDescription("A", "Active"),
-              resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F"),
+              resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F", conviction = false),
               mostSeriousFlag = false,
             ),
           ),
@@ -445,7 +445,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         offencesCount = 1,
         offenceDate = LocalDate.parse("2024-01-02"),
         chargeStatus = CodeDescription("A", "Active"),
-        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F"),
+        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F", conviction = false),
         mostSeriousFlag = false,
       ),
     ),
@@ -455,118 +455,6 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     primaryCaseInfoNumber = caseInfoNumber,
     caseInfoNumbers = caseIndentifiers,
   )
-
-  private fun courtCaseResponse3(
-    bookingId: Long = 2,
-    offenderNo: String = "G4803UT",
-    caseId: Long = 3,
-    courtId: String = "BATHMC",
-    caseInfoNumber: String? = "caseRef1",
-    caseIndentifiers: List<CaseIdentifierResponse> = emptyList(),
-  ): String {
-    // language=JSON
-    return """
-{
-
-  "courtEvents": [
-    {
-     
-      "createdDateTime": "2024-02-08T14:36:16.485181",
-      "createdByUsername": "PRISONER_MANAGER_API",
-      "courtEventCharges": [
-        {
-          "eventId": 528456562,
-          "offenderCharge": {
-            "id": 3934645,
-            "offence": {
-              "offenceCode": "RR84027",
-              "statuteCode": "RR84",
-              "description": "Failing to stop at school crossing (horsedrawn vehicle)"
-            },
-            "offencesCount": 1,
-            "offenceDate": "2024-01-02",
-            "chargeStatus": {
-              "code": "A",
-              "description": "Active"
-            },
-            "resultCode1": {
-              "code": "1081",
-              "description": "Detention and Training Order"
-            },
-            "resultCode1Indicator": "F",
-            "mostSeriousFlag": false,
-            "lidsOffenceNumber": 3
-          },
-          "offencesCount": 1,
-          "offenceDate": "2024-01-02",
-          "resultCode1": {
-            "code": "1081",
-            "description": "Detention and Training Order"
-          },
-          "resultCode1Indicator": "F",
-          "mostSeriousFlag": false
-        }
-      ],
-      "courtOrders": [
-        {
-          "id": 1434174,
-          "courtDate": "2024-02-01",
-          "issuingCourt": "ABDRCT",
-          "orderType": "AUTO",
-          "orderStatus": "A",
-          "sentencePurposes": []
-        }
-      ]
-    }
-  ],
-  "caseInfoNumbers": [],
-  "offenderCharges": [
-    {
-      "id": 3934645,
-      "offence": {
-        "offenceCode": "RR84027",
-        "statuteCode": "RR84",
-        "description": "Failing to stop at school crossing (horsedrawn vehicle)"
-      },
-      "offencesCount": 1,
-      "offenceDate": "2024-01-02",
-      "chargeStatus": {
-        "code": "A",
-        "description": "Active"
-      },
-      "resultCode1": {
-        "code": "1081",
-        "description": "Detention and Training Order"
-      },
-      "resultCode1Indicator": "F",
-      "mostSeriousFlag": false,
-      "lidsOffenceNumber": 3
-    },
-    {
-      "id": 3934646,
-      "offence": {
-        "offenceCode": "RR84028",
-        "statuteCode": "RR28",
-        "description": "Failing to stop at school crossing (horsedrawn vehicle)"
-      },
-      "offencesCount": 1,
-      "offenceDate": "2024-01-02",
-      "chargeStatus": {
-        "code": "A",
-        "description": "Active"
-      },
-      "resultCode1": {
-        "code": "1081",
-        "description": "Detention and Training Order"
-      },
-      "resultCode1Indicator": "F",
-      "mostSeriousFlag": false,
-      "lidsOffenceNumber": 3
-    }
-  ]
-}
-    """.trimIndent()
-  }
 
   fun courtCaseIdsPagedResponse(
     totalElements: Long = 10,
