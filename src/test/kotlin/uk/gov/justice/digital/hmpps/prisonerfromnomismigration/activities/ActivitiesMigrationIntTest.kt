@@ -39,6 +39,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.activitiesIdsPagedResponse
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
@@ -135,6 +136,21 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
       // check course activity is included when retrieving ids
       nomisApi.verifyActivitiesGetIds("/activities/ids", "BXI", courseActivityId = 1)
+
+      // single mapping and activity are created
+      mappingApi.verifyCreateActivityMappings(1)
+      assertThat(activitiesApi.createActivitiesCount()).isEqualTo(1)
+    }
+
+    @Test
+    fun `will migrate activities to start on requested date`() {
+      stubMigrationDependencies()
+
+      // Pass a course activity id into the migrate request
+      webTestClient.performMigration("""{ "prisonId": "BXI", "activityStartDate": "${LocalDate.now().plusDays(1)}" }""")
+
+      // check course activity is included when retrieving ids
+      nomisApi.verifyActivitiesGetIds("/activities/ids", "BXI")
 
       // single mapping and activity are created
       mappingApi.verifyCreateActivityMappings(1)
