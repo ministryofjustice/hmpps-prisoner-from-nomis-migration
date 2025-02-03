@@ -304,6 +304,8 @@ class ActivitiesMigrationServiceTest {
 
   @Nested
   inner class MigrateEntitiesForPage {
+    private val startDate = LocalDate.now().plusDays(2)
+
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(false)
@@ -320,7 +322,7 @@ class ActivitiesMigrationServiceTest {
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 7,
           body = MigrationPage(
-            filter = ActivitiesMigrationFilter(prisonId = "BXI"),
+            filter = ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = startDate),
             pageNumber = 1,
             pageSize = 3,
           ),
@@ -342,7 +344,7 @@ class ActivitiesMigrationServiceTest {
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 7,
           body = MigrationPage(
-            filter = ActivitiesMigrationFilter(prisonId = "BXI"),
+            filter = ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = startDate),
             pageNumber = 1,
             pageSize = 3,
           ),
@@ -360,8 +362,8 @@ class ActivitiesMigrationServiceTest {
     }
 
     @Test
-    internal fun `will send MIGRATE_ACTIVITIES with courseActivityId for each activity`(): Unit = runBlocking {
-      val context: KArgumentCaptor<MigrationContext<FindActiveActivityIdsResponse>> = argumentCaptor()
+    internal fun `will send MIGRATE_ACTIVITIES with courseActivityId and start date for each activity`(): Unit = runBlocking {
+      val context: KArgumentCaptor<MigrationContext<ActivitiesMigrationRequest>> = argumentCaptor()
 
       whenever(nomisApiService.getActivityIds(any(), anyOrNull(), any(), any())).thenReturn(
         pages(totalEntities = 7, pageSize = 3, startId = 1000),
@@ -373,9 +375,7 @@ class ActivitiesMigrationServiceTest {
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 7,
           body = MigrationPage(
-            filter = ActivitiesMigrationFilter(
-              prisonId = "BXI",
-            ),
+            filter = ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = startDate),
             pageNumber = 2,
             pageSize = 3,
           ),
@@ -388,14 +388,17 @@ class ActivitiesMigrationServiceTest {
         delaySeconds = eq(0),
 
       )
-      val allContexts: List<MigrationContext<FindActiveActivityIdsResponse>> = context.allValues
+      val allContexts: List<MigrationContext<ActivitiesMigrationRequest>> = context.allValues
 
       val (firstPage, secondPage) = allContexts
       val lastPage = allContexts.last()
 
       assertThat(firstPage.body.courseActivityId).isEqualTo(1000)
+      assertThat(firstPage.body.activityStartDate).isEqualTo(startDate)
       assertThat(secondPage.body.courseActivityId).isEqualTo(1001)
+      assertThat(secondPage.body.activityStartDate).isEqualTo(startDate)
       assertThat(lastPage.body.courseActivityId).isEqualTo(1006)
+      assertThat(lastPage.body.activityStartDate).isEqualTo(startDate)
     }
 
     @Test
@@ -412,9 +415,7 @@ class ActivitiesMigrationServiceTest {
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 7,
           body = MigrationPage(
-            filter = ActivitiesMigrationFilter(
-              prisonId = "BXI",
-            ),
+            filter = ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = startDate),
             pageNumber = 2,
             pageSize = 3,
           ),
@@ -431,6 +432,7 @@ class ActivitiesMigrationServiceTest {
     private val today = LocalDate.now()
     private val yesterday = today.minusDays(1)
     private val tomorrow = today.plusDays(1)
+    private val startDate = today.plusDays(2)
 
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
@@ -463,7 +465,7 @@ class ActivitiesMigrationServiceTest {
         check {
           assertThat(it.programServiceCode).isEqualTo("SOME_PROGRAM")
           assertThat(it.prisonCode).isEqualTo("BXI")
-          assertThat(it.startDate).isEqualTo(yesterday)
+          assertThat(it.startDate).isEqualTo(startDate)
           assertThat(it.endDate).isEqualTo(tomorrow)
           assertThat(it.capacity).isEqualTo(10)
           assertThat(it.description).isEqualTo("Some activity")
@@ -518,6 +520,19 @@ class ActivitiesMigrationServiceTest {
       verify(activitiesApiService).migrateActivity(
         check {
           assertThat(it.capacity).isEqualTo(1)
+        },
+      )
+    }
+
+    @Test
+    internal fun `will take start date from activity if after requested start date`(): Unit = runBlocking {
+      whenever(nomisApiService.getActivity(any())).thenReturn(nomisActivityResponse(startDate = today.plusDays(5)))
+
+      service.migrateNomisEntity(migrationContext())
+
+      verify(activitiesApiService).migrateActivity(
+        check {
+          assertThat(it.startDate).isEqualTo(today.plusDays(5))
         },
       )
     }
@@ -713,14 +728,7 @@ class ActivitiesMigrationServiceTest {
       whenever(mappingService.findNomisMapping(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
 
       assertThrows<WebClientResponseException.BadGateway> {
-        service.migrateNomisEntity(
-          MigrationContext(
-            type = MigrationType.ACTIVITIES,
-            migrationId = "2020-05-23T11:30:00",
-            estimatedCount = 7,
-            body = FindActiveActivityIdsResponse(123),
-          ),
-        )
+        service.migrateNomisEntity(migrationContext())
       }
 
       verifyNoInteractions(queueService)
@@ -848,11 +856,12 @@ class ActivitiesMigrationServiceTest {
         ),
       ),
       capacity: Int = 10,
+      startDate: LocalDate = yesterday,
     ) = GetActivityResponse(
       courseActivityId = 123,
       programCode = "SOME_PROGRAM",
       prisonId = "BXI",
-      startDate = yesterday,
+      startDate = startDate,
       endDate = tomorrow,
       capacity = capacity,
       description = "Some activity",
@@ -895,7 +904,7 @@ class ActivitiesMigrationServiceTest {
       type = MigrationType.ACTIVITIES,
       migrationId = "2020-05-23T11:30:00",
       estimatedCount = 7,
-      body = FindActiveActivityIdsResponse(123),
+      body = ActivitiesMigrationRequest(FindActiveActivityIdsResponse(123).courseActivityId, startDate),
     )
   }
 

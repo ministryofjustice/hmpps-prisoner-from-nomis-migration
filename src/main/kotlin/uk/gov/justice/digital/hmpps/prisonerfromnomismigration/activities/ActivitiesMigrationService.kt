@@ -15,7 +15,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ActivityMigrationMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetActivityResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PayRatesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ScheduleRulesResponse
@@ -24,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import java.math.BigDecimal
+import java.time.LocalDate
 import kotlin.math.max
 
 @Service
@@ -35,7 +35,7 @@ class ActivitiesMigrationService(
   @Value("\${activities.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${activities.complete-check.count}") completeCheckCount: Int,
   @Value("\${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
-) : MigrationService<ActivitiesMigrationFilter, FindActiveActivityIdsResponse, ActivityMigrationMappingDto>(
+) : MigrationService<ActivitiesMigrationFilter, ActivitiesMigrationRequest, ActivityMigrationMappingDto>(
   mappingService = activitiesMappingService,
   migrationType = ACTIVITIES,
   pageSize = pageSize,
@@ -50,15 +50,19 @@ class ActivitiesMigrationService(
     migrationFilter: ActivitiesMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<FindActiveActivityIdsResponse> = nomisApiService.getActivityIds(
-    prisonId = migrationFilter.prisonId,
-    courseActivityId = migrationFilter.courseActivityId,
-    pageNumber = pageNumber,
-    pageSize = pageSize,
-  )
+  ): PageImpl<ActivitiesMigrationRequest> {
+    val start = migrationFilter.activityStartDate ?: LocalDate.now().plusDays(1)
+    return nomisApiService.getActivityIds(
+      prisonId = migrationFilter.prisonId,
+      courseActivityId = migrationFilter.courseActivityId,
+      pageNumber = pageNumber,
+      pageSize = pageSize,
+    ).map { ActivitiesMigrationRequest(it.courseActivityId, start) } as PageImpl<ActivitiesMigrationRequest>
+  }
 
-  override suspend fun migrateNomisEntity(context: MigrationContext<FindActiveActivityIdsResponse>) {
+  override suspend fun migrateNomisEntity(context: MigrationContext<ActivitiesMigrationRequest>) {
     val courseActivityId = context.body.courseActivityId
+    val requestedStartDate = context.body.activityStartDate
     val migrationId = context.migrationId
 
     activitiesMappingService.findNomisMapping(courseActivityId)
@@ -71,7 +75,7 @@ class ActivitiesMigrationService(
       }
       ?: runCatching {
         nomisApiService.getActivity(courseActivityId)
-          .let { nomisResponse -> nomisResponse.toActivityMigrateRequest() }
+          .let { nomisResponse -> nomisResponse.toActivityMigrateRequest(requestedStartDate) }
           .let { activitiesRequest -> activitiesApiService.migrateActivity(activitiesRequest) }
           .let { activitiesResponse -> activitiesResponse.toActivityMigrateMappingDto(courseActivityId, migrationId) }
           .also { mappingDto -> mappingDto.createActivityMapping(context) }
@@ -142,10 +146,10 @@ class ActivitiesMigrationService(
     }
 }
 
-private fun GetActivityResponse.toActivityMigrateRequest(): ActivityMigrateRequest = ActivityMigrateRequest(
+private fun GetActivityResponse.toActivityMigrateRequest(requestedStartDate: LocalDate): ActivityMigrateRequest = ActivityMigrateRequest(
   programServiceCode = programCode,
   prisonCode = prisonId,
-  startDate = startDate,
+  startDate = maxOf(startDate, requestedStartDate),
   endDate = endDate,
   capacity = max(1, capacity),
   description = description,
