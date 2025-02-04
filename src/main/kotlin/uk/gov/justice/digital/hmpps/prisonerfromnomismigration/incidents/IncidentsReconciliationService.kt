@@ -16,6 +16,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.R
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentAgencyId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.doApiCallWithRetries
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 @Service
@@ -175,6 +177,7 @@ class IncidentsReconciliationService(
     if (nomis.staffParties.size != dps.staffInvolved.size) return "Staff parties mismatch"
     if (nomis.type != dps.nomisType) return "type mismatch"
     if (nomis.status.code != dps.nomisStatus) return "status mismatch"
+    if (nomis.reportedDateTime.dateWithoutMillis() != dps.reportedAt.dateWithoutMillis()) return "reporting date mismatch"
     val offendersDifference = nomis.offenderParties.map { it.offender.offenderNo }.compare(dps.prisonersInvolved.map { it.prisonerNumber })
     if (offendersDifference.isNotEmpty()) return "offender parties mismatch $offendersDifference"
     if (nomis.questions.size != dps.questions.size) return "questions mismatch"
@@ -192,6 +195,8 @@ class IncidentsReconciliationService(
 
     return null
   }
+
+  fun String.dateWithoutMillis(): LocalDateTime = LocalDateTime.parse(this).truncatedTo(ChronoUnit.SECONDS)
 
   fun List<String>.compare(otherList: List<String>): List<String> {
     val both = (this + otherList).toSet()
@@ -219,6 +224,7 @@ data class IncidentReportDetail(
   val type: String? = null,
   val status: String? = null,
   val reportedBy: String,
+  val reportedDateTime: String,
   val offenderParties: List<String>? = null,
   val totalStaffParties: Int? = null,
   val totalQuestions: Int? = null,
@@ -230,6 +236,7 @@ fun IncidentResponse.toReportDetail() = IncidentReportDetail(
   type,
   status.code,
   reportingStaff.username,
+  reportedDateTime,
   offenderParties.map { it.offender.offenderNo },
   staffParties.size,
   questions.size,
@@ -241,6 +248,7 @@ fun ReportWithDetails.toReportDetail() = IncidentReportDetail(
   nomisType,
   nomisStatus,
   reportedBy,
+  reportedAt,
   prisonersInvolved.map { it.prisonerNumber },
   staffInvolved.size,
   questions.size,

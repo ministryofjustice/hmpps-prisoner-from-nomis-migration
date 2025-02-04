@@ -76,6 +76,7 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     nomisIncidentId: Long = 1234,
     offenderParty: String = "A1234BC",
     status: String = "AWAN",
+    reportedDateTime: String = "2021-07-07T10:35:17",
     type: String = "ATT_ESC_E",
   ) {
     nomisApi.stubFor(
@@ -87,6 +88,7 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
                 nomisIncidentId = nomisIncidentId,
                 offenderParty = offenderParty,
                 status = status,
+                reportedDateTime = reportedDateTime,
                 type = type,
               ),
             ),
@@ -271,6 +273,7 @@ private fun incidentResponse(
   nomisIncidentId: Long = 1234,
   offenderParty: String = "A1234BC",
   status: String = "AWAN",
+  reportedDateTime: String = "2021-07-07T10:35:17",
   type: String = "ATT_ESC_E",
 ): IncidentResponse = IncidentResponse(
   incidentId = nomisIncidentId,
@@ -302,7 +305,7 @@ private fun incidentResponse(
   createdBy = "JIM SMITH",
   lastModifiedBy = "JIM_ADM",
   lastModifiedDateTime = "2021-07-23T10:35:17",
-  reportedDateTime = "2024-02-06T12:36:00",
+  reportedDateTime = reportedDateTime,
   staffParties =
   listOf(
     StaffParty(
