@@ -36,9 +36,10 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
 
   @Nested
   inner class OffenderMerged {
-    val survivorOffenderNo = "A1234BB"
-    val removedOffenderNo = "A1234AA"
-    val aMomentAgo = LocalDateTime.now().minusSeconds(1).toString()
+    private val survivorOffenderNo = "A1234BB"
+    private val removedOffenderNo = "A1234AA"
+    private val aMomentAgo = LocalDateTime.now().minusSeconds(1).toString()
+    private val fiveMinutesAgo = LocalDateTime.now().minusMinutes(5).toString()
 
     @BeforeEach
     fun setUp() {
@@ -99,6 +100,14 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
             auditModuleName = "MERGE",
             createdDatetime = aMomentAgo,
           ),
+          // a previous merge that is already mapped from 5 minutes ago
+          caseNoteTemplate(
+            caseNoteId = 120,
+            bookingId = 1,
+            text = "text 4",
+            auditModuleName = "MERGE",
+            createdDatetime = fiveMinutesAgo,
+          ),
         ),
       )
       caseNotesMappingApiMockServer.stubGetMappings(
@@ -145,6 +154,13 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
             nomisBookingId = 2,
             mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
           ),
+          CaseNoteMappingDto(
+            dpsCaseNoteId = "00001111-2222-3333-4444-000000004",
+            nomisCaseNoteId = 120,
+            offenderNo = removedOffenderNo,
+            nomisBookingId = 2,
+            mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
+          ),
         ),
       )
       caseNotesMappingApiMockServer.stubUpdateMappingsByNomisId()
@@ -179,6 +195,18 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
             assertThat(it["offenderNo"]).isEqualTo("A1234BB")
             assertThat(it["removedOffenderNo"]).isEqualTo("A1234AA")
             assertThat(it["bookingId"]).isEqualTo("1")
+          },
+          isNull(),
+        )
+        // also verify that we ignored any case notes that we have already got the mappings for
+        verify(telemetryClient).trackEvent(
+          eq("casenotes-prisoner-merge-existing-mappings"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BB")
+            assertThat(it["removedOffenderNo"]).isEqualTo("A1234AA")
+            assertThat(it["bookingId"]).isEqualTo("1")
+            assertThat(it["mappingsCount"]).isEqualTo("1")
+            assertThat(it["mappings"]).isEqualTo("120")
           },
           isNull(),
         )
@@ -353,8 +381,8 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
 
   @Nested
   inner class BookingMoved {
-    val uuid1 = generateUUID(1)
-    val uuid2 = generateUUID(2)
+    private val uuid1 = generateUUID(1)
+    private val uuid2 = generateUUID(2)
 
     @BeforeEach
     fun setUp() {
