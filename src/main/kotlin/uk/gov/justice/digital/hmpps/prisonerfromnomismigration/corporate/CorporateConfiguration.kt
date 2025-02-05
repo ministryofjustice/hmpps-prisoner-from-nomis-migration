@@ -11,7 +11,7 @@ import java.time.Duration
 @Configuration
 class CorporateConfiguration(
   // DPS for corporates is the same as contacts
-  @Value("\${api.base.url.contact.person}") val apiBaseUri: String,
+  @Value("\${api.base.url.organisations}") val apiBaseUri: String,
   @Value("\${api.timeout:90s}") val timeout: Duration,
 ) {
 
@@ -20,5 +20,5 @@ class CorporateConfiguration(
     authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
     builder: WebClient.Builder,
   ): WebClient = // DPS for corporates is the same as contacts
-    builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "contact-person-api", url = apiBaseUri, timeout)
+    builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "organisations-api", url = apiBaseUri, timeout)
 }

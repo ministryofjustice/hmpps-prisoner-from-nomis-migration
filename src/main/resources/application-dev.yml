@@ -17,6 +17,7 @@ api.base.url:
   alerts: http://localhost:8092
   prison.person: http://localhost:8095
   personal.relationships: http://localhost:8097
+  organisations: http://localhost:8097
 
 spring:
   r2dbc:
