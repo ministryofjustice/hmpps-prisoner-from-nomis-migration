@@ -159,8 +159,8 @@ class CaseNotesSynchronisationService(
       }
   }
 
-  suspend fun repairDeletedCaseNote(caseNoteId: Long) = CaseNotesEvent(
-    caseNoteId = caseNoteId,
+  suspend fun repairDeletedCaseNote(nomisCaseNoteId: Long) = CaseNotesEvent(
+    caseNoteId = nomisCaseNoteId,
     offenderIdDisplay = null,
     caseNoteType = null,
     caseNoteSubType = null,

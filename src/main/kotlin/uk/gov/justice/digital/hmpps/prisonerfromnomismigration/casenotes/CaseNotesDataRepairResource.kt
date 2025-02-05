@@ -15,19 +15,19 @@ class CaseNotesDataRepairResource(
   private val caseNotesSynchronisationService: CaseNotesSynchronisationService,
   private val telemetryClient: TelemetryClient,
 ) {
-  @DeleteMapping("/casenotes/{caseNoteId}/repair")
+  @DeleteMapping("/casenotes/{nomisCaseNoteId}/repair")
   @ResponseStatus(HttpStatus.OK)
   @PreAuthorize("hasRole('ROLE_MIGRATE_CASENOTES')")
   @Operation(
     summary = "Repairs a casenote that has been deleted in Nomis by removing any associated mappings in the mapping table and alerting DPS",
     description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_MIGRATE_CASENOTES",
   )
-  suspend fun repairAlert(@PathVariable caseNoteId: Long) {
-    caseNotesSynchronisationService.repairDeletedCaseNote(caseNoteId)
+  suspend fun repairAlert(@PathVariable nomisCaseNoteId: Long) {
+    caseNotesSynchronisationService.repairDeletedCaseNote(nomisCaseNoteId)
     telemetryClient.trackEvent(
       "casenotes-repair-deleted-success",
       mapOf(
-        "caseNoteId" to caseNoteId,
+        "nomisCaseNoteId" to nomisCaseNoteId,
       ),
     )
   }

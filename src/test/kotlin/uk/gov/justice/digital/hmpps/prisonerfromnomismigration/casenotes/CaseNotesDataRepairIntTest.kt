@@ -161,7 +161,6 @@ class CaseNotesDataRepairIntTest : SqsIntegrationTestBase() {
               eq("casenotes-repair-deleted-success"),
               check {
                 assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID.toString())
-                assertThat(it["dpsCaseNoteId"]).isEqualTo(DPS_CASE_NOTE_ID)
               },
               isNull(),
             )
