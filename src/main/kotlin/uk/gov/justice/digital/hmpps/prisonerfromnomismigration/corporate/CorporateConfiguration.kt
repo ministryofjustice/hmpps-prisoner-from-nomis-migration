@@ -18,6 +18,5 @@ class CorporateConfiguration(
   fun corporateDpsApiWebClient(
     authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
     builder: WebClient.Builder,
-  ): WebClient =
-    builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "organisations-api", url = apiBaseUri, timeout)
+  ): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "organisations-api", url = apiBaseUri, timeout)
 }
