@@ -213,12 +213,9 @@ Also add new mappings for the new booking id for the copied case notes, which po
      */
     val (nomsNumber, removedNomsNumber, bookingId) = prisonerMergeEvent.additionalInformation
     try {
-      val nomisCaseNotes = nomisApiService.getCaseNotesForPrisoner(nomsNumber)
-        .caseNotes
+      val nomisCaseNotes = nomisApiService.getCaseNotesForPrisoner(nomsNumber).caseNotes
       val freshlyMergedNomisCaseNotes = nomisCaseNotes
-        .filter {
-          isMergeCaseNoteRecentlyCreated(it, prisonerMergeEvent)
-        }
+        .filter { isMergeCaseNoteRecentlyCreated(it, prisonerMergeEvent) }
         .apply {
           if (isEmpty()) {
             throw IllegalStateException("Merge data not ready for $nomsNumber")
@@ -226,9 +223,9 @@ Also add new mappings for the new booking id for the copied case notes, which po
         }
 
       val existingMappings = caseNotesMappingService.getMappings(nomisCaseNotes.map { it.caseNoteId })
+        .associateBy { it.nomisCaseNoteId }
 
       // Skip if mappings already created
-
       if (existingMappings.size == nomisCaseNotes.size) {
         telemetryClient.trackEvent(
           "casenotes-prisoner-merge-skipped",
@@ -241,6 +238,7 @@ Also add new mappings for the new booking id for the copied case notes, which po
         return
       }
 
+      // mapping of freshly merged case notes to what the note is a copy of
       val newToOldMap = freshlyMergedNomisCaseNotes
         .associate { newCaseNote ->
           newCaseNote.caseNoteId to nomisCaseNotes.first { old -> isMergeCopy(old, newCaseNote) }
@@ -251,9 +249,7 @@ Also add new mappings for the new booking id for the copied case notes, which po
       val newMappings =
         freshlyMergedNomisCaseNotes.map { newNomisCaseNote ->
           CaseNoteMappingDto(
-            dpsCaseNoteId = existingMappings.find {
-              it.nomisCaseNoteId == newToOldMap[newNomisCaseNote.caseNoteId]?.caseNoteId
-            }
+            dpsCaseNoteId = existingMappings[newToOldMap[newNomisCaseNote.caseNoteId]?.caseNoteId]
               ?.dpsCaseNoteId
               ?: throw IllegalStateException("synchronisePrisonerMerged(): No mapping found for newNomisCaseNote = $newNomisCaseNote, offender $nomsNumber"),
             nomisCaseNoteId = newNomisCaseNote.caseNoteId,
@@ -263,8 +259,24 @@ Also add new mappings for the new booking id for the copied case notes, which po
           )
         }
 
+      // Now exclude any mappings that already exist.  This can happen if two merges occur within half an hour of each
+      // other as we find all merged case notes within that time frame
+      val newUniqueMappings = newMappings.filter { it.nomisCaseNoteId !in existingMappings.keys }
+      if (newUniqueMappings.size != newMappings.size) {
+        telemetryClient.trackEvent(
+          "casenotes-prisoner-merge-existing-mappings",
+          mapOf(
+            "offenderNo" to nomsNumber,
+            "removedOffenderNo" to removedNomsNumber,
+            "bookingId" to bookingId,
+            "mappingsCount" to (newMappings.size - newUniqueMappings.size),
+            "mappings" to newMappings.filter { it.nomisCaseNoteId in existingMappings.keys }.joinToString { it.nomisCaseNoteId.toString() },
+          ),
+        )
+      }
+
       caseNotesByPrisonerMigrationMappingApiService.createMappings(
-        newMappings,
+        newUniqueMappings,
         object : ParameterizedTypeReference<DuplicateErrorResponse<CaseNoteMappingDto>>() {},
       ).also {
         if (it.isError) {
@@ -291,7 +303,7 @@ Also add new mappings for the new booking id for the copied case notes, which po
           "offenderNo" to nomsNumber,
           "removedOffenderNo" to removedNomsNumber,
           "bookingId" to bookingId,
-          "newMappingsCount" to newMappings.size,
+          "newMappingsCount" to newUniqueMappings.size,
         ),
       )
     } catch (e: Exception) {
