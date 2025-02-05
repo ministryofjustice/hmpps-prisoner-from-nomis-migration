@@ -59,11 +59,11 @@ class CaseNotesEventListener(
 
 data class CaseNotesEvent(
   val caseNoteId: Long,
-  val caseNoteType: String?,
-  val caseNoteSubType: String?,
+  val caseNoteType: String? = null,
+  val caseNoteSubType: String? = null,
   // offenderIdDisplay not present for delete event
-  val offenderIdDisplay: String?,
-  val bookingId: Long?,
-  val auditModuleName: String?,
-  val recordDeleted: Boolean?,
+  val offenderIdDisplay: String? = null,
+  val bookingId: Long? = null,
+  val auditModuleName: String? = null,
+  val recordDeleted: Boolean? = null,
 )

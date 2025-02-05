@@ -159,20 +159,22 @@ class CaseNotesSynchronisationService(
       }
   }
 
+  suspend fun repairDeletedCaseNote(nomisCaseNoteId: Long) = caseNoteDeleted(CaseNotesEvent(caseNoteId = nomisCaseNoteId))
+
   suspend fun caseNoteDeleted(event: CaseNotesEvent) {
     try {
       caseNotesMappingService.getMappingGivenNomisIdOrNull(event.caseNoteId)
         ?.also { mapping ->
           caseNotesMappingService.getByDpsId(mapping.dpsCaseNoteId)
             .filter { it.nomisCaseNoteId != event.caseNoteId }
-            .forEach { it ->
+            .forEach {
               nomisApiService.deleteCaseNote(it.nomisCaseNoteId)
               telemetryClient.trackEvent(
                 "casenotes-synchronisation-deleted-related-success",
                 mapOf(
                   "dpsCaseNoteId" to mapping.dpsCaseNoteId,
                   "nomisCaseNoteId" to it.nomisCaseNoteId.toString(),
-                  "bookingId" to it.nomisBookingId.toString(),
+                  "bookingId" to mapping.nomisBookingId.toString(),
                 ),
               )
             }
@@ -389,7 +391,7 @@ Also add new mappings for the new booking id for the copied case notes, which po
           val duplicateErrorDetails = (it.errorResponse!!).moreInfo
           telemetryClient.trackEvent(
             "from-nomis-synch-casenote-duplicate",
-            mapOf<String, String>(
+            mapOf(
               "duplicateDpsCaseNoteId" to duplicateErrorDetails.duplicate.dpsCaseNoteId,
               "duplicateNomisCaseNoteId" to duplicateErrorDetails.duplicate.nomisCaseNoteId.toString(),
               "existingDpsCaseNoteId" to duplicateErrorDetails.existing.dpsCaseNoteId,
