@@ -288,6 +288,47 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
+      fun `will show mismatch reportedDateTime in report`() {
+        incidentsNomisApi.stubGetIncident(33, reportedDateTime = "2021-07-08T10:35:18")
+
+        webTestClient.put().uri("/incidents/reports/reconciliation")
+          .exchange()
+          .expectStatus().isAccepted
+
+        awaitReportFinished()
+
+        verify(telemetryClient).trackEvent(
+          eq("incidents-reports-reconciliation-report"),
+          check {
+            assertThat(it).containsEntry("mismatch-count", "2")
+            assertThat(it).containsEntry("success", "true")
+            assertThat(it).containsEntry("ASI", "open-dps=3:open-nomis=2; closed-dps=3:closed-nomis=3")
+            assertThat(it).containsEntry("BFI", "open-dps=3:open-nomis=1; closed-dps=3:closed-nomis=4")
+            assertThat(it).doesNotContainKeys("WWI")
+          },
+          isNull(),
+        )
+
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("incidents-reports-reconciliation-mismatch"),
+          any(),
+          isNull(),
+        )
+
+        verify(telemetryClient).trackEvent(
+          eq("incidents-reports-reconciliation-detail-mismatch"),
+          check {
+            assertThat(it).containsEntry("nomisId", "33")
+            assertThat(it).containsKey("dpsId")
+            assertThat(it).containsEntry("verdict", "reported date mismatch")
+            assertThat(it).containsEntry("nomis", "IncidentReportDetail(type=ATT_ESC_E, status=AWAN, reportedBy=FSTAFF_GEN, reportedDateTime=2021-07-08T10:35:18, offenderParties=[A1234BC, A1234BC], totalStaffParties=1, totalQuestions=1, totalRequirements=1, totalResponses=1)")
+            assertThat(it).containsEntry("dps", "IncidentReportDetail(type=ATT_ESC_E, status=AWAN, reportedBy=FSTAFF_GEN, reportedDateTime=2021-07-07T10:35:17, offenderParties=[A1234BC, A1234BC], totalStaffParties=1, totalQuestions=1, totalRequirements=1, totalResponses=1)")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
       fun `will show status mismatch differences in report`() {
         incidentsNomisApi.stubGetMismatchIncident()
 
@@ -330,6 +371,47 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will show response mismatch differences in report`() {
+        incidentsNomisApi.stubGetMismatchResponsesForIncident()
+
+        webTestClient.put().uri("/incidents/reports/reconciliation")
+          .exchange()
+          .expectStatus().isAccepted
+
+        awaitReportFinished()
+
+        verify(telemetryClient).trackEvent(
+          eq("incidents-reports-reconciliation-report"),
+          check {
+            assertThat(it).containsEntry("mismatch-count", "2")
+            assertThat(it).containsEntry("success", "true")
+            assertThat(it).containsEntry("ASI", "open-dps=3:open-nomis=2; closed-dps=3:closed-nomis=3")
+            assertThat(it).containsEntry("BFI", "open-dps=3:open-nomis=1; closed-dps=3:closed-nomis=4")
+            assertThat(it).doesNotContainKeys("WWI")
+          },
+          isNull(),
+        )
+
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("incidents-reports-reconciliation-mismatch"),
+          any(),
+          isNull(),
+        )
+
+        verify(telemetryClient).trackEvent(
+          eq("incidents-reports-reconciliation-detail-mismatch"),
+          check {
+            assertThat(it).containsEntry("nomisId", "33")
+            assertThat(it).containsKey("dpsId")
+            assertThat(it).containsEntry("verdict", "responses mismatch for question: 1234")
+            assertThat(it).containsEntry("nomis", "IncidentReportDetail(type=ATT_ESC_E, status=AWAN, reportedBy=FSTAFF_GEN, reportedDateTime=2021-07-07T10:35:17, offenderParties=[A1234BC, A1234BC], totalStaffParties=1, totalQuestions=1, totalRequirements=1, totalResponses=0)")
+            assertThat(it).containsEntry("dps", "IncidentReportDetail(type=ATT_ESC_E, status=AWAN, reportedBy=FSTAFF_GEN, reportedDateTime=2021-07-07T10:35:17, offenderParties=[A1234BC, A1234BC], totalStaffParties=1, totalQuestions=1, totalRequirements=1, totalResponses=1)")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will show response mismatch reported date in report`() {
         incidentsNomisApi.stubGetMismatchResponsesForIncident()
 
         webTestClient.put().uri("/incidents/reports/reconciliation")
