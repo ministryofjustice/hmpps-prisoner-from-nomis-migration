@@ -9,17 +9,17 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate.CorporateDpsApiMockServer.Companion.migrateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate.OrganisationsDpsApiMockServer.Companion.migrateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 
 @SpringAPIServiceTest
-@Import(CorporateDpsApiService::class, CorporateConfiguration::class, CorporateDpsApiMockServer::class)
+@Import(CorporateDpsApiService::class, CorporateConfiguration::class, OrganisationsDpsApiMockServer::class)
 class CorporateDpsApiServiceTest {
   @Autowired
   private lateinit var apiService: CorporateDpsApiService
 
   @Autowired
-  private lateinit var dpsCorporateServer: CorporateDpsApiMockServer
+  private lateinit var dpsCorporateServer: OrganisationsDpsApiMockServer
 
   @Nested
   inner class MigrateContact {
