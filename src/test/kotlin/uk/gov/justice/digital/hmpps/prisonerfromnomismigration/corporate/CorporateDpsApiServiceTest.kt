@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate.OrganisationsDpsApiExtension.Companion.dpsOrganisationsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate.OrganisationsDpsApiMockServer.Companion.migrateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 
@@ -18,18 +19,15 @@ class CorporateDpsApiServiceTest {
   @Autowired
   private lateinit var apiService: CorporateDpsApiService
 
-  @Autowired
-  private lateinit var dpsCorporateServer: OrganisationsDpsApiMockServer
-
   @Nested
   inner class MigrateContact {
     @Test
     internal fun `will pass oath2 token to contact endpoint`() = runTest {
-      dpsCorporateServer.stubMigrateOrganisation()
+      dpsOrganisationsServer.stubMigrateOrganisation()
 
       apiService.migrateOrganisation(migrateOrganisationRequest())
 
-      dpsCorporateServer.verify(
+      dpsOrganisationsServer.verify(
         postRequestedFor(anyUrl())
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -37,11 +35,11 @@ class CorporateDpsApiServiceTest {
 
     @Test
     fun `will call the migrate endpoint`() = runTest {
-      dpsCorporateServer.stubMigrateOrganisation()
+      dpsOrganisationsServer.stubMigrateOrganisation()
 
       apiService.migrateOrganisation(migrateOrganisationRequest())
 
-      dpsCorporateServer.verify(
+      dpsOrganisationsServer.verify(
         postRequestedFor(urlPathEqualTo("/migrate/organisation")),
       )
     }

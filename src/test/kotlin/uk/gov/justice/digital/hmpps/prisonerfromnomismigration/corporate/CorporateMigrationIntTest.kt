@@ -250,8 +250,7 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
       private lateinit var migrationResult: MigrationResult
 
       @BeforeAll
-      fun setUp() = runBlocking {
-        migrationHistoryRepository.deleteAll()
+      fun setUp() {
         stubMigrateCorporates(
           CorporateOrganisation(
             id = 1000,
