@@ -21,7 +21,9 @@ api.base.url:
   court.sentencing: http://localhost:8094
   prison.person: http://localhost:8095
   casenotes: http://localhost:8096
-  contact.person: http://localhost:8097
+  personal.relationships: http://localhost:8097
+  # for now use same Wiremock as personal.relationships - change later
+  organisations: http://localhost:8097
   nomis-sync: http://localhost:8098
 
 visits:
