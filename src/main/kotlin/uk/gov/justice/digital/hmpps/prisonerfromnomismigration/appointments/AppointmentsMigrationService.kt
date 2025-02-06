@@ -57,23 +57,35 @@ class AppointmentsMigrationService(
       ?: run {
         val appointment = nomisApiService.getAppointment(eventId)
 
-        val migratedAppointment = appointmentsService.createAppointment(appointment.toAppointment())
-        val id = migratedAppointment.id
-        createAppointmentMapping(
-          nomisEventId = eventId,
-          appointmentInstanceId = id,
-          context = context,
-        )
+        appointmentsService.createAppointment(appointment.toAppointment())
+          ?.also {
+            createAppointmentMapping(
+              nomisEventId = eventId,
+              appointmentInstanceId = it.id,
+              context = context,
+            )
 
-        telemetryClient.trackEvent(
-          "appointments-migration-entity-migrated",
-          mapOf(
-            "nomisEventId" to eventId.toString(),
-            "appointmentInstanceId" to id.toString(),
-            "migrationId" to context.migrationId,
-          ),
-          null,
-        )
+            telemetryClient.trackEvent(
+              "appointments-migration-entity-migrated",
+              mapOf(
+                "nomisEventId" to eventId.toString(),
+                "appointmentInstanceId" to it.id.toString(),
+                "migrationId" to context.migrationId,
+              ),
+              null,
+            )
+          }
+          ?: run {
+            telemetryClient.trackEvent(
+              "appointments-migration-entity-ignored",
+              mapOf(
+                "nomisEventId" to eventId.toString(),
+                "reason" to "DPS returned null indicating they ignored the appointment",
+                "migrationId" to context.migrationId,
+              ),
+              null,
+            )
+          }
       }
   }
 
