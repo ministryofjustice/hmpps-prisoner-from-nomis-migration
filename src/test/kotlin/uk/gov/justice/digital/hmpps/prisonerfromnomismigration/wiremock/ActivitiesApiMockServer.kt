@@ -61,8 +61,8 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCreateAppointmentForMigration(appointmentInstanceId: Long) {
-    val response = objectMapper.writeValueAsString(sampleAppointmentInstance(appointmentInstanceId))
+  fun stubCreateAppointmentForMigration(appointmentInstanceId: Long?) {
+    val response = appointmentInstanceId?.let { objectMapper.writeValueAsString(sampleAppointmentInstance(it)) }
 
     stubFor(
       post(urlMatching("/migrate-appointment"))
@@ -70,7 +70,9 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.CREATED.value())
-            .withBody(response),
+            .apply {
+              response?.run { withBody(this) }
+            },
         ),
     )
   }
