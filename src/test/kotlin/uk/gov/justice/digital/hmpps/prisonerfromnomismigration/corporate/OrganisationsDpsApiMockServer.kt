@@ -1,21 +1,59 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
+import org.junit.jupiter.api.extension.AfterAllCallback
+import org.junit.jupiter.api.extension.BeforeAllCallback
+import org.junit.jupiter.api.extension.BeforeEachCallback
+import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.stereotype.Component
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiExtension.Companion.dpsContactPersonServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateOrganisationRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateOrganisationResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigratedOrganisationAddress
+import org.springframework.test.context.junit.jupiter.SpringExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate.OrganisationsDpsApiExtension.Companion.dpsOrganisationsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.IdPair
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigratedOrganisationAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
+
+class OrganisationsDpsApiExtension :
+  BeforeAllCallback,
+  AfterAllCallback,
+  BeforeEachCallback {
+  companion object {
+    @JvmField
+    val dpsOrganisationsServer = OrganisationsDpsApiMockServer()
+    lateinit var objectMapper: ObjectMapper
+
+    @Suppress("unused")
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsOrganisationsServer.getRequestBody(pattern, objectMapper)
+    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsOrganisationsServer.getRequestBodies(pattern, objectMapper)
+  }
+
+  override fun beforeAll(context: ExtensionContext) {
+    dpsOrganisationsServer.start()
+    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonObjectMapper") as ObjectMapper)
+  }
+
+  override fun beforeEach(context: ExtensionContext) {
+    dpsOrganisationsServer.resetAll()
+  }
+
+  override fun afterAll(context: ExtensionContext) {
+    dpsOrganisationsServer.stop()
+  }
+}
 
 @Component
-class CorporateDpsApiMockServer(private val objectMapper: ObjectMapper) {
+class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
+    private const val WIREMOCK_PORT = 8100
+
     fun migrateOrganisationRequest() = MigrateOrganisationRequest(
       nomisCorporateId = 123456,
       organisationName = "Test Organisation",
@@ -39,29 +77,26 @@ class CorporateDpsApiMockServer(private val objectMapper: ObjectMapper) {
   }
 
   fun stubMigrateOrganisation(response: MigrateOrganisationResponse = migrateOrganisationResponse()) {
-    dpsContactPersonServer.stubFor(
+    dpsOrganisationsServer.stubFor(
       post("/migrate/organisation")
         .willReturn(
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(objectMapper.writeValueAsString(response)),
+            .withBody(OrganisationsDpsApiExtension.objectMapper.writeValueAsString(response)),
         ),
     )
   }
 
   fun stubMigrateOrganisation(nomisCorporateId: Long, response: MigrateOrganisationResponse = migrateOrganisationResponse()) {
-    dpsContactPersonServer.stubFor(
+    dpsOrganisationsServer.stubFor(
       post("/migrate/organisation")
         .willReturn(
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(objectMapper.writeValueAsString(response)),
+            .withBody(OrganisationsDpsApiExtension.objectMapper.writeValueAsString(response)),
         ).withRequestBody(matchingJsonPath("$.nomisCorporateId", equalTo(nomisCorporateId.toString()))),
     )
   }
-
-  fun verify(pattern: RequestPatternBuilder) = dpsContactPersonServer.verify(pattern)
-  fun resetAll() = dpsContactPersonServer.resetAll()
 }

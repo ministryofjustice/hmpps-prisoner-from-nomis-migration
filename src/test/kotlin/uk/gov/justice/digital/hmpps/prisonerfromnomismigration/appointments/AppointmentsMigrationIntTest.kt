@@ -226,6 +226,24 @@ class AppointmentsMigrationIntTest : SqsIntegrationTestBase() {
         isNull(),
       )
     }
+
+    @Test
+    fun `will add tracking event if DPS ignore the migration`() {
+      nomisApi.stubGetInitialCount(APPOINTMENTS_ID_URL, 1) { appointmentIdsPagedResponse(it) }
+      nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 1, pageSize = 10)
+      nomisApi.stubMultipleGetAppointments(1..1)
+      activitiesApi.stubCreateAppointmentForMigration(null)
+      mappingApi.stubAllMappingsNotFound(APPOINTMENTS_GET_MAPPING_URL)
+      mappingApi.stubMappingCreate(APPOINTMENTS_CREATE_MAPPING_URL)
+
+      // stub 1 migrated records
+      mappingApi.stubAppointmentMappingByMigrationId(count = 1)
+
+      webTestClient.performMigration()
+
+      verify(telemetryClient).trackEvent(eq("appointments-migration-started"), any(), isNull())
+      verify(telemetryClient).trackEvent(eq("appointments-migration-entity-ignored"), any(), isNull())
+    }
   }
 
   @Nested
