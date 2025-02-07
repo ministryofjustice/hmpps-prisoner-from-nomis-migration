@@ -5,13 +5,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.Activi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.AllocationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate.CorporateMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsMappingService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.CorporateMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMappingService
 
