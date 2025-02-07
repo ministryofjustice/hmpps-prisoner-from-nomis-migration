@@ -15,13 +15,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import java.time.LocalDate
 
 @SpringAPIServiceTest
-@Import(CorporateNomisApiService::class, CorporateNomisApiMockServer::class)
-class CorporateNomisApiServiceTest {
+@Import(OrganisationsNomisApiService::class, OrganisationsNomisApiMockServer::class)
+class OrganisationsNomisApiServiceTest {
   @Autowired
-  private lateinit var apiService: CorporateNomisApiService
+  private lateinit var apiService: OrganisationsNomisApiService
 
   @Autowired
-  private lateinit var mockServer: CorporateNomisApiMockServer
+  private lateinit var mockServer: OrganisationsNomisApiMockServer
 
   @Nested
   inner class GetCorporateOrganisation {

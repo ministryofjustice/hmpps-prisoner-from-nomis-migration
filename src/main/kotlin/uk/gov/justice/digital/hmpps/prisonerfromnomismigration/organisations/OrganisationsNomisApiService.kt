@@ -13,7 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.typeRefer
 import java.time.LocalDate
 
 @Service
-class CorporateNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
+class OrganisationsNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
   suspend fun getCorporateOrganisation(nomisCorporateId: Long): CorporateOrganisation = webClient.get()
     .uri(
       "/corporates/{corporateId}",

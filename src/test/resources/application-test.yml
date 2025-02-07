@@ -69,7 +69,7 @@ contactperson:
      count: 1
    page:
      size: 10
-corporate:
+organisations:
    complete-check:
      delay-seconds: 0
      retry-seconds: 0

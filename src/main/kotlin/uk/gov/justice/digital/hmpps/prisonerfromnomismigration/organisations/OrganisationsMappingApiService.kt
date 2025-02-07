@@ -15,7 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingsDto
 
 @Service
-class CorporateMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorporateMappingsDto>(domainUrl = "/mapping/corporate/organisation", webClient) {
+class OrganisationsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorporateMappingsDto>(domainUrl = "/mapping/corporate/organisation", webClient) {
   suspend fun createMappingsForMigration(mappings: CorporateMappingsDto): CreateMappingResult<CorporateMappingDto> = webClient.post()
     .uri("/mapping/corporate/migrate")
     .bodyValue(mappings)
@@ -27,7 +27,7 @@ class CorporateMappingApiService(@Qualifier("mappingApiWebClient") webClient: We
     }
     .awaitFirstOrDefault(CreateMappingResult())
 
-  suspend fun createCorporateMapping(mappings: CorporateMappingDto): CreateMappingResult<CorporateMappingDto> = webClient.post()
+  suspend fun createOrganisationMapping(mappings: CorporateMappingDto): CreateMappingResult<CorporateMappingDto> = webClient.post()
     .uri("/mapping/corporate/organisation")
     .bodyValue(mappings)
     .retrieve()

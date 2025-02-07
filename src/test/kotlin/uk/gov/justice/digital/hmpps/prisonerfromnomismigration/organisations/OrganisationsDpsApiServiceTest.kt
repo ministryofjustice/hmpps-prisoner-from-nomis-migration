@@ -14,10 +14,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.Org
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.migrateOrganisationRequest
 
 @SpringAPIServiceTest
-@Import(CorporateDpsApiService::class, CorporateConfiguration::class, OrganisationsDpsApiMockServer::class)
-class CorporateDpsApiServiceTest {
+@Import(OrganisationsDpsApiService::class, OrganisationsConfiguration::class, OrganisationsDpsApiMockServer::class)
+class OrganisationsDpsApiServiceTest {
   @Autowired
-  private lateinit var apiService: CorporateDpsApiService
+  private lateinit var apiService: OrganisationsDpsApiService
 
   @Nested
   inner class MigrateContact {

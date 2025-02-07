@@ -17,7 +17,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Component
-class CorporateNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class OrganisationsNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetCorporateOrganisation(
     corporateId: Long = 123456,
     corporate: CorporateOrganisation = corporateOrganisation(),

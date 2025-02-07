@@ -52,12 +52,12 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class CorporateMigrationIntTest : SqsIntegrationTestBase() {
+class OrganisationsMigrationIntTest : SqsIntegrationTestBase() {
   @Autowired
-  private lateinit var nomisApiMock: CorporateNomisApiMockServer
+  private lateinit var nomisApiMock: OrganisationsNomisApiMockServer
 
   @Autowired
-  private lateinit var mappingApiMock: CorporateMappingApiMockServer
+  private lateinit var mappingApiMock: OrganisationsMappingApiMockServer
 
   private val dpsApiMock = OrganisationsDpsApiExtension.dpsOrganisationsServer
 
@@ -81,7 +81,7 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
         webTestClient.post().uri("/migrate/corporate")
           .headers(setAuthorisation(roles = listOf()))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(CorporateMigrationFilter())
+          .bodyValue(OrganisationsMigrationFilter())
           .exchange()
           .expectStatus().isForbidden
       }
@@ -91,7 +91,7 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
         webTestClient.post().uri("/migrate/corporate")
           .headers(setAuthorisation(roles = listOf("BANANAS")))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(CorporateMigrationFilter())
+          .bodyValue(OrganisationsMigrationFilter())
           .exchange()
           .expectStatus().isForbidden
       }
@@ -100,7 +100,7 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
       fun `access unauthorised with no auth token`() {
         webTestClient.post().uri("/migrate/corporate")
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(CorporateMigrationFilter())
+          .bodyValue(OrganisationsMigrationFilter())
           .exchange()
           .expectStatus().isUnauthorized
       }
@@ -769,7 +769,7 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = MigrationType.CORPORATE,
+            migrationType = MigrationType.ORGANISATIONS,
           ),
         )
         migrationHistoryRepository.save(
@@ -782,7 +782,7 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = MigrationType.CORPORATE,
+            migrationType = MigrationType.ORGANISATIONS,
           ),
         )
         migrationHistoryRepository.save(
@@ -795,7 +795,7 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = MigrationType.CORPORATE,
+            migrationType = MigrationType.ORGANISATIONS,
           ),
         )
         migrationHistoryRepository.save(
@@ -808,7 +808,7 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = MigrationType.CORPORATE,
+            migrationType = MigrationType.ORGANISATIONS,
           ),
         )
       }
@@ -890,7 +890,7 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = MigrationType.CORPORATE,
+            migrationType = MigrationType.ORGANISATIONS,
           ),
         )
       }
@@ -969,7 +969,7 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = MigrationType.CORPORATE,
+            migrationType = MigrationType.ORGANISATIONS,
           ),
         )
         migrationHistoryRepository.save(
@@ -982,7 +982,7 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = MigrationType.CORPORATE,
+            migrationType = MigrationType.ORGANISATIONS,
           ),
         )
       }
@@ -1056,7 +1056,7 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.recordsFailed").isEqualTo(0)
         .jsonPath("$.estimatedRecordCount").isEqualTo(123567)
         .jsonPath("$.status").isEqualTo("STARTED")
-        .jsonPath("$.migrationType").isEqualTo("CORPORATE")
+        .jsonPath("$.migrationType").isEqualTo("ORGANISATIONS")
     }
 
     @Test
@@ -1121,7 +1121,7 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
     }
   }
 
-  private fun performMigration(body: CorporateMigrationFilter = CorporateMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/corporate")
+  private fun performMigration(body: OrganisationsMigrationFilter = OrganisationsMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/corporate")
     .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
     .contentType(MediaType.APPLICATION_JSON)
     .bodyValue(body)

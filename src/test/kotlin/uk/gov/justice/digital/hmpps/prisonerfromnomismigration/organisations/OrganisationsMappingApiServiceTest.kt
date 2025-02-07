@@ -21,13 +21,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 
 @SpringAPIServiceTest
-@Import(CorporateMappingApiService::class, CorporateMappingApiMockServer::class)
-class CorporateMappingApiServiceTest {
+@Import(OrganisationsMappingApiService::class, OrganisationsMappingApiMockServer::class)
+class OrganisationsMappingApiServiceTest {
   @Autowired
-  private lateinit var apiService: CorporateMappingApiService
+  private lateinit var apiService: OrganisationsMappingApiService
 
   @Autowired
-  private lateinit var mockServer: CorporateMappingApiMockServer
+  private lateinit var mockServer: OrganisationsMappingApiMockServer
 
   @Nested
   inner class CreateMappingsForMigration {
@@ -147,7 +147,7 @@ class CorporateMappingApiServiceTest {
     internal fun `will pass oath2 token to create corporate mapping endpoint`() = runTest {
       mockServer.stubCreateCorporateMapping()
 
-      apiService.createCorporateMapping(
+      apiService.createOrganisationMapping(
         CorporateMappingDto(
           mappingType = NOMIS_CREATED,
           nomisId = 1234567,
@@ -164,7 +164,7 @@ class CorporateMappingApiServiceTest {
     fun `will return success when OK response`() = runTest {
       mockServer.stubCreateCorporateMapping()
 
-      val result = apiService.createCorporateMapping(
+      val result = apiService.createOrganisationMapping(
         CorporateMappingDto(
           mappingType = NOMIS_CREATED,
           nomisId = 1234567,
@@ -201,7 +201,7 @@ class CorporateMappingApiServiceTest {
         ),
       )
 
-      val result = apiService.createCorporateMapping(
+      val result = apiService.createOrganisationMapping(
         CorporateMappingDto(
           mappingType = NOMIS_CREATED,
           nomisId = 1234567,

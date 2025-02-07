@@ -12,7 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompl
 import java.util.concurrent.CompletableFuture
 
 @Service
-class CorporateEventListener(
+class OrganisationsEventListener(
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -22,7 +22,7 @@ class CorporateEventListener(
   }
 
   @Suppress("LoggingSimilarMessage")
-  @SqsListener("eventcorporate", factory = "hmppsQueueContainerFactoryProxy")
+  @SqsListener("eventorganisations", factory = "hmppsQueueContainerFactoryProxy")
   fun onMessage(message: String): CompletableFuture<Void?> {
     log.debug("Received offender event message {}", message)
     val sqsMessage: SQSMessage = objectMapper.readValue(message)
@@ -30,7 +30,7 @@ class CorporateEventListener(
       when (sqsMessage.Type) {
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
-          if (eventFeatureSwitch.isEnabled(eventType, "corporate")) {
+          if (eventFeatureSwitch.isEnabled(eventType, "organisations")) {
             when (eventType) {
               "CORPORATE-INSERTED" -> log.debug("Received $eventType")
               "CORPORATE-UPDATED" -> log.debug("Received $eventType")

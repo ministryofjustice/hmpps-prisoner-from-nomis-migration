@@ -35,7 +35,7 @@ hmpps.sqs:
     migrationcontactperson:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    migrationcorporate:
+    migrationorganisations:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     migrationcoreperson:
@@ -78,6 +78,6 @@ hmpps.sqs:
     eventcontactperson:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    eventcorporate:
+    eventorganisations:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

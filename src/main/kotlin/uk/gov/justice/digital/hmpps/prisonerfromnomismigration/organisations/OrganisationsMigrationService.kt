@@ -24,18 +24,18 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 
 @Service
-class CorporateMigrationService(
-  val mappingApiService: CorporateMappingApiService,
-  val nomisApiService: CorporateNomisApiService,
-  val dpsApiService: CorporateDpsApiService,
-  @Value("\${corporate.page.size:1000}") pageSize: Long,
-  @Value("\${corporate.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
-  @Value("\${corporate.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
-  @Value("\${corporate.complete-check.count}") completeCheckCount: Int,
+class OrganisationsMigrationService(
+  val mappingApiService: OrganisationsMappingApiService,
+  val nomisApiService: OrganisationsNomisApiService,
+  val dpsApiService: OrganisationsDpsApiService,
+  @Value("\${organisations.page.size:1000}") pageSize: Long,
+  @Value("\${organisations.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value("\${organisations.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
+  @Value("\${organisations.complete-check.count}") completeCheckCount: Int,
   @Value("\${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
-) : MigrationService<CorporateMigrationFilter, CorporateOrganisationIdResponse, CorporateMappingsDto>(
+) : MigrationService<OrganisationsMigrationFilter, CorporateOrganisationIdResponse, CorporateMappingsDto>(
   mappingService = mappingApiService,
-  migrationType = MigrationType.CORPORATE,
+  migrationType = MigrationType.ORGANISATIONS,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
@@ -47,7 +47,7 @@ class CorporateMigrationService(
   }
 
   override suspend fun getIds(
-    migrationFilter: CorporateMigrationFilter,
+    migrationFilter: OrganisationsMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
   ): PageImpl<CorporateOrganisationIdResponse> = nomisApiService.getCorporateOrganisationIdsToMigrate(

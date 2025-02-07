@@ -121,9 +121,9 @@ generic-service:
     sqs-migration-contactperson-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONCONTACTPERSON_DLQ_NAME: "sqs_name"
     sqs-migration-corporate-queue:
-      HMPPS_SQS_QUEUES_MIGRATIONCORPORATE_QUEUE_NAME: "sqs_name"
+      HMPPS_SQS_QUEUES_MIGRATIONORGANISATIONS_QUEUE_NAME: "sqs_name"
     sqs-migration-corporate-dlq:
-      HMPPS_SQS_QUEUES_MIGRATIONCORPORATE_DLQ_NAME: "sqs_name"
+      HMPPS_SQS_QUEUES_MIGRATIONORGANISATIONS_DLQ_NAME: "sqs_name"
     sqs-migration-coreperson-queue:
       HMPPS_SQS_QUEUES_MIGRATIONCOREPERSON_QUEUE_NAME: "sqs_name"
     sqs-migration-coreperson-dlq:
@@ -173,9 +173,9 @@ generic-service:
     prison-events-contactperson-dl-queue:
       HMPPS_SQS_QUEUES_EVENTCONTACTPERSON_DLQ_NAME: "sqs_name"
     prison-events-corporate-queue:
-      HMPPS_SQS_QUEUES_EVENTCORPORATE_QUEUE_NAME: "sqs_name"
+      HMPPS_SQS_QUEUES_EVENTORGANISATIONS_QUEUE_NAME: "sqs_name"
     prison-events-corporate-dl-queue:
-      HMPPS_SQS_QUEUES_EVENTCORPORATE_DLQ_NAME: "sqs_name"
+      HMPPS_SQS_QUEUES_EVENTORGANISATIONS_DLQ_NAME: "sqs_name"
     rds-database:
       SPRING_FLYWAY_USER: "database_username"
       SPRING_FLYWAY_PASSWORD: "database_password"
