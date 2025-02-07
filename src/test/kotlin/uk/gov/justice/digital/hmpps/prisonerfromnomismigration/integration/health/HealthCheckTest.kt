@@ -8,6 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonNomisSyncApiExtension
@@ -32,6 +33,21 @@ class HealthCheckTest : SqsIntegrationTestBase() {
       .isOk
       .expectBody()
       .jsonPath("status").isEqualTo("UP")
+      .jsonPath("components.personalRelationshipsApi.status").isEqualTo("UP")
+      .jsonPath("components.organisationsApi.status").isEqualTo("UP")
+      .jsonPath("components.visitsApi.status").isEqualTo("UP")
+      .jsonPath("components.sentencingApi.status").isEqualTo("UP")
+      .jsonPath("components.prisonPersonApi.status").isEqualTo("UP")
+      .jsonPath("components.nomisMappingApi.status").isEqualTo("UP")
+      .jsonPath("components.nomisApiHealth.status").isEqualTo("UP")
+      .jsonPath("components.incidentsApi.status").isEqualTo("UP")
+      .jsonPath("components.hmppsAuthApiHealth.status").isEqualTo("UP")
+      .jsonPath("components.csipApi.status").isEqualTo("UP")
+      .jsonPath("components.courtSentencingApi.status").isEqualTo("UP")
+      .jsonPath("components.corePersonApi.status").isEqualTo("UP")
+      .jsonPath("components.caseNotesApi.status").isEqualTo("UP")
+      .jsonPath("components.alertsApi.status").isEqualTo("UP")
+      .jsonPath("components.activitiesApi.status").isEqualTo("UP")
   }
 
   @Test
@@ -96,6 +112,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     CourtSentencingDpsApiExtension.dpsCourtSentencingServer.stubHealthPing(status)
     PrisonPersonDpsApiExtension.dpsPrisonPersonApi.stubHealthPing(status)
     ContactPersonDpsApiExtension.dpsContactPersonServer.stubHealthPing(status)
+    OrganisationsDpsApiExtension.dpsOrganisationsServer.stubHealthPing(status)
     PrisonPersonNomisSyncApiExtension.nomisSyncApi.stubHealthPing(status)
   }
 }
