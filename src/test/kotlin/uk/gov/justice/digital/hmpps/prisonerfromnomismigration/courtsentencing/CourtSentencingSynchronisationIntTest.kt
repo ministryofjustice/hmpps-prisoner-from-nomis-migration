@@ -835,7 +835,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `telemetry added to track the skipping of the event`() {
           await untilAsserted {
-            verify(telemetryClient, times(2)).trackEvent(
+            verify(telemetryClient).trackEvent(
               eq("case-identifiers-synchronisation-skipped"),
               check {
                 assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
