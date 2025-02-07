@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -73,6 +74,17 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       webAddresses = request.webAddresses.map { IdPair(elementType = IdPair.ElementType.EMAIL, nomisId = it.nomisWebAddressId, dpsId = it.nomisWebAddressId * 10) },
       // we don't care about mapping types since in NOMIS they have no identity
       organisationTypes = emptyList(),
+    )
+  }
+
+  fun stubHealthPing(status: Int) {
+    stubFor(
+      get("/health/ping").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(if (status == 200) "pong" else "some error")
+          .withStatus(status),
+      ),
     )
   }
 

@@ -37,7 +37,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRestrictionRequest
 
 @Service
-class ContactPersonDpsApiService(@Qualifier("contactPersonApiWebClient") private val webClient: WebClient) {
+class ContactPersonDpsApiService(@Qualifier("personalRelationshipsApiWebClient") private val webClient: WebClient) {
   suspend fun migrateContact(contact: MigrateContactRequest): MigrateContactResponse = webClient.post()
     .uri("/migrate/contact")
     .bodyValue(contact)
