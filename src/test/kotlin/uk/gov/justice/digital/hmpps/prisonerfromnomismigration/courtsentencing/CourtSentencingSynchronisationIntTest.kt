@@ -819,6 +819,49 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      @DisplayName("When mapping doesn't exist")
+      inner class MappingDoesNotExistForDeletedEvent {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            caseIdentifiersEvent(
+              eventType = "OFFENDER_CASE_IDENTIFIERS-DELETED",
+            ),
+          )
+        }
+
+        @Test
+        fun `telemetry added to track the skipping of the event`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("case-identifiers-synchronisation-skipped"),
+              check {
+                assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
+                assertThat(it["isDelete"]).isEqualTo("true")
+                assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
+                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-DELETED")
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `the event is NOT placed on dead letter queue`() {
+          await untilAsserted {
+            assertThat(
+              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+                courtSentencingQueueOffenderEventsDlqUrl,
+              ).get(),
+            ).isEqualTo(0)
+          }
+        }
+      }
+
+      @Nested
       @DisplayName("When mapping exists")
       inner class MappingExists {
         @BeforeEach

@@ -837,12 +837,21 @@ class CourtSentencingSynchronisationService(
       telemetryClient.trackEvent("case-identifiers-synchronisation-skipped", telemetry)
     } else {
       val mapping = mappingApiService.getCourtCaseOrNullByNomisId(event.caseId)
+
       if (mapping == null) {
-        telemetryClient.trackEvent(
-          "case-identifiers-synchronisation-failed",
-          telemetry,
-        )
-        throw IllegalStateException("Received OFFENDER_CASE_IDENTIFIERS event to for court-case without a mapping")
+        val isDelete = eventName == "OFFENDER_CASE_IDENTIFIERS-DELETED"
+        if (!isDelete) {
+          telemetryClient.trackEvent(
+            "case-identifiers-synchronisation-failed",
+            telemetry + ("isDelete" to isDelete.toString()),
+          )
+          throw IllegalStateException("Received OFFENDER_CASE_IDENTIFIERS event to for court-case without a mapping")
+        } else {
+          telemetryClient.trackEvent(
+            "case-identifiers-synchronisation-skipped",
+            telemetry + ("isDelete" to isDelete.toString()),
+          )
+        }
       } else {
         val nomisCourtCase =
           nomisApiService.getCourtCaseForMigration(courtCaseId = event.caseId)
