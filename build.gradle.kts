@@ -80,12 +80,19 @@ val models = listOf(
     output = "casenotes",
     packageName = "casenotes",
   ),
-  // https://contacts-api-dev.hmpps.service.justice.gov.uk/v3/api-docs
+  // https://prersonal-relationships-api-dev.hmpps.service.justice.gov.uk/v3/api-docs
   ModelConfiguration(
-    name = "buildContactPersonApiModel",
-    input = "contact-person-api-docs.json",
-    output = "contactperson",
-    packageName = "contactperson",
+    name = "buildPersonalRelationshipsApiModel",
+    input = "personal-relationships-api-docs.json",
+    output = "personalrelationships",
+    packageName = "personalrelationships",
+  ),
+  // https://organisations-api-dev.hmpps.service.justice.gov.uk/v3/api-docs
+  ModelConfiguration(
+    name = "buildOrganisationsApiModel",
+    input = "organisations-api-docs.json",
+    output = "organisations",
+    packageName = "organisations",
   ),
   // https://hmpps-person-record-dev.hmpps.service.justice.gov.uk/v3/api-docs
   ModelConfiguration(

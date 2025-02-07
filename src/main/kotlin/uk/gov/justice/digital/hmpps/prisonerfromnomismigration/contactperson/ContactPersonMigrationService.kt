@@ -5,19 +5,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.CodedValue
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.Corporate
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateContactResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateEmailAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateEmployment
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateIdentifier
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigratePhoneNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigratePrisonerContactRestriction
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateRelationship
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
@@ -31,9 +18,21 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.CodedValue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.Corporate
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.IdPair
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateEmployment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateIdentifier
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateRelationship
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
-import java.time.LocalDate
 
 @Service
 class ContactPersonMigrationService(
@@ -152,7 +151,7 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
   lastName = this.lastName,
   firstName = this.firstName,
   middleName = this.middleName,
-  dateOfBirth = this.dateOfBirth.toString(),
+  dateOfBirth = this.dateOfBirth,
   gender = this.gender?.toCodedValue(),
   title = this.title?.toCodedValue(),
   language = this.language?.toCodedValue(),
@@ -227,7 +226,6 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
       corporate = it.corporate.let { corporate ->
         Corporate(
           id = corporate.id,
-          name = corporate.name,
         )
       },
       createDateTime = it.audit.createDatetime.toDateTime(),
@@ -320,4 +318,3 @@ private fun IdPair.toContactPersonSequenceMappingIdDto(personId: Long) = Contact
 private fun IdPair.toContactPersonPhoneMappingIdDto(phoneType: ContactPersonPhoneMappingIdDto.DpsPhoneType) = ContactPersonPhoneMappingIdDto(dpsId = this.dpsId.toString(), dpsPhoneType = phoneType, nomisId = this.nomisId)
 private fun CodeDescription.toCodedValue() = CodedValue(code = this.code, description = this.description)
 private fun String?.toDateTime() = this?.let { java.time.LocalDateTime.parse(it) }
-private fun LocalDate?.toString() = this?.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)

@@ -23,10 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.ContactPersonDpsApiExtension.Companion.getRequestBodies
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.IdPair
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.contactperson.model.MigrateOrganisationRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate.CorporateDpsApiMockServer.Companion.migrateOrganisationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate.OrganisationsDpsApiExtension.Companion.getRequestBodies
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.corporate.OrganisationsDpsApiMockServer.Companion.migrateOrganisationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto
@@ -41,6 +39,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporatePhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.IdPair
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
@@ -59,8 +59,7 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var mappingApiMock: CorporateMappingApiMockServer
 
-  @Autowired
-  private lateinit var dpsApiMock: CorporateDpsApiMockServer
+  private val dpsApiMock = OrganisationsDpsApiExtension.dpsOrganisationsServer
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
@@ -662,7 +661,7 @@ class CorporateMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will record the number of corporates migrated`() {
-        webTestClient.get().uri("/migrate/contactperson/history/${migrationResult.migrationId}")
+        webTestClient.get().uri("/migrate/corporate/history/${migrationResult.migrationId}")
           .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
           .header("Content-Type", "application/json")
           .exchange()
