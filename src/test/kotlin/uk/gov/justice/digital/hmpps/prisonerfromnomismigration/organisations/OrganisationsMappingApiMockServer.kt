@@ -18,7 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageCont
 import java.time.LocalDateTime
 
 @Component
-class CorporateMappingApiMockServer(private val objectMapper: ObjectMapper) {
+class OrganisationsMappingApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubCreateMappingsForMigration() {
     mappingApi.stubFor(

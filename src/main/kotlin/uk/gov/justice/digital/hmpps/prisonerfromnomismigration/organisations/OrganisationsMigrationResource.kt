@@ -25,14 +25,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 @RequestMapping("/migrate/corporate", produces = [MediaType.APPLICATION_JSON_VALUE])
 @Tag(name = "corporate-migration-resource")
 @PreAuthorize("hasAnyRole('ROLE_MIGRATE_CONTACTPERSON', 'ROLE_MIGRATE_NOMIS_SYSCON')")
-class CorporateMigrationResource(
-  private val migrationService: CorporateMigrationService,
+class OrganisationsMigrationResource(
+  private val migrationService: OrganisationsMigrationService,
   private val migrationHistoryService: MigrationHistoryService,
 ) {
   @PostMapping
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
-    summary = "Starts a corporate migration. The entity type is determined by the migration filter",
+    summary = "Starts a organisation migration. The entity type is determined by the migration filter",
     description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_CONTACTPERSON</b>",
     responses = [
       ApiResponse(
@@ -52,12 +52,12 @@ class CorporateMigrationResource(
     ],
   )
   suspend fun migrateCorporate(
-    @RequestBody @Valid migrationFilter: CorporateMigrationFilter,
+    @RequestBody @Valid migrationFilter: OrganisationsMigrationFilter,
   ) = migrationService.startMigration(migrationFilter)
 
   @GetMapping("/history")
   @Operation(
-    summary = "Lists all migration history records un-paged for corporate",
+    summary = "Lists all migration history records un-paged for organisations",
     description = "The records are un-paged and requires role <b>MIGRATE_CONTACTPERSON</b>",
     responses = [
       ApiResponse(
@@ -76,7 +76,7 @@ class CorporateMigrationResource(
       ),
     ],
   )
-  suspend fun getAll() = migrationHistoryService.findAll(HistoryFilter(migrationTypes = listOf(MigrationType.CORPORATE.name)))
+  suspend fun getAll() = migrationHistoryService.findAll(HistoryFilter(migrationTypes = listOf(MigrationType.ORGANISATIONS.name)))
 
   @GetMapping("/history/{migrationId}")
   @Operation(
@@ -165,5 +165,5 @@ class CorporateMigrationResource(
       ),
     ],
   )
-  suspend fun activeMigration() = migrationHistoryService.getActiveMigrationDetails(MigrationType.CORPORATE)
+  suspend fun activeMigration() = migrationHistoryService.getActiveMigrationDetails(MigrationType.ORGANISATIONS)
 }

@@ -11,32 +11,32 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CORPORATE_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ORGANISATIONS_QUEUE_ID
 import java.util.concurrent.CompletableFuture
 
 @Service
-class CorporateMigrationMessageListener(
+class OrganisationsMigrationMessageListener(
   objectMapper: ObjectMapper,
-  migrationService: CorporateMigrationService,
-) : MigrationMessageListener<CorporateMigrationFilter, CorporateOrganisationIdResponse, CorporateOrganisation, CorporateMappingsDto>(
+  migrationService: OrganisationsMigrationService,
+) : MigrationMessageListener<OrganisationsMigrationFilter, CorporateOrganisationIdResponse, CorporateOrganisation, CorporateMappingsDto>(
   objectMapper,
   migrationService,
 ) {
 
   @SqsListener(
-    CORPORATE_QUEUE_ID,
+    ORGANISATIONS_QUEUE_ID,
     factory = "hmppsQueueContainerFactoryProxy",
     maxConcurrentMessages = "8",
     maxMessagesPerPoll = "8",
   )
-  @WithSpan(value = "dps-syscon-migration_corporate_queue", kind = SpanKind.SERVER)
-  fun onCorporateMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
+  @WithSpan(value = "dps-syscon-migration_organisations_queue", kind = SpanKind.SERVER)
+  fun onOrganisationMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
 
-  override fun parseContextFilter(json: String): MigrationMessage<*, CorporateMigrationFilter> = objectMapper.readValue(json)
+  override fun parseContextFilter(json: String): MigrationMessage<*, OrganisationsMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<CorporateMigrationFilter>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<OrganisationsMigrationFilter>> = objectMapper.readValue(json)
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, CorporateOrganisationIdResponse> = objectMapper.readValue(json)
 

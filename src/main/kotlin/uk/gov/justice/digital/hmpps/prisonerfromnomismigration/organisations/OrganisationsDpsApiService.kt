@@ -8,7 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationResponse
 
 @Service
-class CorporateDpsApiService(@Qualifier("organisationsDpsApiWebClient") private val webClient: WebClient) {
+class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") private val webClient: WebClient) {
   suspend fun migrateOrganisation(contact: MigrateOrganisationRequest): MigrateOrganisationResponse = webClient.post()
     .uri("/migrate/organisation")
     .bodyValue(contact)

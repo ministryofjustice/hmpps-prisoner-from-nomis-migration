@@ -9,7 +9,7 @@ import uk.gov.justice.hmpps.kotlin.auth.reactiveAuthorisedWebClient
 import java.time.Duration
 
 @Configuration
-class CorporateConfiguration(
+class OrganisationsConfiguration(
   @Value("\${api.base.url.organisations}") val apiBaseUri: String,
   @Value("\${api.timeout:90s}") val timeout: Duration,
 ) {

@@ -6,16 +6,16 @@ import java.time.LocalDate
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(description = "Filter specifying what should be migrated from NOMIS to DPS")
-data class CorporateMigrationFilter(
+data class OrganisationsMigrationFilter(
 
   @Schema(
-    description = "Only include Corporates created on or after this date",
+    description = "Only include Organisations created on or after this date",
     example = "2020-03-23",
   )
   val fromDate: LocalDate? = null,
 
   @Schema(
-    description = "Only include Corporates created before or on this date",
+    description = "Only include Organisations created before or on this date",
     example = "2020-03-24",
   )
   val toDate: LocalDate? = null,
