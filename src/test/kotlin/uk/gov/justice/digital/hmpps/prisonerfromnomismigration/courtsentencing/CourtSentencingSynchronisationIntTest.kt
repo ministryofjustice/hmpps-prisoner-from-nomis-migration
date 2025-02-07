@@ -2327,15 +2327,16 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `the event failed and is retried`() {
+        fun `the event is skipped`() {
           await untilAsserted {
-            verify(telemetryClient, times(2)).trackEvent(
-              eq("court-charge-synchronisation-deleted-failed"),
+            verify(telemetryClient).trackEvent(
+              eq("court-charge-synchronisation-deleted-skipped"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
                 assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
                 assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+                assertThat(it["reason"]).isEqualTo("charge is not mapped")
               },
               isNull(),
             )
@@ -2361,15 +2362,16 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `the failure event is recorded and retried`() {
+        fun `the skipped event is recorded `() {
           await untilAsserted {
             verify(telemetryClient, times(2)).trackEvent(
-              eq("court-charge-synchronisation-deleted-failed"),
+              eq("court-charge-synchronisation-deleted-skipped"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
                 assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
                 assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+                assertThat(it["reason"]).isEqualTo("court appearance is not mapped")
               },
               isNull(),
             )

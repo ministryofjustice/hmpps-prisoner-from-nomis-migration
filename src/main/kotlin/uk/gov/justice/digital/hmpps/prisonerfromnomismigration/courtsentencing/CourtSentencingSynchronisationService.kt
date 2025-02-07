@@ -542,19 +542,16 @@ class CourtSentencingSynchronisationService(
             telemetry,
           )
         } ?: let {
-          // TODO determine whether retry is the best option here
           telemetryClient.trackEvent(
-            "court-charge-synchronisation-deleted-failed",
-            telemetry,
+            "court-charge-synchronisation-deleted-skipped",
+            telemetry + ("reason" to "charge is not mapped"),
           )
-          throw ParentEntityNotFoundRetry("Received COURT_EVENT_CHARGES-DELETED for court charge ${event.chargeId} that does not have a mapping")
         }
       } ?: let {
         telemetryClient.trackEvent(
-          "court-charge-synchronisation-deleted-failed",
-          telemetry,
+          "court-charge-synchronisation-deleted-skipped",
+          telemetry + ("reason" to "court appearance is not mapped"),
         )
-        throw ParentEntityNotFoundRetry("Received COURT_EVENT_CHARGES-DELETED for court appearance ${event.eventId} without an appearance mapping")
       }
     }
   }
