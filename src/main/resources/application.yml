@@ -179,7 +179,7 @@ contactperson:
     delay-seconds: 180
     count: 9
 
-corporate:
+organisations:
   complete-check:
     delay-seconds: 180
     count: 9
@@ -226,7 +226,7 @@ hmpps.sqs:
       propagateTracing: false
     migrationcontactperson:
       propagateTracing: false
-    migrationcorporate:
+    migrationorganisations:
       propagateTracing: false
     migrationcoreperson:
       propagateTracing: false

@@ -10,7 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsMappingService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.CorporateMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMappingService
@@ -29,7 +29,7 @@ class GeneralMappingService(
   private val prisonPersonMappingService: PrisonPersonMappingApiService,
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
   private val contactPersonMappingApiService: ContactPersonMappingApiService,
-  private val corporateMappingApiService: CorporateMappingApiService,
+  private val organisationsMappingApiService: OrganisationsMappingApiService,
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long? = when (migrationType) {
     MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
@@ -44,7 +44,7 @@ class GeneralMappingService(
     MigrationType.PRISONPERSON -> prisonPersonMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
     MigrationType.CONTACTPERSON -> contactPersonMappingApiService.getMigrationCount(migrationId)
-    MigrationType.CORPORATE -> corporateMappingApiService.getMigrationCount(migrationId)
+    MigrationType.ORGANISATIONS -> organisationsMappingApiService.getMigrationCount(migrationId)
     // since this is a patch we cannot count mappings created since none are created - it will have to be manual Telemetry
     MigrationType.SENTENCING_ADJUSTMENTS -> 0
   }
