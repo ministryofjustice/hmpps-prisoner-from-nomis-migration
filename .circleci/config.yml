@@ -7,7 +7,7 @@ parameters:
     default: syscon-alerts-security
   test-executor-packages:
     type: string
-    default: "activities alerts appointments courtsentencing csip incidents locations prisonperson sentencing visits contactperson casenotes corporate"
+    default: "activities alerts appointments courtsentencing csip incidents locations prisonperson sentencing visits personalrelationships casenotes organisations"
   test-executors-count:
     type: integer
     default: 14
