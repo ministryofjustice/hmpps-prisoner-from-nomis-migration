@@ -2323,7 +2323,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               eventType = "COURT_EVENT_CHARGES-DELETED",
             ),
           )
-          waitForTelemetry(times(2))
+          waitForTelemetry(times(1))
         }
 
         @Test
@@ -2364,7 +2364,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `the skipped event is recorded `() {
           await untilAsserted {
-            verify(telemetryClient, times(2)).trackEvent(
+            verify(telemetryClient).trackEvent(
               eq("court-charge-synchronisation-deleted-skipped"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
