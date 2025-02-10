@@ -37,7 +37,6 @@ class HealthCheckTest : SqsIntegrationTestBase() {
       .jsonPath("components.organisationsApi.status").isEqualTo("UP")
       .jsonPath("components.visitsApi.status").isEqualTo("UP")
       .jsonPath("components.sentencingApi.status").isEqualTo("UP")
-      .jsonPath("components.prisonPersonApi.status").isEqualTo("UP")
       .jsonPath("components.nomisMappingApi.status").isEqualTo("UP")
       .jsonPath("components.nomisApiHealth.status").isEqualTo("UP")
       .jsonPath("components.incidentsApi.status").isEqualTo("UP")
