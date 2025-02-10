@@ -91,8 +91,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenCreatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personEvent(
             eventType = "PERSON-INSERTED",
             personId = nomisPersonId,
@@ -145,8 +145,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateContact(contact().copy(id = dpsContactId))
         mappingApiMock.stubCreatePersonMapping()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personEvent(
             eventType = "PERSON-INSERTED",
             personId = nomisPersonId,
@@ -216,8 +216,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = nomisPersonId, mapping = PersonMappingDto(dpsId = "$dpsContactId", nomisId = nomisPersonId, mappingType = PersonMappingDto.MappingType.NOMIS_CREATED))
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personEvent(
             eventType = "PERSON-INSERTED",
             personId = nomisPersonId,
@@ -272,8 +272,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
 
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personEvent(
             eventType = "PERSON-INSERTED",
             personId = nomisPersonId,
@@ -331,8 +331,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateContact(contact().copy(id = dpsContactId))
         mappingApiMock.stubCreatePersonMappingFailureFollowedBySuccess()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personEvent(
             eventType = "PERSON-INSERTED",
             personId = nomisPersonId,
@@ -380,8 +380,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenUpdatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personEvent(
             eventType = "PERSON-UPDATED",
             personId = nomisPersonId,
@@ -440,8 +440,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubUpdateContact(contactId = dpsContactId)
 
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personEvent(
             eventType = "PERSON-UPDATED",
             personId = nomisPersonId,
@@ -504,8 +504,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         dpsApiMock.stubDeleteContact(contactId = dpsContactId)
         mappingApiMock.stubDeleteByNomisPersonId(nomisPersonId)
 
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personEvent(
             eventType = "PERSON-DELETED",
             personId = nomisPersonId,
@@ -546,8 +546,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           mapping = null,
         )
 
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personEvent(
             eventType = "PERSON-DELETED",
             personId = nomisPersonId,
@@ -580,8 +580,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenCreatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressEvent(
             eventType = "ADDRESSES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -645,8 +645,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateContactAddress(contactAddress().copy(contactAddressId = dpsContactAddressId))
         mappingApiMock.stubCreateAddressMapping()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressEvent(
             eventType = "ADDRESSES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -723,8 +723,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         mappingApiMock.stubGetByNomisAddressIdOrNull(nomisAddressId = nomisAddressId, mapping = PersonAddressMappingDto(dpsId = "$dpsContactAddressId", nomisId = nomisAddressId, mappingType = PersonAddressMappingDto.MappingType.NOMIS_CREATED))
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressEvent(
             eventType = "ADDRESSES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -808,8 +808,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
 
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressEvent(
             eventType = "ADDRESSES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -896,8 +896,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateContactAddress(contactAddress().copy(contactAddressId = dpsContactAddressId))
         mappingApiMock.stubCreateAddressMappingFollowedBySuccess()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressEvent(
             eventType = "ADDRESSES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -947,8 +947,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenUpdatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressEvent(
             eventType = "ADDRESSES_PERSON-UPDATED",
             personId = nomisPersonId,
@@ -1018,8 +1018,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubUpdateContactAddress(addressId = dpsContactAddressId)
 
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressEvent(
             eventType = "ADDRESSES_PERSON-UPDATED",
             personId = nomisPersonId,
@@ -1094,8 +1094,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubDeleteContactAddress(dpsContactAddressId)
         mappingApiMock.stubDeleteByNomisAddressId(nomisAddressId)
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressEvent(
             eventType = "ADDRESSES_PERSON-DELETED",
             personId = nomisPersonId,
@@ -1138,8 +1138,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisAddressId = nomisAddressId,
           mapping = null,
         )
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressEvent(
             eventType = "ADDRESSES_PERSON-DELETED",
             personId = nomisPersonId,
@@ -1174,8 +1174,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenCreatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personPhoneEvent(
             eventType = "PHONES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -1225,8 +1225,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateContactPhone(contactPhone().copy(contactPhoneId = dpsContactPhoneId))
         mappingApiMock.stubCreatePhoneMapping()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personPhoneEvent(
             eventType = "PHONES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -1299,8 +1299,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
           ),
         )
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personPhoneEvent(
             eventType = "PHONES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -1372,8 +1372,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
 
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personPhoneEvent(
             eventType = "PHONES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -1447,8 +1447,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateContactPhone(contactPhone().copy(contactPhoneId = dpsContactPhoneId))
         mappingApiMock.stubCreatePhoneMappingFollowedBySuccess()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personPhoneEvent(
             eventType = "PHONES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -1498,8 +1498,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenUpdateInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personPhoneEvent(
             eventType = "PHONES_PERSON-UPDATED",
             personId = nomisPersonId,
@@ -1558,8 +1558,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
         )
         dpsApiMock.stubUpdateContactPhone(dpsContactPhoneId)
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personPhoneEvent(
             eventType = "PHONES_PERSON-UPDATED",
             personId = nomisPersonId,
@@ -1627,8 +1627,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubDeleteContactPhone(dpsContactPhoneId)
         mappingApiMock.stubDeleteByNomisPhoneId(nomisPhoneId)
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personPhoneEvent(
             eventType = "PHONES_PERSON-DELETED",
             personId = nomisPersonId,
@@ -1671,8 +1671,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisPhoneId = nomisPhoneId,
           mapping = null,
         )
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personPhoneEvent(
             eventType = "PHONES_PERSON-DELETED",
             personId = nomisPersonId,
@@ -1709,8 +1709,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenCreatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressPhoneEvent(
             eventType = "PHONES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -1770,8 +1770,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateContactAddressPhone(contactAddressPhone().copy(contactAddressPhoneId = dpsContactAddressPhoneId))
         mappingApiMock.stubCreatePhoneMapping()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressPhoneEvent(
             eventType = "PHONES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -1851,8 +1851,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             mappingType = PersonPhoneMappingDto.MappingType.NOMIS_CREATED,
           ),
         )
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressPhoneEvent(
             eventType = "PHONES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -1934,8 +1934,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
 
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressPhoneEvent(
             eventType = "PHONES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -2019,8 +2019,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateContactAddressPhone(contactAddressPhone().copy(contactAddressPhoneId = dpsContactAddressPhoneId))
         mappingApiMock.stubCreatePhoneMappingFollowedBySuccess()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressPhoneEvent(
             eventType = "PHONES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -2072,8 +2072,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenUpdatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressPhoneEvent(
             eventType = "PHONES_PERSON-UPDATED",
             personId = nomisPersonId,
@@ -2134,8 +2134,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
         )
         dpsApiMock.stubUpdateContactAddressPhone(dpsContactAddressPhoneId)
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressPhoneEvent(
             eventType = "PHONES_PERSON-UPDATED",
             personId = nomisPersonId,
@@ -2204,8 +2204,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubDeleteContactAddressPhone(dpsContactAddressPhoneId)
         mappingApiMock.stubDeleteByNomisPhoneId(nomisPhoneId)
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressPhoneEvent(
             eventType = "PHONES_PERSON-DELETED",
             personId = nomisPersonId,
@@ -2249,8 +2249,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisPhoneId = nomisPhoneId,
           mapping = null,
         )
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personAddressPhoneEvent(
             eventType = "PHONES_PERSON-DELETED",
             personId = nomisPersonId,
@@ -2286,8 +2286,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenCreatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personInternetAddressEvent(
             eventType = "INTERNET_ADDRESSES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -2335,8 +2335,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateContactEmail(contactEmail().copy(contactEmailId = dpsContactEmailId))
         mappingApiMock.stubCreateEmailMapping()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personInternetAddressEvent(
             eventType = "INTERNET_ADDRESSES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -2398,8 +2398,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         mappingApiMock.stubGetByNomisEmailIdOrNull(nomisInternetAddressId = nomisInternetAddressId, mapping = PersonEmailMappingDto(dpsId = "$dpsContactEmailId", nomisId = nomisInternetAddressId, mappingType = PersonEmailMappingDto.MappingType.NOMIS_CREATED))
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personInternetAddressEvent(
             eventType = "INTERNET_ADDRESSES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -2467,8 +2467,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
 
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personInternetAddressEvent(
             eventType = "INTERNET_ADDRESSES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -2539,8 +2539,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateContactEmail(contactEmail().copy(contactEmailId = dpsContactEmailId))
         mappingApiMock.stubCreateEmailMappingFollowedBySuccess()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personInternetAddressEvent(
             eventType = "INTERNET_ADDRESSES_PERSON-INSERTED",
             personId = nomisPersonId,
@@ -2590,8 +2590,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenUpdatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personInternetAddressEvent(
             eventType = "INTERNET_ADDRESSES_PERSON-UPDATED",
             personId = nomisPersonId,
@@ -2640,8 +2640,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
         )
         dpsApiMock.stubUpdateContactEmail(dpsContactEmailId)
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personInternetAddressEvent(
             eventType = "INTERNET_ADDRESSES_PERSON-UPDATED",
             personId = nomisPersonId,
@@ -2706,8 +2706,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubDeleteContactEmail(dpsContactEmailId)
         mappingApiMock.stubDeleteByNomisEmailId(nomisInternetAddressId)
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personInternetAddressEvent(
             eventType = "INTERNET_ADDRESSES_PERSON-DELETED",
             personId = nomisPersonId,
@@ -2750,8 +2750,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisInternetAddressId = nomisInternetAddressId,
           mapping = null,
         )
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personInternetAddressEvent(
             eventType = "INTERNET_ADDRESSES_PERSON-DELETED",
             personId = nomisPersonId,
@@ -2783,8 +2783,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @BeforeEach
     fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
+      awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+        personalRelationshipsQueueOffenderEventsUrl,
         personEmploymentEvent(
           eventType = "PERSON_EMPLOYMENTS-INSERTED",
           personId = personId,
@@ -2814,8 +2814,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @BeforeEach
     fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
+      awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+        personalRelationshipsQueueOffenderEventsUrl,
         personEmploymentEvent(
           eventType = "PERSON_EMPLOYMENTS-UPDATED",
           personId = personId,
@@ -2845,8 +2845,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @BeforeEach
     fun setUp() {
-      awsSqsContactPersonOffenderEventsClient.sendMessage(
-        contactPersonQueueOffenderEventsUrl,
+      awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+        personalRelationshipsQueueOffenderEventsUrl,
         personEmploymentEvent(
           eventType = "PERSON_EMPLOYMENTS-DELETED",
           personId = personId,
@@ -2879,8 +2879,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenCreatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personIdentifierEvent(
             eventType = "PERSON_IDENTIFIERS-INSERTED",
             personId = nomisPersonId,
@@ -2930,8 +2930,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateContactIdentity(contactIdentity().copy(contactIdentityId = dpsContactIdentityId))
         mappingApiMock.stubCreateIdentifierMapping()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personIdentifierEvent(
             eventType = "PERSON_IDENTIFIERS-INSERTED",
             personId = nomisPersonId,
@@ -3005,8 +3005,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             mappingType = PersonIdentifierMappingDto.MappingType.NOMIS_CREATED,
           ),
         )
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personIdentifierEvent(
             eventType = "PERSON_IDENTIFIERS-INSERTED",
             personId = nomisPersonId,
@@ -3078,8 +3078,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
 
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personIdentifierEvent(
             eventType = "PERSON_IDENTIFIERS-INSERTED",
             personId = nomisPersonId,
@@ -3155,8 +3155,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateContactIdentity(contactIdentity().copy(contactIdentityId = dpsContactIdentityId))
         mappingApiMock.stubCreateIdentifierMappingFollowedBySuccess()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personIdentifierEvent(
             eventType = "PERSON_IDENTIFIERS-INSERTED",
             personId = nomisPersonId,
@@ -3208,8 +3208,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenUpdatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personIdentifierEvent(
             eventType = "PERSON_IDENTIFIERS-UPDATED",
             personId = nomisPersonId,
@@ -3269,8 +3269,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
         )
         dpsApiMock.stubUpdateContactIdentity(contactIdentityId = dpsContactIdentityId)
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personIdentifierEvent(
             eventType = "PERSON_IDENTIFIERS-UPDATED",
             personId = nomisPersonId,
@@ -3343,8 +3343,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
 
         dpsApiMock.stubDeleteContactIdentity(contactIdentityId = dpsContactIdentityId)
 
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personIdentifierEvent(
             eventType = "PERSON_IDENTIFIERS-DELETED",
             personId = nomisPersonId,
@@ -3385,8 +3385,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisIdentifierIdsOrNull(nomisPersonId = nomisPersonId, nomisSequenceNumber = nomisSequenceNumber, mapping = null)
         mappingApiMock.stubDeleteByNomisIdentifierIds(nomisPersonId = nomisPersonId, nomisSequenceNumber = nomisSequenceNumber)
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personIdentifierEvent(
             eventType = "PERSON_IDENTIFIERS-DELETED",
             personId = nomisPersonId,
@@ -3421,8 +3421,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenCreatedOrUpdatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personRestrictionEvent(
             eventType = "VISITOR_RESTRICTION-UPSERTED",
             personId = nomisPersonId,
@@ -3477,8 +3477,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateContactRestriction(contactRestriction().copy(contactRestrictionId = dpsContactRestrictionId))
         mappingApiMock.stubCreatePersonRestrictionMapping()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personRestrictionEvent(
             eventType = "VISITOR_RESTRICTION-UPSERTED",
             personId = nomisPersonId,
@@ -3566,8 +3566,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
         )
         dpsApiMock.stubUpdateContactRestriction(dpsContactRestrictionId)
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personRestrictionEvent(
             eventType = "VISITOR_RESTRICTION-UPSERTED",
             personId = nomisPersonId,
@@ -3653,8 +3653,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
 
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personRestrictionEvent(
             eventType = "VISITOR_RESTRICTION-UPSERTED",
             personId = nomisPersonId,
@@ -3732,8 +3732,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateContactRestriction(contactRestriction().copy(contactRestrictionId = dpsContactRestrictionId))
         mappingApiMock.stubCreatePersonRestrictionMappingFollowedBySuccess()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personRestrictionEvent(
             eventType = "VISITOR_RESTRICTION-UPSERTED",
             personId = nomisPersonId,
@@ -3786,8 +3786,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         mappingApiMock.stubGetByNomisPersonRestrictionIdOrNull(nomisPersonRestrictionId = nomisPersonRestrictionId, mapping = PersonRestrictionMappingDto(dpsId = "$dpsContactRestrictionId", nomisId = nomisPersonRestrictionId, mappingType = PersonRestrictionMappingDto.MappingType.NOMIS_CREATED))
         dpsApiMock.stubDeleteContactRestriction(dpsContactRestrictionId)
         mappingApiMock.stubDeleteByNomisPersonRestrictionId(nomisPersonRestrictionId)
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personRestrictionEvent(
             eventType = "VISITOR_RESTRICTION-DELETED",
             personId = nomisPersonId,
@@ -3826,8 +3826,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         mappingApiMock.stubGetByNomisPersonRestrictionIdOrNull(nomisPersonRestrictionId = nomisPersonRestrictionId, mapping = null)
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           personRestrictionEvent(
             eventType = "VISITOR_RESTRICTION-DELETED",
             personId = nomisPersonId,
@@ -3864,8 +3864,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenCreatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactEvent(
             eventType = "OFFENDER_CONTACT-INSERTED",
             personId = nomisPersonId,
@@ -3930,8 +3930,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreatePrisonerContact(prisonerContact().copy(id = dpsPrisonerContactId))
         mappingApiMock.stubCreateContactMapping()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactEvent(
             eventType = "OFFENDER_CONTACT-INSERTED",
             personId = nomisPersonId,
@@ -4004,8 +4004,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         mappingApiMock.stubGetByNomisContactIdOrNull(nomisContactId = nomisContactId, mapping = PersonContactMappingDto(dpsId = "$dpsPrisonerContactId", nomisId = nomisContactId, mappingType = PersonContactMappingDto.MappingType.NOMIS_CREATED))
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactEvent(
             eventType = "OFFENDER_CONTACT-INSERTED",
             personId = nomisPersonId,
@@ -4090,8 +4090,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
 
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactEvent(
             eventType = "OFFENDER_CONTACT-INSERTED",
             personId = nomisPersonId,
@@ -4179,8 +4179,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreatePrisonerContact(prisonerContact().copy(id = dpsPrisonerContactId))
         mappingApiMock.stubCreateContactMappingFollowedBySuccess()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactEvent(
             eventType = "OFFENDER_CONTACT-INSERTED",
             personId = nomisPersonId,
@@ -4234,8 +4234,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenUpdatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactEvent(
             eventType = "OFFENDER_CONTACT-UPDATED",
             personId = nomisPersonId,
@@ -4305,8 +4305,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubUpdatePrisonerContact(prisonerContactId = dpsPrisonerContactId)
 
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactEvent(
             eventType = "OFFENDER_CONTACT-UPDATED",
             personId = nomisPersonId,
@@ -4376,8 +4376,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         dpsApiMock.stubDeletePrisonerContact(prisonerContactId = dpsPrisonerContactId)
         mappingApiMock.stubDeleteByNomisContactId(nomisContactId)
 
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactEvent(
             eventType = "OFFENDER_CONTACT-DELETED",
             personId = nomisPersonId,
@@ -4423,8 +4423,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisContactId = nomisContactId,
           mapping = null,
         )
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactEvent(
             eventType = "OFFENDER_CONTACT-DELETED",
             personId = nomisPersonId,
@@ -4465,8 +4465,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenCreatedOrUpdatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactRestrictionEvent(
             eventType = "PERSON_RESTRICTION-UPSERTED",
             personId = nomisPersonId,
@@ -4529,8 +4529,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
 
         dpsApiMock.stubCreatePrisonerContactRestriction(prisonerContactRestriction().copy(prisonerContactRestrictionId = dpsPrisonerContactRestrictionId))
         mappingApiMock.stubCreateContactRestrictionMapping()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactRestrictionEvent(
             eventType = "PERSON_RESTRICTION-UPSERTED",
             personId = nomisPersonId,
@@ -4636,8 +4636,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
         )
         dpsContactPersonServer.stubUpdatePrisonerContactRestriction(dpsPrisonerContactRestrictionId)
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactRestrictionEvent(
             eventType = "PERSON_RESTRICTION-UPSERTED",
             personId = nomisPersonId,
@@ -4727,8 +4727,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             userMessage = "Duplicate mapping",
           ),
         )
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactRestrictionEvent(
             eventType = "PERSON_RESTRICTION-UPSERTED",
             personId = nomisPersonId,
@@ -4812,8 +4812,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreatePrisonerContactRestriction(prisonerContactRestriction().copy(prisonerContactRestrictionId = dpsPrisonerContactRestrictionId))
         mappingApiMock.stubCreateContactRestrictionMappingFollowedBySuccess()
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactRestrictionEvent(
             eventType = "PERSON_RESTRICTION-UPSERTED",
             personId = nomisPersonId,
@@ -4879,8 +4879,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubDeletePrisonerContactRestriction(dpsPrisonerContactRestrictionId)
         mappingApiMock.stubDeleteByNomisContactRestrictionId(nomisContactRestrictionId)
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactRestrictionEvent(
             eventType = "PERSON_RESTRICTION-DELETED",
             personId = nomisPersonId,
@@ -4917,8 +4917,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisContactRestrictionId = nomisContactRestrictionId,
           mapping = null,
         )
-        awsSqsContactPersonOffenderEventsClient.sendMessage(
-          contactPersonQueueOffenderEventsUrl,
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
           contactRestrictionEvent(
             eventType = "PERSON_RESTRICTION-DELETED",
             personId = nomisPersonId,

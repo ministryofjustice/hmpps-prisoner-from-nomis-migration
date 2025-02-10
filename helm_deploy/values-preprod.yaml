@@ -101,15 +101,16 @@ generic-prometheus-alerts:
     prisonperson:
       - "syscon-devs-preprod-prisoner_from_nomis_prisonperson_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_prisonperson_dl_queue"
-    contactperson:
-      - "syscon-devs-preprod-migration_contactperson_queue"
-      - "syscon-devs-preprod-migration_contactperson_dlq"
-      - "syscon-devs-preprod-migration_corporate_queue"
-      - "syscon-devs-preprod-migration_corporate_dlq"
-      - "syscon-devs-preprod-prisoner_from_nomis_contactperson_queue"
-      - "syscon-devs-preprod-prisoner_from_nomis_contactperson_dl_queue"
-      - "syscon-devs-preprod-prisoner_from_nomis_corporate_queue"
-      - "syscon-devs-preprod-prisoner_from_nomis_corporate_dl_queue"
+    personalrelationships:
+      - "syscon-devs-preprod-migration_personalrelationships_queue"
+      - "syscon-devs-preprod-migration_personalrelationships_dlq"
+      - "syscon-devs-preprod-prisoner_from_nomis_personalrelationships_queue"
+      - "syscon-devs-preprod-prisoner_from_nomis_personalrelationships_dl_queue"
+    organisations:
+      - "syscon-devs-preprod-migration_organisations_queue"
+      - "syscon-devs-preprod-migration_organisations_dlq"
+      - "syscon-devs-preprod-prisoner_from_nomis_organisations_queue"
+      - "syscon-devs-preprod-prisoner_from_nomis_organisations_dl_queue"
     coreperson:
       - "syscon-devs-preprod-migration_coreperson_queue"
       - "syscon-devs-preprod-migration_coreperson_dlq"

@@ -76,7 +76,7 @@ class ContactPersonMigrationResource(
       ),
     ],
   )
-  suspend fun getAll() = migrationHistoryService.findAll(HistoryFilter(migrationTypes = listOf(MigrationType.CONTACTPERSON.name)))
+  suspend fun getAll() = migrationHistoryService.findAll(HistoryFilter(migrationTypes = listOf(MigrationType.PERSONALRELATIONSHIPS.name)))
 
   @GetMapping("/history/{migrationId}")
   @Operation(
@@ -165,5 +165,5 @@ class ContactPersonMigrationResource(
       ),
     ],
   )
-  suspend fun activeMigration() = migrationHistoryService.getActiveMigrationDetails(MigrationType.CONTACTPERSON)
+  suspend fun activeMigration() = migrationHistoryService.getActiveMigrationDetails(MigrationType.PERSONALRELATIONSHIPS)
 }
