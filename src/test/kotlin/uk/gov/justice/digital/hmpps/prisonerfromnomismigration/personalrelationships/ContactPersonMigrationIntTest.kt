@@ -1123,7 +1123,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = MigrationType.CONTACTPERSON,
+            migrationType = MigrationType.PERSONALRELATIONSHIPS,
           ),
         )
         migrationHistoryRepository.save(
@@ -1136,7 +1136,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = MigrationType.CONTACTPERSON,
+            migrationType = MigrationType.PERSONALRELATIONSHIPS,
           ),
         )
         migrationHistoryRepository.save(
@@ -1149,7 +1149,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = MigrationType.CONTACTPERSON,
+            migrationType = MigrationType.PERSONALRELATIONSHIPS,
           ),
         )
         migrationHistoryRepository.save(
@@ -1162,7 +1162,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = MigrationType.CONTACTPERSON,
+            migrationType = MigrationType.PERSONALRELATIONSHIPS,
           ),
         )
       }
@@ -1244,7 +1244,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = MigrationType.CONTACTPERSON,
+            migrationType = MigrationType.PERSONALRELATIONSHIPS,
           ),
         )
       }
@@ -1323,7 +1323,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = MigrationType.CONTACTPERSON,
+            migrationType = MigrationType.PERSONALRELATIONSHIPS,
           ),
         )
         migrationHistoryRepository.save(
@@ -1336,7 +1336,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = MigrationType.CONTACTPERSON,
+            migrationType = MigrationType.PERSONALRELATIONSHIPS,
           ),
         )
       }
@@ -1410,7 +1410,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.recordsFailed").isEqualTo(0)
         .jsonPath("$.estimatedRecordCount").isEqualTo(123567)
         .jsonPath("$.status").isEqualTo("STARTED")
-        .jsonPath("$.migrationType").isEqualTo("CONTACTPERSON")
+        .jsonPath("$.migrationType").isEqualTo("PERSONALRELATIONSHIPS")
     }
 
     @Test

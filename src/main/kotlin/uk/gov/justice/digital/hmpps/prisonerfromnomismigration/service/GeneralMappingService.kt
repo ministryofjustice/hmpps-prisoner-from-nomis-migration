@@ -43,7 +43,7 @@ class GeneralMappingService(
     MigrationType.CASENOTES -> caseNotesMappingService.getMigrationCount(migrationId)
     MigrationType.PRISONPERSON -> prisonPersonMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
-    MigrationType.CONTACTPERSON -> contactPersonMappingApiService.getMigrationCount(migrationId)
+    MigrationType.PERSONALRELATIONSHIPS -> contactPersonMappingApiService.getMigrationCount(migrationId)
     MigrationType.ORGANISATIONS -> organisationsMappingApiService.getMigrationCount(migrationId)
     // since this is a patch we cannot count mappings created since none are created - it will have to be manual Telemetry
     MigrationType.SENTENCING_ADJUSTMENTS -> 0

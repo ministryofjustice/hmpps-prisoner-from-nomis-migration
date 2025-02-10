@@ -62,7 +62,7 @@ courtsentencing:
   page:
     size: 10
   has-migrated-data: true
-contactperson:
+personalrelationships:
    complete-check:
      delay-seconds: 0
      retry-seconds: 0

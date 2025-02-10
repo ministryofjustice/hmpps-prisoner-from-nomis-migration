@@ -769,7 +769,7 @@ class ContactPersonSynchronisationService(
       log.error("Failed to create mapping for person id $mapping", e)
       queueService.sendMessage(
         messageType = RETRY_SYNCHRONISATION_PERSON_MAPPING.name,
-        synchronisationType = SynchronisationType.CONTACTPERSON,
+        synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
       )
@@ -785,7 +785,7 @@ class ContactPersonSynchronisationService(
       log.error("Failed to create mapping for contact id $mapping", e)
       queueService.sendMessage(
         messageType = ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CONTACT_MAPPING.name,
-        synchronisationType = SynchronisationType.CONTACTPERSON,
+        synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
       )
@@ -801,7 +801,7 @@ class ContactPersonSynchronisationService(
       log.error("Failed to create mapping for address id $mapping", e)
       queueService.sendMessage(
         messageType = ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_MAPPING.name,
-        synchronisationType = SynchronisationType.CONTACTPERSON,
+        synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
       )
@@ -817,7 +817,7 @@ class ContactPersonSynchronisationService(
       log.error("Failed to create mapping for phone id $mapping", e)
       queueService.sendMessage(
         messageType = ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PHONE_MAPPING.name,
-        synchronisationType = SynchronisationType.CONTACTPERSON,
+        synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
       )
@@ -833,7 +833,7 @@ class ContactPersonSynchronisationService(
       log.error("Failed to create mapping for email id $mapping", e)
       queueService.sendMessage(
         messageType = ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_EMAIL_MAPPING.name,
-        synchronisationType = SynchronisationType.CONTACTPERSON,
+        synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
       )
@@ -849,7 +849,7 @@ class ContactPersonSynchronisationService(
       log.error("Failed to create mapping for identifier id $mapping", e)
       queueService.sendMessage(
         messageType = ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_IDENTIFIER_MAPPING.name,
-        synchronisationType = SynchronisationType.CONTACTPERSON,
+        synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
       )
@@ -865,7 +865,7 @@ class ContactPersonSynchronisationService(
       log.error("Failed to create mapping for contact restriction id $mapping", e)
       queueService.sendMessage(
         messageType = ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CONTACT_RESTRICTION_MAPPING.name,
-        synchronisationType = SynchronisationType.CONTACTPERSON,
+        synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
       )
@@ -881,7 +881,7 @@ class ContactPersonSynchronisationService(
       log.error("Failed to create mapping for person restriction id $mapping", e)
       queueService.sendMessage(
         messageType = ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_RESTRICTION_MAPPING.name,
-        synchronisationType = SynchronisationType.CONTACTPERSON,
+        synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
       )

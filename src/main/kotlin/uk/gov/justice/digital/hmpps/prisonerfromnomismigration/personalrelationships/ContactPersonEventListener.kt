@@ -30,7 +30,7 @@ class ContactPersonEventListener(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @SqsListener("eventcontactperson", factory = "hmppsQueueContainerFactoryProxy")
+  @SqsListener("eventpersonalrelationships", factory = "hmppsQueueContainerFactoryProxy")
   fun onMessage(message: String): CompletableFuture<Void?> {
     log.debug("Received offender event message {}", message)
     val sqsMessage: SQSMessage = objectMapper.readValue(message)
@@ -38,7 +38,7 @@ class ContactPersonEventListener(
       when (sqsMessage.Type) {
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
-          if (eventFeatureSwitch.isEnabled(eventType, "contactperson")) {
+          if (eventFeatureSwitch.isEnabled(eventType, "personalrelationships")) {
             when (eventType) {
               "PERSON-INSERTED" -> service.personAdded(sqsMessage.Message.fromJson())
               "PERSON-UPDATED" -> service.personUpdated(sqsMessage.Message.fromJson())

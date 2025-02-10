@@ -33,7 +33,7 @@ const val LOCATIONS_QUEUE_ID = "migrationlocations"
 const val CASENOTES_QUEUE_ID = "migrationcasenotes"
 const val PRISONPERSON_QUEUE_ID = "migrationprisonperson"
 const val COURT_SENTENCING_QUEUE_ID = "migrationcourtsentencing"
-const val CONTACTPERSON_QUEUE_ID = "migrationcontactperson"
+const val PERSONALRELATIONSHIPS_QUEUE_ID = "migrationpersonalrelationships"
 const val ORGANISATIONS_QUEUE_ID = "migrationorganisations"
 const val SENTENCING_ADJUSTMENTS_QUEUE_ID = "migrationsentencing"
 
@@ -45,7 +45,7 @@ const val CSIP_SYNC_QUEUE_ID = "eventcsip"
 const val LOCATIONS_SYNC_QUEUE_ID = "eventlocations"
 const val CASENOTES_SYNC_QUEUE_ID = "eventcasenotes"
 const val ALERTS_SYNC_QUEUE_ID = "eventalerts"
-const val CONTACTPERSON_SYNC_QUEUE_ID = "eventcontactperson"
+const val PERSONALRELATIONSHIPS_SYNC_QUEUE_ID = "eventpersonalrelationships"
 
 enum class MigrationType(val queueId: String, val telemetryName: String) {
   VISITS(VISITS_QUEUE_ID, "visits"),
@@ -59,7 +59,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   CASENOTES(CASENOTES_QUEUE_ID, "casenotes"),
   PRISONPERSON(PRISONPERSON_QUEUE_ID, "prisonperson"),
   COURT_SENTENCING(COURT_SENTENCING_QUEUE_ID, "court-sentencing"),
-  CONTACTPERSON(CONTACTPERSON_QUEUE_ID, "contactperson"),
+  PERSONALRELATIONSHIPS(PERSONALRELATIONSHIPS_QUEUE_ID, "contactperson"),
   ORGANISATIONS(ORGANISATIONS_QUEUE_ID, "corporate"),
   SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_QUEUE_ID, "sentencing-adjustments"),
 }
@@ -73,7 +73,7 @@ enum class SynchronisationType(val queueId: String) {
   LOCATIONS(LOCATIONS_SYNC_QUEUE_ID),
   CASENOTES(CASENOTES_SYNC_QUEUE_ID),
   COURT_SENTENCING(COURT_SENTENCING_SYNC_QUEUE_ID),
-  CONTACTPERSON(CONTACTPERSON_SYNC_QUEUE_ID),
+  PERSONALRELATIONSHIPS(PERSONALRELATIONSHIPS_SYNC_QUEUE_ID),
 }
 
 fun Any.asMap(): Map<String, String> = this::class.memberProperties

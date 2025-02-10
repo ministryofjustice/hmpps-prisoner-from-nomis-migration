@@ -11,9 +11,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CONTACTPERSON_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.PERSONALRELATIONSHIPS_QUEUE_ID
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -26,12 +26,12 @@ class ContactPersonMigrationMessageListener(
 ) {
 
   @SqsListener(
-    CONTACTPERSON_QUEUE_ID,
+    PERSONALRELATIONSHIPS_QUEUE_ID,
     factory = "hmppsQueueContainerFactoryProxy",
     maxConcurrentMessages = "8",
     maxMessagesPerPoll = "8",
   )
-  @WithSpan(value = "dps-syscon-migration_contactperson_queue", kind = SpanKind.SERVER)
+  @WithSpan(value = "dps-syscon-migration_personalrelationships_queue", kind = SpanKind.SERVER)
   fun onContactPersonMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
 
   override fun parseContextFilter(json: String): MigrationMessage<*, ContactPersonMigrationFilter> = objectMapper.readValue(json)

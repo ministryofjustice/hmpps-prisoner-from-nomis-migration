@@ -32,7 +32,7 @@ hmpps.sqs:
     migrationcourtsentencing:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    migrationcontactperson:
+    migrationpersonalrelationships:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     migrationorganisations:
@@ -75,7 +75,7 @@ hmpps.sqs:
     eventprisonperson:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    eventcontactperson:
+    eventpersonalrelationships:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     eventorganisations:
