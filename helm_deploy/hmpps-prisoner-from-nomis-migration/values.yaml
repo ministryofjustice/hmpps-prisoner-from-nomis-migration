@@ -116,10 +116,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONCOURTSENTENCING_QUEUE_NAME: "sqs_name"
     sqs-migration-courtsentencing-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONCOURTSENTENCING_DLQ_NAME: "sqs_name"
-    sqs-migration-contactperson-queue:
-      HMPPS_SQS_QUEUES_MIGRATIONCONTACTPERSON_QUEUE_NAME: "sqs_name"
-    sqs-migration-contactperson-dlq:
-      HMPPS_SQS_QUEUES_MIGRATIONCONTACTPERSON_DLQ_NAME: "sqs_name"
+    sqs-migration-personalrelationships-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONCPERSONALRELATIONSHIPS_QUEUE_NAME: "sqs_name"
+    sqs-migration-personalrelationships-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONCPERSONALRELATIONSHIPS_DLQ_NAME: "sqs_name"
     sqs-migration-corporate-queue:
       HMPPS_SQS_QUEUES_MIGRATIONORGANISATIONS_QUEUE_NAME: "sqs_name"
     sqs-migration-corporate-dlq:
