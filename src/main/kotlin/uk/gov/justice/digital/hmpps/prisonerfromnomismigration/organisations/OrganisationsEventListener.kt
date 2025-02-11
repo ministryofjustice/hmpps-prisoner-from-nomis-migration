@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture
 class OrganisationsEventListener(
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
+  private val synchronisationService: OrganisationsSynchronisationService,
 ) {
 
   private companion object {
@@ -32,9 +33,9 @@ class OrganisationsEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType, "organisations")) {
             when (eventType) {
-              "CORPORATE-INSERTED" -> log.debug("Received $eventType")
-              "CORPORATE-UPDATED" -> log.debug("Received $eventType")
-              "CORPORATE-DELETED" -> log.debug("Received $eventType")
+              "CORPORATE-INSERTED" -> synchronisationService.corporateInserted(sqsMessage.Message.fromJson())
+              "CORPORATE-UPDATED" -> synchronisationService.corporateUpdated(sqsMessage.Message.fromJson())
+              "CORPORATE-DELETED" -> synchronisationService.corporateDeleted(sqsMessage.Message.fromJson())
               "ADDRESSES_CORPORATE-INSERTED" -> log.debug("Received $eventType")
               "ADDRESSES_CORPORATE-UPDATED" -> log.debug("Received $eventType")
               "ADDRESSES_CORPORATE-DELETED" -> log.debug("Received $eventType")
@@ -67,3 +68,8 @@ class OrganisationsEventListener(
     // TODO
   }
 }
+
+data class CorporateEvent(
+  val auditModuleName: String,
+  val corporateId: Long,
+)

@@ -3,10 +3,12 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -75,6 +77,21 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       // we don't care about mapping types since in NOMIS they have no identity
       organisationTypes = emptyList(),
     )
+
+    fun syncCreateOrganisationRequest() = SyncCreateOrganisationRequest(
+      organisationId = 123456,
+      organisationName = "Test Organisation",
+      active = true,
+    )
+
+    fun syncCreateOrganisationResponse() = SyncCreateOrganisationResponse(
+      organisationId = 123456,
+    )
+
+    fun syncUpdateOrganisationRequest() = SyncUpdateOrganisationRequest(
+      organisationName = "Test Organisation",
+      active = true,
+    )
   }
 
   fun stubHealthPing(status: Int) {
@@ -109,6 +126,39 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withHeader("Content-Type", "application/json")
             .withBody(OrganisationsDpsApiExtension.objectMapper.writeValueAsString(response)),
         ).withRequestBody(matchingJsonPath("$.nomisCorporateId", equalTo(nomisCorporateId.toString()))),
+    )
+  }
+
+  fun stubCreateOrganisation(response: SyncCreateOrganisationResponse = syncCreateOrganisationResponse()) {
+    dpsOrganisationsServer.stubFor(
+      post("/sync/organisation")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(OrganisationsDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+  fun stubUpdateOrganisation(organisationId: Long) {
+    dpsOrganisationsServer.stubFor(
+      put("/sync/organisation/$organisationId")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubDeleteOrganisation(organisationId: Long) {
+    dpsOrganisationsServer.stubFor(
+      delete("/sync/organisation/$organisationId")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
     )
   }
 }
