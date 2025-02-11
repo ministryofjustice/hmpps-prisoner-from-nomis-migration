@@ -101,8 +101,6 @@ generic-prometheus-alerts:
     locations:
       - "syscon-devs-prod-prisoner_from_nomis_locations_queue"
       - "syscon-devs-prod-prisoner_from_nomis_locations_dl_queue"
-      - "syscon-devs-prod-migration_locations_queue"
-      - "syscon-devs-prod-migration_locations_dlq"
     casenotes:
       - "syscon-devs-prod-prisoner_from_nomis_casenotes_queue"
       - "syscon-devs-prod-prisoner_from_nomis_casenotes_dl_queue"
