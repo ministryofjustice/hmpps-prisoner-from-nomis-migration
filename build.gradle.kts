@@ -122,7 +122,7 @@ val models = listOf(
     output = "incidents",
     packageName = "incidents",
   ),
-  // https://locations-api-dev.prison.service.justice.gov.uk/v3/api-docs
+  // https://locations-inside-prison-api-dev.hmpps.service.justice.gov.uk/v3/api-docs
   ModelConfiguration(
     name = "buildLocationsApiModel",
     input = "locations-api-docs.json",
