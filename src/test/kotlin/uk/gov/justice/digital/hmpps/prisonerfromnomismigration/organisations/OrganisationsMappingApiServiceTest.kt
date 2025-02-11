@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -263,6 +264,31 @@ class OrganisationsMappingApiServiceTest {
       )
 
       assertThat(apiService.getByNomisCorporateIdOrNull(nomisCorporateId = 1234567)).isNull()
+    }
+  }
+
+  @Nested
+  inner class DeleteByNomisCorporateId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubDeleteByNomisCorporateId(nomisCorporateId = 1234567)
+
+      apiService.deleteByNomisCorporateId(nomisCorporateId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to DELETE endpoint`() = runTest {
+      mockServer.stubDeleteByNomisCorporateId(nomisCorporateId = 1234567)
+
+      apiService.deleteByNomisCorporateId(nomisCorporateId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/mapping/corporate/organisation/nomis-corporate-id/1234567")),
+      )
     }
   }
 }

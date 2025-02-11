@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -118,6 +119,18 @@ class OrganisationsMappingApiMockServer(private val objectMapper: ObjectMapper) 
         ),
       )
     }
+  }
+
+  fun stubDeleteByNomisCorporateId(
+    nomisCorporateId: Long = 123456,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/corporate/organisation/nomis-corporate-id/$nomisCorporateId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
   }
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
