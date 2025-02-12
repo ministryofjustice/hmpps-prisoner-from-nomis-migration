@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingsDto
 
@@ -29,16 +30,7 @@ class OrganisationsMappingApiService(@Qualifier("mappingApiWebClient") webClient
     }
     .awaitFirstOrDefault(CreateMappingResult())
 
-  suspend fun createOrganisationMapping(mappings: CorporateMappingDto): CreateMappingResult<CorporateMappingDto> = webClient.post()
-    .uri("/mapping/corporate/organisation")
-    .bodyValue(mappings)
-    .retrieve()
-    .bodyToMono(Unit::class.java)
-    .map { CreateMappingResult<CorporateMappingDto>() }
-    .onErrorResume(WebClientResponseException.Conflict::class.java) {
-      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CorporateMappingDto>>() {})))
-    }
-    .awaitFirstOrDefault(CreateMappingResult())
+  suspend fun createOrganisationMapping(mapping: CorporateMappingDto): CreateMappingResult<CorporateMappingDto> = createMapping("/mapping/corporate/organisation", mapping)
 
   suspend fun getByNomisCorporateIdOrNull(nomisCorporateId: Long): CorporateMappingDto? = webClient.get()
     .uri(
@@ -65,4 +57,43 @@ class OrganisationsMappingApiService(@Qualifier("mappingApiWebClient") webClient
       .retrieve()
       .awaitBodilessEntity()
   }
+
+  suspend fun createAddressMapping(mapping: CorporateAddressMappingDto): CreateMappingResult<CorporateAddressMappingDto> = createMapping("/mapping/corporate/address", mapping)
+
+  suspend fun getByNomisAddressIdOrNull(nomisAddressId: Long): CorporateAddressMappingDto? = webClient.get()
+    .uri(
+      "/mapping/corporate/address/nomis-address-id/{nomisAddressId}",
+      nomisAddressId,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getByNomisAddressId(nomisAddressId: Long): CorporateAddressMappingDto = webClient.get()
+    .uri(
+      "/mapping/corporate/address/nomis-address-id/{nomisAddressId}",
+      nomisAddressId,
+    )
+    .retrieve()
+    .awaitBody()
+
+  suspend fun deleteByNomisAddressId(nomisAddressId: Long) {
+    webClient.delete()
+      .uri(
+        "/mapping/corporate/address/nomis-address-id/{nomisAddressId}",
+        nomisAddressId,
+      )
+      .retrieve()
+      .awaitBodilessEntity()
+  }
+
+  private suspend inline fun <reified T : Any> createMapping(url: String, mapping: T): CreateMappingResult<T> = webClient.post()
+    .uri(url)
+    .bodyValue(mapping)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<T>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<T>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
 }

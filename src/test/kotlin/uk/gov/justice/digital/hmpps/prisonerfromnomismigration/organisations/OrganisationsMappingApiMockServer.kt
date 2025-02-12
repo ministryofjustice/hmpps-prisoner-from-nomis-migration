@@ -11,6 +11,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
@@ -137,6 +138,79 @@ class OrganisationsMappingApiMockServer(private val objectMapper: ObjectMapper) 
   ) {
     mappingApi.stubFor(
       delete(urlEqualTo("/mapping/corporate/organisation/nomis-corporate-id/$nomisCorporateId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
+
+  fun stubCreateAddressMapping() {
+    mappingApi.stubFor(
+      post("/mapping/corporate/address").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateAddressMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/corporate/address").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubCreateAddressMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/corporate/address")
+
+  fun stubGetByNomisAddressIdOrNull(
+    nomisAddressId: Long = 123456,
+    mapping: CorporateAddressMappingDto? = CorporateAddressMappingDto(
+      nomisId = 123456,
+      dpsId = "654321",
+      mappingType = CorporateAddressMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mapping?.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/corporate/address/nomis-address-id/$nomisAddressId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(mapping)),
+        ),
+      )
+    } ?: run {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/corporate/address/nomis-address-id/$nomisAddressId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+        ),
+      )
+    }
+  }
+
+  fun stubGetByNomisAddressId(
+    nomisAddressId: Long = 123456,
+    mapping: CorporateAddressMappingDto = CorporateAddressMappingDto(
+      nomisId = 123456,
+      dpsId = "123456",
+      mappingType = CorporateAddressMappingDto.MappingType.MIGRATED,
+    ),
+  ) = stubGetByNomisAddressIdOrNull(nomisAddressId, mapping)
+
+  fun stubDeleteByNomisAddressId(
+    nomisAddressId: Long = 123456,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/corporate/address/nomis-address-id/$nomisAddressId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NO_CONTENT.value()),
