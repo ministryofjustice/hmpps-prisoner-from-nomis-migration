@@ -123,6 +123,15 @@ class OrganisationsMappingApiMockServer(private val objectMapper: ObjectMapper) 
     }
   }
 
+  fun stubGetByNomisCorporateId(
+    nomisCorporateId: Long = 123456,
+    mapping: CorporateMappingDto = CorporateMappingDto(
+      nomisId = 123456,
+      dpsId = "123456",
+      mappingType = CorporateMappingDto.MappingType.MIGRATED,
+    ),
+  ) = stubGetByNomisCorporateIdOrNull(nomisCorporateId, mapping)
+
   fun stubDeleteByNomisCorporateId(
     nomisCorporateId: Long = 123456,
   ) {

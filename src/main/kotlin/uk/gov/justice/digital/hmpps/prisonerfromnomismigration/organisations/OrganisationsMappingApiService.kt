@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
+import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
@@ -46,6 +47,14 @@ class OrganisationsMappingApiService(@Qualifier("mappingApiWebClient") webClient
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getByNomisCorporateId(nomisCorporateId: Long): CorporateMappingDto = webClient.get()
+    .uri(
+      "/mapping/corporate/organisation/nomis-corporate-id/{nomisCorporateId}",
+      nomisCorporateId,
+    )
+    .retrieve()
+    .awaitBody()
 
   suspend fun deleteByNomisCorporateId(nomisCorporateId: Long) {
     webClient.delete()

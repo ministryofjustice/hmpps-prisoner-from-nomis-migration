@@ -2,7 +2,9 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations
 
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -15,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
@@ -23,6 +26,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.Org
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import java.time.LocalDate
 
 class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
   @Autowired
@@ -302,6 +306,105 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           },
           isNull(),
         )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("CORPORATE-UPDATED")
+  inner class CorporateUpdated {
+    private val nomisCorporateId = 123456L
+    private val dpsOrganisationId = 123456L
+
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        awsSqsOrganisationsOffenderEventsClient.sendMessage(
+          organisationsQueueOffenderEventsUrl,
+          corporateEvent(
+            eventType = "CORPORATE-UPDATED",
+            corporateId = nomisCorporateId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not update organisation in DPS`() {
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/organisation/.*")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-corporate-synchronisation-updated-skipped"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo(nomisCorporateId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInNomis {
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisCorporateId(
+          nomisCorporateId = nomisCorporateId,
+          mapping = CorporateMappingDto(dpsId = dpsOrganisationId.toString(), nomisId = nomisCorporateId, mappingType = MIGRATED),
+        )
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporateId = nomisCorporateId,
+          corporate = corporateOrganisation().copy(
+            id = nomisCorporateId,
+            name = "Mesh Solicitors Ltd",
+            caseload = CodeDescription("LEI", "Leeds"),
+            active = false,
+            expiryDate = LocalDate.parse("2020-01-01"),
+            programmeNumber = "1",
+            vatNumber = "ABS1234",
+            comment = "Good people",
+          ),
+        )
+        dpsApiMock.stubUpdateOrganisation(organisationId = dpsOrganisationId)
+
+        awsSqsOrganisationsOffenderEventsClient.sendMessage(
+          organisationsQueueOffenderEventsUrl,
+          corporateEvent(
+            eventType = "CORPORATE-UPDATED",
+            corporateId = nomisCorporateId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-corporate-synchronisation-updated-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$nomisCorporateId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$dpsOrganisationId")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will update the organisation in DPS from the NOMIS corporate organisation`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation/$dpsOrganisationId")))
+        val request: SyncUpdateOrganisationRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation/$dpsOrganisationId")))
+        with(request) {
+          assertThat(organisationName).isEqualTo("Mesh Solicitors Ltd")
+          assertThat(caseloadId).isEqualTo("LEI")
+          assertThat(programmeNumber).isEqualTo("1")
+          assertThat(vatNumber).isEqualTo("ABS1234")
+          assertThat(active).isFalse()
+          assertThat(comments).isEqualTo("Good people")
+          assertThat(deactivatedDate).isEqualTo(LocalDate.parse("2020-01-01"))
+        }
       }
     }
   }

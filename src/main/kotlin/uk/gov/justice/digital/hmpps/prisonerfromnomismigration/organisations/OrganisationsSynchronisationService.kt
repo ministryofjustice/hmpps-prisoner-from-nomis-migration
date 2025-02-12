@@ -60,7 +60,22 @@ class OrganisationsSynchronisationService(
     }
   }
   suspend fun corporateUpdated(event: CorporateEvent) {
-    log.debug("received corporate updated event {}", event)
+    val telemetry =
+      telemetryOf("nomisCorporateId" to event.corporateId)
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "organisations-corporate-synchronisation-updated-skipped",
+        telemetry,
+      )
+    } else {
+      track("organisations-corporate-synchronisation-updated", telemetry) {
+        val contactId = mappingApiService.getByNomisCorporateId(nomisCorporateId = event.corporateId).dpsId.toLong().also {
+          telemetry["dpsOrganisationId"] = it
+        }
+        val nomisCorporate = nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId)
+        dpsApiService.updateOrganisation(contactId, nomisCorporate.toDpsUpdateOrganisationRequest())
+      }
+    }
   }
   suspend fun corporateDeleted(event: CorporateEvent) {
     log.debug("received corporate deleted event {}", event)
@@ -114,6 +129,15 @@ class OrganisationsSynchronisationService(
 
 fun CorporateOrganisation.toDpsCreateOrganisationRequest() = SyncCreateOrganisationRequest(
   organisationId = id,
+  organisationName = this.name,
+  programmeNumber = programmeNumber,
+  vatNumber = vatNumber,
+  caseloadId = caseload?.code,
+  comments = comment,
+  active = active,
+  deactivatedDate = expiryDate,
+)
+fun CorporateOrganisation.toDpsUpdateOrganisationRequest() = SyncUpdateOrganisationRequest(
   organisationName = this.name,
   programmeNumber = programmeNumber,
   vatNumber = vatNumber,

@@ -268,6 +268,31 @@ class OrganisationsMappingApiServiceTest {
   }
 
   @Nested
+  inner class GetByNomisCorporateId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetByNomisCorporateId(nomisCorporateId = 1234567)
+
+      apiService.getByNomisCorporateId(nomisCorporateId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetByNomisCorporateId(nomisCorporateId = 1234567)
+
+      apiService.getByNomisCorporateId(nomisCorporateId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/mapping/corporate/organisation/nomis-corporate-id/1234567")),
+      )
+    }
+  }
+
+  @Nested
   inner class DeleteByNomisCorporateId {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
