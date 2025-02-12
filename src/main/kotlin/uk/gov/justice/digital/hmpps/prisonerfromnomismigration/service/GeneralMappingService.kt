@@ -9,7 +9,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonMappingApiService
@@ -24,7 +23,6 @@ class GeneralMappingService(
   private val corePersonMappingApiService: CorePersonMappingApiService,
   private val csipMappingService: CSIPMappingService,
   private val incidentsMappingService: IncidentsMappingService,
-  private val locationsMappingService: LocationsMappingService,
   private val caseNotesMappingService: CaseNotesMappingApiService,
   private val prisonPersonMappingService: PrisonPersonMappingApiService,
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
@@ -39,7 +37,6 @@ class GeneralMappingService(
     MigrationType.CORE_PERSON -> corePersonMappingApiService.getMigrationCount(migrationId)
     MigrationType.CSIP -> csipMappingService.getMigrationCount(migrationId)
     MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
-    MigrationType.LOCATIONS -> locationsMappingService.getMigrationCount(migrationId)
     MigrationType.CASENOTES -> caseNotesMappingService.getMigrationCount(migrationId)
     MigrationType.PRISONPERSON -> prisonPersonMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
