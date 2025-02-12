@@ -19,10 +19,6 @@ hmpps.sqs:
     migrationcsip:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    migrationlocations:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
-      errorVisibilityTimeout: 0
     migrationcasenotes:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
