@@ -6,6 +6,7 @@ import io.awspring.cloud.sqs.annotation.SqsListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
@@ -90,10 +91,6 @@ class ContactPersonEventListener(
       RETRY_SYNCHRONISATION_PERSON_RESTRICTION_MAPPING -> service.retryCreatePersonRestrictionMapping(message.fromJson())
     }
   }
-}
-
-interface EventAudited {
-  val auditModuleName: String
 }
 
 data class PersonRestrictionEvent(

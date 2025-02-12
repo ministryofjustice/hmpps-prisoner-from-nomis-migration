@@ -6,9 +6,11 @@ import io.awspring.cloud.sqs.annotation.SqsListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_ORGANISATION_MAPPING
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -64,12 +66,18 @@ class OrganisationsEventListener(
   @Suppress("unused")
   private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this)
 
-  private suspend fun retryMapping(@Suppress("UNUSED_PARAMETER") mappingName: String, @Suppress("UNUSED_PARAMETER") message: String) {
-    // TODO
+  private suspend fun retryMapping(mappingName: String, message: String) {
+    when (OrganisationsSynchronisationMessageType.valueOf(mappingName)) {
+      RETRY_SYNCHRONISATION_ORGANISATION_MAPPING -> synchronisationService.retryCreateCorporateMapping(message.fromJson())
+    }
   }
 }
 
 data class CorporateEvent(
-  val auditModuleName: String,
+  override val auditModuleName: String,
   val corporateId: Long,
-)
+) : EventAudited
+
+enum class OrganisationsSynchronisationMessageType {
+  RETRY_SYNCHRONISATION_ORGANISATION_MAPPING,
+}

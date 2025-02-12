@@ -92,6 +92,8 @@ class OrganisationsMappingApiMockServer(private val objectMapper: ObjectMapper) 
     )
   }
 
+  fun stubCreateCorporateMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/corporate/organisation")
+
   fun stubGetByNomisCorporateIdOrNull(
     nomisCorporateId: Long = 123456,
     mapping: CorporateMappingDto? = CorporateMappingDto(

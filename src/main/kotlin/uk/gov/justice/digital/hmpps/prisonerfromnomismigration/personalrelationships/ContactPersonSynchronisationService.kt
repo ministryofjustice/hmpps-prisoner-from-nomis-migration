@@ -5,7 +5,10 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.doesOriginateInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
@@ -52,9 +55,9 @@ class ContactPersonSynchronisationService(
   private val mappingApiService: ContactPersonMappingApiService,
   private val nomisApiService: ContactPersonNomisApiService,
   private val dpsApiService: ContactPersonDpsApiService,
-  private val telemetryClient: TelemetryClient,
+  override val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
-) {
+) : TelemetryEnabled {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
@@ -1107,17 +1110,6 @@ class ContactPersonSynchronisationService(
         )
       }
   }
-
-  private inline fun track(name: String, telemetry: MutableMap<String, Any>, transform: () -> Unit) {
-    try {
-      transform()
-      telemetryClient.trackEvent("$name-success", telemetry)
-    } catch (e: Exception) {
-      telemetry["error"] = e.message.toString()
-      telemetryClient.trackEvent("$name-error", telemetry)
-      throw e
-    }
-  }
 }
 
 fun ContactPerson.toDpsCreateContactRequest() = SyncCreateContactRequest(
@@ -1339,4 +1331,3 @@ fun ContactRestriction.toDpsUpdatePrisonerContactRestrictionRequest() = SyncUpda
 )
 
 private fun String.toDateTime() = this.let { LocalDateTime.parse(it) }
-private fun EventAudited.doesOriginateInDps() = this.auditModuleName == "DPS_SYNCHRONISATION"
