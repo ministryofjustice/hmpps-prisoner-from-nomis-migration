@@ -794,41 +794,6 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubLocationsLatestMigration(migrationId: String) {
-    stubFor(
-      get(urlEqualTo("/mapping/locations/migrated/latest")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(
-            """
-            {
-              "dpsLocationId": "abcdef12-1234-5678-9101-abcdef123456",
-              "nomisLocationId": 1234,                                       
-              "label": "$migrationId",
-              "whenCreated": "2024-01-01T11:10:00",
-              "mappingType": "MIGRATED"
-            }              
-            """,
-          ),
-      ),
-    )
-  }
-
-  fun stubLocationsMappingByMigrationId(whenCreated: String = "2024-01-01T11:10:00", count: Int = 54327) {
-    val content = """{
-      "dpsLocationId": "abcdef12",
-      "nomisLocationId": 1234,                                       
-      "label": "2022-02-14T09:58:45",
-      "whenCreated": "$whenCreated",
-      "mappingType": "MIGRATED"
-    }"""
-    stubFor(
-      get(urlPathMatching("/mapping/locations/migration-id/.*")).willReturn(
-        okJson(pageContent(content, count)),
-      ),
-    )
-  }
-
   fun stubLocationsDeleteMapping(dpsLocationId: String) {
     stubFor(
       delete(urlPathMatching("/mapping/locations/dps/$dpsLocationId")).willReturn(

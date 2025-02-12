@@ -12,10 +12,8 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NomisMigrateLocationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NomisSyncLocationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.LocationsApiExtension.Companion.locationsApi
-import java.util.UUID
 
 private const val LOCATION_ID = "abcde123-1234-1234-1234-1234567890ab"
 
@@ -65,50 +63,6 @@ internal class LocationsServiceTest {
           .withRequestBody(matchingJsonPath("prisonId", equalTo("LEI")))
           .withRequestBody(matchingJsonPath("comments", equalTo("Test comment")))
           .withRequestBody(matchingJsonPath("lastUpdatedBy", equalTo("TJONES_ADM"))),
-      )
-    }
-  }
-
-  @Nested
-  @DisplayName("POST /migrate/location")
-  inner class CreateLocationForMigration {
-    @BeforeEach
-    internal fun setUp() {
-      locationsApi.stubUpsertLocationForMigration(locationId = LOCATION_ID)
-      runBlocking {
-        locationsService.migrateLocation(
-          NomisMigrateLocationRequest(
-            code = "C",
-            localName = "Wing C",
-            locationType = NomisMigrateLocationRequest.LocationType.WING,
-            comments = "Test comment",
-            prisonId = "LEI",
-            lastUpdatedBy = "TJONES_ADM",
-            parentId = UUID.fromString("12345678-1234-1234-1234-1234567890ab"),
-            isDeactivated = false,
-          ),
-        )
-      }
-    }
-
-    @Test
-    fun `should call api with OAuth2 token`() {
-      locationsApi.verify(
-        postRequestedFor(urlEqualTo("/migrate/location"))
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `will pass data to the api`() {
-      locationsApi.verify(
-        postRequestedFor(urlEqualTo("/migrate/location"))
-          .withRequestBody(matchingJsonPath("locationType", equalTo("WING")))
-          .withRequestBody(matchingJsonPath("code", equalTo("C")))
-          .withRequestBody(matchingJsonPath("localName", equalTo("Wing C")))
-          .withRequestBody(matchingJsonPath("prisonId", equalTo("LEI")))
-          .withRequestBody(matchingJsonPath("comments", equalTo("Test comment")))
-          .withRequestBody(matchingJsonPath("parentId", equalTo("12345678-1234-1234-1234-1234567890ab"))),
       )
     }
   }

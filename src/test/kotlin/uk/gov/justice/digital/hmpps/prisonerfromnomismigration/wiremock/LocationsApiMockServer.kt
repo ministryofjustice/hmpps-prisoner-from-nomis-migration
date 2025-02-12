@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -12,11 +13,13 @@ import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
-import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.HttpStatus.NO_CONTENT
 import org.springframework.http.HttpStatus.OK
+import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.LegacyLocation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.LocationsApiExtension.Companion.objectMapper
+import java.time.LocalDateTime
 import java.util.UUID
 
 class LocationsApiExtension :
@@ -26,10 +29,12 @@ class LocationsApiExtension :
   companion object {
     @JvmField
     val locationsApi = LocationsApiMockServer()
+    lateinit var objectMapper: ObjectMapper
   }
 
   override fun beforeAll(context: ExtensionContext) {
     locationsApi.start()
+    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonObjectMapper") as ObjectMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
@@ -57,17 +62,6 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubUpsertLocationForMigration(locationId: String = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e") {
-    stubFor(
-      post("/migrate/location").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(CREATED.value())
-          .withBody(aLocation(locationId)),
-      ),
-    )
-  }
-
   fun stubUpsertLocationForSynchronisation(locationId: String = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e") {
     stubFor(
       post("/sync/upsert").willReturn(
@@ -85,7 +79,7 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(error.status)
-          .withBody(error.toJson()),
+          .withBody(error),
       ),
     )
   }
@@ -110,8 +104,6 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createLocationMigrationCount() = findAll(postRequestedFor(urlMatching("/migrate/location"))).count()
-
   fun createLocationSynchronisationCount() = findAll(postRequestedFor(urlMatching("/sync/upsert"))).count()
 
   private fun aLocation(locationId: String) = LegacyLocation(
@@ -125,8 +117,8 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     key = "key",
     pathHierarchy = "MDI-C",
     lastModifiedBy = "me",
-    lastModifiedDate = "2024-05-25",
-  ).toJson()
+    lastModifiedDate = LocalDateTime.parse("2024-05-25T12:40"),
+  )
 }
 
-private fun Any.toJson(): String = ObjectMapper().writeValueAsString(this)
+fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder = this.withBody(objectMapper.writeValueAsString(body))

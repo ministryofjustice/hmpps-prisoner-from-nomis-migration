@@ -33,7 +33,6 @@ class NomisApiExtension :
     const val APPOINTMENTS_ID_URL = "/appointments/ids"
     const val ACTIVITIES_ID_URL = "/activities/ids"
     const val ALLOCATIONS_ID_URL = "/allocations/ids"
-    const val LOCATIONS_ID_URL = "/locations/ids"
     const val COURT_CASES_ID_URL = "/court-cases/ids"
 
     @JvmField
@@ -209,34 +208,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   // //////////////////////////////////// Locations //////////////////////////////////////
-
-  fun stubMultipleGetLocationIdCounts(totalElements: Long, pageSize: Long) {
-    // for each page create a response for each location id starting from 1 up to `totalElements`
-
-    val pages = (totalElements / pageSize) + 1
-    (0..pages).forEach { page ->
-      val startLocationId = (page * pageSize) + 1
-      val endLocationId = min((page * pageSize) + pageSize, totalElements)
-      nomisApi.stubFor(
-        get(
-          urlPathEqualTo("/locations/ids"),
-        )
-          .withQueryParam("page", equalTo(page.toString()))
-          .willReturn(
-            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(
-                locationIdsPagedResponse(
-                  totalElements = totalElements,
-                  ids = (startLocationId..endLocationId).map { it },
-                  pageNumber = page,
-                  pageSize = pageSize,
-                ),
-              ),
-          ),
-      )
-    }
-  }
-
   fun stubGetLocation(nomisLocationId: Long = 1234, parentLocationId: Long = 5678) {
     nomisApi.stubFor(
       get(
@@ -271,20 +242,6 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(HttpStatus.NOT_FOUND.value()),
         ),
     )
-  }
-
-  fun stubMultipleGetLocations(intProgression: IntProgression, parentId: Long = 5678L) {
-    (intProgression).forEach {
-      nomisApi.stubFor(
-        get(
-          urlPathEqualTo("/locations/$it"),
-        )
-          .willReturn(
-            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(locationResponse(it.toLong(), parentId)),
-          ),
-      )
-    }
   }
 
   fun stubMultipleGetAppointmentIdCounts(totalElements: Long, pageSize: Long) {
@@ -568,16 +525,6 @@ fun visitPagedResponse(
 ): String {
   val content = visitIds.map { """{ "visitId": $it }""" }.joinToString { it }
   return pageContent(content, pageSize, pageNumber, totalElements, visitIds.size)
-}
-
-fun locationIdsPagedResponse(
-  totalElements: Long = 10,
-  ids: List<Long> = (0L..10L).toList(),
-  pageSize: Long = 10,
-  pageNumber: Long = 0,
-): String {
-  val content = ids.map { """{ "locationId": $it }""" }.joinToString { it }
-  return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }
 
 fun appointmentIdsPagedResponse(
