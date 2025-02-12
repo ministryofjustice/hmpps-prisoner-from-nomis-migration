@@ -185,8 +185,6 @@ class SqsIntegrationTestBase : TestBase() {
   internal val personalRelationshipsQueueOffenderEventsUrl by lazy { personalRelationshipsOffenderEventsQueue.queueUrl }
 
   internal val organisationsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(ORGANISATIONS_SYNC_QUEUE_ID) as HmppsQueue }
-  internal val awsSqsOrganisationsOffenderEventsClient by lazy { organisationsOffenderEventsQueue.sqsClient }
-  internal val organisationsQueueOffenderEventsUrl by lazy { organisationsOffenderEventsQueue.queueUrl }
 
   private val allQueues by lazy {
     listOf(
@@ -257,7 +255,7 @@ class SqsIntegrationTestBase : TestBase() {
 }
 
 internal fun SqsAsyncClient.sendMessage(queueOffenderEventsUrl: String, message: String) = sendMessage(SendMessageRequest.builder().queueUrl(queueOffenderEventsUrl).messageBody(message).build()).get()
-
+internal fun HmppsQueue.sendMessage(message: String) = this.sqsClient.sendMessage(this.queueUrl, message = message)
 internal fun String.purgeQueueRequest() = PurgeQueueRequest.builder().queueUrl(this).build()
 private fun SqsAsyncClient.purgeQueue(queueUrl: String?) = purgeQueue(queueUrl?.purgeQueueRequest())
 

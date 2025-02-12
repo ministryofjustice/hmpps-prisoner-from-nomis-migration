@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations
 
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -46,8 +47,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenCreatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-INSERTED",
             corporateId = corporateAndOrganisationId,
@@ -91,8 +91,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateOrganisation(syncCreateOrganisationResponse().copy(organisationId = corporateAndOrganisationId))
         mappingApiMock.stubCreateCorporateMapping()
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-INSERTED",
             corporateId = corporateAndOrganisationId,
@@ -156,8 +155,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         mappingApiMock.stubGetByNomisCorporateIdOrNull(nomisCorporateId = corporateAndOrganisationId, mapping = CorporateMappingDto(dpsId = "$corporateAndOrganisationId", nomisId = corporateAndOrganisationId, mappingType = CorporateMappingDto.MappingType.NOMIS_CREATED))
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-INSERTED",
             corporateId = corporateAndOrganisationId,
@@ -212,8 +210,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
 
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-INSERTED",
             corporateId = corporateAndOrganisationId,
@@ -271,8 +268,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateOrganisation(syncCreateOrganisationResponse().copy(organisationId = corporateAndOrganisationId))
         mappingApiMock.stubCreateCorporateMappingFailureFollowedBySuccess()
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-INSERTED",
             corporateId = corporateAndOrganisationId,
@@ -320,8 +316,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenUpdatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-UPDATED",
             corporateId = nomisCorporateId,
@@ -371,8 +366,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubUpdateOrganisation(organisationId = dpsOrganisationId)
 
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-UPDATED",
             corporateId = nomisCorporateId,
@@ -405,6 +399,87 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(comments).isEqualTo("Good people")
           assertThat(deactivatedDate).isEqualTo(LocalDate.parse("2020-01-01"))
         }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("CORPORATE-DELETED")
+  inner class CorporateDeleted {
+    private val nomisCorporateId = 123456L
+    private val dpsOrganisationId = 123456L
+
+    @Nested
+    inner class WhenMappingExists {
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisCorporateIdOrNull(
+          nomisCorporateId = nomisCorporateId,
+          mapping = CorporateMappingDto(dpsId = dpsOrganisationId.toString(), nomisId = nomisCorporateId, mappingType = MIGRATED),
+        )
+        dpsApiMock.stubDeleteOrganisation(organisationId = dpsOrganisationId)
+        mappingApiMock.stubDeleteByNomisCorporateId(nomisCorporateId)
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateEvent(
+            eventType = "CORPORATE-DELETED",
+            corporateId = nomisCorporateId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-corporate-synchronisation-deleted-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo(nomisCorporateId.toString())
+            assertThat(it["dpsOrganisationId"]).isEqualTo(dpsOrganisationId.toString())
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will delete the organisation from DPS`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/organisation/$dpsOrganisationId")))
+      }
+
+      @Test
+      fun `will delete the corporate mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/corporate/organisation/nomis-corporate-id/$nomisCorporateId")))
+      }
+    }
+
+    @Nested
+    inner class WhenMappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisCorporateIdOrNull(
+          nomisCorporateId = nomisCorporateId,
+          mapping = null,
+        )
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateEvent(
+            eventType = "CORPORATE-DELETED",
+            corporateId = nomisCorporateId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry for delete ignored`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-corporate-synchronisation-deleted-ignored"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo(nomisCorporateId.toString())
+          },
+          isNull(),
+        )
       }
     }
   }

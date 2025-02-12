@@ -78,7 +78,20 @@ class OrganisationsSynchronisationService(
     }
   }
   suspend fun corporateDeleted(event: CorporateEvent) {
-    log.debug("received corporate deleted event {}", event)
+    val telemetry =
+      telemetryOf("nomisCorporateId" to event.corporateId)
+    mappingApiService.getByNomisCorporateIdOrNull(nomisCorporateId = event.corporateId)?.also {
+      track("organisations-corporate-synchronisation-deleted", telemetry) {
+        telemetry["dpsOrganisationId"] = it.dpsId
+        dpsApiService.deleteOrganisation(it.dpsId.toLong())
+        mappingApiService.deleteByNomisCorporateId(event.corporateId)
+      }
+    } ?: run {
+      telemetryClient.trackEvent(
+        "organisations-corporate-synchronisation-deleted-ignored",
+        telemetry,
+      )
+    }
   }
 
   private suspend fun tryToCreateMapping(
