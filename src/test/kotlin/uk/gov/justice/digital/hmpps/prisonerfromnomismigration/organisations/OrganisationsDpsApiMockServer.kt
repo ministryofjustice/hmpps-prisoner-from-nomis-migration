@@ -17,12 +17,14 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.stereotype.Component
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.dpsOrganisationsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigratedOrganisationAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
+import java.time.LocalDateTime
 
 class OrganisationsDpsApiExtension :
   BeforeAllCallback,
@@ -92,6 +94,26 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       organisationName = "Test Organisation",
       active = true,
     )
+
+    fun syncCreateOrganisationAddressRequest() = SyncCreateOrganisationAddressRequest(
+      organisationId = 1234567,
+      addressType = "MOB",
+      primaryAddress = true,
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
+
+    fun syncCreateOrganisationAddressResponse() = SyncCreateOrganisationAddressResponse(
+      organisationAddressId = 123456,
+    )
+
+    fun syncUpdateOrganisationAddressRequest() = SyncUpdateOrganisationAddressRequest(
+      addressType = "MOB",
+      primaryAddress = true,
+      updatedBy = "JANE.SAM",
+      updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
+      verified = false,
+    )
   }
 
   fun stubHealthPing(status: Int) {
@@ -112,7 +134,7 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(OrganisationsDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(objectMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -124,7 +146,7 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(OrganisationsDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(objectMapper.writeValueAsString(response)),
         ).withRequestBody(matchingJsonPath("$.nomisCorporateId", equalTo(nomisCorporateId.toString()))),
     )
   }
@@ -136,7 +158,7 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(OrganisationsDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(objectMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -154,6 +176,38 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubDeleteOrganisation(organisationId: Long) {
     dpsOrganisationsServer.stubFor(
       delete("/sync/organisation/$organisationId")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+  fun stubCreateOrganisationAddress(response: SyncCreateOrganisationAddressResponse = syncCreateOrganisationAddressResponse()) {
+    dpsOrganisationsServer.stubFor(
+      post("/sync/organisation-address")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+  fun stubUpdateOrganisationAddress(organisationAddressId: Long) {
+    dpsOrganisationsServer.stubFor(
+      put("/sync/organisation-address/$organisationAddressId")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubDeleteOrganisationAddress(organisationAddressId: Long) {
+    dpsOrganisationsServer.stubFor(
+      delete("/sync/organisation-address/$organisationAddressId")
         .willReturn(
           aResponse()
             .withStatus(204)

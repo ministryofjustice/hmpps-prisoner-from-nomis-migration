@@ -93,6 +93,9 @@ class OrganisationsSynchronisationService(
       )
     }
   }
+  suspend fun corporateAddressInserted(event: CorporateAddressEvent) {}
+  suspend fun corporateAddressUpdated(event: CorporateAddressEvent) {}
+  suspend fun corporateAddressDeleted(event: CorporateAddressEvent) {}
 
   private suspend fun tryToCreateMapping(
     mapping: CorporateMappingDto,

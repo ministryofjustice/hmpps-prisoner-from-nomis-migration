@@ -38,9 +38,9 @@ class OrganisationsEventListener(
               "CORPORATE-INSERTED" -> synchronisationService.corporateInserted(sqsMessage.Message.fromJson())
               "CORPORATE-UPDATED" -> synchronisationService.corporateUpdated(sqsMessage.Message.fromJson())
               "CORPORATE-DELETED" -> synchronisationService.corporateDeleted(sqsMessage.Message.fromJson())
-              "ADDRESSES_CORPORATE-INSERTED" -> log.debug("Received $eventType")
-              "ADDRESSES_CORPORATE-UPDATED" -> log.debug("Received $eventType")
-              "ADDRESSES_CORPORATE-DELETED" -> log.debug("Received $eventType")
+              "ADDRESSES_CORPORATE-INSERTED" -> synchronisationService.corporateAddressInserted(sqsMessage.Message.fromJson())
+              "ADDRESSES_CORPORATE-UPDATED" -> synchronisationService.corporateAddressUpdated(sqsMessage.Message.fromJson())
+              "ADDRESSES_CORPORATE-DELETED" -> synchronisationService.corporateAddressDeleted(sqsMessage.Message.fromJson())
               "PHONES_CORPORATE-INSERTED" -> log.debug("Received $eventType")
               "PHONES_CORPORATE-UPDATED" -> log.debug("Received $eventType")
               "PHONES_CORPORATE-DELETED" -> log.debug("Received $eventType")
@@ -63,7 +63,6 @@ class OrganisationsEventListener(
     }
   }
 
-  @Suppress("unused")
   private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this)
 
   private suspend fun retryMapping(mappingName: String, message: String) {
@@ -76,6 +75,12 @@ class OrganisationsEventListener(
 data class CorporateEvent(
   override val auditModuleName: String,
   val corporateId: Long,
+) : EventAudited
+
+data class CorporateAddressEvent(
+  override val auditModuleName: String,
+  val corporateId: Long,
+  val addressId: Long,
 ) : EventAudited
 
 enum class OrganisationsSynchronisationMessageType {
