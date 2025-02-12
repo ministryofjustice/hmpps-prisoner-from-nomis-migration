@@ -47,8 +47,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenCreatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-INSERTED",
             corporateId = corporateAndOrganisationId,
@@ -92,8 +91,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateOrganisation(syncCreateOrganisationResponse().copy(organisationId = corporateAndOrganisationId))
         mappingApiMock.stubCreateCorporateMapping()
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-INSERTED",
             corporateId = corporateAndOrganisationId,
@@ -157,8 +155,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         mappingApiMock.stubGetByNomisCorporateIdOrNull(nomisCorporateId = corporateAndOrganisationId, mapping = CorporateMappingDto(dpsId = "$corporateAndOrganisationId", nomisId = corporateAndOrganisationId, mappingType = CorporateMappingDto.MappingType.NOMIS_CREATED))
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-INSERTED",
             corporateId = corporateAndOrganisationId,
@@ -213,8 +210,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
 
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-INSERTED",
             corporateId = corporateAndOrganisationId,
@@ -272,8 +268,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubCreateOrganisation(syncCreateOrganisationResponse().copy(organisationId = corporateAndOrganisationId))
         mappingApiMock.stubCreateCorporateMappingFailureFollowedBySuccess()
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-INSERTED",
             corporateId = corporateAndOrganisationId,
@@ -321,8 +316,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenUpdatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-UPDATED",
             corporateId = nomisCorporateId,
@@ -372,8 +366,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubUpdateOrganisation(organisationId = dpsOrganisationId)
 
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-UPDATED",
             corporateId = nomisCorporateId,
@@ -428,8 +421,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         dpsApiMock.stubDeleteOrganisation(organisationId = dpsOrganisationId)
         mappingApiMock.stubDeleteByNomisCorporateId(nomisCorporateId)
 
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-DELETED",
             corporateId = nomisCorporateId,
@@ -470,8 +462,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           mapping = null,
         )
 
-        awsSqsOrganisationsOffenderEventsClient.sendMessage(
-          organisationsQueueOffenderEventsUrl,
+        organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-DELETED",
             corporateId = nomisCorporateId,

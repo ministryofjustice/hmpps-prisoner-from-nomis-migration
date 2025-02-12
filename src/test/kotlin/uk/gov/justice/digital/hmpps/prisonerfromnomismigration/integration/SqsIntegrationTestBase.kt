@@ -113,7 +113,6 @@ class SqsIntegrationTestBase : TestBase() {
   internal val awsSqsAllocationsMigrationDlqClient by lazy { allocationsMigrationQueue.sqsDlqClient }
   internal val awsSqsIncidentsMigrationDlqClient by lazy { incidentsMigrationQueue.sqsDlqClient }
   internal val awsSqsCSIPMigrationDlqClient by lazy { csipMigrationQueue.sqsDlqClient }
-  internal val awsSqsLocationsMigrationDlqClient by lazy { locationsMigrationQueue.sqsDlqClient }
   internal val visitsMigrationDlqUrl by lazy { visitsMigrationQueue.dlqUrl }
 
   internal val appointmentsMigrationDlqUrl by lazy { appointmentsMigrationQueue.dlqUrl }
@@ -121,7 +120,6 @@ class SqsIntegrationTestBase : TestBase() {
   internal val allocationsMigrationDlqUrl by lazy { allocationsMigrationQueue.dlqUrl }
   internal val incidentsMigrationDlqUrl by lazy { incidentsMigrationQueue.dlqUrl }
   internal val csipMigrationDlqUrl by lazy { csipMigrationQueue.dlqUrl }
-  internal val locationsMigrationDlqUrl by lazy { locationsMigrationQueue.dlqUrl }
 
   internal val visitsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(VISITS_SYNC_QUEUE_ID) as HmppsQueue }
   internal val visitsQueueOffenderEventsUrl by lazy { visitsOffenderEventsQueue.queueUrl }
@@ -189,8 +187,6 @@ class SqsIntegrationTestBase : TestBase() {
   internal val personalRelationshipsQueueOffenderEventsUrl by lazy { personalRelationshipsOffenderEventsQueue.queueUrl }
 
   internal val organisationsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(ORGANISATIONS_SYNC_QUEUE_ID) as HmppsQueue }
-  internal val awsSqsOrganisationsOffenderEventsClient by lazy { organisationsOffenderEventsQueue.sqsClient }
-  internal val organisationsQueueOffenderEventsUrl by lazy { organisationsOffenderEventsQueue.queueUrl }
 
   private val allQueues by lazy {
     listOf(
@@ -262,7 +258,7 @@ class SqsIntegrationTestBase : TestBase() {
 }
 
 internal fun SqsAsyncClient.sendMessage(queueOffenderEventsUrl: String, message: String) = sendMessage(SendMessageRequest.builder().queueUrl(queueOffenderEventsUrl).messageBody(message).build()).get()
-
+internal fun HmppsQueue.sendMessage(message: String) = this.sqsClient.sendMessage(this.queueUrl, message = message)
 internal fun String.purgeQueueRequest() = PurgeQueueRequest.builder().queueUrl(this).build()
 private fun SqsAsyncClient.purgeQueue(queueUrl: String?) = purgeQueue(queueUrl?.purgeQueueRequest())
 
