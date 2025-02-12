@@ -9,7 +9,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsMigrationService.Companion.invalidPrisons
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Capacity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Certification
@@ -24,7 +23,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.LOCATIONS
-import java.util.*
+import java.time.LocalDateTime
+import java.util.UUID
 
 @Service
 class LocationsSynchronisationService(
@@ -36,6 +36,7 @@ class LocationsSynchronisationService(
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
+    val invalidPrisons = listOf("ZZGHI", "UNKNWN", "TRN", "LT3", "LT4")
   }
 
   suspend fun synchroniseUsage(event: LocationsOffenderEvent) {
@@ -272,7 +273,7 @@ private fun LocationsOffenderEvent.toTelemetryProperties(
   if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap()
   )
 
-private val warningLogger = LoggerFactory.getLogger(LocationsMigrationService::class.java)
+private val warningLogger = LoggerFactory.getLogger(LocationsSynchronisationService::class.java)
 
 fun toUpsertSyncRequest(id: UUID, nomisLocationResponse: LocationResponse, parentId: String?) = toUpsertSyncRequest(nomisLocationResponse, parentId).copy(id = id)
 
@@ -304,7 +305,7 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse, parentId: Strin
     ?.toSet(),
   usage = nomisLocationResponse.usages?.map { toUsage(it) }?.toSet(),
 
-  createDate = nomisLocationResponse.createDatetime,
+  createDate = LocalDateTime.parse(nomisLocationResponse.createDatetime),
   // lastModifiedDate - no value available as it changes with occupancy
   deactivatedDate = if (nomisLocationResponse.active) {
     null
