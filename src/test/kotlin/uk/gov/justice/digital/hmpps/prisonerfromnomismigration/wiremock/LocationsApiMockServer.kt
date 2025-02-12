@@ -119,6 +119,5 @@ class LocationsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     lastModifiedBy = "me",
     lastModifiedDate = LocalDateTime.parse("2024-05-25T12:40"),
   )
+  fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder = this.withBody(objectMapper.writeValueAsString(body))
 }
-
-fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder = this.withBody(objectMapper.writeValueAsString(body))
