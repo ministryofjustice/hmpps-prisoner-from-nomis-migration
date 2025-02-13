@@ -8,11 +8,14 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -72,6 +75,37 @@ fun corporateOrganisation(corporateId: Long = 123456): CorporateOrganisation = C
   internetAddresses = emptyList(),
   types = emptyList(),
   audit = nomisAudit(),
+)
+
+fun CorporateOrganisation.withAddress(address: CorporateAddress = corporateAddress()): CorporateOrganisation = copy(addresses = listOf(address))
+fun corporateAddress(): CorporateAddress = CorporateAddress(
+  id = 12345,
+  phoneNumbers = emptyList(),
+  comment = "nice area",
+  validatedPAF = false,
+  primaryAddress = true,
+  mailAddress = true,
+  noFixedAddress = false,
+  type = CodeDescription("HOME", "Home Address"),
+  flat = "Flat 1",
+  premise = "Brown Court",
+  locality = "Broomhill",
+  street = "Broomhill Street",
+  postcode = "S1 6GG",
+  city = CodeDescription("12345", "Sheffield"),
+  county = CodeDescription("S.YORKSHIRE", "South Yorkshire"),
+  country = CodeDescription("GBR", "United Kingdom"),
+  startDate = LocalDate.parse("2021-01-01"),
+  endDate = LocalDate.parse("2025-01-01"),
+  isServices = true,
+  contactPersonName = "Bob Brown",
+  businessHours = "10am to 10pm Monday to Friday",
+  audit = NomisAudit(
+    createUsername = "J.SPEAK",
+    createDatetime = "2024-09-01T13:31",
+    modifyUserId = "T.SMITH",
+    modifyDatetime = "2024-10-01T13:31",
+  ),
 )
 
 fun nomisAudit() = NomisAudit(

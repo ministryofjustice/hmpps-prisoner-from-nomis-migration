@@ -109,6 +109,7 @@ data class SyncCreateOrganisationAddressRequest(
   val specialNeedsCode: String? = null,
   val contactPersonName: String? = null,
   val businessHours: String? = null,
+  val servicesAddress: Boolean? = null,
 )
 
 data class SyncCreateOrganisationAddressResponse(

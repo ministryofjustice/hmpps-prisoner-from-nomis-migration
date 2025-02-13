@@ -30,7 +30,7 @@ class OrganisationsMappingApiService(@Qualifier("mappingApiWebClient") webClient
     }
     .awaitFirstOrDefault(CreateMappingResult())
 
-  suspend fun createOrganisationMapping(mapping: CorporateMappingDto): CreateMappingResult<CorporateMappingDto> = createMapping("/mapping/corporate/organisation", mapping)
+  suspend fun createOrganisationMapping(mapping: CorporateMappingDto): CreateMappingResult<OrganisationMapping> = createMapping("/mapping/corporate/organisation", mapping)
 
   suspend fun getByNomisCorporateIdOrNull(nomisCorporateId: Long): CorporateMappingDto? = webClient.get()
     .uri(
@@ -58,7 +58,7 @@ class OrganisationsMappingApiService(@Qualifier("mappingApiWebClient") webClient
       .awaitBodilessEntity()
   }
 
-  suspend fun createAddressMapping(mapping: CorporateAddressMappingDto): CreateMappingResult<CorporateAddressMappingDto> = createMapping("/mapping/corporate/address", mapping)
+  suspend fun createAddressMapping(mapping: CorporateAddressMappingDto): CreateMappingResult<OrganisationMapping> = createMapping("/mapping/corporate/address", mapping)
 
   suspend fun getByNomisAddressIdOrNull(nomisAddressId: Long): CorporateAddressMappingDto? = webClient.get()
     .uri(
@@ -86,14 +86,20 @@ class OrganisationsMappingApiService(@Qualifier("mappingApiWebClient") webClient
       .awaitBodilessEntity()
   }
 
-  private suspend inline fun <reified T : Any> createMapping(url: String, mapping: T): CreateMappingResult<T> = webClient.post()
+  // all mappings follow this exact pattern
+  data class OrganisationMapping(
+    val nomisId: String,
+    val dpsId: String,
+  )
+
+  private suspend inline fun <reified T : Any> createMapping(url: String, mapping: T): CreateMappingResult<OrganisationMapping> = webClient.post()
     .uri(url)
     .bodyValue(mapping)
     .retrieve()
     .bodyToMono(Unit::class.java)
-    .map { CreateMappingResult<T>() }
+    .map { CreateMappingResult<OrganisationMapping>() }
     .onErrorResume(WebClientResponseException.Conflict::class.java) {
-      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<T>>() {})))
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<OrganisationMapping>>() {})))
     }
     .awaitFirstOrDefault(CreateMappingResult())
 }

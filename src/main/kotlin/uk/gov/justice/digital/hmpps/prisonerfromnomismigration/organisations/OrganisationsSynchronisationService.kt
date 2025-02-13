@@ -11,11 +11,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import java.time.LocalDateTime
 
 @Service
 class OrganisationsSynchronisationService(
@@ -27,6 +31,13 @@ class OrganisationsSynchronisationService(
 ) : TelemetryEnabled {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
+
+  private val corporateMappingCreator = RetryableMappingCreator<CorporateMappingDto>(OrganisationMappingType.CORPORATE) {
+    mappingApiService.createOrganisationMapping(it)
+  }
+  private val addressMappingCreator = RetryableMappingCreator<CorporateAddressMappingDto>(OrganisationMappingType.ADDRESS) {
+    mappingApiService.createAddressMapping(it)
   }
 
   suspend fun corporateInserted(event: CorporateEvent) {
@@ -46,7 +57,7 @@ class OrganisationsSynchronisationService(
         track("organisations-corporate-synchronisation-created", telemetry) {
           nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId).also { organisation ->
             val dpsOrganisation = dpsApiService.createOrganisation(organisation.toDpsCreateOrganisationRequest())
-            tryToCreateMapping(
+            corporateMappingCreator.tryToCreateMapping(
               CorporateMappingDto(
                 nomisId = event.corporateId,
                 dpsId = "${dpsOrganisation.organisationId}",
@@ -93,53 +104,93 @@ class OrganisationsSynchronisationService(
       )
     }
   }
-  suspend fun corporateAddressInserted(event: CorporateAddressEvent) {}
+  suspend fun corporateAddressInserted(event: CorporateAddressEvent) {
+    val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisAddressId" to event.addressId)
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "organisations-address-synchronisation-created-skipped",
+        telemetry,
+      )
+    } else {
+      mappingApiService.getByNomisAddressIdOrNull(nomisAddressId = event.addressId)?.also {
+        telemetryClient.trackEvent(
+          "organisations-address-synchronisation-created-ignored",
+          telemetry + ("dpsOrganisationAddressId" to it.dpsId),
+        )
+      } ?: run {
+        track("organisations-address-synchronisation-created", telemetry) {
+          nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId).also { organisation ->
+            val nomisAddress = organisation.addresses.find { it.id == event.addressId }!!
+            val dpsOrganisationAddress = dpsApiService.createOrganisationAddress(nomisAddress.toDpsCreateOrganisationAddressRequest(event.corporateId)).also { dpsAddress ->
+              telemetry["dpsOrganisationAddressId"] = dpsAddress.organisationAddressId
+            }
+            addressMappingCreator.tryToCreateMapping(
+              CorporateAddressMappingDto(
+                nomisId = event.addressId,
+                dpsId = "${dpsOrganisationAddress.organisationAddressId}",
+                mappingType = CorporateAddressMappingDto.MappingType.NOMIS_CREATED,
+              ),
+              telemetry,
+            )
+          }
+        }
+      }
+    }
+  }
   suspend fun corporateAddressUpdated(event: CorporateAddressEvent) {}
   suspend fun corporateAddressDeleted(event: CorporateAddressEvent) {}
 
-  private suspend fun tryToCreateMapping(
-    mapping: CorporateMappingDto,
-    telemetry: Map<String, Any>,
-  ) {
-    try {
-      createMapping(mapping)
-    } catch (e: Exception) {
-      log.error("Failed to create mapping for organisations mapping id $mapping", e)
-      queueService.sendMessage(
-        messageType = OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_ORGANISATION_MAPPING.name,
-        synchronisationType = SynchronisationType.ORGANISATIONS,
-        message = mapping,
-        telemetryAttributes = telemetry.valuesAsStrings(),
-      )
-    }
-  }
-  private suspend fun createMapping(
-    mapping: CorporateMappingDto,
-  ) {
-    mappingApiService.createOrganisationMapping(mapping).takeIf { it.isError }?.also {
-      with(it.errorResponse!!.moreInfo) {
-        telemetryClient.trackEvent(
-          "from-nomis-sync-organisations-duplicate",
-          mapOf(
-            "existingNomisCorporateId" to existing.nomisId,
-            "existingDpsOrganisationId" to existing.dpsId,
-            "duplicateNomisCorporateId" to duplicate.nomisId,
-            "duplicateDpsOrganisationId" to duplicate.dpsId,
-            "type" to "ORGANISATION",
-          ),
-        )
-      }
-    }
+  suspend fun retryCreateCorporateMapping(retryMessage: InternalMessage<CorporateMappingDto>) = corporateMappingCreator.retryCreateMapping(retryMessage)
+  suspend fun retryCreateAddressMapping(retryMessage: InternalMessage<CorporateAddressMappingDto>) = addressMappingCreator.retryCreateMapping(retryMessage)
+
+  enum class OrganisationMappingType(val messageType: OrganisationsSynchronisationMessageType) {
+    CORPORATE(OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_ORGANISATION_MAPPING),
+    ADDRESS(OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_MAPPING),
   }
 
-  suspend fun retryCreateCorporateMapping(retryMessage: InternalMessage<CorporateMappingDto>) {
-    createMapping(retryMessage.body)
-      .also {
-        telemetryClient.trackEvent(
-          "organisations-corporate-mapping-synchronisation-created",
-          retryMessage.telemetryAttributes,
+  inner class RetryableMappingCreator<T : Any>(private val type: OrganisationMappingType, private val create: suspend (T) -> CreateMappingResult<OrganisationsMappingApiService.OrganisationMapping>) {
+    suspend fun createMapping(mapping: T) {
+      create(mapping).takeIf { it.isError }?.also {
+        with(it.errorResponse!!.moreInfo) {
+          telemetryClient.trackEvent(
+            "from-nomis-sync-organisations-duplicate",
+            mapOf(
+              "existingNomisId" to existing.nomisId,
+              "existingDpsId" to existing.dpsId,
+              "duplicateNomisId" to duplicate.nomisId,
+              "duplicateDpsId" to duplicate.dpsId,
+              "type" to type.name.uppercase(),
+            ),
+          )
+        }
+      }
+    }
+
+    suspend fun retryCreateMapping(retryMessage: InternalMessage<T>) {
+      create(retryMessage.body)
+        .also {
+          telemetryClient.trackEvent(
+            "organisations-${type.name.lowercase()}-mapping-synchronisation-created",
+            retryMessage.telemetryAttributes,
+          )
+        }
+    }
+    suspend fun tryToCreateMapping(
+      mapping: T,
+      telemetry: Map<String, Any>,
+    ) {
+      try {
+        createMapping(mapping)
+      } catch (e: Exception) {
+        log.error("Failed to create mapping for ${type.name.lowercase()} mapping id $mapping", e)
+        queueService.sendMessage(
+          messageType = type.messageType.name,
+          synchronisationType = SynchronisationType.ORGANISATIONS,
+          message = mapping,
+          telemetryAttributes = telemetry.valuesAsStrings(),
         )
       }
+    }
   }
 }
 
@@ -162,3 +213,29 @@ fun CorporateOrganisation.toDpsUpdateOrganisationRequest() = SyncUpdateOrganisat
   active = active,
   deactivatedDate = expiryDate,
 )
+fun CorporateAddress.toDpsCreateOrganisationAddressRequest(dpsOrganisationId: Long) = SyncCreateOrganisationAddressRequest(
+  organisationId = dpsOrganisationId,
+  addressType = this.type?.code,
+  primaryAddress = this.primaryAddress,
+  flat = this.flat,
+  property = this.premise,
+  street = this.street,
+  area = this.locality,
+  cityCode = this.city?.code,
+  countyCode = this.county?.code,
+  countryCode = this.country?.code,
+  postcode = this.postcode,
+  verified = null,
+  mailFlag = this.mailAddress,
+  startDate = this.startDate,
+  endDate = this.endDate,
+  noFixedAddress = this.noFixedAddress,
+  contactPersonName = this.contactPersonName,
+  businessHours = this.businessHours,
+  servicesAddress = this.isServices,
+  comments = this.comment,
+  createdBy = this.audit.createUsername,
+  createdTime = this.audit.createDatetime.toDateTime(),
+)
+
+private fun String.toDateTime() = this.let { LocalDateTime.parse(it) }
