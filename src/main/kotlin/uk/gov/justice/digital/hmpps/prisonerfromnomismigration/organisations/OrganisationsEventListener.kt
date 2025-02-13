@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_ORGANISATION_MAPPING
 import java.util.concurrent.CompletableFuture
 
@@ -68,6 +69,7 @@ class OrganisationsEventListener(
   private suspend fun retryMapping(mappingName: String, message: String) {
     when (OrganisationsSynchronisationMessageType.valueOf(mappingName)) {
       RETRY_SYNCHRONISATION_ORGANISATION_MAPPING -> synchronisationService.retryCreateCorporateMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_ADDRESS_MAPPING -> synchronisationService.retryCreateAddressMapping(message.fromJson())
     }
   }
 }
@@ -85,4 +87,5 @@ data class CorporateAddressEvent(
 
 enum class OrganisationsSynchronisationMessageType {
   RETRY_SYNCHRONISATION_ORGANISATION_MAPPING,
+  RETRY_SYNCHRONISATION_ADDRESS_MAPPING,
 }
