@@ -137,7 +137,24 @@ class OrganisationsSynchronisationService(
       }
     }
   }
-  suspend fun corporateAddressUpdated(event: CorporateAddressEvent) {}
+  suspend fun corporateAddressUpdated(event: CorporateAddressEvent) {
+    val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisAddressId" to event.addressId)
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "organisations-address-synchronisation-updated-skipped",
+        telemetry,
+      )
+    } else {
+      track("organisations-address-synchronisation-updated", telemetry) {
+        val dpsOrganisationAddressId = mappingApiService.getByNomisAddressId(nomisAddressId = event.addressId).dpsId.toLong().also {
+          telemetry["dpsOrganisationAddressId"] = it
+        }
+        val nomisCorporate = nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId)
+        val nomisAddress = nomisCorporate.addresses.find { it.id == event.addressId }!!
+        dpsApiService.updateOrganisationAddress(dpsOrganisationAddressId, nomisAddress.toDpsUpdateOrganisationAddressRequest())
+      }
+    }
+  }
   suspend fun corporateAddressDeleted(event: CorporateAddressEvent) {}
 
   suspend fun retryCreateCorporateMapping(retryMessage: InternalMessage<CorporateMappingDto>) = corporateMappingCreator.retryCreateMapping(retryMessage)
@@ -236,6 +253,29 @@ fun CorporateAddress.toDpsCreateOrganisationAddressRequest(dpsOrganisationId: Lo
   comments = this.comment,
   createdBy = this.audit.createUsername,
   createdTime = this.audit.createDatetime.toDateTime(),
+)
+fun CorporateAddress.toDpsUpdateOrganisationAddressRequest() = SyncUpdateOrganisationAddressRequest(
+  addressType = this.type?.code,
+  primaryAddress = this.primaryAddress,
+  flat = this.flat,
+  property = this.premise,
+  street = this.street,
+  area = this.locality,
+  cityCode = this.city?.code,
+  countyCode = this.county?.code,
+  countryCode = this.country?.code,
+  postcode = this.postcode,
+  verified = null,
+  mailFlag = this.mailAddress,
+  startDate = this.startDate,
+  endDate = this.endDate,
+  noFixedAddress = this.noFixedAddress,
+  contactPersonName = this.contactPersonName,
+  businessHours = this.businessHours,
+  servicesAddress = this.isServices,
+  comments = this.comment,
+  updatedBy = this.audit.modifyUserId!!,
+  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
 )
 
 private fun String.toDateTime() = this.let { LocalDateTime.parse(it) }
