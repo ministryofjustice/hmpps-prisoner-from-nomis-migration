@@ -138,4 +138,5 @@ data class SyncUpdateOrganisationAddressRequest(
   val specialNeedsCode: String? = null,
   val contactPersonName: String? = null,
   val businessHours: String? = null,
+  val servicesAddress: Boolean? = null,
 )

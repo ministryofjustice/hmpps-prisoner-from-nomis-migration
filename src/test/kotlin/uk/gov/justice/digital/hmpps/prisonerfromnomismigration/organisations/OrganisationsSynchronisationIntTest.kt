@@ -807,6 +807,145 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
     }
   }
+
+  @Nested
+  @DisplayName("ADDRESSES_CORPORATE-UPDATED")
+  inner class CorporateAddressUpdated {
+    private val corporateAndOrganisationId = 123456L
+    private val nomisAddressId = 34567L
+    private val dpsOrganisationAddressId = 76543L
+
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateAddressEvent(
+            eventType = "ADDRESSES_CORPORATE-UPDATED",
+            corporateId = corporateAndOrganisationId,
+            addressId = nomisAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not update the address in DPS`() {
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/organisation-address/.*")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-address-synchronisation-updated-skipped"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInNomis {
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressId(
+          nomisAddressId = nomisAddressId,
+          mapping = CorporateAddressMappingDto(dpsId = dpsOrganisationAddressId.toString(), nomisId = nomisAddressId, mappingType = CorporateAddressMappingDto.MappingType.MIGRATED),
+        )
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporateId = corporateAndOrganisationId,
+          corporate = corporateOrganisation().withAddress(
+            CorporateAddress(
+              id = nomisAddressId,
+              phoneNumbers = emptyList(),
+              comment = "nice area",
+              validatedPAF = false,
+              primaryAddress = true,
+              mailAddress = true,
+              noFixedAddress = false,
+              type = CodeDescription("HOME", "Home Address"),
+              flat = "Flat 1",
+              premise = "Brown Court",
+              locality = "Broomhill",
+              street = "Broomhill Street",
+              postcode = "S1 6GG",
+              city = CodeDescription("12345", "Sheffield"),
+              county = CodeDescription("S.YORKSHIRE", "South Yorkshire"),
+              country = CodeDescription("GBR", "United Kingdom"),
+              startDate = LocalDate.parse("2021-01-01"),
+              endDate = LocalDate.parse("2025-01-01"),
+              isServices = true,
+              contactPersonName = "Bob Brown",
+              businessHours = "10am to 10pm Monday to Friday",
+              audit = NomisAudit(
+                createUsername = "J.SPEAK",
+                createDatetime = "2024-09-01T13:31",
+                modifyUserId = "T.SMITH",
+                modifyDatetime = "2024-10-01T13:31",
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubUpdateOrganisationAddress(organisationAddressId = dpsOrganisationAddressId)
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateAddressEvent(
+            eventType = "ADDRESSES_CORPORATE-UPDATED",
+            corporateId = corporateAndOrganisationId,
+            addressId = nomisAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-address-synchronisation-updated-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
+            assertThat(it["dpsOrganisationAddressId"]).isEqualTo("$dpsOrganisationAddressId")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will update the address in DPS from the NOMIS address`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-address/$dpsOrganisationAddressId")))
+        val request: SyncUpdateOrganisationAddressRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-address/$dpsOrganisationAddressId")))
+        with(request) {
+          assertThat(addressType).isEqualTo("HOME")
+          assertThat(primaryAddress).isTrue()
+          assertThat(flat).isEqualTo("Flat 1")
+          assertThat(property).isEqualTo("Brown Court")
+          assertThat(street).isEqualTo("Broomhill Street")
+          assertThat(area).isEqualTo("Broomhill")
+          assertThat(cityCode).isEqualTo("12345")
+          assertThat(countyCode).isEqualTo("S.YORKSHIRE")
+          assertThat(countryCode).isEqualTo("GBR")
+          assertThat(postcode).isEqualTo("S1 6GG")
+          assertThat(verified).isNull()
+          assertThat(mailFlag).isTrue()
+          assertThat(startDate).isEqualTo(LocalDate.parse("2021-01-01"))
+          assertThat(endDate).isEqualTo(LocalDate.parse("2025-01-01"))
+          assertThat(noFixedAddress).isFalse()
+          assertThat(comments).isEqualTo("nice area")
+          assertThat(servicesAddress).isTrue()
+          assertThat(businessHours).isEqualTo("10am to 10pm Monday to Friday")
+          assertThat(contactPersonName).isEqualTo("Bob Brown")
+          assertThat(updatedBy).isEqualTo("T.SMITH")
+          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+        }
+      }
+    }
+  }
 }
 
 fun corporateEvent(
