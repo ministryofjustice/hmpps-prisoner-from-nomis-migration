@@ -73,6 +73,12 @@ class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") priv
       .retrieve()
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
   }
+  suspend fun deleteOrganisationPhone(organisationPhoneId: Long) {
+    webClient.delete()
+      .uri("/sync/organisation-phone/{organisationPhoneId}", organisationPhoneId)
+      .retrieve()
+      .awaitBodilessEntityIgnoreNotFound()
+  }
 
   suspend fun createOrganisationAddressPhone(organisationAddressPhone: SyncCreateOrganisationAddressPhoneRequest): SyncCreateOrganisationAddressPhoneResponse = webClient.post()
     .uri("/sync/organisation-address-phone")
@@ -86,6 +92,12 @@ class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") priv
       .bodyValue(organisationAddressPhone)
       .retrieve()
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
+  }
+  suspend fun deleteOrganisationAddressPhone(organisationAddressPhoneId: Long) {
+    webClient.delete()
+      .uri("/sync/organisation-address-phone/{organisationAddressPhoneId}", organisationAddressPhoneId)
+      .retrieve()
+      .awaitBodilessEntityIgnoreNotFound()
   }
 }
 

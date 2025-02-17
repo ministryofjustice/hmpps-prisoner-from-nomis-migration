@@ -264,6 +264,32 @@ class OrganisationsDpsApiServiceTest {
   }
 
   @Nested
+  inner class DeleteOrganisationPhone {
+    @Test
+    internal fun `will pass oath2 token to organisation phone endpoint`() = runTest {
+      dpsOrganisationsServer.stubDeleteOrganisationPhone(12345)
+
+      apiService.deleteOrganisationPhone(12345)
+
+      dpsOrganisationsServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the DELETE endpoint`() = runTest {
+      dpsOrganisationsServer.stubDeleteOrganisationPhone(12345)
+
+      apiService.deleteOrganisationPhone(12345)
+
+      dpsOrganisationsServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/organisation-phone/12345")),
+      )
+    }
+  }
+
+  @Nested
   inner class CreateOrganisationAddressPhone {
     @Test
     internal fun `will pass oath2 token to organisation address phone endpoint`() = runTest {
@@ -311,6 +337,32 @@ class OrganisationsDpsApiServiceTest {
 
       dpsOrganisationsServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/organisation-address-phone/12345")),
+      )
+    }
+  }
+
+  @Nested
+  inner class DeleteOrganisationAddressPhone {
+    @Test
+    internal fun `will pass oath2 token to organisation address phone endpoint`() = runTest {
+      dpsOrganisationsServer.stubDeleteOrganisationAddressPhone(12345)
+
+      apiService.deleteOrganisationAddressPhone(12345)
+
+      dpsOrganisationsServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the DELETE endpoint`() = runTest {
+      dpsOrganisationsServer.stubDeleteOrganisationAddressPhone(12345)
+
+      apiService.deleteOrganisationAddressPhone(12345)
+
+      dpsOrganisationsServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/organisation-address-phone/12345")),
       )
     }
   }

@@ -229,6 +229,22 @@ class OrganisationsSynchronisationService(
     }
   }
 
+  suspend fun corporatePhoneDeleted(event: CorporatePhoneEvent) {
+    val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisPhoneId" to event.phoneId)
+    mappingApiService.getByNomisPhoneIdOrNull(nomisPhoneId = event.phoneId)?.also {
+      track("organisations-phone-synchronisation-deleted", telemetry) {
+        telemetry["dpsOrganisationPhoneId"] = it.dpsId
+        dpsApiService.deleteOrganisationPhone(it.dpsId.toLong())
+        mappingApiService.deleteByNomisPhoneId(event.phoneId)
+      }
+    } ?: run {
+      telemetryClient.trackEvent(
+        "organisations-phone-synchronisation-deleted-ignored",
+        telemetry,
+      )
+    }
+  }
+
   suspend fun corporateAddressPhoneInserted(event: CorporateAddressPhoneEvent) {
     val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisPhoneId" to event.phoneId, "nomisAddressId" to event.addressId)
     if (event.doesOriginateInDps()) {
@@ -288,6 +304,21 @@ class OrganisationsSynchronisationService(
         val nomisPhone = nomisAddress.phoneNumbers.find { it.id == event.phoneId }!!
         dpsApiService.updateOrganisationAddressPhone(dpsOrganisationAddressPhoneId, nomisPhone.toDpsUpdateOrganisationAddressPhoneRequest())
       }
+    }
+  }
+  suspend fun corporateAddressPhoneDeleted(event: CorporateAddressPhoneEvent) {
+    val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisAddressId" to event.addressId, "nomisPhoneId" to event.phoneId)
+    mappingApiService.getByNomisAddressPhoneIdOrNull(nomisPhoneId = event.phoneId)?.also {
+      track("organisations-address-phone-synchronisation-deleted", telemetry) {
+        telemetry["dpsOrganisationAddressPhoneId"] = it.dpsId
+        dpsApiService.deleteOrganisationAddressPhone(it.dpsId.toLong())
+        mappingApiService.deleteByNomisAddressPhoneId(event.phoneId)
+      }
+    } ?: run {
+      telemetryClient.trackEvent(
+        "organisations-address-phone-synchronisation-deleted-ignored",
+        telemetry,
+      )
     }
   }
 
