@@ -18,7 +18,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.Org
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationRequest
 
 @SpringAPIServiceTest
@@ -236,6 +238,32 @@ class OrganisationsDpsApiServiceTest {
   }
 
   @Nested
+  inner class UpdateOrganisationPhone {
+    @Test
+    internal fun `will pass oath2 token to organisation-phone endpoint`() = runTest {
+      dpsOrganisationsServer.stubUpdateOrganisationPhone(12345)
+
+      apiService.updateOrganisationPhone(12345, syncUpdateOrganisationPhoneRequest())
+
+      dpsOrganisationsServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the PUT endpoint`() = runTest {
+      dpsOrganisationsServer.stubUpdateOrganisationPhone(12345)
+
+      apiService.updateOrganisationPhone(12345, syncUpdateOrganisationPhoneRequest())
+
+      dpsOrganisationsServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/organisation-phone/12345")),
+      )
+    }
+  }
+
+  @Nested
   inner class CreateOrganisationAddressPhone {
     @Test
     internal fun `will pass oath2 token to organisation address phone endpoint`() = runTest {
@@ -257,6 +285,32 @@ class OrganisationsDpsApiServiceTest {
 
       dpsOrganisationsServer.verify(
         postRequestedFor(urlPathEqualTo("/sync/organisation-address-phone")),
+      )
+    }
+  }
+
+  @Nested
+  inner class UpdateOrganisationAddressPhone {
+    @Test
+    internal fun `will pass oath2 token to organisation address phone endpoint`() = runTest {
+      dpsOrganisationsServer.stubUpdateOrganisationAddressPhone(12345)
+
+      apiService.updateOrganisationAddressPhone(12345, syncUpdateOrganisationAddressPhoneRequest())
+
+      dpsOrganisationsServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the PUT endpoint`() = runTest {
+      dpsOrganisationsServer.stubUpdateOrganisationAddressPhone(12345)
+
+      apiService.updateOrganisationAddressPhone(12345, syncUpdateOrganisationAddressPhoneRequest())
+
+      dpsOrganisationsServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/organisation-address-phone/12345")),
       )
     }
   }

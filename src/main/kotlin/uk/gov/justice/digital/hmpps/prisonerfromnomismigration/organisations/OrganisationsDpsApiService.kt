@@ -66,11 +66,27 @@ class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") priv
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
+  suspend fun updateOrganisationPhone(organisationPhoneId: Long, organisationPhone: SyncUpdateOrganisationPhoneRequest) {
+    webClient.put()
+      .uri("/sync/organisation-phone/{organisationPhoneId}", organisationPhoneId)
+      .bodyValue(organisationPhone)
+      .retrieve()
+      .awaitBodilessEntityOrLogAndRethrowBadRequest()
+  }
+
   suspend fun createOrganisationAddressPhone(organisationAddressPhone: SyncCreateOrganisationAddressPhoneRequest): SyncCreateOrganisationAddressPhoneResponse = webClient.post()
     .uri("/sync/organisation-address-phone")
     .bodyValue(organisationAddressPhone)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun updateOrganisationAddressPhone(organisationAddressPhoneId: Long, organisationAddressPhone: SyncUpdateOrganisationAddressPhoneRequest) {
+    webClient.put()
+      .uri("/sync/organisation-address-phone/{organisationAddressPhoneId}", organisationAddressPhoneId)
+      .bodyValue(organisationAddressPhone)
+      .retrieve()
+      .awaitBodilessEntityOrLogAndRethrowBadRequest()
+  }
 }
 
 //  Fake DTOs - replace with real ones once created
@@ -166,6 +182,14 @@ data class SyncCreateOrganisationPhoneRequest(
 data class SyncCreateOrganisationPhoneResponse(
   val organisationPhoneId: Long,
 )
+data class SyncUpdateOrganisationPhoneRequest(
+  val phoneType: String,
+  val phoneNumber: String,
+  val updatedBy: String,
+  val updatedTime: LocalDateTime,
+  val extNumber: String? = null,
+)
+
 data class SyncCreateOrganisationAddressPhoneRequest(
   val organisationId: Long,
   val organisationAddressId: Long,
@@ -173,6 +197,13 @@ data class SyncCreateOrganisationAddressPhoneRequest(
   val phoneNumber: String,
   val createdBy: String,
   val createdTime: LocalDateTime,
+  val extNumber: String? = null,
+)
+data class SyncUpdateOrganisationAddressPhoneRequest(
+  val phoneType: String,
+  val phoneNumber: String,
+  val updatedBy: String,
+  val updatedTime: LocalDateTime,
   val extNumber: String? = null,
 )
 
