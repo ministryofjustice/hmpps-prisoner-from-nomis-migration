@@ -11,10 +11,9 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateAddressMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
@@ -54,10 +53,10 @@ class OrganisationsMappingApiMockServer(private val objectMapper: ObjectMapper) 
             pageContent(
               objectMapper = objectMapper,
               content = listOf(
-                CorporateMappingDto(
+                OrganisationsMappingDto(
                   dpsId = "654321",
                   nomisId = 123456,
-                  mappingType = CorporateMappingDto.MappingType.MIGRATED,
+                  mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
                   label = migrationId,
                   whenCreated = LocalDateTime.now().toString(),
                 ),
@@ -97,10 +96,10 @@ class OrganisationsMappingApiMockServer(private val objectMapper: ObjectMapper) 
 
   fun stubGetByNomisCorporateIdOrNull(
     nomisCorporateId: Long = 123456,
-    mapping: CorporateMappingDto? = CorporateMappingDto(
+    mapping: OrganisationsMappingDto? = OrganisationsMappingDto(
       nomisId = 123456,
       dpsId = "123456",
-      mappingType = CorporateMappingDto.MappingType.MIGRATED,
+      mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
     ),
   ) {
     mapping?.apply {
@@ -126,10 +125,10 @@ class OrganisationsMappingApiMockServer(private val objectMapper: ObjectMapper) 
 
   fun stubGetByNomisCorporateId(
     nomisCorporateId: Long = 123456,
-    mapping: CorporateMappingDto = CorporateMappingDto(
+    mapping: OrganisationsMappingDto = OrganisationsMappingDto(
       nomisId = 123456,
       dpsId = "123456",
-      mappingType = CorporateMappingDto.MappingType.MIGRATED,
+      mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
     ),
   ) = stubGetByNomisCorporateIdOrNull(nomisCorporateId, mapping)
 
@@ -170,10 +169,10 @@ class OrganisationsMappingApiMockServer(private val objectMapper: ObjectMapper) 
 
   fun stubGetByNomisAddressIdOrNull(
     nomisAddressId: Long = 123456,
-    mapping: CorporateAddressMappingDto? = CorporateAddressMappingDto(
+    mapping: OrganisationsMappingDto? = OrganisationsMappingDto(
       nomisId = 123456,
       dpsId = "654321",
-      mappingType = CorporateAddressMappingDto.MappingType.MIGRATED,
+      mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
     ),
   ) {
     mapping?.apply {
@@ -199,10 +198,10 @@ class OrganisationsMappingApiMockServer(private val objectMapper: ObjectMapper) 
 
   fun stubGetByNomisAddressId(
     nomisAddressId: Long = 123456,
-    mapping: CorporateAddressMappingDto = CorporateAddressMappingDto(
+    mapping: OrganisationsMappingDto = OrganisationsMappingDto(
       nomisId = 123456,
       dpsId = "123456",
-      mappingType = CorporateAddressMappingDto.MappingType.MIGRATED,
+      mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
     ),
   ) = stubGetByNomisAddressIdOrNull(nomisAddressId, mapping)
 

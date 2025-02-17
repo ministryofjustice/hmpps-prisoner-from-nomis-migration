@@ -17,12 +17,11 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateAddressMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto.MappingType.MIGRATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto.MappingType.MIGRATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
@@ -158,7 +157,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenAlreadyCreated {
       @BeforeEach
       fun setUp() {
-        mappingApiMock.stubGetByNomisCorporateIdOrNull(nomisCorporateId = corporateAndOrganisationId, mapping = CorporateMappingDto(dpsId = "$corporateAndOrganisationId", nomisId = corporateAndOrganisationId, mappingType = CorporateMappingDto.MappingType.NOMIS_CREATED))
+        mappingApiMock.stubGetByNomisCorporateIdOrNull(nomisCorporateId = corporateAndOrganisationId, mapping = OrganisationsMappingDto(dpsId = "$corporateAndOrganisationId", nomisId = corporateAndOrganisationId, mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED))
         organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-INSERTED",
@@ -197,12 +196,12 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         mappingApiMock.stubCreateCorporateMapping(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
-              duplicate = CorporateMappingDto(
+              duplicate = OrganisationsMappingDto(
                 dpsId = corporateAndOrganisationId.toString(),
                 nomisId = corporateAndOrganisationId,
                 mappingType = NOMIS_CREATED,
               ),
-              existing = CorporateMappingDto(
+              existing = OrganisationsMappingDto(
                 dpsId = "9999",
                 nomisId = corporateAndOrganisationId,
                 mappingType = NOMIS_CREATED,
@@ -353,7 +352,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisCorporateId(
           nomisCorporateId = nomisCorporateId,
-          mapping = CorporateMappingDto(dpsId = dpsOrganisationId.toString(), nomisId = nomisCorporateId, mappingType = MIGRATED),
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationId.toString(), nomisId = nomisCorporateId, mappingType = MIGRATED),
         )
         nomisApiMock.stubGetCorporateOrganisation(
           corporateId = nomisCorporateId,
@@ -420,7 +419,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisCorporateIdOrNull(
           nomisCorporateId = nomisCorporateId,
-          mapping = CorporateMappingDto(dpsId = dpsOrganisationId.toString(), nomisId = nomisCorporateId, mappingType = MIGRATED),
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationId.toString(), nomisId = nomisCorporateId, mappingType = MIGRATED),
         )
         dpsApiMock.stubDeleteOrganisation(organisationId = dpsOrganisationId)
         mappingApiMock.stubDeleteByNomisCorporateId(nomisCorporateId)
@@ -648,7 +647,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenAlreadyCreated {
       @BeforeEach
       fun setUp() {
-        mappingApiMock.stubGetByNomisAddressIdOrNull(nomisAddressId = nomisAddressId, mapping = CorporateAddressMappingDto(dpsId = "$dpsOrganisationAddressId", nomisId = nomisAddressId, mappingType = CorporateAddressMappingDto.MappingType.NOMIS_CREATED))
+        mappingApiMock.stubGetByNomisAddressIdOrNull(nomisAddressId = nomisAddressId, mapping = OrganisationsMappingDto(dpsId = "$dpsOrganisationAddressId", nomisId = nomisAddressId, mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED))
         organisationsOffenderEventsQueue.sendMessage(
           corporateAddressEvent(
             eventType = "ADDRESSES_CORPORATE-INSERTED",
@@ -691,15 +690,15 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         mappingApiMock.stubCreateAddressMapping(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
-              duplicate = CorporateAddressMappingDto(
+              duplicate = OrganisationsMappingDto(
                 dpsId = "$dpsOrganisationAddressId",
                 nomisId = nomisAddressId,
-                mappingType = CorporateAddressMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
               ),
-              existing = CorporateAddressMappingDto(
+              existing = OrganisationsMappingDto(
                 dpsId = "9999",
                 nomisId = nomisAddressId,
-                mappingType = CorporateAddressMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
               ),
             ),
             errorCode = 1409,
@@ -855,7 +854,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisAddressId(
           nomisAddressId = nomisAddressId,
-          mapping = CorporateAddressMappingDto(dpsId = dpsOrganisationAddressId.toString(), nomisId = nomisAddressId, mappingType = CorporateAddressMappingDto.MappingType.MIGRATED),
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationAddressId.toString(), nomisId = nomisAddressId, mappingType = OrganisationsMappingDto.MappingType.MIGRATED),
         )
         nomisApiMock.stubGetCorporateOrganisation(
           corporateId = corporateAndOrganisationId,
@@ -961,7 +960,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisAddressIdOrNull(
           nomisAddressId = nomisAddressId,
-          mapping = CorporateAddressMappingDto(dpsId = dpsOrganisationAddressId.toString(), nomisId = nomisAddressId, mappingType = CorporateAddressMappingDto.MappingType.MIGRATED),
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationAddressId.toString(), nomisId = nomisAddressId, mappingType = OrganisationsMappingDto.MappingType.MIGRATED),
         )
         dpsApiMock.stubDeleteOrganisationAddress(organisationAddressId = dpsOrganisationAddressId)
         mappingApiMock.stubDeleteByNomisAddressId(nomisAddressId)
