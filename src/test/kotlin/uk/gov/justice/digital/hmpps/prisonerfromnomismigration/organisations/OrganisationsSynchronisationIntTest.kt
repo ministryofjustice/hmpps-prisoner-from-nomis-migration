@@ -1325,6 +1325,112 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("PHONES_CORPORATE-UPDATED (global)")
+  inner class CorporatePhoneUpdated {
+    private val corporateAndOrganisationId = 123456L
+    private val nomisPhoneId = 34567L
+    private val dpsOrganisationPhoneId = 76543L
+
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        organisationsOffenderEventsQueue.sendMessage(
+          corporatePhoneEvent(
+            eventType = "PHONES_CORPORATE-UPDATED",
+            corporateId = corporateAndOrganisationId,
+            phoneId = nomisPhoneId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not update the phone in DPS`() {
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/organisation-phone/.*")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-phone-synchronisation-updated-skipped"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInNomis {
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneId(
+          nomisPhoneId = nomisPhoneId,
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationPhoneId.toString(), nomisId = nomisPhoneId, mappingType = OrganisationsMappingDto.MappingType.MIGRATED),
+        )
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporateId = corporateAndOrganisationId,
+          corporate = corporateOrganisation().withPhone(
+            CorporatePhoneNumber(
+              id = nomisPhoneId,
+              number = "0114 555 5555",
+              extension = "ext 123",
+              type = CodeDescription("HOME", "Home Phone"),
+              audit = NomisAudit(
+                createUsername = "J.SPEAK",
+                createDatetime = "2024-09-01T13:31",
+                modifyUserId = "T.SMITH",
+                modifyDatetime = "2024-10-01T13:31",
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubUpdateOrganisationPhone(organisationPhoneId = dpsOrganisationPhoneId)
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporatePhoneEvent(
+            eventType = "PHONES_CORPORATE-UPDATED",
+            corporateId = corporateAndOrganisationId,
+            phoneId = nomisPhoneId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-phone-synchronisation-updated-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+            assertThat(it["dpsOrganisationPhoneId"]).isEqualTo("$dpsOrganisationPhoneId")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will update the phone in DPS from the NOMIS phone`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-phone/$dpsOrganisationPhoneId")))
+        val request: SyncUpdateOrganisationPhoneRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-phone/$dpsOrganisationPhoneId")))
+        with(request) {
+          assertThat(phoneType).isEqualTo("HOME")
+          assertThat(extNumber).isEqualTo("ext 123")
+          assertThat(phoneNumber).isEqualTo("0114 555 5555")
+          assertThat(updatedBy).isEqualTo("T.SMITH")
+          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+        }
+      }
+    }
+  }
+
+  @Nested
   @DisplayName("PHONES_CORPORATE-INSERTED (address)")
   inner class CorporateAddressPhoneInserted {
     private val corporateAndOrganisationId = 123456L
@@ -1652,6 +1758,117 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           },
           isNull(),
         )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("PHONES_CORPORATE-UPDATED (address)")
+  inner class CorporateAddressPhoneUpdated {
+    private val corporateAndOrganisationId = 123456L
+    private val nomisPhoneId = 34567L
+    private val nomisAddressId = 6789L
+    private val dpsOrganisationAddressPhoneId = 76543L
+
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateAddressPhoneEvent(
+            eventType = "PHONES_CORPORATE-UPDATED",
+            corporateId = corporateAndOrganisationId,
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not update the phone in DPS`() {
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/organisation-address-phone/.*")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-address-phone-synchronisation-updated-skipped"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInNomis {
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressPhoneId(
+          nomisPhoneId = nomisPhoneId,
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationAddressPhoneId.toString(), nomisId = nomisPhoneId, mappingType = OrganisationsMappingDto.MappingType.MIGRATED),
+        )
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation().withAddress(
+            corporateAddress().withPhone(
+              CorporatePhoneNumber(
+                id = nomisPhoneId,
+                number = "0114 555 5555",
+                extension = "ext 123",
+                type = CodeDescription("HOME", "Home Phone"),
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                  modifyUserId = "T.SMITH",
+                  modifyDatetime = "2024-10-01T13:31",
+                ),
+              ),
+            ).copy(id = nomisAddressId),
+          ),
+        )
+        dpsApiMock.stubUpdateOrganisationAddressPhone(organisationAddressPhoneId = dpsOrganisationAddressPhoneId)
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateAddressPhoneEvent(
+            eventType = "PHONES_CORPORATE-UPDATED",
+            corporateId = corporateAndOrganisationId,
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-address-phone-synchronisation-updated-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+            assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
+            assertThat(it["dpsOrganisationAddressPhoneId"]).isEqualTo("$dpsOrganisationAddressPhoneId")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will update the phone in DPS from the NOMIS phone`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-address-phone/$dpsOrganisationAddressPhoneId")))
+        val request: SyncUpdateOrganisationAddressPhoneRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-address-phone/$dpsOrganisationAddressPhoneId")))
+        with(request) {
+          assertThat(phoneType).isEqualTo("HOME")
+          assertThat(extNumber).isEqualTo("ext 123")
+          assertThat(phoneNumber).isEqualTo("0114 555 5555")
+          assertThat(updatedBy).isEqualTo("T.SMITH")
+          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+        }
       }
     }
   }

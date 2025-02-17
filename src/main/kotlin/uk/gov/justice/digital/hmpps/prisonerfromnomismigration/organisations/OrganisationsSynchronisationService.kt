@@ -210,15 +210,33 @@ class OrganisationsSynchronisationService(
       }
     }
   }
-  suspend fun corporateAddressPhoneInserted(event: CorporateAddressPhoneEvent) {
+  suspend fun corporatePhoneUpdated(event: CorporatePhoneEvent) {
     val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisPhoneId" to event.phoneId)
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "organisations-phone-synchronisation-updated-skipped",
+        telemetry,
+      )
+    } else {
+      track("organisations-phone-synchronisation-updated", telemetry) {
+        val dpsOrganisationPhoneId = mappingApiService.getByNomisPhoneId(nomisPhoneId = event.phoneId).dpsId.toLong().also {
+          telemetry["dpsOrganisationPhoneId"] = it
+        }
+        val nomisCorporate = nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId)
+        val nomisPhone = nomisCorporate.phoneNumbers.find { it.id == event.phoneId }!!
+        dpsApiService.updateOrganisationPhone(dpsOrganisationPhoneId, nomisPhone.toDpsUpdateOrganisationPhoneRequest())
+      }
+    }
+  }
+
+  suspend fun corporateAddressPhoneInserted(event: CorporateAddressPhoneEvent) {
+    val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisPhoneId" to event.phoneId, "nomisAddressId" to event.addressId)
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
         "organisations-address-phone-synchronisation-created-skipped",
         telemetry,
       )
     } else {
-      telemetry["nomisAddressId"] = event.addressId
       mappingApiService.getByNomisAddressPhoneIdOrNull(nomisPhoneId = event.phoneId)?.also {
         telemetryClient.trackEvent(
           "organisations-address-phone-synchronisation-created-ignored",
@@ -250,6 +268,25 @@ class OrganisationsSynchronisationService(
             )
           }
         }
+      }
+    }
+  }
+  suspend fun corporateAddressPhoneUpdated(event: CorporateAddressPhoneEvent) {
+    val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisAddressId" to event.addressId, "nomisPhoneId" to event.phoneId)
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "organisations-address-phone-synchronisation-updated-skipped",
+        telemetry,
+      )
+    } else {
+      track("organisations-address-phone-synchronisation-updated", telemetry) {
+        val dpsOrganisationAddressPhoneId = mappingApiService.getByNomisAddressPhoneId(nomisPhoneId = event.phoneId).dpsId.toLong().also {
+          telemetry["dpsOrganisationAddressPhoneId"] = it
+        }
+        val nomisCorporate = nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId)
+        val nomisAddress = nomisCorporate.addresses.find { it.id == event.addressId }!!
+        val nomisPhone = nomisAddress.phoneNumbers.find { it.id == event.phoneId }!!
+        dpsApiService.updateOrganisationAddressPhone(dpsOrganisationAddressPhoneId, nomisPhone.toDpsUpdateOrganisationAddressPhoneRequest())
       }
     }
   }
@@ -394,6 +431,22 @@ fun CorporatePhoneNumber.toDpsCreateOrganisationAddressPhoneRequest(dpsOrganisat
   phoneType = this.type.code,
   createdBy = this.audit.createUsername,
   createdTime = this.audit.createDatetime.toDateTime(),
+  phoneNumber = this.number,
+  extNumber = this.extension,
+)
+
+fun CorporatePhoneNumber.toDpsUpdateOrganisationAddressPhoneRequest() = SyncUpdateOrganisationAddressPhoneRequest(
+  phoneType = this.type.code,
+  updatedBy = this.audit.modifyUserId!!,
+  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+  phoneNumber = this.number,
+  extNumber = this.extension,
+)
+
+fun CorporatePhoneNumber.toDpsUpdateOrganisationPhoneRequest() = SyncUpdateOrganisationPhoneRequest(
+  phoneType = this.type.code,
+  updatedBy = this.audit.modifyUserId!!,
+  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
   phoneNumber = this.number,
   extNumber = this.extension,
 )
