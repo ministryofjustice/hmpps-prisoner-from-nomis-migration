@@ -160,7 +160,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenAlreadyCreated {
       @BeforeEach
       fun setUp() {
-        mappingApiMock.stubGetByNomisCorporateIdOrNull(nomisCorporateId = corporateAndOrganisationId, mapping = OrganisationsMappingDto(dpsId = "$corporateAndOrganisationId", nomisId = corporateAndOrganisationId, mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED))
+        mappingApiMock.stubGetByNomisCorporateIdOrNull(nomisCorporateId = corporateAndOrganisationId, mapping = OrganisationsMappingDto(dpsId = "$corporateAndOrganisationId", nomisId = corporateAndOrganisationId, mappingType = NOMIS_CREATED))
         organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-INSERTED",
@@ -650,7 +650,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenAlreadyCreated {
       @BeforeEach
       fun setUp() {
-        mappingApiMock.stubGetByNomisAddressIdOrNull(nomisAddressId = nomisAddressId, mapping = OrganisationsMappingDto(dpsId = "$dpsOrganisationAddressId", nomisId = nomisAddressId, mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED))
+        mappingApiMock.stubGetByNomisAddressIdOrNull(nomisAddressId = nomisAddressId, mapping = OrganisationsMappingDto(dpsId = "$dpsOrganisationAddressId", nomisId = nomisAddressId, mappingType = NOMIS_CREATED))
         organisationsOffenderEventsQueue.sendMessage(
           corporateAddressEvent(
             eventType = "ADDRESSES_CORPORATE-INSERTED",
@@ -696,12 +696,12 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
               duplicate = OrganisationsMappingDto(
                 dpsId = "$dpsOrganisationAddressId",
                 nomisId = nomisAddressId,
-                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = NOMIS_CREATED,
               ),
               existing = OrganisationsMappingDto(
                 dpsId = "9999",
                 nomisId = nomisAddressId,
-                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = NOMIS_CREATED,
               ),
             ),
             errorCode = 1409,
@@ -857,7 +857,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisAddressId(
           nomisAddressId = nomisAddressId,
-          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationAddressId.toString(), nomisId = nomisAddressId, mappingType = OrganisationsMappingDto.MappingType.MIGRATED),
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationAddressId.toString(), nomisId = nomisAddressId, mappingType = MIGRATED),
         )
         nomisApiMock.stubGetCorporateOrganisation(
           corporateId = corporateAndOrganisationId,
@@ -963,7 +963,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisAddressIdOrNull(
           nomisAddressId = nomisAddressId,
-          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationAddressId.toString(), nomisId = nomisAddressId, mappingType = OrganisationsMappingDto.MappingType.MIGRATED),
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationAddressId.toString(), nomisId = nomisAddressId, mappingType = MIGRATED),
         )
         dpsApiMock.stubDeleteOrganisationAddress(organisationAddressId = dpsOrganisationAddressId)
         mappingApiMock.stubDeleteByNomisAddressId(nomisAddressId)
@@ -1164,7 +1164,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenAlreadyCreated {
       @BeforeEach
       fun setUp() {
-        mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = OrganisationsMappingDto(dpsId = "$dpsOrganisationPhoneId", nomisId = nomisPhoneId, mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED))
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = OrganisationsMappingDto(dpsId = "$dpsOrganisationPhoneId", nomisId = nomisPhoneId, mappingType = NOMIS_CREATED))
         organisationsOffenderEventsQueue.sendMessage(
           corporatePhoneEvent(
             eventType = "PHONES_CORPORATE-INSERTED",
@@ -1210,12 +1210,12 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
               duplicate = OrganisationsMappingDto(
                 dpsId = "$dpsOrganisationPhoneId",
                 nomisId = nomisPhoneId,
-                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = NOMIS_CREATED,
               ),
               existing = OrganisationsMappingDto(
                 dpsId = "9999",
                 nomisId = nomisPhoneId,
-                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = NOMIS_CREATED,
               ),
             ),
             errorCode = 1409,
@@ -1371,7 +1371,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisPhoneId(
           nomisPhoneId = nomisPhoneId,
-          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationPhoneId.toString(), nomisId = nomisPhoneId, mappingType = OrganisationsMappingDto.MappingType.MIGRATED),
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationPhoneId.toString(), nomisId = nomisPhoneId, mappingType = MIGRATED),
         )
         nomisApiMock.stubGetCorporateOrganisation(
           corporateId = corporateAndOrganisationId,
@@ -1426,6 +1426,94 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(updatedBy).isEqualTo("T.SMITH")
           assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
         }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("PHONES_CORPORATE-DELETED (global)")
+  inner class CorporatePhoneDeleted {
+    private val corporateAndOrganisationId = 123456L
+    private val nomisPhoneId = 34567L
+    private val dpsOrganisationPhoneId = 76543L
+
+    @Nested
+    inner class WhenMappingExists {
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(
+          nomisPhoneId = nomisPhoneId,
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationPhoneId.toString(), nomisId = nomisPhoneId, mappingType = MIGRATED),
+        )
+        dpsApiMock.stubDeleteOrganisationPhone(organisationPhoneId = dpsOrganisationPhoneId)
+        mappingApiMock.stubDeleteByNomisPhoneId(nomisPhoneId)
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporatePhoneEvent(
+            eventType = "PHONES_CORPORATE-DELETED",
+            corporateId = corporateAndOrganisationId,
+            phoneId = nomisPhoneId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-phone-synchronisation-deleted-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+            assertThat(it["dpsOrganisationPhoneId"]).isEqualTo("$dpsOrganisationPhoneId")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will delete the organisation phone from DPS`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/organisation-phone/$dpsOrganisationPhoneId")))
+      }
+
+      @Test
+      fun `will delete the phone mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/corporate/phone/nomis-phone-id/$nomisPhoneId")))
+      }
+    }
+
+    @Nested
+    inner class WhenMappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(
+          nomisPhoneId = nomisPhoneId,
+          mapping = null,
+        )
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporatePhoneEvent(
+            eventType = "PHONES_CORPORATE-DELETED",
+            corporateId = corporateAndOrganisationId,
+            phoneId = nomisPhoneId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry for delete ignored`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-phone-synchronisation-deleted-ignored"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+          },
+          isNull(),
+        )
       }
     }
   }
@@ -1574,7 +1662,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenAlreadyCreated {
       @BeforeEach
       fun setUp() {
-        mappingApiMock.stubGetByNomisAddressPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = OrganisationsMappingDto(dpsId = "$dpsOrganisationAddressPhoneId", nomisId = nomisPhoneId, mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED))
+        mappingApiMock.stubGetByNomisAddressPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = OrganisationsMappingDto(dpsId = "$dpsOrganisationAddressPhoneId", nomisId = nomisPhoneId, mappingType = NOMIS_CREATED))
         organisationsOffenderEventsQueue.sendMessage(
           corporateAddressPhoneEvent(
             eventType = "PHONES_CORPORATE-INSERTED",
@@ -1632,12 +1720,12 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
               duplicate = OrganisationsMappingDto(
                 dpsId = "$dpsOrganisationAddressPhoneId",
                 nomisId = nomisPhoneId,
-                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = NOMIS_CREATED,
               ),
               existing = OrganisationsMappingDto(
                 dpsId = "9999",
                 nomisId = nomisPhoneId,
-                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = NOMIS_CREATED,
               ),
             ),
             errorCode = 1409,
@@ -1811,7 +1899,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         mappingApiMock.stubGetByNomisAddressPhoneId(
           nomisPhoneId = nomisPhoneId,
-          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationAddressPhoneId.toString(), nomisId = nomisPhoneId, mappingType = OrganisationsMappingDto.MappingType.MIGRATED),
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationAddressPhoneId.toString(), nomisId = nomisPhoneId, mappingType = MIGRATED),
         )
         nomisApiMock.stubGetCorporateOrganisation(
           corporate = corporateOrganisation().withAddress(
@@ -1869,6 +1957,99 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(updatedBy).isEqualTo("T.SMITH")
           assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
         }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("PHONES_CORPORATE-DELETED (address)")
+  inner class CorporateAddressPhoneDeleted {
+    private val corporateAndOrganisationId = 123456L
+    private val nomisPhoneId = 34567L
+    private val nomisAddressId = 6789L
+    private val dpsOrganisationAddressPhoneId = 76543L
+
+    @Nested
+    inner class WhenMappingExists {
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressPhoneIdOrNull(
+          nomisPhoneId = nomisPhoneId,
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationAddressPhoneId.toString(), nomisId = nomisPhoneId, mappingType = MIGRATED),
+        )
+        dpsApiMock.stubDeleteOrganisationAddressPhone(organisationAddressPhoneId = dpsOrganisationAddressPhoneId)
+        mappingApiMock.stubDeleteByNomisAddressPhoneId(nomisPhoneId)
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateAddressPhoneEvent(
+            eventType = "PHONES_CORPORATE-DELETED",
+            corporateId = corporateAndOrganisationId,
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-address-phone-synchronisation-deleted-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+            assertThat(it["dpsOrganisationAddressPhoneId"]).isEqualTo("$dpsOrganisationAddressPhoneId")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will delete the organisation address phone from DPS`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/organisation-address-phone/$dpsOrganisationAddressPhoneId")))
+      }
+
+      @Test
+      fun `will delete the address phone mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/corporate/address-phone/nomis-phone-id/$nomisPhoneId")))
+      }
+    }
+
+    @Nested
+    inner class WhenMappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressPhoneIdOrNull(
+          nomisPhoneId = nomisPhoneId,
+          mapping = null,
+        )
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateAddressPhoneEvent(
+            eventType = "PHONES_CORPORATE-DELETED",
+            corporateId = corporateAndOrganisationId,
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry for delete ignored`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-address-phone-synchronisation-deleted-ignored"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+          },
+          isNull(),
+        )
       }
     }
   }

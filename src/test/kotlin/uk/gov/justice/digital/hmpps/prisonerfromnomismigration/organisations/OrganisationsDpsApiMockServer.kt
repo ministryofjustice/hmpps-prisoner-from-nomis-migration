@@ -276,6 +276,17 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubDeleteOrganisationPhone(organisationPhoneId: Long) {
+    dpsOrganisationsServer.stubFor(
+      delete("/sync/organisation-phone/$organisationPhoneId")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
   fun stubCreateOrganisationAddressPhone(response: SyncCreateOrganisationAddressPhoneResponse = syncCreateOrganisationAddressPhoneResponse()) {
     dpsOrganisationsServer.stubFor(
       post("/sync/organisation-address-phone")
@@ -293,6 +304,17 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse()
             .withStatus(200)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubDeleteOrganisationAddressPhone(organisationAddressPhoneId: Long) {
+    dpsOrganisationsServer.stubFor(
+      delete("/sync/organisation-address-phone/$organisationAddressPhoneId")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
             .withHeader("Content-Type", "application/json"),
         ),
     )
