@@ -185,62 +185,69 @@ class OrganisationsSynchronisationService(
         telemetry,
       )
     } else {
-      if (event.isAddress) {
-        telemetry["nomisAddressId"] = event.addressId!!
-        mappingApiService.getByNomisAddressPhoneIdOrNull(nomisPhoneId = event.phoneId)?.also {
-          telemetryClient.trackEvent(
-            "organisations-address-phone-synchronisation-created-ignored",
-            telemetry + ("dpsOrganisationAddressPhoneId" to it.dpsId),
-          )
-        } ?: run {
-          track("organisations-address-phone-synchronisation-created", telemetry) {
-            nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId).also { organisation ->
-              val nomisAddress = organisation.addresses.find { it.id == event.addressId }!!
-              val nomisPhone = nomisAddress.phoneNumbers.find { it.id == event.phoneId }!!
-              val dpsOrganisationAddressId = mappingApiService.getByNomisAddressId(nomisAddressId = event.addressId!!).dpsId.toLong().also {
-                telemetry["dpsOrganisationAddressId"] = it
-              }
-              val dpsOrganisationPhone = dpsApiService.createOrganisationAddressPhone(
-                nomisPhone.toDpsCreateOrganisationAddressPhoneRequest(
-                  dpsOrganisationId = event.corporateId,
-                  dpsOrganisationAddressId = dpsOrganisationAddressId,
-                ),
-              ).also { dpsPhone ->
-                telemetry["dpsOrganisationAddressPhoneId"] = dpsPhone.organisationAddressPhoneId
-              }
-              addressPhoneMappingCreator.tryToCreateMapping(
-                OrganisationsMappingDto(
-                  nomisId = event.phoneId,
-                  dpsId = "${dpsOrganisationPhone.organisationAddressPhoneId}",
-                  mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
-                ),
-                telemetry,
-              )
+      mappingApiService.getByNomisPhoneIdOrNull(nomisPhoneId = event.phoneId)?.also {
+        telemetryClient.trackEvent(
+          "organisations-phone-synchronisation-created-ignored",
+          telemetry + ("dpsOrganisationPhoneId" to it.dpsId),
+        )
+      } ?: run {
+        track("organisations-phone-synchronisation-created", telemetry) {
+          nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId).also { organisation ->
+            val nomisPhone = organisation.phoneNumbers.find { it.id == event.phoneId }!!
+            val dpsOrganisationPhone = dpsApiService.createOrganisationPhone(nomisPhone.toDpsCreateOrganisationPhoneRequest(event.corporateId)).also { dpsPhone ->
+              telemetry["dpsOrganisationPhoneId"] = dpsPhone.organisationPhoneId
             }
+            phoneMappingCreator.tryToCreateMapping(
+              OrganisationsMappingDto(
+                nomisId = event.phoneId,
+                dpsId = "${dpsOrganisationPhone.organisationPhoneId}",
+                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+              ),
+              telemetry,
+            )
           }
         }
-      } else {
-        mappingApiService.getByNomisPhoneIdOrNull(nomisPhoneId = event.phoneId)?.also {
-          telemetryClient.trackEvent(
-            "organisations-phone-synchronisation-created-ignored",
-            telemetry + ("dpsOrganisationPhoneId" to it.dpsId),
-          )
-        } ?: run {
-          track("organisations-phone-synchronisation-created", telemetry) {
-            nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId).also { organisation ->
-              val nomisPhone = organisation.phoneNumbers.find { it.id == event.phoneId }!!
-              val dpsOrganisationPhone = dpsApiService.createOrganisationPhone(nomisPhone.toDpsCreateOrganisationPhoneRequest(event.corporateId)).also { dpsPhone ->
-                telemetry["dpsOrganisationPhoneId"] = dpsPhone.organisationPhoneId
-              }
-              phoneMappingCreator.tryToCreateMapping(
-                OrganisationsMappingDto(
-                  nomisId = event.phoneId,
-                  dpsId = "${dpsOrganisationPhone.organisationPhoneId}",
-                  mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
-                ),
-                telemetry,
-              )
+      }
+    }
+  }
+  suspend fun corporateAddressPhoneInserted(event: CorporateAddressPhoneEvent) {
+    val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisPhoneId" to event.phoneId)
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "organisations-address-phone-synchronisation-created-skipped",
+        telemetry,
+      )
+    } else {
+      telemetry["nomisAddressId"] = event.addressId
+      mappingApiService.getByNomisAddressPhoneIdOrNull(nomisPhoneId = event.phoneId)?.also {
+        telemetryClient.trackEvent(
+          "organisations-address-phone-synchronisation-created-ignored",
+          telemetry + ("dpsOrganisationAddressPhoneId" to it.dpsId),
+        )
+      } ?: run {
+        track("organisations-address-phone-synchronisation-created", telemetry) {
+          nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId).also { organisation ->
+            val nomisAddress = organisation.addresses.find { it.id == event.addressId }!!
+            val nomisPhone = nomisAddress.phoneNumbers.find { it.id == event.phoneId }!!
+            val dpsOrganisationAddressId = mappingApiService.getByNomisAddressId(nomisAddressId = event.addressId).dpsId.toLong().also {
+              telemetry["dpsOrganisationAddressId"] = it
             }
+            val dpsOrganisationPhone = dpsApiService.createOrganisationAddressPhone(
+              nomisPhone.toDpsCreateOrganisationAddressPhoneRequest(
+                dpsOrganisationId = event.corporateId,
+                dpsOrganisationAddressId = dpsOrganisationAddressId,
+              ),
+            ).also { dpsPhone ->
+              telemetry["dpsOrganisationAddressPhoneId"] = dpsPhone.organisationAddressPhoneId
+            }
+            addressPhoneMappingCreator.tryToCreateMapping(
+              OrganisationsMappingDto(
+                nomisId = event.phoneId,
+                dpsId = "${dpsOrganisationPhone.organisationAddressPhoneId}",
+                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+              ),
+              telemetry,
+            )
           }
         }
       }
