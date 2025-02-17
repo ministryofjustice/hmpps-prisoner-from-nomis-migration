@@ -11,7 +11,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_PHONE_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_ORGANISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_PHONE_MAPPING
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -42,7 +44,7 @@ class OrganisationsEventListener(
               "ADDRESSES_CORPORATE-INSERTED" -> synchronisationService.corporateAddressInserted(sqsMessage.Message.fromJson())
               "ADDRESSES_CORPORATE-UPDATED" -> synchronisationService.corporateAddressUpdated(sqsMessage.Message.fromJson())
               "ADDRESSES_CORPORATE-DELETED" -> synchronisationService.corporateAddressDeleted(sqsMessage.Message.fromJson())
-              "PHONES_CORPORATE-INSERTED" -> log.debug("Received $eventType")
+              "PHONES_CORPORATE-INSERTED" -> synchronisationService.corporatePhoneInserted(sqsMessage.Message.fromJson())
               "PHONES_CORPORATE-UPDATED" -> log.debug("Received $eventType")
               "PHONES_CORPORATE-DELETED" -> log.debug("Received $eventType")
               "INTERNET_ADDRESSES_CORPORATE-INSERTED" -> log.debug("Received $eventType")
@@ -70,6 +72,8 @@ class OrganisationsEventListener(
     when (OrganisationsSynchronisationMessageType.valueOf(mappingName)) {
       RETRY_SYNCHRONISATION_ORGANISATION_MAPPING -> synchronisationService.retryCreateCorporateMapping(message.fromJson())
       RETRY_SYNCHRONISATION_ADDRESS_MAPPING -> synchronisationService.retryCreateAddressMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_PHONE_MAPPING -> synchronisationService.retryCreatePhoneMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_ADDRESS_PHONE_MAPPING -> synchronisationService.retryCreateAddressPhoneMapping(message.fromJson())
     }
   }
 }
@@ -85,7 +89,17 @@ data class CorporateAddressEvent(
   val addressId: Long,
 ) : EventAudited
 
+data class CorporatePhoneEvent(
+  override val auditModuleName: String,
+  val corporateId: Long,
+  val phoneId: Long,
+  val addressId: Long? = null,
+  val isAddress: Boolean,
+) : EventAudited
+
 enum class OrganisationsSynchronisationMessageType {
   RETRY_SYNCHRONISATION_ORGANISATION_MAPPING,
   RETRY_SYNCHRONISATION_ADDRESS_MAPPING,
+  RETRY_SYNCHRONISATION_PHONE_MAPPING,
+  RETRY_SYNCHRONISATION_ADDRESS_PHONE_MAPPING,
 }

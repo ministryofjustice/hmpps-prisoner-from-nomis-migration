@@ -9,6 +9,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationResponse
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Service
 class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") private val webClient: WebClient) {
@@ -58,6 +59,18 @@ class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") priv
       .retrieve()
       .awaitBodilessEntityIgnoreNotFound()
   }
+
+  suspend fun createOrganisationPhone(organisationPhone: SyncCreateOrganisationPhoneRequest): SyncCreateOrganisationPhoneResponse = webClient.post()
+    .uri("/sync/organisation-phone")
+    .bodyValue(organisationPhone)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun createOrganisationAddressPhone(organisationAddressPhone: SyncCreateOrganisationAddressPhoneRequest): SyncCreateOrganisationAddressPhoneResponse = webClient.post()
+    .uri("/sync/organisation-address-phone")
+    .bodyValue(organisationAddressPhone)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
 }
 
 //  Fake DTOs - replace with real ones once created
@@ -90,7 +103,7 @@ data class SyncCreateOrganisationAddressRequest(
   val organisationId: Long,
   val primaryAddress: Boolean,
   val createdBy: String,
-  val createdTime: java.time.LocalDateTime,
+  val createdTime: LocalDateTime,
   val addressType: String? = null,
   val flat: String? = null,
   val `property`: String? = null,
@@ -119,7 +132,7 @@ data class SyncCreateOrganisationAddressResponse(
 data class SyncUpdateOrganisationAddressRequest(
   val primaryAddress: Boolean,
   val updatedBy: String,
-  val updatedTime: java.time.LocalDateTime,
+  val updatedTime: LocalDateTime,
   val addressType: String? = null,
   val flat: String? = null,
   val `property`: String? = null,
@@ -139,4 +152,30 @@ data class SyncUpdateOrganisationAddressRequest(
   val contactPersonName: String? = null,
   val businessHours: String? = null,
   val servicesAddress: Boolean? = null,
+)
+
+data class SyncCreateOrganisationPhoneRequest(
+  val organisationId: Long,
+  val phoneType: String,
+  val phoneNumber: String,
+  val createdBy: String,
+  val createdTime: LocalDateTime,
+  val extNumber: String? = null,
+)
+
+data class SyncCreateOrganisationPhoneResponse(
+  val organisationPhoneId: Long,
+)
+data class SyncCreateOrganisationAddressPhoneRequest(
+  val organisationId: Long,
+  val organisationAddressId: Long,
+  val phoneType: String,
+  val phoneNumber: String,
+  val createdBy: String,
+  val createdTime: LocalDateTime,
+  val extNumber: String? = null,
+)
+
+data class SyncCreateOrganisationAddressPhoneResponse(
+  val organisationAddressPhoneId: Long,
 )

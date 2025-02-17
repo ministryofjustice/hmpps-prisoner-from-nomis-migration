@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporatePhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
@@ -100,6 +101,20 @@ fun corporateAddress(): CorporateAddress = CorporateAddress(
   isServices = true,
   contactPersonName = "Bob Brown",
   businessHours = "10am to 10pm Monday to Friday",
+  audit = NomisAudit(
+    createUsername = "J.SPEAK",
+    createDatetime = "2024-09-01T13:31",
+    modifyUserId = "T.SMITH",
+    modifyDatetime = "2024-10-01T13:31",
+  ),
+)
+fun CorporateOrganisation.withPhone(phone: CorporatePhoneNumber = corporatePhone()): CorporateOrganisation = copy(phoneNumbers = listOf(phone))
+fun CorporateAddress.withPhone(phone: CorporatePhoneNumber = corporatePhone()): CorporateAddress = copy(phoneNumbers = listOf(phone))
+fun corporatePhone(): CorporatePhoneNumber = CorporatePhoneNumber(
+  id = 12345,
+  type = CodeDescription("HOME", "Home Address"),
+  number = "0114 555 5555",
+  extension = "ext 123",
   audit = NomisAudit(
     createUsername = "J.SPEAK",
     createDatetime = "2024-09-01T13:31",
