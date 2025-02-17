@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-02-11.5889.dc4239d"
+    "version": "2025-02-17"
   },
   "servers": [
     {
@@ -2563,12 +2563,12 @@
         ],
         "summary": "Creates web mappings for synchronisation",
         "description": "Creates mappings for synchronisation between NOMIS ids and dps ids. Requires ROLE_NOMIS_CONTACTPERSONS",
-        "operationId": "createMapping_10",
+        "operationId": "createWebMapping",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CorporateWebMappingDto"
+                "$ref": "#/components/schemas/OrganisationsMappingDto"
               }
             }
           },
@@ -2619,12 +2619,12 @@
         ],
         "summary": "Creates phone mappings for synchronisation",
         "description": "Creates mappings for synchronisation between NOMIS ids and dps ids. Requires ROLE_NOMIS_CONTACTPERSONS",
-        "operationId": "createMapping_11",
+        "operationId": "createPhoneMapping",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CorporatePhoneMappingDto"
+                "$ref": "#/components/schemas/OrganisationsMappingDto"
               }
             }
           },
@@ -2692,7 +2692,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageCorporateMappingDto"
+                  "$ref": "#/components/schemas/PageOrganisationsMappingDto"
                 }
               }
             }
@@ -2725,12 +2725,12 @@
         ],
         "summary": "Creates corporate mappings for synchronisation",
         "description": "Creates mappings for synchronisation between NOMIS ids and dps ids. Requires ROLE_NOMIS_CONTACTPERSONS",
-        "operationId": "createMapping_12",
+        "operationId": "createOrganisationMapping",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CorporateMappingDto"
+                "$ref": "#/components/schemas/OrganisationsMappingDto"
               }
             }
           },
@@ -2837,12 +2837,12 @@
         ],
         "summary": "Creates email mappings for synchronisation",
         "description": "Creates mappings for synchronisation between NOMIS ids and dps ids. Requires ROLE_NOMIS_CONTACTPERSONS",
-        "operationId": "createMapping_13",
+        "operationId": "createEmailMapping",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CorporateEmailMappingDto"
+                "$ref": "#/components/schemas/OrganisationsMappingDto"
               }
             }
           },
@@ -2893,12 +2893,12 @@
         ],
         "summary": "Creates address phone mappings for synchronisation",
         "description": "Creates mappings for synchronisation between NOMIS ids and dps ids. Requires ROLE_NOMIS_CONTACTPERSONS",
-        "operationId": "createMapping_14",
+        "operationId": "createAddressPhoneMapping",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CorporateAddressPhoneMappingDto"
+                "$ref": "#/components/schemas/OrganisationsMappingDto"
               }
             }
           },
@@ -2949,12 +2949,12 @@
         ],
         "summary": "Creates address mappings for synchronisation",
         "description": "Creates mappings for synchronisation between NOMIS ids and dps ids. Requires ROLE_NOMIS_CONTACTPERSONS",
-        "operationId": "createMapping_15",
+        "operationId": "createAddressMapping",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CorporateAddressMappingDto"
+                "$ref": "#/components/schemas/OrganisationsMappingDto"
               }
             }
           },
@@ -3859,7 +3859,7 @@
         ],
         "summary": "Creates a new casenote mapping",
         "description": "Creates a mapping between nomis casenote id and dps casenote id. Requires ROLE_NOMIS_CASENOTES",
-        "operationId": "createMapping_16",
+        "operationId": "createMapping_10",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3948,7 +3948,7 @@
         ],
         "summary": "Creates a new appointment mapping",
         "description": "Creates a mapping between nomis id and Appointment instance id. Requires NOMIS_APPOINTMENTS",
-        "operationId": "createMapping_17",
+        "operationId": "createMapping_11",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4004,7 +4004,7 @@
         ],
         "summary": "Creates a new allocation migration mapping",
         "description": "Creates a mapping between nomis allocation id and Actvities allocation id. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_18",
+        "operationId": "createMapping_12",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4159,7 +4159,7 @@
         ],
         "summary": "Creates a new alert mapping",
         "description": "Creates a mapping between nomis alert ids and dps alert id. Requires ROLE_NOMIS_ALERTS",
-        "operationId": "createMapping_19",
+        "operationId": "createMapping_13",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4376,7 +4376,7 @@
         ],
         "summary": "Creates a new adjudication mapping",
         "description": "Creates a record of a adjudication number. Requires NOMIS_ADJUDICATIONS",
-        "operationId": "createMapping_20",
+        "operationId": "createMapping_14",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4422,7 +4422,7 @@
         ],
         "summary": "Creates a new activity migration mapping",
         "description": "Creates a mapping between nomis id and up to 2 Activity service ids. Requires NOMIS_ACTIVITIES",
-        "operationId": "createMapping_21",
+        "operationId": "createMapping_15",
         "requestBody": {
           "content": {
             "application/json": {
@@ -8465,7 +8465,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CorporateWebMappingDto"
+                  "$ref": "#/components/schemas/OrganisationsMappingDto"
                 }
               }
             }
@@ -8526,7 +8526,7 @@
         ],
         "responses": {
           "204": {
-            "description": "Delete Web mapping data or doesnot exist",
+            "description": "Delete Web mapping data or does not exist",
             "content": {}
           },
           "401": {
@@ -8580,7 +8580,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CorporateWebMappingDto"
+                  "$ref": "#/components/schemas/OrganisationsMappingDto"
                 }
               }
             }
@@ -8647,7 +8647,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CorporatePhoneMappingDto"
+                  "$ref": "#/components/schemas/OrganisationsMappingDto"
                 }
               }
             }
@@ -8762,7 +8762,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CorporatePhoneMappingDto"
+                  "$ref": "#/components/schemas/OrganisationsMappingDto"
                 }
               }
             }
@@ -8829,7 +8829,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CorporateMappingDto"
+                  "$ref": "#/components/schemas/OrganisationsMappingDto"
                 }
               }
             }
@@ -8952,7 +8952,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageCorporateMappingDto"
+                  "$ref": "#/components/schemas/PageOrganisationsMappingDto"
                 }
               }
             }
@@ -9008,7 +9008,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CorporateMappingDto"
+                  "$ref": "#/components/schemas/OrganisationsMappingDto"
                 }
               }
             }
@@ -9075,7 +9075,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CorporateEmailMappingDto"
+                  "$ref": "#/components/schemas/OrganisationsMappingDto"
                 }
               }
             }
@@ -9140,7 +9140,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CorporateEmailMappingDto"
+                  "$ref": "#/components/schemas/OrganisationsMappingDto"
                 }
               }
             }
@@ -9196,7 +9196,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CorporateEmailMappingDto"
+                  "$ref": "#/components/schemas/OrganisationsMappingDto"
                 }
               }
             }
@@ -9263,7 +9263,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CorporateAddressMappingDto"
+                  "$ref": "#/components/schemas/OrganisationsMappingDto"
                 }
               }
             }
@@ -9378,7 +9378,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CorporateAddressMappingDto"
+                  "$ref": "#/components/schemas/OrganisationsMappingDto"
                 }
               }
             }
@@ -9445,7 +9445,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CorporateAddressPhoneMappingDto"
+                  "$ref": "#/components/schemas/OrganisationsMappingDto"
                 }
               }
             }
@@ -9560,7 +9560,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CorporateAddressPhoneMappingDto"
+                  "$ref": "#/components/schemas/OrganisationsMappingDto"
                 }
               }
             }
@@ -16239,21 +16239,25 @@
           "nomisCourtAppearanceId"
         ]
       },
-      "CorporateWebMappingDto": {
+      "OrganisationsMappingDto": {
         "type": "object",
         "properties": {
           "dpsId": {
-            "type": "string"
+            "type": "string",
+            "description": "DPS id"
           },
           "nomisId": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "description": "NOMIS id"
           },
           "label": {
-            "type": "string"
+            "type": "string",
+            "description": "Label (a timestamp for migrated ids)"
           },
           "mappingType": {
             "type": "string",
+            "description": "Mapping type",
             "enum": [
               "MIGRATED",
               "DPS_CREATED",
@@ -16262,72 +16266,7 @@
           },
           "whenCreated": {
             "type": "string",
-            "example": "2021-07-05T10:35:17",
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
-          }
-        },
-        "required": [
-          "dpsId",
-          "mappingType",
-          "nomisId"
-        ]
-      },
-      "CorporatePhoneMappingDto": {
-        "type": "object",
-        "properties": {
-          "dpsId": {
-            "type": "string"
-          },
-          "nomisId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "label": {
-            "type": "string"
-          },
-          "mappingType": {
-            "type": "string",
-            "enum": [
-              "MIGRATED",
-              "DPS_CREATED",
-              "NOMIS_CREATED"
-            ]
-          },
-          "whenCreated": {
-            "type": "string",
-            "example": "2021-07-05T10:35:17",
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
-          }
-        },
-        "required": [
-          "dpsId",
-          "mappingType",
-          "nomisId"
-        ]
-      },
-      "CorporateMappingDto": {
-        "type": "object",
-        "properties": {
-          "dpsId": {
-            "type": "string"
-          },
-          "nomisId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "label": {
-            "type": "string"
-          },
-          "mappingType": {
-            "type": "string",
-            "enum": [
-              "MIGRATED",
-              "DPS_CREATED",
-              "NOMIS_CREATED"
-            ]
-          },
-          "whenCreated": {
-            "type": "string",
+            "description": "Date time the mapping was created",
             "example": "2021-07-05T10:35:17",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
           }
@@ -16428,105 +16367,6 @@
           "corporatePhoneMapping",
           "corporateWebMapping",
           "mappingType"
-        ]
-      },
-      "CorporateEmailMappingDto": {
-        "type": "object",
-        "properties": {
-          "dpsId": {
-            "type": "string"
-          },
-          "nomisId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "label": {
-            "type": "string"
-          },
-          "mappingType": {
-            "type": "string",
-            "enum": [
-              "MIGRATED",
-              "DPS_CREATED",
-              "NOMIS_CREATED"
-            ]
-          },
-          "whenCreated": {
-            "type": "string",
-            "example": "2021-07-05T10:35:17",
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
-          }
-        },
-        "required": [
-          "dpsId",
-          "mappingType",
-          "nomisId"
-        ]
-      },
-      "CorporateAddressPhoneMappingDto": {
-        "type": "object",
-        "properties": {
-          "dpsId": {
-            "type": "string"
-          },
-          "nomisId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "label": {
-            "type": "string"
-          },
-          "mappingType": {
-            "type": "string",
-            "enum": [
-              "MIGRATED",
-              "DPS_CREATED",
-              "NOMIS_CREATED"
-            ]
-          },
-          "whenCreated": {
-            "type": "string",
-            "example": "2021-07-05T10:35:17",
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
-          }
-        },
-        "required": [
-          "dpsId",
-          "mappingType",
-          "nomisId"
-        ]
-      },
-      "CorporateAddressMappingDto": {
-        "type": "object",
-        "properties": {
-          "dpsId": {
-            "type": "string"
-          },
-          "nomisId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "label": {
-            "type": "string"
-          },
-          "mappingType": {
-            "type": "string",
-            "enum": [
-              "MIGRATED",
-              "DPS_CREATED",
-              "NOMIS_CREATED"
-            ]
-          },
-          "whenCreated": {
-            "type": "string",
-            "example": "2021-07-05T10:35:17",
-            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
-          }
-        },
-        "required": [
-          "dpsId",
-          "mappingType",
-          "nomisId"
         ]
       },
       "CorePersonMappingIdDto": {
@@ -17592,13 +17432,19 @@
       "PageCourtCaseMappingDto": {
         "type": "object",
         "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourtCaseMappingDto"
+            }
           },
           "first": {
             "type": "boolean"
@@ -17610,12 +17456,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CourtCaseMappingDto"
-            }
-          },
           "number": {
             "type": "integer",
             "format": "int32"
@@ -17623,12 +17463,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -17645,9 +17485,8 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
+          "unpaged": {
+            "type": "boolean"
           },
           "paged": {
             "type": "boolean"
@@ -17656,8 +17495,9 @@
             "type": "integer",
             "format": "int32"
           },
-          "unpaged": {
-            "type": "boolean"
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -17726,16 +17566,22 @@
           "nomisCourtAppearanceId"
         ]
       },
-      "PageCorporateMappingDto": {
+      "PageOrganisationsMappingDto": {
         "type": "object",
         "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganisationsMappingDto"
+            }
           },
           "first": {
             "type": "boolean"
@@ -17747,12 +17593,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CorporateMappingDto"
-            }
-          },
           "number": {
             "type": "integer",
             "format": "int32"
@@ -17760,12 +17600,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -17853,13 +17693,19 @@
       "PageCorePersonMappingDto": {
         "type": "object",
         "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CorePersonMappingDto"
+            }
           },
           "first": {
             "type": "boolean"
@@ -17871,12 +17717,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CorePersonMappingDto"
-            }
-          },
           "number": {
             "type": "integer",
             "format": "int32"
@@ -17884,12 +17724,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -17969,13 +17809,19 @@
       "PagePersonMappingDto": {
         "type": "object",
         "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonMappingDto"
+            }
           },
           "first": {
             "type": "boolean"
@@ -17987,12 +17833,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PersonMappingDto"
-            }
-          },
           "number": {
             "type": "integer",
             "format": "int32"
@@ -18000,12 +17840,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -18047,13 +17887,19 @@
       "PagePrisonerAlertMappingsSummaryDto": {
         "type": "object",
         "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrisonerAlertMappingsSummaryDto"
+            }
           },
           "first": {
             "type": "boolean"
@@ -18065,12 +17911,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PrisonerAlertMappingsSummaryDto"
-            }
-          },
           "number": {
             "type": "integer",
             "format": "int32"
@@ -18078,12 +17918,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -18118,13 +17958,19 @@
       "PageAlertMappingDto": {
         "type": "object",
         "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertMappingDto"
+            }
           },
           "first": {
             "type": "boolean"
@@ -18136,12 +17982,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AlertMappingDto"
-            }
-          },
           "number": {
             "type": "integer",
             "format": "int32"
@@ -18149,12 +17989,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"

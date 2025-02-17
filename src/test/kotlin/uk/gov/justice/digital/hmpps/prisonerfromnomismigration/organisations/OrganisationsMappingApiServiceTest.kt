@@ -13,14 +13,13 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateAddressMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto.MappingType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto.MappingType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto.MappingType.NOMIS_CREATED
 
 @SpringAPIServiceTest
 @Import(OrganisationsMappingApiService::class, OrganisationsMappingApiMockServer::class)
@@ -90,12 +89,12 @@ class OrganisationsMappingApiServiceTest {
       mockServer.stubCreateMappingsForMigration(
         error = DuplicateMappingErrorResponse(
           moreInfo = DuplicateErrorContentObject(
-            duplicate = CorporateMappingDto(
+            duplicate = OrganisationsMappingDto(
               dpsId = dpsId,
               nomisId = nomisId,
               mappingType = NOMIS_CREATED,
             ),
-            existing = CorporateMappingDto(
+            existing = OrganisationsMappingDto(
               dpsId = existingDpsId,
               nomisId = nomisId,
               mappingType = NOMIS_CREATED,
@@ -150,7 +149,7 @@ class OrganisationsMappingApiServiceTest {
       mockServer.stubCreateCorporateMapping()
 
       apiService.createOrganisationMapping(
-        CorporateMappingDto(
+        OrganisationsMappingDto(
           mappingType = NOMIS_CREATED,
           nomisId = 1234567,
           dpsId = "1234567",
@@ -167,7 +166,7 @@ class OrganisationsMappingApiServiceTest {
       mockServer.stubCreateCorporateMapping()
 
       val result = apiService.createOrganisationMapping(
-        CorporateMappingDto(
+        OrganisationsMappingDto(
           mappingType = NOMIS_CREATED,
           nomisId = 1234567,
           dpsId = "1234567",
@@ -186,12 +185,12 @@ class OrganisationsMappingApiServiceTest {
       mockServer.stubCreateCorporateMapping(
         error = DuplicateMappingErrorResponse(
           moreInfo = DuplicateErrorContentObject(
-            duplicate = CorporateMappingDto(
+            duplicate = OrganisationsMappingDto(
               dpsId = dpsId,
               nomisId = nomisId,
               mappingType = NOMIS_CREATED,
             ),
-            existing = CorporateMappingDto(
+            existing = OrganisationsMappingDto(
               dpsId = existingDpsId,
               nomisId = nomisId,
               mappingType = NOMIS_CREATED,
@@ -204,7 +203,7 @@ class OrganisationsMappingApiServiceTest {
       )
 
       val result = apiService.createOrganisationMapping(
-        CorporateMappingDto(
+        OrganisationsMappingDto(
           mappingType = NOMIS_CREATED,
           nomisId = 1234567,
           dpsId = "1234567",
@@ -245,7 +244,7 @@ class OrganisationsMappingApiServiceTest {
     fun `will return dpsId when mapping exists`() = runTest {
       mockServer.stubGetByNomisCorporateIdOrNull(
         nomisCorporateId = 1234567,
-        mapping = CorporateMappingDto(
+        mapping = OrganisationsMappingDto(
           dpsId = "1234567",
           nomisId = 1234567,
           mappingType = MappingType.MIGRATED,
@@ -325,8 +324,8 @@ class OrganisationsMappingApiServiceTest {
       mockServer.stubCreateAddressMapping()
 
       apiService.createAddressMapping(
-        CorporateAddressMappingDto(
-          mappingType = CorporateAddressMappingDto.MappingType.NOMIS_CREATED,
+        OrganisationsMappingDto(
+          mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
           nomisId = 1234567,
           dpsId = "7654321",
         ),
@@ -342,8 +341,8 @@ class OrganisationsMappingApiServiceTest {
       mockServer.stubCreateAddressMapping()
 
       val result = apiService.createAddressMapping(
-        CorporateAddressMappingDto(
-          mappingType = CorporateAddressMappingDto.MappingType.NOMIS_CREATED,
+        OrganisationsMappingDto(
+          mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
           nomisId = 1234567,
           dpsId = "7654321",
         ),
@@ -361,15 +360,15 @@ class OrganisationsMappingApiServiceTest {
       mockServer.stubCreateAddressMapping(
         error = DuplicateMappingErrorResponse(
           moreInfo = DuplicateErrorContentObject(
-            duplicate = CorporateAddressMappingDto(
+            duplicate = OrganisationsMappingDto(
               dpsId = dpsId,
               nomisId = nomisId,
-              mappingType = CorporateAddressMappingDto.MappingType.NOMIS_CREATED,
+              mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
             ),
-            existing = CorporateAddressMappingDto(
+            existing = OrganisationsMappingDto(
               dpsId = existingDpsId,
               nomisId = nomisId,
-              mappingType = CorporateAddressMappingDto.MappingType.NOMIS_CREATED,
+              mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
             ),
           ),
           errorCode = 1409,
@@ -379,8 +378,8 @@ class OrganisationsMappingApiServiceTest {
       )
 
       val result = apiService.createAddressMapping(
-        CorporateAddressMappingDto(
-          mappingType = CorporateAddressMappingDto.MappingType.NOMIS_CREATED,
+        OrganisationsMappingDto(
+          mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
           nomisId = nomisId,
           dpsId = dpsId,
         ),
@@ -420,10 +419,10 @@ class OrganisationsMappingApiServiceTest {
     fun `will return dpsId when mapping exists`() = runTest {
       mockServer.stubGetByNomisAddressIdOrNull(
         nomisAddressId = 1234567,
-        mapping = CorporateAddressMappingDto(
+        mapping = OrganisationsMappingDto(
           dpsId = "1234567",
           nomisId = 1234567,
-          mappingType = CorporateAddressMappingDto.MappingType.MIGRATED,
+          mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
         ),
       )
 

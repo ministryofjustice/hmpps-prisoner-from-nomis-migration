@@ -12,8 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateAddressMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -33,10 +32,10 @@ class OrganisationsSynchronisationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  private val corporateMappingCreator = RetryableMappingCreator<CorporateMappingDto>(OrganisationMappingType.CORPORATE) {
+  private val corporateMappingCreator = RetryableMappingCreator<OrganisationsMappingDto>(OrganisationMappingType.CORPORATE) {
     mappingApiService.createOrganisationMapping(it)
   }
-  private val addressMappingCreator = RetryableMappingCreator<CorporateAddressMappingDto>(OrganisationMappingType.ADDRESS) {
+  private val addressMappingCreator = RetryableMappingCreator<OrganisationsMappingDto>(OrganisationMappingType.ADDRESS) {
     mappingApiService.createAddressMapping(it)
   }
 
@@ -58,10 +57,10 @@ class OrganisationsSynchronisationService(
           nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId).also { organisation ->
             val dpsOrganisation = dpsApiService.createOrganisation(organisation.toDpsCreateOrganisationRequest())
             corporateMappingCreator.tryToCreateMapping(
-              CorporateMappingDto(
+              OrganisationsMappingDto(
                 nomisId = event.corporateId,
                 dpsId = "${dpsOrganisation.organisationId}",
-                mappingType = CorporateMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
               ),
               telemetry,
             )
@@ -125,10 +124,10 @@ class OrganisationsSynchronisationService(
               telemetry["dpsOrganisationAddressId"] = dpsAddress.organisationAddressId
             }
             addressMappingCreator.tryToCreateMapping(
-              CorporateAddressMappingDto(
+              OrganisationsMappingDto(
                 nomisId = event.addressId,
                 dpsId = "${dpsOrganisationAddress.organisationAddressId}",
-                mappingType = CorporateAddressMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
               ),
               telemetry,
             )
@@ -171,15 +170,15 @@ class OrganisationsSynchronisationService(
     }
   }
 
-  suspend fun retryCreateCorporateMapping(retryMessage: InternalMessage<CorporateMappingDto>) = corporateMappingCreator.retryCreateMapping(retryMessage)
-  suspend fun retryCreateAddressMapping(retryMessage: InternalMessage<CorporateAddressMappingDto>) = addressMappingCreator.retryCreateMapping(retryMessage)
+  suspend fun retryCreateCorporateMapping(retryMessage: InternalMessage<OrganisationsMappingDto>) = corporateMappingCreator.retryCreateMapping(retryMessage)
+  suspend fun retryCreateAddressMapping(retryMessage: InternalMessage<OrganisationsMappingDto>) = addressMappingCreator.retryCreateMapping(retryMessage)
 
   enum class OrganisationMappingType(val messageType: OrganisationsSynchronisationMessageType) {
     CORPORATE(OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_ORGANISATION_MAPPING),
     ADDRESS(OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_MAPPING),
   }
 
-  inner class RetryableMappingCreator<T : Any>(private val type: OrganisationMappingType, private val create: suspend (T) -> CreateMappingResult<OrganisationsMappingApiService.OrganisationMapping>) {
+  inner class RetryableMappingCreator<T : Any>(private val type: OrganisationMappingType, private val create: suspend (T) -> CreateMappingResult<OrganisationsMappingDto>) {
     suspend fun createMapping(mapping: T) {
       create(mapping).takeIf { it.isError }?.also {
         with(it.errorResponse!!.moreInfo) {

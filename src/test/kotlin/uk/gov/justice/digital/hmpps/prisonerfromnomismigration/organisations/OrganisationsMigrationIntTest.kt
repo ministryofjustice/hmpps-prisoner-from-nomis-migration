@@ -25,10 +25,10 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateInternetAddress
@@ -115,19 +115,19 @@ class OrganisationsMigrationIntTest : SqsIntegrationTestBase() {
         nomisApiMock.stubGetCorporateOrganisationIdsToMigrate(content = listOf(CorporateOrganisationIdResponse(1000), CorporateOrganisationIdResponse(2000)))
         mappingApiMock.stubGetByNomisCorporateIdOrNull(
           nomisCorporateId = 1000,
-          mapping = CorporateMappingDto(
+          mapping = OrganisationsMappingDto(
             dpsId = "10000",
             nomisId = 1000,
-            mappingType = CorporateMappingDto.MappingType.MIGRATED,
+            mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
             label = "2020-01-01T00:00:00",
           ),
         )
         mappingApiMock.stubGetByNomisCorporateIdOrNull(
           nomisCorporateId = 2000,
-          mapping = CorporateMappingDto(
+          mapping = OrganisationsMappingDto(
             dpsId = "20000",
             nomisId = 2000,
-            mappingType = CorporateMappingDto.MappingType.MIGRATED,
+            mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
             label = "2020-01-01T00:00:00",
           ),
         )
@@ -686,15 +686,15 @@ class OrganisationsMigrationIntTest : SqsIntegrationTestBase() {
         mappingApiMock.stubCreateMappingsForMigration(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
-              duplicate = CorporateMappingDto(
+              duplicate = OrganisationsMappingDto(
                 dpsId = "1000",
                 nomisId = 100,
-                mappingType = CorporateMappingDto.MappingType.MIGRATED,
+                mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
               ),
-              existing = CorporateMappingDto(
+              existing = OrganisationsMappingDto(
                 dpsId = "999",
                 nomisId = 100,
-                mappingType = CorporateMappingDto.MappingType.MIGRATED,
+                mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
               ),
             ),
             errorCode = 1409,
