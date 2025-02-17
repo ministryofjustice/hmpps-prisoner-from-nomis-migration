@@ -97,7 +97,7 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
     fun syncCreateOrganisationAddressRequest() = SyncCreateOrganisationAddressRequest(
       organisationId = 1234567,
-      addressType = "MOB",
+      addressType = "BUS",
       primaryAddress = true,
       createdBy = "JANE.SAM",
       createdTime = LocalDateTime.parse("2024-01-01T12:13"),
@@ -113,6 +113,29 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       updatedBy = "JANE.SAM",
       updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
       verified = false,
+    )
+
+    fun syncCreateOrganisationPhoneRequest() = SyncCreateOrganisationPhoneRequest(
+      organisationId = 1234567,
+      phoneType = "MOB",
+      phoneNumber = "0114 555 5555",
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
+
+    fun syncCreateOrganisationPhoneResponse() = SyncCreateOrganisationPhoneResponse(
+      organisationPhoneId = 123456,
+    )
+    fun syncCreateOrganisationAddressPhoneRequest() = SyncCreateOrganisationAddressPhoneRequest(
+      organisationId = 1234567,
+      organisationAddressId = 345678,
+      phoneType = "MOB",
+      phoneNumber = "0114 555 5555",
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
+    fun syncCreateOrganisationAddressPhoneResponse() = SyncCreateOrganisationAddressPhoneResponse(
+      organisationAddressPhoneId = 123456,
     )
   }
 
@@ -212,6 +235,29 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(204)
             .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubCreateOrganisationPhone(response: SyncCreateOrganisationPhoneResponse = syncCreateOrganisationPhoneResponse()) {
+    dpsOrganisationsServer.stubFor(
+      post("/sync/organisation-phone")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+  fun stubCreateOrganisationAddressPhone(response: SyncCreateOrganisationAddressPhoneResponse = syncCreateOrganisationAddressPhoneResponse()) {
+    dpsOrganisationsServer.stubFor(
+      post("/sync/organisation-address-phone")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(response)),
         ),
     )
   }

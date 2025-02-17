@@ -24,9 +24,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporatePhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.dpsOrganisationsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationAddressPhoneResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationAddressResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationPhoneResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
@@ -1033,6 +1036,625 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
     }
   }
+
+  @Nested
+  @DisplayName("PHONES_CORPORATE-INSERTED (global)")
+  inner class CorporatePhoneInserted {
+    private val corporateAndOrganisationId = 123456L
+    private val nomisPhoneId = 34567L
+    private val dpsOrganisationPhoneId = 76543L
+
+    @Nested
+    inner class WhenCreatedInDps {
+      @BeforeEach
+      fun setUp() {
+        organisationsOffenderEventsQueue.sendMessage(
+          corporatePhoneEvent(
+            eventType = "PHONES_CORPORATE-INSERTED",
+            corporateId = corporateAndOrganisationId,
+            phoneId = nomisPhoneId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create phone in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/organisation-phone")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-phone-synchronisation-created-skipped"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenCreatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = null)
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation().withPhone(
+            CorporatePhoneNumber(
+              id = nomisPhoneId,
+              number = "0114 555 5555",
+              extension = "ext 123",
+              type = CodeDescription("HOME", "Home Phone"),
+              audit = NomisAudit(
+                createUsername = "J.SPEAK",
+                createDatetime = "2024-09-01T13:31",
+                modifyUserId = "T.SMITH",
+                modifyDatetime = "2024-10-01T13:31",
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubCreateOrganisationPhone(syncCreateOrganisationPhoneResponse().copy(organisationPhoneId = dpsOrganisationPhoneId))
+        mappingApiMock.stubCreatePhoneMapping()
+        organisationsOffenderEventsQueue.sendMessage(
+          corporatePhoneEvent(
+            eventType = "PHONES_CORPORATE-INSERTED",
+            phoneId = nomisPhoneId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will check if mapping already exists for phone`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/corporate/phone/nomis-phone-id/$nomisPhoneId")))
+      }
+
+      @Test
+      fun `will retrieve the organisation details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/corporates/$corporateAndOrganisationId")))
+      }
+
+      @Test
+      fun `will create the organisation phone in DPS from the organisation`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-phone")))
+        val request: SyncCreateOrganisationPhoneRequest = OrganisationsDpsApiExtension.getRequestBody(
+          postRequestedFor(urlPathEqualTo("/sync/organisation-phone")),
+        )
+        with(request) {
+          assertThat(organisationId).isEqualTo(corporateAndOrganisationId)
+          assertThat(phoneType).isEqualTo("HOME")
+          assertThat(phoneNumber).isEqualTo("0114 555 5555")
+          assertThat(extNumber).isEqualTo("ext 123")
+          assertThat(createdBy).isEqualTo("J.SPEAK")
+          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+        }
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/phone"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", "$dpsOrganisationPhoneId")
+            .withRequestBodyJsonPath("nomisId", "$nomisPhoneId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-phone-synchronisation-created-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+            assertThat(it["dpsOrganisationPhoneId"]).isEqualTo("$dpsOrganisationPhoneId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = OrganisationsMappingDto(dpsId = "$dpsOrganisationPhoneId", nomisId = nomisPhoneId, mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED))
+        organisationsOffenderEventsQueue.sendMessage(
+          corporatePhoneEvent(
+            eventType = "PHONES_CORPORATE-INSERTED",
+            phoneId = nomisPhoneId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create organisation in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/organisation-phone")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-phone-synchronisation-created-ignored"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+            assertThat(it["dpsOrganisationPhoneId"]).isEqualTo("$dpsOrganisationPhoneId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenDuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = null)
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation(corporateAndOrganisationId).withPhone(corporatePhone().copy(id = nomisPhoneId)),
+        )
+
+        dpsApiMock.stubCreateOrganisationPhone(syncCreateOrganisationPhoneResponse().copy(organisationPhoneId = dpsOrganisationPhoneId))
+        mappingApiMock.stubCreatePhoneMapping(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = OrganisationsMappingDto(
+                dpsId = "$dpsOrganisationPhoneId",
+                nomisId = nomisPhoneId,
+                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+              ),
+              existing = OrganisationsMappingDto(
+                dpsId = "9999",
+                nomisId = nomisPhoneId,
+                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporatePhoneEvent(
+            eventType = "PHONES_CORPORATE-INSERTED",
+            phoneId = nomisPhoneId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete("from-nomis-sync-organisations-duplicate") }
+      }
+
+      @Test
+      fun `will create the organisation phone in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/organisation-phone")))
+      }
+
+      @Test
+      fun `will attempt to create a mapping between the DPS and NOMIS record once`() {
+        mappingApiMock.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/phone"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", "$dpsOrganisationPhoneId")
+            .withRequestBodyJsonPath("nomisId", "$nomisPhoneId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for both overall success and duplicate`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-phone-synchronisation-created-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-sync-organisations-duplicate"),
+          org.mockito.kotlin.check {
+            assertThat(it["existingNomisId"]).isEqualTo("$nomisPhoneId")
+            assertThat(it["existingDpsId"]).isEqualTo("9999")
+            assertThat(it["duplicateNomisId"]).isEqualTo("$nomisPhoneId")
+            assertThat(it["duplicateDpsId"]).isEqualTo("$dpsOrganisationPhoneId")
+            assertThat(it["type"]).isEqualTo("PHONE")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class MappingCreateFails {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisCorporateIdOrNull(nomisCorporateId = corporateAndOrganisationId, mapping = null)
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation(corporateAndOrganisationId).withPhone(corporatePhone().copy(id = nomisPhoneId)),
+        )
+        dpsApiMock.stubCreateOrganisationPhone(syncCreateOrganisationPhoneResponse().copy(organisationPhoneId = dpsOrganisationPhoneId))
+        mappingApiMock.stubCreatePhoneMappingFailureFollowedBySuccess()
+        organisationsOffenderEventsQueue.sendMessage(
+          corporatePhoneEvent(
+            eventType = "PHONES_CORPORATE-INSERTED",
+            phoneId = nomisPhoneId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete("organisations-phone-mapping-synchronisation-created") }
+      }
+
+      @Test
+      fun `will create the organisation in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/organisation-phone")))
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/phone"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", "$dpsOrganisationPhoneId")
+            .withRequestBodyJsonPath("nomisId", "$nomisPhoneId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-phone-synchronisation-created-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+            assertThat(it["dpsOrganisationPhoneId"]).isEqualTo("$dpsOrganisationPhoneId")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("PHONES_CORPORATE-INSERTED (address)")
+  inner class CorporateAddressPhoneInserted {
+    private val corporateAndOrganisationId = 123456L
+    private val nomisPhoneId = 34567L
+    private val nomisAddressId = 6789L
+    private val dpsOrganisationAddressId = 9876L
+    private val dpsOrganisationAddressPhoneId = 76543L
+
+    @Nested
+    inner class WhenCreatedInDps {
+      @BeforeEach
+      fun setUp() {
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateAddressPhoneEvent(
+            eventType = "PHONES_CORPORATE-INSERTED",
+            corporateId = corporateAndOrganisationId,
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create phone in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/organisation-address-phone")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-address-phone-synchronisation-created-skipped"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenCreatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = null)
+        mappingApiMock.stubGetByNomisAddressId(
+          nomisAddressId = nomisAddressId,
+          mapping = OrganisationsMappingDto(
+            dpsId = "$dpsOrganisationAddressId",
+            nomisId = nomisAddressId,
+            mappingType = MIGRATED,
+          ),
+        )
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation().withAddress(
+            corporateAddress().withPhone(
+              CorporatePhoneNumber(
+                id = nomisPhoneId,
+                number = "0114 555 5555",
+                extension = "ext 123",
+                type = CodeDescription("HOME", "Home Phone"),
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                  modifyUserId = "T.SMITH",
+                  modifyDatetime = "2024-10-01T13:31",
+                ),
+              ),
+            ).copy(id = nomisAddressId),
+          ),
+        )
+        dpsApiMock.stubCreateOrganisationAddressPhone(syncCreateOrganisationAddressPhoneResponse().copy(organisationAddressPhoneId = dpsOrganisationAddressPhoneId))
+        mappingApiMock.stubCreateAddressPhoneMapping()
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateAddressPhoneEvent(
+            eventType = "PHONES_CORPORATE-INSERTED",
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will check if mapping already exists for phone`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/corporate/address-phone/nomis-phone-id/$nomisPhoneId")))
+      }
+
+      @Test
+      fun `will retrieve the organisation details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/corporates/$corporateAndOrganisationId")))
+      }
+
+      @Test
+      fun `will create the organisation phone in DPS from the organisation`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-address-phone")))
+        val request: SyncCreateOrganisationAddressPhoneRequest = OrganisationsDpsApiExtension.getRequestBody(
+          postRequestedFor(urlPathEqualTo("/sync/organisation-address-phone")),
+        )
+        with(request) {
+          assertThat(organisationId).isEqualTo(corporateAndOrganisationId)
+          assertThat(organisationAddressId).isEqualTo(dpsOrganisationAddressId)
+          assertThat(phoneType).isEqualTo("HOME")
+          assertThat(phoneNumber).isEqualTo("0114 555 5555")
+          assertThat(extNumber).isEqualTo("ext 123")
+          assertThat(createdBy).isEqualTo("J.SPEAK")
+          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+        }
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/address-phone"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", "$dpsOrganisationAddressPhoneId")
+            .withRequestBodyJsonPath("nomisId", "$nomisPhoneId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-address-phone-synchronisation-created-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+            assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
+            assertThat(it["dpsOrganisationAddressPhoneId"]).isEqualTo("$dpsOrganisationAddressPhoneId")
+            assertThat(it["dpsOrganisationAddressId"]).isEqualTo("$dpsOrganisationAddressId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = OrganisationsMappingDto(dpsId = "$dpsOrganisationAddressPhoneId", nomisId = nomisPhoneId, mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED))
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateAddressPhoneEvent(
+            eventType = "PHONES_CORPORATE-INSERTED",
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create organisation in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/organisation-address-phone")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-address-phone-synchronisation-created-ignored"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+            assertThat(it["dpsOrganisationAddressPhoneId"]).isEqualTo("$dpsOrganisationAddressPhoneId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenDuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisPhoneIdOrNull(nomisPhoneId = nomisPhoneId, mapping = null)
+        mappingApiMock.stubGetByNomisAddressId(
+          nomisAddressId = nomisAddressId,
+          mapping = OrganisationsMappingDto(
+            dpsId = "$dpsOrganisationAddressId",
+            nomisId = nomisAddressId,
+            mappingType = MIGRATED,
+          ),
+        )
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation().withAddress(
+            corporateAddress().withPhone(
+              corporatePhone().copy(id = nomisPhoneId),
+            ).copy(id = nomisAddressId),
+          ),
+        )
+        dpsApiMock.stubCreateOrganisationAddressPhone(syncCreateOrganisationAddressPhoneResponse().copy(organisationAddressPhoneId = dpsOrganisationAddressPhoneId))
+        mappingApiMock.stubCreateAddressPhoneMapping(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = OrganisationsMappingDto(
+                dpsId = "$dpsOrganisationAddressPhoneId",
+                nomisId = nomisPhoneId,
+                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+              ),
+              existing = OrganisationsMappingDto(
+                dpsId = "9999",
+                nomisId = nomisPhoneId,
+                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateAddressPhoneEvent(
+            eventType = "PHONES_CORPORATE-INSERTED",
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete("from-nomis-sync-organisations-duplicate") }
+      }
+
+      @Test
+      fun `will create the organisation phone in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/organisation-address-phone")))
+      }
+
+      @Test
+      fun `will attempt to create a mapping between the DPS and NOMIS record once`() {
+        mappingApiMock.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/address-phone"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", "$dpsOrganisationAddressPhoneId")
+            .withRequestBodyJsonPath("nomisId", "$nomisPhoneId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for both overall success and duplicate`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-address-phone-synchronisation-created-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-sync-organisations-duplicate"),
+          org.mockito.kotlin.check {
+            assertThat(it["existingNomisId"]).isEqualTo("$nomisPhoneId")
+            assertThat(it["existingDpsId"]).isEqualTo("9999")
+            assertThat(it["duplicateNomisId"]).isEqualTo("$nomisPhoneId")
+            assertThat(it["duplicateDpsId"]).isEqualTo("$dpsOrganisationAddressPhoneId")
+            assertThat(it["type"]).isEqualTo("ADDRESS_PHONE")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class MappingCreateFails {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisCorporateIdOrNull(nomisCorporateId = corporateAndOrganisationId, mapping = null)
+        mappingApiMock.stubGetByNomisAddressId(
+          nomisAddressId = nomisAddressId,
+          mapping = OrganisationsMappingDto(
+            dpsId = "$dpsOrganisationAddressId",
+            nomisId = nomisAddressId,
+            mappingType = MIGRATED,
+          ),
+        )
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation().withAddress(
+            corporateAddress().withPhone(
+              corporatePhone().copy(id = nomisPhoneId),
+            ).copy(id = nomisAddressId),
+          ),
+        )
+        dpsApiMock.stubCreateOrganisationAddressPhone(syncCreateOrganisationAddressPhoneResponse().copy(organisationAddressPhoneId = dpsOrganisationAddressPhoneId))
+        mappingApiMock.stubCreateAddressPhoneMappingFailureFollowedBySuccess()
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateAddressPhoneEvent(
+            eventType = "PHONES_CORPORATE-INSERTED",
+            phoneId = nomisPhoneId,
+            addressId = nomisAddressId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete("organisations-address_phone-mapping-synchronisation-created") }
+      }
+
+      @Test
+      fun `will create the organisation in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/organisation-address-phone")))
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/address-phone"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", "$dpsOrganisationAddressPhoneId")
+            .withRequestBodyJsonPath("nomisId", "$nomisPhoneId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-address-phone-synchronisation-created-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+            assertThat(it["dpsOrganisationAddressPhoneId"]).isEqualTo("$dpsOrganisationAddressPhoneId")
+            assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
+            assertThat(it["dpsOrganisationAddressId"]).isEqualTo("$dpsOrganisationAddressId")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
 }
 
 fun corporateEvent(
@@ -1062,6 +1684,44 @@ fun corporateAddressEvent(
   """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
     "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"addressId\": \"$addressId\",\"corporateId\": \"$corporateId\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+  """.trimIndent()
+
+fun corporatePhoneEvent(
+  eventType: String,
+  corporateId: Long,
+  phoneId: Long,
+  auditModuleName: String = "OUMAGENC",
+) = // language=JSON
+  """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"phoneId\": \"$phoneId\",\"isAddress\": \"false\",\"corporateId\": \"$corporateId\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+  """.trimIndent()
+fun corporateAddressPhoneEvent(
+  eventType: String,
+  corporateId: Long,
+  phoneId: Long,
+  addressId: Long,
+  auditModuleName: String = "OUMAGENC",
+) = // language=JSON
+  """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"phoneId\": \"$phoneId\",\"isAddress\": \"true\",\"addressId\": \"$addressId\",\"corporateId\": \"$corporateId\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 

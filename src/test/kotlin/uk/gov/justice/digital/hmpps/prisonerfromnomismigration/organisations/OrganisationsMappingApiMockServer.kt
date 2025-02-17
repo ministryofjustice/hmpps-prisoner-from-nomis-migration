@@ -217,6 +217,152 @@ class OrganisationsMappingApiMockServer(private val objectMapper: ObjectMapper) 
     )
   }
 
+  fun stubCreatePhoneMapping() {
+    mappingApi.stubFor(
+      post("/mapping/corporate/phone").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreatePhoneMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/corporate/phone").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubCreatePhoneMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/corporate/phone")
+
+  fun stubGetByNomisPhoneIdOrNull(
+    nomisPhoneId: Long = 123456,
+    mapping: OrganisationsMappingDto? = OrganisationsMappingDto(
+      nomisId = 123456,
+      dpsId = "654321",
+      mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mapping?.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/corporate/phone/nomis-phone-id/$nomisPhoneId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(mapping)),
+        ),
+      )
+    } ?: run {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/corporate/phone/nomis-phone-id/$nomisPhoneId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+        ),
+      )
+    }
+  }
+
+  fun stubGetByNomisPhoneId(
+    nomisPhoneId: Long = 123456,
+    mapping: OrganisationsMappingDto = OrganisationsMappingDto(
+      nomisId = 123456,
+      dpsId = "123456",
+      mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
+    ),
+  ) = stubGetByNomisPhoneIdOrNull(nomisPhoneId, mapping)
+
+  fun stubDeleteByNomisPhoneId(
+    nomisPhoneId: Long = 123456,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/corporate/phone/nomis-phone-id/$nomisPhoneId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
+
+  fun stubCreateAddressPhoneMapping() {
+    mappingApi.stubFor(
+      post("/mapping/corporate/address-phone").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateAddressPhoneMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/corporate/address-phone").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubCreateAddressPhoneMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/corporate/address-phone")
+
+  fun stubGetByNomisAddressPhoneIdOrNull(
+    nomisPhoneId: Long = 123456,
+    mapping: OrganisationsMappingDto? = OrganisationsMappingDto(
+      nomisId = 123456,
+      dpsId = "654321",
+      mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mapping?.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/corporate/address-phone/nomis-phone-id/$nomisPhoneId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(mapping)),
+        ),
+      )
+    } ?: run {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/corporate/address-phone/nomis-phone-id/$nomisPhoneId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+        ),
+      )
+    }
+  }
+
+  fun stubGetByNomisAddressPhoneId(
+    nomisPhoneId: Long = 123456,
+    mapping: OrganisationsMappingDto = OrganisationsMappingDto(
+      nomisId = 123456,
+      dpsId = "123456",
+      mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
+    ),
+  ) = stubGetByNomisAddressPhoneIdOrNull(nomisPhoneId, mapping)
+
+  fun stubDeleteByNomisAddressPhoneId(
+    nomisPhoneId: Long = 123456,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/corporate/address-phone/nomis-phone-id/$nomisPhoneId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
