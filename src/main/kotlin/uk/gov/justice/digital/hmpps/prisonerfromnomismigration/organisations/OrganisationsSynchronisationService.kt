@@ -462,6 +462,27 @@ class OrganisationsSynchronisationService(
     }
   }
   suspend fun corporateInternetAddressDeleted(event: CorporateInternetAddressEvent) {
+    val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisInternetAddressId" to event.internetAddressId)
+    mappingApiService.getByNomisWebIdOrNull(nomisWebId = event.internetAddressId)?.also {
+      track("organisations-web-address-synchronisation-deleted", telemetry) {
+        telemetry["dpsOrganisationWebAddressId"] = it.dpsId
+        dpsApiService.deleteOrganisationWebAddress(it.dpsId.toLong())
+        mappingApiService.deleteByNomisWebId(event.internetAddressId)
+      }
+    } ?: run {
+      mappingApiService.getByNomisEmailIdOrNull(nomisEmailId = event.internetAddressId)?.also {
+        track("organisations-email-synchronisation-deleted", telemetry) {
+          telemetry["dpsOrganisationEmailId"] = it.dpsId
+          dpsApiService.deleteOrganisationEmail(it.dpsId.toLong())
+          mappingApiService.deleteByNomisEmailId(event.internetAddressId)
+        }
+      } ?: run {
+        telemetryClient.trackEvent(
+          "organisations-internet-address-synchronisation-deleted-ignored",
+          telemetry,
+        )
+      }
+    }
   }
 
   suspend fun retryCreateCorporateMapping(retryMessage: InternalMessage<OrganisationsMappingDto>) = corporateMappingCreator.retryCreateMapping(retryMessage)
