@@ -171,7 +171,7 @@ class LocationsSynchronisationService(
     event: LocationsOffenderEvent,
   ): LocationMappingDto? {
     val parent = nomisLocation.parentLocationId?.let {
-      locationsMappingService.getMappingGivenNomisId(nomisLocation.parentLocationId!!)
+      locationsMappingService.getMappingGivenNomisId(it)
     }
     if (parent == null && nomisLocation.parentLocationId != null) {
       throw IllegalStateException("No mapping found for parent NOMIS location ${nomisLocation.parentLocationId} syncing NOMIS location ${event.internalLocationId}, ${nomisLocation.description}")
@@ -296,7 +296,7 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse, parentId: Strin
     null
   },
   certification = if (nomisLocationResponse.certified != null || nomisLocationResponse.cnaCapacity != null) {
-    Certification(nomisLocationResponse.certified ?: false, nomisLocationResponse.cnaCapacity ?: 0)
+    Certification(nomisLocationResponse.certified == true, nomisLocationResponse.cnaCapacity ?: 0)
   } else {
     null
   },
@@ -326,7 +326,7 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse, parentId: Strin
 )
 
 private fun toLocationType(locationType: String): NomisSyncLocationRequest.LocationType = when (locationType) {
-  "WING", "BLK" -> NomisSyncLocationRequest.LocationType.WING
+  "WING", "BLK", "HBLK" -> NomisSyncLocationRequest.LocationType.WING
   "SPUR" -> NomisSyncLocationRequest.LocationType.SPUR
   "LAND", "TIER", "LAN" -> NomisSyncLocationRequest.LocationType.LANDING
   "CELL" -> NomisSyncLocationRequest.LocationType.CELL

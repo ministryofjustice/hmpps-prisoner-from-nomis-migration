@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-02-06.4638.aa3a143"
+    "version": "2025-02-16.4657.afb4cc2"
   },
   "servers": [
     {
@@ -7276,26 +7276,26 @@
             "maxLength": 80,
             "minLength": 0
           },
+          "numberOfSpurs": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of spurs required",
+            "example": 2,
+            "maximum": 4
+          },
           "numberOfLandings": {
             "type": "integer",
             "format": "int32",
             "description": "Number of landings required",
             "example": 3,
-            "maximum": 10
-          },
-          "numberOfSpursPerLanding": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Number of spurs required",
-            "example": 2,
-            "maximum": 10
+            "maximum": 5
           },
           "numberOfCellsPerSection": {
             "type": "integer",
             "format": "int32",
             "description": "Number of cells required in each section (wing,landing or spur)",
             "example": 40,
-            "maximum": 999
+            "maximum": 100
           },
           "defaultCellCapacity": {
             "type": "integer",
@@ -7303,7 +7303,7 @@
             "default": "1",
             "description": "Default Cell Capacity",
             "example": 1,
-            "maximum": 10
+            "maximum": 4
           }
         },
         "required": [
@@ -8039,13 +8039,13 @@
       "PageLegacyLocation": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -8096,15 +8096,15 @@
             "type": "integer",
             "format": "int32"
           },
+          "unpaged": {
+            "type": "boolean"
+          },
           "paged": {
             "type": "boolean"
           },
           "pageNumber": {
             "type": "integer",
             "format": "int32"
-          },
-          "unpaged": {
-            "type": "boolean"
           }
         }
       },
