@@ -50,9 +50,9 @@ class OrganisationsEventListener(
               "PHONES_CORPORATE-UPDATED" -> synchronisationService.corporatePhoneUpdated(sqsMessage.Message.fromJson())
               "PHONES_CORPORATE-DELETED" if sqsMessage.Message.asCorporatePhoneEvent().isAddress -> synchronisationService.corporateAddressPhoneDeleted(sqsMessage.Message.fromJson())
               "PHONES_CORPORATE-DELETED" -> synchronisationService.corporatePhoneDeleted(sqsMessage.Message.fromJson())
-              "INTERNET_ADDRESSES_CORPORATE-INSERTED" -> log.debug("Received $eventType")
-              "INTERNET_ADDRESSES_CORPORATE-UPDATED" -> log.debug("Received $eventType")
-              "INTERNET_ADDRESSES_CORPORATE-DELETED" -> log.debug("Received $eventType")
+              "INTERNET_ADDRESSES_CORPORATE-INSERTED" -> synchronisationService.corporateInternetAddressInserted(sqsMessage.Message.fromJson())
+              "INTERNET_ADDRESSES_CORPORATE-UPDATED" -> synchronisationService.corporateInternetAddressUpdated(sqsMessage.Message.fromJson())
+              "INTERNET_ADDRESSES_CORPORATE-DELETED" -> synchronisationService.corporateInternetAddressDeleted(sqsMessage.Message.fromJson())
               "CORPORATE_TYPES-INSERTED" -> log.debug("Received $eventType")
               "CORPORATE_TYPES-UPDATED" -> log.debug("Received $eventType")
               "CORPORATE_TYPES-DELETED" -> log.debug("Received $eventType")
@@ -105,6 +105,12 @@ data class CorporateAddressPhoneEvent(
   val corporateId: Long,
   val phoneId: Long,
   val addressId: Long,
+) : EventAudited
+
+data class CorporateInternetAddressEvent(
+  override val auditModuleName: String,
+  val corporateId: Long,
+  val internetAddressId: Long,
 ) : EventAudited
 
 enum class OrganisationsSynchronisationMessageType {

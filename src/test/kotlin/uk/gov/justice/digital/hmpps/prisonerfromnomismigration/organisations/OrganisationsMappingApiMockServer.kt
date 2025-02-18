@@ -363,6 +363,152 @@ class OrganisationsMappingApiMockServer(private val objectMapper: ObjectMapper) 
     )
   }
 
+  fun stubCreateWebMapping() {
+    mappingApi.stubFor(
+      post("/mapping/corporate/web").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateWebMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/corporate/web").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubCreateWebMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/corporate/web")
+
+  fun stubGetByNomisWebIdOrNull(
+    nomisWebId: Long = 123456,
+    mapping: OrganisationsMappingDto? = OrganisationsMappingDto(
+      nomisId = 123456,
+      dpsId = "654321",
+      mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mapping?.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/corporate/web/nomis-internet-address-id/$nomisWebId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(mapping)),
+        ),
+      )
+    } ?: run {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/corporate/web/nomis-internet-address-id/$nomisWebId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+        ),
+      )
+    }
+  }
+
+  fun stubGetByNomisWebId(
+    nomisWebId: Long = 123456,
+    mapping: OrganisationsMappingDto = OrganisationsMappingDto(
+      nomisId = 123456,
+      dpsId = "123456",
+      mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
+    ),
+  ) = stubGetByNomisWebIdOrNull(nomisWebId, mapping)
+
+  fun stubDeleteByNomisWebId(
+    nomisWebId: Long = 123456,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/corporate/web/nomis-internet-address-id/$nomisWebId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
+
+  fun stubCreateEmailMapping() {
+    mappingApi.stubFor(
+      post("/mapping/corporate/email").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateEmailMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/corporate/email").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubCreateEmailMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/corporate/email")
+
+  fun stubGetByNomisEmailIdOrNull(
+    nomisEmailId: Long = 123456,
+    mapping: OrganisationsMappingDto? = OrganisationsMappingDto(
+      nomisId = 123456,
+      dpsId = "654321",
+      mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mapping?.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/corporate/email/nomis-internet-address-id/$nomisEmailId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(mapping)),
+        ),
+      )
+    } ?: run {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/corporate/email/nomis-internet-address-id/$nomisEmailId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+        ),
+      )
+    }
+  }
+
+  fun stubGetByNomisEmailId(
+    nomisEmailId: Long = 123456,
+    mapping: OrganisationsMappingDto = OrganisationsMappingDto(
+      nomisId = 123456,
+      dpsId = "123456",
+      mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
+    ),
+  ) = stubGetByNomisEmailIdOrNull(nomisEmailId, mapping)
+
+  fun stubDeleteByNomisEmailId(
+    nomisEmailId: Long = 123456,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/corporate/email/nomis-internet-address-id/$nomisEmailId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)

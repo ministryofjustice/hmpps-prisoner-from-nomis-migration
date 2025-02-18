@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateInternetAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporatePhoneNumber
@@ -115,6 +116,30 @@ fun corporatePhone(): CorporatePhoneNumber = CorporatePhoneNumber(
   type = CodeDescription("HOME", "Home Address"),
   number = "0114 555 5555",
   extension = "ext 123",
+  audit = NomisAudit(
+    createUsername = "J.SPEAK",
+    createDatetime = "2024-09-01T13:31",
+    modifyUserId = "T.SMITH",
+    modifyDatetime = "2024-10-01T13:31",
+  ),
+)
+fun CorporateOrganisation.withInternetAddress(internetAddress: CorporateInternetAddress): CorporateOrganisation = this.copy(internetAddresses = listOf(internetAddress))
+
+fun corporateWebAddress(): CorporateInternetAddress = CorporateInternetAddress(
+  id = 12345,
+  internetAddress = "www.boots.gov.uk",
+  type = "WEB",
+  audit = NomisAudit(
+    createUsername = "J.SPEAK",
+    createDatetime = "2024-09-01T13:31",
+    modifyUserId = "T.SMITH",
+    modifyDatetime = "2024-10-01T13:31",
+  ),
+)
+fun corporateEmail(): CorporateInternetAddress = CorporateInternetAddress(
+  id = 12345,
+  internetAddress = "jane@test.com",
+  type = "EMAIL",
   audit = NomisAudit(
     createUsername = "J.SPEAK",
     createDatetime = "2024-09-01T13:31",

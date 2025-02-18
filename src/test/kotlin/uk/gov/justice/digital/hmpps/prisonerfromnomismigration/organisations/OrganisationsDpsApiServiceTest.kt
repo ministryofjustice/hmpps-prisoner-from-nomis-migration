@@ -16,12 +16,16 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.Org
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.migrateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationWebAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationWebAddressRequest
 
 @SpringAPIServiceTest
 @Import(OrganisationsDpsApiService::class, OrganisationsConfiguration::class, OrganisationsDpsApiMockServer::class)
@@ -363,6 +367,162 @@ class OrganisationsDpsApiServiceTest {
 
       dpsOrganisationsServer.verify(
         deleteRequestedFor(urlPathEqualTo("/sync/organisation-address-phone/12345")),
+      )
+    }
+  }
+
+  @Nested
+  inner class CreateOrganisationWebAddress {
+    @Test
+    internal fun `will pass oath2 token to organisation web address endpoint`() = runTest {
+      dpsOrganisationsServer.stubCreateOrganisationWebAddress()
+
+      apiService.createOrganisationWebAddress(syncCreateOrganisationWebAddressRequest())
+
+      dpsOrganisationsServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the POST endpoint`() = runTest {
+      dpsOrganisationsServer.stubCreateOrganisationWebAddress()
+
+      apiService.createOrganisationWebAddress(syncCreateOrganisationWebAddressRequest())
+
+      dpsOrganisationsServer.verify(
+        postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")),
+      )
+    }
+  }
+
+  @Nested
+  inner class UpdateOrganisationWebAddress {
+    @Test
+    internal fun `will pass oath2 token to organisation web address endpoint`() = runTest {
+      dpsOrganisationsServer.stubUpdateOrganisationWebAddress(12345)
+
+      apiService.updateOrganisationWebAddress(12345, syncUpdateOrganisationWebAddressRequest())
+
+      dpsOrganisationsServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the PUT endpoint`() = runTest {
+      dpsOrganisationsServer.stubUpdateOrganisationWebAddress(12345)
+
+      apiService.updateOrganisationWebAddress(12345, syncUpdateOrganisationWebAddressRequest())
+
+      dpsOrganisationsServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/organisation-web-address/12345")),
+      )
+    }
+  }
+
+  @Nested
+  inner class DeleteOrganisationWebAddress {
+    @Test
+    internal fun `will pass oath2 token to organisation web address endpoint`() = runTest {
+      dpsOrganisationsServer.stubDeleteOrganisationWebAddress(12345)
+
+      apiService.deleteOrganisationWebAddress(12345)
+
+      dpsOrganisationsServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the DELETE endpoint`() = runTest {
+      dpsOrganisationsServer.stubDeleteOrganisationWebAddress(12345)
+
+      apiService.deleteOrganisationWebAddress(12345)
+
+      dpsOrganisationsServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/organisation-web-address/12345")),
+      )
+    }
+  }
+
+  @Nested
+  inner class CreateOrganisationEmail {
+    @Test
+    internal fun `will pass oath2 token to organisation email endpoint`() = runTest {
+      dpsOrganisationsServer.stubCreateOrganisationEmail()
+
+      apiService.createOrganisationEmail(syncCreateOrganisationEmailRequest())
+
+      dpsOrganisationsServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the POST endpoint`() = runTest {
+      dpsOrganisationsServer.stubCreateOrganisationEmail()
+
+      apiService.createOrganisationEmail(syncCreateOrganisationEmailRequest())
+
+      dpsOrganisationsServer.verify(
+        postRequestedFor(urlPathEqualTo("/sync/organisation-email")),
+      )
+    }
+  }
+
+  @Nested
+  inner class UpdateOrganisationEmail {
+    @Test
+    internal fun `will pass oath2 token to organisation-email endpoint`() = runTest {
+      dpsOrganisationsServer.stubUpdateOrganisationEmail(12345)
+
+      apiService.updateOrganisationEmail(12345, syncUpdateOrganisationEmailRequest())
+
+      dpsOrganisationsServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the PUT endpoint`() = runTest {
+      dpsOrganisationsServer.stubUpdateOrganisationEmail(12345)
+
+      apiService.updateOrganisationEmail(12345, syncUpdateOrganisationEmailRequest())
+
+      dpsOrganisationsServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/organisation-email/12345")),
+      )
+    }
+  }
+
+  @Nested
+  inner class DeleteOrganisationEmail {
+    @Test
+    internal fun `will pass oath2 token to organisation email endpoint`() = runTest {
+      dpsOrganisationsServer.stubDeleteOrganisationEmail(12345)
+
+      apiService.deleteOrganisationEmail(12345)
+
+      dpsOrganisationsServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the DELETE endpoint`() = runTest {
+      dpsOrganisationsServer.stubDeleteOrganisationEmail(12345)
+
+      apiService.deleteOrganisationEmail(12345)
+
+      dpsOrganisationsServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/organisation-email/12345")),
       )
     }
   }
