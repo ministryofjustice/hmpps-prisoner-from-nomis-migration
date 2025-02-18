@@ -99,6 +99,45 @@ class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") priv
       .retrieve()
       .awaitBodilessEntityIgnoreNotFound()
   }
+  suspend fun createOrganisationWebAddress(organisationWebAddress: SyncCreateOrganisationWebAddressRequest): SyncCreateOrganisationWebAddressResponse = webClient.post()
+    .uri("/sync/organisation-web-address")
+    .bodyValue(organisationWebAddress)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun updateOrganisationWebAddress(organisationWebAddressId: Long, organisationWebAddress: SyncUpdateOrganisationWebAddressRequest) {
+    webClient.put()
+      .uri("/sync/organisation-web-address/{organisationWebAddressId}", organisationWebAddressId)
+      .bodyValue(organisationWebAddress)
+      .retrieve()
+      .awaitBodilessEntityOrLogAndRethrowBadRequest()
+  }
+  suspend fun deleteOrganisationWebAddress(organisationWebAddressId: Long) {
+    webClient.delete()
+      .uri("/sync/organisation-web-address/{organisationWebAddressId}", organisationWebAddressId)
+      .retrieve()
+      .awaitBodilessEntityIgnoreNotFound()
+  }
+
+  suspend fun createOrganisationEmail(organisationEmail: SyncCreateOrganisationEmailRequest): SyncCreateOrganisationEmailResponse = webClient.post()
+    .uri("/sync/organisation-email")
+    .bodyValue(organisationEmail)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun updateOrganisationEmail(organisationEmailId: Long, organisationEmail: SyncUpdateOrganisationEmailRequest) {
+    webClient.put()
+      .uri("/sync/organisation-email/{organisationEmailId}", organisationEmailId)
+      .bodyValue(organisationEmail)
+      .retrieve()
+      .awaitBodilessEntityOrLogAndRethrowBadRequest()
+  }
+  suspend fun deleteOrganisationEmail(organisationEmailId: Long) {
+    webClient.delete()
+      .uri("/sync/organisation-email/{organisationEmailId}", organisationEmailId)
+      .retrieve()
+      .awaitBodilessEntityIgnoreNotFound()
+  }
 }
 
 //  Fake DTOs - replace with real ones once created
@@ -221,4 +260,38 @@ data class SyncUpdateOrganisationAddressPhoneRequest(
 
 data class SyncCreateOrganisationAddressPhoneResponse(
   val organisationAddressPhoneId: Long,
+)
+
+data class SyncCreateOrganisationEmailRequest(
+  val organisationId: Long,
+  val emailAddress: String,
+  val createdBy: String,
+  val createdTime: LocalDateTime,
+)
+
+data class SyncCreateOrganisationEmailResponse(
+  val organisationEmailId: Long,
+)
+
+data class SyncUpdateOrganisationEmailRequest(
+  val emailAddress: String,
+  val updatedBy: String,
+  val updatedTime: LocalDateTime,
+)
+
+data class SyncCreateOrganisationWebAddressRequest(
+  val organisationId: Long,
+  val webAddress: String,
+  val createdBy: String,
+  val createdTime: LocalDateTime,
+)
+
+data class SyncCreateOrganisationWebAddressResponse(
+  val organisationWebAddressId: Long,
+)
+
+data class SyncUpdateOrganisationWebAddressRequest(
+  val webAddress: String,
+  val updatedBy: String,
+  val updatedTime: LocalDateTime,
 )

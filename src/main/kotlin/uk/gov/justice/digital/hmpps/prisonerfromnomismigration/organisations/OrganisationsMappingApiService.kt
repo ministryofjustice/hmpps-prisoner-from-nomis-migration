@@ -141,6 +141,62 @@ class OrganisationsMappingApiService(@Qualifier("mappingApiWebClient") webClient
       .awaitBodilessEntity()
   }
 
+  suspend fun createWebMapping(mapping: OrganisationsMappingDto): CreateMappingResult<OrganisationsMappingDto> = createMapping("/mapping/corporate/web", mapping)
+
+  suspend fun getByNomisWebIdOrNull(nomisWebId: Long): OrganisationsMappingDto? = webClient.get()
+    .uri(
+      "/mapping/corporate/web/nomis-internet-address-id/{nomisWebId}",
+      nomisWebId,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getByNomisWebId(nomisWebId: Long): OrganisationsMappingDto = webClient.get()
+    .uri(
+      "/mapping/corporate/web/nomis-internet-address-id/{nomisWebId}",
+      nomisWebId,
+    )
+    .retrieve()
+    .awaitBody()
+
+  suspend fun deleteByNomisWebId(nomisWebId: Long) {
+    webClient.delete()
+      .uri(
+        "/mapping/corporate/web/nomis-internet-address-id/{nomisWebId}",
+        nomisWebId,
+      )
+      .retrieve()
+      .awaitBodilessEntity()
+  }
+
+  suspend fun createEmailMapping(mapping: OrganisationsMappingDto): CreateMappingResult<OrganisationsMappingDto> = createMapping("/mapping/corporate/email", mapping)
+
+  suspend fun getByNomisEmailIdOrNull(nomisEmailId: Long): OrganisationsMappingDto? = webClient.get()
+    .uri(
+      "/mapping/corporate/email/nomis-internet-address-id/{nomisEmailId}",
+      nomisEmailId,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getByNomisEmailId(nomisEmailId: Long): OrganisationsMappingDto = webClient.get()
+    .uri(
+      "/mapping/corporate/email/nomis-internet-address-id/{nomisEmailId}",
+      nomisEmailId,
+    )
+    .retrieve()
+    .awaitBody()
+
+  suspend fun deleteByNomisEmailId(nomisEmailId: Long) {
+    webClient.delete()
+      .uri(
+        "/mapping/corporate/email/nomis-internet-address-id/{nomisEmailId}",
+        nomisEmailId,
+      )
+      .retrieve()
+      .awaitBodilessEntity()
+  }
+
   private suspend inline fun <reified T : Any> createMapping(url: String, mapping: T): CreateMappingResult<OrganisationsMappingDto> = webClient.post()
     .uri(url)
     .bodyValue(mapping)

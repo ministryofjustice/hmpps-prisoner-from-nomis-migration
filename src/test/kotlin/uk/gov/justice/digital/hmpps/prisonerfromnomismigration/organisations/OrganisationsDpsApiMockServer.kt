@@ -151,6 +151,34 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       updatedBy = "JANE.SAM",
       updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
+    fun syncCreateOrganisationWebAddressRequest() = SyncCreateOrganisationWebAddressRequest(
+      organisationId = 1234567,
+      webAddress = "www.test.com",
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
+    fun syncCreateOrganisationWebAddressResponse() = SyncCreateOrganisationWebAddressResponse(
+      organisationWebAddressId = 123456,
+    )
+    fun syncUpdateOrganisationWebAddressRequest() = SyncUpdateOrganisationWebAddressRequest(
+      webAddress = "www.test.com",
+      updatedBy = "JANE.SAM",
+      updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
+    fun syncCreateOrganisationEmailRequest() = SyncCreateOrganisationEmailRequest(
+      organisationId = 1234567,
+      emailAddress = "jane@test.com",
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
+    fun syncCreateOrganisationEmailResponse() = SyncCreateOrganisationEmailResponse(
+      organisationEmailId = 123456,
+    )
+    fun syncUpdateOrganisationEmailRequest() = SyncUpdateOrganisationEmailRequest(
+      emailAddress = "jane@test.com",
+      updatedBy = "JANE.SAM",
+      updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
   }
 
   fun stubHealthPing(status: Int) {
@@ -312,6 +340,70 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubDeleteOrganisationAddressPhone(organisationAddressPhoneId: Long) {
     dpsOrganisationsServer.stubFor(
       delete("/sync/organisation-address-phone/$organisationAddressPhoneId")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+  fun stubCreateOrganisationWebAddress(response: SyncCreateOrganisationWebAddressResponse = syncCreateOrganisationWebAddressResponse()) {
+    dpsOrganisationsServer.stubFor(
+      post("/sync/organisation-web-address")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+  fun stubUpdateOrganisationWebAddress(organisationWebAddressId: Long) {
+    dpsOrganisationsServer.stubFor(
+      put("/sync/organisation-web-address/$organisationWebAddressId")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubDeleteOrganisationWebAddress(organisationWebAddressId: Long) {
+    dpsOrganisationsServer.stubFor(
+      delete("/sync/organisation-web-address/$organisationWebAddressId")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+  fun stubCreateOrganisationEmail(response: SyncCreateOrganisationEmailResponse = syncCreateOrganisationEmailResponse()) {
+    dpsOrganisationsServer.stubFor(
+      post("/sync/organisation-email")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+  fun stubUpdateOrganisationEmail(organisationEmailId: Long) {
+    dpsOrganisationsServer.stubFor(
+      put("/sync/organisation-email/$organisationEmailId")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubDeleteOrganisationEmail(organisationEmailId: Long) {
+    dpsOrganisationsServer.stubFor(
+      delete("/sync/organisation-email/$organisationEmailId")
         .willReturn(
           aResponse()
             .withStatus(204)

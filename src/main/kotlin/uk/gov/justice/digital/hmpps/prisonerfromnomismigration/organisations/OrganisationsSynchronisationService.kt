@@ -322,6 +322,13 @@ class OrganisationsSynchronisationService(
     }
   }
 
+  suspend fun corporateInternetAddressInserted(event: CorporateInternetAddressEvent) {
+  }
+  suspend fun corporateInternetAddressUpdated(event: CorporateInternetAddressEvent) {
+  }
+  suspend fun corporateInternetAddressDeleted(event: CorporateInternetAddressEvent) {
+  }
+
   suspend fun retryCreateCorporateMapping(retryMessage: InternalMessage<OrganisationsMappingDto>) = corporateMappingCreator.retryCreateMapping(retryMessage)
   suspend fun retryCreateAddressMapping(retryMessage: InternalMessage<OrganisationsMappingDto>) = addressMappingCreator.retryCreateMapping(retryMessage)
   suspend fun retryCreatePhoneMapping(retryMessage: InternalMessage<OrganisationsMappingDto>) = phoneMappingCreator.retryCreateMapping(retryMessage)

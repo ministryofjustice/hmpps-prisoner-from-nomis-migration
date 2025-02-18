@@ -124,7 +124,7 @@ class OrganisationsMappingApiServiceTest {
 
       assertThat(result.isError).isTrue()
       assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
-      assertThat(result.errorResponse!!.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
+      assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
     }
   }
 
@@ -212,7 +212,7 @@ class OrganisationsMappingApiServiceTest {
 
       assertThat(result.isError).isTrue()
       assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
-      assertThat(result.errorResponse!!.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
+      assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
     }
   }
 
@@ -387,7 +387,7 @@ class OrganisationsMappingApiServiceTest {
 
       assertThat(result.isError).isTrue()
       assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
-      assertThat(result.errorResponse!!.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
+      assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
     }
   }
 
@@ -562,7 +562,7 @@ class OrganisationsMappingApiServiceTest {
 
       assertThat(result.isError).isTrue()
       assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
-      assertThat(result.errorResponse!!.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
+      assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
     }
   }
 
@@ -737,7 +737,7 @@ class OrganisationsMappingApiServiceTest {
 
       assertThat(result.isError).isTrue()
       assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
-      assertThat(result.errorResponse!!.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
+      assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
     }
   }
 
@@ -838,6 +838,356 @@ class OrganisationsMappingApiServiceTest {
 
       mockServer.verify(
         deleteRequestedFor(urlPathEqualTo("/mapping/corporate/address-phone/nomis-phone-id/1234567")),
+      )
+    }
+  }
+
+  @Nested
+  inner class CreateWebMapping {
+    @Test
+    internal fun `will pass oath2 token to create web mapping endpoint`() = runTest {
+      mockServer.stubCreateWebMapping()
+
+      apiService.createWebMapping(
+        OrganisationsMappingDto(
+          mappingType = NOMIS_CREATED,
+          nomisId = 1234567,
+          dpsId = "7654321",
+        ),
+      )
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/corporate/web")).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will return success when OK response`() = runTest {
+      mockServer.stubCreateWebMapping()
+
+      val result = apiService.createWebMapping(
+        OrganisationsMappingDto(
+          mappingType = NOMIS_CREATED,
+          nomisId = 1234567,
+          dpsId = "7654321",
+        ),
+      )
+
+      assertThat(result.isError).isFalse()
+    }
+
+    @Test
+    fun `will return error when 409 conflict`() = runTest {
+      val nomisId = 1234567890L
+      val dpsId = "1234567890"
+      val existingDpsId = "1234567890"
+
+      mockServer.stubCreateWebMapping(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            duplicate = OrganisationsMappingDto(
+              dpsId = dpsId,
+              nomisId = nomisId,
+              mappingType = NOMIS_CREATED,
+            ),
+            existing = OrganisationsMappingDto(
+              dpsId = existingDpsId,
+              nomisId = nomisId,
+              mappingType = NOMIS_CREATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      val result = apiService.createWebMapping(
+        OrganisationsMappingDto(
+          mappingType = NOMIS_CREATED,
+          nomisId = nomisId,
+          dpsId = dpsId,
+        ),
+      )
+
+      assertThat(result.isError).isTrue()
+      assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
+      assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
+    }
+  }
+
+  @Nested
+  inner class GetByNomisWebIdOrNull {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetByNomisWebIdOrNull(nomisWebId = 1234567)
+
+      apiService.getByNomisWebIdOrNull(nomisWebId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetByNomisWebIdOrNull()
+
+      apiService.getByNomisWebIdOrNull(nomisWebId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/mapping/corporate/web/nomis-internet-address-id/1234567")),
+      )
+    }
+
+    @Test
+    fun `will return dpsId when mapping exists`() = runTest {
+      mockServer.stubGetByNomisWebIdOrNull(
+        nomisWebId = 1234567,
+        mapping = OrganisationsMappingDto(
+          dpsId = "1234567",
+          nomisId = 1234567,
+          mappingType = MappingType.MIGRATED,
+        ),
+      )
+
+      val mapping = apiService.getByNomisWebIdOrNull(nomisWebId = 1234567)
+
+      assertThat(mapping?.dpsId).isEqualTo("1234567")
+    }
+
+    @Test
+    fun `will return null if mapping does not exist`() = runTest {
+      mockServer.stubGetByNomisWebIdOrNull(
+        nomisWebId = 1234567,
+        mapping = null,
+      )
+
+      assertThat(apiService.getByNomisWebIdOrNull(nomisWebId = 1234567)).isNull()
+    }
+  }
+
+  @Nested
+  inner class GetByNomisWebId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetByNomisWebId(nomisWebId = 1234567)
+
+      apiService.getByNomisWebId(nomisWebId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetByNomisWebId(nomisWebId = 1234567)
+
+      apiService.getByNomisWebId(nomisWebId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/mapping/corporate/web/nomis-internet-address-id/1234567")),
+      )
+    }
+  }
+
+  @Nested
+  inner class DeleteByNomisWebId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubDeleteByNomisWebId(nomisWebId = 1234567)
+
+      apiService.deleteByNomisWebId(nomisWebId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to DELETE endpoint`() = runTest {
+      mockServer.stubDeleteByNomisWebId(nomisWebId = 1234567)
+
+      apiService.deleteByNomisWebId(nomisWebId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/mapping/corporate/web/nomis-internet-address-id/1234567")),
+      )
+    }
+  }
+
+  @Nested
+  inner class CreateEmailMapping {
+    @Test
+    internal fun `will pass oath2 token to create email mapping endpoint`() = runTest {
+      mockServer.stubCreateEmailMapping()
+
+      apiService.createEmailMapping(
+        OrganisationsMappingDto(
+          mappingType = NOMIS_CREATED,
+          nomisId = 1234567,
+          dpsId = "7654321",
+        ),
+      )
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/corporate/email")).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will return success when OK response`() = runTest {
+      mockServer.stubCreateEmailMapping()
+
+      val result = apiService.createEmailMapping(
+        OrganisationsMappingDto(
+          mappingType = NOMIS_CREATED,
+          nomisId = 1234567,
+          dpsId = "7654321",
+        ),
+      )
+
+      assertThat(result.isError).isFalse()
+    }
+
+    @Test
+    fun `will return error when 409 conflict`() = runTest {
+      val nomisId = 1234567890L
+      val dpsId = "1234567890"
+      val existingDpsId = "1234567890"
+
+      mockServer.stubCreateEmailMapping(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            duplicate = OrganisationsMappingDto(
+              dpsId = dpsId,
+              nomisId = nomisId,
+              mappingType = NOMIS_CREATED,
+            ),
+            existing = OrganisationsMappingDto(
+              dpsId = existingDpsId,
+              nomisId = nomisId,
+              mappingType = NOMIS_CREATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      val result = apiService.createEmailMapping(
+        OrganisationsMappingDto(
+          mappingType = NOMIS_CREATED,
+          nomisId = nomisId,
+          dpsId = dpsId,
+        ),
+      )
+
+      assertThat(result.isError).isTrue()
+      assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
+      assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
+    }
+  }
+
+  @Nested
+  inner class GetByNomisEmailIdOrNull {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetByNomisEmailIdOrNull(nomisEmailId = 1234567)
+
+      apiService.getByNomisEmailIdOrNull(nomisEmailId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetByNomisEmailIdOrNull()
+
+      apiService.getByNomisEmailIdOrNull(nomisEmailId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/mapping/corporate/email/nomis-internet-address-id/1234567")),
+      )
+    }
+
+    @Test
+    fun `will return dpsId when mapping exists`() = runTest {
+      mockServer.stubGetByNomisEmailIdOrNull(
+        nomisEmailId = 1234567,
+        mapping = OrganisationsMappingDto(
+          dpsId = "1234567",
+          nomisId = 1234567,
+          mappingType = MappingType.MIGRATED,
+        ),
+      )
+
+      val mapping = apiService.getByNomisEmailIdOrNull(nomisEmailId = 1234567)
+
+      assertThat(mapping?.dpsId).isEqualTo("1234567")
+    }
+
+    @Test
+    fun `will return null if mapping does not exist`() = runTest {
+      mockServer.stubGetByNomisEmailIdOrNull(
+        nomisEmailId = 1234567,
+        mapping = null,
+      )
+
+      assertThat(apiService.getByNomisEmailIdOrNull(nomisEmailId = 1234567)).isNull()
+    }
+  }
+
+  @Nested
+  inner class GetByNomisEmailId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetByNomisEmailId(nomisEmailId = 1234567)
+
+      apiService.getByNomisEmailId(nomisEmailId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetByNomisEmailId(nomisEmailId = 1234567)
+
+      apiService.getByNomisEmailId(nomisEmailId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/mapping/corporate/email/nomis-internet-address-id/1234567")),
+      )
+    }
+  }
+
+  @Nested
+  inner class DeleteByNomisEmailId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubDeleteByNomisEmailId(nomisEmailId = 1234567)
+
+      apiService.deleteByNomisEmailId(nomisEmailId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to DELETE endpoint`() = runTest {
+      mockServer.stubDeleteByNomisEmailId(nomisEmailId = 1234567)
+
+      apiService.deleteByNomisEmailId(nomisEmailId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/mapping/corporate/email/nomis-internet-address-id/1234567")),
       )
     }
   }
