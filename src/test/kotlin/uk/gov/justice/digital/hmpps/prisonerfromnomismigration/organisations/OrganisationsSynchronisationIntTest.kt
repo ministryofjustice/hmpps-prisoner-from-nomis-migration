@@ -2996,6 +2996,146 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
     }
   }
+
+  @Nested
+  @DisplayName("INTERNET_ADDRESSES_CORPORATE-DELETED")
+  inner class CorporateInternetAddressDeleted {
+    private val corporateAndOrganisationId = 123456L
+    private val nomisInternetAddressId = 34567L
+
+    @Nested
+    inner class WhenMappingExistsForWebAddress {
+      private val dpsOrganisationWebAddressId = 76543L
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisWebIdOrNull(
+          nomisWebId = nomisInternetAddressId,
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationWebAddressId.toString(), nomisId = nomisInternetAddressId, mappingType = MIGRATED),
+        )
+        dpsApiMock.stubDeleteOrganisationWebAddress(organisationWebAddressId = dpsOrganisationWebAddressId)
+        mappingApiMock.stubDeleteByNomisWebId(nomisInternetAddressId)
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-DELETED",
+            corporateId = corporateAndOrganisationId,
+            internetAddressId = nomisInternetAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-web-address-synchronisation-deleted-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["dpsOrganisationWebAddressId"]).isEqualTo("$dpsOrganisationWebAddressId")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will delete the organisation web address from DPS`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/organisation-web-address/$dpsOrganisationWebAddressId")))
+      }
+
+      @Test
+      fun `will delete the web mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/corporate/web/nomis-internet-address-id/$nomisInternetAddressId")))
+      }
+    }
+
+    @Nested
+    inner class WhenMappingExistsForEmailAddress {
+      private val dpsOrganisationEmailId = 76543L
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmailIdOrNull(
+          nomisEmailId = nomisInternetAddressId,
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationEmailId.toString(), nomisId = nomisInternetAddressId, mappingType = MIGRATED),
+        )
+        dpsApiMock.stubDeleteOrganisationEmail(organisationEmailId = dpsOrganisationEmailId)
+        mappingApiMock.stubDeleteByNomisEmailId(nomisInternetAddressId)
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-DELETED",
+            corporateId = corporateAndOrganisationId,
+            internetAddressId = nomisInternetAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-email-synchronisation-deleted-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["dpsOrganisationEmailId"]).isEqualTo("$dpsOrganisationEmailId")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will delete the organisation web address from DPS`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/organisation-email/$dpsOrganisationEmailId")))
+      }
+
+      @Test
+      fun `will delete the web mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/corporate/email/nomis-internet-address-id/$nomisInternetAddressId")))
+      }
+    }
+
+    @Nested
+    inner class WhenMappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisWebIdOrNull(
+          nomisWebId = nomisInternetAddressId,
+          mapping = null,
+        )
+        mappingApiMock.stubGetByNomisEmailIdOrNull(
+          nomisEmailId = nomisInternetAddressId,
+          mapping = null,
+        )
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-DELETED",
+            corporateId = corporateAndOrganisationId,
+            internetAddressId = nomisInternetAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry for delete ignored`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-internet-address-synchronisation-deleted-ignored"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
 }
 
 fun corporateEvent(
