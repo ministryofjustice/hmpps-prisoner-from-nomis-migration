@@ -47,12 +47,14 @@ class CaseNotesSynchronisationService(
         return
       }
       if (nomisCaseNote.auditMissing()) {
-        val cn = caseNotesMappingService.getMappingGivenNomisIdOrNull(event.caseNoteId)
-        if (cn != null && cn.mappingType == DPS_CREATED) {
-          // Detected where the auditModuleName is null but the mapping exists, signifying that this CN was created from DPS
-          telemetryClient.trackEvent("casenotes-synchronisation-created-skipped-null", event.toTelemetryProperties())
-          return
-        }
+        caseNotesMappingService.getMappingGivenNomisIdOrNull(event.caseNoteId)
+          ?.apply {
+            if (mappingType == DPS_CREATED) {
+              // Detected where the auditModuleName is null but the mapping exists, signifying that this CN was created from DPS
+              telemetryClient.trackEvent("casenotes-synchronisation-created-skipped-null", event.toTelemetryProperties())
+              return
+            }
+          }
       }
 
       caseNotesService.upsertCaseNote(nomisCaseNote.toDPSSyncCaseNote(event.offenderIdDisplay!!)).apply {
