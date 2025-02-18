@@ -2659,6 +2659,343 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
     }
   }
+
+  @Nested
+  @DisplayName("INTERNET_ADDRESSES_CORPORATE-UPDATED")
+  inner class CorporateInternetAddressUpdated {
+    private val corporateAndOrganisationId = 123456L
+    private val nomisInternetAddressId = 34567L
+
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-UPDATED",
+            corporateId = corporateAndOrganisationId,
+            internetAddressId = nomisInternetAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not update either the web or email address in DPS`() {
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/organisation-web-address/.*")))
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/organisation-email/.*")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-internet-address-synchronisation-updated-skipped"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInNomisAndRemainsAWebAddress {
+      private val dpsOrganisationWebAddressId = 76543L
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisWebId(
+          nomisWebId = nomisInternetAddressId,
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationWebAddressId.toString(), nomisId = nomisInternetAddressId, mappingType = MIGRATED),
+        )
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporateId = corporateAndOrganisationId,
+          corporate = corporateOrganisation().withInternetAddress(
+            corporateWebAddress().copy(
+              id = nomisInternetAddressId,
+              internetAddress = "www.test.com",
+              audit = NomisAudit(
+                createUsername = "J.SPEAK",
+                createDatetime = "2024-09-01T13:31",
+                modifyUserId = "T.SMITH",
+                modifyDatetime = "2024-10-01T13:31",
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubUpdateOrganisationWebAddress(organisationWebAddressId = dpsOrganisationWebAddressId)
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-UPDATED",
+            corporateId = corporateAndOrganisationId,
+            internetAddressId = nomisInternetAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-web-address-synchronisation-updated-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["dpsOrganisationWebAddressId"]).isEqualTo("$dpsOrganisationWebAddressId")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will update the web address in DPS from the NOMIS address`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-web-address/$dpsOrganisationWebAddressId")))
+        val request: SyncUpdateOrganisationWebAddressRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-web-address/$dpsOrganisationWebAddressId")))
+        with(request) {
+          assertThat(webAddress).isEqualTo("www.test.com")
+          assertThat(updatedBy).isEqualTo("T.SMITH")
+          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+        }
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInNomisAndRemainsAEmailAddress {
+      private val dpsOrganisationEmailId = 76543L
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmailId(
+          nomisEmailId = nomisInternetAddressId,
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationEmailId.toString(), nomisId = nomisInternetAddressId, mappingType = MIGRATED),
+        )
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporateId = corporateAndOrganisationId,
+          corporate = corporateOrganisation().withInternetAddress(
+            corporateEmail().copy(
+              id = nomisInternetAddressId,
+              internetAddress = "jane@test.com",
+              audit = NomisAudit(
+                createUsername = "J.SPEAK",
+                createDatetime = "2024-09-01T13:31",
+                modifyUserId = "T.SMITH",
+                modifyDatetime = "2024-10-01T13:31",
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubUpdateOrganisationEmail(organisationEmailId = dpsOrganisationEmailId)
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-UPDATED",
+            corporateId = corporateAndOrganisationId,
+            internetAddressId = nomisInternetAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-email-synchronisation-updated-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["dpsOrganisationEmailId"]).isEqualTo("$dpsOrganisationEmailId")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will update the email address in DPS from the NOMIS email`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-email/$dpsOrganisationEmailId")))
+        val request: SyncUpdateOrganisationEmailRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-email/$dpsOrganisationEmailId")))
+        with(request) {
+          assertThat(emailAddress).isEqualTo("jane@test.com")
+          assertThat(updatedBy).isEqualTo("T.SMITH")
+          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+        }
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInNomisAndSwitchesToEmailAddress {
+      private val dpsOrganisationWebAddressId = 76543L
+      private val dpsOrganisationEmailId = 888643L
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisWebId(
+          nomisWebId = nomisInternetAddressId,
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationWebAddressId.toString(), nomisId = nomisInternetAddressId, mappingType = MIGRATED),
+        )
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporateId = corporateAndOrganisationId,
+          corporate = corporateOrganisation().withInternetAddress(
+            corporateEmail().copy(
+              id = nomisInternetAddressId,
+              internetAddress = "jane@test.com",
+              audit = NomisAudit(
+                createUsername = "J.SPEAK",
+                createDatetime = "2024-09-01T13:31",
+                modifyUserId = "T.SMITH",
+                modifyDatetime = "2024-10-01T13:31",
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubDeleteOrganisationWebAddress(organisationWebAddressId = dpsOrganisationWebAddressId)
+        dpsApiMock.stubCreateOrganisationEmail(syncCreateOrganisationEmailResponse().copy(organisationEmailId = dpsOrganisationEmailId))
+        mappingApiMock.stubDeleteByNomisWebId(nomisWebId = nomisInternetAddressId)
+        mappingApiMock.stubCreateEmailMapping()
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-UPDATED",
+            corporateId = corporateAndOrganisationId,
+            internetAddressId = nomisInternetAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-web-address-synchronisation-updated-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["dpsOrganisationWebAddressId"]).isEqualTo("$dpsOrganisationWebAddressId")
+            assertThat(it["dpsOrganisationEmailId"]).isEqualTo("$dpsOrganisationEmailId")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will delete the web address in DPS since it is now an email address`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/organisation-web-address/$dpsOrganisationWebAddressId")))
+      }
+
+      @Test
+      fun `will delete the web mapping since it is now an email address`() {
+        mappingApiMock.verify(deleteRequestedFor(urlPathEqualTo("/mapping/corporate/web/nomis-internet-address-id/$nomisInternetAddressId")))
+      }
+
+      @Test
+      fun `will create the email address in DPS from the NOMIS email`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-email")))
+        val request: SyncCreateOrganisationEmailRequest = OrganisationsDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/organisation-email")))
+        with(request) {
+          assertThat(emailAddress).isEqualTo("jane@test.com")
+          assertThat(createdBy).isEqualTo("T.SMITH")
+          assertThat(createdTime).isEqualTo("2024-10-01T13:31")
+        }
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/email"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", "$dpsOrganisationEmailId")
+            .withRequestBodyJsonPath("nomisId", "$nomisInternetAddressId"),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInNomisAndSwitchesToWebAddress {
+      private val dpsOrganisationWebAddressId = 76543L
+      private val dpsOrganisationEmailId = 888643L
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmailId(
+          nomisEmailId = nomisInternetAddressId,
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationEmailId.toString(), nomisId = nomisInternetAddressId, mappingType = MIGRATED),
+        )
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporateId = corporateAndOrganisationId,
+          corporate = corporateOrganisation().withInternetAddress(
+            corporateWebAddress().copy(
+              id = nomisInternetAddressId,
+              internetAddress = "www.test.com",
+              audit = NomisAudit(
+                createUsername = "J.SPEAK",
+                createDatetime = "2024-09-01T13:31",
+                modifyUserId = "T.SMITH",
+                modifyDatetime = "2024-10-01T13:31",
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubDeleteOrganisationEmail(organisationEmailId = dpsOrganisationEmailId)
+        dpsApiMock.stubCreateOrganisationWebAddress(syncCreateOrganisationWebAddressResponse().copy(organisationWebAddressId = dpsOrganisationWebAddressId))
+        mappingApiMock.stubDeleteByNomisEmailId(nomisEmailId = nomisInternetAddressId)
+        mappingApiMock.stubCreateWebMapping()
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-UPDATED",
+            corporateId = corporateAndOrganisationId,
+            internetAddressId = nomisInternetAddressId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-email-synchronisation-updated-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["dpsOrganisationWebAddressId"]).isEqualTo("$dpsOrganisationWebAddressId")
+            assertThat(it["dpsOrganisationEmailId"]).isEqualTo("$dpsOrganisationEmailId")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will delete the email address in DPS since it is now a web address`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/organisation-email/$dpsOrganisationEmailId")))
+      }
+
+      @Test
+      fun `will delete the email mapping since it is now a web address`() {
+        mappingApiMock.verify(deleteRequestedFor(urlPathEqualTo("/mapping/corporate/email/nomis-internet-address-id/$nomisInternetAddressId")))
+      }
+
+      @Test
+      fun `will create the web address in DPS from the NOMIS address`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")))
+        val request: SyncCreateOrganisationWebAddressRequest = OrganisationsDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")))
+        with(request) {
+          assertThat(webAddress).isEqualTo("www.test.com")
+          assertThat(createdBy).isEqualTo("T.SMITH")
+          assertThat(createdTime).isEqualTo("2024-10-01T13:31")
+        }
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/web"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", "$dpsOrganisationWebAddressId")
+            .withRequestBodyJsonPath("nomisId", "$nomisInternetAddressId"),
+        )
+      }
+    }
+  }
 }
 
 fun corporateEvent(
