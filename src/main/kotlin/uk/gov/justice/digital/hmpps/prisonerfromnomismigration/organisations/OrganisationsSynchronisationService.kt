@@ -389,6 +389,77 @@ class OrganisationsSynchronisationService(
     }
   }
   suspend fun corporateInternetAddressUpdated(event: CorporateInternetAddressEvent) {
+    val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisInternetAddressId" to event.internetAddressId)
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "organisations-internet-address-synchronisation-updated-skipped",
+        telemetry,
+      )
+    } else {
+      val nomisCorporate = nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId)
+      val nomisInternetAddress = nomisCorporate.internetAddresses.find { it.id == event.internetAddressId }!!
+      mappingApiService.getByNomisWebIdOrNull(nomisWebId = event.internetAddressId)?.also { mapping ->
+        telemetry["dpsOrganisationWebAddressId"] = mapping.dpsId
+        track("organisations-web-address-synchronisation-updated", telemetry) {
+          // check if type has changed
+          if (nomisInternetAddress.type == "EMAIL") {
+            // remove web address mapping and DPS address
+            mappingApiService.deleteByNomisWebId(nomisInternetAddress.id)
+            dpsApiService.deleteOrganisationWebAddress(mapping.dpsId.toLong())
+
+            // recreate as an email
+            val dpsOrganisationEmail =
+              dpsApiService.createOrganisationEmail(nomisInternetAddress.toDpsCreateOrganisationEmailRequestForUpdateSwitch(event.corporateId))
+                .also { dpsOrganisationEmail ->
+                  telemetry["dpsOrganisationEmailId"] = dpsOrganisationEmail.organisationEmailId
+                }
+            emailAddressMappingCreator.tryToCreateMapping(
+              OrganisationsMappingDto(
+                nomisId = event.internetAddressId,
+                dpsId = "${dpsOrganisationEmail.organisationEmailId}",
+                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+              ),
+              telemetry,
+            )
+          } else {
+            dpsApiService.updateOrganisationWebAddress(
+              mapping.dpsId.toLong(),
+              nomisInternetAddress.toDpsUpdateOrganisationWebAddressRequest(),
+            )
+          }
+        }
+      }
+      mappingApiService.getByNomisEmailIdOrNull(nomisEmailId = event.internetAddressId)?.also { mapping ->
+        telemetry["dpsOrganisationEmailId"] = mapping.dpsId
+        track("organisations-email-synchronisation-updated", telemetry) {
+          // check if type has changed
+          if (nomisInternetAddress.type == "WEB") {
+            // remove email address mapping and DPS address
+            mappingApiService.deleteByNomisEmailId(nomisInternetAddress.id)
+            dpsApiService.deleteOrganisationEmail(mapping.dpsId.toLong())
+
+            val dpsOrganisationWebAddress = dpsApiService.createOrganisationWebAddress(
+              nomisInternetAddress.toDpsCreateOrganisationWebAddressRequestForUpdateSwitch(event.corporateId),
+            ).also { dpsOrganisationWebAddress ->
+              telemetry["dpsOrganisationWebAddressId"] = dpsOrganisationWebAddress.organisationWebAddressId
+            }
+            webAddressMappingCreator.tryToCreateMapping(
+              OrganisationsMappingDto(
+                nomisId = event.internetAddressId,
+                dpsId = "${dpsOrganisationWebAddress.organisationWebAddressId}",
+                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+              ),
+              telemetry,
+            )
+          } else {
+            dpsApiService.updateOrganisationEmail(
+              mapping.dpsId.toLong(),
+              nomisInternetAddress.toDpsUpdateOrganisationEmailRequest(),
+            )
+          }
+        }
+      }
+    }
   }
   suspend fun corporateInternetAddressDeleted(event: CorporateInternetAddressEvent) {
   }
@@ -562,7 +633,7 @@ fun CorporateInternetAddress.toDpsCreateOrganisationWebAddressRequest(dpsOrganis
   createdBy = this.audit.createUsername,
   createdTime = this.audit.createDatetime.toDateTime(),
 )
-fun CorporateInternetAddress.toDpsUpdateOrganisationWebAddressRequest(dpsOrganisationId: Long) = SyncUpdateOrganisationWebAddressRequest(
+fun CorporateInternetAddress.toDpsUpdateOrganisationWebAddressRequest() = SyncUpdateOrganisationWebAddressRequest(
   webAddress = this.internetAddress,
   updatedBy = this.audit.modifyUserId!!,
   updatedTime = this.audit.modifyDatetime!!.toDateTime(),
@@ -573,7 +644,19 @@ fun CorporateInternetAddress.toDpsCreateOrganisationEmailRequest(dpsOrganisation
   createdBy = this.audit.createUsername,
   createdTime = this.audit.createDatetime.toDateTime(),
 )
-fun CorporateInternetAddress.toDpsUpdateOrganisationEmailRequest(dpsOrganisationId: Long) = SyncUpdateOrganisationEmailRequest(
+fun CorporateInternetAddress.toDpsCreateOrganisationEmailRequestForUpdateSwitch(dpsOrganisationId: Long) = SyncCreateOrganisationEmailRequest(
+  emailAddress = this.internetAddress,
+  organisationId = dpsOrganisationId,
+  createdBy = this.audit.modifyUserId!!,
+  createdTime = this.audit.modifyDatetime!!.toDateTime(),
+)
+fun CorporateInternetAddress.toDpsCreateOrganisationWebAddressRequestForUpdateSwitch(dpsOrganisationId: Long) = SyncCreateOrganisationWebAddressRequest(
+  webAddress = this.internetAddress,
+  organisationId = dpsOrganisationId,
+  createdBy = this.audit.modifyUserId!!,
+  createdTime = this.audit.modifyDatetime!!.toDateTime(),
+)
+fun CorporateInternetAddress.toDpsUpdateOrganisationEmailRequest() = SyncUpdateOrganisationEmailRequest(
   emailAddress = this.internetAddress,
   updatedBy = this.audit.modifyUserId!!,
   updatedTime = this.audit.modifyDatetime!!.toDateTime(),
