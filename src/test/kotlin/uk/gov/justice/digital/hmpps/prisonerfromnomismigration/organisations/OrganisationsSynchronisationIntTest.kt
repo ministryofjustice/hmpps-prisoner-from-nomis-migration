@@ -29,8 +29,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.N
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.dpsOrganisationsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationAddressPhoneResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationAddressResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationEmailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationPhoneResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationWebAddressResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
@@ -2047,6 +2049,610 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
             assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("INTERNET_ADDRESSES_CORPORATE-INSERTED (web address)")
+  inner class CorporateInternetAddressWebInserted {
+    private val corporateAndOrganisationId = 123456L
+    private val nomisInternetAddressId = 34567L
+    private val dpsOrganisationWebAddressId = 76543L
+
+    @Nested
+    inner class WhenCreatedInDps {
+      @BeforeEach
+      fun setUp() {
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-INSERTED",
+            corporateId = corporateAndOrganisationId,
+            internetAddressId = nomisInternetAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create address in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-internet-address-synchronisation-created-skipped"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenCreatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisWebIdOrNull(nomisWebId = nomisInternetAddressId, mapping = null)
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation().withInternetAddress(
+            corporateWebAddress().copy(
+              id = nomisInternetAddressId,
+              internetAddress = "www.test.com",
+              audit = NomisAudit(
+                createUsername = "J.SPEAK",
+                createDatetime = "2024-09-01T13:31",
+                modifyUserId = "T.SMITH",
+                modifyDatetime = "2024-10-01T13:31",
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubCreateOrganisationWebAddress(syncCreateOrganisationWebAddressResponse().copy(organisationWebAddressId = dpsOrganisationWebAddressId))
+        mappingApiMock.stubCreateWebMapping()
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-INSERTED",
+            internetAddressId = nomisInternetAddressId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will check if mapping already exists for web address`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/corporate/web/nomis-internet-address-id/$nomisInternetAddressId")))
+      }
+
+      @Test
+      fun `will retrieve the organisation details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/corporates/$corporateAndOrganisationId")))
+      }
+
+      @Test
+      fun `will create the organisation web address in DPS from the organisation`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")))
+        val request: SyncCreateOrganisationWebAddressRequest = OrganisationsDpsApiExtension.getRequestBody(
+          postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")),
+        )
+        with(request) {
+          assertThat(organisationId).isEqualTo(corporateAndOrganisationId)
+          assertThat(webAddress).isEqualTo("www.test.com")
+          assertThat(createdBy).isEqualTo("J.SPEAK")
+          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+        }
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/web"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", "$dpsOrganisationWebAddressId")
+            .withRequestBodyJsonPath("nomisId", "$nomisInternetAddressId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-web-address-synchronisation-created-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["dpsOrganisationWebAddressId"]).isEqualTo("$dpsOrganisationWebAddressId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation().withInternetAddress(
+            corporateWebAddress().copy(
+              id = nomisInternetAddressId,
+            ),
+          ),
+        )
+
+        mappingApiMock.stubGetByNomisWebIdOrNull(nomisWebId = nomisInternetAddressId, mapping = OrganisationsMappingDto(dpsId = "$dpsOrganisationWebAddressId", nomisId = nomisInternetAddressId, mappingType = NOMIS_CREATED))
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-INSERTED",
+            internetAddressId = nomisInternetAddressId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create organisation in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-web-address-synchronisation-created-ignored"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["dpsOrganisationWebAddressId"]).isEqualTo("$dpsOrganisationWebAddressId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenDuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation().withInternetAddress(
+            corporateWebAddress().copy(
+              id = nomisInternetAddressId,
+            ),
+          ),
+        )
+
+        mappingApiMock.stubGetByNomisWebIdOrNull(nomisWebId = nomisInternetAddressId, mapping = null)
+
+        dpsApiMock.stubCreateOrganisationWebAddress(syncCreateOrganisationWebAddressResponse().copy(organisationWebAddressId = dpsOrganisationWebAddressId))
+        mappingApiMock.stubCreateWebMapping(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = OrganisationsMappingDto(
+                dpsId = "$dpsOrganisationWebAddressId",
+                nomisId = nomisInternetAddressId,
+                mappingType = NOMIS_CREATED,
+              ),
+              existing = OrganisationsMappingDto(
+                dpsId = "9999",
+                nomisId = nomisInternetAddressId,
+                mappingType = NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-INSERTED",
+            internetAddressId = nomisInternetAddressId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete("from-nomis-sync-organisations-duplicate") }
+      }
+
+      @Test
+      fun `will create the organisation web address in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")))
+      }
+
+      @Test
+      fun `will attempt to create a mapping between the DPS and NOMIS record once`() {
+        mappingApiMock.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/web"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", "$dpsOrganisationWebAddressId")
+            .withRequestBodyJsonPath("nomisId", "$nomisInternetAddressId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for both overall success and duplicate`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-web-address-synchronisation-created-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-sync-organisations-duplicate"),
+          org.mockito.kotlin.check {
+            assertThat(it["existingNomisId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["existingDpsId"]).isEqualTo("9999")
+            assertThat(it["duplicateNomisId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["duplicateDpsId"]).isEqualTo("$dpsOrganisationWebAddressId")
+            assertThat(it["type"]).isEqualTo("WEB")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class MappingCreateFails {
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation().withInternetAddress(
+            corporateWebAddress().copy(
+              id = nomisInternetAddressId,
+            ),
+          ),
+        )
+
+        mappingApiMock.stubGetByNomisWebIdOrNull(nomisWebId = nomisInternetAddressId, mapping = null)
+
+        dpsApiMock.stubCreateOrganisationWebAddress(syncCreateOrganisationWebAddressResponse().copy(organisationWebAddressId = dpsOrganisationWebAddressId))
+        mappingApiMock.stubCreateWebMappingFailureFollowedBySuccess()
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-INSERTED",
+            internetAddressId = nomisInternetAddressId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete("organisations-web-mapping-synchronisation-created") }
+      }
+
+      @Test
+      fun `will create the organisation in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")))
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/web"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", "$dpsOrganisationWebAddressId")
+            .withRequestBodyJsonPath("nomisId", "$nomisInternetAddressId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-web-address-synchronisation-created-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["dpsOrganisationWebAddressId"]).isEqualTo("$dpsOrganisationWebAddressId")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("INTERNET_ADDRESSES_CORPORATE-INSERTED (email address)")
+  inner class CorporateInternetAddressEmailInserted {
+    private val corporateAndOrganisationId = 123456L
+    private val nomisInternetAddressId = 34567L
+    private val dpsOrganisationEmailId = 76543L
+
+    @Nested
+    inner class WhenCreatedInDps {
+      @BeforeEach
+      fun setUp() {
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-INSERTED",
+            corporateId = corporateAndOrganisationId,
+            internetAddressId = nomisInternetAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create address in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/organisation-email")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-internet-address-synchronisation-created-skipped"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenCreatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmailIdOrNull(nomisEmailId = nomisInternetAddressId, mapping = null)
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation().withInternetAddress(
+            corporateEmail().copy(
+              id = nomisInternetAddressId,
+              internetAddress = "jane@test.com",
+              audit = NomisAudit(
+                createUsername = "J.SPEAK",
+                createDatetime = "2024-09-01T13:31",
+                modifyUserId = "T.SMITH",
+                modifyDatetime = "2024-10-01T13:31",
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubCreateOrganisationEmail(syncCreateOrganisationEmailResponse().copy(organisationEmailId = dpsOrganisationEmailId))
+        mappingApiMock.stubCreateEmailMapping()
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-INSERTED",
+            internetAddressId = nomisInternetAddressId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will check if mapping already exists for email address`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/corporate/email/nomis-internet-address-id/$nomisInternetAddressId")))
+      }
+
+      @Test
+      fun `will retrieve the organisation details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/corporates/$corporateAndOrganisationId")))
+      }
+
+      @Test
+      fun `will create the organisation email address in DPS from the organisation`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-email")))
+        val request: SyncCreateOrganisationEmailRequest = OrganisationsDpsApiExtension.getRequestBody(
+          postRequestedFor(urlPathEqualTo("/sync/organisation-email")),
+        )
+        with(request) {
+          assertThat(organisationId).isEqualTo(corporateAndOrganisationId)
+          assertThat(emailAddress).isEqualTo("jane@test.com")
+          assertThat(createdBy).isEqualTo("J.SPEAK")
+          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+        }
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/email"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", "$dpsOrganisationEmailId")
+            .withRequestBodyJsonPath("nomisId", "$nomisInternetAddressId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-email-synchronisation-created-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["dpsOrganisationEmailId"]).isEqualTo("$dpsOrganisationEmailId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation().withInternetAddress(
+            corporateEmail().copy(
+              id = nomisInternetAddressId,
+            ),
+          ),
+        )
+
+        mappingApiMock.stubGetByNomisEmailIdOrNull(nomisEmailId = nomisInternetAddressId, mapping = OrganisationsMappingDto(dpsId = "$dpsOrganisationEmailId", nomisId = nomisInternetAddressId, mappingType = NOMIS_CREATED))
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-INSERTED",
+            internetAddressId = nomisInternetAddressId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create organisation in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/organisation-email")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-email-synchronisation-created-ignored"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["dpsOrganisationEmailId"]).isEqualTo("$dpsOrganisationEmailId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenDuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation().withInternetAddress(
+            corporateEmail().copy(
+              id = nomisInternetAddressId,
+            ),
+          ),
+        )
+
+        mappingApiMock.stubGetByNomisEmailIdOrNull(nomisEmailId = nomisInternetAddressId, mapping = null)
+
+        dpsApiMock.stubCreateOrganisationEmail(syncCreateOrganisationEmailResponse().copy(organisationEmailId = dpsOrganisationEmailId))
+        mappingApiMock.stubCreateEmailMapping(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = OrganisationsMappingDto(
+                dpsId = "$dpsOrganisationEmailId",
+                nomisId = nomisInternetAddressId,
+                mappingType = NOMIS_CREATED,
+              ),
+              existing = OrganisationsMappingDto(
+                dpsId = "9999",
+                nomisId = nomisInternetAddressId,
+                mappingType = NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-INSERTED",
+            internetAddressId = nomisInternetAddressId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete("from-nomis-sync-organisations-duplicate") }
+      }
+
+      @Test
+      fun `will create the organisation email address in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/organisation-email")))
+      }
+
+      @Test
+      fun `will attempt to create a mapping between the DPS and NOMIS record once`() {
+        mappingApiMock.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/email"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", "$dpsOrganisationEmailId")
+            .withRequestBodyJsonPath("nomisId", "$nomisInternetAddressId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for both overall success and duplicate`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-email-synchronisation-created-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-sync-organisations-duplicate"),
+          org.mockito.kotlin.check {
+            assertThat(it["existingNomisId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["existingDpsId"]).isEqualTo("9999")
+            assertThat(it["duplicateNomisId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["duplicateDpsId"]).isEqualTo("$dpsOrganisationEmailId")
+            assertThat(it["type"]).isEqualTo("EMAIL")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class MappingCreateFails {
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation().withInternetAddress(
+            corporateEmail().copy(
+              id = nomisInternetAddressId,
+            ),
+          ),
+        )
+
+        mappingApiMock.stubGetByNomisEmailIdOrNull(nomisEmailId = nomisInternetAddressId, mapping = null)
+
+        dpsApiMock.stubCreateOrganisationEmail(syncCreateOrganisationEmailResponse().copy(organisationEmailId = dpsOrganisationEmailId))
+        mappingApiMock.stubCreateEmailMappingFailureFollowedBySuccess()
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-INSERTED",
+            internetAddressId = nomisInternetAddressId,
+            corporateId = corporateAndOrganisationId,
+          ),
+        ).also { waitForAnyProcessingToComplete("organisations-email-mapping-synchronisation-created") }
+      }
+
+      @Test
+      fun `will create the organisation in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/organisation-email")))
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/corporate/email"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", "$dpsOrganisationEmailId")
+            .withRequestBodyJsonPath("nomisId", "$nomisInternetAddressId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-email-synchronisation-created-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+            assertThat(it["dpsOrganisationEmailId"]).isEqualTo("$dpsOrganisationEmailId")
           },
           isNull(),
         )

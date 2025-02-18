@@ -12,8 +12,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMess
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_PHONE_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_EMAIL_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_ORGANISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_PHONE_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsSynchronisationMessageType.RETRY_SYNCHRONISATION_WEB_MAPPING
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -78,6 +80,8 @@ class OrganisationsEventListener(
       RETRY_SYNCHRONISATION_ADDRESS_MAPPING -> synchronisationService.retryCreateAddressMapping(message.fromJson())
       RETRY_SYNCHRONISATION_PHONE_MAPPING -> synchronisationService.retryCreatePhoneMapping(message.fromJson())
       RETRY_SYNCHRONISATION_ADDRESS_PHONE_MAPPING -> synchronisationService.retryCreateAddressPhoneMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_WEB_MAPPING -> synchronisationService.retryCreateWebMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_EMAIL_MAPPING -> synchronisationService.retryCreateEmailMapping(message.fromJson())
     }
   }
 }
@@ -118,4 +122,6 @@ enum class OrganisationsSynchronisationMessageType {
   RETRY_SYNCHRONISATION_ADDRESS_MAPPING,
   RETRY_SYNCHRONISATION_PHONE_MAPPING,
   RETRY_SYNCHRONISATION_ADDRESS_PHONE_MAPPING,
+  RETRY_SYNCHRONISATION_WEB_MAPPING,
+  RETRY_SYNCHRONISATION_EMAIL_MAPPING,
 }
