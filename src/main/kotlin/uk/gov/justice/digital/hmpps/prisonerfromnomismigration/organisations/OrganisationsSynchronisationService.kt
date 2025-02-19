@@ -399,97 +399,142 @@ class OrganisationsSynchronisationService(
     } else {
       val nomisCorporate = nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId)
       val nomisInternetAddress = nomisCorporate.internetAddresses.find { it.id == event.internetAddressId }!!
-      mappingApiService.getByNomisWebIdOrNull(nomisWebId = event.internetAddressId)?.also { mapping ->
-        telemetry["dpsOrganisationWebAddressId"] = mapping.dpsId
-        track("organisations-web-address-synchronisation-updated", telemetry) {
-          // check if type has changed
-          if (nomisInternetAddress.type == "EMAIL") {
-            // remove web address mapping and DPS address
-            mappingApiService.deleteByNomisWebId(nomisInternetAddress.id)
-            dpsApiService.deleteOrganisationWebAddress(mapping.dpsId.toLong())
-
-            // recreate as an email
-            val dpsOrganisationEmail =
-              dpsApiService.createOrganisationEmail(nomisInternetAddress.toDpsCreateOrganisationEmailRequestForUpdateSwitch(event.corporateId))
-                .also { dpsOrganisationEmail ->
-                  telemetry["dpsOrganisationEmailId"] = dpsOrganisationEmail.organisationEmailId
-                }
-            emailAddressMappingCreator.tryToCreateMapping(
-              OrganisationsMappingDto(
-                nomisId = event.internetAddressId,
-                dpsId = "${dpsOrganisationEmail.organisationEmailId}",
-                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
-              ),
-              telemetry,
-            )
-          } else {
-            dpsApiService.updateOrganisationWebAddress(
-              mapping.dpsId.toLong(),
-              nomisInternetAddress.toDpsUpdateOrganisationWebAddressRequest(),
-            )
-          }
-        }
-      } ?: run {
-        mappingApiService.getByNomisEmailIdOrNull(nomisEmailId = event.internetAddressId)?.also { mapping ->
-          telemetry["dpsOrganisationEmailId"] = mapping.dpsId
-          track("organisations-email-synchronisation-updated", telemetry) {
-            // check if type has changed
-            if (nomisInternetAddress.type == "WEB") {
-              // remove email address mapping and DPS address
-              mappingApiService.deleteByNomisEmailId(nomisInternetAddress.id)
-              dpsApiService.deleteOrganisationEmail(mapping.dpsId.toLong())
-
-              val dpsOrganisationWebAddress = dpsApiService.createOrganisationWebAddress(
-                nomisInternetAddress.toDpsCreateOrganisationWebAddressRequestForUpdateSwitch(event.corporateId),
-              ).also { dpsOrganisationWebAddress ->
-                telemetry["dpsOrganisationWebAddressId"] = dpsOrganisationWebAddress.organisationWebAddressId
-              }
-              webAddressMappingCreator.tryToCreateMapping(
-                OrganisationsMappingDto(
-                  nomisId = event.internetAddressId,
-                  dpsId = "${dpsOrganisationWebAddress.organisationWebAddressId}",
-                  mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
-                ),
-                telemetry,
-              )
-            } else {
-              dpsApiService.updateOrganisationEmail(
-                mapping.dpsId.toLong(),
-                nomisInternetAddress.toDpsUpdateOrganisationEmailRequest(),
-              )
-            }
-          }
-        }
-      } ?: run {
-        telemetryClient.trackEvent(
-          "organisations-internet-address-synchronisation-updated-error",
-          telemetry,
+      val internetAddressMapping = getInternetAddressMapping(event.internetAddressId)
+      when (internetAddressMapping) {
+        is InternetAddressMapping.EmailAddressMapping -> corporateEmailAddressUpdated(
+          nomisInternetAddress = nomisInternetAddress,
+          dpsOrganisationId = event.corporateId,
+          dpsOrganisationEmailId = internetAddressMapping.dpsId,
+          telemetry = telemetry,
         )
-        throw IllegalStateException("Unable to find mapping for ${event.internetAddressId} - assuming we have not received create event yet")
+        is InternetAddressMapping.WebAddressMapping -> corporateWebAddressUpdated(
+          nomisInternetAddress = nomisInternetAddress,
+          dpsOrganisationId = event.corporateId,
+          dpsOrganisationWebAddressId = internetAddressMapping.dpsId,
+          telemetry = telemetry,
+        )
+        null -> {
+          telemetryClient.trackEvent("organisations-internet-address-synchronisation-updated-error", telemetry)
+          throw IllegalStateException("Unable to find mapping for ${event.internetAddressId} - assuming we have not received create event yet")
+        }
       }
     }
   }
-  suspend fun corporateInternetAddressDeleted(event: CorporateInternetAddressEvent) {
-    val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisInternetAddressId" to event.internetAddressId)
-    mappingApiService.getByNomisWebIdOrNull(nomisWebId = event.internetAddressId)?.also {
-      track("organisations-web-address-synchronisation-deleted", telemetry) {
-        telemetry["dpsOrganisationWebAddressId"] = it.dpsId
-        dpsApiService.deleteOrganisationWebAddress(it.dpsId.toLong())
-        mappingApiService.deleteByNomisWebId(event.internetAddressId)
-      }
-    } ?: run {
-      mappingApiService.getByNomisEmailIdOrNull(nomisEmailId = event.internetAddressId)?.also {
-        track("organisations-email-synchronisation-deleted", telemetry) {
-          telemetry["dpsOrganisationEmailId"] = it.dpsId
-          dpsApiService.deleteOrganisationEmail(it.dpsId.toLong())
-          mappingApiService.deleteByNomisEmailId(event.internetAddressId)
-        }
-      } ?: run {
-        telemetryClient.trackEvent(
-          "organisations-internet-address-synchronisation-deleted-ignored",
-          telemetry,
+
+  private suspend fun corporateEmailAddressUpdated(
+    nomisInternetAddress: CorporateInternetAddress,
+    dpsOrganisationId: Long,
+    dpsOrganisationEmailId: Long,
+    telemetry: MutableMap<String, Any>,
+  ) {
+    telemetry["dpsOrganisationEmailId"] = dpsOrganisationEmailId
+    track("organisations-email-synchronisation-updated", telemetry) {
+      // check if type has changed
+      if (nomisInternetAddress.isWebAddress()) {
+        convertEmailToWebAddress(nomisInternetAddress, dpsOrganisationId, dpsOrganisationEmailId, telemetry)
+      } else {
+        dpsApiService.updateOrganisationEmail(
+          dpsOrganisationEmailId,
+          nomisInternetAddress.toDpsUpdateOrganisationEmailRequest(),
         )
       }
+    }
+  }
+
+  private suspend fun convertEmailToWebAddress(
+    nomisInternetAddress: CorporateInternetAddress,
+    dpsOrganisationId: Long,
+    dpsOrganisationEmailId: Long,
+    telemetry: MutableMap<String, Any>,
+  ) {
+    // remove email address mapping and DPS address
+    mappingApiService.deleteByNomisEmailId(nomisInternetAddress.id)
+    dpsApiService.deleteOrganisationEmail(dpsOrganisationEmailId)
+
+    // recreate as an web address
+    val dpsOrganisationWebAddress = dpsApiService.createOrganisationWebAddress(
+      nomisInternetAddress.toDpsCreateOrganisationWebAddressRequestForUpdateSwitch(dpsOrganisationId),
+    ).also { dpsOrganisationWebAddress ->
+      telemetry["dpsOrganisationWebAddressId"] = dpsOrganisationWebAddress.organisationWebAddressId
+    }
+    webAddressMappingCreator.tryToCreateMapping(
+      OrganisationsMappingDto(
+        nomisId = nomisInternetAddress.id,
+        dpsId = "${dpsOrganisationWebAddress.organisationWebAddressId}",
+        mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+      ),
+      telemetry,
+    )
+  }
+
+  private suspend fun corporateWebAddressUpdated(
+    nomisInternetAddress: CorporateInternetAddress,
+    dpsOrganisationId: Long,
+    dpsOrganisationWebAddressId: Long,
+    telemetry: MutableMap<String, Any>,
+  ) {
+    telemetry["dpsOrganisationWebAddressId"] = dpsOrganisationWebAddressId
+    track("organisations-web-address-synchronisation-updated", telemetry) {
+      // check if type has changed
+      if (nomisInternetAddress.isEmailAddress()) {
+        convertWebAddressToEmail(
+          nomisInternetAddress = nomisInternetAddress,
+          dpsOrganisationId = dpsOrganisationId,
+          dpsOrganisationWebAddressId = dpsOrganisationWebAddressId,
+          telemetry = telemetry,
+        )
+      } else {
+        dpsApiService.updateOrganisationWebAddress(
+          dpsOrganisationWebAddressId,
+          nomisInternetAddress.toDpsUpdateOrganisationWebAddressRequest(),
+        )
+      }
+    }
+  }
+
+  private suspend fun convertWebAddressToEmail(
+    nomisInternetAddress: CorporateInternetAddress,
+    dpsOrganisationId: Long,
+    dpsOrganisationWebAddressId: Long,
+    telemetry: MutableMap<String, Any>,
+  ) {
+    // remove web address mapping and DPS address
+    mappingApiService.deleteByNomisWebId(nomisInternetAddress.id)
+    dpsApiService.deleteOrganisationWebAddress(dpsOrganisationWebAddressId)
+
+    // recreate as an email
+    val dpsOrganisationEmail =
+      dpsApiService.createOrganisationEmail(
+        nomisInternetAddress.toDpsCreateOrganisationEmailRequestForUpdateSwitch(dpsOrganisationId),
+      )
+        .also { dpsOrganisationEmail ->
+          telemetry["dpsOrganisationEmailId"] = dpsOrganisationEmail.organisationEmailId
+        }
+    emailAddressMappingCreator.tryToCreateMapping(
+      OrganisationsMappingDto(
+        nomisId = nomisInternetAddress.id,
+        dpsId = "${dpsOrganisationEmail.organisationEmailId}",
+        mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+      ),
+      telemetry,
+    )
+  }
+
+  suspend fun corporateInternetAddressDeleted(event: CorporateInternetAddressEvent) {
+    val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisInternetAddressId" to event.internetAddressId)
+    val internetAddressMapping = getInternetAddressMapping(event.internetAddressId)
+    when (internetAddressMapping) {
+      is InternetAddressMapping.EmailAddressMapping -> track("organisations-email-synchronisation-deleted", telemetry) {
+        telemetry["dpsOrganisationEmailId"] = internetAddressMapping.dpsId
+        dpsApiService.deleteOrganisationEmail(internetAddressMapping.dpsId)
+        mappingApiService.deleteByNomisEmailId(event.internetAddressId)
+      }
+      is InternetAddressMapping.WebAddressMapping -> track("organisations-web-address-synchronisation-deleted", telemetry) {
+        telemetry["dpsOrganisationWebAddressId"] = internetAddressMapping.dpsId
+        dpsApiService.deleteOrganisationWebAddress(internetAddressMapping.dpsId)
+        mappingApiService.deleteByNomisWebId(event.internetAddressId)
+      }
+      null -> telemetryClient.trackEvent("organisations-internet-address-synchronisation-deleted-ignored", telemetry)
     }
   }
   suspend fun corporateTypeInserted(event: CorporateTypeEvent) = corporateTypeChanged("inserted", event)
@@ -516,6 +561,19 @@ class OrganisationsSynchronisationService(
       }
     }
   }
+  private fun CorporateInternetAddress.isWebAddress() = type == "WEB"
+  private fun CorporateInternetAddress.isEmailAddress() = type == "EMAIL"
+  sealed class InternetAddressMapping(val mapping: OrganisationsMappingDto) {
+    class WebAddressMapping(mapping: OrganisationsMappingDto) : InternetAddressMapping(mapping)
+    class EmailAddressMapping(mapping: OrganisationsMappingDto) : InternetAddressMapping(mapping)
+    val dpsId get() = mapping.dpsId.toLong()
+  }
+  private suspend fun getInternetAddressMapping(internetAddressId: Long): InternetAddressMapping? = mappingApiService.getByNomisWebIdOrNull(internetAddressId)?.let {
+    InternetAddressMapping.WebAddressMapping(it)
+  } ?: mappingApiService.getByNomisEmailIdOrNull(internetAddressId)?.let {
+    InternetAddressMapping.EmailAddressMapping(it)
+  }
+
   suspend fun retryCreateCorporateMapping(retryMessage: InternalMessage<OrganisationsMappingDto>) = corporateMappingCreator.retryCreateMapping(retryMessage)
   suspend fun retryCreateAddressMapping(retryMessage: InternalMessage<OrganisationsMappingDto>) = addressMappingCreator.retryCreateMapping(retryMessage)
   suspend fun retryCreatePhoneMapping(retryMessage: InternalMessage<OrganisationsMappingDto>) = phoneMappingCreator.retryCreateMapping(retryMessage)
