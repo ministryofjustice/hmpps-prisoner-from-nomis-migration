@@ -21,7 +21,7 @@ import java.time.LocalDateTime
 
 @SpringAPIServiceTest
 @Import(ProfileDetailsNomisApiService::class, ProfileDetailsNomisApiMockServer::class)
-class ContactPersonProfileDetailsNomisApiServiceTest {
+class ProfileDetailsNomisApiServiceTest {
   @Autowired
   private lateinit var apiService: ProfileDetailsNomisApiService
 

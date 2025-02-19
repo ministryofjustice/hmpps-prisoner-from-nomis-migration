@@ -30,7 +30,7 @@ class ContactPersonProfileDetailsDpsApiServiceTest {
   inner class SyncDomesticStatus {
     private val prisonerNumber = "A1234AA"
     private val domesticStatus = "YES"
-    private val createdDateTime = LocalDateTime.now()
+    private val createdDateTime = LocalDateTime.parse("2025-02-19T12:34:56")
     private val createdBy = "A_USER"
 
     @Test
@@ -90,7 +90,7 @@ class ContactPersonProfileDetailsDpsApiServiceTest {
   inner class SyncDependants {
     private val prisonerNumber = "A1234AA"
     private val dependants = "3"
-    private val createdDateTime = LocalDateTime.now()
+    private val createdDateTime = LocalDateTime.parse("2025-02-19T12:34:56")
     private val createdBy = "A_USER"
 
     @Test
