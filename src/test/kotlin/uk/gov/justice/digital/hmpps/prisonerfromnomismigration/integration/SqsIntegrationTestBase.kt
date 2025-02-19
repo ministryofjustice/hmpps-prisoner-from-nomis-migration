@@ -269,3 +269,7 @@ private fun HmppsQueue.purgeAndWait() {
     }
   }
 }
+
+fun HmppsQueue.countAllMessagesOnDLQQueue(): Int = this.sqsDlqClient!!.countAllMessagesOnQueue(dlqUrl!!).get()
+
+fun HmppsQueue.hasMessagesOnDLQQueue(): Boolean = this.countAllMessagesOnDLQQueue() > 0

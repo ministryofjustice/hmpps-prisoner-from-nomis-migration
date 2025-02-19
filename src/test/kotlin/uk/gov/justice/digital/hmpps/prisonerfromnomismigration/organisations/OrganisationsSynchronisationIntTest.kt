@@ -7,15 +7,20 @@ import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.Awaitility.await
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.eq
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.hasMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
@@ -3008,6 +3013,58 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             .withRequestBodyJsonPath("dpsId", "$dpsOrganisationWebAddressId")
             .withRequestBodyJsonPath("nomisId", "$nomisInternetAddressId"),
         )
+      }
+    }
+
+    @Nested
+    inner class WhenNoMappingFound {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmailIdOrNull(
+          nomisEmailId = nomisInternetAddressId,
+          mapping = null,
+        )
+        mappingApiMock.stubGetByNomisWebIdOrNull(
+          nomisWebId = nomisInternetAddressId,
+          mapping = null,
+        )
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporateId = corporateAndOrganisationId,
+          corporate = corporateOrganisation().withInternetAddress(
+            corporateWebAddress().copy(
+              id = nomisInternetAddressId,
+            ),
+          ),
+        )
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateInternetAddressEvent(
+            eventType = "INTERNET_ADDRESSES_CORPORATE-UPDATED",
+            corporateId = corporateAndOrganisationId,
+            internetAddressId = nomisInternetAddressId,
+          ),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        await untilAsserted {
+          verify(telemetryClient, atLeastOnce()).trackEvent(
+            eq("organisations-internet-address-synchronisation-updated-error"),
+            org.mockito.kotlin.check {
+              assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+              assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+              assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Test
+      fun `event will be sent to dead letter queue`() {
+        await untilAsserted {
+          assertThat(organisationsOffenderEventsQueue.hasMessagesOnDLQQueue()).isTrue
+        }
       }
     }
   }
