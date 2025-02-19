@@ -112,6 +112,8 @@ generic-prometheus-alerts:
     coreperson:
       - "syscon-devs-preprod-migration_coreperson_queue"
       - "syscon-devs-preprod-migration_coreperson_dlq"
-
+    visitorders:
+      - "syscon-devs-preprod-migration_visitorders_queue"
+      - "syscon-devs-preprod-migration_visitorders_dlq"
 cron:
   retry_dlqs_schedule: "*/10 7-20 * * 1-5"
