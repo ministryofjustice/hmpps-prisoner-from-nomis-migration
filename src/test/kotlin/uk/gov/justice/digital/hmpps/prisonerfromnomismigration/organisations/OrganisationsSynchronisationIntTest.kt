@@ -15,6 +15,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.eq
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
@@ -3041,20 +3042,22 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             corporateId = corporateAndOrganisationId,
             internetAddressId = nomisInternetAddressId,
           ),
-        ).also { waitForAnyProcessingToComplete() }
+        )
       }
 
       @Test
       fun `will track telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("organisations-internet-address-synchronisation-updated-error"),
-          org.mockito.kotlin.check {
-            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
-            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
-            assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
-          },
-          isNull(),
-        )
+        await untilAsserted {
+          verify(telemetryClient, atLeastOnce()).trackEvent(
+            eq("organisations-internet-address-synchronisation-updated-error"),
+            org.mockito.kotlin.check {
+              assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+              assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+              assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
+            },
+            isNull(),
+          )
+        }
       }
 
       @Test
