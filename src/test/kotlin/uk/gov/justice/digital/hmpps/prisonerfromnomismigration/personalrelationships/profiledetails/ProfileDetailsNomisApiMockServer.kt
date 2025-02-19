@@ -29,8 +29,8 @@ class ProfileDetailsNomisApiMockServer(private val objectMapper: ObjectMapper) {
           latestBooking = true,
           profileDetails = listOf(
             ProfileDetailsResponse(
-              type = "DOMESTIC",
-              code = "YES",
+              type = "MARITAL",
+              code = "M",
               createDateTime = LocalDateTime.now().toString(),
               createdBy = "A_USER",
               modifiedDateTime = LocalDateTime.now().toString(),

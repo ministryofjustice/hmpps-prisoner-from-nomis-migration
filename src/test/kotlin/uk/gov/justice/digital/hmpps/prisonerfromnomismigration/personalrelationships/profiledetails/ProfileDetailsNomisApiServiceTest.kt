@@ -66,7 +66,7 @@ class ProfileDetailsNomisApiServiceTest {
         assertThat(bookings[0].profileDetails)
           .extracting("type", "code", "createdBy", "modifiedBy", "auditModuleName")
           .containsExactly(
-            tuple("DOMESTIC", "YES", "A_USER", "ANOTHER_USER", "NOMIS"),
+            tuple("MARITAL", "M", "A_USER", "ANOTHER_USER", "NOMIS"),
             tuple("CHILD", "3", "A_USER", "ANOTHER_USER", "NOMIS"),
           )
         assertThat(LocalDateTime.parse(bookings[0].profileDetails[0].createDateTime).toLocalDate()).isEqualTo(LocalDate.now())
