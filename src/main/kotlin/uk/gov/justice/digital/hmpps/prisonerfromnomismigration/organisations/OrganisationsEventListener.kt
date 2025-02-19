@@ -55,10 +55,9 @@ class OrganisationsEventListener(
               "INTERNET_ADDRESSES_CORPORATE-INSERTED" -> synchronisationService.corporateInternetAddressInserted(sqsMessage.Message.fromJson())
               "INTERNET_ADDRESSES_CORPORATE-UPDATED" -> synchronisationService.corporateInternetAddressUpdated(sqsMessage.Message.fromJson())
               "INTERNET_ADDRESSES_CORPORATE-DELETED" -> synchronisationService.corporateInternetAddressDeleted(sqsMessage.Message.fromJson())
-              "CORPORATE_TYPES-INSERTED" -> log.debug("Received $eventType")
-              "CORPORATE_TYPES-UPDATED" -> log.debug("Received $eventType")
-              "CORPORATE_TYPES-DELETED" -> log.debug("Received $eventType")
-
+              "CORPORATE_TYPES-INSERTED" -> synchronisationService.corporateTypeInserted(sqsMessage.Message.fromJson())
+              "CORPORATE_TYPES-UPDATED" -> synchronisationService.corporateTypeUpdated(sqsMessage.Message.fromJson())
+              "CORPORATE_TYPES-DELETED" -> synchronisationService.corporateTypeDeleted(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -115,6 +114,12 @@ data class CorporateInternetAddressEvent(
   override val auditModuleName: String,
   val corporateId: Long,
   val internetAddressId: Long,
+) : EventAudited
+
+data class CorporateTypeEvent(
+  override val auditModuleName: String,
+  val corporateId: Long,
+  val corporateType: String,
 ) : EventAudited
 
 enum class OrganisationsSynchronisationMessageType {

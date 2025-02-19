@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateInternetAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporatePhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -484,7 +485,30 @@ class OrganisationsSynchronisationService(
       }
     }
   }
-
+  suspend fun corporateTypeInserted(event: CorporateTypeEvent) = corporateTypeChanged("inserted", event)
+  suspend fun corporateTypeUpdated(event: CorporateTypeEvent) = corporateTypeChanged("updated", event)
+  suspend fun corporateTypeDeleted(event: CorporateTypeEvent) = corporateTypeChanged("deleted", event)
+  suspend fun corporateTypeChanged(eventType: String, event: CorporateTypeEvent) {
+    val telemetry = telemetryOf(
+      "nomisCorporateId" to event.corporateId,
+      "dpsOrganisationId" to event.corporateId,
+      "nomisCorporateType" to event.corporateType,
+    )
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "organisations-type-synchronisation-$eventType-skipped",
+        telemetry,
+      )
+    } else {
+      track("organisations-type-synchronisation-$eventType", telemetry) {
+        val nomisCorporate = nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId)
+        dpsApiService.updateOrganisationTypes(
+          event.corporateId,
+          nomisCorporate.types.toDpsUpdateOrganisationTypesRequest(),
+        )
+      }
+    }
+  }
   suspend fun retryCreateCorporateMapping(retryMessage: InternalMessage<OrganisationsMappingDto>) = corporateMappingCreator.retryCreateMapping(retryMessage)
   suspend fun retryCreateAddressMapping(retryMessage: InternalMessage<OrganisationsMappingDto>) = addressMappingCreator.retryCreateMapping(retryMessage)
   suspend fun retryCreatePhoneMapping(retryMessage: InternalMessage<OrganisationsMappingDto>) = phoneMappingCreator.retryCreateMapping(retryMessage)
@@ -681,6 +705,17 @@ fun CorporateInternetAddress.toDpsUpdateOrganisationEmailRequest() = SyncUpdateO
   emailAddress = this.internetAddress,
   updatedBy = this.audit.modifyUserId!!,
   updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+)
+fun List<CorporateOrganisationType>.toDpsUpdateOrganisationTypesRequest() = SyncUpdateOrganisationTypesRequest(
+  types = this.map {
+    SyncUpdateOrganisationType(
+      type = it.type.code,
+      createdBy = it.audit.createUsername,
+      createdTime = it.audit.createDatetime.toDateTime(),
+      updatedBy = it.audit.modifyUserId,
+      updatedTime = it.audit.modifyDatetime?.toDateTime(),
+    )
+  },
 )
 
 private fun String.toDateTime() = this.let { LocalDateTime.parse(it) }
