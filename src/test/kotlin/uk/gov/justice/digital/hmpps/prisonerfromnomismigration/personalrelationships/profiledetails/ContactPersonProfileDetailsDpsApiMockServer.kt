@@ -11,7 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension.Companion.objectMapper
 
 @Component
-class ProfileDetailsDpsApiMockServer {
+class ContactPersonProfileDetailsDpsApiMockServer {
 
   fun stubSyncDomesticStatus(
     prisonerNumber: String = "A1234AA",

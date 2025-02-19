@@ -7,7 +7,7 @@ import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerProfileDetailsResponse
 
 @Service
-class ProfileDetailsNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
+class ContactPersonProfileDetailsNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
   suspend fun getProfileDetails(offenderNo: String): PrisonerProfileDetailsResponse = webClient.get()
     .uri("/prisoners/{offenderNo}/profile-details", offenderNo)
     .retrieve()

@@ -18,13 +18,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import java.time.LocalDateTime
 
 @SpringAPIServiceTest
-@Import(ProfileDetailsDpsApiService::class, ContactPersonConfiguration::class, ProfileDetailsDpsApiMockServer::class)
-class ProfileDetailsDpsApiServiceTest {
+@Import(ProfileDetailsDpsApiService::class, ContactPersonConfiguration::class, ContactPersonProfileDetailsDpsApiMockServer::class)
+class ContactPersonProfileDetailsDpsApiServiceTest {
   @Autowired
   private lateinit var apiService: ProfileDetailsDpsApiService
 
   @Autowired
-  private lateinit var dpsApi: ProfileDetailsDpsApiMockServer
+  private lateinit var dpsApi: ContactPersonProfileDetailsDpsApiMockServer
 
   @Nested
   inner class SyncDomesticStatus {

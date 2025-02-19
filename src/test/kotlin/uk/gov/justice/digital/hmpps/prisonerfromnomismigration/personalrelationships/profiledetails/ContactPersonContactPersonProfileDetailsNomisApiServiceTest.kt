@@ -20,13 +20,13 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @SpringAPIServiceTest
-@Import(ProfileDetailsNomisApiService::class, ProfileDetailsNomisApiMockServer::class)
-class ProfileDetailsNomisApiServiceTest {
+@Import(ContactPersonProfileDetailsNomisApiService::class, ContactPersonProfileDetailsNomisApiMockServer::class)
+class ContactPersonContactPersonProfileDetailsNomisApiServiceTest {
   @Autowired
-  private lateinit var apiService: ProfileDetailsNomisApiService
+  private lateinit var apiService: ContactPersonProfileDetailsNomisApiService
 
   @Autowired
-  private lateinit var profileDetailsNomisApi: ProfileDetailsNomisApiMockServer
+  private lateinit var profileDetailsNomisApi: ContactPersonProfileDetailsNomisApiMockServer
 
   @Nested
   inner class GetProfileDetails {

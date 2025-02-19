@@ -16,7 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApi
 import java.time.LocalDateTime
 
 @Component
-class ProfileDetailsNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class ContactPersonProfileDetailsNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetProfileDetails(
     offenderNo: String = "A1234AA",
     response: PrisonerProfileDetailsResponse = PrisonerProfileDetailsResponse(
