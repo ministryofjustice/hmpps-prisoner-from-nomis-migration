@@ -84,6 +84,8 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       organisationId = 123456,
       organisationName = "Test Organisation",
       active = true,
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
 
     fun syncCreateOrganisationResponse() = SyncCreateOrganisationResponse(
@@ -93,6 +95,8 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun syncUpdateOrganisationRequest() = SyncUpdateOrganisationRequest(
       organisationName = "Test Organisation",
       active = true,
+      updatedBy = "JANE.SAM",
+      updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
 
     fun syncCreateOrganisationAddressRequest() = SyncCreateOrganisationAddressRequest(

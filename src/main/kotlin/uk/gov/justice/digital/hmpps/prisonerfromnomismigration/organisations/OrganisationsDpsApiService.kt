@@ -157,6 +157,8 @@ data class SyncCreateOrganisationRequest(
   val comments: String? = null,
   val active: Boolean,
   val deactivatedDate: LocalDate? = null,
+  val createdBy: String,
+  val createdTime: LocalDateTime,
 )
 
 data class SyncUpdateOrganisationRequest(
@@ -167,6 +169,8 @@ data class SyncUpdateOrganisationRequest(
   val comments: String? = null,
   val active: Boolean,
   val deactivatedDate: LocalDate? = null,
+  val updatedBy: String,
+  val updatedTime: LocalDateTime,
 )
 
 data class SyncCreateOrganisationResponse(

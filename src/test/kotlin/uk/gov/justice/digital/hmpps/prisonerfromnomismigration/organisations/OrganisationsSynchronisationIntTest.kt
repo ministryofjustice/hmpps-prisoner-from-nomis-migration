@@ -96,6 +96,10 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             programmeNumber = "1",
             vatNumber = "ABS1234",
             comment = "Good people",
+            audit = NomisAudit(
+              createUsername = "J.SPEAK",
+              createDatetime = "2024-09-01T13:31",
+            ),
           ),
         )
         dpsApiMock.stubCreateOrganisation(syncCreateOrganisationResponse().copy(organisationId = corporateAndOrganisationId))
@@ -133,6 +137,8 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(active).isTrue()
           assertThat(comments).isEqualTo("Good people")
           assertThat(deactivatedDate).isNull()
+          assertThat(createdBy).isEqualTo("J.SPEAK")
+          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
         }
       }
 
@@ -371,6 +377,12 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             programmeNumber = "1",
             vatNumber = "ABS1234",
             comment = "Good people",
+            audit = NomisAudit(
+              createUsername = "J.SPEAK",
+              createDatetime = "2024-09-01T13:31",
+              modifyUserId = "T.SMITH",
+              modifyDatetime = "2024-10-01T13:31",
+            ),
           ),
         )
         dpsApiMock.stubUpdateOrganisation(organisationId = dpsOrganisationId)
@@ -407,6 +419,8 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(active).isFalse()
           assertThat(comments).isEqualTo("Good people")
           assertThat(deactivatedDate).isEqualTo(LocalDate.parse("2020-01-01"))
+          assertThat(updatedBy).isEqualTo("T.SMITH")
+          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
         }
       }
     }

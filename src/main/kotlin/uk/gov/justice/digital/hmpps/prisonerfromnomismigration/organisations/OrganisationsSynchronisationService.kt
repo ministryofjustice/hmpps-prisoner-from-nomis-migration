@@ -580,6 +580,8 @@ fun CorporateOrganisation.toDpsCreateOrganisationRequest() = SyncCreateOrganisat
   comments = comment,
   active = active,
   deactivatedDate = expiryDate,
+  createdBy = this.audit.createUsername,
+  createdTime = this.audit.createDatetime.toDateTime(),
 )
 fun CorporateOrganisation.toDpsUpdateOrganisationRequest() = SyncUpdateOrganisationRequest(
   organisationName = this.name,
@@ -589,6 +591,8 @@ fun CorporateOrganisation.toDpsUpdateOrganisationRequest() = SyncUpdateOrganisat
   comments = comment,
   active = active,
   deactivatedDate = expiryDate,
+  updatedBy = this.audit.modifyUserId!!,
+  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
 )
 fun CorporateAddress.toDpsCreateOrganisationAddressRequest(dpsOrganisationId: Long) = SyncCreateOrganisationAddressRequest(
   organisationId = dpsOrganisationId,
