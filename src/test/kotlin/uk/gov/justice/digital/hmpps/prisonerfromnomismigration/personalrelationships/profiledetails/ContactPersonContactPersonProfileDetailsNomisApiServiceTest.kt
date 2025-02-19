@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.profiledetails
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.profiledetails
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
@@ -20,13 +20,13 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @SpringAPIServiceTest
-@Import(ProfileDetailsNomisApiService::class, ProfileDetailsNomisApiMockServer::class)
-class ProfileDetailsNomisApiServiceTest {
+@Import(ContactPersonProfileDetailsNomisApiService::class, ContactPersonProfileDetailsNomisApiMockServer::class)
+class ContactPersonContactPersonProfileDetailsNomisApiServiceTest {
   @Autowired
-  private lateinit var apiService: ProfileDetailsNomisApiService
+  private lateinit var apiService: ContactPersonProfileDetailsNomisApiService
 
   @Autowired
-  private lateinit var profileDetailsNomisApi: ProfileDetailsNomisApiMockServer
+  private lateinit var profileDetailsNomisApi: ContactPersonProfileDetailsNomisApiMockServer
 
   @Nested
   inner class GetProfileDetails {
@@ -66,8 +66,8 @@ class ProfileDetailsNomisApiServiceTest {
         assertThat(bookings[0].profileDetails)
           .extracting("type", "code", "createdBy", "modifiedBy", "auditModuleName")
           .containsExactly(
-            tuple("BUILD", "SLIM", "A_USER", "ANOTHER_USER", "NOMIS"),
-            tuple("SHOESIZE", "8.5", "A_USER", "ANOTHER_USER", "NOMIS"),
+            tuple("MARITAL", "M", "A_USER", "ANOTHER_USER", "NOMIS"),
+            tuple("CHILD", "3", "A_USER", "ANOTHER_USER", "NOMIS"),
           )
         assertThat(LocalDateTime.parse(bookings[0].profileDetails[0].createDateTime).toLocalDate()).isEqualTo(LocalDate.now())
         assertThat(LocalDateTime.parse(bookings[0].profileDetails[0].modifiedDateTime!!).toLocalDate()).isEqualTo(LocalDate.now())
