@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporatePhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.dpsOrganisationsServer
@@ -95,6 +96,10 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             programmeNumber = "1",
             vatNumber = "ABS1234",
             comment = "Good people",
+            audit = NomisAudit(
+              createUsername = "J.SPEAK",
+              createDatetime = "2024-09-01T13:31",
+            ),
           ),
         )
         dpsApiMock.stubCreateOrganisation(syncCreateOrganisationResponse().copy(organisationId = corporateAndOrganisationId))
@@ -132,6 +137,8 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(active).isTrue()
           assertThat(comments).isEqualTo("Good people")
           assertThat(deactivatedDate).isNull()
+          assertThat(createdBy).isEqualTo("J.SPEAK")
+          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
         }
       }
 
@@ -370,6 +377,12 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             programmeNumber = "1",
             vatNumber = "ABS1234",
             comment = "Good people",
+            audit = NomisAudit(
+              createUsername = "J.SPEAK",
+              createDatetime = "2024-09-01T13:31",
+              modifyUserId = "T.SMITH",
+              modifyDatetime = "2024-10-01T13:31",
+            ),
           ),
         )
         dpsApiMock.stubUpdateOrganisation(organisationId = dpsOrganisationId)
@@ -406,6 +419,8 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(active).isFalse()
           assertThat(comments).isEqualTo("Good people")
           assertThat(deactivatedDate).isEqualTo(LocalDate.parse("2020-01-01"))
+          assertThat(updatedBy).isEqualTo("T.SMITH")
+          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
         }
       }
     }
@@ -3136,6 +3151,335 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
     }
   }
+
+  @Nested
+  @DisplayName("CORPORATE_TYPES-INSERTED")
+  inner class CorporateTypeInserted {
+    private val corporateAndOrganisationId = 123456L
+    private val nomisCorporateType = "BSKILLS"
+
+    @Nested
+    inner class WhenInsertedInDps {
+      @BeforeEach
+      fun setUp() {
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateTypeEvent(
+            eventType = "CORPORATE_TYPES-INSERTED",
+            corporateId = corporateAndOrganisationId,
+            corporateType = nomisCorporateType,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not update the types in DPS`() {
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/organisation-types/$corporateAndOrganisationId")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-type-synchronisation-inserted-skipped"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisCorporateType"]).isEqualTo(nomisCorporateType)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenInsertedInNomis {
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporateId = corporateAndOrganisationId,
+          corporate = corporateOrganisation().copy(
+            types = listOf(
+              CorporateOrganisationType(
+                type = CodeDescription("TEA", "Teacher"),
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                  modifyUserId = "T.SMITH",
+                  modifyDatetime = "2024-10-01T13:31",
+                ),
+              ),
+              CorporateOrganisationType(
+                type = CodeDescription("BSKILLS", "Basic Skills Provider"),
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-10-01T13:31",
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubUpdateOrganisationTypes(corporateAndOrganisationId)
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateTypeEvent(
+            eventType = "CORPORATE_TYPES-INSERTED",
+            corporateId = corporateAndOrganisationId,
+            corporateType = nomisCorporateType,
+            auditModuleName = "OCUCORPT",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-type-synchronisation-inserted-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisCorporateType"]).isEqualTo(nomisCorporateType)
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will update all the types in DPS from the NOMIS types`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-types/$corporateAndOrganisationId")))
+        val request: SyncUpdateOrganisationTypesRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-types/$corporateAndOrganisationId")))
+        with(request) {
+          assertThat(types).hasSize(2)
+          assertThat(types[0].type).isEqualTo("TEA")
+          assertThat(types[0].createdBy).isEqualTo("J.SPEAK")
+          assertThat(types[0].createdTime).isEqualTo("2024-09-01T13:31")
+          assertThat(types[0].updatedBy).isEqualTo("T.SMITH")
+          assertThat(types[0].updatedTime).isEqualTo("2024-10-01T13:31")
+          assertThat(types[1].type).isEqualTo("BSKILLS")
+          assertThat(types[1].createdBy).isEqualTo("J.SPEAK")
+          assertThat(types[1].createdTime).isEqualTo("2024-10-01T13:31")
+          assertThat(types[1].updatedBy).isNull()
+          assertThat(types[1].updatedTime).isNull()
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("CORPORATE_TYPES-UPDATED")
+  inner class CorporateTypeUpdated {
+    private val corporateAndOrganisationId = 123456L
+    private val nomisCorporateType = "BSKILLS"
+
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateTypeEvent(
+            eventType = "CORPORATE_TYPES-UPDATED",
+            corporateId = corporateAndOrganisationId,
+            corporateType = nomisCorporateType,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not update the types in DPS`() {
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/organisation-types/$corporateAndOrganisationId")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-type-synchronisation-updated-skipped"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisCorporateType"]).isEqualTo(nomisCorporateType)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInNomis {
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporateId = corporateAndOrganisationId,
+          corporate = corporateOrganisation().copy(
+            types = listOf(
+              CorporateOrganisationType(
+                type = CodeDescription("TEA", "Teacher"),
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                  modifyUserId = "T.SMITH",
+                  modifyDatetime = "2024-10-01T13:31",
+                ),
+              ),
+              CorporateOrganisationType(
+                type = CodeDescription("BSKILLS", "Basic Skills Provider"),
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-10-01T13:31",
+                  modifyUserId = "T.SMITH",
+                  modifyDatetime = "2024-11-01T13:31",
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubUpdateOrganisationTypes(corporateAndOrganisationId)
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateTypeEvent(
+            eventType = "CORPORATE_TYPES-UPDATED",
+            corporateId = corporateAndOrganisationId,
+            corporateType = nomisCorporateType,
+            auditModuleName = "OCUCORPT",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-type-synchronisation-updated-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisCorporateType"]).isEqualTo(nomisCorporateType)
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will update all the types in DPS from the NOMIS types`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-types/$corporateAndOrganisationId")))
+        val request: SyncUpdateOrganisationTypesRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-types/$corporateAndOrganisationId")))
+        with(request) {
+          assertThat(types).hasSize(2)
+          assertThat(types[0].type).isEqualTo("TEA")
+          assertThat(types[0].createdBy).isEqualTo("J.SPEAK")
+          assertThat(types[0].createdTime).isEqualTo("2024-09-01T13:31")
+          assertThat(types[0].updatedBy).isEqualTo("T.SMITH")
+          assertThat(types[0].updatedTime).isEqualTo("2024-10-01T13:31")
+          assertThat(types[1].type).isEqualTo("BSKILLS")
+          assertThat(types[1].createdBy).isEqualTo("J.SPEAK")
+          assertThat(types[1].createdTime).isEqualTo("2024-10-01T13:31")
+          assertThat(types[1].updatedBy).isEqualTo("T.SMITH")
+          assertThat(types[1].updatedTime).isEqualTo("2024-11-01T13:31")
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("CORPORATE_TYPES-DELETED")
+  inner class CorporateTypeDeleted {
+    private val corporateAndOrganisationId = 123456L
+    private val nomisCorporateType = "BSKILLS"
+
+    @Nested
+    inner class WhenDeletedInDps {
+      @BeforeEach
+      fun setUp() {
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateTypeEvent(
+            eventType = "CORPORATE_TYPES-DELETED",
+            corporateId = corporateAndOrganisationId,
+            corporateType = nomisCorporateType,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not update the types in DPS`() {
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/organisation-types/$corporateAndOrganisationId")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-type-synchronisation-deleted-skipped"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisCorporateType"]).isEqualTo(nomisCorporateType)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenDeletedInNomis {
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporateId = corporateAndOrganisationId,
+          corporate = corporateOrganisation().copy(
+            types = listOf(
+              CorporateOrganisationType(
+                type = CodeDescription("TEA", "Teacher"),
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                  modifyUserId = "T.SMITH",
+                  modifyDatetime = "2024-10-01T13:31",
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubUpdateOrganisationTypes(corporateAndOrganisationId)
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateTypeEvent(
+            eventType = "CORPORATE_TYPES-DELETED",
+            corporateId = corporateAndOrganisationId,
+            corporateType = nomisCorporateType,
+            auditModuleName = "OCUCORPT",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-type-synchronisation-deleted-success"),
+          org.mockito.kotlin.check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisCorporateType"]).isEqualTo(nomisCorporateType)
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will update all the types in DPS from the NOMIS types`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-types/$corporateAndOrganisationId")))
+        val request: SyncUpdateOrganisationTypesRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-types/$corporateAndOrganisationId")))
+        with(request) {
+          assertThat(types).hasSize(1)
+          assertThat(types[0].type).isEqualTo("TEA")
+          assertThat(types[0].createdBy).isEqualTo("J.SPEAK")
+          assertThat(types[0].createdTime).isEqualTo("2024-09-01T13:31")
+          assertThat(types[0].updatedBy).isEqualTo("T.SMITH")
+          assertThat(types[0].updatedTime).isEqualTo("2024-10-01T13:31")
+        }
+      }
+    }
+  }
 }
 
 fun corporateEvent(
@@ -3222,6 +3566,25 @@ fun corporateInternetAddressEvent(
   """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
     "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"internetAddressId\": \"$internetAddressId\",\"corporateId\": \"$corporateId\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+  """.trimIndent()
+
+fun corporateTypeEvent(
+  eventType: String,
+  corporateId: Long,
+  corporateType: String,
+  auditModuleName: String = "OCUCORPT",
+) = // language=JSON
+  """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"corporateType\": \"$corporateType\",\"corporateId\": \"$corporateId\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 

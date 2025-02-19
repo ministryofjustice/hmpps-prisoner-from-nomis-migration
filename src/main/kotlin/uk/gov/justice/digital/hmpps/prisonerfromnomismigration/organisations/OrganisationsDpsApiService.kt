@@ -138,6 +138,13 @@ class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") priv
       .retrieve()
       .awaitBodilessEntityIgnoreNotFound()
   }
+  suspend fun updateOrganisationTypes(organisationId: Long, organisationTypes: SyncUpdateOrganisationTypesRequest) {
+    webClient.put()
+      .uri("/sync/organisation-types/{organisationId}", organisationId)
+      .bodyValue(organisationTypes)
+      .retrieve()
+      .awaitBodilessEntityOrLogAndRethrowBadRequest()
+  }
 }
 
 //  Fake DTOs - replace with real ones once created
@@ -150,6 +157,8 @@ data class SyncCreateOrganisationRequest(
   val comments: String? = null,
   val active: Boolean,
   val deactivatedDate: LocalDate? = null,
+  val createdBy: String,
+  val createdTime: LocalDateTime,
 )
 
 data class SyncUpdateOrganisationRequest(
@@ -160,6 +169,8 @@ data class SyncUpdateOrganisationRequest(
   val comments: String? = null,
   val active: Boolean,
   val deactivatedDate: LocalDate? = null,
+  val updatedBy: String,
+  val updatedTime: LocalDateTime,
 )
 
 data class SyncCreateOrganisationResponse(
@@ -294,4 +305,13 @@ data class SyncUpdateOrganisationWebAddressRequest(
   val webAddress: String,
   val updatedBy: String,
   val updatedTime: LocalDateTime,
+)
+
+data class SyncUpdateOrganisationTypesRequest(val types: List<SyncUpdateOrganisationType>)
+data class SyncUpdateOrganisationType(
+  val type: String,
+  val createdBy: String,
+  val createdTime: LocalDateTime,
+  val updatedBy: String?,
+  val updatedTime: LocalDateTime?,
 )

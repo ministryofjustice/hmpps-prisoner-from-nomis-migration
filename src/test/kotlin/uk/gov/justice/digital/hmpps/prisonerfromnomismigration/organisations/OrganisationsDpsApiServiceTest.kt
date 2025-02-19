@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.Org
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationTypesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationWebAddressRequest
 
 @SpringAPIServiceTest
@@ -523,6 +524,32 @@ class OrganisationsDpsApiServiceTest {
 
       dpsOrganisationsServer.verify(
         deleteRequestedFor(urlPathEqualTo("/sync/organisation-email/12345")),
+      )
+    }
+  }
+
+  @Nested
+  inner class UpdateOrganisationTypes {
+    @Test
+    internal fun `will pass oath2 token to organisation-types endpoint`() = runTest {
+      dpsOrganisationsServer.stubUpdateOrganisationTypes(12345)
+
+      apiService.updateOrganisationTypes(12345, syncUpdateOrganisationTypesRequest())
+
+      dpsOrganisationsServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the PUT endpoint`() = runTest {
+      dpsOrganisationsServer.stubUpdateOrganisationTypes(12345)
+
+      apiService.updateOrganisationTypes(12345, syncUpdateOrganisationTypesRequest())
+
+      dpsOrganisationsServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/organisation-types/12345")),
       )
     }
   }

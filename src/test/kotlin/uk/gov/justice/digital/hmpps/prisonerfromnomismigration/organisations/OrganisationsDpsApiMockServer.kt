@@ -84,6 +84,8 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       organisationId = 123456,
       organisationName = "Test Organisation",
       active = true,
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
 
     fun syncCreateOrganisationResponse() = SyncCreateOrganisationResponse(
@@ -93,6 +95,8 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun syncUpdateOrganisationRequest() = SyncUpdateOrganisationRequest(
       organisationName = "Test Organisation",
       active = true,
+      updatedBy = "JANE.SAM",
+      updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
 
     fun syncCreateOrganisationAddressRequest() = SyncCreateOrganisationAddressRequest(
@@ -178,6 +182,17 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       emailAddress = "jane@test.com",
       updatedBy = "JANE.SAM",
       updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
+    )
+    fun syncUpdateOrganisationTypesRequest() = SyncUpdateOrganisationTypesRequest(
+      listOf(
+        SyncUpdateOrganisationType(
+          type = "TEA",
+          createdBy = "JANE.SAM",
+          createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+          updatedBy = "JANE.SAM",
+          updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
+        ),
+      ),
     )
   }
 
@@ -407,6 +422,17 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse()
             .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubUpdateOrganisationTypes(organisationId: Long) {
+    dpsOrganisationsServer.stubFor(
+      put("/sync/organisation-types/$organisationId")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
             .withHeader("Content-Type", "application/json"),
         ),
     )
