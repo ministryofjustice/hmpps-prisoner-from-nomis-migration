@@ -429,36 +429,43 @@ class OrganisationsSynchronisationService(
             )
           }
         }
-      }
-      mappingApiService.getByNomisEmailIdOrNull(nomisEmailId = event.internetAddressId)?.also { mapping ->
-        telemetry["dpsOrganisationEmailId"] = mapping.dpsId
-        track("organisations-email-synchronisation-updated", telemetry) {
-          // check if type has changed
-          if (nomisInternetAddress.type == "WEB") {
-            // remove email address mapping and DPS address
-            mappingApiService.deleteByNomisEmailId(nomisInternetAddress.id)
-            dpsApiService.deleteOrganisationEmail(mapping.dpsId.toLong())
+      } ?: run {
+        mappingApiService.getByNomisEmailIdOrNull(nomisEmailId = event.internetAddressId)?.also { mapping ->
+          telemetry["dpsOrganisationEmailId"] = mapping.dpsId
+          track("organisations-email-synchronisation-updated", telemetry) {
+            // check if type has changed
+            if (nomisInternetAddress.type == "WEB") {
+              // remove email address mapping and DPS address
+              mappingApiService.deleteByNomisEmailId(nomisInternetAddress.id)
+              dpsApiService.deleteOrganisationEmail(mapping.dpsId.toLong())
 
-            val dpsOrganisationWebAddress = dpsApiService.createOrganisationWebAddress(
-              nomisInternetAddress.toDpsCreateOrganisationWebAddressRequestForUpdateSwitch(event.corporateId),
-            ).also { dpsOrganisationWebAddress ->
-              telemetry["dpsOrganisationWebAddressId"] = dpsOrganisationWebAddress.organisationWebAddressId
+              val dpsOrganisationWebAddress = dpsApiService.createOrganisationWebAddress(
+                nomisInternetAddress.toDpsCreateOrganisationWebAddressRequestForUpdateSwitch(event.corporateId),
+              ).also { dpsOrganisationWebAddress ->
+                telemetry["dpsOrganisationWebAddressId"] = dpsOrganisationWebAddress.organisationWebAddressId
+              }
+              webAddressMappingCreator.tryToCreateMapping(
+                OrganisationsMappingDto(
+                  nomisId = event.internetAddressId,
+                  dpsId = "${dpsOrganisationWebAddress.organisationWebAddressId}",
+                  mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+                ),
+                telemetry,
+              )
+            } else {
+              dpsApiService.updateOrganisationEmail(
+                mapping.dpsId.toLong(),
+                nomisInternetAddress.toDpsUpdateOrganisationEmailRequest(),
+              )
             }
-            webAddressMappingCreator.tryToCreateMapping(
-              OrganisationsMappingDto(
-                nomisId = event.internetAddressId,
-                dpsId = "${dpsOrganisationWebAddress.organisationWebAddressId}",
-                mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
-              ),
-              telemetry,
-            )
-          } else {
-            dpsApiService.updateOrganisationEmail(
-              mapping.dpsId.toLong(),
-              nomisInternetAddress.toDpsUpdateOrganisationEmailRequest(),
-            )
           }
         }
+      } ?: run {
+        telemetryClient.trackEvent(
+          "organisations-internet-address-synchronisation-updated-error",
+          telemetry,
+        )
+        throw IllegalStateException("Unable to find mapping for ${event.internetAddressId} - assuming we have not received create event yet")
       }
     }
   }
