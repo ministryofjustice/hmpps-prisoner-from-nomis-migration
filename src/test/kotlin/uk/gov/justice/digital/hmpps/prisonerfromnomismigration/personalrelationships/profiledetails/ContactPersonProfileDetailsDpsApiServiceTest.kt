@@ -142,6 +142,7 @@ class ContactPersonProfileDetailsDpsApiServiceTest {
       dependants = dependants,
       createdBy = createdBy,
       createdDateTime = createdDateTime,
+      latestBooking = true,
     )
 
     private fun aResponse(dpsId: Long = 321) = DependantsSyncResponse(dpsId)
