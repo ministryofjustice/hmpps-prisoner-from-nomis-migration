@@ -182,7 +182,9 @@ class SqsIntegrationTestBase : TestBase() {
 
   internal val personalRelationshipsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(PERSONALRELATIONSHIPS_SYNC_QUEUE_ID) as HmppsQueue }
   internal val awsSqsPersonalRelationshipsOffenderEventsClient by lazy { personalRelationshipsOffenderEventsQueue.sqsClient }
+  internal val awsSqsPersonalRelationshipsOffenderEventsDlqClient by lazy { personalRelationshipsOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
   internal val personalRelationshipsQueueOffenderEventsUrl by lazy { personalRelationshipsOffenderEventsQueue.queueUrl }
+  internal val personalRelationshipsQueueOffenderEventsDlqUrl by lazy { personalRelationshipsOffenderEventsQueue.dlqUrl as String }
 
   internal val organisationsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(ORGANISATIONS_SYNC_QUEUE_ID) as HmppsQueue }
 
