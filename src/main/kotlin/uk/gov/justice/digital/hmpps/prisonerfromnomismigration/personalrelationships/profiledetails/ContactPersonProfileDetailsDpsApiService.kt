@@ -7,7 +7,7 @@ import org.springframework.web.reactive.function.client.awaitBody
 import java.time.LocalDateTime
 
 @Service
-class ProfileDetailsDpsApiService(@Qualifier("personalRelationshipsApiWebClient") private val webClient: WebClient) {
+class ContactPersonProfileDetailsDpsApiService(@Qualifier("personalRelationshipsApiWebClient") private val webClient: WebClient) {
   suspend fun syncDomesticStatus(
     prisonerNumber: String,
     request: DomesticStatusSyncRequest,
@@ -31,9 +31,10 @@ class ProfileDetailsDpsApiService(@Qualifier("personalRelationshipsApiWebClient"
 
 // TODO SDIT-2573 All models to be replaced by models generated from OpenAPI spec when available
 data class DomesticStatusSyncRequest(
-  val domesticStatusCode: String,
+  val domesticStatusCode: String?,
   val createdBy: String,
   val createdDateTime: LocalDateTime,
+  val latestBooking: Boolean,
 )
 
 data class DomesticStatusSyncResponse(val domesticStatusId: Long)
