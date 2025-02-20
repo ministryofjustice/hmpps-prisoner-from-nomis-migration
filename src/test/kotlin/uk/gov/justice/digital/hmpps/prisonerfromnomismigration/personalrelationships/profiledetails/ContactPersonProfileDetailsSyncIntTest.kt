@@ -123,6 +123,100 @@ class ContactPersonProfileDetailsSyncIntTest(
         )
         verifyTelemetry(latestBooking = true)
       }
+
+      @Test
+      fun `should ignore a null value that has just been created`() = runTest {
+        nomisApi.stubGetProfileDetails(
+          response = nomisResponse(
+            bookings = listOf(
+              booking(
+                profileDetails = listOf(
+                  profileDetails(
+                    type = "MARITAL",
+                    code = null,
+                    modifiedDateTime = null,
+                    modifiedBy = null,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApi.stubSyncDomesticStatus(response = dpsResponse())
+
+        sendProfileDetailsChangedEvent(profileType = "MARITAL")
+          .also { waitForAnyProcessingToComplete() }
+
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
+        dpsApi.verify(type = "ignored")
+        verifyTelemetry(telemetryType = "ignored", ignoreReason = "New profile details are empty")
+      }
+
+      @Test
+      fun `should ignore an update created by the synchronisation service`() = runTest {
+        nomisApi.stubGetProfileDetails(
+          response = nomisResponse(
+            bookings = listOf(
+              booking(
+                profileDetails = listOf(
+                  profileDetails(
+                    auditModuleName = "DPS_SYNCHRONISATION",
+                  ),
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApi.stubSyncDomesticStatus(response = dpsResponse())
+
+        sendProfileDetailsChangedEvent(profileType = "MARITAL")
+          .also { waitForAnyProcessingToComplete() }
+
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
+        dpsApi.verify(type = "ignored")
+        verifyTelemetry(telemetryType = "ignored", ignoreReason = "Profile details were created by DPS_SYNCHRONISATION")
+      }
+
+      @Test
+      fun `should sync a historical booking`() = runTest {
+        nomisApi.stubGetProfileDetails(
+          response = nomisResponse(
+            bookings = listOf(
+              booking(
+                bookingId = 12345,
+                latestBooking = false,
+                profileDetails = listOf(
+                  profileDetails(
+                    code = "M",
+                  ),
+                ),
+              ),
+              booking(
+                bookingId = 54321,
+                latestBooking = true,
+                profileDetails = listOf(
+                  profileDetails(
+                    code = "S",
+                  ),
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApi.stubSyncDomesticStatus(response = dpsResponse())
+
+        sendProfileDetailsChangedEvent(bookingId = 12345, profileType = "MARITAL")
+          .also { waitForAnyProcessingToComplete() }
+
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
+        dpsApi.verify(
+          dpsUpdates = mapOf(
+            "domesticStatusCode" to equalTo("M"),
+            "latestBooking" to equalTo("false"),
+          ),
+        )
+        verifyTelemetry(bookingId = 12345, latestBooking = false)
+      }
     }
 
     @Nested
@@ -150,6 +244,48 @@ class ContactPersonProfileDetailsSyncIntTest(
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
         dpsApi.verify()
         verifyTelemetry(telemetryType = "error", errorReason = "500 Internal Server Error from PUT http://localhost:8097/sync/domestic-status/A1234AA")
+      }
+
+      @Test
+      fun `should handle a missing profile type`() = runTest {
+        nomisApi.stubGetProfileDetails(
+          response = nomisResponse(
+            bookings = listOf(
+              booking(
+                profileDetails = listOf(
+                  profileDetails(type = "CHILD"),
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApi.stubSyncDomesticStatus(response = dpsResponse())
+
+        sendProfileDetailsChangedEvent(profileType = "MARITAL")
+          .also { waitForDlqMessage() }
+
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
+        dpsApi.verify(type = "ignored")
+        verifyTelemetry(telemetryType = "error", errorReason = "No MARITAL profile type found for bookingId 12345")
+      }
+
+      @Test
+      fun `should handle a missing booking`() = runTest {
+        nomisApi.stubGetProfileDetails(
+          response = nomisResponse(
+            bookings = listOf(
+              booking(bookingId = 12345),
+            ),
+          ),
+        )
+        dpsApi.stubSyncDomesticStatus(response = dpsResponse())
+
+        sendProfileDetailsChangedEvent(bookingId = 54321, profileType = "MARITAL")
+          .also { waitForDlqMessage() }
+
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
+        dpsApi.verify(type = "ignored")
+        verifyTelemetry(bookingId = 54321, telemetryType = "error", errorReason = "No booking found for bookingId 54321")
       }
     }
 
@@ -263,7 +399,7 @@ class ContactPersonProfileDetailsSyncIntTest(
 
   private fun sendProfileDetailsChangedEvent(
     prisonerNumber: String = "A1234AA",
-    bookingId: Int = 1,
+    bookingId: Int = 12345,
     profileType: String,
   ) = awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
     personalRelationshipsQueueOffenderEventsUrl,
