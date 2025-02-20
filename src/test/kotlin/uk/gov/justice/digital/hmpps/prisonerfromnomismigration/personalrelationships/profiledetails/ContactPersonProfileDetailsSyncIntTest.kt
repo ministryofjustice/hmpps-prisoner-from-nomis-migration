@@ -9,10 +9,11 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.StringValuePattern
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -20,16 +21,16 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
-import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 
 class ContactPersonProfileDetailsSyncIntTest(
   @Autowired private val nomisApi: ContactPersonProfileDetailsNomisApiMockServer,
   @Autowired private val dpsApi: ContactPersonProfileDetailsDpsApiMockServer,
-  @Autowired private val syncService: ContactPersonProfileDetailsSyncService,
 ) : SqsIntegrationTestBase() {
 
   @Nested
@@ -66,8 +67,8 @@ class ContactPersonProfileDetailsSyncIntTest(
         )
         dpsApi.stubSyncDomesticStatus(response = dpsResponse())
 
-        // TODO replace this with a send event when listener implemented
-        syncService.profileDetailsChanged(profileType = "MARITAL", offenderNo = "A1234AA", bookingId = 12345)
+        sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "MARITAL")
+          .also { waitForAnyProcessingToComplete() }
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
         dpsApi.verify(
@@ -108,8 +109,8 @@ class ContactPersonProfileDetailsSyncIntTest(
         )
         dpsApi.stubSyncDomesticStatus(response = dpsResponse())
 
-        // TODO replace this with a send event when listener implemented
-        syncService.profileDetailsChanged(profileType = "MARITAL", offenderNo = "A1234AA", bookingId = 12345)
+        sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "MARITAL")
+          .also { waitForAnyProcessingToComplete() }
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
         dpsApi.verify(
@@ -130,10 +131,8 @@ class ContactPersonProfileDetailsSyncIntTest(
       fun `should handle failed NOMIS API call`() = runTest {
         nomisApi.stubGetProfileDetails(status = NOT_FOUND)
 
-        // TODO replace this with a send event when listener implemented and test msg on DLQ
-        assertThrows<WebClientResponseException.NotFound> {
-          syncService.profileDetailsChanged(profileType = "MARITAL", offenderNo = "A1234AA", bookingId = 12345)
-        }
+        sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "MARITAL")
+          .also { waitForDlqMessage() }
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
         dpsApi.verify(type = "ignored")
@@ -145,10 +144,8 @@ class ContactPersonProfileDetailsSyncIntTest(
         nomisApi.stubGetProfileDetails("A1234AA", nomisResponse(offenderNo = "A1234AA"))
         dpsApi.stubSyncDomesticStatus(status = INTERNAL_SERVER_ERROR)
 
-        // TODO replace this with a send event when listener implemented and test msg on DLQ
-        assertThrows<WebClientResponseException.InternalServerError> {
-          syncService.profileDetailsChanged(profileType = "MARITAL", offenderNo = "A1234AA", bookingId = 12345)
-        }
+        sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "MARITAL")
+          .also { waitForDlqMessage() }
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
         dpsApi.verify()
@@ -241,4 +238,41 @@ class ContactPersonProfileDetailsSyncIntTest(
     },
     isNull(),
   )
+
+  private fun profileDetailsChangedEvent(
+    prisonerNumber: String = "A1234AA",
+    bookingId: Int = 1,
+    profileType: String,
+  ) = """
+   {
+      "Type" : "Notification",
+      "MessageId" : "298a61d6-e078-51f2-9c60-3f348f8bde68",
+      "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
+      "Message" : "{\"eventType\":\"OFFENDER_PHYSICAL_DETAILS-CHANGED\",\"eventDatetime\":\"2024-06-11T16:30:59\",\"offenderIdDisplay\":\"$prisonerNumber\",\"bookingId\":$bookingId,\"profileType\":\"$profileType\"}",
+      "Timestamp" : "2024-06-11T15:30:59.048Z",
+      "SignatureVersion" : "1",
+      "Signature" : "kyuV8tDWmRoixtnyXauR/mzBdkO4yWXEFLZU6256JRIRfcGBNdn7+TPcRnM7afa6N6DwUs3TDKQ17U7W8hkB86r/J1PsfEpF8qOr8bZd4J/RDNAHJxmNnuTzy351ISDYjdxccREF57pLXtaMcu0Z6nJTTnv9pn7qOVasuxUIGANaD214P6iXkWvsFj0AgR1TVITHW5jMFTE+ln2PTLQ9N6dwx4/foIlFsQu7rWnx3hy9+x7gtInnDIaQSvI2gHQQI51TpQrES0YKjn5Tb25ANS8bZooK7knt9F+Hv3bejDyXWgR3fyC4SJbUvbVhfVI/aRhOv/qLwFGSOFKt6I0KAA==",
+      "SigningCertURL" : "https://sns.eu-west-2.amazonaws.com/SimpleNotificationService-60eadc530605d63b8e62a523676ef735.pem",
+      "UnsubscribeURL" : "https://sns.eu-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7:e5c3f313-ccda-4a2f-9667-e2519fd01a19",
+      "MessageAttributes" : {
+        "publishedAt" : {"Type":"String","Value":"2024-06-11T16:30:59.023769832+01:00"},
+        "eventType" : {"Type":"String","Value":"OFFENDER_PHYSICAL_DETAILS-CHANGED"}
+      }
+   }
+  """.trimIndent()
+
+  private fun sendProfileDetailsChangedEvent(
+    prisonerNumber: String = "A1234AA",
+    bookingId: Int = 1,
+    profileType: String,
+  ) = awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+    personalRelationshipsQueueOffenderEventsUrl,
+    profileDetailsChangedEvent(prisonerNumber, bookingId, profileType),
+  )
+
+  private fun waitForDlqMessage() = await untilAsserted {
+    assertThat(
+      awsSqsPersonalRelationshipsOffenderEventsDlqClient.countAllMessagesOnQueue(personalRelationshipsQueueOffenderEventsDlqUrl).get(),
+    ).isEqualTo(1)
+  }
 }
