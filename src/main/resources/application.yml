@@ -227,6 +227,7 @@ hmpps.sqs:
       propagateTracing: false
     migrationvisitorders:
       propagateTracing: false
+
 reports:
   incidents:
     reconciliation:
