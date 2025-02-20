@@ -5,8 +5,10 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ProfileDetailsChangedEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.synchronisationUser
 import java.time.LocalDateTime
 
 @Service
@@ -41,6 +43,13 @@ class ContactPersonProfileDetailsSyncService(
         ?: throw DomesticStatusChangedException("No MARITAL profile type found for bookingId $bookingId")
       val (lastModifiedTime, lastModifiedBy) = profileDetails.lastModified()
 
+      getIgnoreReason(nomisResponse.bookings.size, profileDetails)
+        ?.let { ignoreReason ->
+          telemetry["reason"] = ignoreReason
+          telemetryClient.trackEvent("contact-person-domestic-status-synchronisation-ignored", telemetry)
+          return
+        }
+
       dpsApi.syncDomesticStatus(
         offenderNo,
         DomesticStatusSyncRequest(profileDetails.code, lastModifiedBy, lastModifiedTime, booking.latestBooking),
@@ -48,6 +57,16 @@ class ContactPersonProfileDetailsSyncService(
     }
   }
 
+  private fun getIgnoreReason(
+    bookingCount: Int,
+    profileDetails: ProfileDetailsResponse,
+  ): String? = if (bookingCount == 1 && profileDetails.code == null && profileDetails.modifiedDateTime == null) {
+    "New profile details are empty"
+  } else if (profileDetails.auditModuleName == synchronisationUser) {
+    "Profile details were created by $synchronisationUser"
+  } else {
+    null
+  }
   private fun ProfileDetailsResponse.lastModified(): Pair<LocalDateTime, String> = (modifiedDateTime ?: createDateTime).toLocalDateTime() to (modifiedBy ?: createdBy)
 
   private fun String.toLocalDateTime() = LocalDateTime.parse(this)
