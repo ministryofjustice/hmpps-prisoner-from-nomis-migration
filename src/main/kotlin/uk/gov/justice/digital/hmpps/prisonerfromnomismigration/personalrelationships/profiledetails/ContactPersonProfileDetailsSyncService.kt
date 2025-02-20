@@ -11,6 +11,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.synchronisationUser
 import java.time.LocalDateTime
 
+enum class ContactPersonProfileType(val telemetryName: String) {
+  MARITAL("domestic-status"),
+  CHILD("dependants"),
+}
+
 @Service
 class ContactPersonProfileDetailsSyncService(
   private val nomisApi: ContactPersonProfileDetailsNomisApiService,
@@ -19,41 +24,48 @@ class ContactPersonProfileDetailsSyncService(
 ) : TelemetryEnabled {
 
   suspend fun profileDetailsChanged(event: ProfileDetailsChangedEvent) = with(event) {
-    profileDetailsChanged(profileType, offenderIdDisplay, bookingId)
+    runCatching { ContactPersonProfileType.valueOf(profileType) }
+      .map {
+        profileDetailsChanged(offenderIdDisplay, bookingId, it)
+      }
   }
 
-  suspend fun profileDetailsChanged(profileType: String, offenderNo: String, bookingId: Long) {
-    when (profileType) {
-      "MARITAL" -> domesticStatusChanged(offenderNo, bookingId)
-    }
-  }
-
-  suspend fun domesticStatusChanged(offenderNo: String, bookingId: Long) {
+  suspend fun profileDetailsChanged(offenderNo: String, bookingId: Long, profileType: ContactPersonProfileType) {
     val telemetry = telemetryOf(
       "offenderNo" to offenderNo,
       "bookingId" to bookingId,
     )
 
-    track("contact-person-domestic-status-synchronisation", telemetry) {
+    track("contact-person-${profileType.telemetryName}-synchronisation", telemetry) {
       val nomisResponse = nomisApi.getProfileDetails(offenderNo)
       val booking = nomisResponse.bookings.find { it.bookingId == bookingId }
         ?: throw DomesticStatusChangedException("No booking found for bookingId $bookingId")
       telemetry["latestBooking"] = booking.latestBooking
-      val profileDetails = booking.profileDetails.find { it.type == "MARITAL" }
-        ?: throw DomesticStatusChangedException("No MARITAL profile type found for bookingId $bookingId")
+      val profileDetails = booking.profileDetails.find { it.type == profileType.name }
+        ?: throw DomesticStatusChangedException("No ${profileType.name} profile type found for bookingId $bookingId")
       val (lastModifiedTime, lastModifiedBy) = profileDetails.lastModified()
 
       getIgnoreReason(nomisResponse.bookings.size, profileDetails)
         ?.let { ignoreReason ->
           telemetry["reason"] = ignoreReason
-          telemetryClient.trackEvent("contact-person-domestic-status-synchronisation-ignored", telemetry)
+          telemetryClient.trackEvent("contact-person-${profileType.telemetryName}-synchronisation-ignored", telemetry)
           return
         }
 
-      dpsApi.syncDomesticStatus(
-        offenderNo,
-        DomesticStatusSyncRequest(profileDetails.code, lastModifiedBy, lastModifiedTime, booking.latestBooking),
-      ).also { dpsResponse -> telemetry["dpsId"] = dpsResponse.domesticStatusId }
+      when (profileType) {
+        ContactPersonProfileType.MARITAL -> {
+          dpsApi.syncDomesticStatus(
+            offenderNo,
+            DomesticStatusSyncRequest(profileDetails.code, lastModifiedBy, lastModifiedTime, booking.latestBooking),
+          ).domesticStatusId
+        }
+        ContactPersonProfileType.CHILD -> {
+          dpsApi.syncDependants(
+            offenderNo,
+            DependantsSyncRequest(profileDetails.code, lastModifiedBy, lastModifiedTime, booking.latestBooking),
+          ).dependantsId
+        }
+      }.also { telemetry["dpsId"] = it }
     }
   }
 

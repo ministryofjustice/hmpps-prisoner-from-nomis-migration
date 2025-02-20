@@ -40,9 +40,10 @@ data class DomesticStatusSyncRequest(
 data class DomesticStatusSyncResponse(val domesticStatusId: Long)
 
 data class DependantsSyncRequest(
-  val dependants: String,
+  val dependants: String?,
   val createdBy: String,
   val createdDateTime: LocalDateTime,
+  val latestBooking: Boolean,
 )
 
 data class DependantsSyncResponse(val dependantsId: Long)
