@@ -225,6 +225,8 @@ hmpps.sqs:
       propagateTracing: false
     migrationcoreperson:
       propagateTracing: false
+    migrationvisitorders:
+      propagateTracing: false
 
 reports:
   incidents:

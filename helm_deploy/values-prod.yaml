@@ -154,4 +154,6 @@ generic-prometheus-alerts:
     coreperson:
       - "syscon-devs-prod-migration_coreperson_queue"
       - "syscon-devs-prod-migration_coreperson_dlq"
-
+    visitorders:
+      - "syscon-devs-prod-migration_visitorders_queue"
+      - "syscon-devs-prod-migration_visitorders_dlq"
