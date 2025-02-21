@@ -8,12 +8,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ProfileDetailsChangedEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerDomesticStatusRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerNumberOfChildrenRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.synchronisationUser
 import java.time.LocalDateTime
 
 enum class ContactPersonProfileType(val telemetryName: String) {
   MARITAL("domestic-status"),
-  CHILD("dependants"),
+  CHILD("number-of-children"),
 }
 
 @Service
@@ -45,7 +47,7 @@ class ContactPersonProfileDetailsSyncService(
         ?: throw DomesticStatusChangedException("No ${profileType.name} profile type found for bookingId $bookingId")
       val (lastModifiedTime, lastModifiedBy) = profileDetails.lastModified()
 
-      getIgnoreReason(nomisResponse.bookings.size, profileDetails)
+      getIgnoreReason(nomisResponse.bookings.size, booking.latestBooking, bookingId, profileDetails)
         ?.let { ignoreReason ->
           telemetry["reason"] = ignoreReason
           telemetryClient.trackEvent("contact-person-${profileType.telemetryName}-synchronisation-ignored", telemetry)
@@ -56,14 +58,14 @@ class ContactPersonProfileDetailsSyncService(
         ContactPersonProfileType.MARITAL -> {
           dpsApi.syncDomesticStatus(
             offenderNo,
-            DomesticStatusSyncRequest(profileDetails.code, lastModifiedBy, lastModifiedTime, booking.latestBooking),
-          ).domesticStatusId
+            SyncUpdatePrisonerDomesticStatusRequest(lastModifiedBy, lastModifiedTime, profileDetails.code),
+          ).id
         }
         ContactPersonProfileType.CHILD -> {
-          dpsApi.syncDependants(
+          dpsApi.syncNumberOfChildren(
             offenderNo,
-            DependantsSyncRequest(profileDetails.code, lastModifiedBy, lastModifiedTime, booking.latestBooking),
-          ).dependantsId
+            SyncUpdatePrisonerNumberOfChildrenRequest(lastModifiedBy, lastModifiedTime, profileDetails.code),
+          ).id
         }
       }.also { telemetry["dpsId"] = it }
     }
@@ -71,11 +73,15 @@ class ContactPersonProfileDetailsSyncService(
 
   private fun getIgnoreReason(
     bookingCount: Int,
+    latestBooking: Boolean,
+    bookingId: Long,
     profileDetails: ProfileDetailsResponse,
   ): String? = if (bookingCount == 1 && profileDetails.code == null && profileDetails.modifiedDateTime == null) {
     "New profile details are empty"
   } else if (profileDetails.auditModuleName == synchronisationUser) {
     "Profile details were created by $synchronisationUser"
+  } else if (!latestBooking) {
+    "Ignoring historical bookingId $bookingId"
   } else {
     null
   }
