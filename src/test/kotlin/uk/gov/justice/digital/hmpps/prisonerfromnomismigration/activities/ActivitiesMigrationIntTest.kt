@@ -653,12 +653,50 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
   inner class EndMigratedActivities {
 
     private val migrationId = "2023-10-05T09:58:45"
+    private val migrationIdNoStarDate = "2024-11-05T09:58:45"
     private val count = 3
+    private val activityStartDate = LocalDate.parse("2023-10-08")
 
     @BeforeEach
     internal fun stubApis() = runTest {
       mappingApi.stubActivitiesMappingByMigrationId(count = count, migrationId = migrationId)
       nomisApi.stubEndActivities()
+    }
+
+    @BeforeEach
+    internal fun createHistoryRecords() = runTest {
+      migrationHistoryRepository.deleteAll()
+      migrationHistoryRepository.save(
+        MigrationHistory(
+          migrationId = migrationId,
+          whenStarted = LocalDateTime.parse("2023-10-05T09:58:45"),
+          whenEnded = LocalDateTime.parse("2023-10-05T10:04:45"),
+          status = MigrationStatus.COMPLETED,
+          estimatedRecordCount = 8,
+          filter = """{"prisonId":"BLI","activityStartDate":"$activityStartDate"}""",
+          recordsMigrated = 8,
+          recordsFailed = 0,
+          migrationType = MigrationType.ACTIVITIES,
+        ),
+      )
+      migrationHistoryRepository.save(
+        MigrationHistory(
+          migrationId = migrationIdNoStarDate,
+          whenStarted = LocalDateTime.parse("2024-12-05T09:58:45"),
+          whenEnded = LocalDateTime.parse("2024-11-05T10:04:45"),
+          status = MigrationStatus.COMPLETED,
+          estimatedRecordCount = 8,
+          filter = """{"prisonId":"BLI"}""",
+          recordsMigrated = 8,
+          recordsFailed = 0,
+          migrationType = MigrationType.ACTIVITIES,
+        ),
+      )
+    }
+
+    @AfterEach
+    internal fun deleteHistoryRecords() = runTest {
+      migrationHistoryRepository.deleteAll()
     }
 
     @Test
@@ -702,6 +740,18 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will end activities`() {
+      webTestClient.put().uri("/migrate/activities/$migrationIdNoStarDate/end")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+
+      mappingApi.verifyActivitiesMappingByMigrationId(migrationIdNoStarDate, count)
+      nomisApi.verifyEndActivities("[1,2,3]", "${LocalDate.now()}")
+    }
+
+    @Test
+    internal fun `will end activities with an activity start date filter`() {
       webTestClient.put().uri("/migrate/activities/$migrationId/end")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
         .header("Content-Type", "application/json")
@@ -709,7 +759,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isOk
 
       mappingApi.verifyActivitiesMappingByMigrationId(migrationId, count)
-      nomisApi.verifyEndActivities(listOf(1, 2, 3))
+      nomisApi.verifyEndActivities("[1,2,3]", "${activityStartDate.minusDays(1)}")
     }
   }
 }

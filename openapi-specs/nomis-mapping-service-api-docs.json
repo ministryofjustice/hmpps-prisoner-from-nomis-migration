@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-02-17"
+    "version": "2025-02-21.5938.205140d"
   },
   "servers": [
     {
@@ -4242,6 +4242,42 @@
         }
       }
     },
+    "/mapping/adjudications/delete-mappings": {
+      "post": {
+        "tags": [
+          "adjudications-mapping-resource"
+        ],
+        "summary": "Delete all mappings related to a specific adjudication",
+        "description": "Delete mapping entries created for a specific adjudication and associated hearings and punishments",
+        "operationId": "deleteMappingsForAdjudication",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdjudicationDeleteMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Adjudication mappings deleted",
+            "content": {}
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/adjudications/all": {
       "post": {
         "tags": [
@@ -4274,54 +4310,6 @@
                 }
               }
             }
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "adjudications-mapping-resource"
-        ],
-        "summary": "Delete all adjudication related mapping entries",
-        "description": "Delete mapping entries created during any migration or synchronisation for adjudications and associated hearings and punishments",
-        "operationId": "deleteAllMappings_2",
-        "parameters": [
-          {
-            "name": "migrationOnly",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "description": "Migration mappings only",
-              "example": true
-            }
-          },
-          {
-            "name": "synchronisationOnly",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "description": "Synchronisation mappings only",
-              "example": true
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Adjudication mappings deleted",
-            "content": {}
           },
           "401": {
             "description": "Unauthorized to access this endpoint",
@@ -13995,7 +13983,7 @@
         ],
         "summary": "Deletes all corporate mappings",
         "description": "Deletes all corporate mappings regardless of source. This includes corporate, phone, address, address phone, email, web. This is expected to only ever been used in a non-production environment. Requires role ROLE_NOMIS_CONTACTPERSONS",
-        "operationId": "deleteAllMappings_3",
+        "operationId": "deleteAllMappings_2",
         "responses": {
           "204": {
             "description": "All mappings deleted",
@@ -14031,7 +14019,7 @@
         ],
         "summary": "Deletes all core person mappings",
         "description": "Deletes all core person mappings regardless of source. This includes person and address. This is expected to only ever been used in a non-production environment. Requires role ROLE_NOMIS_CORE_PERSON",
-        "operationId": "deleteAllMappings_4",
+        "operationId": "deleteAllMappings_3",
         "responses": {
           "204": {
             "description": "All mappings deleted",
@@ -14131,7 +14119,7 @@
         ],
         "summary": "Deletes all contact person mappings",
         "description": "Deletes all contact person mappings regardless of source. This includes person, phone, address, email, employment, identifiers, restrictions, contacts and contact restrictions. This is expected to only ever been used in a non-production environment. Requires role ROLE_NOMIS_CONTACTPERSONS",
-        "operationId": "deleteAllMappings_5",
+        "operationId": "deleteAllMappings_4",
         "responses": {
           "204": {
             "description": "All mappings deleted",
@@ -14287,46 +14275,6 @@
         "responses": {
           "204": {
             "description": "Mapping deleted",
-            "content": {}
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/mapping/adjudications/all/migration-id/{migrationId}": {
-      "delete": {
-        "tags": [
-          "adjudications-mapping-resource"
-        ],
-        "summary": "Delete all adjudication related mapping entries for the given migration id",
-        "description": "Delete mapping entries created during a single migration for adjudications and associated hearings and punishments",
-        "operationId": "deleteMappingsByMigrationId",
-        "parameters": [
-          {
-            "name": "migrationId",
-            "in": "path",
-            "description": "Migration Id",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "description": "Migration Id",
-              "example": "2020-03-24T12:00:00"
-            },
-            "example": "2020-03-24T12:00:00"
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Adjudication mappings deleted",
             "content": {}
           },
           "401": {
@@ -17098,6 +17046,36 @@
           "nomisAllocationId"
         ]
       },
+      "AdjudicationDeleteMappingDto": {
+        "type": "object",
+        "description": "All DPS ids related to mappings that need deleting",
+        "properties": {
+          "dpsChargeNumber": {
+            "type": "string",
+            "description": "DPS Charge number",
+            "example": "123456/1"
+          },
+          "dpsHearingIds": {
+            "type": "array",
+            "description": "List of DPS hearing Ids",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dpsPunishmentIds": {
+            "type": "array",
+            "description": "List of DPS punishment Ids",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "dpsChargeNumber",
+          "dpsHearingIds",
+          "dpsPunishmentIds"
+        ]
+      },
       "AdjudicationAllMappingDto": {
         "type": "object",
         "description": "Adjudication mapping for all entities in an adjudication",
@@ -17432,19 +17410,13 @@
       "PageCourtCaseMappingDto": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CourtCaseMappingDto"
-            }
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -17456,6 +17428,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourtCaseMappingDto"
+            }
+          },
           "number": {
             "type": "integer",
             "format": "int32"
@@ -17463,12 +17441,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -17485,8 +17463,9 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "unpaged": {
-            "type": "boolean"
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
           },
           "paged": {
             "type": "boolean"
@@ -17495,9 +17474,8 @@
             "type": "integer",
             "format": "int32"
           },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
+          "unpaged": {
+            "type": "boolean"
           }
         }
       },
@@ -17569,19 +17547,13 @@
       "PageOrganisationsMappingDto": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OrganisationsMappingDto"
-            }
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -17593,6 +17565,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrganisationsMappingDto"
+            }
+          },
           "number": {
             "type": "integer",
             "format": "int32"
@@ -17600,12 +17578,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -17693,19 +17671,13 @@
       "PageCorePersonMappingDto": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CorePersonMappingDto"
-            }
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -17717,6 +17689,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CorePersonMappingDto"
+            }
+          },
           "number": {
             "type": "integer",
             "format": "int32"
@@ -17724,12 +17702,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -17809,19 +17787,13 @@
       "PagePersonMappingDto": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PersonMappingDto"
-            }
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -17833,6 +17805,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonMappingDto"
+            }
+          },
           "number": {
             "type": "integer",
             "format": "int32"
@@ -17840,12 +17818,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -17887,19 +17865,13 @@
       "PagePrisonerAlertMappingsSummaryDto": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PrisonerAlertMappingsSummaryDto"
-            }
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -17911,6 +17883,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PrisonerAlertMappingsSummaryDto"
+            }
+          },
           "number": {
             "type": "integer",
             "format": "int32"
@@ -17918,12 +17896,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -17958,19 +17936,13 @@
       "PageAlertMappingDto": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
           },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AlertMappingDto"
-            }
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -17982,6 +17954,12 @@
             "type": "integer",
             "format": "int32"
           },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AlertMappingDto"
+            }
+          },
           "number": {
             "type": "integer",
             "format": "int32"
@@ -17989,12 +17967,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"

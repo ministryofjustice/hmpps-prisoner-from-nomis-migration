@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -64,6 +65,7 @@ class ActivitiesMigrationServiceTest {
     nomisApiService = nomisApiService,
     activitiesMappingService = mappingService,
     activitiesApiService = activitiesApiService,
+    objectMapper = jacksonObjectMapper(),
     pageSize = 3L,
     completeCheckDelaySeconds = 10,
     completeCheckCount = 9,
@@ -89,6 +91,7 @@ class ActivitiesMigrationServiceTest {
       nomisApiService = nomisApiService,
       activitiesMappingService = mappingService,
       activitiesApiService = activitiesApiService,
+      objectMapper = jacksonObjectMapper(),
       pageSize = 3L,
       completeCheckDelaySeconds = 10,
       completeCheckCount = 9,

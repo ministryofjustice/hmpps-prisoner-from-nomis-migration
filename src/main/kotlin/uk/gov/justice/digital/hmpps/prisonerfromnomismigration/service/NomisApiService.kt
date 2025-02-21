@@ -135,9 +135,9 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     }
     .awaitSingle()
 
-  suspend fun endActivities(ids: List<Long>) = webClient.put()
+  suspend fun endActivities(ids: List<Long>, endDate: LocalDate) = webClient.put()
     .uri("/activities/end")
-    .body(BodyInserters.fromValue(EndActivitiesRequest(ids)))
+    .body(BodyInserters.fromValue(EndActivitiesRequest(ids, endDate)))
     .retrieve()
     .awaitBodilessEntity()
 

@@ -368,9 +368,11 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyEndActivities(expectedCourseActivityIds: List<Long>) {
-    putRequestedFor(urlPathEqualTo("/activities/end"))
-      .withRequestBody(containing(""""courseActivityIds": $expectedCourseActivityIds"""))
+  fun verifyEndActivities(expectedCourseActivityIds: String, endDate: String) {
+    nomisApi.verify(
+      putRequestedFor(urlPathEqualTo("/activities/end"))
+        .withRequestBody(containing(""""courseActivityIds":$expectedCourseActivityIds,"endDate":"$endDate"""")),
+    )
   }
 
   fun stubMultipleGetAllocations(count: Int) {
