@@ -4,46 +4,30 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
-import java.time.LocalDateTime
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerDomesticStatusResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerNumberOfChildrenResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerDomesticStatusRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerNumberOfChildrenRequest
 
 @Service
 class ContactPersonProfileDetailsDpsApiService(@Qualifier("personalRelationshipsApiWebClient") private val webClient: WebClient) {
   suspend fun syncDomesticStatus(
     prisonerNumber: String,
-    request: DomesticStatusSyncRequest,
-  ): DomesticStatusSyncResponse = webClient
+    request: SyncUpdatePrisonerDomesticStatusRequest,
+  ): SyncPrisonerDomesticStatusResponse = webClient
     .put()
-    .uri("/sync/domestic-status/{prisonerNumber}", prisonerNumber)
+    .uri("/sync/{prisonerNumber}/domestic-status", prisonerNumber)
     .bodyValue(request)
     .retrieve()
     .awaitBody()
 
-  suspend fun syncDependants(
+  suspend fun syncNumberOfChildren(
     prisonerNumber: String,
-    request: DependantsSyncRequest,
-  ): DependantsSyncResponse = webClient
+    request: SyncUpdatePrisonerNumberOfChildrenRequest,
+  ): SyncPrisonerNumberOfChildrenResponse = webClient
     .put()
-    .uri("/sync/dependants/{prisonerNumber}", prisonerNumber)
+    .uri("/sync/{prisonerNumber}/number-of-children", prisonerNumber)
     .bodyValue(request)
     .retrieve()
     .awaitBody()
 }
-
-// TODO SDIT-2573 All models to be replaced by models generated from OpenAPI spec when available
-data class DomesticStatusSyncRequest(
-  val domesticStatusCode: String?,
-  val createdBy: String,
-  val createdDateTime: LocalDateTime,
-  val latestBooking: Boolean,
-)
-
-data class DomesticStatusSyncResponse(val domesticStatusId: Long)
-
-data class DependantsSyncRequest(
-  val dependants: String?,
-  val createdBy: String,
-  val createdDateTime: LocalDateTime,
-  val latestBooking: Boolean,
-)
-
-data class DependantsSyncResponse(val dependantsId: Long)

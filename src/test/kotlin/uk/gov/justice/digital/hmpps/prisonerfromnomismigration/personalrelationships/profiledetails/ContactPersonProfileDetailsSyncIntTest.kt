@@ -30,6 +30,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.B
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ProfileDetailsChangedEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerDomesticStatusResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerNumberOfChildrenResponse
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import kotlin.collections.component1
 import kotlin.collections.component2
@@ -79,9 +81,8 @@ class ContactPersonProfileDetailsSyncIntTest(
         dpsApi.verify(
           dpsUpdates = mapOf(
             "domesticStatusCode" to equalTo("M"),
-            "createdDateTime" to equalTo("2024-09-04T12:34:56"),
+            "createdTime" to equalTo("2024-09-04T12:34:56"),
             "createdBy" to equalTo("A_USER"),
-            "latestBooking" to equalTo("true"),
           ),
         )
         verifyTelemetry(
@@ -89,12 +90,11 @@ class ContactPersonProfileDetailsSyncIntTest(
           profileType = "domestic-status",
           offenderNo = "A1234AA",
           bookingId = 12345,
-          latestBooking = true,
         )
       }
 
       @Test
-      fun `should sync new profile details for number of dependants`() = runTest {
+      fun `should sync new profile details for number of children`() = runTest {
         nomisApi.stubGetProfileDetails(
           "A1234AA",
           nomisResponse(
@@ -118,27 +118,25 @@ class ContactPersonProfileDetailsSyncIntTest(
             ),
           ),
         )
-        dpsApi.stubSyncDependants(response = dpsDependantsResponse())
+        dpsApi.stubSyncNumberOfChildren(response = dpsNumberOfChildrenResponse())
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "CHILD")
           .also { waitForAnyProcessingToComplete() }
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
         dpsApi.verify(
-          profileType = "dependants",
+          profileType = "number-of-children",
           dpsUpdates = mapOf(
-            "dependants" to equalTo("2"),
-            "createdDateTime" to equalTo("2024-09-04T12:34:56"),
+            "numberOfChildren" to equalTo("2"),
+            "createdTime" to equalTo("2024-09-04T12:34:56"),
             "createdBy" to equalTo("A_USER"),
-            "latestBooking" to equalTo("true"),
           ),
         )
         verifyTelemetry(
           telemetryType = "success",
-          profileType = "dependants",
+          profileType = "number-of-children",
           offenderNo = "A1234AA",
           bookingId = 12345,
-          latestBooking = true,
         )
       }
 
@@ -170,12 +168,11 @@ class ContactPersonProfileDetailsSyncIntTest(
         dpsApi.verify(
           dpsUpdates = mapOf(
             "domesticStatusCode" to absent(),
-            "createdDateTime" to equalTo("2024-09-05T12:34:56"),
+            "createdTime" to equalTo("2024-09-05T12:34:56"),
             "createdBy" to equalTo("ANOTHER_USER"),
-            "latestBooking" to equalTo("true"),
           ),
         )
-        verifyTelemetry(latestBooking = true)
+        verifyTelemetry()
       }
 
       @Test
@@ -232,7 +229,7 @@ class ContactPersonProfileDetailsSyncIntTest(
       }
 
       @Test
-      fun `should sync a historical booking`() = runTest {
+      fun `should ignore a historical booking`() = runTest {
         nomisApi.stubGetProfileDetails(
           response = nomisResponse(
             bookings = listOf(
@@ -263,13 +260,8 @@ class ContactPersonProfileDetailsSyncIntTest(
           .also { waitForAnyProcessingToComplete() }
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
-        dpsApi.verify(
-          dpsUpdates = mapOf(
-            "domesticStatusCode" to equalTo("M"),
-            "latestBooking" to equalTo("false"),
-          ),
-        )
-        verifyTelemetry(bookingId = 12345, latestBooking = false)
+        dpsApi.verify(type = "ignored")
+        verifyTelemetry(telemetryType = "ignored", ignoreReason = "Ignoring historical bookingId 12345")
       }
 
       @Test
@@ -293,9 +285,9 @@ class ContactPersonProfileDetailsSyncIntTest(
           ),
         )
         dpsApi.stubSyncDomesticStatus(response = dpsDomesticStatusResponse())
-        dpsApi.stubSyncDependants(response = dpsDependantsResponse())
+        dpsApi.stubSyncNumberOfChildren(response = dpsNumberOfChildrenResponse())
 
-        // The event received is for a domestic-status update, not dependants
+        // The event received is for a domestic-status update, not number-of-children
         sendProfileDetailsChangedEvent(profileType = "MARITAL")
           .also { waitForAnyProcessingToComplete() }
 
@@ -303,10 +295,10 @@ class ContactPersonProfileDetailsSyncIntTest(
         dpsApi.verify(profileType = "domestic-status", type = "updated")
         verifyTelemetry(profileType = "domestic-status", telemetryType = "success")
 
-        // We didn't update dependants or create telemetry
-        dpsApi.verify(profileType = "dependants", type = "not updated")
+        // We didn't update number of children or create telemetry
+        dpsApi.verify(profileType = "number-of-children", type = "not updated")
         verify(telemetryClient, times(0)).trackEvent(
-          eq("contact-person-dependants-synchronisation-success"),
+          eq("contact-person-number-of-children-synchronisation-success"),
           any(),
           isNull(),
         )
@@ -319,7 +311,7 @@ class ContactPersonProfileDetailsSyncIntTest(
         }
 
         dpsApi.verify(profileType = "domestic-status", type = "ignored")
-        dpsApi.verify(profileType = "dependants", type = "ignored")
+        dpsApi.verify(profileType = "number-of-children", type = "ignored")
       }
     }
 
@@ -347,7 +339,7 @@ class ContactPersonProfileDetailsSyncIntTest(
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
         dpsApi.verify()
-        verifyTelemetry(telemetryType = "error", errorReason = "500 Internal Server Error from PUT http://localhost:8097/sync/domestic-status/A1234AA")
+        verifyTelemetry(telemetryType = "error", errorReason = "500 Internal Server Error from PUT http://localhost:8097/sync/A1234AA/domestic-status")
       }
 
       @Test
@@ -393,8 +385,8 @@ class ContactPersonProfileDetailsSyncIntTest(
       }
     }
 
-    private fun dpsDomesticStatusResponse(id: Long = 321) = DomesticStatusSyncResponse(id)
-    private fun dpsDependantsResponse(id: Long = 321) = DependantsSyncResponse(id)
+    private fun dpsDomesticStatusResponse(id: Long = 321) = SyncPrisonerDomesticStatusResponse(id)
+    private fun dpsNumberOfChildrenResponse(id: Long = 321) = SyncPrisonerNumberOfChildrenResponse(id)
 
     private fun ContactPersonProfileDetailsDpsApiMockServer.verify(
       type: String = "updated",
@@ -404,7 +396,7 @@ class ContactPersonProfileDetailsSyncIntTest(
       // For updates verify we sent the correct details to the DPS API
       if (type == "updated") {
         verify(
-          putRequestedFor(urlPathEqualTo("/sync/$profileType/A1234AA"))
+          putRequestedFor(urlPathEqualTo("/sync/A1234AA/$profileType"))
             .apply {
               dpsUpdates.forEach { (jsonPath, pattern) ->
                 withRequestBody(matchingJsonPath(jsonPath, pattern))
@@ -413,7 +405,7 @@ class ContactPersonProfileDetailsSyncIntTest(
         )
       } else {
         // If not updated we shouldn't call the DPS API
-        verify(0, putRequestedFor(urlPathEqualTo("/sync/$profileType/A1234AA")))
+        verify(0, putRequestedFor(urlPathEqualTo("/sync/A1234AA/$profileType")))
       }
     }
   }
@@ -463,7 +455,6 @@ class ContactPersonProfileDetailsSyncIntTest(
     telemetryType: String = "success",
     offenderNo: String = "A1234AA",
     bookingId: Long = 12345,
-    latestBooking: Boolean? = null,
     ignoreReason: String? = null,
     errorReason: String? = null,
   ) = verify(telemetryClient).trackEvent(
@@ -471,7 +462,6 @@ class ContactPersonProfileDetailsSyncIntTest(
     check {
       assertThat(it["offenderNo"]).isEqualTo(offenderNo)
       assertThat(it["bookingId"]).isEqualTo("$bookingId")
-      latestBooking?.run { assertThat(it["latestBooking"]).isEqualTo("$latestBooking") }
       ignoreReason?.run { assertThat(it["reason"]).isEqualTo(this) }
       errorReason?.run { assertThat(it["error"]).isEqualTo(this) }
       if (ignoreReason == null && errorReason == null) {
