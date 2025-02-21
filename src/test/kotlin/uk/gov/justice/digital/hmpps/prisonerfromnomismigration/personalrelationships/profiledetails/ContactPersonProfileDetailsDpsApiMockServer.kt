@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension.Companion.dpsContactPersonServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerDomesticStatusResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerNumberOfChildrenResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension.Companion.objectMapper
 
 @Component
@@ -15,10 +17,10 @@ class ContactPersonProfileDetailsDpsApiMockServer {
 
   fun stubSyncDomesticStatus(
     prisonerNumber: String = "A1234AA",
-    response: DomesticStatusSyncResponse,
+    response: SyncPrisonerDomesticStatusResponse,
   ) {
     dpsContactPersonServer.stubFor(
-      put(urlPathMatching("/sync/domestic-status/$prisonerNumber"))
+      put(urlPathMatching("/sync/$prisonerNumber/domestic-status"))
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -34,7 +36,7 @@ class ContactPersonProfileDetailsDpsApiMockServer {
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     dpsContactPersonServer.stubFor(
-      put(urlPathMatching("/sync/domestic-status/$prisonerNumber"))
+      put(urlPathMatching("/sync/$prisonerNumber/domestic-status"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -44,12 +46,12 @@ class ContactPersonProfileDetailsDpsApiMockServer {
     )
   }
 
-  fun stubSyncDependants(
+  fun stubSyncNumberOfChildren(
     prisonerNumber: String = "A1234AA",
-    response: DependantsSyncResponse,
+    response: SyncPrisonerNumberOfChildrenResponse,
   ) {
     dpsContactPersonServer.stubFor(
-      put(urlPathMatching("/sync/dependants/$prisonerNumber"))
+      put(urlPathMatching("/sync/$prisonerNumber/number-of-children"))
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -59,13 +61,13 @@ class ContactPersonProfileDetailsDpsApiMockServer {
     )
   }
 
-  fun stubSyncDependants(
+  fun stubSyncNumberOfChildren(
     prisonerNumber: String = "A1234AA",
     status: HttpStatus,
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     dpsContactPersonServer.stubFor(
-      put(urlPathMatching("/sync/dependants/$prisonerNumber"))
+      put(urlPathMatching("/sync/$prisonerNumber/number-of-children"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
