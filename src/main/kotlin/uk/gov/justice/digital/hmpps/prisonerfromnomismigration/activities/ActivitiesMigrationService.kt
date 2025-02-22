@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
@@ -31,6 +32,7 @@ class ActivitiesMigrationService(
   private val nomisApiService: NomisApiService,
   private val activitiesApiService: ActivitiesApiService,
   private val activitiesMappingService: ActivitiesMappingService,
+  private val objectMapper: ObjectMapper,
   @Value("\${activities.page.size:20}") pageSize: Long,
   @Value("\${activities.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${activities.complete-check.count}") completeCheckCount: Int,
@@ -96,7 +98,10 @@ class ActivitiesMigrationService(
 
     val allActivityIds = activitiesMappingService.getActivityMigrationDetails(migrationId, activityCount).content
       .map { it.nomisCourseActivityId }
-    nomisApiService.endActivities(allActivityIds)
+
+    val migration = migrationHistoryService.get(migrationId)
+    val activityStartDate = objectMapper.readValue(migration.filter, ActivitiesMigrationFilter::class.java).activityStartDate?.minusDays(1) ?: LocalDate.now()
+    nomisApiService.endActivities(allActivityIds, activityStartDate)
   }
 
   private suspend fun ActivityMigrationMappingDto.createActivityMapping(context: MigrationContext<*>) = try {
