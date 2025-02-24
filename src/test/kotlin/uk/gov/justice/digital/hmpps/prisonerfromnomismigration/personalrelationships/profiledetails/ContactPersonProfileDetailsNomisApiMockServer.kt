@@ -2,8 +2,9 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelation
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.havingExactly
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
@@ -19,13 +20,14 @@ import java.time.LocalDateTime
 class ContactPersonProfileDetailsNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetProfileDetails(
     offenderNo: String = "A1234AA",
+    bookingId: Long = 12345,
+    profileTypes: List<String> = listOf("MARITAL"),
     response: PrisonerProfileDetailsResponse = PrisonerProfileDetailsResponse(
       offenderNo = offenderNo,
       bookings = listOf(
         BookingProfileDetailsResponse(
           bookingId = 1,
           startDateTime = "2024-02-03T12:34:56",
-          endDateTime = "2024-10-21T12:34:56",
           latestBooking = true,
           profileDetails = listOf(
             ProfileDetailsResponse(
@@ -51,12 +53,15 @@ class ContactPersonProfileDetailsNomisApiMockServer(private val objectMapper: Ob
       ),
     ),
   ) = nomisApi.stubFor(
-    get(urlEqualTo("/prisoners/$offenderNo/profile-details")).willReturn(
-      aResponse()
-        .withHeader("Content-Type", "application/json")
-        .withStatus(HttpStatus.OK.value())
-        .withBody(objectMapper.writeValueAsString(response)),
-    ),
+    get(urlPathMatching("/prisoners/$offenderNo/profile-details"))
+      .withQueryParam("bookingId", equalTo("$bookingId"))
+      .withQueryParam("profileTypes", havingExactly(*profileTypes.toTypedArray()))
+      .willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(response)),
+      ),
   )
 
   fun stubGetProfileDetails(

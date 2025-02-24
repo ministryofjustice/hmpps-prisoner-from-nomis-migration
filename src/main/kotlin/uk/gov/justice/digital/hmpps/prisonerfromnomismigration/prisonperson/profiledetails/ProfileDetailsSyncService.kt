@@ -78,7 +78,8 @@ class ProfileDetailsSyncService(
         with(profileDetails) {
           ProfileDetailsPhysicalAttributesSyncRequest(
             appliesFrom = booking.startDateTime.toLocalDateTime().atPrisonPersonZone(),
-            appliesTo = booking.endDateTime?.toLocalDateTime()?.atPrisonPersonZone(),
+            // We no longer return booking end date from the API call and this service isn't used anyway
+            appliesTo = "",
             latestBooking = booking.latestBooking,
             build = toDpsRequestIfType("BUILD"),
             shoeSize = toDpsRequestIfType("SHOESIZE"),

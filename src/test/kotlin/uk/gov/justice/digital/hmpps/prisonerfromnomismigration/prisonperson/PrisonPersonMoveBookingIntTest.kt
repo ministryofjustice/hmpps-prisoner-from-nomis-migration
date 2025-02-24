@@ -1050,7 +1050,6 @@ private fun bookingProfileDetails(
 ) = BookingProfileDetailsResponse(
   bookingId = bookingId,
   startDateTime = if (activeBooking) "${LocalDateTime.now().minusDays(1)}" else "${LocalDateTime.now().minusDays(8)}",
-  endDateTime = if (activeBooking) null else "${LocalDateTime.now().minusDays(6)}",
   latestBooking = latestBooking,
   profileDetails = profileDetails,
 )
