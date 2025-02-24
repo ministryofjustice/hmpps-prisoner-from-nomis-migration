@@ -27,7 +27,8 @@ class ProfileDetailPhysicalAttributesEntityMigrator(
     with(booking) {
       ProfileDetailsPhysicalAttributesMigrationRequest(
         appliesFrom = startDateTime.toLocalDateTime().atPrisonPersonZone(),
-        appliesTo = endDateTime?.toLocalDateTime()?.atPrisonPersonZone(),
+        // We no longer return booking end date from the API call and this service isn't used anyway
+        appliesTo = "",
         build = profileDetails.toDpsRequest("BUILD"),
         shoeSize = profileDetails.toDpsRequest("SHOESIZE"),
         hair = profileDetails.toDpsRequest("HAIR"),

@@ -71,7 +71,6 @@ class ProfileDetailsPhysicalAttributesMigrationIntTest : SqsIntegrationTestBase(
         dpsApi.verify(
           putRequestedFor(urlMatching("/migration/prisoners/A0001KT/profile-details-physical-attributes"))
             .withRequestBodyJsonPath("$[0].appliesFrom", "2024-02-03T12:34:56Z[Europe/London]")
-            .withRequestBodyJsonPath("$[0].appliesTo", "2024-10-21T12:34:56+01:00[Europe/London]")
             .withRequestBodyJsonPath("$[0].build.value", "SLIM")
             .withRequestBodyJsonPath("$[0].build.lastModifiedAt", containing(LocalDate.now().toString()))
             .withRequestBodyJsonPath("$[0].build.lastModifiedBy", "ANOTHER_USER")

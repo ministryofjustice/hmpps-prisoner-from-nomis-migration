@@ -52,7 +52,6 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
               booking(
                 bookingId = 12345,
                 startDateTime = "2024-09-03T12:34:56",
-                endDateTime = null,
                 latestBooking = true,
                 profileDetails = listOf(
                   profileDetails(
@@ -78,7 +77,6 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
           dpsUpdates = mapOf(
             "shoeSize.value" to equalTo("8.5"),
             "appliesFrom" to equalTo("2024-09-03T12:34:56+01:00[Europe/London]"),
-            "appliesTo" to absent(),
             "latestBooking" to equalTo("true"),
             "shoeSize.lastModifiedAt" to equalTo("2024-09-04T12:34:56+01:00[Europe/London]"),
             "shoeSize.lastModifiedBy" to equalTo("A_USER"),
@@ -204,7 +202,6 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
               booking(
                 bookingId = 12345,
                 startDateTime = "2024-09-02T12:34:56",
-                endDateTime = "2024-09-03T12:34:56",
                 latestBooking = false,
                 profileDetails = listOf(
                   profileDetails(
@@ -225,7 +222,6 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
           dpsUpdates = mapOf(
             "shoeSize.value" to equalTo("9.5"),
             "appliesFrom" to equalTo("2024-09-02T12:34:56+01:00[Europe/London]"),
-            "appliesTo" to equalTo("2024-09-03T12:34:56+01:00[Europe/London]"),
             "latestBooking" to equalTo("false"),
           ),
         )
@@ -241,7 +237,6 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
               booking(
                 bookingId = 12345,
                 startDateTime = "2024-09-02T12:34:56",
-                endDateTime = "2024-09-03T12:34:56",
                 latestBooking = true,
                 profileDetails = listOf(
                   profileDetails(
@@ -262,7 +257,6 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
           dpsUpdates = mapOf(
             "shoeSize.value" to equalTo("8.5"),
             "appliesFrom" to equalTo("2024-09-02T12:34:56+01:00[Europe/London]"),
-            "appliesTo" to equalTo("2024-09-03T12:34:56+01:00[Europe/London]"),
             "latestBooking" to equalTo("true"),
           ),
         )
@@ -438,13 +432,11 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
   private fun booking(
     bookingId: Long = 12345,
     startDateTime: String = "2024-09-03T12:34:56",
-    endDateTime: String? = null,
     latestBooking: Boolean = true,
     profileDetails: List<ProfileDetailsResponse> = listOf(profileDetails()),
   ) = BookingProfileDetailsResponse(
     bookingId = bookingId,
     startDateTime = startDateTime,
-    endDateTime = endDateTime,
     latestBooking = latestBooking,
     profileDetails = profileDetails,
   )

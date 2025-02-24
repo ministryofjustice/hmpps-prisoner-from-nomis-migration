@@ -61,8 +61,8 @@ class ProfileDetailsNomisApiServiceTest {
       with(profileDetailsResponse) {
         assertThat(offenderNo).isEqualTo("A1234AA")
         assertThat(bookings)
-          .extracting("bookingId", "startDateTime", "endDateTime", "latestBooking")
-          .containsExactly(tuple(1L, "2024-02-03T12:34:56", "2024-10-21T12:34:56", true))
+          .extracting("bookingId", "startDateTime", "latestBooking")
+          .containsExactly(tuple(1L, "2024-02-03T12:34:56", true))
         assertThat(bookings[0].profileDetails)
           .extracting("type", "code", "createdBy", "modifiedBy", "auditModuleName")
           .containsExactly(

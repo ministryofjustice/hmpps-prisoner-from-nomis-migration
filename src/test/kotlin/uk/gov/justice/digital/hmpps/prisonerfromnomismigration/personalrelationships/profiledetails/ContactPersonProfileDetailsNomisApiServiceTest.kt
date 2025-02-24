@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelation
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.havingExactly
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -21,7 +22,7 @@ import java.time.LocalDateTime
 
 @SpringAPIServiceTest
 @Import(ContactPersonProfileDetailsNomisApiService::class, ContactPersonProfileDetailsNomisApiMockServer::class)
-class ContactPersonContactPersonProfileDetailsNomisApiServiceTest {
+class ContactPersonProfileDetailsNomisApiServiceTest {
   @Autowired
   private lateinit var apiService: ContactPersonProfileDetailsNomisApiService
 
@@ -32,9 +33,9 @@ class ContactPersonContactPersonProfileDetailsNomisApiServiceTest {
   inner class GetProfileDetails {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      profileDetailsNomisApi.stubGetProfileDetails(offenderNo = "A1234AA")
+      profileDetailsNomisApi.stubGetProfileDetails(offenderNo = "A1234AA", profileTypes = listOf("MARITAL", "CHILD"), bookingId = 12345)
 
-      apiService.getProfileDetails(offenderNo = "A1234AA")
+      apiService.getProfileDetails(offenderNo = "A1234AA", profileTypes = listOf("MARITAL", "CHILD"), bookingId = 12345)
 
       profileDetailsNomisApi.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -42,27 +43,30 @@ class ContactPersonContactPersonProfileDetailsNomisApiServiceTest {
     }
 
     @Test
-    internal fun `will pass NOMIS ids to service`() = runTest {
-      profileDetailsNomisApi.stubGetProfileDetails(offenderNo = "A1234AA")
+    internal fun `will pass parameters to the service`() = runTest {
+      profileDetailsNomisApi.stubGetProfileDetails(offenderNo = "A1234AA", profileTypes = listOf("MARITAL", "CHILD"), bookingId = 12345)
 
-      apiService.getProfileDetails(offenderNo = "A1234AA")
+      apiService.getProfileDetails(offenderNo = "A1234AA", profileTypes = listOf("MARITAL", "CHILD"), bookingId = 12345)
 
       profileDetailsNomisApi.verify(
-        getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")),
+        getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details"))
+          .withQueryParam("profileTypes", havingExactly("MARITAL", "CHILD"))
+          .withQueryParam("bookingId", equalTo("12345")),
+
       )
     }
 
     @Test
-    fun `will return physical attributes`() = runTest {
-      profileDetailsNomisApi.stubGetProfileDetails(offenderNo = "A1234AA")
+    fun `will return profile details`() = runTest {
+      profileDetailsNomisApi.stubGetProfileDetails(offenderNo = "A1234AA", profileTypes = listOf("MARITAL", "CHILD"), bookingId = 12345)
 
-      val profileDetailsResponse = apiService.getProfileDetails("A1234AA")
+      val profileDetailsResponse = apiService.getProfileDetails(offenderNo = "A1234AA", profileTypes = listOf("MARITAL", "CHILD"), bookingId = 12345)
 
       with(profileDetailsResponse) {
         assertThat(offenderNo).isEqualTo("A1234AA")
         assertThat(bookings)
-          .extracting("bookingId", "startDateTime", "endDateTime", "latestBooking")
-          .containsExactly(tuple(1L, "2024-02-03T12:34:56", "2024-10-21T12:34:56", true))
+          .extracting("bookingId", "startDateTime", "latestBooking")
+          .containsExactly(tuple(1L, "2024-02-03T12:34:56", true))
         assertThat(bookings[0].profileDetails)
           .extracting("type", "code", "createdBy", "modifiedBy", "auditModuleName")
           .containsExactly(

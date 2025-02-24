@@ -25,7 +25,6 @@ class ProfileDetailsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         BookingProfileDetailsResponse(
           bookingId = 1,
           startDateTime = "2024-02-03T12:34:56",
-          endDateTime = "2024-10-21T12:34:56",
           latestBooking = true,
           profileDetails = listOf(
             ProfileDetailsResponse(

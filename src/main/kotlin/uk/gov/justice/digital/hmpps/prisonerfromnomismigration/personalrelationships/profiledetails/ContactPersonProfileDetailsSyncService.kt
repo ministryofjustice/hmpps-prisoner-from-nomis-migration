@@ -39,7 +39,7 @@ class ContactPersonProfileDetailsSyncService(
     )
 
     track("contact-person-${profileType.telemetryName}-synchronisation", telemetry) {
-      val nomisResponse = nomisApi.getProfileDetails(offenderNo)
+      val nomisResponse = nomisApi.getProfileDetails(offenderNo, listOf(profileType.name), bookingId)
       val booking = nomisResponse.bookings.find { it.bookingId == bookingId }
         ?: throw DomesticStatusChangedException("No booking found for bookingId $bookingId")
       telemetry["latestBooking"] = booking.latestBooking
