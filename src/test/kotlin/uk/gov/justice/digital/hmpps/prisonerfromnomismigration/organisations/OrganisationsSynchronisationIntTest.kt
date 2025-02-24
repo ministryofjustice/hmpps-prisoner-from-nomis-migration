@@ -7,7 +7,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
-import org.awaitility.Awaitility.await
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
@@ -33,12 +32,22 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporatePhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.dpsOrganisationsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncAddressResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationAddressPhoneResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationAddressResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationEmailResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationPhoneResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationWebAddressResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncEmailResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncOrganisationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncPhoneResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncWebResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateEmailRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreatePhoneRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateWebRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateEmailRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdatePhoneRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateWebRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
@@ -107,7 +116,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        dpsApiMock.stubCreateOrganisation(syncCreateOrganisationResponse().copy(organisationId = corporateAndOrganisationId))
+        dpsApiMock.stubCreateOrganisation(syncOrganisationResponse().copy(organisationId = corporateAndOrganisationId))
         mappingApiMock.stubCreateCorporateMapping()
         organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
@@ -209,7 +218,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         nomisApiMock.stubGetCorporateOrganisation(
           corporate = corporateOrganisation(corporateAndOrganisationId),
         )
-        dpsApiMock.stubCreateOrganisation(syncCreateOrganisationResponse().copy(organisationId = corporateAndOrganisationId))
+        dpsApiMock.stubCreateOrganisation(syncOrganisationResponse().copy(organisationId = corporateAndOrganisationId))
         mappingApiMock.stubCreateCorporateMapping(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
@@ -286,7 +295,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         nomisApiMock.stubGetCorporateOrganisation(
           corporate = corporateOrganisation(corporateAndOrganisationId),
         )
-        dpsApiMock.stubCreateOrganisation(syncCreateOrganisationResponse().copy(organisationId = corporateAndOrganisationId))
+        dpsApiMock.stubCreateOrganisation(syncOrganisationResponse().copy(organisationId = corporateAndOrganisationId))
         mappingApiMock.stubCreateCorporateMappingFailureFollowedBySuccess()
         organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
@@ -590,7 +599,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        dpsApiMock.stubCreateOrganisationAddress(syncCreateOrganisationAddressResponse().copy(organisationAddressId = dpsOrganisationAddressId))
+        dpsApiMock.stubCreateOrganisationAddress(syncAddressResponse().copy(organisationAddressId = dpsOrganisationAddressId))
         mappingApiMock.stubCreateAddressMapping()
         organisationsOffenderEventsQueue.sendMessage(
           corporateAddressEvent(
@@ -614,7 +623,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the organisation address in DPS from the organisation`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-address")))
-        val request: SyncCreateOrganisationAddressRequest = OrganisationsDpsApiExtension.getRequestBody(
+        val request: SyncCreateAddressRequest = OrganisationsDpsApiExtension.getRequestBody(
           postRequestedFor(urlPathEqualTo("/sync/organisation-address")),
         )
         with(request) {
@@ -629,13 +638,12 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(countyCode).isEqualTo("S.YORKSHIRE")
           assertThat(countryCode).isEqualTo("GBR")
           assertThat(postcode).isEqualTo("S1 6GG")
-          assertThat(verified).isNull()
-          assertThat(mailFlag).isTrue()
+          assertThat(mailAddress).isTrue()
           assertThat(startDate).isEqualTo(LocalDate.parse("2021-01-01"))
           assertThat(endDate).isEqualTo(LocalDate.parse("2025-01-01"))
           assertThat(noFixedAddress).isFalse()
           assertThat(comments).isEqualTo("nice area")
-          assertThat(servicesAddress).isTrue()
+          assertThat(serviceAddress).isTrue()
           assertThat(businessHours).isEqualTo("10am to 10pm Monday to Friday")
           assertThat(contactPersonName).isEqualTo("Bob Brown")
           assertThat(createdBy).isEqualTo("J.SPEAK")
@@ -711,7 +719,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           corporate = corporateOrganisation(corporateAndOrganisationId).withAddress(corporateAddress().copy(id = nomisAddressId)),
         )
 
-        dpsApiMock.stubCreateOrganisationAddress(syncCreateOrganisationAddressResponse().copy(organisationAddressId = dpsOrganisationAddressId))
+        dpsApiMock.stubCreateOrganisationAddress(syncAddressResponse().copy(organisationAddressId = dpsOrganisationAddressId))
         mappingApiMock.stubCreateAddressMapping(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
@@ -789,7 +797,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         nomisApiMock.stubGetCorporateOrganisation(
           corporate = corporateOrganisation(corporateAndOrganisationId).withAddress(corporateAddress().copy(id = nomisAddressId)),
         )
-        dpsApiMock.stubCreateOrganisationAddress(syncCreateOrganisationAddressResponse().copy(organisationAddressId = dpsOrganisationAddressId))
+        dpsApiMock.stubCreateOrganisationAddress(syncAddressResponse().copy(organisationAddressId = dpsOrganisationAddressId))
         mappingApiMock.stubCreateAddressMappingFailureFollowedBySuccess()
         organisationsOffenderEventsQueue.sendMessage(
           corporateAddressEvent(
@@ -943,7 +951,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update the address in DPS from the NOMIS address`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-address/$dpsOrganisationAddressId")))
-        val request: SyncUpdateOrganisationAddressRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-address/$dpsOrganisationAddressId")))
+        val request: SyncUpdateAddressRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-address/$dpsOrganisationAddressId")))
         with(request) {
           assertThat(addressType).isEqualTo("HOME")
           assertThat(primaryAddress).isTrue()
@@ -955,13 +963,12 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(countyCode).isEqualTo("S.YORKSHIRE")
           assertThat(countryCode).isEqualTo("GBR")
           assertThat(postcode).isEqualTo("S1 6GG")
-          assertThat(verified).isNull()
-          assertThat(mailFlag).isTrue()
+          assertThat(mailAddress).isTrue()
           assertThat(startDate).isEqualTo(LocalDate.parse("2021-01-01"))
           assertThat(endDate).isEqualTo(LocalDate.parse("2025-01-01"))
           assertThat(noFixedAddress).isFalse()
           assertThat(comments).isEqualTo("nice area")
-          assertThat(servicesAddress).isTrue()
+          assertThat(serviceAddress).isTrue()
           assertThat(businessHours).isEqualTo("10am to 10pm Monday to Friday")
           assertThat(contactPersonName).isEqualTo("Bob Brown")
           assertThat(updatedBy).isEqualTo("T.SMITH")
@@ -1120,7 +1127,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        dpsApiMock.stubCreateOrganisationPhone(syncCreateOrganisationPhoneResponse().copy(organisationPhoneId = dpsOrganisationPhoneId))
+        dpsApiMock.stubCreateOrganisationPhone(syncPhoneResponse().copy(organisationPhoneId = dpsOrganisationPhoneId))
         mappingApiMock.stubCreatePhoneMapping()
         organisationsOffenderEventsQueue.sendMessage(
           corporatePhoneEvent(
@@ -1144,7 +1151,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the organisation phone in DPS from the organisation`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-phone")))
-        val request: SyncCreateOrganisationPhoneRequest = OrganisationsDpsApiExtension.getRequestBody(
+        val request: SyncCreatePhoneRequest = OrganisationsDpsApiExtension.getRequestBody(
           postRequestedFor(urlPathEqualTo("/sync/organisation-phone")),
         )
         with(request) {
@@ -1225,7 +1232,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           corporate = corporateOrganisation(corporateAndOrganisationId).withPhone(corporatePhone().copy(id = nomisPhoneId)),
         )
 
-        dpsApiMock.stubCreateOrganisationPhone(syncCreateOrganisationPhoneResponse().copy(organisationPhoneId = dpsOrganisationPhoneId))
+        dpsApiMock.stubCreateOrganisationPhone(syncPhoneResponse().copy(organisationPhoneId = dpsOrganisationPhoneId))
         mappingApiMock.stubCreatePhoneMapping(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
@@ -1303,7 +1310,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         nomisApiMock.stubGetCorporateOrganisation(
           corporate = corporateOrganisation(corporateAndOrganisationId).withPhone(corporatePhone().copy(id = nomisPhoneId)),
         )
-        dpsApiMock.stubCreateOrganisationPhone(syncCreateOrganisationPhoneResponse().copy(organisationPhoneId = dpsOrganisationPhoneId))
+        dpsApiMock.stubCreateOrganisationPhone(syncPhoneResponse().copy(organisationPhoneId = dpsOrganisationPhoneId))
         mappingApiMock.stubCreatePhoneMappingFailureFollowedBySuccess()
         organisationsOffenderEventsQueue.sendMessage(
           corporatePhoneEvent(
@@ -1440,7 +1447,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update the phone in DPS from the NOMIS phone`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-phone/$dpsOrganisationPhoneId")))
-        val request: SyncUpdateOrganisationPhoneRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-phone/$dpsOrganisationPhoneId")))
+        val request: SyncUpdatePhoneRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-phone/$dpsOrganisationPhoneId")))
         with(request) {
           assertThat(phoneType).isEqualTo("HOME")
           assertThat(extNumber).isEqualTo("ext 123")
@@ -2099,7 +2106,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will not create address in DPS`() {
-        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")))
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/organisation-web")))
       }
 
       @Test
@@ -2135,7 +2142,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        dpsApiMock.stubCreateOrganisationWebAddress(syncCreateOrganisationWebAddressResponse().copy(organisationWebAddressId = dpsOrganisationWebAddressId))
+        dpsApiMock.stubCreateOrganisationWebAddress(syncWebResponse().copy(organisationWebAddressId = dpsOrganisationWebAddressId))
         mappingApiMock.stubCreateWebMapping()
         organisationsOffenderEventsQueue.sendMessage(
           corporateInternetAddressEvent(
@@ -2158,9 +2165,9 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will create the organisation web address in DPS from the organisation`() {
-        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")))
-        val request: SyncCreateOrganisationWebAddressRequest = OrganisationsDpsApiExtension.getRequestBody(
-          postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")),
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-web")))
+        val request: SyncCreateWebRequest = OrganisationsDpsApiExtension.getRequestBody(
+          postRequestedFor(urlPathEqualTo("/sync/organisation-web")),
         )
         with(request) {
           assertThat(organisationId).isEqualTo(corporateAndOrganisationId)
@@ -2219,7 +2226,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will not create organisation in DPS`() {
-        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")))
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/organisation-web")))
       }
 
       @Test
@@ -2251,7 +2258,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
         mappingApiMock.stubGetByNomisWebIdOrNull(nomisWebId = nomisInternetAddressId, mapping = null)
 
-        dpsApiMock.stubCreateOrganisationWebAddress(syncCreateOrganisationWebAddressResponse().copy(organisationWebAddressId = dpsOrganisationWebAddressId))
+        dpsApiMock.stubCreateOrganisationWebAddress(syncWebResponse().copy(organisationWebAddressId = dpsOrganisationWebAddressId))
         mappingApiMock.stubCreateWebMapping(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
@@ -2283,7 +2290,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will create the organisation web address in DPS once`() {
-        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")))
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/organisation-web")))
       }
 
       @Test
@@ -2335,7 +2342,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
         mappingApiMock.stubGetByNomisWebIdOrNull(nomisWebId = nomisInternetAddressId, mapping = null)
 
-        dpsApiMock.stubCreateOrganisationWebAddress(syncCreateOrganisationWebAddressResponse().copy(organisationWebAddressId = dpsOrganisationWebAddressId))
+        dpsApiMock.stubCreateOrganisationWebAddress(syncWebResponse().copy(organisationWebAddressId = dpsOrganisationWebAddressId))
         mappingApiMock.stubCreateWebMappingFailureFollowedBySuccess()
         organisationsOffenderEventsQueue.sendMessage(
           corporateInternetAddressEvent(
@@ -2348,7 +2355,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will create the organisation in DPS once`() {
-        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")))
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/organisation-web")))
       }
 
       @Test
@@ -2437,7 +2444,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        dpsApiMock.stubCreateOrganisationEmail(syncCreateOrganisationEmailResponse().copy(organisationEmailId = dpsOrganisationEmailId))
+        dpsApiMock.stubCreateOrganisationEmail(syncEmailResponse().copy(organisationEmailId = dpsOrganisationEmailId))
         mappingApiMock.stubCreateEmailMapping()
         organisationsOffenderEventsQueue.sendMessage(
           corporateInternetAddressEvent(
@@ -2461,7 +2468,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the organisation email address in DPS from the organisation`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-email")))
-        val request: SyncCreateOrganisationEmailRequest = OrganisationsDpsApiExtension.getRequestBody(
+        val request: SyncCreateEmailRequest = OrganisationsDpsApiExtension.getRequestBody(
           postRequestedFor(urlPathEqualTo("/sync/organisation-email")),
         )
         with(request) {
@@ -2553,7 +2560,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
         mappingApiMock.stubGetByNomisEmailIdOrNull(nomisEmailId = nomisInternetAddressId, mapping = null)
 
-        dpsApiMock.stubCreateOrganisationEmail(syncCreateOrganisationEmailResponse().copy(organisationEmailId = dpsOrganisationEmailId))
+        dpsApiMock.stubCreateOrganisationEmail(syncEmailResponse().copy(organisationEmailId = dpsOrganisationEmailId))
         mappingApiMock.stubCreateEmailMapping(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
@@ -2637,7 +2644,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
         mappingApiMock.stubGetByNomisEmailIdOrNull(nomisEmailId = nomisInternetAddressId, mapping = null)
 
-        dpsApiMock.stubCreateOrganisationEmail(syncCreateOrganisationEmailResponse().copy(organisationEmailId = dpsOrganisationEmailId))
+        dpsApiMock.stubCreateOrganisationEmail(syncEmailResponse().copy(organisationEmailId = dpsOrganisationEmailId))
         mappingApiMock.stubCreateEmailMappingFailureFollowedBySuccess()
         organisationsOffenderEventsQueue.sendMessage(
           corporateInternetAddressEvent(
@@ -2702,7 +2709,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will not update either the web or email address in DPS`() {
-        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/organisation-web-address/.*")))
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/organisation-web/.*")))
         dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/organisation-email/.*")))
       }
 
@@ -2772,8 +2779,8 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will update the web address in DPS from the NOMIS address`() {
-        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-web-address/$dpsOrganisationWebAddressId")))
-        val request: SyncUpdateOrganisationWebAddressRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-web-address/$dpsOrganisationWebAddressId")))
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-web/$dpsOrganisationWebAddressId")))
+        val request: SyncUpdateWebRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-web/$dpsOrganisationWebAddressId")))
         with(request) {
           assertThat(webAddress).isEqualTo("www.test.com")
           assertThat(updatedBy).isEqualTo("T.SMITH")
@@ -2835,7 +2842,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update the email address in DPS from the NOMIS email`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-email/$dpsOrganisationEmailId")))
-        val request: SyncUpdateOrganisationEmailRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-email/$dpsOrganisationEmailId")))
+        val request: SyncUpdateEmailRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-email/$dpsOrganisationEmailId")))
         with(request) {
           assertThat(emailAddress).isEqualTo("jane@test.com")
           assertThat(updatedBy).isEqualTo("T.SMITH")
@@ -2871,7 +2878,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
         dpsApiMock.stubDeleteOrganisationWebAddress(organisationWebAddressId = dpsOrganisationWebAddressId)
-        dpsApiMock.stubCreateOrganisationEmail(syncCreateOrganisationEmailResponse().copy(organisationEmailId = dpsOrganisationEmailId))
+        dpsApiMock.stubCreateOrganisationEmail(syncEmailResponse().copy(organisationEmailId = dpsOrganisationEmailId))
         mappingApiMock.stubDeleteByNomisWebId(nomisWebId = nomisInternetAddressId)
         mappingApiMock.stubCreateEmailMapping()
         organisationsOffenderEventsQueue.sendMessage(
@@ -2900,7 +2907,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will delete the web address in DPS since it is now an email address`() {
-        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/organisation-web-address/$dpsOrganisationWebAddressId")))
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/organisation-web/$dpsOrganisationWebAddressId")))
       }
 
       @Test
@@ -2911,7 +2918,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the email address in DPS from the NOMIS email`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-email")))
-        val request: SyncCreateOrganisationEmailRequest = OrganisationsDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/organisation-email")))
+        val request: SyncCreateEmailRequest = OrganisationsDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/organisation-email")))
         with(request) {
           assertThat(emailAddress).isEqualTo("jane@test.com")
           assertThat(createdBy).isEqualTo("T.SMITH")
@@ -2957,7 +2964,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
         dpsApiMock.stubDeleteOrganisationEmail(organisationEmailId = dpsOrganisationEmailId)
-        dpsApiMock.stubCreateOrganisationWebAddress(syncCreateOrganisationWebAddressResponse().copy(organisationWebAddressId = dpsOrganisationWebAddressId))
+        dpsApiMock.stubCreateOrganisationWebAddress(syncWebResponse().copy(organisationWebAddressId = dpsOrganisationWebAddressId))
         mappingApiMock.stubDeleteByNomisEmailId(nomisEmailId = nomisInternetAddressId)
         mappingApiMock.stubCreateWebMapping()
         organisationsOffenderEventsQueue.sendMessage(
@@ -2996,8 +3003,8 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will create the web address in DPS from the NOMIS address`() {
-        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")))
-        val request: SyncCreateOrganisationWebAddressRequest = OrganisationsDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/organisation-web-address")))
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-web")))
+        val request: SyncCreateWebRequest = OrganisationsDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/organisation-web")))
         with(request) {
           assertThat(webAddress).isEqualTo("www.test.com")
           assertThat(createdBy).isEqualTo("T.SMITH")
@@ -3114,7 +3121,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will delete the organisation web address from DPS`() {
-        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/organisation-web-address/$dpsOrganisationWebAddressId")))
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/organisation-web/$dpsOrganisationWebAddressId")))
       }
 
       @Test

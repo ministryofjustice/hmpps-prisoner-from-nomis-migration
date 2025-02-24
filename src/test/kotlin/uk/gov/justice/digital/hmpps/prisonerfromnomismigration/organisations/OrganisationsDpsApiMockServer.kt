@@ -22,6 +22,21 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigratedOrganisationAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncAddressResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateEmailRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreatePhoneRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateWebRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncEmailResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncOrganisationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncPhoneResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateEmailRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdatePhoneRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateWebRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncWebResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDateTime
@@ -88,38 +103,55 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
 
-    fun syncCreateOrganisationResponse() = SyncCreateOrganisationResponse(
+    fun syncOrganisationResponse() = SyncOrganisationResponse(
       organisationId = 123456,
+      active = true,
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
 
     fun syncUpdateOrganisationRequest() = SyncUpdateOrganisationRequest(
+      organisationId = 123456,
       organisationName = "Test Organisation",
       active = true,
       updatedBy = "JANE.SAM",
       updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
 
-    fun syncCreateOrganisationAddressRequest() = SyncCreateOrganisationAddressRequest(
+    fun syncCreateAddressRequest() = SyncCreateAddressRequest(
       organisationId = 1234567,
       addressType = "BUS",
       primaryAddress = true,
       createdBy = "JANE.SAM",
       createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+      mailAddress = false,
+      serviceAddress = false,
+      noFixedAddress = false,
     )
 
-    fun syncCreateOrganisationAddressResponse() = SyncCreateOrganisationAddressResponse(
+    fun syncAddressResponse() = SyncAddressResponse(
       organisationAddressId = 123456,
+      organisationId = 1234567,
+      primaryAddress = false,
+      mailAddress = false,
+      serviceAddress = false,
+      noFixedAddress = false,
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
 
-    fun syncUpdateOrganisationAddressRequest() = SyncUpdateOrganisationAddressRequest(
+    fun syncUpdateAddressRequest() = SyncUpdateAddressRequest(
       addressType = "MOB",
       primaryAddress = true,
       updatedBy = "JANE.SAM",
       updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
-      verified = false,
+      organisationId = 1234567,
+      mailAddress = false,
+      serviceAddress = false,
+      noFixedAddress = false,
     )
 
-    fun syncCreateOrganisationPhoneRequest() = SyncCreateOrganisationPhoneRequest(
+    fun syncCreatePhoneRequest() = SyncCreatePhoneRequest(
       organisationId = 1234567,
       phoneType = "MOB",
       phoneNumber = "0114 555 5555",
@@ -127,11 +159,17 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
 
-    fun syncCreateOrganisationPhoneResponse() = SyncCreateOrganisationPhoneResponse(
+    fun syncPhoneResponse() = SyncPhoneResponse(
       organisationPhoneId = 123456,
+      organisationId = 1234567,
+      phoneType = "MOB",
+      phoneNumber = "0114 555 5555",
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
 
-    fun syncUpdateOrganisationPhoneRequest() = SyncUpdateOrganisationPhoneRequest(
+    fun syncUpdatePhoneRequest() = SyncUpdatePhoneRequest(
+      organisationId = 1234567,
       phoneType = "MOB",
       phoneNumber = "0114 555 5555",
       updatedBy = "JANE.SAM",
@@ -155,30 +193,40 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       updatedBy = "JANE.SAM",
       updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
-    fun syncCreateOrganisationWebAddressRequest() = SyncCreateOrganisationWebAddressRequest(
+    fun syncCreateWebRequest() = SyncCreateWebRequest(
       organisationId = 1234567,
       webAddress = "www.test.com",
       createdBy = "JANE.SAM",
       createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
-    fun syncCreateOrganisationWebAddressResponse() = SyncCreateOrganisationWebAddressResponse(
+    fun syncWebResponse() = SyncWebResponse(
       organisationWebAddressId = 123456,
+      organisationId = 1234567,
+      webAddress = "www.test.com",
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
-    fun syncUpdateOrganisationWebAddressRequest() = SyncUpdateOrganisationWebAddressRequest(
+    fun syncUpdateWebRequest() = SyncUpdateWebRequest(
+      organisationId = 1234567,
       webAddress = "www.test.com",
       updatedBy = "JANE.SAM",
       updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
-    fun syncCreateOrganisationEmailRequest() = SyncCreateOrganisationEmailRequest(
+    fun syncCreateEmailRequest() = SyncCreateEmailRequest(
       organisationId = 1234567,
       emailAddress = "jane@test.com",
       createdBy = "JANE.SAM",
       createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
-    fun syncCreateOrganisationEmailResponse() = SyncCreateOrganisationEmailResponse(
+    fun syncEmailResponse() = SyncEmailResponse(
       organisationEmailId = 123456,
+      organisationId = 1234567,
+      emailAddress = "jane@test.com",
+      createdBy = "JANE.SAM",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
-    fun syncUpdateOrganisationEmailRequest() = SyncUpdateOrganisationEmailRequest(
+    fun syncUpdateEmailRequest() = SyncUpdateEmailRequest(
+      organisationId = 1234567,
       emailAddress = "jane@test.com",
       updatedBy = "JANE.SAM",
       updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
@@ -231,7 +279,7 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCreateOrganisation(response: SyncCreateOrganisationResponse = syncCreateOrganisationResponse()) {
+  fun stubCreateOrganisation(response: SyncOrganisationResponse = syncOrganisationResponse()) {
     dpsOrganisationsServer.stubFor(
       post("/sync/organisation")
         .willReturn(
@@ -263,7 +311,7 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
-  fun stubCreateOrganisationAddress(response: SyncCreateOrganisationAddressResponse = syncCreateOrganisationAddressResponse()) {
+  fun stubCreateOrganisationAddress(response: SyncAddressResponse = syncAddressResponse()) {
     dpsOrganisationsServer.stubFor(
       post("/sync/organisation-address")
         .willReturn(
@@ -296,7 +344,7 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCreateOrganisationPhone(response: SyncCreateOrganisationPhoneResponse = syncCreateOrganisationPhoneResponse()) {
+  fun stubCreateOrganisationPhone(response: SyncPhoneResponse = syncPhoneResponse()) {
     dpsOrganisationsServer.stubFor(
       post("/sync/organisation-phone")
         .willReturn(
@@ -362,9 +410,9 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
-  fun stubCreateOrganisationWebAddress(response: SyncCreateOrganisationWebAddressResponse = syncCreateOrganisationWebAddressResponse()) {
+  fun stubCreateOrganisationWebAddress(response: SyncWebResponse = syncWebResponse()) {
     dpsOrganisationsServer.stubFor(
-      post("/sync/organisation-web-address")
+      post("/sync/organisation-web")
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -375,7 +423,7 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
   fun stubUpdateOrganisationWebAddress(organisationWebAddressId: Long) {
     dpsOrganisationsServer.stubFor(
-      put("/sync/organisation-web-address/$organisationWebAddressId")
+      put("/sync/organisation-web/$organisationWebAddressId")
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -386,7 +434,7 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubDeleteOrganisationWebAddress(organisationWebAddressId: Long) {
     dpsOrganisationsServer.stubFor(
-      delete("/sync/organisation-web-address/$organisationWebAddressId")
+      delete("/sync/organisation-web/$organisationWebAddressId")
         .willReturn(
           aResponse()
             .withStatus(204)
@@ -394,7 +442,7 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
-  fun stubCreateOrganisationEmail(response: SyncCreateOrganisationEmailResponse = syncCreateOrganisationEmailResponse()) {
+  fun stubCreateOrganisationEmail(response: SyncEmailResponse = syncEmailResponse()) {
     dpsOrganisationsServer.stubFor(
       post("/sync/organisation-email")
         .willReturn(
