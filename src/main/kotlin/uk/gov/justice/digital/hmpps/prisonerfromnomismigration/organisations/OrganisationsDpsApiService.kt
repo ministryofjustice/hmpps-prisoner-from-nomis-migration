@@ -8,7 +8,21 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationResponse
-import java.time.LocalDate
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncAddressResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateEmailRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreatePhoneRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateWebRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncEmailResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncOrganisationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncPhoneResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateEmailRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdatePhoneRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateWebRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncWebResponse
 import java.time.LocalDateTime
 
 @Service
@@ -19,7 +33,7 @@ class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") priv
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun createOrganisation(organisation: SyncCreateOrganisationRequest): SyncCreateOrganisationResponse = webClient.post()
+  suspend fun createOrganisation(organisation: SyncCreateOrganisationRequest): SyncOrganisationResponse = webClient.post()
     .uri("/sync/organisation")
     .bodyValue(organisation)
     .retrieve()
@@ -39,13 +53,13 @@ class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") priv
       .retrieve()
       .awaitBodilessEntityIgnoreNotFound()
   }
-  suspend fun createOrganisationAddress(organisationAddress: SyncCreateOrganisationAddressRequest): SyncCreateOrganisationAddressResponse = webClient.post()
+  suspend fun createOrganisationAddress(organisationAddress: SyncCreateAddressRequest): SyncAddressResponse = webClient.post()
     .uri("/sync/organisation-address")
     .bodyValue(organisationAddress)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun updateOrganisationAddress(organisationAddressId: Long, organisationAddress: SyncUpdateOrganisationAddressRequest) {
+  suspend fun updateOrganisationAddress(organisationAddressId: Long, organisationAddress: SyncUpdateAddressRequest) {
     webClient.put()
       .uri("/sync/organisation-address/{organisationAddressId}", organisationAddressId)
       .bodyValue(organisationAddress)
@@ -60,13 +74,13 @@ class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") priv
       .awaitBodilessEntityIgnoreNotFound()
   }
 
-  suspend fun createOrganisationPhone(organisationPhone: SyncCreateOrganisationPhoneRequest): SyncCreateOrganisationPhoneResponse = webClient.post()
+  suspend fun createOrganisationPhone(organisationPhone: SyncCreatePhoneRequest): SyncPhoneResponse = webClient.post()
     .uri("/sync/organisation-phone")
     .bodyValue(organisationPhone)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun updateOrganisationPhone(organisationPhoneId: Long, organisationPhone: SyncUpdateOrganisationPhoneRequest) {
+  suspend fun updateOrganisationPhone(organisationPhoneId: Long, organisationPhone: SyncUpdatePhoneRequest) {
     webClient.put()
       .uri("/sync/organisation-phone/{organisationPhoneId}", organisationPhoneId)
       .bodyValue(organisationPhone)
@@ -99,33 +113,33 @@ class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") priv
       .retrieve()
       .awaitBodilessEntityIgnoreNotFound()
   }
-  suspend fun createOrganisationWebAddress(organisationWebAddress: SyncCreateOrganisationWebAddressRequest): SyncCreateOrganisationWebAddressResponse = webClient.post()
-    .uri("/sync/organisation-web-address")
+  suspend fun createOrganisationWebAddress(organisationWebAddress: SyncCreateWebRequest): SyncWebResponse = webClient.post()
+    .uri("/sync/organisation-web")
     .bodyValue(organisationWebAddress)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun updateOrganisationWebAddress(organisationWebAddressId: Long, organisationWebAddress: SyncUpdateOrganisationWebAddressRequest) {
+  suspend fun updateOrganisationWebAddress(organisationWebAddressId: Long, organisationWebAddress: SyncUpdateWebRequest) {
     webClient.put()
-      .uri("/sync/organisation-web-address/{organisationWebAddressId}", organisationWebAddressId)
+      .uri("/sync/organisation-web/{organisationWebAddressId}", organisationWebAddressId)
       .bodyValue(organisationWebAddress)
       .retrieve()
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
   }
   suspend fun deleteOrganisationWebAddress(organisationWebAddressId: Long) {
     webClient.delete()
-      .uri("/sync/organisation-web-address/{organisationWebAddressId}", organisationWebAddressId)
+      .uri("/sync/organisation-web/{organisationWebAddressId}", organisationWebAddressId)
       .retrieve()
       .awaitBodilessEntityIgnoreNotFound()
   }
 
-  suspend fun createOrganisationEmail(organisationEmail: SyncCreateOrganisationEmailRequest): SyncCreateOrganisationEmailResponse = webClient.post()
+  suspend fun createOrganisationEmail(organisationEmail: SyncCreateEmailRequest): SyncEmailResponse = webClient.post()
     .uri("/sync/organisation-email")
     .bodyValue(organisationEmail)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun updateOrganisationEmail(organisationEmailId: Long, organisationEmail: SyncUpdateOrganisationEmailRequest) {
+  suspend fun updateOrganisationEmail(organisationEmailId: Long, organisationEmail: SyncUpdateEmailRequest) {
     webClient.put()
       .uri("/sync/organisation-email/{organisationEmailId}", organisationEmailId)
       .bodyValue(organisationEmail)
@@ -148,109 +162,6 @@ class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") priv
 }
 
 //  Fake DTOs - replace with real ones once created
-data class SyncCreateOrganisationRequest(
-  val organisationId: Long,
-  val organisationName: String,
-  val programmeNumber: String? = null,
-  val vatNumber: String? = null,
-  val caseloadId: String? = null,
-  val comments: String? = null,
-  val active: Boolean,
-  val deactivatedDate: LocalDate? = null,
-  val createdBy: String,
-  val createdTime: LocalDateTime,
-)
-
-data class SyncUpdateOrganisationRequest(
-  val organisationName: String,
-  val programmeNumber: String? = null,
-  val vatNumber: String? = null,
-  val caseloadId: String? = null,
-  val comments: String? = null,
-  val active: Boolean,
-  val deactivatedDate: LocalDate? = null,
-  val updatedBy: String,
-  val updatedTime: LocalDateTime,
-)
-
-data class SyncCreateOrganisationResponse(
-  val organisationId: Long,
-)
-
-data class SyncCreateOrganisationAddressRequest(
-  val organisationId: Long,
-  val primaryAddress: Boolean,
-  val createdBy: String,
-  val createdTime: LocalDateTime,
-  val addressType: String? = null,
-  val flat: String? = null,
-  val `property`: String? = null,
-  val street: String? = null,
-  val area: String? = null,
-  val cityCode: String? = null,
-  val countyCode: String? = null,
-  val postcode: String? = null,
-  val countryCode: String? = null,
-  val verified: Boolean? = null,
-  val mailFlag: Boolean? = null,
-  val startDate: LocalDate? = null,
-  val endDate: LocalDate? = null,
-  val noFixedAddress: Boolean? = null,
-  val comments: String? = null,
-  val specialNeedsCode: String? = null,
-  val contactPersonName: String? = null,
-  val businessHours: String? = null,
-  val servicesAddress: Boolean? = null,
-)
-
-data class SyncCreateOrganisationAddressResponse(
-  val organisationAddressId: Long,
-)
-
-data class SyncUpdateOrganisationAddressRequest(
-  val primaryAddress: Boolean,
-  val updatedBy: String,
-  val updatedTime: LocalDateTime,
-  val addressType: String? = null,
-  val flat: String? = null,
-  val `property`: String? = null,
-  val street: String? = null,
-  val area: String? = null,
-  val cityCode: String? = null,
-  val countyCode: String? = null,
-  val postcode: String? = null,
-  val countryCode: String? = null,
-  val verified: Boolean? = null,
-  val mailFlag: Boolean? = null,
-  val startDate: LocalDate? = null,
-  val endDate: LocalDate? = null,
-  val noFixedAddress: Boolean? = null,
-  val comments: String? = null,
-  val specialNeedsCode: String? = null,
-  val contactPersonName: String? = null,
-  val businessHours: String? = null,
-  val servicesAddress: Boolean? = null,
-)
-
-data class SyncCreateOrganisationPhoneRequest(
-  val organisationId: Long,
-  val phoneType: String,
-  val phoneNumber: String,
-  val createdBy: String,
-  val createdTime: LocalDateTime,
-  val extNumber: String? = null,
-)
-
-data class SyncCreateOrganisationPhoneResponse(
-  val organisationPhoneId: Long,
-)
-data class SyncUpdateOrganisationPhoneRequest(
-  val phoneType: String,
-  val phoneNumber: String,
-  val updatedBy: String,
-  val updatedTime: LocalDateTime,
-  val extNumber: String? = null,
-)
 
 data class SyncCreateOrganisationAddressPhoneRequest(
   val organisationId: Long,
@@ -271,40 +182,6 @@ data class SyncUpdateOrganisationAddressPhoneRequest(
 
 data class SyncCreateOrganisationAddressPhoneResponse(
   val organisationAddressPhoneId: Long,
-)
-
-data class SyncCreateOrganisationEmailRequest(
-  val organisationId: Long,
-  val emailAddress: String,
-  val createdBy: String,
-  val createdTime: LocalDateTime,
-)
-
-data class SyncCreateOrganisationEmailResponse(
-  val organisationEmailId: Long,
-)
-
-data class SyncUpdateOrganisationEmailRequest(
-  val emailAddress: String,
-  val updatedBy: String,
-  val updatedTime: LocalDateTime,
-)
-
-data class SyncCreateOrganisationWebAddressRequest(
-  val organisationId: Long,
-  val webAddress: String,
-  val createdBy: String,
-  val createdTime: LocalDateTime,
-)
-
-data class SyncCreateOrganisationWebAddressResponse(
-  val organisationWebAddressId: Long,
-)
-
-data class SyncUpdateOrganisationWebAddressRequest(
-  val webAddress: String,
-  val updatedBy: String,
-  val updatedTime: LocalDateTime,
 )
 
 data class SyncUpdateOrganisationTypesRequest(val types: List<SyncUpdateOrganisationType>)

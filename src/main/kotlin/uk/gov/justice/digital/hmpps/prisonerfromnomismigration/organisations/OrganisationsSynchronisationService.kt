@@ -18,6 +18,16 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporatePhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateEmailRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreatePhoneRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateWebRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateAddressRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateEmailRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdatePhoneRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateWebRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -94,11 +104,11 @@ class OrganisationsSynchronisationService(
       )
     } else {
       track("organisations-corporate-synchronisation-updated", telemetry) {
-        val contactId = mappingApiService.getByNomisCorporateId(nomisCorporateId = event.corporateId).dpsId.toLong().also {
+        val dpsOrganisationId = mappingApiService.getByNomisCorporateId(nomisCorporateId = event.corporateId).dpsId.toLong().also {
           telemetry["dpsOrganisationId"] = it
         }
         val nomisCorporate = nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId)
-        dpsApiService.updateOrganisation(contactId, nomisCorporate.toDpsUpdateOrganisationRequest())
+        dpsApiService.updateOrganisation(dpsOrganisationId, nomisCorporate.toDpsUpdateOrganisationRequest(dpsOrganisationId))
       }
     }
   }
@@ -165,7 +175,7 @@ class OrganisationsSynchronisationService(
         }
         val nomisCorporate = nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId)
         val nomisAddress = nomisCorporate.addresses.find { it.id == event.addressId }!!
-        dpsApiService.updateOrganisationAddress(dpsOrganisationAddressId, nomisAddress.toDpsUpdateOrganisationAddressRequest())
+        dpsApiService.updateOrganisationAddress(dpsOrganisationAddressId, nomisAddress.toDpsUpdateOrganisationAddressRequest(dpsOrganisationId = event.corporateId))
       }
     }
   }
@@ -232,7 +242,7 @@ class OrganisationsSynchronisationService(
         }
         val nomisCorporate = nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId)
         val nomisPhone = nomisCorporate.phoneNumbers.find { it.id == event.phoneId }!!
-        dpsApiService.updateOrganisationPhone(dpsOrganisationPhoneId, nomisPhone.toDpsUpdateOrganisationPhoneRequest())
+        dpsApiService.updateOrganisationPhone(dpsOrganisationPhoneId, nomisPhone.toDpsUpdateOrganisationPhoneRequest(dpsOrganisationId = event.corporateId))
       }
     }
   }
@@ -435,7 +445,7 @@ class OrganisationsSynchronisationService(
       } else {
         dpsApiService.updateOrganisationEmail(
           dpsOrganisationEmailId,
-          nomisInternetAddress.toDpsUpdateOrganisationEmailRequest(),
+          nomisInternetAddress.toDpsUpdateOrganisationEmailRequest(dpsOrganisationId = dpsOrganisationId),
         )
       }
     }
@@ -451,7 +461,7 @@ class OrganisationsSynchronisationService(
     mappingApiService.deleteByNomisEmailId(nomisInternetAddress.id)
     dpsApiService.deleteOrganisationEmail(dpsOrganisationEmailId)
 
-    // recreate as an web address
+    // recreate as a web address
     val dpsOrganisationWebAddress = dpsApiService.createOrganisationWebAddress(
       nomisInternetAddress.toDpsCreateOrganisationWebAddressRequestForUpdateSwitch(dpsOrganisationId),
     ).also { dpsOrganisationWebAddress ->
@@ -486,7 +496,7 @@ class OrganisationsSynchronisationService(
       } else {
         dpsApiService.updateOrganisationWebAddress(
           dpsOrganisationWebAddressId,
-          nomisInternetAddress.toDpsUpdateOrganisationWebAddressRequest(),
+          nomisInternetAddress.toDpsUpdateOrganisationWebAddressRequest(dpsOrganisationId = dpsOrganisationId),
         )
       }
     }
@@ -648,7 +658,8 @@ fun CorporateOrganisation.toDpsCreateOrganisationRequest() = SyncCreateOrganisat
   createdBy = this.audit.createUsername,
   createdTime = this.audit.createDatetime.toDateTime(),
 )
-fun CorporateOrganisation.toDpsUpdateOrganisationRequest() = SyncUpdateOrganisationRequest(
+fun CorporateOrganisation.toDpsUpdateOrganisationRequest(dpsOrganisationId: Long) = SyncUpdateOrganisationRequest(
+  organisationId = dpsOrganisationId,
   organisationName = this.name,
   programmeNumber = programmeNumber,
   vatNumber = vatNumber,
@@ -659,7 +670,7 @@ fun CorporateOrganisation.toDpsUpdateOrganisationRequest() = SyncUpdateOrganisat
   updatedBy = this.audit.modifyUserId!!,
   updatedTime = this.audit.modifyDatetime!!.toDateTime(),
 )
-fun CorporateAddress.toDpsCreateOrganisationAddressRequest(dpsOrganisationId: Long) = SyncCreateOrganisationAddressRequest(
+fun CorporateAddress.toDpsCreateOrganisationAddressRequest(dpsOrganisationId: Long) = SyncCreateAddressRequest(
   organisationId = dpsOrganisationId,
   addressType = this.type?.code,
   primaryAddress = this.primaryAddress,
@@ -671,19 +682,19 @@ fun CorporateAddress.toDpsCreateOrganisationAddressRequest(dpsOrganisationId: Lo
   countyCode = this.county?.code,
   countryCode = this.country?.code,
   postcode = this.postcode,
-  verified = null,
-  mailFlag = this.mailAddress,
+  mailAddress = this.mailAddress,
   startDate = this.startDate,
   endDate = this.endDate,
-  noFixedAddress = this.noFixedAddress,
+  noFixedAddress = this.noFixedAddress == true,
   contactPersonName = this.contactPersonName,
   businessHours = this.businessHours,
-  servicesAddress = this.isServices,
+  serviceAddress = this.isServices,
   comments = this.comment,
   createdBy = this.audit.createUsername,
   createdTime = this.audit.createDatetime.toDateTime(),
 )
-fun CorporateAddress.toDpsUpdateOrganisationAddressRequest() = SyncUpdateOrganisationAddressRequest(
+fun CorporateAddress.toDpsUpdateOrganisationAddressRequest(dpsOrganisationId: Long) = SyncUpdateAddressRequest(
+  organisationId = dpsOrganisationId,
   addressType = this.type?.code,
   primaryAddress = this.primaryAddress,
   flat = this.flat,
@@ -694,20 +705,19 @@ fun CorporateAddress.toDpsUpdateOrganisationAddressRequest() = SyncUpdateOrganis
   countyCode = this.county?.code,
   countryCode = this.country?.code,
   postcode = this.postcode,
-  verified = null,
-  mailFlag = this.mailAddress,
+  mailAddress = this.mailAddress,
   startDate = this.startDate,
   endDate = this.endDate,
-  noFixedAddress = this.noFixedAddress,
+  noFixedAddress = this.noFixedAddress == true,
   contactPersonName = this.contactPersonName,
   businessHours = this.businessHours,
-  servicesAddress = this.isServices,
+  serviceAddress = this.isServices,
   comments = this.comment,
   updatedBy = this.audit.modifyUserId!!,
   updatedTime = this.audit.modifyDatetime!!.toDateTime(),
 )
 
-fun CorporatePhoneNumber.toDpsCreateOrganisationPhoneRequest(dpsOrganisationId: Long) = SyncCreateOrganisationPhoneRequest(
+fun CorporatePhoneNumber.toDpsCreateOrganisationPhoneRequest(dpsOrganisationId: Long) = SyncCreatePhoneRequest(
   organisationId = dpsOrganisationId,
   phoneType = this.type.code,
   createdBy = this.audit.createUsername,
@@ -734,43 +744,46 @@ fun CorporatePhoneNumber.toDpsUpdateOrganisationAddressPhoneRequest() = SyncUpda
   extNumber = this.extension,
 )
 
-fun CorporatePhoneNumber.toDpsUpdateOrganisationPhoneRequest() = SyncUpdateOrganisationPhoneRequest(
+fun CorporatePhoneNumber.toDpsUpdateOrganisationPhoneRequest(dpsOrganisationId: Long) = SyncUpdatePhoneRequest(
+  organisationId = dpsOrganisationId,
   phoneType = this.type.code,
   updatedBy = this.audit.modifyUserId!!,
   updatedTime = this.audit.modifyDatetime!!.toDateTime(),
   phoneNumber = this.number,
   extNumber = this.extension,
 )
-fun CorporateInternetAddress.toDpsCreateOrganisationWebAddressRequest(dpsOrganisationId: Long) = SyncCreateOrganisationWebAddressRequest(
-  webAddress = this.internetAddress,
+fun CorporateInternetAddress.toDpsCreateOrganisationWebAddressRequest(dpsOrganisationId: Long) = SyncCreateWebRequest(
   organisationId = dpsOrganisationId,
+  webAddress = this.internetAddress,
   createdBy = this.audit.createUsername,
   createdTime = this.audit.createDatetime.toDateTime(),
 )
-fun CorporateInternetAddress.toDpsUpdateOrganisationWebAddressRequest() = SyncUpdateOrganisationWebAddressRequest(
+fun CorporateInternetAddress.toDpsUpdateOrganisationWebAddressRequest(dpsOrganisationId: Long) = SyncUpdateWebRequest(
+  organisationId = dpsOrganisationId,
   webAddress = this.internetAddress,
   updatedBy = this.audit.modifyUserId!!,
   updatedTime = this.audit.modifyDatetime!!.toDateTime(),
 )
-fun CorporateInternetAddress.toDpsCreateOrganisationEmailRequest(dpsOrganisationId: Long) = SyncCreateOrganisationEmailRequest(
-  emailAddress = this.internetAddress,
+fun CorporateInternetAddress.toDpsCreateOrganisationEmailRequest(dpsOrganisationId: Long) = SyncCreateEmailRequest(
   organisationId = dpsOrganisationId,
+  emailAddress = this.internetAddress,
   createdBy = this.audit.createUsername,
   createdTime = this.audit.createDatetime.toDateTime(),
 )
-fun CorporateInternetAddress.toDpsCreateOrganisationEmailRequestForUpdateSwitch(dpsOrganisationId: Long) = SyncCreateOrganisationEmailRequest(
+fun CorporateInternetAddress.toDpsCreateOrganisationEmailRequestForUpdateSwitch(dpsOrganisationId: Long) = SyncCreateEmailRequest(
   emailAddress = this.internetAddress,
   organisationId = dpsOrganisationId,
   createdBy = this.audit.modifyUserId!!,
   createdTime = this.audit.modifyDatetime!!.toDateTime(),
 )
-fun CorporateInternetAddress.toDpsCreateOrganisationWebAddressRequestForUpdateSwitch(dpsOrganisationId: Long) = SyncCreateOrganisationWebAddressRequest(
+fun CorporateInternetAddress.toDpsCreateOrganisationWebAddressRequestForUpdateSwitch(dpsOrganisationId: Long) = SyncCreateWebRequest(
   webAddress = this.internetAddress,
   organisationId = dpsOrganisationId,
   createdBy = this.audit.modifyUserId!!,
   createdTime = this.audit.modifyDatetime!!.toDateTime(),
 )
-fun CorporateInternetAddress.toDpsUpdateOrganisationEmailRequest() = SyncUpdateOrganisationEmailRequest(
+fun CorporateInternetAddress.toDpsUpdateOrganisationEmailRequest(dpsOrganisationId: Long) = SyncUpdateEmailRequest(
+  organisationId = dpsOrganisationId,
   emailAddress = this.internetAddress,
   updatedBy = this.audit.modifyUserId!!,
   updatedTime = this.audit.modifyDatetime!!.toDateTime(),
