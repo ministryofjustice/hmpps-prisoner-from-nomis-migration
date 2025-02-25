@@ -23,10 +23,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreatePhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateWebRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncOrganisationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdatePhoneRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateTypesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateWebRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -566,7 +568,7 @@ class OrganisationsSynchronisationService(
         val nomisCorporate = nomisApiService.getCorporateOrganisation(nomisCorporateId = event.corporateId)
         dpsApiService.updateOrganisationTypes(
           event.corporateId,
-          nomisCorporate.types.toDpsUpdateOrganisationTypesRequest(),
+          nomisCorporate.types.toDpsUpdateOrganisationTypesRequest(dpsOrganisationId = event.corporateId),
         )
       }
     }
@@ -788,9 +790,10 @@ fun CorporateInternetAddress.toDpsUpdateOrganisationEmailRequest(dpsOrganisation
   updatedBy = this.audit.modifyUserId!!,
   updatedTime = this.audit.modifyDatetime!!.toDateTime(),
 )
-fun List<CorporateOrganisationType>.toDpsUpdateOrganisationTypesRequest() = SyncUpdateOrganisationTypesRequest(
+fun List<CorporateOrganisationType>.toDpsUpdateOrganisationTypesRequest(dpsOrganisationId: Long) = SyncUpdateTypesRequest(
+  organisationId = dpsOrganisationId,
   types = this.map {
-    SyncUpdateOrganisationType(
+    SyncOrganisationType(
       type = it.type.code,
       createdBy = it.audit.createUsername,
       createdTime = it.audit.createDatetime.toDateTime(),

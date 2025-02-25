@@ -47,6 +47,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdatePhoneRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateTypesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateWebRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
@@ -3311,7 +3312,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update all the types in DPS from the NOMIS types`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-types/$corporateAndOrganisationId")))
-        val request: SyncUpdateOrganisationTypesRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-types/$corporateAndOrganisationId")))
+        val request: SyncUpdateTypesRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-types/$corporateAndOrganisationId")))
         with(request) {
           assertThat(types).hasSize(2)
           assertThat(types[0].type).isEqualTo("TEA")
@@ -3426,7 +3427,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update all the types in DPS from the NOMIS types`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-types/$corporateAndOrganisationId")))
-        val request: SyncUpdateOrganisationTypesRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-types/$corporateAndOrganisationId")))
+        val request: SyncUpdateTypesRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-types/$corporateAndOrganisationId")))
         with(request) {
           assertThat(types).hasSize(2)
           assertThat(types[0].type).isEqualTo("TEA")
@@ -3532,7 +3533,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update all the types in DPS from the NOMIS types`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-types/$corporateAndOrganisationId")))
-        val request: SyncUpdateOrganisationTypesRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-types/$corporateAndOrganisationId")))
+        val request: SyncUpdateTypesRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-types/$corporateAndOrganisationId")))
         with(request) {
           assertThat(types).hasSize(1)
           assertThat(types[0].type).isEqualTo("TEA")

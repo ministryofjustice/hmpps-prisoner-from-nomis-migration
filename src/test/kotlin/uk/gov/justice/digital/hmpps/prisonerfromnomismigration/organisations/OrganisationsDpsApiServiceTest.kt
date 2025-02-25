@@ -24,8 +24,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.Org
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationTypesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdatePhoneRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateTypesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateWebRequest
 
 @SpringAPIServiceTest
@@ -534,7 +534,7 @@ class OrganisationsDpsApiServiceTest {
     internal fun `will pass oath2 token to organisation-types endpoint`() = runTest {
       dpsOrganisationsServer.stubUpdateOrganisationTypes(12345)
 
-      apiService.updateOrganisationTypes(12345, syncUpdateOrganisationTypesRequest())
+      apiService.updateOrganisationTypes(12345, syncUpdateTypesRequest())
 
       dpsOrganisationsServer.verify(
         putRequestedFor(anyUrl())
@@ -546,7 +546,7 @@ class OrganisationsDpsApiServiceTest {
     fun `will call the PUT endpoint`() = runTest {
       dpsOrganisationsServer.stubUpdateOrganisationTypes(12345)
 
-      apiService.updateOrganisationTypes(12345, syncUpdateOrganisationTypesRequest())
+      apiService.updateOrganisationTypes(12345, syncUpdateTypesRequest())
 
       dpsOrganisationsServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/organisation-types/12345")),
