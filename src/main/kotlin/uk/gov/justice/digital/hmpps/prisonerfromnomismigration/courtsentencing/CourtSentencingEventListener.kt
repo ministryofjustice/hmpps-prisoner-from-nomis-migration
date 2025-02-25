@@ -120,6 +120,9 @@ data class OffenderChargeEvent(
 
 data class OffenderSentenceEvent(
   val sentenceSequence: Int,
+  val sentenceLevel: String,
+  val sentenceCategory: String,
+  val caseId: Long?,
   val offenderIdDisplay: String,
   val bookingId: Long,
   val auditModuleName: String?,

@@ -604,7 +604,7 @@ class CourtSentencingSynchronisationService(
   }
 
   suspend fun nomisOffenderChargeUpdated(event: OffenderChargeEvent) {
-    var telemetry =
+    val telemetry =
       mapOf(
         "nomisBookingId" to event.bookingId.toString(),
         "nomisOffenderChargeId" to event.chargeId.toString(),
@@ -654,7 +654,7 @@ class CourtSentencingSynchronisationService(
     nomisSentence.offenderCharges.map {
       mappingApiService.getOffenderChargeByNomisId(it.id).dpsCourtChargeId
     }
-  } catch (notFoundException: WebClientResponseException.NotFound) {
+  } catch (webResponseException: WebClientResponseException) {
     telemetryClient.trackEvent(
       name = "charge-mapping-missing",
       properties = mutableMapOf(
@@ -663,7 +663,7 @@ class CourtSentencingSynchronisationService(
       ),
     )
     log.error("Unable to find mapping for nomis offender charges in the context of sentence: bookingId= ${nomisSentence.bookingId} sentenceSequence= ${nomisSentence.sentenceSeq}}\nPossible causes: events out of order or offender charge has not been migrated")
-    throw notFoundException
+    throw ParentEntityNotFoundRetry("Unable to find mapping for nomis offender charges in the context of sentence: bookingId= ${nomisSentence.bookingId} sentenceSequence= ${nomisSentence.sentenceSeq}")
   }
 
   private suspend fun tryToDeleteCourtChargeMapping(mapping: CourtChargeMappingDto) = runCatching {
@@ -710,46 +710,78 @@ class CourtSentencingSynchronisationService(
     val telemetry =
       mapOf(
         "nomisSentenceSequence" to event.sentenceSequence.toString(),
+        "nomisSentenceCategory" to event.sentenceCategory,
+        "nomisSentenceLevel" to event.sentenceLevel,
         "offenderNo" to event.offenderIdDisplay,
+        "caseId" to event.caseId.toString(),
         "nomisBookingId" to event.bookingId.toString(),
       )
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent("sentence-synchronisation-created-skipped", telemetry)
     } else {
-      val nomisSentence =
-        nomisApiService.getOffenderSentence(bookingId = event.bookingId, sentenceSequence = event.sentenceSequence)
-      mappingApiService.getSentenceOrNullByNomisId(event.bookingId, sentenceSequence = event.sentenceSequence)
-        ?.let {
-          telemetryClient.trackEvent(
-            "sentence-synchronisation-created-ignored",
-            telemetry + ("reason" to "sentence mapping exists"),
-          )
-        } ?: let {
-        // retrieve offence mappings (created as part of the court appearance flow)
-        dpsApiService.createSentence(
-          nomisSentence.toDpsSentence(
-            event.offenderIdDisplay,
-            getDpsChargeMappings(nomisSentence),
-          ),
-        ).run {
-          tryToCreateSentenceMapping(
-            nomisSentence = nomisSentence,
-            dpsSentenceResponse = this,
-            telemetry = telemetry + ("dpsSentenceId" to this.sentenceUuid),
-          ).also { mappingCreateResult ->
-            val mappingSuccessTelemetry =
-              (if (mappingCreateResult == MappingResponse.MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
-            val additionalTelemetry = mappingSuccessTelemetry + ("dpsSentenceId" to this.sentenceUuid)
-
+      if (isSentenceInScope(event)) {
+        val caseId = event.caseId!!
+        mappingApiService.getSentenceOrNullByNomisId(event.bookingId, sentenceSequence = event.sentenceSequence)
+          ?.let {
             telemetryClient.trackEvent(
-              "sentence-synchronisation-created-success",
-              telemetry + additionalTelemetry,
+              "sentence-synchronisation-created-ignored",
+              telemetry + ("reason" to "sentence mapping exists"),
             )
+          } ?: let {
+          mappingApiService.getCourtCaseOrNullByNomisId(caseId) ?: let {
+            telemetryClient.trackEvent(
+              "sentence-synchronisation-created-failed",
+              telemetry + ("reason" to "Nomis court case $caseId is not mapped"),
+            )
+            throw ParentEntityNotFoundRetry("Received OFFENDER_SENTENCES-INSERTED for sentence seq ${event.sentenceSequence} and booking ${event.bookingId} on a case ${event.caseId} that has never been created/mapped")
+          }
+          val nomisSentence =
+            nomisApiService.getOffenderSentence(offenderNo = event.offenderIdDisplay, caseId = caseId, sentenceSequence = event.sentenceSequence)
+          // retrieve offence mappings (created as part of the court appearance flow)
+          dpsApiService.createSentence(
+            nomisSentence.toDpsSentence(
+              sentenceChargeIds = getDpsChargeMappings(nomisSentence),
+              dpsConsecUuid = nomisSentence.consecSequence?.let {
+                getConsecutiveSequenceMappingOrThrow(
+                  event = event,
+                  consecSequence = it,
+                )
+              },
+            ),
+          ).run {
+            tryToCreateSentenceMapping(
+              nomisSentence = nomisSentence,
+              dpsSentenceResponse = this,
+              telemetry = telemetry + ("dpsSentenceId" to this.sentenceUuid),
+            ).also { mappingCreateResult ->
+              val mappingSuccessTelemetry =
+                (if (mappingCreateResult == MappingResponse.MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
+              val additionalTelemetry = mappingSuccessTelemetry + ("dpsSentenceId" to this.sentenceUuid)
+
+              telemetryClient.trackEvent(
+                "sentence-synchronisation-created-success",
+                telemetry + additionalTelemetry,
+              )
+            }
           }
         }
+      } else {
+        telemetryClient.trackEvent(
+          "sentence-synchronisation-created-ignored",
+          telemetry + ("reason" to "sentence not in scope"),
+        )
       }
     }
   }
+
+  private suspend fun getConsecutiveSequenceMappingOrThrow(
+    event: OffenderSentenceEvent,
+    consecSequence: Int,
+  ): String = mappingApiService.getSentenceOrNullByNomisId(
+    bookingId = event.bookingId,
+    sentenceSequence = consecSequence,
+  )?.dpsSentenceId
+    ?: throw ParentEntityNotFoundRetry("Consecutive Sentence with sequence $consecSequence has not been mapped. For sentence sequence ${event.sentenceSequence} and booking ${event.bookingId}")
 
   suspend fun nomisSentenceDeleted(event: OffenderSentenceEvent) {
     val telemetry =
@@ -784,10 +816,13 @@ class CourtSentencingSynchronisationService(
     log.warn("Unable to delete mapping for sentence with dps Id $dpsSentenceId. Please delete manually", e)
   }
 
+  suspend fun isSentenceInScope(sentenceEvent: OffenderSentenceEvent): Boolean = sentenceEvent.caseId != null && sentenceEvent.sentenceLevel == "IND" && sentenceEvent.sentenceCategory != "LICENCE"
+
   suspend fun nomisSentenceUpdated(event: OffenderSentenceEvent) {
     val telemetry =
       mapOf(
         "nomisBookingId" to event.bookingId.toString(),
+        "nomisCaseId" to event.caseId.toString(),
         "nomisSentenceSequence" to event.sentenceSequence.toString(),
         "offenderNo" to event.offenderIdDisplay,
       )
@@ -808,11 +843,20 @@ class CourtSentencingSynchronisationService(
           throw IllegalStateException("Received OFFENDER_SENTENCES-UPDATED for sentence that has never been created")
         }
       } else {
+        // TODO remove hardcoding when completing update processing
         val nomisSentence =
-          nomisApiService.getOffenderSentence(bookingId = event.bookingId, sentenceSequence = event.sentenceSequence)
+          nomisApiService.getOffenderSentence(offenderNo = event.offenderIdDisplay, caseId = event.caseId ?: 5L, sentenceSequence = event.sentenceSequence)
         dpsApiService.updateSentence(
           sentenceId = mapping.dpsSentenceId,
-          nomisSentence.toDpsSentence(offenderNo = event.offenderIdDisplay, getDpsChargeMappings(nomisSentence)),
+          nomisSentence.toDpsSentence(
+            dpsConsecUuid = nomisSentence.consecSequence?.let {
+              getConsecutiveSequenceMappingOrThrow(
+                event = event,
+                consecSequence = it,
+              )
+            },
+            sentenceChargeIds = getDpsChargeMappings(nomisSentence),
+          ),
         )
         telemetryClient.trackEvent(
           "sentence-synchronisation-updated-success",
