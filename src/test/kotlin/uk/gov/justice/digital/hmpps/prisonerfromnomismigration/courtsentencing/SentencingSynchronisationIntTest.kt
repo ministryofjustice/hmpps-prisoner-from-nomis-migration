@@ -189,7 +189,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
-      @DisplayName("Happy path - When mapping does not exist yet")
+      @DisplayName("Happy path - with consecutive sentence")
       inner class NoMappingWithConsecutiveSentence {
         @BeforeEach
         fun setUp() {
@@ -242,6 +242,40 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               },
               isNull(),
             )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("Sentences without a case or level of 'AGG' or category of 'LICENCE' are ignored")
+      inner class SentenceNotInScope {
+        @BeforeEach
+        fun setUp() {
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-INSERTED",
+              sentenceLevel = "AGG",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will create a sentence in DPS for a consecutive sentence`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-synchronisation-created-ignored"),
+              check {
+                assertThat(it["reason"]).isEqualTo("sentence not in scope")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+              },
+              isNull(),
+            )
+            // will not create a sentence in DPS
+            dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
           }
         }
       }
