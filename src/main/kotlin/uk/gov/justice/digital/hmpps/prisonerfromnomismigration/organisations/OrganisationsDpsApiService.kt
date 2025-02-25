@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdatePhoneRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateTypesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateWebRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncWebResponse
 import java.time.LocalDateTime
@@ -152,7 +153,7 @@ class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") priv
       .retrieve()
       .awaitBodilessEntityIgnoreNotFound()
   }
-  suspend fun updateOrganisationTypes(organisationId: Long, organisationTypes: SyncUpdateOrganisationTypesRequest) {
+  suspend fun updateOrganisationTypes(organisationId: Long, organisationTypes: SyncUpdateTypesRequest) {
     webClient.put()
       .uri("/sync/organisation-types/{organisationId}", organisationId)
       .bodyValue(organisationTypes)
@@ -182,13 +183,4 @@ data class SyncUpdateOrganisationAddressPhoneRequest(
 
 data class SyncCreateOrganisationAddressPhoneResponse(
   val organisationAddressPhoneId: Long,
-)
-
-data class SyncUpdateOrganisationTypesRequest(val types: List<SyncUpdateOrganisationType>)
-data class SyncUpdateOrganisationType(
-  val type: String,
-  val createdBy: String,
-  val createdTime: LocalDateTime,
-  val updatedBy: String?,
-  val updatedTime: LocalDateTime?,
 )

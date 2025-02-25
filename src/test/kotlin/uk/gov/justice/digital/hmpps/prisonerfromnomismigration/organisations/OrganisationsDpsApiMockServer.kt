@@ -30,11 +30,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateWebRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncEmailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncOrganisationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncOrganisationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncPhoneResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdatePhoneRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateTypesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateWebRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncWebResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
@@ -231,9 +233,10 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       updatedBy = "JANE.SAM",
       updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
     )
-    fun syncUpdateOrganisationTypesRequest() = SyncUpdateOrganisationTypesRequest(
-      listOf(
-        SyncUpdateOrganisationType(
+    fun syncUpdateTypesRequest() = SyncUpdateTypesRequest(
+      organisationId = 1234567,
+      types = listOf(
+        SyncOrganisationType(
           type = "TEA",
           createdBy = "JANE.SAM",
           createdTime = LocalDateTime.parse("2024-01-01T12:13"),
