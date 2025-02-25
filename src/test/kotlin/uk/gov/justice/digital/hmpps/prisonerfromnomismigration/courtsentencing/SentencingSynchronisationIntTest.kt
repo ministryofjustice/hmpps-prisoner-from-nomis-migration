@@ -263,7 +263,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will create a sentence in DPS for a consecutive sentence`() {
+        fun `will ignore sentences that are not in scope`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
               eq("sentence-synchronisation-created-ignored"),
