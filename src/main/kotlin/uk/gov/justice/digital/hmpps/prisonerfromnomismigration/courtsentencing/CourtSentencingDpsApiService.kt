@@ -114,7 +114,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
 
   suspend fun deleteSentence(sentenceId: String) = webClient
     .delete()
-    .uri("/sentence/{sentenceId}", sentenceId)
+    .uri("/legacy/sentence/{sentenceId}", sentenceId)
     .retrieve()
     .awaitBodilessEntityIgnoreNotFound()
 

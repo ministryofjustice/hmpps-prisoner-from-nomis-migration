@@ -716,6 +716,43 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class NomisDeleted {
 
       @Nested
+      @DisplayName("Sentences without a case or level of 'AGG' or category of 'LICENCE' are ignored")
+      inner class SentenceNotInScope {
+        @BeforeEach
+        fun setUp() {
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-DELETED",
+              sentenceCategory = "LICENCE",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will ignore sentences that are not in scope`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-synchronisation-deleted-ignored"),
+              check {
+                assertThat(it["reason"]).isEqualTo("sentence not in scope")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["nomisSentenceLevel"]).isEqualTo("IND")
+                assertThat(it["nomisSentenceCategory"]).isEqualTo("LICENCE")
+                assertThat(it["nomisCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              },
+              isNull(),
+            )
+            // will not create a sentence in DPS
+            dpsCourtSentencingServer.verify(0, deleteRequestedFor(anyUrl()))
+          }
+        }
+      }
+
+      @Nested
       @DisplayName("When mapping does not exist")
       inner class NoMapping {
         @BeforeEach
@@ -779,7 +816,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              deleteRequestedFor(urlPathEqualTo("/sentence/$DPS_SENTENCE_ID")),
+              deleteRequestedFor(urlPathEqualTo("/legacy/sentence/$DPS_SENTENCE_ID")),
               // TODO DPS to implement this endpoint
             )
           }
@@ -845,8 +882,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              deleteRequestedFor(urlPathEqualTo("/sentence/$DPS_SENTENCE_ID")),
-              // TODO DPS to implement this endpoint
+              deleteRequestedFor(urlPathEqualTo("/legacy/sentence/$DPS_SENTENCE_ID")),
             )
           }
         }

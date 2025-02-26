@@ -279,7 +279,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     sentenceId: String = UUID.randomUUID().toString(),
   ) {
     stubFor(
-      delete("/sentence/$sentenceId")
+      delete("/legacy/sentence$sentenceId")
         .willReturn(
           aResponse()
             .withStatus(204)
