@@ -34,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerDomesticStatusResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerNumberOfChildrenResponse
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.time.LocalDateTime
 import kotlin.collections.component1
 import kotlin.collections.component2
 
@@ -75,7 +76,7 @@ class ContactPersonProfileDetailsSyncIntTest(
             ),
           ),
         )
-        dpsApi.stubSyncDomesticStatus(response = dpsDomesticStatusResponse())
+        dpsApi.stubSyncDomesticStatus(response = dpsDomesticStatusResponse(dpsId = 321))
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "MARITAL")
           .also { waitForAnyProcessingToComplete() }
@@ -334,7 +335,13 @@ class ContactPersonProfileDetailsSyncIntTest(
       }
     }
 
-    private fun dpsDomesticStatusResponse(id: Long = 321) = SyncPrisonerDomesticStatusResponse(id)
+    private fun dpsDomesticStatusResponse(dpsId: Long = 321) = SyncPrisonerDomesticStatusResponse(
+      id = dpsId,
+      active = true,
+      domesticStatusCode = "M",
+      createdTime = LocalDateTime.now(),
+      createdBy = "A_USER",
+    )
     private fun dpsNumberOfChildrenResponse(id: Long = 321) = SyncPrisonerNumberOfChildrenResponse(id)
 
     private fun ContactPersonProfileDetailsNomisApiMockServer.verify(
