@@ -817,7 +817,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             dpsCourtSentencingServer.verify(
               1,
               deleteRequestedFor(urlPathEqualTo("/legacy/sentence/$DPS_SENTENCE_ID")),
-              // TODO DPS to implement this endpoint
             )
           }
         }
