@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-02-24.11464.064b502"
+    "version": "2025-02-26.11476.1990eff"
   },
   "servers": [
     {
@@ -25852,7 +25852,7 @@
             "type": "string"
           },
           "calculationType": {
-            "type": "string"
+            "$ref": "#/components/schemas/CodeDescription"
           },
           "category": {
             "$ref": "#/components/schemas/CodeDescription"

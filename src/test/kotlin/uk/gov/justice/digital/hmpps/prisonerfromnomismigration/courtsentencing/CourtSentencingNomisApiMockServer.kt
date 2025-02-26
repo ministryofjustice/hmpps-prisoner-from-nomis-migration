@@ -266,10 +266,13 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     sentenceTerms: List<SentenceTermResponse> = listOf(
       SentenceTermResponse(
         startDate = LocalDate.now(),
-        sentenceTermType = CodeDescription("S", "Term type"),
+        sentenceTermType = CodeDescription("IMP", "Imprisonment"),
         termSequence = 1,
         years = 1,
         months = 3,
+        weeks = 4,
+        days = 5,
+        lifeSentenceFlag = false,
       ),
     ),
     offenderCharges: List<OffenderChargeResponse> = listOf(
@@ -304,7 +307,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       caseId = caseId,
       courtOrder = courtOrder,
       category = CodeDescription(code = "2003", "2003 Act"),
-      calculationType = "ADIMP_ORA",
+      calculationType = CodeDescription(code = "ADIMP_ORA", description = "ADIMP_ORA description"),
       offenderCharges = offenderCharges,
       startDate = startDate,
       status = "I",
