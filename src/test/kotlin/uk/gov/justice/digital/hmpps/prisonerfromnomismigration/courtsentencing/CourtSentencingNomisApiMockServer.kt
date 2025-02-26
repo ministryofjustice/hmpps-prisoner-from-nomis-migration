@@ -23,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.S
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -260,6 +261,8 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     caseId: Long = 345,
     startDate: LocalDate = LocalDate.now(),
     courtOrder: CourtOrderResponse? = null,
+    consecSequence: Int? = null,
+    sentenceLevel: String = "IND",
     sentenceTerms: List<SentenceTermResponse> = listOf(
       SentenceTermResponse(
         startDate = LocalDate.now(),
@@ -308,10 +311,15 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       sentenceTerms = sentenceTerms,
       createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
       createdByUsername = "Q1251T",
+      prisonId = "MDI",
+      fineAmount = BigDecimal.valueOf(1.10),
+      consecSequence = consecSequence,
+      sentenceLevel = sentenceLevel,
     ),
   ) {
+    println("\n\n/prisoners/$offenderNo/court-cases/$caseId/sentences/$sentenceSequence")
     nomisApi.stubFor(
-      get(urlEqualTo("/prisoners/booking-id/$bookingId/sentencing/sentence-sequence/$sentenceSequence")).willReturn(
+      get(urlEqualTo("/prisoners/$offenderNo/court-cases/$caseId/sentences/$sentenceSequence")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
@@ -322,7 +330,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
 
   fun stubGetSentence(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
-      get(WireMock.urlPathMatching("/prisoners/booking-id/\\S+/sentencing/sentence-sequence/\\d+")).willReturn(
+      get(WireMock.urlPathMatching("/prisoners/\\S+/court-cases/\\d+/sentences/\\d+")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())

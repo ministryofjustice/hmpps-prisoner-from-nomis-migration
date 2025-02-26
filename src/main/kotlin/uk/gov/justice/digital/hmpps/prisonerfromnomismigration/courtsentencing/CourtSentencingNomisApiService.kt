@@ -79,10 +79,11 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     }
     .awaitSingleOrNull()
 
-  suspend fun getOffenderSentence(bookingId: Long, sentenceSequence: Int): SentenceResponse = webClient.get()
+  suspend fun getOffenderSentence(offenderNo: String, caseId: Long, sentenceSequence: Int): SentenceResponse = webClient.get()
     .uri(
-      "/prisoners/booking-id/{bookingId}/sentencing/sentence-sequence/{sentenceSequence}",
-      bookingId,
+      "/prisoners/{offenderNo}/court-cases/{caseId}/sentences/{sentenceSequence}",
+      offenderNo,
+      caseId,
       sentenceSequence,
     )
     .retrieve()

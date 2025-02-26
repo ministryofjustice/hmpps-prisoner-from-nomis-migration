@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtCase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateSentence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
@@ -104,9 +105,9 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
     .awaitBodilessEntity()
 
   // TODO not currently implemented in DPS
-  suspend fun createSentence(sentence: CreateSentenceRequest): CreateSentenceResponse = webClient
+  suspend fun createSentence(sentence: LegacyCreateSentence): CreateSentenceResponse = webClient
     .post()
-    .uri("/sentence")
+    .uri("/legacy/sentence")
     .bodyValue(sentence)
     .retrieve()
     .awaitBody()
@@ -117,7 +118,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
     .retrieve()
     .awaitBodilessEntityIgnoreNotFound()
 
-  suspend fun updateSentence(sentenceId: String, sentence: CreateSentenceRequest): CreateSentenceResponse = webClient
+  suspend fun updateSentence(sentenceId: String, sentence: LegacyCreateSentence): CreateSentenceResponse = webClient
     .put()
     .uri("sentence/{sentenceId}", sentenceId)
     .bodyValue(sentence)
@@ -137,16 +138,6 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
 // TODO remove when DPS API is updated
 data class LegacyUpdateWholeCharge(
   val offenceCode: String,
-)
-
-data class CreateSentenceRequest(
-
-  @field:JsonProperty("prisonerId")
-  val prisonerId: String,
-
-  @field:JsonProperty("chargeUuids")
-  val chargeUuids: List<java.util.UUID>,
-
 )
 
 data class CreateSentenceResponse(

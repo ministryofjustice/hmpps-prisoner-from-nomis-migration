@@ -7,10 +7,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtCase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateFine
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreatePeriodLength
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateSentence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.PeriodLengthLegacyData
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.SentenceLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
@@ -18,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceTermResponse
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -127,9 +133,38 @@ fun OffenderChargeResponse.toDpsMigrationCharge(chargeId: Long) = MigrationCreat
   chargeNOMISId = chargeId.toString(),
 )
 
-fun SentenceResponse.toDpsSentence(offenderNo: String, sentenceChargeIds: List<String>) = CreateSentenceRequest(
-  prisonerId = offenderNo,
-  chargeUuids = sentenceChargeIds.map { UUID.fromString(it) },
+fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsConsecUuid: String?) = LegacyCreateSentence(
+  chargeLifetimeUuid = UUID.fromString(sentenceChargeIds.first()),
+  active = this.status == "A",
+  // can be "OUT"
+  prisonId = this.prisonId,
+  legacyData = this.toSentenceLegacyData(),
+  periodLengths = this.sentenceTerms.map { it.toPeriodLegacyData() },
+  // TODO around 10% of nomis sentences have > 1 charge and 27 have no charges, so we need to handle this.
+  chargeNumber = sentenceChargeIds.firstOrNull(),
+  fine = this.fineAmount?.let { LegacyCreateFine(fineAmount = it) },
+  consecutiveToLifetimeUuid = dpsConsecUuid?.let { UUID.fromString(it) },
+)
+
+fun SentenceResponse.toSentenceLegacyData() = SentenceLegacyData(
+  sentenceCalcType = this.calculationType,
+  sentenceCategory = this.category.code,
+  sentenceTypeDesc = this.calculationType,
+  postedDate = this.createdDateTime,
+)
+
+fun SentenceTermResponse.toPeriodLegacyData() = LegacyCreatePeriodLength(
+  periodYears = this.years,
+  periodMonths = this.months,
+  periodDays = this.days,
+  periodWeeks = this.weeks,
+  // TO BE REMOVED from the dto by DPS
+  periodType = "",
+  legacyData = PeriodLengthLegacyData(
+    lifeSentence = this.lifeSentenceFlag,
+    sentenceTermCode = this.sentenceTermType?.code,
+    sentenceTermDescription = this.sentenceTermType?.description,
+  ),
 )
 
 // TODO confirm that DPS are no longer using ZoneTimeDate  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")

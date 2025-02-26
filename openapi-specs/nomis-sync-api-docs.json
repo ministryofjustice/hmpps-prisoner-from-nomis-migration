@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-02-24.11455.f3f4587"
+    "version": "2025-02-24.11464.064b502"
   },
   "servers": [
     {
@@ -18083,9 +18083,14 @@
           "consecutiveToSentenceSeq": {
             "type": "integer",
             "format": "int64"
+          },
+          "eventId": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "required": [
+          "eventId",
           "offenderChargeIds",
           "sentenceCalcType",
           "sentenceCategory",
@@ -26026,6 +26031,9 @@
             "items": {
               "$ref": "#/components/schemas/OffenderChargeResponse"
             }
+          },
+          "prisonId": {
+            "type": "string"
           }
         },
         "required": [
@@ -26035,6 +26043,7 @@
           "createdByUsername",
           "createdDateTime",
           "offenderCharges",
+          "prisonId",
           "sentenceSeq",
           "sentenceTerms",
           "startDate",
