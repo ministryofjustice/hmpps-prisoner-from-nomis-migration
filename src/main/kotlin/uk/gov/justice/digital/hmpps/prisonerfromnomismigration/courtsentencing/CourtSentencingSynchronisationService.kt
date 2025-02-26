@@ -789,22 +789,32 @@ class CourtSentencingSynchronisationService(
         "nomisSentenceSequence" to event.sentenceSequence,
         "offenderNo" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId,
+        "nomisSentenceCategory" to event.sentenceCategory,
+        "nomisSentenceLevel" to event.sentenceLevel,
+        "nomisCaseId" to event.caseId.toString(),
       )
-    val mapping = mappingApiService.getSentenceOrNullByNomisId(
-      sentenceSequence = event.sentenceSequence,
-      bookingId = event.bookingId,
-    )
-    if (mapping == null) {
+    if (isSentenceInScope(event)) {
+      val mapping = mappingApiService.getSentenceOrNullByNomisId(
+        sentenceSequence = event.sentenceSequence,
+        bookingId = event.bookingId,
+      )
+      if (mapping == null) {
+        telemetryClient.trackEvent(
+          "sentence-synchronisation-deleted-ignored",
+          telemetry,
+        )
+      } else {
+        dpsApiService.deleteSentence(sentenceId = mapping.dpsSentenceId)
+        tryToDeleteSentenceMapping(mapping.dpsSentenceId)
+        telemetryClient.trackEvent(
+          "sentence-synchronisation-deleted-success",
+          telemetry + ("dpsSentenceId" to mapping.dpsSentenceId),
+        )
+      }
+    } else {
       telemetryClient.trackEvent(
         "sentence-synchronisation-deleted-ignored",
-        telemetry,
-      )
-    } else {
-      dpsApiService.deleteSentence(sentenceId = mapping.dpsSentenceId)
-      tryToDeleteSentenceMapping(mapping.dpsSentenceId)
-      telemetryClient.trackEvent(
-        "sentence-synchronisation-deleted-success",
-        telemetry + ("dpsSentenceId" to mapping.dpsSentenceId),
+        telemetry + ("reason" to "sentence not in scope"),
       )
     }
   }
