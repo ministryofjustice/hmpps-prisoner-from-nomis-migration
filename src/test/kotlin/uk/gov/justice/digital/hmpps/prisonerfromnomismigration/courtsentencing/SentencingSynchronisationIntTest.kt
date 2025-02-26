@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
@@ -22,6 +23,7 @@ import org.mockito.Mockito.eq
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.check
+import org.mockito.kotlin.isNotNull
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -1013,7 +1015,22 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              WireMock.putRequestedFor(urlPathEqualTo("/sentence/$DPS_SENTENCE_ID")),
+              putRequestedFor(urlPathEqualTo("/legacy/sentence/$DPS_SENTENCE_ID"))
+                .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1")))
+                .withRequestBody(matchingJsonPath("active", equalTo("false")))
+                .withRequestBody(matchingJsonPath("chargeLifetimeUuid", equalTo(DPS_CHARGE_ID)))
+                .withRequestBody(matchingJsonPath("prisonId", equalTo("MDI")))
+                .withRequestBody(matchingJsonPath("periodLengths[0].periodYears", equalTo("1")))
+                .withRequestBody(matchingJsonPath("periodLengths[0].periodMonths", equalTo("3")))
+                .withRequestBody(matchingJsonPath("periodLengths[0].periodWeeks", equalTo("4")))
+                .withRequestBody(matchingJsonPath("periodLengths[0].periodDays", equalTo("5")))
+                .withRequestBody(matchingJsonPath("periodLengths[0].legacyData.lifeSentence", equalTo("false")))
+                .withRequestBody(matchingJsonPath("periodLengths[0].legacyData.sentenceTermCode", equalTo("IMP")))
+                .withRequestBody(matchingJsonPath("periodLengths[0].legacyData.sentenceTermDescription", equalTo("Imprisonment")))
+                .withRequestBody(matchingJsonPath("legacyData.postedDate", isNotNull()))
+                .withRequestBody(matchingJsonPath("legacyData.sentenceCalcType", equalTo("ADIMP_ORA")))
+                .withRequestBody(matchingJsonPath("legacyData.sentenceTypeDesc", equalTo("ADIMP_ORA description")))
+                .withRequestBody(matchingJsonPath("legacyData.sentenceCategory", equalTo("2003"))),
             )
           }
         }
@@ -1031,6 +1048,43 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               },
               isNull(),
             )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("Sentences without a case or level of 'AGG' or category of 'LICENCE' are ignored")
+      inner class SentenceNotInScope {
+        @BeforeEach
+        fun setUp() {
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-UPDATED",
+              sentenceLevel = "AGG",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will ignore sentences that are not in scope`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-synchronisation-updated-ignored"),
+              check {
+                assertThat(it["reason"]).isEqualTo("sentence not in scope")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["nomisSentenceLevel"]).isEqualTo("AGG")
+                assertThat(it["nomisSentenceCategory"]).isEqualTo("2020")
+                assertThat(it["nomisCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              },
+              isNull(),
+            )
+            // will not create a sentence in DPS
+            dpsCourtSentencingServer.verify(0, putRequestedFor(anyUrl()))
           }
         }
       }

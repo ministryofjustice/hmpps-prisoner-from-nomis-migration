@@ -53,7 +53,6 @@ private const val WARRANT_TYPE_DEFAULT = "REMAND"
 private const val OUTCOME_DEFAULT = "3034"
 
 fun CourtEventResponse.toDpsCourtAppearance(
-  caseReference: String? = null,
   dpsCaseId: String,
 ) = LegacyCreateCourtAppearance(
   courtCode = this.courtId,
@@ -134,22 +133,23 @@ fun OffenderChargeResponse.toDpsMigrationCharge(chargeId: Long) = MigrationCreat
 )
 
 fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsConsecUuid: String?) = LegacyCreateSentence(
+  // TODO around 10% of nomis sentences have > 1 charge and 27 have no charges, so we need to handle this.
   chargeLifetimeUuid = UUID.fromString(sentenceChargeIds.first()),
   active = this.status == "A",
   // can be "OUT"
   prisonId = this.prisonId,
   legacyData = this.toSentenceLegacyData(),
   periodLengths = this.sentenceTerms.map { it.toPeriodLegacyData() },
-  // TODO around 10% of nomis sentences have > 1 charge and 27 have no charges, so we need to handle this.
-  chargeNumber = sentenceChargeIds.firstOrNull(),
+  // TODO confirm what this is used for
+  chargeNumber = this.lineSequence?.toString(),
   fine = this.fineAmount?.let { LegacyCreateFine(fineAmount = it) },
   consecutiveToLifetimeUuid = dpsConsecUuid?.let { UUID.fromString(it) },
 )
 
 fun SentenceResponse.toSentenceLegacyData() = SentenceLegacyData(
-  sentenceCalcType = this.calculationType,
+  sentenceCalcType = this.calculationType.code,
   sentenceCategory = this.category.code,
-  sentenceTypeDesc = this.calculationType,
+  sentenceTypeDesc = this.calculationType.description,
   postedDate = this.createdDateTime,
 )
 
@@ -167,7 +167,6 @@ fun SentenceTermResponse.toPeriodLegacyData() = LegacyCreatePeriodLength(
   ),
 )
 
-// TODO confirm that DPS are no longer using ZoneTimeDate  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
 fun CaseIdentifierResponse.toDpsCaseReference() = CaseReferenceLegacyData(offenderCaseReference = this.reference, updatedDate = LocalDateTime.parse(this.createDateTime))
 
 const val VIDEO_LINK_DPS_APPEARANCE_TYPE_UUID = "1da09b6e-55cb-4838-a157-ee6944f2094c"

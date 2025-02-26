@@ -120,7 +120,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
 
   suspend fun updateSentence(sentenceId: String, sentence: LegacyCreateSentence): CreateSentenceResponse = webClient
     .put()
-    .uri("sentence/{sentenceId}", sentenceId)
+    .uri("/legacy/sentence/{sentenceId}", sentenceId)
     .bodyValue(sentence)
     .retrieve()
     .awaitBody()

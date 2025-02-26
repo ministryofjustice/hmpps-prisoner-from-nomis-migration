@@ -295,7 +295,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     ),
   ) {
     stubFor(
-      put("/sentence/$sentenceId")
+      put("/legacy/sentence/$sentenceId")
         .willReturn(
           aResponse()
             .withStatus(200)

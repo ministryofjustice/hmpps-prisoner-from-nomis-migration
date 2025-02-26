@@ -713,7 +713,7 @@ class CourtSentencingSynchronisationService(
         "nomisSentenceCategory" to event.sentenceCategory,
         "nomisSentenceLevel" to event.sentenceLevel,
         "offenderNo" to event.offenderIdDisplay,
-        "caseId" to event.caseId.toString(),
+        "nomisCaseId" to event.caseId.toString(),
         "nomisBookingId" to event.bookingId.toString(),
       )
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
@@ -824,43 +824,53 @@ class CourtSentencingSynchronisationService(
         "nomisBookingId" to event.bookingId.toString(),
         "nomisCaseId" to event.caseId.toString(),
         "nomisSentenceSequence" to event.sentenceSequence.toString(),
+        "nomisSentenceCategory" to event.sentenceCategory,
+        "nomisSentenceLevel" to event.sentenceLevel,
         "offenderNo" to event.offenderIdDisplay,
       )
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent("sentence-synchronisation-updated-skipped", telemetry)
     } else {
-      val mapping = mappingApiService.getSentenceOrNullByNomisId(
-        bookingId = event.bookingId,
-        sentenceSequence = event.sentenceSequence,
-      )
-      if (mapping == null) {
-        telemetryClient.trackEvent(
-          "sentence-synchronisation-updated-failed",
-          telemetry,
+      if (isSentenceInScope(event)) {
+        val caseId = event.caseId!!
+        val mapping = mappingApiService.getSentenceOrNullByNomisId(
+          bookingId = event.bookingId,
+          sentenceSequence = event.sentenceSequence,
         )
-        if (hasMigratedAllData) {
-          // after migration has run this should not happen so make sure this message goes in DLQ
-          throw IllegalStateException("Received OFFENDER_SENTENCES-UPDATED for sentence that has never been created")
+        if (mapping == null) {
+          telemetryClient.trackEvent(
+            "sentence-synchronisation-updated-failed",
+            telemetry,
+          )
+          throw IllegalStateException("Received OFFENDER_SENTENCES-UPDATED for sentence (sequence ${event.sentenceSequence} booking ${event.bookingId}) that has never been created")
+        } else {
+          val nomisSentence =
+            nomisApiService.getOffenderSentence(
+              offenderNo = event.offenderIdDisplay,
+              caseId = caseId,
+              sentenceSequence = event.sentenceSequence,
+            )
+          dpsApiService.updateSentence(
+            sentenceId = mapping.dpsSentenceId,
+            nomisSentence.toDpsSentence(
+              dpsConsecUuid = nomisSentence.consecSequence?.let {
+                getConsecutiveSequenceMappingOrThrow(
+                  event = event,
+                  consecSequence = it,
+                )
+              },
+              sentenceChargeIds = getDpsChargeMappings(nomisSentence),
+            ),
+          )
+          telemetryClient.trackEvent(
+            "sentence-synchronisation-updated-success",
+            telemetry + ("dpsSentenceId" to mapping.dpsSentenceId),
+          )
         }
       } else {
-        // TODO remove hardcoding when completing update processing
-        val nomisSentence =
-          nomisApiService.getOffenderSentence(offenderNo = event.offenderIdDisplay, caseId = event.caseId ?: 5L, sentenceSequence = event.sentenceSequence)
-        dpsApiService.updateSentence(
-          sentenceId = mapping.dpsSentenceId,
-          nomisSentence.toDpsSentence(
-            dpsConsecUuid = nomisSentence.consecSequence?.let {
-              getConsecutiveSequenceMappingOrThrow(
-                event = event,
-                consecSequence = it,
-              )
-            },
-            sentenceChargeIds = getDpsChargeMappings(nomisSentence),
-          ),
-        )
         telemetryClient.trackEvent(
-          "sentence-synchronisation-updated-success",
-          telemetry + ("dpsSentenceId" to mapping.dpsSentenceId),
+          "sentence-synchronisation-updated-ignored",
+          telemetry + ("reason" to "sentence not in scope"),
         )
       }
     }
