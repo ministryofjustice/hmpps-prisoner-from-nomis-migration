@@ -810,5 +810,29 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubGetApiLocationNomis(nomisLocationId: Long, dpsLocationId: String) {
+    stubFor(
+      get(urlPathMatching("/api/locations/nomis/$nomisLocationId"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody("""{"dpsLocationId": "$dpsLocationId", "nomisLocationId": $nomisLocationId}"""),
+        ),
+    )
+  }
+
+  fun stubGetApiLocationNomis(nomisLocationId: Long, errorStatus: HttpStatus) {
+    stubFor(
+      get(urlPathMatching("/api/locations/nomis/$nomisLocationId"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(errorStatus.value())
+            .withBody("""{"userMessage": "some error"}"""),
+        ),
+    )
+  }
+
   fun createMappingCount(url: String) = findAll(postRequestedFor(urlPathEqualTo(url))).count()
 }
