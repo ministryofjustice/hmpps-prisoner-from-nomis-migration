@@ -20,7 +20,7 @@ import java.time.LocalDateTime
 class ContactPersonProfileDetailsNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetProfileDetails(
     offenderNo: String = "A1234AA",
-    bookingId: Long = 12345,
+    bookingId: Long? = 12345,
     profileTypes: List<String> = listOf("MARITAL"),
     response: PrisonerProfileDetailsResponse = PrisonerProfileDetailsResponse(
       offenderNo = offenderNo,
@@ -54,7 +54,7 @@ class ContactPersonProfileDetailsNomisApiMockServer(private val objectMapper: Ob
     ),
   ) = nomisApi.stubFor(
     get(urlPathMatching("/prisoners/$offenderNo/profile-details"))
-      .withQueryParam("bookingId", equalTo("$bookingId"))
+      .apply { bookingId?.run { withQueryParam("bookingId", equalTo(bookingId.toString())) } }
       .withQueryParam("profileTypes", havingExactly(*profileTypes.toTypedArray()))
       .willReturn(
         aResponse()
