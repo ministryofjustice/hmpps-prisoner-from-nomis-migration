@@ -341,13 +341,13 @@ class ContactPersonProfileDetailsSyncIntTest(
     }
 
     @Nested
-    @DisplayName("PUT /sync/contactperson/profile-detail/{prisonerNumber}/{bookingId}/{profileType}")
+    @DisplayName("PUT /sync/contactperson/profile-detail/{prisonerNumber}/{profileType}")
     inner class SyncEndpoint {
       @BeforeEach
       fun setUp() {
         nomisApi.stubGetProfileDetails(
           offenderNo = "A1234AA",
-          bookingId = 12345,
+          bookingId = null,
           profileTypes = listOf("MARITAL"),
           response = nomisResponse(
             offenderNo = "A1234AA",
@@ -375,7 +375,7 @@ class ContactPersonProfileDetailsSyncIntTest(
 
       @Test
       fun `access forbidden when no role`() {
-        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/12345/MARITAL")
+        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/MARITAL")
           .headers(setAuthorisation(roles = listOf()))
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(ContactPersonMigrationFilter())
@@ -385,7 +385,7 @@ class ContactPersonProfileDetailsSyncIntTest(
 
       @Test
       fun `access forbidden with wrong role`() {
-        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/12345/MARITAL")
+        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/MARITAL")
           .headers(setAuthorisation(roles = listOf("BANANAS")))
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(ContactPersonMigrationFilter())
@@ -395,7 +395,7 @@ class ContactPersonProfileDetailsSyncIntTest(
 
       @Test
       fun `access unauthorised with no auth token`() {
-        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/12345/MARITAL")
+        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/MARITAL")
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(ContactPersonMigrationFilter())
           .exchange()
@@ -404,12 +404,12 @@ class ContactPersonProfileDetailsSyncIntTest(
 
       @Test
       fun `should sync profile details`() = runTest {
-        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/12345/MARITAL")
+        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/MARITAL")
           .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
           .exchange()
           .expectStatus().isOk
 
-        nomisApi.verify()
+        nomisApi.verify(bookingId = null)
         dpsApi.verify()
         verifyTelemetry()
       }
@@ -418,7 +418,7 @@ class ContactPersonProfileDetailsSyncIntTest(
       fun `should handle errors from NOMIS`() = runTest {
         nomisApi.stubGetProfileDetails(status = NOT_FOUND)
 
-        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/12345/MARITAL")
+        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/MARITAL")
           .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
           .exchange()
           .expectStatus().isBadRequest
@@ -427,16 +427,20 @@ class ContactPersonProfileDetailsSyncIntTest(
             assertThat(it).contains("404 Not Found from GET http://localhost:8081/prisoners/A1234AA/profile-details")
           }
 
-        nomisApi.verify()
+        nomisApi.verify(bookingId = null)
         dpsApi.verify(type = "ignored")
-        verifyTelemetry(telemetryType = "error", errorReason = "404 Not Found from GET http://localhost:8081/prisoners/A1234AA/profile-details")
+        verifyTelemetry(
+          bookingId = null,
+          telemetryType = "error",
+          errorReason = "404 Not Found from GET http://localhost:8081/prisoners/A1234AA/profile-details",
+        )
       }
 
       @Test
       fun `should handle errors from DPS`() = runTest {
         dpsApi.stubSyncDomesticStatus(status = INTERNAL_SERVER_ERROR)
 
-        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/12345/MARITAL")
+        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/MARITAL")
           .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
           .exchange()
           .expectStatus().isBadRequest
@@ -452,7 +456,7 @@ class ContactPersonProfileDetailsSyncIntTest(
 
       @Test
       fun `should handle invalid profile type`() = runTest {
-        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/12345/BUILD")
+        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/BUILD")
           .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
           .exchange()
           .expectStatus().isBadRequest
@@ -474,13 +478,13 @@ class ContactPersonProfileDetailsSyncIntTest(
 
     private fun ContactPersonProfileDetailsNomisApiMockServer.verify(
       offenderNo: String = "A1234AA",
-      bookingId: Long = 12345,
+      bookingId: Long? = 12345,
       profileType: String = "MARITAL",
     ) {
       verify(
         getRequestedFor(urlPathMatching("/prisoners/$offenderNo/profile-details"))
           .withQueryParam("profileTypes", equalTo(profileType))
-          .withQueryParam("bookingId", equalTo("$bookingId")),
+          .apply { bookingId?.run { withQueryParam("bookingId", equalTo("$bookingId")) } },
       )
     }
 
@@ -548,14 +552,14 @@ class ContactPersonProfileDetailsSyncIntTest(
     profileType: String = "domestic-status",
     telemetryType: String = "success",
     offenderNo: String = "A1234AA",
-    bookingId: Long = 12345,
+    bookingId: Long? = 12345,
     ignoreReason: String? = null,
     errorReason: String? = null,
   ) = verify(telemetryClient).trackEvent(
     eq("contact-person-$profileType-synchronisation-$telemetryType"),
     check {
       assertThat(it["offenderNo"]).isEqualTo(offenderNo)
-      assertThat(it["bookingId"]).isEqualTo("$bookingId")
+      bookingId?.run { assertThat(it["bookingId"]).isEqualTo("$bookingId") }
       ignoreReason?.run { assertThat(it["reason"]).isEqualTo(this) }
       errorReason?.run { assertThat(it["error"]).isEqualTo(this) }
       if (ignoreReason == null && errorReason == null) {

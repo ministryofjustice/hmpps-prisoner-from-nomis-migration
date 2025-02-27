@@ -23,10 +23,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 class ContactPersonProfileDetailsResource(
   private val syncService: ContactPersonProfileDetailsSyncService,
 ) {
-  @PutMapping("/{prisonerNumber}/{bookingId}/{profileType}")
+  @PutMapping("/{prisonerNumber}/{profileType}")
   @Operation(
     summary = "Synchronises a profile detail to DPS",
-    description = "Manually synchronises a profile detail to NOMIS. This is intended for use by developers to recover from errors. Requires role <b>MIGRATE_CONTACTPERSON</b> or <b>MIGRATE_NOMIS_SYSCON/b>",
+    description = "Manually synchronises a profile detail to DPS. This is intended for use by developers to recover from errors. Requires role <b>MIGRATE_CONTACTPERSON</b> or <b>MIGRATE_NOMIS_SYSCON/b>",
     responses = [
       ApiResponse(
         responseCode = "200",
@@ -51,12 +51,11 @@ class ContactPersonProfileDetailsResource(
   )
   suspend fun syncContactPersonProfileDetail(
     @PathVariable prisonerNumber: String,
-    @PathVariable bookingId: Long,
     @PathVariable profileType: ContactPersonProfileType,
   ) = runCatching {
-    syncService.profileDetailsChanged(prisonerNumber, bookingId, profileType)
+    syncService.profileDetailsChanged(offenderNo = prisonerNumber, profileType = profileType)
   }.onFailure { e ->
-    "Failed to sync profile details for $prisonerNumber/$bookingId/$profileType due to ${e.message}"
+    "Failed to sync profile details for $prisonerNumber/$profileType due to ${e.message}"
       .also {
         log.error(it, e)
         throw BadRequestException(it)
