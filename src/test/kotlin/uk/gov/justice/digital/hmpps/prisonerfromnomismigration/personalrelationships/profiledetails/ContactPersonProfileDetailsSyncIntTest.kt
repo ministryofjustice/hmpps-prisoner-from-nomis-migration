@@ -12,10 +12,13 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.mockito.ArgumentMatchers.anyMap
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
@@ -25,15 +28,18 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
+import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ProfileDetailsChangedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerDomesticStatusResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerNumberOfChildrenResponse
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.time.LocalDateTime
 import kotlin.collections.component1
 import kotlin.collections.component2
 
@@ -75,7 +81,7 @@ class ContactPersonProfileDetailsSyncIntTest(
             ),
           ),
         )
-        dpsApi.stubSyncDomesticStatus(response = dpsDomesticStatusResponse())
+        dpsApi.stubSyncDomesticStatus(response = dpsDomesticStatusResponse(dpsId = 321))
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "MARITAL")
           .also { waitForAnyProcessingToComplete() }
@@ -334,7 +340,136 @@ class ContactPersonProfileDetailsSyncIntTest(
       }
     }
 
-    private fun dpsDomesticStatusResponse(id: Long = 321) = SyncPrisonerDomesticStatusResponse(id)
+    @Nested
+    @DisplayName("PUT /sync/contactperson/profile-detail/{prisonerNumber}/{bookingId}/{profileType}")
+    inner class SyncEndpoint {
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubGetProfileDetails(
+          offenderNo = "A1234AA",
+          bookingId = 12345,
+          profileTypes = listOf("MARITAL"),
+          response = nomisResponse(
+            offenderNo = "A1234AA",
+            bookings = listOf(
+              booking(
+                bookingId = 12345,
+                latestBooking = true,
+                profileDetails = listOf(
+                  profileDetails(
+                    type = "MARITAL",
+                    code = "M",
+                    createDateTime = "2024-09-04T12:34:56",
+                    createdBy = "A_USER",
+                    modifiedDateTime = null,
+                    modifiedBy = null,
+                    auditModuleName = "NOMIS",
+                  ),
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApi.stubSyncDomesticStatus(response = dpsDomesticStatusResponse(dpsId = 321))
+      }
+
+      @Test
+      fun `access forbidden when no role`() {
+        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/12345/MARITAL")
+          .headers(setAuthorisation(roles = listOf()))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(ContactPersonMigrationFilter())
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access forbidden with wrong role`() {
+        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/12345/MARITAL")
+          .headers(setAuthorisation(roles = listOf("BANANAS")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(ContactPersonMigrationFilter())
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access unauthorised with no auth token`() {
+        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/12345/MARITAL")
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(ContactPersonMigrationFilter())
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      fun `should sync profile details`() = runTest {
+        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/12345/MARITAL")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
+          .exchange()
+          .expectStatus().isOk
+
+        nomisApi.verify()
+        dpsApi.verify()
+        verifyTelemetry()
+      }
+
+      @Test
+      fun `should handle errors from NOMIS`() = runTest {
+        nomisApi.stubGetProfileDetails(status = NOT_FOUND)
+
+        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/12345/MARITAL")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
+          .exchange()
+          .expectStatus().isBadRequest
+          .expectBody()
+          .jsonPath("userMessage").value<String> {
+            assertThat(it).contains("404 Not Found from GET http://localhost:8081/prisoners/A1234AA/profile-details")
+          }
+
+        nomisApi.verify()
+        dpsApi.verify(type = "ignored")
+        verifyTelemetry(telemetryType = "error", errorReason = "404 Not Found from GET http://localhost:8081/prisoners/A1234AA/profile-details")
+      }
+
+      @Test
+      fun `should handle errors from DPS`() = runTest {
+        dpsApi.stubSyncDomesticStatus(status = INTERNAL_SERVER_ERROR)
+
+        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/12345/MARITAL")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
+          .exchange()
+          .expectStatus().isBadRequest
+          .expectBody()
+          .jsonPath("userMessage").value<String> {
+            assertThat(it).contains("500 Internal Server Error from PUT http://localhost:8097/sync/A1234AA/domestic-status")
+          }
+
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
+        dpsApi.verify()
+        verifyTelemetry(telemetryType = "error", errorReason = "500 Internal Server Error from PUT http://localhost:8097/sync/A1234AA/domestic-status")
+      }
+
+      @Test
+      fun `should handle invalid profile type`() = runTest {
+        webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/12345/BUILD")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
+          .exchange()
+          .expectStatus().isBadRequest
+
+        nomisApi.verify(count = 0, getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
+        dpsApi.verify(type = "ignored")
+        verify(telemetryClient, times(0)).trackEvent(anyString(), anyMap(), isNull())
+      }
+    }
+
+    private fun dpsDomesticStatusResponse(dpsId: Long = 321) = SyncPrisonerDomesticStatusResponse(
+      id = dpsId,
+      active = true,
+      domesticStatusCode = "M",
+      createdTime = LocalDateTime.now(),
+      createdBy = "A_USER",
+    )
     private fun dpsNumberOfChildrenResponse(id: Long = 321) = SyncPrisonerNumberOfChildrenResponse(id)
 
     private fun ContactPersonProfileDetailsNomisApiMockServer.verify(

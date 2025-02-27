@@ -87,7 +87,13 @@ class ContactPersonProfileDetailsDpsApiServiceTest {
       createdTime = createdDateTime,
     )
 
-    private fun aResponse(dpsId: Long = 321) = SyncPrisonerDomesticStatusResponse(dpsId)
+    private fun aResponse(dpsId: Long = 321) = SyncPrisonerDomesticStatusResponse(
+      id = dpsId,
+      active = true,
+      domesticStatusCode = "M",
+      createdTime = LocalDateTime.now(),
+      createdBy = "A_USER",
+    )
   }
 
   @Nested
