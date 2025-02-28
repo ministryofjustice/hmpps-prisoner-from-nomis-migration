@@ -27,6 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension.Companion.activitiesApi
 import java.time.LocalDate
+import java.util.UUID
 
 @SpringAPIServiceTest
 @Import(ActivitiesApiService::class, ActivitiesConfiguration::class)
@@ -69,9 +70,7 @@ internal class ActivitiesApiServiceTest {
       description = "Some activity",
       payPerSession = PayPerSession.H,
       runsOnBankHoliday = true,
-      internalLocationDescription = "BXI-A-1-01",
-      internalLocationCode = "CELL-01",
-      internalLocationId = 123,
+      dpsLocationId = UUID.fromString("c4ff80c3-3148-4e2f-a4c2-4f278ad8349a"),
       outsideWork = true,
       scheduleRules = listOf(
         NomisScheduleRule(
@@ -141,9 +140,10 @@ internal class ActivitiesApiServiceTest {
               "description": "Some activity",
               "payPerSession": "H",
               "runsOnBankHoliday": true,
-              "internalLocationDescription": "BXI-A-1-01",
-              "internalLocationCode": "CELL-01",
-              "internalLocationId": 123,
+              "dpsLocationId": "c4ff80c3-3148-4e2f-a4c2-4f278ad8349a",
+              "internalLocationDescription": null,
+              "internalLocationCode": null,
+              "internalLocationId": null,
               "outsideWork": true,
               "scheduleRules": [
                 {

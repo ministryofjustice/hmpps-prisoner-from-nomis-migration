@@ -41,6 +41,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.activiti
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.UUID
 
 class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
@@ -56,6 +57,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     nomisApi.stubMultipleGetActivitiesIdCounts(totalElements = entities.toLong(), pageSize = 3)
     mappingApi.stubAllMappingsNotFound(ACTIVITIES_GET_MAPPING_URL)
     mappingApi.stubActivitiesMappingByMigrationId()
+    mappingApi.stubGetApiLocationNomis(1234, UUID.randomUUID().toString())
     nomisApi.stubMultipleGetActivities(entities)
     activitiesApi.stubCreateActivityForMigration()
     stubCreateMapping()
