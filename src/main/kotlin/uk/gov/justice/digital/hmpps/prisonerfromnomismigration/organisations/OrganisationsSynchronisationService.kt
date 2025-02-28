@@ -18,12 +18,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporatePhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreatePhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateWebRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncOrganisationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateOrganisationRequest
@@ -288,7 +290,6 @@ class OrganisationsSynchronisationService(
             }
             val dpsOrganisationPhone = dpsApiService.createOrganisationAddressPhone(
               nomisPhone.toDpsCreateOrganisationAddressPhoneRequest(
-                dpsOrganisationId = event.corporateId,
                 dpsOrganisationAddressId = dpsOrganisationAddressId,
               ),
             ).also { dpsPhone ->
@@ -728,8 +729,7 @@ fun CorporatePhoneNumber.toDpsCreateOrganisationPhoneRequest(dpsOrganisationId: 
   extNumber = this.extension,
 )
 
-fun CorporatePhoneNumber.toDpsCreateOrganisationAddressPhoneRequest(dpsOrganisationId: Long, dpsOrganisationAddressId: Long) = SyncCreateOrganisationAddressPhoneRequest(
-  organisationId = dpsOrganisationId,
+fun CorporatePhoneNumber.toDpsCreateOrganisationAddressPhoneRequest(dpsOrganisationAddressId: Long) = SyncCreateAddressPhoneRequest(
   organisationAddressId = dpsOrganisationAddressId,
   phoneType = this.type.code,
   createdBy = this.audit.createUsername,
@@ -738,7 +738,7 @@ fun CorporatePhoneNumber.toDpsCreateOrganisationAddressPhoneRequest(dpsOrganisat
   extNumber = this.extension,
 )
 
-fun CorporatePhoneNumber.toDpsUpdateOrganisationAddressPhoneRequest() = SyncUpdateOrganisationAddressPhoneRequest(
+fun CorporatePhoneNumber.toDpsUpdateOrganisationAddressPhoneRequest() = SyncUpdateAddressPhoneRequest(
   phoneType = this.type.code,
   updatedBy = this.audit.modifyUserId!!,
   updatedTime = this.audit.modifyDatetime!!.toDateTime(),

@@ -8,7 +8,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncAddressPhoneResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncAddressResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateOrganisationRequest
@@ -17,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncEmailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncOrganisationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncPhoneResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateOrganisationRequest
@@ -24,7 +27,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateTypesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateWebRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncWebResponse
-import java.time.LocalDateTime
 
 @Service
 class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") private val webClient: WebClient) {
@@ -95,13 +97,13 @@ class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") priv
       .awaitBodilessEntityIgnoreNotFound()
   }
 
-  suspend fun createOrganisationAddressPhone(organisationAddressPhone: SyncCreateOrganisationAddressPhoneRequest): SyncCreateOrganisationAddressPhoneResponse = webClient.post()
+  suspend fun createOrganisationAddressPhone(organisationAddressPhone: SyncCreateAddressPhoneRequest): SyncAddressPhoneResponse = webClient.post()
     .uri("/sync/organisation-address-phone")
     .bodyValue(organisationAddressPhone)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun updateOrganisationAddressPhone(organisationAddressPhoneId: Long, organisationAddressPhone: SyncUpdateOrganisationAddressPhoneRequest) {
+  suspend fun updateOrganisationAddressPhone(organisationAddressPhoneId: Long, organisationAddressPhone: SyncUpdateAddressPhoneRequest) {
     webClient.put()
       .uri("/sync/organisation-address-phone/{organisationAddressPhoneId}", organisationAddressPhoneId)
       .bodyValue(organisationAddressPhone)
@@ -161,26 +163,3 @@ class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") priv
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
   }
 }
-
-//  Fake DTOs - replace with real ones once created
-
-data class SyncCreateOrganisationAddressPhoneRequest(
-  val organisationId: Long,
-  val organisationAddressId: Long,
-  val phoneType: String,
-  val phoneNumber: String,
-  val createdBy: String,
-  val createdTime: LocalDateTime,
-  val extNumber: String? = null,
-)
-data class SyncUpdateOrganisationAddressPhoneRequest(
-  val phoneType: String,
-  val phoneNumber: String,
-  val updatedBy: String,
-  val updatedTime: LocalDateTime,
-  val extNumber: String? = null,
-)
-
-data class SyncCreateOrganisationAddressPhoneResponse(
-  val organisationAddressPhoneId: Long,
-)

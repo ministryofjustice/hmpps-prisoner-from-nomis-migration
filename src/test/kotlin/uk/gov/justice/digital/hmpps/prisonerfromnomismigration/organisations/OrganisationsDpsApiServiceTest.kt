@@ -20,9 +20,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.Org
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreatePhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateWebRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateEmailRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdatePhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncUpdateTypesRequest
@@ -326,7 +326,7 @@ class OrganisationsDpsApiServiceTest {
     internal fun `will pass oath2 token to organisation address phone endpoint`() = runTest {
       dpsOrganisationsServer.stubUpdateOrganisationAddressPhone(12345)
 
-      apiService.updateOrganisationAddressPhone(12345, syncUpdateOrganisationAddressPhoneRequest())
+      apiService.updateOrganisationAddressPhone(12345, syncUpdateAddressPhoneRequest())
 
       dpsOrganisationsServer.verify(
         putRequestedFor(anyUrl())
@@ -338,7 +338,7 @@ class OrganisationsDpsApiServiceTest {
     fun `will call the PUT endpoint`() = runTest {
       dpsOrganisationsServer.stubUpdateOrganisationAddressPhone(12345)
 
-      apiService.updateOrganisationAddressPhone(12345, syncUpdateOrganisationAddressPhoneRequest())
+      apiService.updateOrganisationAddressPhone(12345, syncUpdateAddressPhoneRequest())
 
       dpsOrganisationsServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/organisation-address-phone/12345")),
