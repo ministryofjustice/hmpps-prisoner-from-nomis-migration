@@ -33,16 +33,18 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.dpsOrganisationsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncAddressResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationAddressPhoneResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateAddressPhoneResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncEmailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncOrganisationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncPhoneResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncWebResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreatePhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateWebRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncUpdateOrganisationRequest
@@ -1622,7 +1624,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             ).copy(id = nomisAddressId),
           ),
         )
-        dpsApiMock.stubCreateOrganisationAddressPhone(syncCreateOrganisationAddressPhoneResponse().copy(organisationAddressPhoneId = dpsOrganisationAddressPhoneId))
+        dpsApiMock.stubCreateOrganisationAddressPhone(syncCreateAddressPhoneResponse().copy(organisationAddressPhoneId = dpsOrganisationAddressPhoneId))
         mappingApiMock.stubCreateAddressPhoneMapping()
         organisationsOffenderEventsQueue.sendMessage(
           corporateAddressPhoneEvent(
@@ -1647,11 +1649,10 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the organisation phone in DPS from the organisation`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-address-phone")))
-        val request: SyncCreateOrganisationAddressPhoneRequest = OrganisationsDpsApiExtension.getRequestBody(
+        val request: SyncCreateAddressPhoneRequest = OrganisationsDpsApiExtension.getRequestBody(
           postRequestedFor(urlPathEqualTo("/sync/organisation-address-phone")),
         )
         with(request) {
-          assertThat(organisationId).isEqualTo(corporateAndOrganisationId)
           assertThat(organisationAddressId).isEqualTo(dpsOrganisationAddressId)
           assertThat(phoneType).isEqualTo("HOME")
           assertThat(phoneNumber).isEqualTo("0114 555 5555")
@@ -1743,7 +1744,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             ).copy(id = nomisAddressId),
           ),
         )
-        dpsApiMock.stubCreateOrganisationAddressPhone(syncCreateOrganisationAddressPhoneResponse().copy(organisationAddressPhoneId = dpsOrganisationAddressPhoneId))
+        dpsApiMock.stubCreateOrganisationAddressPhone(syncCreateAddressPhoneResponse().copy(organisationAddressPhoneId = dpsOrganisationAddressPhoneId))
         mappingApiMock.stubCreateAddressPhoneMapping(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
@@ -1834,7 +1835,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             ).copy(id = nomisAddressId),
           ),
         )
-        dpsApiMock.stubCreateOrganisationAddressPhone(syncCreateOrganisationAddressPhoneResponse().copy(organisationAddressPhoneId = dpsOrganisationAddressPhoneId))
+        dpsApiMock.stubCreateOrganisationAddressPhone(syncCreateAddressPhoneResponse().copy(organisationAddressPhoneId = dpsOrganisationAddressPhoneId))
         mappingApiMock.stubCreateAddressPhoneMappingFailureFollowedBySuccess()
         organisationsOffenderEventsQueue.sendMessage(
           corporateAddressPhoneEvent(
@@ -1979,7 +1980,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update the phone in DPS from the NOMIS phone`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-address-phone/$dpsOrganisationAddressPhoneId")))
-        val request: SyncUpdateOrganisationAddressPhoneRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-address-phone/$dpsOrganisationAddressPhoneId")))
+        val request: SyncUpdateAddressPhoneRequest = OrganisationsDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/organisation-address-phone/$dpsOrganisationAddressPhoneId")))
         with(request) {
           assertThat(phoneType).isEqualTo("HOME")
           assertThat(extNumber).isEqualTo("ext 123")
