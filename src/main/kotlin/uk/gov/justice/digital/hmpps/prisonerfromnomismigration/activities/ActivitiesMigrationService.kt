@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.util.UUID
 import kotlin.math.max
 
 @Service
@@ -149,24 +150,24 @@ class ActivitiesMigrationService(
         null,
       )
     }
-}
 
-private fun GetActivityResponse.toActivityMigrateRequest(requestedStartDate: LocalDate): ActivityMigrateRequest = ActivityMigrateRequest(
-  programServiceCode = programCode,
-  prisonCode = prisonId,
-  startDate = maxOf(startDate, requestedStartDate),
-  endDate = endDate,
-  capacity = max(1, capacity),
-  description = description,
-  payPerSession = ActivityMigrateRequest.PayPerSession.valueOf(payPerSession),
-  runsOnBankHoliday = !excludeBankHolidays,
-  internalLocationCode = internalLocationCode,
-  internalLocationId = internalLocationId,
-  internalLocationDescription = internalLocationDescription,
-  scheduleRules = scheduleRules.toNomisScheduleRules(),
-  payRates = payRates.map { it.toNomisPayRate() },
-  outsideWork = outsideWork,
-)
+  private suspend fun GetActivityResponse.toActivityMigrateRequest(requestedStartDate: LocalDate): ActivityMigrateRequest = ActivityMigrateRequest(
+    programServiceCode = programCode,
+    prisonCode = prisonId,
+    startDate = maxOf(startDate, requestedStartDate),
+    endDate = endDate,
+    capacity = max(1, capacity),
+    description = description,
+    payPerSession = ActivityMigrateRequest.PayPerSession.valueOf(payPerSession),
+    runsOnBankHoliday = !excludeBankHolidays,
+    dpsLocationId = internalLocationId.toDpsLocationId(),
+    scheduleRules = scheduleRules.toNomisScheduleRules(),
+    payRates = payRates.map { it.toNomisPayRate() },
+    outsideWork = outsideWork,
+  )
+
+  private suspend fun Long?.toDpsLocationId(): UUID? = this?.let { activitiesMappingService.getDpsLocation(it).dpsLocationId }?.let { UUID.fromString(it) }
+}
 
 private fun List<ScheduleRulesResponse>.toNomisScheduleRules(): List<NomisScheduleRule> = map {
   NomisScheduleRule(

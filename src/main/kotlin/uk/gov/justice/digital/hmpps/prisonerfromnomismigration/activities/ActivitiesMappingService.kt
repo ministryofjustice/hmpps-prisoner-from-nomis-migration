@@ -33,9 +33,9 @@ class ActivitiesMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
     .bodyToMono(ActivityMigrationDetails::class.java)
     .awaitSingle()!!
 
-  suspend fun getDpsLocation(nomisLocationId: Long): NomisDpsLocationMapping? = webClient.get()
+  suspend fun getDpsLocation(nomisLocationId: Long): NomisDpsLocationMapping = webClient.get()
     .uri("/api/locations/nomis/{nomisLocationId}", nomisLocationId)
     .retrieve()
     .bodyToMono(NomisDpsLocationMapping::class.java)
-    .awaitSingleOrNull()
+    .awaitSingle()
 }

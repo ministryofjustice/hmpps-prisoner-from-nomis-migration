@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
@@ -39,6 +40,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ActivityMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NomisDpsLocationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.FindActiveActivityIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.GetActivityResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PayRatesResponse
@@ -52,6 +54,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.util.UUID
 
 class ActivitiesMigrationServiceTest {
   private val nomisApiService: NomisApiService = mock()
@@ -436,10 +439,13 @@ class ActivitiesMigrationServiceTest {
     private val yesterday = today.minusDays(1)
     private val tomorrow = today.plusDays(1)
     private val startDate = today.plusDays(2)
+    private val dpsLocationId = UUID.randomUUID()
+    private val dpsLocationResponse = NomisDpsLocationMapping(dpsLocationId.toString(), 123L)
 
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
       whenever(mappingService.findNomisMapping(any())).thenReturn(null)
+      whenever(mappingService.getDpsLocation(anyLong())).thenReturn(dpsLocationResponse)
       whenever(nomisApiService.getActivity(any())).thenReturn(nomisActivityResponse())
 
       whenever(activitiesApiService.migrateActivity(any())).thenReturn(
@@ -474,9 +480,10 @@ class ActivitiesMigrationServiceTest {
           assertThat(it.description).isEqualTo("Some activity")
           assertThat(it.payPerSession).isEqualTo(ActivityMigrateRequest.PayPerSession.H)
           assertThat(it.runsOnBankHoliday).isEqualTo(false)
-          assertThat(it.internalLocationId).isEqualTo(123)
-          assertThat(it.internalLocationCode).isEqualTo("CELL-01")
-          assertThat(it.internalLocationDescription).isEqualTo("BXI-A-1-01")
+          assertThat(it.dpsLocationId).isEqualTo(dpsLocationId)
+          assertThat(it.internalLocationId).isNull()
+          assertThat(it.internalLocationCode).isNull()
+          assertThat(it.internalLocationDescription).isNull()
           assertThat(it.outsideWork).isEqualTo(true)
           with(it.payRates.first { it.nomisPayBand == "1" }) {
             assertThat(incentiveLevel).isEqualTo("BAS")
@@ -731,6 +738,17 @@ class ActivitiesMigrationServiceTest {
       whenever(mappingService.findNomisMapping(any())).thenThrow(WebClientResponseException.BadGateway::class.java)
 
       assertThrows<WebClientResponseException.BadGateway> {
+        service.migrateNomisEntity(migrationContext())
+      }
+
+      verifyNoInteractions(queueService)
+    }
+
+    @Test
+    internal fun `will throw after an error getting the DPS location ID so the message is rejected and retried`(): Unit = runBlocking {
+      whenever(mappingService.getDpsLocation(anyLong())).thenThrow(WebClientResponseException.create(HttpStatus.NOT_FOUND, "404 Not Found", HttpHeaders.EMPTY, ByteArray(0), null, null))
+
+      assertThrows<WebClientResponseException.NotFound> {
         service.migrateNomisEntity(migrationContext())
       }
 
