@@ -30,10 +30,10 @@ import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.caseNotesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteAmendment
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse.SourceSystem
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteAmendment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse.SourceSystem
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
@@ -1023,12 +1023,12 @@ fun caseNoteTemplate(
   authorStaffId = 123456L,
   authorFirstName = "First",
   authorLastName = "Last",
-  amendments = listOf(CaseNoteAmendment("$text amend", "me", "2021-02-03T04:05:07", CaseNoteAmendment.SourceSystem.NOMIS)),
-  createdDatetime = createdDatetime,
-  creationDateTime = "2023-04-05T06:07:08",
+  amendments = listOf(CaseNoteAmendment("$text amend", "me", LocalDateTime.parse("2021-02-03T04:05:07"), CaseNoteAmendment.SourceSystem.NOMIS)),
+  createdDatetime = LocalDateTime.parse(createdDatetime),
+  creationDateTime = LocalDateTime.parse("2023-04-05T06:07:08"),
   createdUsername = "John",
   noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
-  occurrenceDateTime = "2021-02-03T04:05:06",
+  occurrenceDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
   prisonId = "SWI",
   sourceSystem = SourceSystem.NOMIS,
 )

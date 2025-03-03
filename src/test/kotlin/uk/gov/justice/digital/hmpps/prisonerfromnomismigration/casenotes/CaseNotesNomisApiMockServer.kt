@@ -10,11 +10,12 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse.SourceSystem
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerCaseNotesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse.SourceSystem
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerCaseNotesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import java.time.LocalDateTime
 
 @Component
 class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
@@ -32,11 +33,11 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
       authorFirstName = "First",
       authorLastName = "Last",
       amendments = emptyList(),
-      creationDateTime = "2021-02-03T04:05:06",
-      createdDatetime = "2024-11-03T04:05:06",
+      creationDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
+      createdDatetime = LocalDateTime.parse("2024-11-03T04:05:06"),
       createdUsername = "John",
       noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
-      occurrenceDateTime = "2021-02-03T04:05:06",
+      occurrenceDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
       prisonId = "SWI",
       caseNoteText = "the actual casenote",
       auditModuleName = auditModuleName,
@@ -68,18 +69,18 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
       authorFirstName = "First",
       authorLastName = "Last",
       amendments = emptyList(),
-      creationDateTime = "2021-02-03T04:05:06",
-      createdDatetime = "2024-11-03T04:05:06",
+      creationDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
+      createdDatetime = LocalDateTime.parse("2024-11-03T04:05:06"),
       createdUsername = "John",
       noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
-      occurrenceDateTime = "2021-02-03T04:05:06",
+      occurrenceDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
       prisonId = "SWI",
       auditModuleName = auditModuleName,
       sourceSystem = SourceSystem.NOMIS,
     ),
   ) {
     val response = PrisonerCaseNotesResponse(
-      caseNotes = (0..currentCaseNoteCount - 1).map {
+      caseNotes = (0..<currentCaseNoteCount).map {
         caseNote.copy(
           caseNoteId = it + currentCaseNoteStart,
           caseNoteText = "text $it",

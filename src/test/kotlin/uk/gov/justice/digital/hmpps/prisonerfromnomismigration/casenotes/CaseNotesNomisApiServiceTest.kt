@@ -11,9 +11,10 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse.SourceSystem
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse.SourceSystem
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import java.time.LocalDateTime
 
 private const val OFFENDER_NUMBER = "G4803UT"
 
@@ -64,10 +65,10 @@ class CaseNotesNomisApiServiceTest {
           authorFirstName = "First",
           authorLastName = "Last",
           amendments = emptyList(),
-          createdDatetime = "2021-02-03T04:05:06",
+          createdDatetime = LocalDateTime.parse("2021-02-03T04:05:06"),
           createdUsername = "John",
           noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
-          occurrenceDateTime = "2021-02-03T04:05:06",
+          occurrenceDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
           prisonId = "SWI",
           caseNoteText = "the actual casenote",
           auditModuleName = "module",
@@ -122,10 +123,10 @@ class CaseNotesNomisApiServiceTest {
           authorFirstName = "First",
           authorLastName = "Last",
           amendments = emptyList(),
-          createdDatetime = "2021-02-03T04:05:06",
+          createdDatetime = LocalDateTime.parse("2021-02-03T04:05:06"),
           createdUsername = "John",
           noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
-          occurrenceDateTime = "2021-02-03T04:05:06",
+          occurrenceDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
           prisonId = "SWI",
           caseNoteText = "the actual casenote",
           auditModuleName = "module",
