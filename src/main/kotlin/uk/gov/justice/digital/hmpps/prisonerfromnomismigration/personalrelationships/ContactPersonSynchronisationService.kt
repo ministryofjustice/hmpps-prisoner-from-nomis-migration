@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactRestrictionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmailMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmploymentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
@@ -24,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmployment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
@@ -34,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateEmploymentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactAddressPhoneRequest
@@ -43,6 +46,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateEmploymentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -650,11 +654,41 @@ class ContactPersonSynchronisationService(
 
   suspend fun personEmploymentAdded(event: PersonEmploymentEvent) {
     val telemetry =
-      mapOf("personId" to event.personId, "employmentSequence" to event.employmentSequence)
-    telemetryClient.trackEvent(
-      "contactperson-person-employment-synchronisation-created-success",
-      telemetry,
-    )
+      telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisSequenceNumber" to event.employmentSequence)
+
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "contactperson-employment-synchronisation-created-skipped",
+        telemetry,
+      )
+    } else {
+      mappingApiService.getByNomisEmploymentIdsOrNull(nomisPersonId = event.personId, nomisSequenceNumber = event.employmentSequence)?.also {
+        telemetryClient.trackEvent(
+          "contactperson-employment-synchronisation-created-ignored",
+          telemetry + ("dpsContactEmploymentId" to it.dpsId),
+        )
+      } ?: run {
+        track("contactperson-employment-synchronisation-created", telemetry) {
+          nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
+            val nomisEmployment = nomisPerson.employments.find { it.sequence == event.employmentSequence }
+              ?: throw IllegalStateException("Employment ${event.employmentSequence} for person ${event.personId} not found in NOMIS")
+            val dpsEmployment =
+              dpsApiService.createContactEmployment(nomisEmployment.toDpsCreateContactEmploymentRequest(nomisPersonId = event.personId))
+                .also {
+                  telemetry["dpsContactEmploymentId"] = it.employmentId
+                }
+            val mapping = PersonEmploymentMappingDto(
+              nomisPersonId = event.personId,
+              nomisSequenceNumber = event.employmentSequence,
+              dpsId = dpsEmployment.employmentId.toString(),
+              mappingType = PersonEmploymentMappingDto.MappingType.NOMIS_CREATED,
+            )
+
+            tryToCreateMapping(mapping, telemetry)
+          }
+        }
+      }
+    }
   }
 
   suspend fun personEmploymentUpdated(event: PersonEmploymentEvent) {
@@ -859,6 +893,22 @@ class ContactPersonSynchronisationService(
     }
   }
   private suspend fun tryToCreateMapping(
+    mapping: PersonEmploymentMappingDto,
+    telemetry: Map<String, Any>,
+  ) {
+    try {
+      createEmploymentMapping(mapping)
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for employment id $mapping", e)
+      queueService.sendMessage(
+        messageType = ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_EMPLOYMENT_MAPPING.name,
+        synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+  private suspend fun tryToCreateMapping(
     mapping: PersonContactRestrictionMappingDto,
     telemetry: Map<String, Any>,
   ) {
@@ -1001,6 +1051,26 @@ class ContactPersonSynchronisationService(
       }
     }
   }
+  private suspend fun createEmploymentMapping(
+    mapping: PersonEmploymentMappingDto,
+  ) {
+    mappingApiService.createEmploymentMapping(mapping).takeIf { it.isError }?.also {
+      with(it.errorResponse!!.moreInfo) {
+        telemetryClient.trackEvent(
+          "from-nomis-sync-contactperson-duplicate",
+          mapOf(
+            "existingNomisPersonId" to existing.nomisPersonId,
+            "existingNomisSequenceNumber" to existing.nomisSequenceNumber,
+            "existingDpsContactIdentityId" to existing.dpsId,
+            "duplicateNomisPersonId" to duplicate.nomisPersonId,
+            "duplicateNomisSequenceNumber" to duplicate.nomisSequenceNumber,
+            "duplicateDpsContactIdentityId" to duplicate.dpsId,
+            "type" to "EMPLOYMENT",
+          ),
+        )
+      }
+    }
+  }
   private suspend fun createContactRestrictionMapping(
     mapping: PersonContactRestrictionMappingDto,
   ) {
@@ -1088,6 +1158,15 @@ class ContactPersonSynchronisationService(
       .also {
         telemetryClient.trackEvent(
           "contactperson-identifier-mapping-synchronisation-created",
+          retryMessage.telemetryAttributes,
+        )
+      }
+  }
+  suspend fun retryCreateEmploymentMapping(retryMessage: InternalMessage<PersonEmploymentMappingDto>) {
+    createEmploymentMapping(retryMessage.body)
+      .also {
+        telemetryClient.trackEvent(
+          "contactperson-employment-mapping-synchronisation-created",
           retryMessage.telemetryAttributes,
         )
       }
@@ -1282,8 +1361,23 @@ fun PersonIdentifier.toDpsUpdateContactIdentityRequest(nomisPersonId: Long) = Sy
   updatedBy = this.audit.modifyUserId!!,
   identityValue = this.identifier,
   identityType = this.type.code,
-  // TODO - DPS to make this optional
-  issuingAuthority = this.issuedAuthority ?: "",
+  issuingAuthority = this.issuedAuthority,
+  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+)
+
+fun PersonEmployment.toDpsCreateContactEmploymentRequest(nomisPersonId: Long) = SyncCreateEmploymentRequest(
+  contactId = nomisPersonId,
+  organisationId = this.corporate.id,
+  active = this.active,
+  createdBy = this.audit.createUsername,
+  createdTime = this.audit.createDatetime.toDateTime(),
+)
+
+fun PersonEmployment.toDpsUpdateContactEmploymentRequest(nomisPersonId: Long) = SyncUpdateEmploymentRequest(
+  contactId = nomisPersonId,
+  organisationId = this.corporate.id,
+  active = this.active,
+  updatedBy = this.audit.modifyUserId!!,
   updatedTime = this.audit.modifyDatetime!!.toDateTime(),
 )
 

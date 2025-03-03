@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-02-21.5938.205140d"
+    "version": "2025-03-03.5964.c1941ce"
   },
   "servers": [
     {
@@ -3341,6 +3341,62 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PersonIdentifierMappingDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Mapping created",
+            "content": {}
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access forbidden for this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Indicates a duplicate mapping has been rejected. If Error code = 1409 the body will return a DuplicateErrorResponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/contact-person/employment": {
+      "post": {
+        "tags": [
+          "contact-person-mapping-resource"
+        ],
+        "summary": "Creates person employment mappings for synchronisation",
+        "description": "Creates person employment mappings for synchronisation between NOMIS ids and dps ids. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "createPersonEmploymentMapping",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonEmploymentMappingDto"
               }
             }
           },
@@ -11123,6 +11179,214 @@
         }
       }
     },
+    "/mapping/contact-person/employment/nomis-person-id/{nomisPersonId}/nomis-sequence-number/{nomisSequenceNumber}": {
+      "get": {
+        "tags": [
+          "contact-person-mapping-resource"
+        ],
+        "summary": "Get person employment mapping by nomis person id and sequence",
+        "description": "Retrieves the person employment mapping by NOMIS person id and NOMIS sequence number. Requires role ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "getPersonEmploymentMappingByNomisIds",
+        "parameters": [
+          {
+            "name": "nomisPersonId",
+            "in": "path",
+            "description": "NOMIS person id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "description": "NOMIS person id",
+              "example": 12345
+            },
+            "example": 12345
+          },
+          {
+            "name": "nomisSequenceNumber",
+            "in": "path",
+            "description": "NOMIS employment sequence",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "description": "NOMIS employment sequence",
+              "example": 4
+            },
+            "example": 4
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Person employment mapping data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonEmploymentMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access this endpoint is forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "contact-person-mapping-resource"
+        ],
+        "summary": "Delete person employment mapping by nomis person id and sequence",
+        "description": "Delete the person employment mapping by NOMIS person id and NOMIS sequence number. Requires role ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "deletePersonEmploymentMappingByNomisIds",
+        "parameters": [
+          {
+            "name": "nomisPersonId",
+            "in": "path",
+            "description": "NOMIS person id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "description": "NOMIS person id",
+              "example": 12345
+            },
+            "example": 12345
+          },
+          {
+            "name": "nomisSequenceNumber",
+            "in": "path",
+            "description": "NOMIS employment sequence",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "description": "NOMIS employment sequence",
+              "example": 4
+            },
+            "example": 4
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Person employment mapping deleted",
+            "content": {}
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access this endpoint is forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/contact-person/employment/dps-contact-employment-id/{dpsContactEmploymentId}": {
+      "get": {
+        "tags": [
+          "contact-person-mapping-resource"
+        ],
+        "summary": "Get contact employment mapping by dps contact employment Id",
+        "description": "Retrieves the person employment mapping by DPS Contact Employment Id. Requires role ROLE_NOMIS_CONTACTPERSONS",
+        "operationId": "getPersonEmploymentMappingByDpsId",
+        "parameters": [
+          {
+            "name": "dpsContactEmploymentId",
+            "in": "path",
+            "description": "DPS contact employment id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "DPS contact employment id",
+              "example": "12345"
+            },
+            "example": 12345
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Person Employment mapping data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonEmploymentMappingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access this endpoint is forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Id does not exist in mapping table",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/contact-person/email/nomis-internet-address-id/{nomisInternetAddressId}": {
       "get": {
         "tags": [
@@ -14048,70 +14312,6 @@
         }
       }
     },
-    "/mapping/contact-person/employment/nomis-person-id/{nomisPersonId}/nomis-sequence-number/{nomisSequenceNumber}": {
-      "delete": {
-        "tags": [
-          "contact-person-mapping-resource"
-        ],
-        "summary": "Delete person employment mapping by nomis person id and sequence",
-        "description": "Delete the person employment mapping by NOMIS person id and NOMIS sequence number. Requires role ROLE_NOMIS_CONTACTPERSONS",
-        "operationId": "deletePersonEmploymentMappingByNomisIds",
-        "parameters": [
-          {
-            "name": "nomisPersonId",
-            "in": "path",
-            "description": "NOMIS person id",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64",
-              "description": "NOMIS person id",
-              "example": 12345
-            },
-            "example": 12345
-          },
-          {
-            "name": "nomisSequenceNumber",
-            "in": "path",
-            "description": "NOMIS employment sequence",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int64",
-              "description": "NOMIS employment sequence",
-              "example": 4
-            },
-            "example": 4
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Person employment mapping deleted",
-            "content": {}
-          },
-          "401": {
-            "description": "Unauthorized to access this endpoint",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Access this endpoint is forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/mapping/contact-person": {
       "delete": {
         "tags": [
@@ -16763,6 +16963,47 @@
           "nomisSequenceNumber"
         ]
       },
+      "PersonEmploymentMappingDto": {
+        "type": "object",
+        "properties": {
+          "dpsId": {
+            "type": "string",
+            "description": "DPS id"
+          },
+          "nomisPersonId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "NOMIS id"
+          },
+          "nomisSequenceNumber": {
+            "type": "integer",
+            "format": "int64",
+            "description": "NOMIS sequence"
+          },
+          "label": {
+            "type": "string"
+          },
+          "mappingType": {
+            "type": "string",
+            "enum": [
+              "MIGRATED",
+              "DPS_CREATED",
+              "NOMIS_CREATED"
+            ]
+          },
+          "whenCreated": {
+            "type": "string",
+            "example": "2021-07-05T10:35:17",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
+          }
+        },
+        "required": [
+          "dpsId",
+          "mappingType",
+          "nomisPersonId",
+          "nomisSequenceNumber"
+        ]
+      },
       "PersonEmailMappingDto": {
         "type": "object",
         "properties": {
@@ -17410,13 +17651,13 @@
       "PageCourtCaseMappingDto": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -17547,13 +17788,13 @@
       "PageOrganisationsMappingDto": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -17671,13 +17912,13 @@
       "PageCorePersonMappingDto": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -17787,13 +18028,13 @@
       "PagePersonMappingDto": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -17865,13 +18106,13 @@
       "PagePrisonerAlertMappingsSummaryDto": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"
@@ -17936,13 +18177,13 @@
       "PageAlertMappingDto": {
         "type": "object",
         "properties": {
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
           },
           "first": {
             "type": "boolean"

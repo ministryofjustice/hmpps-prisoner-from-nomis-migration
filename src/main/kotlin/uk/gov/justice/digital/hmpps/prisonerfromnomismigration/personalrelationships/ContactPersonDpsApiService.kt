@@ -22,8 +22,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateEmploymentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncEmployment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerContactRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactAddressPhoneRequest
@@ -33,6 +35,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateEmploymentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRestrictionRequest
 
@@ -119,6 +122,25 @@ class ContactPersonDpsApiService(@Qualifier("personalRelationshipsApiWebClient")
   suspend fun deleteContactEmail(contactEmailId: Long) {
     webClient.delete()
       .uri("/sync/contact-email/{contactEmailId}", contactEmailId)
+      .retrieve()
+      .awaitBodilessEntityIgnoreNotFound()
+  }
+
+  suspend fun createContactEmployment(contactEmployment: SyncCreateEmploymentRequest): SyncEmployment = webClient.post()
+    .uri("/sync/employment")
+    .bodyValue(contactEmployment)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun updateContactEmployment(contactEmploymentId: Long, contactEmployment: SyncUpdateEmploymentRequest): SyncEmployment = webClient.put()
+    .uri("/sync/employment/{contactEmploymentId}", contactEmploymentId)
+    .bodyValue(contactEmployment)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun deleteContactEmployment(contactEmploymentId: Long) {
+    webClient.delete()
+      .uri("/sync/employment/{contactEmploymentId}", contactEmploymentId)
       .retrieve()
       .awaitBodilessEntityIgnoreNotFound()
   }

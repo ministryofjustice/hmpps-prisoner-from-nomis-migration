@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CONTACT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CONTACT_RESTRICTION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_EMAIL_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_EMPLOYMENT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_IDENTIFIER_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_RESTRICTION_MAPPING
@@ -92,6 +93,7 @@ class ContactPersonEventListener(
       RETRY_SYNCHRONISATION_IDENTIFIER_MAPPING -> service.retryCreateIdentifierMapping(message.fromJson())
       RETRY_SYNCHRONISATION_CONTACT_RESTRICTION_MAPPING -> service.retryCreateContactRestrictionMapping(message.fromJson())
       RETRY_SYNCHRONISATION_PERSON_RESTRICTION_MAPPING -> service.retryCreatePersonRestrictionMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_EMPLOYMENT_MAPPING -> service.retryCreateEmploymentMapping(message.fromJson())
     }
   }
 }
@@ -168,6 +170,7 @@ enum class ContactPersonSynchronisationMessageType {
   RETRY_SYNCHRONISATION_EMAIL_MAPPING,
   RETRY_SYNCHRONISATION_PHONE_MAPPING,
   RETRY_SYNCHRONISATION_IDENTIFIER_MAPPING,
+  RETRY_SYNCHRONISATION_EMPLOYMENT_MAPPING,
   RETRY_SYNCHRONISATION_CONTACT_RESTRICTION_MAPPING,
   RETRY_SYNCHRONISATION_PERSON_RESTRICTION_MAPPING,
 }

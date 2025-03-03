@@ -153,6 +153,6 @@ class ContactPersonProfileDetailsDpsApiServiceTest {
       createdTime = createdDateTime,
     )
 
-    private fun aResponse(dpsId: Long = 321) = SyncPrisonerNumberOfChildrenResponse(dpsId)
+    private fun aResponse(dpsId: Long = 321) = SyncPrisonerNumberOfChildrenResponse(dpsId, active = true)
   }
 }

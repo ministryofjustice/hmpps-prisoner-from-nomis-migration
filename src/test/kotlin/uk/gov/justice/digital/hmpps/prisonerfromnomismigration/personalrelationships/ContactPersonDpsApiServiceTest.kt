@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createContactEmailRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createContactEmploymentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createContactIdentityRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createContactRequest
@@ -27,6 +28,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactEmailRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactEmploymentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactIdentityRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactRequest
@@ -424,6 +426,97 @@ class ContactPersonDpsApiServiceTest {
 
       dpsContactPersonServer.verify(
         deleteRequestedFor(urlPathEqualTo("/sync/contact-email/$contactEmailId")),
+      )
+    }
+  }
+
+  @Nested
+  inner class CreateContactEmployment {
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsContactPersonServer.stubCreateContactEmployment()
+
+      apiService.createContactEmployment(createContactEmploymentRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the create sync endpoint`() = runTest {
+      dpsContactPersonServer.stubCreateContactEmployment()
+
+      apiService.createContactEmployment(createContactEmploymentRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/sync/employment")),
+      )
+    }
+  }
+
+  @Nested
+  inner class UpdateContactEmployment {
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsContactPersonServer.stubUpdateContactEmployment(contactEmploymentId = 123456)
+
+      apiService.updateContactEmployment(contactEmploymentId = 123456, updateContactEmploymentRequest())
+
+      dpsContactPersonServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the update sync endpoint`() = runTest {
+      dpsContactPersonServer.stubUpdateContactEmployment(contactEmploymentId = 123456)
+
+      apiService.updateContactEmployment(contactEmploymentId = 123456, updateContactEmploymentRequest())
+
+      dpsContactPersonServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/employment/123456")),
+      )
+    }
+  }
+
+  @Nested
+  inner class DeleteContactEmployment {
+    private val contactEmploymentId = 12345L
+
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContactEmployment(contactEmploymentId)
+
+      apiService.deleteContactEmployment(contactEmploymentId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the delete sync endpoint`() = runTest {
+      dpsContactPersonServer.stubDeleteContactEmployment(contactEmploymentId)
+
+      apiService.deleteContactEmployment(contactEmploymentId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/employment/$contactEmploymentId")),
+      )
+    }
+
+    @Test
+    fun `will ignore 404`() = runTest {
+      dpsContactPersonServer.stubDeleteContactEmployment(contactEmploymentId, status = 404)
+
+      apiService.deleteContactEmployment(contactEmploymentId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/employment/$contactEmploymentId")),
       )
     }
   }
