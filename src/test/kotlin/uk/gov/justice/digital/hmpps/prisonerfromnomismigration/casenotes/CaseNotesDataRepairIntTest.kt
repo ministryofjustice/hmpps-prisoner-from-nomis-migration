@@ -22,10 +22,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto.MappingType.MIGRATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteAmendment
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse.SourceSystem
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteAmendment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse.SourceSystem
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import java.time.LocalDateTime
 
 private const val BOOKING_ID = 1234L
 private const val NOMIS_CASE_NOTE_ID = 2345678L
@@ -402,7 +403,7 @@ private fun caseNote(bookingId: Long = 123456, caseNoteId: Long = 3) = CaseNoteR
   authorLastName = "Last",
   amendments = listOf(
     CaseNoteAmendment(
-      createdDateTime = "2021-02-03T04:05:06",
+      createdDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
       text = "amendment text",
       authorUsername = "authorone",
       authorStaffId = 2001,
@@ -411,11 +412,11 @@ private fun caseNote(bookingId: Long = 123456, caseNoteId: Long = 3) = CaseNoteR
       sourceSystem = CaseNoteAmendment.SourceSystem.NOMIS,
     ),
   ),
-  creationDateTime = "2021-02-03T04:05:06",
-  createdDatetime = "2023-11-12T13:14:15",
+  creationDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
+  createdDatetime = LocalDateTime.parse("2023-11-12T13:14:15"),
   createdUsername = "John",
   noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
-  occurrenceDateTime = "2021-02-03T04:05:06",
+  occurrenceDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
   prisonId = "SWI",
   caseNoteText = "the actual casenote",
   auditModuleName = "module",

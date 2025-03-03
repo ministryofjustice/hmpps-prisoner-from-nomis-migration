@@ -17,13 +17,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Synchro
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto.MappingType.DPS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto.MappingType.NOMIS_CREATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.UpdateAmendment
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.UpdateCaseNoteRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.UpdateAmendment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.UpdateCaseNoteRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.CASENOTES
-import java.time.LocalDateTime
 import java.util.*
 
 @Service
@@ -328,14 +327,13 @@ Also add new mappings for the new booking id for the copied case notes, which po
     response: CaseNoteResponse,
     prisonerMergeEvent: PrisonerMergeDomainEvent,
   ): Boolean = response.auditModuleName == "MERGE" &&
-    LocalDateTime.parse(response.createdDatetime)
-      .isAfter(prisonerMergeEvent.occurredAt.toLocalDateTime().minusMinutes(30))
+    response.createdDatetime.isAfter(prisonerMergeEvent.occurredAt.toLocalDateTime().minusMinutes(30))
 
   suspend fun synchronisePrisonerBookingMoved(prisonerMergeEvent: PrisonerBookingMovedDomainEvent) {
     val (movedToNomsNumber, movedFromNomsNumber, bookingId) = prisonerMergeEvent.additionalInformation
 
     try {
-      val caseNotes = caseNotesMappingService.updateMappingsByBookingId(bookingId.toLong(), movedToNomsNumber)
+      val caseNotes = caseNotesMappingService.updateMappingsByBookingId(bookingId, movedToNomsNumber)
       val caseNotesToResynchronise = caseNotes.map { UUID.fromString(it.dpsCaseNoteId) }.toSet()
       caseNotesService.moveCaseNotes(
         MoveCaseNotesRequest(

@@ -6,8 +6,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.M
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrateCaseNoteRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteAmendmentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseNoteResponse
-import java.time.LocalDateTime
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse
 import java.util.UUID
 
 fun CaseNoteResponse.toDPSCreateCaseNote(offenderNo: String) = MigrateCaseNoteRequest(
@@ -27,7 +26,7 @@ fun CaseNoteResponse.toDPSCreateCaseNote(offenderNo: String) = MigrateCaseNoteRe
   // never null:
   text = this.caseNoteText,
   // never null in prod data:
-  occurrenceDateTime = LocalDateTime.parse(this.occurrenceDateTime!!),
+  occurrenceDateTime = this.occurrenceDateTime!!,
   systemGenerated = this.noteSourceCode == CaseNoteResponse.NoteSourceCode.AUTO,
   author = Author(
     username = this.authorUsername,
@@ -35,7 +34,7 @@ fun CaseNoteResponse.toDPSCreateCaseNote(offenderNo: String) = MigrateCaseNoteRe
     firstName = this.authorFirstName ?: "",
     lastName = this.authorLastName,
   ),
-  createdDateTime = LocalDateTime.parse(this.creationDateTime!!),
+  createdDateTime = this.creationDateTime!!,
   createdByUsername = this.createdUsername,
   system = MigrateCaseNoteRequest.System.valueOf(this.sourceSystem.name),
   amendments = this.amendments.map { a ->
@@ -47,7 +46,7 @@ fun CaseNoteResponse.toDPSCreateCaseNote(offenderNo: String) = MigrateCaseNoteRe
         firstName = a.authorFirstName ?: "",
         lastName = a.authorLastName ?: "",
       ),
-      createdDateTime = LocalDateTime.parse(a.createdDateTime),
+      createdDateTime = a.createdDateTime,
       system = MigrateAmendmentRequest.System.valueOf(a.sourceSystem.name),
     )
   }.toSet(),
@@ -64,7 +63,7 @@ fun CaseNoteResponse.toDPSSyncCaseNote(offenderNo: String, id: UUID? = null) = S
   // never null:
   text = this.caseNoteText,
   // never null in prod data:
-  occurrenceDateTime = LocalDateTime.parse(this.occurrenceDateTime!!),
+  occurrenceDateTime = this.occurrenceDateTime!!,
   systemGenerated = this.noteSourceCode == CaseNoteResponse.NoteSourceCode.AUTO,
   author = Author(
     username = this.authorUsername,
@@ -72,7 +71,7 @@ fun CaseNoteResponse.toDPSSyncCaseNote(offenderNo: String, id: UUID? = null) = S
     firstName = this.authorFirstName ?: "",
     lastName = this.authorLastName,
   ),
-  createdDateTime = LocalDateTime.parse(this.creationDateTime!!),
+  createdDateTime = this.creationDateTime!!,
   createdByUsername = this.createdUsername,
   system = SyncCaseNoteRequest.System.valueOf(this.sourceSystem.name),
   amendments = this.amendments.map { a ->
@@ -84,7 +83,7 @@ fun CaseNoteResponse.toDPSSyncCaseNote(offenderNo: String, id: UUID? = null) = S
         firstName = a.authorFirstName ?: "",
         lastName = a.authorLastName ?: "",
       ),
-      createdDateTime = LocalDateTime.parse(a.createdDateTime),
+      createdDateTime = a.createdDateTime,
       system = SyncCaseNoteAmendmentRequest.System.valueOf(a.sourceSystem.name),
     )
   }.toSet(),

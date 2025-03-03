@@ -10,7 +10,6 @@ import org.mockito.Mockito.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
@@ -53,7 +52,7 @@ class PrisonPersonMigrationServiceTest {
     @Test
     fun `will get all IDs when there is no prisoner number`() = runTest {
       whenever(nomisService.getPrisonerIds(anyLong(), anyLong()))
-        .thenReturn(RestResponsePage(emptyList<PrisonerId>(), 0, 1, 0, TextNode("")))
+        .thenReturn(RestResponsePage(emptyList(), 0, 1, 0, TextNode("")))
 
       service.getIds(PrisonPersonMigrationFilter(null), 1000, 0)
 
@@ -63,7 +62,7 @@ class PrisonPersonMigrationServiceTest {
     @Test
     fun `will get all IDs when the prisoner number is empty`() = runTest {
       whenever(nomisService.getPrisonerIds(anyLong(), anyLong()))
-        .thenReturn(RestResponsePage(emptyList<PrisonerId>(), 0, 1, 0, TextNode("")))
+        .thenReturn(RestResponsePage(emptyList(), 0, 1, 0, TextNode("")))
 
       service.getIds(PrisonPersonMigrationFilter(""), 1000, 0)
 
