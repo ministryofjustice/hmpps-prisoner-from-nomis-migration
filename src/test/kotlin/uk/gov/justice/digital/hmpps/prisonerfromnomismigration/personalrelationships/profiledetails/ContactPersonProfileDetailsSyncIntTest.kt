@@ -474,7 +474,7 @@ class ContactPersonProfileDetailsSyncIntTest(
       createdTime = LocalDateTime.now(),
       createdBy = "A_USER",
     )
-    private fun dpsNumberOfChildrenResponse(id: Long = 321) = SyncPrisonerNumberOfChildrenResponse(id)
+    private fun dpsNumberOfChildrenResponse(id: Long = 321) = SyncPrisonerNumberOfChildrenResponse(id, active = true)
 
     private fun ContactPersonProfileDetailsNomisApiMockServer.verify(
       offenderNo: String = "A1234AA",

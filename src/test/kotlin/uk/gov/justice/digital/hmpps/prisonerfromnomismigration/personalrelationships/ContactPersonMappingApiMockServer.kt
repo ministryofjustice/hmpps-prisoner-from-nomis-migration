@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactRestrictionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmailMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmploymentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
@@ -640,6 +641,95 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
     ),
   ) = stubGetByNomisIdentifierIdsOrNull(nomisPersonId, nomisSequenceNumber, mapping)
 
+  fun stubCreateEmploymentMapping() {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/employment").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateEmploymentMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/employment").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubCreateEmploymentMappingFollowedBySuccess(status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/employment")
+        .inScenario("Retry Mapping Employment Scenario")
+        .whenScenarioStateIs(Scenario.STARTED)
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(objectMapper.writeValueAsString(error)),
+        ).willSetStateTo("Cause Mapping Employment Success"),
+    )
+
+    mappingApi.stubFor(
+      post("/mapping/contact-person/employment")
+        .inScenario("Retry Mapping Employment Scenario")
+        .whenScenarioStateIs("Cause Mapping Employment Success")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(201),
+
+        ).willSetStateTo(Scenario.STARTED),
+    )
+  }
+
+  fun stubGetByNomisEmploymentIdsOrNull(
+    nomisPersonId: Long = 123456,
+    nomisSequenceNumber: Long = 4,
+    mapping: PersonEmploymentMappingDto? = PersonEmploymentMappingDto(
+      nomisPersonId = 123456,
+      nomisSequenceNumber = 4,
+      dpsId = "654321",
+      mappingType = PersonEmploymentMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mapping?.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/contact-person/employment/nomis-person-id/$nomisPersonId/nomis-sequence-number/$nomisSequenceNumber")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(mapping)),
+        ),
+      )
+    } ?: run {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/contact-person/employment/nomis-person-id/$nomisPersonId/nomis-sequence-number/$nomisSequenceNumber")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+        ),
+      )
+    }
+  }
+
+  fun stubGetByNomisEmploymentIds(
+    nomisPersonId: Long = 123456,
+    nomisSequenceNumber: Long = 4,
+    mapping: PersonEmploymentMappingDto = PersonEmploymentMappingDto(
+      nomisPersonId = 123456,
+      nomisSequenceNumber = 4,
+      dpsId = "654321",
+      mappingType = PersonEmploymentMappingDto.MappingType.MIGRATED,
+    ),
+  ) = stubGetByNomisEmploymentIdsOrNull(nomisPersonId, nomisSequenceNumber, mapping)
+
   fun stubGetByNomisContactRestrictionIdOrNull(
     nomisContactRestrictionId: Long = 123456,
     mapping: PersonContactRestrictionMappingDto? = PersonContactRestrictionMappingDto(
@@ -687,6 +777,18 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
   ) {
     mappingApi.stubFor(
       delete(urlEqualTo("/mapping/contact-person/identifier/nomis-person-id/$nomisPersonId/nomis-sequence-number/$nomisSequenceNumber")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
+  fun stubDeleteByNomisEmploymentIds(
+    nomisPersonId: Long = 123456,
+    nomisSequenceNumber: Long = 4,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/contact-person/employment/nomis-person-id/$nomisPersonId/nomis-sequence-number/$nomisSequenceNumber")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NO_CONTENT.value()),

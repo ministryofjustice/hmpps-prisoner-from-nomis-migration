@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactRestrictionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmailMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmploymentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto.MappingType.MIGRATED
@@ -38,6 +39,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.N
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmployment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmploymentCorporate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension.Companion.dpsContactPersonServer
@@ -45,6 +48,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.contactAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.contactAddressPhone
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.contactEmail
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.contactEmployment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.contactIdentity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.contactPhone
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.contactRestriction
@@ -57,6 +61,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateEmploymentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactAddressPhoneRequest
@@ -2778,31 +2783,334 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("PERSON_EMPLOYMENTS-INSERTED")
   inner class PersonEmploymentAdded {
-    private val personId = 123456L
-    private val employmentSequence = 76543L
+    private val nomisSequenceNumber = 4L
+    private val nomisPersonId = 123456L
+    private val dpsContactEmploymentId = 937373L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
-        personalRelationshipsQueueOffenderEventsUrl,
-        personEmploymentEvent(
-          eventType = "PERSON_EMPLOYMENTS-INSERTED",
-          personId = personId,
-          employmentSequence = employmentSequence,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenCreatedInDps {
+      @BeforeEach
+      fun setUp() {
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
+          personEmploymentEvent(
+            eventType = "PERSON_EMPLOYMENTS-INSERTED",
+            personId = nomisPersonId,
+            employmentSequence = nomisSequenceNumber,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create employment in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/employment")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-employment-synchronisation-created-skipped"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisSequenceNumber"]).isEqualTo(nomisSequenceNumber.toString())
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-employment-synchronisation-created-success"),
-        check {
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-          assertThat(it["employmentSequence"]).isEqualTo(employmentSequence.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenCreatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmploymentIdsOrNull(nomisPersonId = nomisPersonId, nomisSequenceNumber = nomisSequenceNumber, mapping = null)
+        nomisApiMock.stubGetPerson(
+          person = contactPerson(nomisPersonId)
+            .withEmployment(
+              PersonEmployment(
+                sequence = nomisSequenceNumber,
+                corporate = PersonEmploymentCorporate(
+                  id = 54321,
+                  name = "Police",
+                ),
+                active = true,
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                ),
+              ),
+            ),
+        )
+        dpsApiMock.stubCreateContactEmployment(contactEmployment().copy(employmentId = dpsContactEmploymentId))
+        mappingApiMock.stubCreateEmploymentMapping()
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
+          personEmploymentEvent(
+            eventType = "PERSON_EMPLOYMENTS-INSERTED",
+            personId = nomisPersonId,
+            employmentSequence = nomisSequenceNumber,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will check if mapping already exists`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/contact-person/employment/nomis-person-id/$nomisPersonId/nomis-sequence-number/$nomisSequenceNumber")))
+      }
+
+      @Test
+      fun `will retrieve the details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/$nomisPersonId")))
+      }
+
+      @Test
+      fun `will create the employment in DPS from the person`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/employment")))
+        val request: SyncCreateEmploymentRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/employment")))
+        with(request) {
+          // DPS and NOMIS contact/person id are the same
+          assertThat(contactId).isEqualTo(nomisPersonId)
+          assertThat(organisationId).isEqualTo(54321L)
+          assertThat(active).isEqualTo(true)
+          assertThat(createdBy).isEqualTo("J.SPEAK")
+          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+        }
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/employment"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsContactEmploymentId)
+            .withRequestBodyJsonPath("nomisPersonId", "$nomisPersonId")
+            .withRequestBodyJsonPath("nomisSequenceNumber", "$nomisSequenceNumber"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-employment-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisSequenceNumber"]).isEqualTo(nomisSequenceNumber.toString())
+            assertThat(it["dpsContactEmploymentId"]).isEqualTo(dpsContactEmploymentId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmploymentIdsOrNull(
+          nomisPersonId = nomisPersonId,
+          nomisSequenceNumber = nomisSequenceNumber,
+          mapping = PersonEmploymentMappingDto(
+            dpsId = "$dpsContactEmploymentId",
+            nomisSequenceNumber = nomisSequenceNumber,
+            nomisPersonId = nomisPersonId,
+            mappingType = PersonEmploymentMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
+          personEmploymentEvent(
+            eventType = "PERSON_EMPLOYMENTS-INSERTED",
+            personId = nomisPersonId,
+            employmentSequence = nomisSequenceNumber,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not create employment in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/sync/employment")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-employment-synchronisation-created-ignored"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisSequenceNumber"]).isEqualTo(nomisSequenceNumber.toString())
+            assertThat(it["dpsContactEmploymentId"]).isEqualTo(dpsContactEmploymentId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenDuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmploymentIdsOrNull(nomisPersonId = nomisPersonId, nomisSequenceNumber = nomisSequenceNumber, mapping = null)
+        nomisApiMock.stubGetPerson(
+          person = contactPerson(nomisPersonId)
+            .withEmployment(
+              PersonEmployment(
+                sequence = nomisSequenceNumber,
+                corporate = PersonEmploymentCorporate(
+                  id = 54321,
+                  name = "Police",
+                ),
+                active = true,
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                ),
+              ),
+            ),
+        )
+        dpsApiMock.stubCreateContactEmployment(contactEmployment().copy(employmentId = dpsContactEmploymentId))
+        mappingApiMock.stubCreateEmploymentMapping(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = PersonEmploymentMappingDto(
+                dpsId = dpsContactEmploymentId.toString(),
+                nomisSequenceNumber = nomisSequenceNumber,
+                nomisPersonId = nomisPersonId,
+                mappingType = PersonEmploymentMappingDto.MappingType.NOMIS_CREATED,
+              ),
+              existing = PersonEmploymentMappingDto(
+                dpsId = "9999",
+                nomisSequenceNumber = nomisSequenceNumber,
+                nomisPersonId = nomisPersonId,
+                mappingType = PersonEmploymentMappingDto.MappingType.NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
+          personEmploymentEvent(
+            eventType = "PERSON_EMPLOYMENTS-INSERTED",
+            personId = nomisPersonId,
+            employmentSequence = nomisSequenceNumber,
+          ),
+        ).also { waitForAnyProcessingToComplete("from-nomis-sync-contactperson-duplicate") }
+      }
+
+      @Test
+      fun `will create the employment in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/employment")))
+      }
+
+      @Test
+      fun `will attempt to create a mapping between the DPS and NOMIS record once`() {
+        mappingApiMock.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/employment"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsContactEmploymentId)
+            .withRequestBodyJsonPath("nomisSequenceNumber", "$nomisSequenceNumber")
+            .withRequestBodyJsonPath("nomisPersonId", "$nomisPersonId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for both overall success and duplicate`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-employment-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisSequenceNumber"]).isEqualTo(nomisSequenceNumber.toString())
+            assertThat(it["dpsContactEmploymentId"]).isEqualTo(dpsContactEmploymentId.toString())
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-sync-contactperson-duplicate"),
+          check {
+            assertThat(it["existingNomisSequenceNumber"]).isEqualTo(nomisSequenceNumber.toString())
+            assertThat(it["existingNomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["existingDpsContactIdentityId"]).isEqualTo("9999")
+            assertThat(it["duplicateNomisSequenceNumber"]).isEqualTo(nomisSequenceNumber.toString())
+            assertThat(it["duplicateNomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["duplicateDpsContactIdentityId"]).isEqualTo(dpsContactEmploymentId.toString())
+            assertThat(it["type"]).isEqualTo("EMPLOYMENT")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class MappingCreateFails {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmploymentIdsOrNull(nomisPersonId = nomisPersonId, nomisSequenceNumber = nomisSequenceNumber, mapping = null)
+        nomisApiMock.stubGetPerson(
+          person = contactPerson(nomisPersonId)
+            .withEmployment(
+              PersonEmployment(
+                sequence = nomisSequenceNumber,
+                corporate = PersonEmploymentCorporate(
+                  id = 54321,
+                  name = "Police",
+                ),
+                active = true,
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = "2024-09-01T13:31",
+                ),
+              ),
+            ),
+        )
+        dpsApiMock.stubCreateContactEmployment(contactEmployment().copy(employmentId = dpsContactEmploymentId))
+        mappingApiMock.stubCreateEmploymentMappingFollowedBySuccess()
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
+          personEmploymentEvent(
+            eventType = "PERSON_EMPLOYMENTS-INSERTED",
+            personId = nomisPersonId,
+            employmentSequence = nomisSequenceNumber,
+          ),
+        ).also { waitForAnyProcessingToComplete("contactperson-employment-mapping-synchronisation-created") }
+      }
+
+      @Test
+      fun `will create the employment in DPS once`() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/employment")))
+      }
+
+      @Test
+      fun `will create a mapping between the DPS and NOMIS record`() {
+        mappingApiMock.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/employment"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("dpsId", dpsContactEmploymentId)
+            .withRequestBodyJsonPath("nomisSequenceNumber", "$nomisSequenceNumber")
+            .withRequestBodyJsonPath("nomisPersonId", "$nomisPersonId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-employment-synchronisation-created-success"),
+          check {
+            assertThat(it["nomisSequenceNumber"]).isEqualTo(nomisSequenceNumber.toString())
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactEmploymentId"]).isEqualTo(dpsContactEmploymentId.toString())
+          },
+          isNull(),
+        )
+      }
     }
   }
 

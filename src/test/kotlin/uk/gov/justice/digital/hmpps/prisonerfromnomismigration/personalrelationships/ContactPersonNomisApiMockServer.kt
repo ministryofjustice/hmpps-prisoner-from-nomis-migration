@@ -150,6 +150,7 @@ fun ContactPerson.withAddress(addressId: Long, phone: PersonPhoneNumber): Contac
 fun ContactPerson.withPhoneNumber(phone: PersonPhoneNumber): ContactPerson = copy(phoneNumbers = listOf(phone))
 fun ContactPerson.withEmailAddress(phone: PersonEmailAddress): ContactPerson = copy(emailAddresses = listOf(phone))
 fun ContactPerson.withIdentifier(identifier: PersonIdentifier): ContactPerson = copy(identifiers = listOf(identifier))
+fun ContactPerson.withEmployment(employment: PersonEmployment): ContactPerson = copy(employments = listOf(employment))
 fun ContactPerson.withContactRestriction(restriction: ContactRestriction): ContactPerson = copy(restrictions = listOf(restriction))
 fun ContactPerson.withContact(contact: PersonContact): ContactPerson = copy(contacts = listOf(contact))
 fun ContactPerson.withContact(contactId: Long, offenderNo: String, restriction: ContactRestriction): ContactPerson = copy(

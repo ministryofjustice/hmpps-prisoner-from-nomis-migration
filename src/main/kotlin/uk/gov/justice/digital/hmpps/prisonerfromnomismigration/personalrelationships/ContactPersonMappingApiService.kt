@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactRestrictionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmailMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonEmploymentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
@@ -183,6 +184,16 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
       .retrieve()
       .awaitBodilessEntity()
   }
+  suspend fun deleteByNomisEmploymentIds(nomisPersonId: Long, nomisSequenceNumber: Long) {
+    webClient.delete()
+      .uri(
+        "/mapping/contact-person/employment/nomis-person-id/{nomisPersonId}/nomis-sequence-number/{nomisSequenceNumber}",
+        nomisPersonId,
+        nomisSequenceNumber,
+      )
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 
   suspend fun getByNomisContactRestrictionIdOrNull(nomisContactRestrictionId: Long): PersonContactRestrictionMappingDto? = webClient.get()
     .uri(
@@ -219,6 +230,24 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
       .retrieve()
       .awaitBodilessEntity()
   }
+
+  suspend fun getByNomisEmploymentIdsOrNull(nomisPersonId: Long, nomisSequenceNumber: Long): PersonEmploymentMappingDto? = webClient.get()
+    .uri(
+      "/mapping/contact-person/employment/nomis-person-id/{nomisPersonId}/nomis-sequence-number/{nomisSequenceNumber}",
+      nomisPersonId,
+      nomisSequenceNumber,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getByNomisEmploymentIds(nomisPersonId: Long, nomisSequenceNumber: Long): PersonEmploymentMappingDto = webClient.get()
+    .uri(
+      "/mapping/contact-person/employment/nomis-person-id/{nomisPersonId}/nomis-sequence-number/{nomisSequenceNumber}",
+      nomisPersonId,
+      nomisSequenceNumber,
+    )
+    .retrieve()
+    .awaitBody()
 
   suspend fun createMappingsForMigration(mappings: ContactPersonMappingsDto): CreateMappingResult<PersonMappingDto> = webClient.post()
     .uri("/mapping/contact-person/migrate")
@@ -294,6 +323,17 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
     .map { CreateMappingResult<PersonIdentifierMappingDto>() }
     .onErrorResume(WebClientResponseException.Conflict::class.java) {
       Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonIdentifierMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun createEmploymentMapping(mappings: PersonEmploymentMappingDto): CreateMappingResult<PersonEmploymentMappingDto> = webClient.post()
+    .uri("/mapping/contact-person/employment")
+    .bodyValue(mappings)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<PersonEmploymentMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonEmploymentMappingDto>>() {})))
     }
     .awaitFirstOrDefault(CreateMappingResult())
 
