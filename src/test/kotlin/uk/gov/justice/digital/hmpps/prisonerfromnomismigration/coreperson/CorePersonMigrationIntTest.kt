@@ -38,21 +38,21 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CoreOffender
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorePerson
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Identifier
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderAddressUsage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderBelief
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderDisability
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderEmailAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderInterestToImmigration
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderNationality
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderNationalityDetails
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderPhoneNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderSexualOrientation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Identifier
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddressUsage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderBelief
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderDisability
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderInterestToImmigration
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderNationality
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderNationalityDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderSexualOrientation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
@@ -391,14 +391,14 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
               OffenderNationality(
                 bookingId = 1125444,
                 nationality = CodeDescription("BRIT", "British"),
-                startDateTime = "2016-08-18T19:58:23",
+                startDateTime = LocalDateTime.parse("2016-08-18T19:58:23"),
                 latestBooking = true,
               ),
               OffenderNationality(
                 bookingId = 914459,
                 nationality = CodeDescription("MG", "Malagasy"),
-                startDateTime = "2012-01-11T16:45:02",
-                endDateTime = "2014-09-05T10:55:00",
+                startDateTime = LocalDateTime.parse("2012-01-11T16:45:02"),
+                endDateTime = LocalDateTime.parse("2014-09-05T10:55:00"),
                 latestBooking = false,
               ),
             ),
@@ -406,14 +406,14 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
               OffenderNationalityDetails(
                 bookingId = 1125444,
                 details = "ROTL 23/01/2023",
-                startDateTime = "2016-08-19T19:58:23",
+                startDateTime = LocalDateTime.parse("2016-08-19T19:58:23"),
                 latestBooking = true,
               ),
               OffenderNationalityDetails(
                 bookingId = 914459,
                 details = "Claims to be from Madagascar",
-                startDateTime = "2012-01-12T16:45:02",
-                endDateTime = "2014-09-05T10:55:00",
+                startDateTime = LocalDateTime.parse("2012-01-12T16:45:02"),
+                endDateTime = LocalDateTime.parse("2014-09-05T10:55:00"),
                 latestBooking = false,
               ),
             ),
@@ -421,14 +421,14 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
               OffenderSexualOrientation(
                 bookingId = 1125444,
                 sexualOrientation = CodeDescription("HET", "Heterosexual"),
-                startDateTime = "2016-08-19T19:58:23",
+                startDateTime = LocalDateTime.parse("2016-08-19T19:58:23"),
                 latestBooking = true,
               ),
               OffenderSexualOrientation(
                 bookingId = 914459,
                 sexualOrientation = CodeDescription("ND", "Not disclosed"),
-                startDateTime = "2012-01-12T16:45:02",
-                endDateTime = "2014-09-05T10:55:00",
+                startDateTime = LocalDateTime.parse("2012-01-12T16:45:02"),
+                endDateTime = LocalDateTime.parse("2014-09-05T10:55:00"),
                 latestBooking = false,
               ),
             ),
@@ -436,28 +436,28 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
               OffenderDisability(
                 bookingId = 1125444,
                 disability = true,
-                startDateTime = "2016-08-19T19:58:23",
+                startDateTime = LocalDateTime.parse("2016-08-19T19:58:23"),
                 latestBooking = true,
               ),
               OffenderDisability(
                 bookingId = 914459,
                 disability = false,
-                startDateTime = "2012-01-12T16:45:02",
-                endDateTime = "2014-09-05T10:55:00",
+                startDateTime = LocalDateTime.parse("2012-01-12T16:45:02"),
+                endDateTime = LocalDateTime.parse("2014-09-05T10:55:00"),
                 latestBooking = false,
               ),
             ),
             interestsToImmigration = listOf(
               OffenderInterestToImmigration(
                 bookingId = 1125444,
-                startDateTime = "2016-08-19T19:58:23",
+                startDateTime = LocalDateTime.parse("2016-08-19T19:58:23"),
                 interestToImmigration = true,
                 latestBooking = true,
               ),
               OffenderInterestToImmigration(
                 bookingId = 914459,
-                startDateTime = "2012-01-12T16:45:02",
-                endDateTime = "2014-09-05T10:55:00",
+                startDateTime = LocalDateTime.parse("2012-01-12T16:45:02"),
+                endDateTime = LocalDateTime.parse("2014-09-05T10:55:00"),
                 interestToImmigration = false,
                 latestBooking = false,
 
@@ -470,7 +470,7 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
                 startDate = LocalDate.parse("2016-08-02"),
                 verified = true,
                 audit = NomisAudit(
-                  createDatetime = "2016-08-01",
+                  createDatetime = LocalDateTime.parse("2016-08-01T10:55:00"),
                   createUsername = "KOFEADDY",
                   createDisplayName = "KOFE ADDY",
                 ),
@@ -484,12 +484,12 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
                 endDate = LocalDate.parse("2016-08-02"),
                 verified = true,
                 audit = NomisAudit(
-                  createDatetime = "2016-08-01",
+                  createDatetime = LocalDateTime.parse("2016-08-01T10:55:00"),
                   createUsername = "KOFEADDY",
                   createDisplayName = "KOFE ADDY",
                   modifyUserId = "JIMADM",
                   modifyDisplayName = "Jimmy Admin",
-                  modifyDatetime = "2016-08-02T10:55:00",
+                  modifyDatetime = LocalDateTime.parse("2016-08-02T10:55:00"),
                 ),
                 changeReason = true,
                 comments = "New believer",

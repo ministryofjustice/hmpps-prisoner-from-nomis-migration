@@ -17,13 +17,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.N
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NonResidentialUsageDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto.MappingType.NOMIS_CREATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.LocationResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.UsageRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.LocationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.UsageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.LOCATIONS
-import java.time.LocalDateTime
 import java.util.UUID
 
 @Service
@@ -305,7 +304,7 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse, parentId: Strin
     ?.toSet(),
   usage = nomisLocationResponse.usages?.map { toUsage(it) }?.toSet(),
 
-  createDate = LocalDateTime.parse(nomisLocationResponse.createDatetime),
+  createDate = nomisLocationResponse.createDatetime,
   // lastModifiedDate - no value available as it changes with occupancy
   deactivatedDate = if (nomisLocationResponse.active) {
     null

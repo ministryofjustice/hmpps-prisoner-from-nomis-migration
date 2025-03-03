@@ -8,22 +8,23 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CoreOffender
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorePerson
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Identifier
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderAddressUsage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderBelief
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderDisability
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderEmailAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderInterestToImmigration
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderNationality
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderPhoneNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderSexualOrientation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Identifier
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddressUsage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderBelief
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderDisability
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderInterestToImmigration
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderNationality
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderSexualOrientation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Component
 class CorePersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
@@ -141,7 +142,7 @@ fun corePerson(prisonNumber: String = "A1234BC"): CorePerson = CorePerson(
     OffenderNationality(
       bookingId = 1125444,
       nationality = CodeDescription("BRIT", "British"),
-      startDateTime = "2016-08-18T19:58:23",
+      startDateTime = LocalDateTime.parse("2016-08-18T19:58:23"),
       latestBooking = true,
     ),
   ),
@@ -150,7 +151,7 @@ fun corePerson(prisonNumber: String = "A1234BC"): CorePerson = CorePerson(
     OffenderSexualOrientation(
       bookingId = 1125444,
       sexualOrientation = CodeDescription("HET", "Heterosexual"),
-      startDateTime = "2016-08-19T19:58:23",
+      startDateTime = LocalDateTime.parse("2016-08-19T19:58:23"),
       latestBooking = true,
     ),
   ),
@@ -158,14 +159,14 @@ fun corePerson(prisonNumber: String = "A1234BC"): CorePerson = CorePerson(
     OffenderDisability(
       bookingId = 1125444,
       disability = true,
-      startDateTime = "2016-08-19T19:58:23",
+      startDateTime = LocalDateTime.parse("2016-08-19T19:58:23"),
       latestBooking = true,
     ),
   ),
   interestsToImmigration = listOf(
     OffenderInterestToImmigration(
       bookingId = 1125444,
-      startDateTime = "2016-08-19T19:58:23",
+      startDateTime = LocalDateTime.parse("2016-08-19T19:58:23"),
       interestToImmigration = true,
       latestBooking = true,
     ),
@@ -177,7 +178,7 @@ fun corePerson(prisonNumber: String = "A1234BC"): CorePerson = CorePerson(
       startDate = LocalDate.parse("2016-08-02"),
       verified = true,
       audit = NomisAudit(
-        createDatetime = "2016-08-01",
+        createDatetime = LocalDateTime.parse("2016-08-01T10:55:00"),
         createUsername = "KOFEADDY",
         createDisplayName = "KOFE ADDY",
       ),
