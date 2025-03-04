@@ -27,7 +27,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.P
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonNomisSyncApiExtension.Companion.nomisSyncApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesSyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.ProfileDetailsPhysicalAttributesSyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.PhysicalAttributesDpsApiMockServer
@@ -51,6 +50,9 @@ class PrisonPersonMoveBookingIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var profileDetailsDpsApi: ProfileDetailsPhysicalAttributesDpsApiMockServer
+
+  @Autowired
+  private lateinit var nomisSyncApi: PrisonPersonNomisSyncApiMockServer
 
   @Nested
   @DisplayName("prison-offender-events.prisoner.booking.moved")

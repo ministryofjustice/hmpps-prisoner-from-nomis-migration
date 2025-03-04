@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.profiledetails
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
@@ -10,26 +10,26 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
-import org.springframework.http.HttpStatus.BAD_GATEWAY
+import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 
 @SpringAPIServiceTest
-@Import(PrisonPersonNomisSyncApiService::class, PrisonPersonNomisSyncApiMockServer::class)
-class PrisonPersonNomisSyncApiServiceTest {
+@Import(ContactPersonNomisSyncApiService::class, ContactPersonNomisSyncApiMockServer::class)
+class ContactPersonNomisSyncApiServiceTest {
   @Autowired
-  private lateinit var apiService: PrisonPersonNomisSyncApiService
+  private lateinit var apiService: ContactPersonNomisSyncApiService
 
   @Autowired
-  private lateinit var nomisSyncApi: PrisonPersonNomisSyncApiMockServer
+  private lateinit var nomisSyncApi: ContactPersonNomisSyncApiMockServer
 
   @Nested
-  inner class SyncPhysicalAttributes {
+  inner class SyncProfileDetails {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      nomisSyncApi.stubSyncPhysicalAttributes(prisonerNumber = "A1234AA")
+      nomisSyncApi.stubSyncProfileDetails(prisonerNumber = "A1234AA", profileType = "MARITAL")
 
-      apiService.syncPhysicalAttributes(prisonerNumber = "A1234AA")
+      apiService.syncProfileDetails(prisonerNumber = "A1234AA", profileType = "MARITAL")
 
       nomisSyncApi.verify(
         putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -38,21 +38,25 @@ class PrisonPersonNomisSyncApiServiceTest {
 
     @Test
     internal fun `will pass NOMIS id to service`() = runTest {
-      nomisSyncApi.stubSyncPhysicalAttributes(prisonerNumber = "A1234AA")
+      nomisSyncApi.stubSyncProfileDetails(prisonerNumber = "A1234AA", profileType = "MARITAL")
 
-      apiService.syncPhysicalAttributes(prisonerNumber = "A1234AA")
+      apiService.syncProfileDetails(prisonerNumber = "A1234AA", profileType = "MARITAL")
 
       nomisSyncApi.verify(
-        putRequestedFor(urlPathEqualTo("/prisonperson/A1234AA/physical-attributes")),
+        putRequestedFor(urlPathEqualTo("/contactperson/sync/profile-details/A1234AA/MARITAL")),
       )
     }
 
     @Test
     fun `will throw error when API returns an error`() = runTest {
-      nomisSyncApi.stubSyncPhysicalAttributes(status = BAD_GATEWAY)
+      nomisSyncApi.stubSyncProfileDetails(
+        prisonerNumber = "A1234AA",
+        profileType = "MARITAL",
+        status = HttpStatus.BAD_GATEWAY,
+      )
 
       assertThrows<WebClientResponseException.BadGateway> {
-        apiService.syncPhysicalAttributes("A1234AA")
+        apiService.syncProfileDetails(prisonerNumber = "A1234AA", profileType = "MARITAL")
       }
     }
   }
