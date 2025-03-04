@@ -14,10 +14,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPhoneMappingIdDto.DpsPhoneType.PERSON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonSequenceMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonSimpleMappingIdDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactPerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.CodedValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.Corporate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.IdPair
@@ -158,17 +158,17 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
   interpreterRequired = this.interpreterRequired,
   domesticStatus = this.domesticStatus?.toCodedValue(),
   deceasedDate = this.deceasedDate,
-  staff = this.isStaff ?: false,
-  remitter = this.isRemitter ?: false,
+  staff = this.isStaff == true,
+  remitter = this.isRemitter == true,
   phoneNumbers = this.phoneNumbers.map {
     MigratePhoneNumber(
       phoneId = it.phoneId,
       number = it.number,
       extension = it.extension,
       type = it.type.toCodedValue(),
-      createDateTime = it.audit.createDatetime.toDateTime(),
+      createDateTime = it.audit.createDatetime,
       createUsername = it.audit.createUsername,
-      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyDateTime = it.audit.modifyDatetime,
       modifyUsername = it.audit.modifyUserId,
     )
   },
@@ -185,7 +185,7 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
       county = it.county?.toCodedValue(),
       country = it.country?.toCodedValue(),
       validatedPAF = it.validatedPAF,
-      noFixedAddress = it.noFixedAddress ?: false,
+      noFixedAddress = it.noFixedAddress == true,
       primaryAddress = it.primaryAddress,
       mailAddress = it.mailAddress,
       comment = it.comment,
@@ -197,15 +197,15 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
           number = phone.number,
           extension = phone.extension,
           type = phone.type.toCodedValue(),
-          createDateTime = phone.audit.createDatetime.toDateTime(),
+          createDateTime = phone.audit.createDatetime,
           createUsername = phone.audit.createUsername,
-          modifyDateTime = phone.audit.modifyDatetime.toDateTime(),
+          modifyDateTime = phone.audit.modifyDatetime,
           modifyUsername = phone.audit.modifyUserId,
         )
       },
-      createDateTime = it.audit.createDatetime.toDateTime(),
+      createDateTime = it.audit.createDatetime,
       createUsername = it.audit.createUsername,
-      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyDateTime = it.audit.modifyDatetime,
       modifyUsername = it.audit.modifyUserId,
     )
   },
@@ -213,9 +213,9 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
     MigrateEmailAddress(
       emailAddressId = it.emailAddressId,
       email = it.email,
-      createDateTime = it.audit.createDatetime.toDateTime(),
+      createDateTime = it.audit.createDatetime,
       createUsername = it.audit.createUsername,
-      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyDateTime = it.audit.modifyDatetime,
       modifyUsername = it.audit.modifyUserId,
     )
   },
@@ -223,14 +223,12 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
     MigrateEmployment(
       sequence = it.sequence,
       active = it.active,
-      corporate = it.corporate.let { corporate ->
-        Corporate(
-          id = corporate.id,
-        )
-      },
-      createDateTime = it.audit.createDatetime.toDateTime(),
+      corporate = Corporate(
+        id = it.corporate.id,
+      ),
+      createDateTime = it.audit.createDatetime,
       createUsername = it.audit.createUsername,
-      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyDateTime = it.audit.modifyDatetime,
       modifyUsername = it.audit.modifyUserId,
     )
   },
@@ -240,9 +238,9 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
       type = it.type.toCodedValue(),
       identifier = it.identifier,
       issuedAuthority = it.issuedAuthority,
-      createDateTime = it.audit.createDatetime.toDateTime(),
+      createDateTime = it.audit.createDatetime,
       createUsername = it.audit.createUsername,
-      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyDateTime = it.audit.modifyDatetime,
       modifyUsername = it.audit.modifyUserId,
     )
   },
@@ -259,9 +257,9 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
       emergencyContact = it.emergencyContact,
       comment = it.comment,
       prisonerNumber = it.prisoner.offenderNo,
-      createDateTime = it.audit.createDatetime.toDateTime(),
+      createDateTime = it.audit.createDatetime,
       createUsername = it.audit.createUsername,
-      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyDateTime = it.audit.modifyDatetime,
       modifyUsername = it.audit.modifyUserId,
       restrictions = it.restrictions.map { restriction ->
         MigratePrisonerContactRestriction(
@@ -270,13 +268,13 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
           startDate = restriction.effectiveDate,
           expiryDate = restriction.expiryDate,
           comment = restriction.comment,
-          createDateTime = restriction.audit.createDatetime.toDateTime(),
+          createDateTime = restriction.audit.createDatetime,
           createUsername = if (restriction.audit.hasBeenModified()) {
             restriction.audit.createUsername
           } else {
             restriction.enteredStaff.username
           },
-          modifyDateTime = restriction.audit.modifyDatetime.toDateTime(),
+          modifyDateTime = restriction.audit.modifyDatetime,
           modifyUsername = if (restriction.audit.hasBeenModified()) {
             restriction.enteredStaff.username
           } else {
@@ -293,13 +291,13 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
       effectiveDate = it.effectiveDate,
       expiryDate = it.expiryDate,
       comment = it.comment,
-      createDateTime = it.audit.createDatetime.toDateTime(),
+      createDateTime = it.audit.createDatetime,
       createUsername = if (it.audit.hasBeenModified()) {
         it.audit.createUsername
       } else {
         it.enteredStaff.username
       },
-      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyDateTime = it.audit.modifyDatetime,
       modifyUsername = if (it.audit.hasBeenModified()) {
         it.enteredStaff.username
       } else {
@@ -307,9 +305,9 @@ fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateC
       },
     )
   },
-  createDateTime = this.audit.createDatetime.toDateTime(),
+  createDateTime = this.audit.createDatetime,
   createUsername = this.audit.createUsername,
-  modifyDateTime = this.audit.modifyDatetime.toDateTime(),
+  modifyDateTime = this.audit.modifyDatetime,
   modifyUsername = this.audit.modifyUserId,
 )
 private fun NomisAudit.hasBeenModified() = this.modifyUserId != null
@@ -317,4 +315,3 @@ private fun IdPair.toContactPersonSimpleMappingIdDto() = ContactPersonSimpleMapp
 private fun IdPair.toContactPersonSequenceMappingIdDto(personId: Long) = ContactPersonSequenceMappingIdDto(dpsId = this.dpsId.toString(), nomisSequenceNumber = this.nomisId, nomisPersonId = personId)
 private fun IdPair.toContactPersonPhoneMappingIdDto(phoneType: ContactPersonPhoneMappingIdDto.DpsPhoneType) = ContactPersonPhoneMappingIdDto(dpsId = this.dpsId.toString(), dpsPhoneType = phoneType, nomisId = this.nomisId)
 private fun CodeDescription.toCodedValue() = CodedValue(code = this.code, description = this.description)
-private fun String?.toDateTime() = this?.let { java.time.LocalDateTime.parse(it) }
