@@ -126,7 +126,7 @@ class IdentifyingMarksNomisApiServiceTest {
         assertThat(default).isTrue()
         assertThat(imageExists).isTrue()
         assertThat(imageSourceCode).isEqualTo("FILE")
-        assertThat(createDateTime).startsWith("${LocalDate.now()}")
+        assertThat(createDateTime.toString()).startsWith(LocalDate.now().toString())
         assertThat(createdBy).isEqualTo("A_USER")
         assertThat(auditModuleName).isEqualTo("MODULE")
       }

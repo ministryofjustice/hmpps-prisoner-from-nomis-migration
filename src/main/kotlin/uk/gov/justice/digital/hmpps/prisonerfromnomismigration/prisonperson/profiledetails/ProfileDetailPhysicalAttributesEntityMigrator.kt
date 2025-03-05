@@ -1,8 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.profiledetails
 
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.DpsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonEntityMigrator
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.atPrisonPersonZone
@@ -26,7 +26,7 @@ class ProfileDetailPhysicalAttributesEntityMigrator(
   private suspend fun PrisonerProfileDetailsResponse.toDpsMigrationRequests() = bookings.map { booking ->
     with(booking) {
       ProfileDetailsPhysicalAttributesMigrationRequest(
-        appliesFrom = startDateTime.toLocalDateTime().atPrisonPersonZone(),
+        appliesFrom = startDateTime.atPrisonPersonZone(),
         // We no longer return booking end date from the API call and this service isn't used anyway
         appliesTo = "",
         build = profileDetails.toDpsRequest("BUILD"),
@@ -50,9 +50,7 @@ class ProfileDetailPhysicalAttributesEntityMigrator(
     )
   }
 
-  private fun ProfileDetailsResponse.lastModified(): Pair<LocalDateTime, String> = (modifiedDateTime ?: createDateTime).toLocalDateTime() to (modifiedBy ?: createdBy)
+  private fun ProfileDetailsResponse.lastModified(): Pair<LocalDateTime, String> = (modifiedDateTime ?: createDateTime) to (modifiedBy ?: createdBy)
 
   private suspend fun List<ProfileDetailsPhysicalAttributesMigrationRequest>.migrate(offenderNo: String) = dpsApiService.migrateProfileDetailsPhysicalAttributes(offenderNo, this).fieldHistoryInserted
-
-  private fun String.toLocalDateTime() = LocalDateTime.parse(this)
 }
