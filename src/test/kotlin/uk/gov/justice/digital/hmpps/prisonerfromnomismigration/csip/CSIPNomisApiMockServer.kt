@@ -12,24 +12,25 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Actions
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Attendee
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Decision
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InterviewDetails
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InvestigationDetails
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Offender
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Plan
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ReportDetails
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Review
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SaferCustodyScreening
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Actions
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Attendee
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CSIPFactorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CSIPIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CSIPResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Decision
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.InterviewDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.InvestigationDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Offender
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Plan
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ReportDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Review
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SaferCustodyScreening
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.lang.Long.min
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Component
 class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
@@ -84,10 +85,10 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
             interviewee = "Bill Black",
             date = LocalDate.parse("2024-06-06"),
             role = CodeDescription(code = "WITNESS", description = "Witness"),
-            createDateTime = "2024-04-04T15:12:32.00462",
+            createDateTime = LocalDateTime.parse("2024-04-04T15:12:32.00462"),
             createdBy = "AA_ADM",
             comments = "Saw a pipe in his hand",
-            lastModifiedDateTime = "2024-08-12T11:32:15",
+            lastModifiedDateTime = LocalDateTime.parse("2024-08-12T11:32:15"),
             lastModifiedBy = "BB_ADM",
           ),
         ),
@@ -121,7 +122,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
           closedDate = LocalDate.parse("2024-04-17"),
           progression = "there was some improvement",
           referredBy = "Jason",
-          createDateTime = "2024-03-16T11:32:15",
+          createDateTime = LocalDateTime.parse("2024-03-16T11:32:15"),
           createdBy = "PPLAN",
         ),
       ),
@@ -136,7 +137,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
               role = "person",
               attended = true,
               contribution = "talked about things",
-              createDateTime = "2024-08-20T10:33:48.946787",
+              createDateTime = LocalDateTime.parse("2024-08-20T10:33:48.946787"),
               createdBy = "DBULL_ADM",
             ),
           ),
@@ -148,13 +149,13 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
           closeDate = LocalDate.parse("2024-04-16"),
           recordedDate = LocalDate.parse("2024-04-01"),
           createdBy = "FJAMES",
-          createDateTime = "2024-04-01T10:00:00",
+          createDateTime = LocalDateTime.parse("2024-04-01T10:00:00"),
           recordedBy = "JSMITH",
           recordedByDisplayName = "JOHN SMITH",
         ),
       ),
       documents = listOf(),
-      createDateTime = "2024-04-01T10:32:12.867081",
+      createDateTime = LocalDateTime.parse("2024-04-01T10:32:12.867081"),
       createdBy = "JSMITH",
       originalAgencyId = "MDI",
       logNumber = "ASI-001",
@@ -209,7 +210,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
       ),
       plans = listOf(),
       reviews = listOf(),
-      createDateTime = "2024-04-01T10:32:12.867081",
+      createDateTime = LocalDateTime.parse("2024-04-01T10:32:12.867081"),
       createdBy = "JSMITH",
     )
 
@@ -217,7 +218,7 @@ class CSIPNomisApiMockServer(private val objectMapper: ObjectMapper) {
       id = nomisCSIPFactorId,
       type = CodeDescription(code = "BUL", description = "Bullying"),
       comment = "Offender causes trouble",
-      createDateTime = "2024-04-01T10:00:00",
+      createDateTime = LocalDateTime.parse("2024-04-01T10:00:00"),
       createdBy = "CFACTOR",
     )
   }
