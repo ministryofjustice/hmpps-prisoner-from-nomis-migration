@@ -74,6 +74,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       charges = emptyList(),
       appearances = emptyList(),
       sentences = emptyList(),
+      sentenceTerms = emptyList(),
     ),
   ) {
     stubFor(

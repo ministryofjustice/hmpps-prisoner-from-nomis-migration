@@ -38,8 +38,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseIdentifierResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResponse
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDateTime
 import java.util.AbstractMap.SimpleEntry
@@ -760,17 +760,17 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           caseIndentifiers = listOf(
             CaseIdentifierResponse(
               reference = NOMIS_CASE_IDENTIFIER,
-              createDateTime = LocalDateTime.now().toString(),
+              createDateTime = LocalDateTime.now(),
               type = NOMIS_CASE_IDENTIFIER_TYPE,
             ),
             CaseIdentifierResponse(
               reference = "ref2",
-              createDateTime = LocalDateTime.now().plusHours(1).toString(),
+              createDateTime = LocalDateTime.now().plusHours(1),
               type = NOMIS_CASE_IDENTIFIER_TYPE,
             ),
             CaseIdentifierResponse(
               reference = "ref2",
-              createDateTime = LocalDateTime.now().plusHours(1).toString(),
+              createDateTime = LocalDateTime.now().plusHours(1),
               type = "NOT_OF_INTEREST_TO_DPS",
             ),
           ),
@@ -1057,7 +1057,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtCaseId = NOMIS_COURT_CASE_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
           courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
-          eventDateTime = "2020-01-02T09:00:00",
+          eventDateTime = LocalDateTime.parse("2020-01-02T09:00:00"),
           courtId = "MDI",
         )
       }
@@ -1567,7 +1567,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
           courtCaseId = NOMIS_COURT_CASE_ID,
-          eventDateTime = "2020-01-02T09:00:00",
+          eventDateTime = LocalDateTime.parse("2020-01-02T09:00:00"),
         )
       }
 
