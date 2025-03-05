@@ -721,11 +721,25 @@ class ContactPersonSynchronisationService(
 
   suspend fun personEmploymentDeleted(event: PersonEmploymentEvent) {
     val telemetry =
-      mapOf("personId" to event.personId, "employmentSequence" to event.employmentSequence)
-    telemetryClient.trackEvent(
-      "contactperson-person-employment-synchronisation-deleted-success",
-      telemetry,
-    )
+      telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisSequenceNumber" to event.employmentSequence)
+
+    mappingApiService.getByNomisEmploymentIdsOrNull(
+      nomisPersonId = event.personId,
+      nomisSequenceNumber = event.employmentSequence,
+    )?.also {
+      track("contactperson-employment-synchronisation-deleted", telemetry) {
+        telemetry["dpsContactEmploymentId"] = it.dpsId
+        dpsApiService.deleteContactEmployment(
+          it.dpsId.toLong(),
+        )
+        mappingApiService.deleteByNomisEmploymentIds(event.personId, event.employmentSequence)
+      }
+    } ?: run {
+      telemetryClient.trackEvent(
+        "contactperson-employment-synchronisation-deleted-ignored",
+        telemetry,
+      )
+    }
   }
 
   suspend fun personIdentifierAdded(event: PersonIdentifierEvent) {
