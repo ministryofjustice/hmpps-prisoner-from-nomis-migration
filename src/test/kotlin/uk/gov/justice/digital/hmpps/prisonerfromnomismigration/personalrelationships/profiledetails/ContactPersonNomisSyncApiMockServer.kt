@@ -1,7 +1,6 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.profiledetails
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.havingExactly
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -12,11 +11,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.Pris
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisSyncApiExtension.Companion.nomisSyncApi
 
 @Component
-class PrisonPersonNomisSyncApiMockServer {
-  fun stubSyncPhysicalAttributes(prisonerNumber: String = "A1234AA") {
+class ContactPersonNomisSyncApiMockServer {
+  fun stubSyncProfileDetails(prisonerNumber: String = "A1234AA", profileType: String = "MARITAL") {
     nomisSyncApi.stubFor(
-      put(urlPathMatching("/prisonperson/$prisonerNumber/physical-attributes"))
-        .withQueryParam("fields", havingExactly("HEIGHT", "WEIGHT", "BUILD", "FACE", "FACIAL_HAIR", "HAIR", "LEFT_EYE_COLOUR", "RIGHT_EYE_COLOUR", "SHOE_SIZE"))
+      put(urlPathMatching("/contactperson/sync/profile-details/$prisonerNumber/$profileType"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -25,13 +23,13 @@ class PrisonPersonNomisSyncApiMockServer {
     )
   }
 
-  fun stubSyncPhysicalAttributes(
+  fun stubSyncProfileDetails(
     prisonerNumber: String = "A1234AA",
+    profileType: String = "MARITAL",
     status: HttpStatus,
   ) {
     nomisSyncApi.stubFor(
-      put(urlPathMatching("/prisonperson/$prisonerNumber/physical-attributes"))
-        .withQueryParam("fields", havingExactly("HEIGHT", "WEIGHT", "BUILD", "FACE", "FACIAL_HAIR", "HAIR", "LEFT_EYE_COLOUR", "RIGHT_EYE_COLOUR", "SHOE_SIZE"))
+      put(urlPathMatching("/contactperson/sync/profile-details/$prisonerNumber/$profileType"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")

@@ -15,16 +15,16 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncRe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.model.SyncScreeningOutcomeRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPChildMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Actions
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Attendee
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPFactorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CSIPResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Decision
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InterviewDetails
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.InvestigationDetails
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Plan
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Review
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SaferCustodyScreening
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Actions
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Attendee
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CSIPFactorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CSIPResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Decision
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.InterviewDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.InvestigationDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Plan
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Review
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SaferCustodyScreening
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -118,12 +118,12 @@ fun Review.toActionDetails() = getActionDetails(
 )
 
 fun getActionDetails(
-  createDateTime: String,
+  createDateTime: LocalDateTime,
   createdBy: String,
-  lastModifiedDateTime: String?,
+  lastModifiedDateTime: LocalDateTime?,
   lastModifiedBy: String?,
 ) = ActionDetails(
-  actionedAt = lastModifiedDateTime?.let { LocalDateTime.parse(lastModifiedDateTime) } ?: LocalDateTime.parse(createDateTime),
+  actionedAt = lastModifiedDateTime ?: createDateTime,
   actionedBy = lastModifiedBy ?: createdBy,
 )
 

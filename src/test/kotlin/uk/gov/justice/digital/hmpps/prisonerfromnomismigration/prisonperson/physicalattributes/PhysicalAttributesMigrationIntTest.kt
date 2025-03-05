@@ -22,9 +22,9 @@ import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonPersonMigrationMappingRequest.MigrationType.PHYSICAL_ATTRIBUTES
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingPhysicalAttributesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingPhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerPhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesMigrationResponse
@@ -33,7 +33,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 class PhysicalAttributesMigrationIntTest : SqsIntegrationTestBase() {
 
@@ -239,8 +238,8 @@ class PhysicalAttributesMigrationIntTest : SqsIntegrationTestBase() {
       bookings = listOf(
         BookingPhysicalAttributesResponse(
           bookingId = 1,
-          startDateTime = "2024-02-03T12:34:56",
-          endDateTime = "2024-03-21T12:34:56",
+          startDateTime = LocalDateTime.parse("2024-02-03T12:34:56"),
+          endDateTime = LocalDateTime.parse("2024-03-21T12:34:56"),
           latestBooking = true,
           physicalAttributes = listOf(
             PhysicalAttributesResponse(
@@ -248,9 +247,9 @@ class PhysicalAttributesMigrationIntTest : SqsIntegrationTestBase() {
               heightCentimetres = 180,
               weightKilograms = 80,
               createdBy = "A_USER",
-              createDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              createDateTime = LocalDateTime.now(),
               modifiedBy = "ANOTHER_USER",
-              modifiedDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              modifiedDateTime = LocalDateTime.now(),
               auditModuleName = "MODULE",
             ),
             PhysicalAttributesResponse(
@@ -258,17 +257,17 @@ class PhysicalAttributesMigrationIntTest : SqsIntegrationTestBase() {
               heightCentimetres = 182,
               weightKilograms = 82,
               createdBy = "A_USER",
-              createDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              createDateTime = LocalDateTime.now(),
               modifiedBy = "ANOTHER_USER2",
-              modifiedDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              modifiedDateTime = LocalDateTime.now(),
               auditModuleName = "MODULE",
             ),
           ),
         ),
         BookingPhysicalAttributesResponse(
           bookingId = 2,
-          startDateTime = "2024-04-03T12:34:56",
-          endDateTime = "2024-10-21T12:34:56",
+          startDateTime = LocalDateTime.parse("2024-04-03T12:34:56"),
+          endDateTime = LocalDateTime.parse("2024-10-21T12:34:56"),
           latestBooking = true,
           physicalAttributes = listOf(
             PhysicalAttributesResponse(
@@ -276,9 +275,9 @@ class PhysicalAttributesMigrationIntTest : SqsIntegrationTestBase() {
               heightCentimetres = 184,
               weightKilograms = 84,
               createdBy = "A_USER",
-              createDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              createDateTime = LocalDateTime.now(),
               modifiedBy = "ANOTHER_USER3",
-              modifiedDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              modifiedDateTime = LocalDateTime.now(),
               auditModuleName = "MODULE",
             ),
             PhysicalAttributesResponse(
@@ -286,9 +285,9 @@ class PhysicalAttributesMigrationIntTest : SqsIntegrationTestBase() {
               heightCentimetres = 186,
               weightKilograms = 86,
               createdBy = "A_USER",
-              createDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              createDateTime = LocalDateTime.now(),
               modifiedBy = "ANOTHER_USER4",
-              modifiedDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              modifiedDateTime = LocalDateTime.now(),
               auditModuleName = "MODULE",
             ),
           ),

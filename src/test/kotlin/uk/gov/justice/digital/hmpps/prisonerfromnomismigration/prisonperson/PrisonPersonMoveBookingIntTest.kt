@@ -21,13 +21,12 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingPhysicalAttributesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonNomisSyncApiExtension.Companion.nomisSyncApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingPhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerPhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesSyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.ProfileDetailsPhysicalAttributesSyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.physicalattributes.PhysicalAttributesDpsApiMockServer
@@ -51,6 +50,9 @@ class PrisonPersonMoveBookingIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var profileDetailsDpsApi: ProfileDetailsPhysicalAttributesDpsApiMockServer
+
+  @Autowired
+  private lateinit var nomisSyncApi: PrisonPersonNomisSyncApiMockServer
 
   @Nested
   @DisplayName("prison-offender-events.prisoner.booking.moved")
@@ -793,9 +795,9 @@ fun physicalAttributes(
   heightCentimetres = height,
   weightKilograms = weight,
   createdBy = "A_USER",
-  createDateTime = "$createDateTime",
+  createDateTime = createDateTime,
   modifiedBy = modifiedDateTime?.let { "ANOTHER_USER" },
-  modifiedDateTime = modifiedDateTime?.toString(),
+  modifiedDateTime = modifiedDateTime,
   auditModuleName = auditModuleName,
 )
 
@@ -806,8 +808,8 @@ fun bookingPhysicalAttributes(
   physicalAttributes: List<PhysicalAttributesResponse>,
 ) = BookingPhysicalAttributesResponse(
   bookingId = bookingId,
-  startDateTime = if (activeBooking) "${LocalDateTime.now().minusDays(1)}" else "${LocalDateTime.now().minusDays(8)}",
-  endDateTime = if (activeBooking) null else "${LocalDateTime.now().minusDays(6)}",
+  startDateTime = if (activeBooking) LocalDateTime.now().minusDays(1) else LocalDateTime.now().minusDays(8),
+  endDateTime = if (activeBooking) null else LocalDateTime.now().minusDays(6),
   latestBooking = latestBooking,
   physicalAttributes = physicalAttributes,
 )
@@ -1035,9 +1037,9 @@ private fun profileDetails(
 ) = ProfileDetailsResponse(
   type = type,
   code = code,
-  createDateTime = "$createDateTime",
+  createDateTime = createDateTime,
   createdBy = "A_USER",
-  modifiedDateTime = modifiedDateTime?.toString(),
+  modifiedDateTime = modifiedDateTime,
   modifiedBy = modifiedDateTime?.let { "ANOTHER_USER" },
   auditModuleName = auditModuleName,
 )
@@ -1049,7 +1051,7 @@ private fun bookingProfileDetails(
   profileDetails: List<ProfileDetailsResponse>,
 ) = BookingProfileDetailsResponse(
   bookingId = bookingId,
-  startDateTime = if (activeBooking) "${LocalDateTime.now().minusDays(1)}" else "${LocalDateTime.now().minusDays(8)}",
+  startDateTime = if (activeBooking) LocalDateTime.now().minusDays(1) else LocalDateTime.now().minusDays(8),
   latestBooking = latestBooking,
   profileDetails = profileDetails,
 )

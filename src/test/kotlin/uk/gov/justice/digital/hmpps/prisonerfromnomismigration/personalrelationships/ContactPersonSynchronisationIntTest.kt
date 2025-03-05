@@ -31,18 +31,18 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonRestrictionMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactForPrisoner
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactRestriction
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactRestrictionEnteredStaff
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonContact
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmailAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmployment
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmploymentCorporate
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdentifier
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonPhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactForPrisoner
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactRestrictionEnteredStaff
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonEmployment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonEmploymentCorporate
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdentifier
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension.Companion.dpsContactPersonServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.contact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.contactAddress
@@ -71,11 +71,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateEmploymentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Autowired
@@ -137,7 +139,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             interpreterRequired = true,
             audit = NomisAudit(
               createUsername = "J.SPEAK",
-              createDatetime = "2024-09-01T13:31",
+              createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
             ),
             dateOfBirth = LocalDate.parse("2024-07-19"),
             gender = CodeDescription("M", "Male"),
@@ -189,7 +191,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(languageCode).isEqualTo("EN")
           assertThat(interpreterRequired).isTrue()
           assertThat(createdBy).isEqualTo("J.SPEAK")
-          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+          assertThat(createdTime).isEqualTo(LocalDateTime.parse("2024-09-01T13:31"))
         }
       }
 
@@ -220,7 +222,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenAlreadyCreated {
       @BeforeEach
       fun setUp() {
-        mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = nomisPersonId, mapping = PersonMappingDto(dpsId = "$dpsContactId", nomisId = nomisPersonId, mappingType = PersonMappingDto.MappingType.NOMIS_CREATED))
+        mappingApiMock.stubGetByNomisPersonIdOrNull(nomisPersonId = nomisPersonId, mapping = PersonMappingDto(dpsId = "$dpsContactId", nomisId = nomisPersonId, mappingType = NOMIS_CREATED))
         awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
           personalRelationshipsQueueOffenderEventsUrl,
           personEvent(
@@ -430,9 +432,9 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             interpreterRequired = true,
             audit = NomisAudit(
               createUsername = "J.SPEAK",
-              createDatetime = "2024-09-01T13:31",
+              createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
               modifyUserId = "T.SMITH",
-              modifyDatetime = "2024-10-01T13:31",
+              modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
             ),
             dateOfBirth = LocalDate.parse("1965-07-19"),
             gender = CodeDescription("M", "Male"),
@@ -485,7 +487,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(languageCode).isEqualTo("EN")
           assertThat(interpreterRequired).isTrue()
           assertThat(updatedBy).isEqualTo("T.SMITH")
-          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+          assertThat(updatedTime).isEqualTo(LocalDateTime.parse("2024-10-01T13:31"))
         }
       }
     }
@@ -643,7 +645,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 endDate = LocalDate.parse("2025-01-01"),
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -694,7 +696,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(noFixedAddress).isFalse()
           assertThat(comments).isEqualTo("nice area")
           assertThat(createdBy).isEqualTo("J.SPEAK")
-          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+          assertThat(createdTime).isEqualTo(LocalDateTime.parse("2024-09-01T13:31"))
         }
       }
 
@@ -787,7 +789,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 endDate = LocalDate.parse("2025-01-01"),
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -894,7 +896,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 endDate = LocalDate.parse("2025-01-01"),
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -1014,9 +1016,9 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 endDate = LocalDate.parse("2025-01-01"),
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                   modifyUserId = "T.SMITH",
-                  modifyDatetime = "2024-10-01T13:31",
+                  modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
                 ),
               ),
             ),
@@ -1071,7 +1073,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(noFixedAddress).isFalse()
           assertThat(comments).isEqualTo("nice area")
           assertThat(updatedBy).isEqualTo("T.SMITH")
-          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+          assertThat(updatedTime).isEqualTo(LocalDateTime.parse("2024-10-01T13:31"))
         }
       }
     }
@@ -1223,7 +1225,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 extension = "x555",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -1261,7 +1263,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(phoneNumber).isEqualTo("07973 555 555")
           assertThat(extNumber).isEqualTo("x555")
           assertThat(createdBy).isEqualTo("J.SPEAK")
-          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+          assertThat(createdTime).isEqualTo(LocalDateTime.parse("2024-09-01T13:31"))
         }
       }
 
@@ -1349,7 +1351,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 extension = "x555",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -1445,7 +1447,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 extension = "x555",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -1555,9 +1557,9 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 extension = "x555",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                   modifyUserId = "T.SWIFT",
-                  modifyDatetime = "2024-10-01T13:31",
+                  modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
                 ),
               ),
             ),
@@ -1589,7 +1591,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(phoneNumber).isEqualTo("07973 555 555")
           assertThat(extNumber).isEqualTo("x555")
           assertThat(updatedBy).isEqualTo("T.SWIFT")
-          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+          assertThat(updatedTime).isEqualTo(LocalDateTime.parse("2024-10-01T13:31"))
         }
       }
 
@@ -1768,7 +1770,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 extension = "x555",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -1811,7 +1813,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(phoneNumber).isEqualTo("07973 555 555")
           assertThat(extNumber).isEqualTo("x555")
           assertThat(createdBy).isEqualTo("J.SPEAK")
-          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+          assertThat(createdTime).isEqualTo(LocalDateTime.parse("2024-09-01T13:31"))
         }
       }
 
@@ -1911,7 +1913,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 extension = "x555",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -2017,7 +2019,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 extension = "x555",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -2131,9 +2133,9 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 extension = "x555",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                   modifyUserId = "T.SWIFT",
-                  modifyDatetime = "2024-10-01T13:31",
+                  modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
                 ),
               ),
             ),
@@ -2164,7 +2166,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(phoneNumber).isEqualTo("07973 555 555")
           assertThat(extNumber).isEqualTo("x555")
           assertThat(updatedBy).isEqualTo("T.SWIFT")
-          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+          assertThat(updatedTime).isEqualTo(LocalDateTime.parse("2024-10-01T13:31"))
         }
       }
 
@@ -2333,7 +2335,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 email = "test@test.com",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -2369,7 +2371,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(contactId).isEqualTo(nomisPersonId)
           assertThat(emailAddress).isEqualTo("test@test.com")
           assertThat(createdBy).isEqualTo("J.SPEAK")
-          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+          assertThat(createdTime).isEqualTo(LocalDateTime.parse("2024-09-01T13:31"))
         }
       }
 
@@ -2446,7 +2448,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 email = "test@test.com",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -2537,7 +2539,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 email = "test@test.com",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -2637,9 +2639,9 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 email = "test@test.com",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                   modifyUserId = "T.SWIFT",
-                  modifyDatetime = "2024-10-01T13:31",
+                  modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
                 ),
               ),
             ),
@@ -2669,7 +2671,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(contactId).isEqualTo(nomisPersonId)
           assertThat(emailAddress).isEqualTo("test@test.com")
           assertThat(updatedBy).isEqualTo("T.SWIFT")
-          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+          assertThat(updatedTime).isEqualTo(LocalDateTime.parse("2024-10-01T13:31"))
         }
       }
 
@@ -2837,7 +2839,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 active = true,
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -2874,7 +2876,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(organisationId).isEqualTo(54321L)
           assertThat(active).isEqualTo(true)
           assertThat(createdBy).isEqualTo("J.SPEAK")
-          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+          assertThat(createdTime).isEqualTo(LocalDateTime.parse("2024-09-01T13:31"))
         }
       }
 
@@ -2965,7 +2967,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 active = true,
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -3065,7 +3067,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 active = true,
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -3117,62 +3119,214 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("PERSON_EMPLOYMENTS-UPDATED")
   inner class PersonEmploymentUpdated {
-    private val personId = 123456L
-    private val employmentSequence = 76543L
+    private val nomisSequenceNumber = 4L
+    private val nomisPersonId = 123456L
+    private val dpsContactEmploymentId = 937373L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
-        personalRelationshipsQueueOffenderEventsUrl,
-        personEmploymentEvent(
-          eventType = "PERSON_EMPLOYMENTS-UPDATED",
-          personId = personId,
-          employmentSequence = employmentSequence,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
+          personEmploymentEvent(
+            eventType = "PERSON_EMPLOYMENTS-UPDATED",
+            personId = nomisPersonId,
+            employmentSequence = nomisSequenceNumber,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not update employment in DPS`() {
+        dpsApiMock.verify(0, putRequestedFor(urlPathMatching("/sync/employment/.*")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-employment-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisSequenceNumber"]).isEqualTo(nomisSequenceNumber.toString())
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-employment-synchronisation-updated-success"),
-        check {
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-          assertThat(it["employmentSequence"]).isEqualTo(employmentSequence.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenUpdatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmploymentIds(
+          nomisPersonId = nomisPersonId,
+          nomisSequenceNumber = nomisSequenceNumber,
+          mapping = PersonEmploymentMappingDto(
+            dpsId = dpsContactEmploymentId.toString(),
+            nomisSequenceNumber = nomisSequenceNumber,
+            nomisPersonId = nomisPersonId,
+            mappingType = PersonEmploymentMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        nomisApiMock.stubGetPerson(
+          person = contactPerson(nomisPersonId)
+            .withEmployment(
+              PersonEmployment(
+                sequence = nomisSequenceNumber,
+                corporate = PersonEmploymentCorporate(
+                  id = 54321,
+                  name = "Police",
+                ),
+                active = false,
+                audit = NomisAudit(
+                  createUsername = "J.SPEAK",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
+                  modifyUserId = "T.SMITH",
+                  modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
+                ),
+              ),
+            ),
+        )
+        dpsApiMock.stubUpdateContactEmployment(contactEmploymentId = dpsContactEmploymentId)
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
+          personEmploymentEvent(
+            eventType = "PERSON_EMPLOYMENTS-UPDATED",
+            personId = nomisPersonId,
+            employmentSequence = nomisSequenceNumber,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will retrieve the details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/$nomisPersonId")))
+      }
+
+      @Test
+      fun `will update the employment in DPS from the person`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/employment/$dpsContactEmploymentId")))
+        val request: SyncUpdateEmploymentRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/employment/$dpsContactEmploymentId")))
+        with(request) {
+          // DPS and NOMIS contact/person id are the same
+          assertThat(contactId).isEqualTo(nomisPersonId)
+          assertThat(organisationId).isEqualTo(54321)
+          assertThat(active).isEqualTo(false)
+          assertThat(updatedBy).isEqualTo("T.SMITH")
+          assertThat(updatedTime).isEqualTo(LocalDateTime.parse("2024-10-01T13:31"))
+        }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-employment-synchronisation-updated-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisSequenceNumber"]).isEqualTo(nomisSequenceNumber.toString())
+            assertThat(it["dpsContactEmploymentId"]).isEqualTo(dpsContactEmploymentId.toString())
+          },
+          isNull(),
+        )
+      }
     }
   }
 
   @Nested
   @DisplayName("PERSON_EMPLOYMENTS-DELETED")
   inner class PersonEmploymentDeleted {
-    private val personId = 123456L
-    private val employmentSequence = 76543L
+    private val nomisSequenceNumber = 4L
+    private val nomisPersonId = 123456L
+    private val dpsContactEmploymentId = 937373L
 
-    @BeforeEach
-    fun setUp() {
-      awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
-        personalRelationshipsQueueOffenderEventsUrl,
-        personEmploymentEvent(
-          eventType = "PERSON_EMPLOYMENTS-DELETED",
-          personId = personId,
-          employmentSequence = employmentSequence,
-        ),
-      ).also { waitForAnyProcessingToComplete() }
+    @Nested
+    inner class WhenMappingExists {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmploymentIds(
+          nomisPersonId = nomisPersonId,
+          nomisSequenceNumber = nomisSequenceNumber,
+          mapping = PersonEmploymentMappingDto(
+            dpsId = dpsContactEmploymentId.toString(),
+            nomisSequenceNumber = nomisSequenceNumber,
+            nomisPersonId = nomisPersonId,
+            mappingType = PersonEmploymentMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        mappingApiMock.stubDeleteByNomisEmploymentIds(
+          nomisPersonId = nomisPersonId,
+          nomisSequenceNumber = nomisSequenceNumber,
+        )
+
+        dpsApiMock.stubDeleteContactEmployment(contactEmploymentId = dpsContactEmploymentId)
+
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
+          personEmploymentEvent(
+            eventType = "PERSON_EMPLOYMENTS-DELETED",
+            personId = nomisPersonId,
+            employmentSequence = nomisSequenceNumber,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will delete employment in DPS`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/employment/$dpsContactEmploymentId")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-employment-synchronisation-deleted-success"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisSequenceNumber"]).isEqualTo(nomisSequenceNumber.toString())
+            assertThat(it["dpsContactEmploymentId"]).isEqualTo(dpsContactEmploymentId.toString())
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will delete the employment mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/contact-person/employment/nomis-person-id/$nomisPersonId/nomis-sequence-number/$nomisSequenceNumber")))
+      }
     }
 
-    @Test
-    fun `will track telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-person-employment-synchronisation-deleted-success"),
-        check {
-          assertThat(it["personId"]).isEqualTo(personId.toString())
-          assertThat(it["employmentSequence"]).isEqualTo(employmentSequence.toString())
-        },
-        isNull(),
-      )
+    @Nested
+    inner class WhenMappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisEmploymentIdsOrNull(nomisPersonId = nomisPersonId, nomisSequenceNumber = nomisSequenceNumber, mapping = null)
+        mappingApiMock.stubDeleteByNomisEmploymentIds(nomisPersonId = nomisPersonId, nomisSequenceNumber = nomisSequenceNumber)
+        awsSqsPersonalRelationshipsOffenderEventsClient.sendMessage(
+          personalRelationshipsQueueOffenderEventsUrl,
+          personEmploymentEvent(
+            eventType = "PERSON_EMPLOYMENTS-DELETED",
+            personId = nomisPersonId,
+            employmentSequence = nomisSequenceNumber,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-employment-synchronisation-deleted-ignored"),
+          check {
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            assertThat(it["nomisSequenceNumber"]).isEqualTo(nomisSequenceNumber.toString())
+          },
+          isNull(),
+        )
+      }
     }
   }
 
@@ -3231,7 +3385,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 issuedAuthority = "DVLA",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -3269,7 +3423,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(identityValue).isEqualTo("SMITH777788")
           assertThat(issuingAuthority).isEqualTo("DVLA")
           assertThat(createdBy).isEqualTo("J.SPEAK")
-          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+          assertThat(createdTime).isEqualTo(LocalDateTime.parse("2024-09-01T13:31"))
         }
       }
 
@@ -3358,7 +3512,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 issuedAuthority = "DVLA",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -3456,7 +3610,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 issuedAuthority = "DVLA",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -3569,9 +3723,9 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 issuedAuthority = "DVLA",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                   modifyUserId = "T.SMITH",
-                  modifyDatetime = "2024-10-01T13:31",
+                  modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
                 ),
               ),
             ),
@@ -3603,7 +3757,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(identityValue).isEqualTo("SMITH777788")
           assertThat(issuingAuthority).isEqualTo("DVLA")
           assertThat(updatedBy).isEqualTo("T.SMITH")
-          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+          assertThat(updatedTime).isEqualTo(LocalDateTime.parse("2024-10-01T13:31"))
         }
       }
 
@@ -3778,7 +3932,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -3817,7 +3971,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(expiryDate).isEqualTo(LocalDate.parse("2025-01-01"))
           assertThat(comments).isEqualTo("Banned for life")
           assertThat(createdBy).isEqualTo("J.SMITH")
-          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+          assertThat(createdTime).isEqualTo(LocalDateTime.parse("2024-09-01T13:31"))
         }
       }
 
@@ -3866,9 +4020,9 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                   modifyUserId = "J.SPEAK",
-                  modifyDatetime = "2024-09-05T13:31",
+                  modifyDatetime = LocalDateTime.parse("2024-09-05T13:31"),
                 ),
               ),
             ),
@@ -3935,7 +4089,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -4033,7 +4187,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
               ),
             ),
@@ -4223,7 +4377,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 comment = "Big brother",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
                 prisoner = ContactForPrisoner(
                   bookingId = 76544,
@@ -4278,7 +4432,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(relationshipType).isEqualTo("BRO")
           assertThat(comments).isEqualTo("Big brother")
           assertThat(createdBy).isEqualTo("J.SPEAK")
-          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+          assertThat(createdTime).isEqualTo(LocalDateTime.parse("2024-09-01T13:31"))
         }
       }
 
@@ -4364,7 +4518,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 comment = "Big brother",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
                 prisoner = ContactForPrisoner(
                   bookingId = 76544,
@@ -4472,7 +4626,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 comment = "Big brother",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 ),
                 prisoner = ContactForPrisoner(
                   bookingId = 76544,
@@ -4596,9 +4750,9 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 comment = "Big brother",
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                   modifyUserId = "T.SMITH",
-                  modifyDatetime = "2024-10-01T13:31",
+                  modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
                 ),
                 prisoner = ContactForPrisoner(
                   bookingId = 76544,
@@ -4657,7 +4811,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(relationshipType).isEqualTo("BRO")
           assertThat(comments).isEqualTo("Big brother")
           assertThat(updatedBy).isEqualTo("T.SMITH")
-          assertThat(updatedTime).isEqualTo("2024-10-01T13:31")
+          assertThat(updatedTime).isEqualTo(LocalDateTime.parse("2024-10-01T13:31"))
         }
       }
     }
@@ -4830,7 +4984,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 effectiveDate = LocalDate.parse("2020-01-01"),
                 expiryDate = LocalDate.parse("2026-01-01"),
                 comment = "Banned for life",
-                audit = nomisAudit().copy(createDatetime = "2024-09-01T13:31"),
+                audit = nomisAudit().copy(createDatetime = LocalDateTime.parse("2024-09-01T13:31")),
               ),
             ),
         )
@@ -4876,7 +5030,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(expiryDate).isEqualTo("2026-01-01")
           // the entered staff username
           assertThat(createdBy).isEqualTo("Q1251T")
-          assertThat(createdTime).isEqualTo("2024-09-01T13:31")
+          assertThat(createdTime).isEqualTo(LocalDateTime.parse("2024-09-01T13:31"))
         }
       }
 
@@ -4939,7 +5093,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 effectiveDate = LocalDate.parse("2020-01-01"),
                 expiryDate = LocalDate.parse("2026-01-01"),
                 comment = "Banned for life",
-                audit = nomisAudit().copy(modifyDatetime = "2024-09-01T13:31", modifyUserId = "J.SPEAK"),
+                audit = nomisAudit().copy(modifyDatetime = LocalDateTime.parse("2024-09-01T13:31"), modifyUserId = "J.SPEAK"),
               ),
             ),
         )
@@ -4967,7 +5121,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(expiryDate).isEqualTo(LocalDate.parse("2026-01-01"))
           assertThat(comments).isEqualTo("Banned for life")
           assertThat(updatedBy).isEqualTo("J.SMITH")
-          assertThat(updatedTime).isEqualTo("2024-09-01T13:31")
+          assertThat(updatedTime).isEqualTo(LocalDateTime.parse("2024-09-01T13:31"))
         }
       }
 
@@ -5011,7 +5165,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 effectiveDate = LocalDate.parse("2020-01-01"),
                 expiryDate = LocalDate.parse("2026-01-01"),
                 comment = "Banned for life",
-                audit = nomisAudit().copy(createDatetime = "2024-09-01T13:31"),
+                audit = nomisAudit().copy(createDatetime = LocalDateTime.parse("2024-09-01T13:31")),
               ),
             ),
         )
@@ -5114,7 +5268,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
                 effectiveDate = LocalDate.parse("2020-01-01"),
                 expiryDate = LocalDate.parse("2026-01-01"),
                 comment = "Banned for life",
-                audit = nomisAudit().copy(createDatetime = "2024-09-01T13:31"),
+                audit = nomisAudit().copy(createDatetime = LocalDateTime.parse("2024-09-01T13:31")),
               ),
             ),
         )

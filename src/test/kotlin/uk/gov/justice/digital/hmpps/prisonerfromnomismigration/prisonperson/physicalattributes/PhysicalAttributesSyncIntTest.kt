@@ -23,9 +23,9 @@ import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingPhysicalAttributesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingPhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerPhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.PhysicalAttributesSyncResponse
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDateTime
@@ -56,13 +56,13 @@ class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
           aPrisonerPhysicalAttributesResponse(
             bookings = listOf(
               aBookingResponse(
-                startDateTime = "$yesterday",
+                startDateTime = yesterday,
                 endDateTime = null,
                 physicalAttributes = listOf(
                   aPhysicalAttributesResponse(
                     heightCentimetres = 180,
                     weightKilograms = 80,
-                    modifiedDateTime = "$now",
+                    modifiedDateTime = now,
                     modifiedBy = "A_USER",
                   ),
                 ),
@@ -125,14 +125,14 @@ class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
                     attributeSequence = 1,
                     heightCentimetres = 180,
                     weightKilograms = 80,
-                    createDateTime = "$yesterday",
+                    createDateTime = yesterday,
                     modifiedDateTime = null,
                   ),
                   aPhysicalAttributesResponse(
                     attributeSequence = 2,
                     heightCentimetres = 170,
                     weightKilograms = 70,
-                    createDateTime = "$now",
+                    createDateTime = now,
                     modifiedDateTime = null,
                   ),
                 ),
@@ -166,15 +166,15 @@ class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
                     attributeSequence = 1,
                     heightCentimetres = 180,
                     weightKilograms = 80,
-                    createDateTime = "${now.minusDays(3)}",
-                    modifiedDateTime = "${now.minusDays(1)}",
+                    createDateTime = now.minusDays(3),
+                    modifiedDateTime = now.minusDays(1),
                     modifiedBy = "MODIFY_USER",
                   ),
                   aPhysicalAttributesResponse(
                     attributeSequence = 2,
                     heightCentimetres = 170,
                     weightKilograms = 70,
-                    createDateTime = "${now.minusDays(2)}",
+                    createDateTime = now.minusDays(2),
                     modifiedDateTime = null,
                   ),
                 ),
@@ -233,7 +233,7 @@ class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
             bookings = listOf(
               aBookingResponse(
                 bookingId = 12344,
-                endDateTime = "$yesterday",
+                endDateTime = yesterday,
                 latestBooking = false,
                 physicalAttributes = listOf(
                   aPhysicalAttributesResponse(
@@ -244,7 +244,7 @@ class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
               ),
               aBookingResponse(
                 bookingId = 12345,
-                startDateTime = "$now",
+                startDateTime = now,
                 endDateTime = null,
                 latestBooking = true,
                 physicalAttributes = listOf(
@@ -281,8 +281,8 @@ class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
             bookings = listOf(
               aBookingResponse(
                 bookingId = 12344,
-                startDateTime = "${now.minusDays(3)}",
-                endDateTime = "${now.minusDays(2)}",
+                startDateTime = now.minusDays(3),
+                endDateTime = now.minusDays(2),
                 latestBooking = false,
                 physicalAttributes = listOf(
                   aPhysicalAttributesResponse(
@@ -293,7 +293,7 @@ class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
               ),
               aBookingResponse(
                 bookingId = 12345,
-                startDateTime = "$now",
+                startDateTime = now,
                 endDateTime = null,
                 latestBooking = true,
                 physicalAttributes = listOf(
@@ -330,27 +330,27 @@ class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
             bookings = listOf(
               aBookingResponse(
                 bookingId = 12344,
-                startDateTime = "${now.minusDays(3)}",
-                endDateTime = "${now.minusDays(2)}",
+                startDateTime = now.minusDays(3),
+                endDateTime = now.minusDays(2),
                 latestBooking = false,
                 physicalAttributes = listOf(
                   aPhysicalAttributesResponse(
                     attributeSequence = 1,
                     heightCentimetres = 180,
                     weightKilograms = 80,
-                    modifiedDateTime = "$now",
+                    modifiedDateTime = now,
                   ),
                   aPhysicalAttributesResponse(
                     attributeSequence = 2,
                     heightCentimetres = 190,
                     weightKilograms = 90,
-                    modifiedDateTime = "$yesterday",
+                    modifiedDateTime = yesterday,
                   ),
                 ),
               ),
               aBookingResponse(
                 bookingId = 12345,
-                startDateTime = "$now",
+                startDateTime = now,
                 endDateTime = null,
                 latestBooking = true,
                 physicalAttributes = listOf(
@@ -388,15 +388,15 @@ class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
             bookings = listOf(
               aBookingResponse(
                 bookingId = 12344,
-                startDateTime = "${now.minusDays(3)}",
-                endDateTime = "${now.minusDays(2)}",
+                startDateTime = now.minusDays(3),
+                endDateTime = now.minusDays(2),
                 latestBooking = true,
                 physicalAttributes = listOf(
                   aPhysicalAttributesResponse(
                     attributeSequence = 1,
                     heightCentimetres = 180,
                     weightKilograms = 80,
-                    modifiedDateTime = "$now",
+                    modifiedDateTime = now,
                   ),
                 ),
               ),
@@ -525,9 +525,9 @@ class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
       heightCentimetres: Int? = 180,
       weightKilograms: Int? = 80,
       createdBy: String = "A_USER",
-      createDateTime: String = "$yesterday",
+      createDateTime: LocalDateTime = yesterday,
       modifiedBy: String? = "ANOTHER_USER",
-      modifiedDateTime: String? = "$now",
+      modifiedDateTime: LocalDateTime? = now,
       auditModuleName: String = "MODULE",
     ) = PhysicalAttributesResponse(
       attributeSequence = attributeSequence.toLong(),
@@ -542,8 +542,8 @@ class PhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
 
     private fun aBookingResponse(
       bookingId: Long = 12345,
-      startDateTime: String = "2024-02-03T12:34:56",
-      endDateTime: String? = "2024-10-21T12:34:56",
+      startDateTime: LocalDateTime = LocalDateTime.parse("2024-02-03T12:34:56"),
+      endDateTime: LocalDateTime? = LocalDateTime.parse("2024-10-21T12:34:56"),
       latestBooking: Boolean = true,
       physicalAttributes: List<PhysicalAttributesResponse> = listOf(aPhysicalAttributesResponse()),
     ) = BookingPhysicalAttributesResponse(

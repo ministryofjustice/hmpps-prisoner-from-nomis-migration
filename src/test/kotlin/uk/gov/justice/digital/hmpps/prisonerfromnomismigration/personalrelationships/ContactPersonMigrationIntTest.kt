@@ -32,20 +32,20 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto.MappingType.MIGRATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactForPrisoner
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactRestriction
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactRestrictionEnteredStaff
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonContact
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmailAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmployment
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmploymentCorporate
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdentifier
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonPhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactForPrisoner
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactPerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactRestrictionEnteredStaff
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonEmployment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonEmploymentCorporate
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdentifier
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension.Companion.getRequestBodies
@@ -128,7 +128,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           mapping = PersonMappingDto(
             dpsId = "10000",
             nomisId = 1000,
-            mappingType = PersonMappingDto.MappingType.MIGRATED,
+            mappingType = MIGRATED,
             label = "2020-01-01T00:00:00",
           ),
         )
@@ -137,7 +137,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
           mapping = PersonMappingDto(
             dpsId = "20000",
             nomisId = 2000,
-            mappingType = PersonMappingDto.MappingType.MIGRATED,
+            mappingType = MIGRATED,
             label = "2020-01-01T00:00:00",
           ),
         )
@@ -271,9 +271,9 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
             isStaff = true,
             audit = NomisAudit(
               modifyUserId = "ADJUA.MENSAH",
-              modifyDatetime = "2024-01-02T10:23",
+              modifyDatetime = LocalDateTime.parse("2024-01-02T10:23"),
               createUsername = "ADJUA.BEEK",
-              createDatetime = "2022-01-02T10:23",
+              createDatetime = LocalDateTime.parse("2022-01-02T10:23"),
             ),
             phoneNumbers = listOf(
               PersonPhoneNumber(
@@ -282,9 +282,9 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 type = CodeDescription("MOB", "Mobile"),
                 audit = NomisAudit(
                   modifyUserId = "ADJUA.MENSAH",
-                  modifyDatetime = "2024-02-02T10:23",
+                  modifyDatetime = LocalDateTime.parse("2024-02-02T10:23"),
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-02-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                 ),
                 extension = "ext 5555",
               ),
@@ -294,7 +294,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 type = CodeDescription("FAX", "Fax"),
                 audit = NomisAudit(
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-02-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                 ),
               ),
             ),
@@ -308,9 +308,9 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                     type = CodeDescription("HOM", "Home"),
                     audit = NomisAudit(
                       modifyUserId = "ADJUA.MENSAH",
-                      modifyDatetime = "2024-04-02T10:23",
+                      modifyDatetime = LocalDateTime.parse("2024-04-02T10:23"),
                       createUsername = "ADJUA.BEEK",
-                      createDatetime = "2022-04-02T10:23",
+                      createDatetime = LocalDateTime.parse("2022-04-02T10:23"),
                     ),
                     extension = "ext 5555",
                   ),
@@ -320,9 +320,9 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 mailAddress = true,
                 audit = NomisAudit(
                   modifyUserId = "ADJUA.MENSAH",
-                  modifyDatetime = "2024-03-02T10:23",
+                  modifyDatetime = LocalDateTime.parse("2024-03-02T10:23"),
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-03-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-03-02T10:23"),
                 ),
                 type = CodeDescription("HOME", "Home"),
                 flat = "Flat 1B",
@@ -346,7 +346,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 mailAddress = false,
                 audit = NomisAudit(
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-03-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-03-02T10:23"),
                 ),
               ),
             ),
@@ -356,9 +356,9 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 email = "test@test.justice.gov.uk",
                 audit = NomisAudit(
                   modifyUserId = "ADJUA.MENSAH",
-                  modifyDatetime = "2024-02-02T10:23",
+                  modifyDatetime = LocalDateTime.parse("2024-02-02T10:23"),
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-02-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                 ),
               ),
             ),
@@ -368,9 +368,9 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 active = true,
                 audit = NomisAudit(
                   modifyUserId = "ADJUA.MENSAH",
-                  modifyDatetime = "2024-02-02T10:23",
+                  modifyDatetime = LocalDateTime.parse("2024-02-02T10:23"),
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-02-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                 ),
                 corporate = PersonEmploymentCorporate(id = 120, name = "Police"),
               ),
@@ -383,9 +383,9 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 issuedAuthority = "Police",
                 audit = NomisAudit(
                   modifyUserId = "ADJUA.MENSAH",
-                  modifyDatetime = "2024-02-02T10:23",
+                  modifyDatetime = LocalDateTime.parse("2024-02-02T10:23"),
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-02-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                 ),
 
               ),
@@ -395,7 +395,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 identifier = "6363688",
                 audit = NomisAudit(
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-02-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                 ),
               ),
             ),
@@ -412,9 +412,9 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 comment = "Banned for life!",
                 audit = NomisAudit(
                   modifyUserId = "ADJUA.MENSAH",
-                  modifyDatetime = "2024-02-02T10:23",
+                  modifyDatetime = LocalDateTime.parse("2024-02-02T10:23"),
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-02-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                 ),
 
               ),
@@ -428,7 +428,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 ),
                 audit = NomisAudit(
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-02-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                 ),
               ),
             ),
@@ -461,9 +461,9 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                     comment = "Banned for life!",
                     audit = NomisAudit(
                       modifyUserId = "ADJUA.MENSAH",
-                      modifyDatetime = "2024-02-02T10:23",
+                      modifyDatetime = LocalDateTime.parse("2024-02-02T10:23"),
                       createUsername = "ADJUA.BEEK",
-                      createDatetime = "2022-02-02T10:23",
+                      createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                     ),
                   ),
                   ContactRestriction(
@@ -480,15 +480,15 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                       modifyUserId = null,
                       modifyDatetime = null,
                       createUsername = "ADJUA.BEEK",
-                      createDatetime = "2022-02-04T10:23",
+                      createDatetime = LocalDateTime.parse("2022-02-04T10:23"),
                     ),
                   ),
                 ),
                 audit = NomisAudit(
                   modifyUserId = "ADJUA.MENSAH",
-                  modifyDatetime = "2024-02-02T10:23",
+                  modifyDatetime = LocalDateTime.parse("2024-02-02T10:23"),
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-02-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                 ),
                 expiryDate = LocalDate.parse("2030-01-01"),
                 comment = "Banned",
@@ -511,7 +511,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
                 restrictions = emptyList(),
                 audit = NomisAudit(
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-02-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                 ),
               ),
             ),
@@ -523,7 +523,7 @@ class ContactPersonMigrationIntTest : SqsIntegrationTestBase() {
             interpreterRequired = false,
             audit = NomisAudit(
               createUsername = "ADJUA.BEEK",
-              createDatetime = "2022-01-02T10:23",
+              createDatetime = LocalDateTime.parse("2022-01-02T10:23"),
             ),
             phoneNumbers = emptyList(),
             addresses = emptyList(),

@@ -20,14 +20,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonRestrictionMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactPerson
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ContactRestriction
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonContact
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmailAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonEmployment
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonIdentifier
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PersonPhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactPerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonEmployment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdentifier
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactAddressRequest
@@ -693,20 +693,53 @@ class ContactPersonSynchronisationService(
 
   suspend fun personEmploymentUpdated(event: PersonEmploymentEvent) {
     val telemetry =
-      mapOf("personId" to event.personId, "employmentSequence" to event.employmentSequence)
-    telemetryClient.trackEvent(
-      "contactperson-person-employment-synchronisation-updated-success",
-      telemetry,
-    )
+      telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisSequenceNumber" to event.employmentSequence)
+
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "contactperson-employment-synchronisation-updated-skipped",
+        telemetry,
+      )
+    } else {
+      track("contactperson-employment-synchronisation-updated", telemetry) {
+        val dpsContactEmploymentId = mappingApiService.getByNomisEmploymentIds(
+          nomisPersonId = event.personId,
+          nomisSequenceNumber = event.employmentSequence,
+        ).dpsId.also {
+          telemetry["dpsContactEmploymentId"] = it
+        }
+        val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
+        val nomisEmployment = nomisPerson.employments.find { it.sequence == event.employmentSequence }
+          ?: throw IllegalStateException("Employment ${event.employmentSequence} for person ${event.personId} not found in NOMIS")
+        dpsApiService.updateContactEmployment(
+          dpsContactEmploymentId.toLong(),
+          nomisEmployment.toDpsUpdateContactEmploymentRequest(nomisPersonId = event.personId),
+        )
+      }
+    }
   }
 
   suspend fun personEmploymentDeleted(event: PersonEmploymentEvent) {
     val telemetry =
-      mapOf("personId" to event.personId, "employmentSequence" to event.employmentSequence)
-    telemetryClient.trackEvent(
-      "contactperson-person-employment-synchronisation-deleted-success",
-      telemetry,
-    )
+      telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisSequenceNumber" to event.employmentSequence)
+
+    mappingApiService.getByNomisEmploymentIdsOrNull(
+      nomisPersonId = event.personId,
+      nomisSequenceNumber = event.employmentSequence,
+    )?.also {
+      track("contactperson-employment-synchronisation-deleted", telemetry) {
+        telemetry["dpsContactEmploymentId"] = it.dpsId
+        dpsApiService.deleteContactEmployment(
+          it.dpsId.toLong(),
+        )
+        mappingApiService.deleteByNomisEmploymentIds(event.personId, event.employmentSequence)
+      }
+    } ?: run {
+      telemetryClient.trackEvent(
+        "contactperson-employment-synchronisation-deleted-ignored",
+        telemetry,
+      )
+    }
   }
 
   suspend fun personIdentifierAdded(event: PersonIdentifierEvent) {
@@ -1208,7 +1241,7 @@ fun ContactPerson.toDpsCreateContactRequest() = SyncCreateContactRequest(
   languageCode = this.language?.code,
   interpreterRequired = this.interpreterRequired,
   createdBy = this.audit.createUsername,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
 )
 fun ContactPerson.toDpsUpdateContactRequest() = SyncUpdateContactRequest(
   lastName = this.lastName,
@@ -1226,7 +1259,7 @@ fun ContactPerson.toDpsUpdateContactRequest() = SyncUpdateContactRequest(
   languageCode = this.language?.code,
   interpreterRequired = this.interpreterRequired,
   updatedBy = this.audit.modifyUserId!!,
-  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+  updatedTime = this.audit.modifyDatetime!!,
 )
 
 fun PersonContact.toDpsCreatePrisonerContactRequest(nomisPersonId: Long) = SyncCreatePrisonerContactRequest(
@@ -1242,7 +1275,7 @@ fun PersonContact.toDpsCreatePrisonerContactRequest(nomisPersonId: Long) = SyncC
   comments = this.comment,
   expiryDate = this.expiryDate,
   createdBy = this.audit.createUsername,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
 )
 fun PersonContact.toDpsUpdatePrisonerContactRequest(nomisPersonId: Long) = SyncUpdatePrisonerContactRequest(
   // these will be mutable in DPS but we still supply them
@@ -1259,7 +1292,7 @@ fun PersonContact.toDpsUpdatePrisonerContactRequest(nomisPersonId: Long) = SyncU
   comments = this.comment,
   expiryDate = this.expiryDate,
   updatedBy = this.audit.modifyUserId,
-  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+  updatedTime = this.audit.modifyDatetime!!,
 )
 
 fun PersonAddress.toDpsCreateContactAddressRequest(nomisPersonId: Long) = SyncCreateContactAddressRequest(
@@ -1281,7 +1314,7 @@ fun PersonAddress.toDpsCreateContactAddressRequest(nomisPersonId: Long) = SyncCr
   noFixedAddress = this.noFixedAddress,
   comments = this.comment,
   createdBy = this.audit.createUsername,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
 )
 fun PersonAddress.toDpsUpdateContactAddressRequest(nomisPersonId: Long) = SyncUpdateContactAddressRequest(
   contactId = nomisPersonId,
@@ -1302,20 +1335,20 @@ fun PersonAddress.toDpsUpdateContactAddressRequest(nomisPersonId: Long) = SyncUp
   noFixedAddress = this.noFixedAddress,
   comments = this.comment,
   updatedBy = this.audit.modifyUserId!!,
-  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+  updatedTime = this.audit.modifyDatetime!!,
 )
 
 fun PersonEmailAddress.toDpsCreateContactEmailRequest(nomisPersonId: Long) = SyncCreateContactEmailRequest(
   contactId = nomisPersonId,
   createdBy = this.audit.createUsername,
   emailAddress = this.email,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
 )
 fun PersonEmailAddress.toDpsUpdateContactEmailRequest(nomisPersonId: Long) = SyncUpdateContactEmailRequest(
   contactId = nomisPersonId,
   updatedBy = this.audit.modifyUserId!!,
   emailAddress = this.email,
-  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+  updatedTime = this.audit.modifyDatetime!!,
 )
 fun PersonPhoneNumber.toDpsCreateContactPhoneRequest(nomisPersonId: Long) = SyncCreateContactPhoneRequest(
   contactId = nomisPersonId,
@@ -1323,7 +1356,7 @@ fun PersonPhoneNumber.toDpsCreateContactPhoneRequest(nomisPersonId: Long) = Sync
   phoneNumber = this.number,
   extNumber = this.extension,
   phoneType = this.type.code,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
 )
 fun PersonPhoneNumber.toDpsUpdateContactPhoneRequest(nomisPersonId: Long) = SyncUpdateContactPhoneRequest(
   contactId = nomisPersonId,
@@ -1331,7 +1364,7 @@ fun PersonPhoneNumber.toDpsUpdateContactPhoneRequest(nomisPersonId: Long) = Sync
   phoneNumber = this.number,
   extNumber = this.extension,
   phoneType = this.type.code,
-  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+  updatedTime = this.audit.modifyDatetime!!,
 )
 fun PersonPhoneNumber.toDpsCreateContactAddressPhoneRequest(dpsAddressId: Long) = SyncCreateContactAddressPhoneRequest(
   contactAddressId = dpsAddressId,
@@ -1339,14 +1372,14 @@ fun PersonPhoneNumber.toDpsCreateContactAddressPhoneRequest(dpsAddressId: Long) 
   phoneNumber = this.number,
   extNumber = this.extension,
   phoneType = this.type.code,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
 )
 fun PersonPhoneNumber.toDpsUpdateContactAddressPhoneRequest() = SyncUpdateContactAddressPhoneRequest(
   updatedBy = this.audit.modifyUserId!!,
   phoneNumber = this.number,
   extNumber = this.extension,
   phoneType = this.type.code,
-  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+  updatedTime = this.audit.modifyDatetime!!,
 )
 fun PersonIdentifier.toDpsCreateContactIdentityRequest(nomisPersonId: Long) = SyncCreateContactIdentityRequest(
   contactId = nomisPersonId,
@@ -1354,7 +1387,7 @@ fun PersonIdentifier.toDpsCreateContactIdentityRequest(nomisPersonId: Long) = Sy
   identityValue = this.identifier,
   identityType = this.type.code,
   issuingAuthority = this.issuedAuthority,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
 )
 fun PersonIdentifier.toDpsUpdateContactIdentityRequest(nomisPersonId: Long) = SyncUpdateContactIdentityRequest(
   contactId = nomisPersonId,
@@ -1362,7 +1395,7 @@ fun PersonIdentifier.toDpsUpdateContactIdentityRequest(nomisPersonId: Long) = Sy
   identityValue = this.identifier,
   identityType = this.type.code,
   issuingAuthority = this.issuedAuthority,
-  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+  updatedTime = this.audit.modifyDatetime!!,
 )
 
 fun PersonEmployment.toDpsCreateContactEmploymentRequest(nomisPersonId: Long) = SyncCreateEmploymentRequest(
@@ -1370,7 +1403,7 @@ fun PersonEmployment.toDpsCreateContactEmploymentRequest(nomisPersonId: Long) = 
   organisationId = this.corporate.id,
   active = this.active,
   createdBy = this.audit.createUsername,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
 )
 
 fun PersonEmployment.toDpsUpdateContactEmploymentRequest(nomisPersonId: Long) = SyncUpdateEmploymentRequest(
@@ -1378,7 +1411,7 @@ fun PersonEmployment.toDpsUpdateContactEmploymentRequest(nomisPersonId: Long) = 
   organisationId = this.corporate.id,
   active = this.active,
   updatedBy = this.audit.modifyUserId!!,
-  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+  updatedTime = this.audit.modifyDatetime!!,
 )
 
 fun ContactRestriction.toDpsCreatePrisonerContactRestrictionRequest(dpsPrisonerContactId: Long) = SyncCreatePrisonerContactRestrictionRequest(
@@ -1389,7 +1422,7 @@ fun ContactRestriction.toDpsCreatePrisonerContactRestrictionRequest(dpsPrisonerC
   expiryDate = this.expiryDate,
   // DPS use the enteredBy username since they use the createdBy as business data as well as audit
   createdBy = this.enteredStaff.username,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
 )
 
 fun ContactRestriction.toDpsCreateContactRestrictionRequest(dpsContactId: Long) = SyncCreateContactRestrictionRequest(
@@ -1400,7 +1433,7 @@ fun ContactRestriction.toDpsCreateContactRestrictionRequest(dpsContactId: Long) 
   expiryDate = this.expiryDate,
   // DPS use the enteredBy username since they use the createdBy as business data as well as audit
   createdBy = this.enteredStaff.username,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
 )
 
 fun ContactRestriction.toDpsUpdateContactRestrictionRequest(dpsContactId: Long) = SyncUpdateContactRestrictionRequest(
@@ -1411,7 +1444,7 @@ fun ContactRestriction.toDpsUpdateContactRestrictionRequest(dpsContactId: Long) 
   expiryDate = this.expiryDate,
   // DPS use the enteredBy username since they use the updatedBy as business data as well as audit
   updatedBy = this.enteredStaff.username,
-  updatedTime = this.audit.modifyDatetime?.toDateTime() ?: LocalDateTime.now(),
+  updatedTime = this.audit.modifyDatetime ?: LocalDateTime.now(),
 )
 
 fun ContactRestriction.toDpsUpdatePrisonerContactRestrictionRequest() = SyncUpdatePrisonerContactRestrictionRequest(
@@ -1421,7 +1454,5 @@ fun ContactRestriction.toDpsUpdatePrisonerContactRestrictionRequest() = SyncUpda
   expiryDate = this.expiryDate,
   // DPS use the enteredBy username since they use the updatedBy as business data as well as audit
   updatedBy = this.enteredStaff.username,
-  updatedTime = this.audit.modifyDatetime?.toDateTime() ?: LocalDateTime.now(),
+  updatedTime = this.audit.modifyDatetime ?: LocalDateTime.now(),
 )
-
-private fun String.toDateTime() = this.let { LocalDateTime.parse(it) }
