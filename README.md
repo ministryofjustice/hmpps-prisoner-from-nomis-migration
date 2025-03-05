@@ -66,19 +66,19 @@ For some of our external API calls we use `openapi-generator` to generate the mo
 Run the following commands to take a copy of the latest specs:
 
 ```
-http https://nomis-prisoner-api-dev.prison.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/nomis-prisoner-api-docs.json
-http https://nomis-sync-prisoner-mapping-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/nomis-mapping-service-api-docs.json
-http https://activities-api-dev.prison.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/activities-api-docs.json
-http https://manage-adjudications-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/adjudications-api-docs.json
-http https://adjustments-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/sentencing-adjustments-api-docs.json
-http https://incident-reporting-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/incidents-api-docs.json
-http https://csip-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/csip-api-docs.json
-http https://alerts-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/alerts-api-docs.json
-http https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/court-sentencing-api-docs.json
-http https://prison-person-api-dev.prison.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/prison-person-api-docs.json
-http https://personal-relationships-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/personal-relationships-api-docs.json
-http https://organisations-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/organisations-api-docs.json
-http https://hmpps-person-record-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/core-person-api-docs.json
+curl https://nomis-prisoner-api-dev.prison.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/nomis-prisoner-api-docs.json
+curl https://nomis-sync-prisoner-mapping-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/nomis-mapping-service-api-docs.json
+curl https://activities-api-dev.prison.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/activities-api-docs.json
+curl https://manage-adjudications-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/adjudications-api-docs.json
+curl https://adjustments-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/sentencing-adjustments-api-docs.json
+curl https://incident-reporting-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/incidents-api-docs.json
+curl https://csip-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/csip-api-docs.json
+curl https://alerts-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/alerts-api-docs.json
+curl https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/court-sentencing-api-docs.json
+curl https://prison-person-api-dev.prison.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/prison-person-api-docs.json
+curl https://personal-relationships-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/personal-relationships-api-docs.json
+curl https://organisations-api-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/organisations-api-docs.json
+curl https://hmpps-person-record-dev.hmpps.service.justice.gov.uk/v3/api-docs | jq . > openapi-specs/core-person-api-docs.json
 ```
 
 Go into the specs and reformat so they and the diffs are easier for humans to read.
