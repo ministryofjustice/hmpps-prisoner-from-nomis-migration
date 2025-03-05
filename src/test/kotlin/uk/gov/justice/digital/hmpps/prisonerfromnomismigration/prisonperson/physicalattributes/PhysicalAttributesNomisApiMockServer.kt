@@ -9,12 +9,11 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingPhysicalAttributesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingPhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerPhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @Component
 class PhysicalAttributesNomisApiMockServer(private val objectMapper: ObjectMapper) {
@@ -25,8 +24,8 @@ class PhysicalAttributesNomisApiMockServer(private val objectMapper: ObjectMappe
       bookings = listOf(
         BookingPhysicalAttributesResponse(
           bookingId = 1,
-          startDateTime = "2024-02-03T12:34:56",
-          endDateTime = "2024-10-21T12:34:56",
+          startDateTime = LocalDateTime.parse("2024-02-03T12:34:56"),
+          endDateTime = LocalDateTime.parse("2024-10-21T12:34:56"),
           latestBooking = true,
           physicalAttributes = listOf(
             PhysicalAttributesResponse(
@@ -34,9 +33,9 @@ class PhysicalAttributesNomisApiMockServer(private val objectMapper: ObjectMappe
               heightCentimetres = 180,
               weightKilograms = 80,
               createdBy = "A_USER",
-              createDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              createDateTime = LocalDateTime.now(),
               modifiedBy = "ANOTHER_USER",
-              modifiedDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+              modifiedDateTime = LocalDateTime.now(),
               auditModuleName = "MODULE",
             ),
           ),

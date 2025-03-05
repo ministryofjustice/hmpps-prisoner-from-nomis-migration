@@ -3,8 +3,8 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.pro
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.ProfileDetailsChangedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.atPrisonPersonZone
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.ProfileDetailsPhysicalAttributesSyncRequest
@@ -77,7 +77,7 @@ class ProfileDetailsSyncService(
         prisonerNumber = offenderNo,
         with(profileDetails) {
           ProfileDetailsPhysicalAttributesSyncRequest(
-            appliesFrom = booking.startDateTime.toLocalDateTime().atPrisonPersonZone(),
+            appliesFrom = booking.startDateTime.atPrisonPersonZone(),
             // We no longer return booking end date from the API call and this service isn't used anyway
             appliesTo = "",
             latestBooking = booking.latestBooking,
@@ -122,9 +122,7 @@ class ProfileDetailsSyncService(
       )
     }
 
-  private fun ProfileDetailsResponse.lastModified(): Pair<LocalDateTime, String> = (modifiedDateTime ?: createDateTime).toLocalDateTime() to (modifiedBy ?: createdBy)
-
-  private fun String.toLocalDateTime() = LocalDateTime.parse(this)
+  private fun ProfileDetailsResponse.lastModified(): Pair<LocalDateTime, String> = (modifiedDateTime ?: createDateTime) to (modifiedBy ?: createdBy)
 }
 
 class ProfileDetailsChangedException(message: String) : IllegalArgumentException(message)

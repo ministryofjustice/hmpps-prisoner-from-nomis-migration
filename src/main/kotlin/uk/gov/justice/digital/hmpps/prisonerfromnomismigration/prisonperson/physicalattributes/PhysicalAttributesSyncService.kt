@@ -3,12 +3,11 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.phy
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingPhysicalAttributesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PhysicalAttributesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerPhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingPhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PhysicalAttributesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerPhysicalAttributesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PhysicalAttributesChangedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.synchronisationUser
-import java.time.LocalDateTime
 
 @Service
 class PhysicalAttributesSyncService(
@@ -50,10 +49,10 @@ class PhysicalAttributesSyncService(
         offenderNo,
         physicalAttributes.heightCentimetres,
         physicalAttributes.weightKilograms,
-        booking.startDateTime.toLocalDateTime(),
-        booking.endDateTime?.toLocalDateTime(),
+        booking.startDateTime,
+        booking.endDateTime,
         booking.latestBooking,
-        physicalAttributes.lastModifiedDateTime().toLocalDateTime(),
+        physicalAttributes.lastModifiedDateTime(),
         physicalAttributes.modifiedDateTime?.let { physicalAttributes.modifiedBy } ?: physicalAttributes.createdBy,
       )
     } catch (e: Exception) {
@@ -91,10 +90,6 @@ class PhysicalAttributesSyncService(
 class PhysicalAttributesChangedException(message: String) : IllegalArgumentException(message)
 
 internal fun BookingPhysicalAttributesResponse.findLastModifiedPhysicalAttributes() = physicalAttributes
-  .maxBy {
-    (it.modifiedDateTime ?: it.createDateTime).toLocalDateTime()
-  }
-
-internal fun String.toLocalDateTime() = LocalDateTime.parse(this)
+  .maxBy { it.modifiedDateTime ?: it.createDateTime }
 
 internal fun PhysicalAttributesResponse.lastModifiedDateTime() = modifiedDateTime ?: createDateTime
