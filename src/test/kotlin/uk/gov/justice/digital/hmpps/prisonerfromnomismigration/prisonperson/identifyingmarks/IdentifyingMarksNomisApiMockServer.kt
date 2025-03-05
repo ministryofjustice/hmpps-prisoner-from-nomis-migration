@@ -8,12 +8,11 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingIdentifyingMarksResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IdentifyingMarkImageDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IdentifyingMarksResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingIdentifyingMarksResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IdentifyingMarkImageDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IdentifyingMarksResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @Component
 class IdentifyingMarksNomisApiMockServer(private val objectMapper: ObjectMapper) {
@@ -21,8 +20,8 @@ class IdentifyingMarksNomisApiMockServer(private val objectMapper: ObjectMapper)
     bookingId: Long = 12345L,
     response: BookingIdentifyingMarksResponse = BookingIdentifyingMarksResponse(
       bookingId = bookingId,
-      startDateTime = "2024-02-03T12:34:56",
-      endDateTime = "2024-10-21T12:34:56",
+      startDateTime = LocalDateTime.parse("2024-02-03T12:34:56"),
+      endDateTime = LocalDateTime.parse("2024-10-21T12:34:56"),
       latestBooking = true,
       identifyingMarks = listOf(
         IdentifyingMarksResponse(
@@ -34,9 +33,9 @@ class IdentifyingMarksNomisApiMockServer(private val objectMapper: ObjectMapper)
           commentText = "Dragon",
           imageIds = listOf(2345L, 3456L),
           createdBy = "A_USER",
-          createDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+          createDateTime = LocalDateTime.now(),
           modifiedBy = "ANOTHER_USER",
-          modifiedDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+          modifiedDateTime = LocalDateTime.now(),
           auditModuleName = "MODULE",
         ),
       ),
@@ -71,16 +70,16 @@ class IdentifyingMarksNomisApiMockServer(private val objectMapper: ObjectMapper)
       imageId = offenderImageId,
       bookingId = 23456L,
       idMarksSeq = 1L,
-      captureDateTime = "2024-02-03T12:34:56",
+      captureDateTime = LocalDateTime.parse("2024-02-03T12:34:56"),
       bodyPartCode = "ARM",
       markTypeCode = "TAT",
       default = true,
       imageExists = true,
       imageSourceCode = "FILE",
       createdBy = "A_USER",
-      createDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+      createDateTime = LocalDateTime.now(),
       modifiedBy = "ANOTHER_USER",
-      modifiedDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+      modifiedDateTime = LocalDateTime.now(),
       auditModuleName = "MODULE",
     ),
   ) = nomisApi.stubFor(

@@ -23,11 +23,12 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.model.ProfileDetailsPhysicalAttributesSyncResponse
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.time.LocalDateTime
 
 class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
 
@@ -51,13 +52,13 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
             bookings = listOf(
               booking(
                 bookingId = 12345,
-                startDateTime = "2024-09-03T12:34:56",
+                startDateTime = LocalDateTime.parse("2024-09-03T12:34:56"),
                 latestBooking = true,
                 profileDetails = listOf(
                   profileDetails(
                     type = "SHOESIZE",
                     code = "8.5",
-                    createDateTime = "2024-09-04T12:34:56",
+                    createDateTime = LocalDateTime.parse("2024-09-04T12:34:56"),
                     createdBy = "A_USER",
                     modifiedDateTime = null,
                     modifiedBy = null,
@@ -107,7 +108,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
                   profileDetails(
                     type = "SHOESIZE",
                     code = null,
-                    modifiedDateTime = "2024-09-05T12:34:56",
+                    modifiedDateTime = LocalDateTime.parse("2024-09-05T12:34:56"),
                     modifiedBy = "ANOTHER_USER",
                   ),
                 ),
@@ -190,7 +191,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
             bookings = listOf(
               booking(
                 bookingId = 1,
-                startDateTime = "2024-09-02T12:34:56",
+                startDateTime = LocalDateTime.parse("2024-09-02T12:34:56"),
                 latestBooking = true,
                 profileDetails = listOf(
                   profileDetails(
@@ -201,7 +202,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
               ),
               booking(
                 bookingId = 12345,
-                startDateTime = "2024-09-02T12:34:56",
+                startDateTime = LocalDateTime.parse("2024-09-02T12:34:56"),
                 latestBooking = false,
                 profileDetails = listOf(
                   profileDetails(
@@ -236,7 +237,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
             bookings = listOf(
               booking(
                 bookingId = 12345,
-                startDateTime = "2024-09-02T12:34:56",
+                startDateTime = LocalDateTime.parse("2024-09-02T12:34:56"),
                 latestBooking = true,
                 profileDetails = listOf(
                   profileDetails(
@@ -414,9 +415,9 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
   private fun profileDetails(
     type: String = "SHOESIZE",
     code: String? = "8.5",
-    createDateTime: String = "2024-09-04T12:34:56",
+    createDateTime: LocalDateTime = LocalDateTime.parse("2024-09-04T12:34:56"),
     createdBy: String = "A_USER",
-    modifiedDateTime: String? = null,
+    modifiedDateTime: LocalDateTime? = null,
     modifiedBy: String? = null,
     auditModuleName: String = "NOMIS",
   ) = ProfileDetailsResponse(
@@ -431,7 +432,7 @@ class ProfileDetailsPhysicalAttributesSyncIntTest : SqsIntegrationTestBase() {
 
   private fun booking(
     bookingId: Long = 12345,
-    startDateTime: String = "2024-09-03T12:34:56",
+    startDateTime: LocalDateTime = LocalDateTime.parse("2024-09-03T12:34:56"),
     latestBooking: Boolean = true,
     profileDetails: List<ProfileDetailsResponse> = listOf(profileDetails()),
   ) = BookingProfileDetailsResponse(
