@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-03-03"
+    "version": "2025-03-05.11554.f41229a"
   },
   "servers": [
     {
@@ -11591,6 +11591,73 @@
         }
       }
     },
+    "/visit-orders/visit-balance-adjustment/{visitBalanceAdjustmentId}": {
+      "get": {
+        "tags": [
+          "visit-order-balance-resource"
+        ],
+        "summary": "Get specific offender visit balance adjustment",
+        "description": "Retrieves offender visit balance adjustment. Requires ROLE_NOMIS_VISIT_ORDERS",
+        "operationId": "getVisitBalanceAdjustment",
+        "parameters": [
+          {
+            "name": "visitBalanceAdjustmentId",
+            "in": "path",
+            "description": "Visit balance adjustment id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "description": "Visit balance adjustment id",
+              "example": 5
+            },
+            "example": 5
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Visit balance adjustment returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitBalanceAdjustmentResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized to access this endpoint",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden to access this endpoint. Requires ROLE_NOMIS_VISIT_ORDERS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Adjustment does not exist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/splash-screens/{moduleName}": {
       "get": {
         "tags": [
@@ -18167,14 +18234,6 @@
         "type": "object",
         "description": "Sentence term request",
         "properties": {
-          "startDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "endDate": {
-            "type": "string",
-            "format": "date"
-          },
           "years": {
             "type": "integer",
             "format": "int32"
@@ -18204,8 +18263,7 @@
         },
         "required": [
           "lifeSentenceFlag",
-          "sentenceTermType",
-          "startDate"
+          "sentenceTermType"
         ]
       },
       "AlertResponse": {
@@ -23742,13 +23800,13 @@
       "PageVisitIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -23773,12 +23831,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -23795,14 +23853,14 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
           "paged": {
             "type": "boolean"
           },
           "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
             "type": "integer",
             "format": "int32"
           },
@@ -23838,6 +23896,65 @@
         "required": [
           "visitId"
         ]
+      },
+      "VisitBalanceAdjustmentResponse": {
+        "type": "object",
+        "description": "The visit orders balance changes held against a booking for a prisoner",
+        "properties": {
+          "remainingVisitOrders": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of visit orders affected by the adjustment"
+          },
+          "previousRemainingVisitOrders": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Previous number of visit orders before the adjustment"
+          },
+          "remainingPrivilegedVisitOrders": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of privileged visit orders affected by the adjustment"
+          },
+          "previousRemainingPrivilegedVisitOrders": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Previous number of privileged visit orders before the adjustment"
+          },
+          "adjustmentReason": {
+            "$ref": "#/components/schemas/CodeDescription",
+            "description": "Adjustment reason"
+          },
+          "adjustmentDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Date the adjust was made"
+          },
+          "comment": {
+            "type": "string",
+            "description": "Comment text"
+          },
+          "expiryBalance": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Expiry balance"
+          },
+          "expiryDate": {
+            "type": "string",
+            "format": "date",
+            "description": "Expiry date"
+          },
+          "endorsedStaffId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Which staff member endorsed the adjustment aka Entered by"
+          },
+          "authorisedStaffId": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Which staff member authorised the adjustment"
+          }
+        }
       },
       "SplashConditionDto": {
         "type": "object",
@@ -24257,13 +24374,13 @@
       "PageQuestionnaireIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -24288,12 +24405,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -24352,7 +24469,7 @@
             "type": "array",
             "description": "Balance adjustments for this prisoner over the last 28 days",
             "items": {
-              "$ref": "#/components/schemas/VisitOrderBalanceAdjResponse"
+              "$ref": "#/components/schemas/VisitBalanceAdjustmentResponse"
             }
           }
         },
@@ -24361,69 +24478,6 @@
           "remainingVisitOrders",
           "visitOrderBalanceAdjustments"
         ]
-      },
-      "VisitOrderBalanceAdjResponse": {
-        "type": "object",
-        "description": "The visit orders balance changes held against a booking for a  prisoner",
-        "properties": {
-          "remainingVisitOrders": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Number of visit orders affected by the adjustment"
-          },
-          "previousRemainingVisitOrders": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Previous number of visit orders before the adjustment"
-          },
-          "remainingPrivilegedVisitOrders": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Number of privileged visit orders affected by the adjustment"
-          },
-          "previousRemainingPrivilegedVisitOrders": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Previous number of privileged visit orders before the adjustment"
-          },
-          "adjustmentReason": {
-            "$ref": "#/components/schemas/CodeDescription",
-            "description": "Adjustment reason"
-          },
-          "adjustmentDate": {
-            "type": "string",
-            "format": "date",
-            "description": "Date the adjust was made"
-          },
-          "comment": {
-            "type": "string",
-            "description": "Comment text"
-          },
-          "expiryBalance": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Expiry balance"
-          },
-          "expiryDate": {
-            "type": "string",
-            "format": "date",
-            "description": "Expiry date"
-          },
-          "expiryStatus": {
-            "type": "string",
-            "description": "Expiry status"
-          },
-          "endorsedStaffId": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Which staff member endorsed the adjustment aka Entered by"
-          },
-          "authorisedStaffId": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Which staff member authorised the adjustment"
-          }
-        }
       },
       "OffenceResponse": {
         "type": "object",
@@ -24664,6 +24718,12 @@
             "items": {
               "$ref": "#/components/schemas/CaseIdentifierResponse"
             }
+          },
+          "sentences": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SentenceResponse"
+            }
           }
         },
         "required": [
@@ -24679,7 +24739,8 @@
           "legalCaseType",
           "lidsCaseNumber",
           "offenderCharges",
-          "offenderNo"
+          "offenderNo",
+          "sentences"
         ]
       },
       "CourtEventChargeResponse": {
@@ -24833,6 +24894,10 @@
             "type": "integer",
             "format": "int64"
           },
+          "eventId": {
+            "type": "integer",
+            "format": "int64"
+          },
           "courtDate": {
             "type": "string",
             "format": "date"
@@ -24875,6 +24940,7 @@
         },
         "required": [
           "courtDate",
+          "eventId",
           "id",
           "issuingCourt",
           "orderStatus",
@@ -24901,6 +24967,268 @@
           "orderId",
           "orderPartyCode",
           "purposeCode"
+        ]
+      },
+      "SentenceResponse": {
+        "type": "object",
+        "description": "Offender Sentence",
+        "properties": {
+          "bookingId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sentenceSeq": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "calculationType": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "category": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "courtOrder": {
+            "$ref": "#/components/schemas/CourtOrderResponse"
+          },
+          "consecSequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "commentText": {
+            "type": "string"
+          },
+          "absenceCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "caseId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "etdCalculatedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "mtdCalculatedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "ltdCalculatedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "ardCalculatedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "crdCalculatedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "pedCalculatedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "npdCalculatedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "ledCalculatedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "sedCalculatedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "prrdCalculatedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "tariffCalculatedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "dprrdCalculatedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "tusedCalculatedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "aggSentenceSequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "aggAdjustDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sentenceLevel": {
+            "type": "string"
+          },
+          "extendedDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "counts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "statusUpdateReason": {
+            "type": "string"
+          },
+          "statusUpdateComment": {
+            "type": "string"
+          },
+          "statusUpdateDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "statusUpdateStaffId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "fineAmount": {
+            "type": "number"
+          },
+          "dischargeDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "nomSentDetailRef": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nomConsToSentDetailRef": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nomConsFromSentDetailRef": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nomConsWithSentDetailRef": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lineSequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hdcExclusionFlag": {
+            "type": "boolean"
+          },
+          "hdcExclusionReason": {
+            "type": "string"
+          },
+          "cjaAct": {
+            "type": "string"
+          },
+          "sled2Calc": {
+            "type": "string",
+            "format": "date"
+          },
+          "startDate2Calc": {
+            "type": "string",
+            "format": "date"
+          },
+          "createdDateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdByUsername": {
+            "type": "string"
+          },
+          "sentenceTerms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SentenceTermResponse"
+            }
+          },
+          "offenderCharges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OffenderChargeResponse"
+            }
+          },
+          "prisonId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "bookingId",
+          "calculationType",
+          "category",
+          "createdByUsername",
+          "createdDateTime",
+          "offenderCharges",
+          "prisonId",
+          "sentenceSeq",
+          "sentenceTerms",
+          "startDate",
+          "status"
+        ]
+      },
+      "SentenceTermResponse": {
+        "type": "object",
+        "description": "Sentence Term",
+        "properties": {
+          "termSequence": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sentenceTermType": {
+            "$ref": "#/components/schemas/CodeDescription"
+          },
+          "years": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "months": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weeks": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "days": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hours": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "lifeSentenceFlag": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "lifeSentenceFlag",
+          "startDate",
+          "termSequence"
         ]
       },
       "BookingProfileDetailsResponse": {
@@ -25956,267 +26284,6 @@
           }
         }
       },
-      "SentenceResponse": {
-        "type": "object",
-        "description": "Offender Sentence",
-        "properties": {
-          "bookingId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "sentenceSeq": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "status": {
-            "type": "string"
-          },
-          "calculationType": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "category": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "startDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "courtOrder": {
-            "$ref": "#/components/schemas/CourtOrderResponse"
-          },
-          "consecSequence": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "endDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "commentText": {
-            "type": "string"
-          },
-          "absenceCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "caseId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "etdCalculatedDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "mtdCalculatedDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "ltdCalculatedDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "ardCalculatedDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "crdCalculatedDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "pedCalculatedDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "npdCalculatedDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "ledCalculatedDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "sedCalculatedDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "prrdCalculatedDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "tariffCalculatedDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "dprrdCalculatedDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "tusedCalculatedDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "aggSentenceSequence": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "aggAdjustDays": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "sentenceLevel": {
-            "type": "string"
-          },
-          "extendedDays": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "counts": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "statusUpdateReason": {
-            "type": "string"
-          },
-          "statusUpdateComment": {
-            "type": "string"
-          },
-          "statusUpdateDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "statusUpdateStaffId": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "fineAmount": {
-            "type": "number"
-          },
-          "dischargeDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "nomSentDetailRef": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "nomConsToSentDetailRef": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "nomConsFromSentDetailRef": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "nomConsWithSentDetailRef": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "lineSequence": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "hdcExclusionFlag": {
-            "type": "boolean"
-          },
-          "hdcExclusionReason": {
-            "type": "string"
-          },
-          "cjaAct": {
-            "type": "string"
-          },
-          "sled2Calc": {
-            "type": "string",
-            "format": "date"
-          },
-          "startDate2Calc": {
-            "type": "string",
-            "format": "date"
-          },
-          "createdDateTime": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "createdByUsername": {
-            "type": "string"
-          },
-          "sentenceTerms": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SentenceTermResponse"
-            }
-          },
-          "offenderCharges": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OffenderChargeResponse"
-            }
-          },
-          "prisonId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "bookingId",
-          "calculationType",
-          "category",
-          "createdByUsername",
-          "createdDateTime",
-          "offenderCharges",
-          "prisonId",
-          "sentenceSeq",
-          "sentenceTerms",
-          "startDate",
-          "status"
-        ]
-      },
-      "SentenceTermResponse": {
-        "type": "object",
-        "description": "Sentence Term",
-        "properties": {
-          "termSequence": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "sentenceTermType": {
-            "$ref": "#/components/schemas/CodeDescription"
-          },
-          "years": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "months": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "weeks": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "days": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "hours": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "startDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "endDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "lifeSentenceFlag": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "startDate",
-          "termSequence"
-        ]
-      },
       "CaseNoteAmendment": {
         "type": "object",
         "properties": {
@@ -26437,13 +26504,13 @@
       "PagePrisonerIds": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -26468,12 +26535,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -26504,13 +26571,13 @@
       "PagePrisonerId": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -26535,12 +26602,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -27302,13 +27369,13 @@
       "PagePersonIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -27333,12 +27400,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -27455,13 +27522,13 @@
       "PageNonAssociationIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -27486,12 +27553,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -27709,13 +27776,13 @@
       "PageLocationIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -27740,12 +27807,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -28296,13 +28363,13 @@
       "PageIncidentIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -28327,12 +28394,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -28417,13 +28484,13 @@
       "PageIncentiveIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -28448,12 +28515,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -28651,13 +28718,13 @@
       "PageCSIPIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -28682,12 +28749,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -28711,13 +28778,13 @@
       "PageCourtCaseIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -28742,12 +28809,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -29052,13 +29119,13 @@
       "PageCorporateOrganisationIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -29083,12 +29150,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -30022,13 +30089,13 @@
       "PageAppointmentIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -30053,12 +30120,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -30361,13 +30428,13 @@
       "PageFindActiveAllocationIdsResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -30392,12 +30459,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -30426,13 +30493,13 @@
       "PageAdjustmentIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -30457,12 +30524,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -30497,13 +30564,13 @@
       "PageAdjudicationChargeIdResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -30528,12 +30595,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"
@@ -30828,13 +30895,13 @@
       "PageFindActiveActivityIdsResponse": {
         "type": "object",
         "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
           "totalElements": {
             "type": "integer",
             "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
           },
           "first": {
             "type": "boolean"
@@ -30859,12 +30926,12 @@
           "sort": {
             "$ref": "#/components/schemas/SortObject"
           },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
           "numberOfElements": {
             "type": "integer",
             "format": "int32"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
           },
           "empty": {
             "type": "boolean"

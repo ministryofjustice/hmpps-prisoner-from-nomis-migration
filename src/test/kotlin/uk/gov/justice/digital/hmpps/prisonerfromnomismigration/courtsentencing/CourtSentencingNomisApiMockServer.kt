@@ -9,24 +9,23 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseIdentifierResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventChargeResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtOrderResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenceResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenceResultCodeResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceTermResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtOrderResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResultCodeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceTermResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @Component
 class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) {
@@ -35,6 +34,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     offenderNo: String = "A3864DZ",
     courtCaseId: Long = 3,
     caseIndentifiers: List<CaseIdentifierResponse> = emptyList(),
+    sentences: List<SentenceResponse> = emptyList(),
     response: CourtCaseResponse = CourtCaseResponse(
       bookingId = bookingId,
       id = courtCaseId,
@@ -45,11 +45,12 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       courtId = "MDI",
       courtEvents = emptyList(),
       offenderCharges = emptyList(),
-      createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+      createdDateTime = LocalDateTime.now(),
       createdByUsername = "Q1251T",
       lidsCaseNumber = 1,
       primaryCaseInfoNumber = "caseRef1",
       caseInfoNumbers = caseIndentifiers,
+      sentences = sentences,
     ),
   ) {
     nomisApi.stubFor(
@@ -83,6 +84,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     caseIndentifiers: List<CaseIdentifierResponse> = emptyList(),
     courtEvents: List<CourtEventResponse> = emptyList(),
     combinedCaseId: Long? = null,
+    sentences: List<SentenceResponse> = emptyList(),
     response: CourtCaseResponse = CourtCaseResponse(
       bookingId = bookingId,
       id = caseId,
@@ -93,12 +95,13 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       courtId = "MDI",
       courtEvents = courtEvents,
       offenderCharges = emptyList(),
-      createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+      createdDateTime = LocalDateTime.now(),
       createdByUsername = "Q1251T",
       lidsCaseNumber = 1,
       primaryCaseInfoNumber = "caseRef1",
       caseInfoNumbers = caseIndentifiers,
       combinedCaseId = combinedCaseId,
+      sentences = sentences,
     ),
   ) {
     nomisApi.stubFor(
@@ -136,15 +139,15 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     courtAppearanceId: Long = 3,
     courtCaseId: Long? = 2,
     courtId: String = "MDI",
-    eventDateTime: String = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-    nextEventDateTime: String = LocalDateTime.now().plusWeeks(1).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+    eventDateTime: LocalDateTime = LocalDateTime.now(),
+    nextEventDateTime: LocalDateTime = LocalDateTime.now(),
     response: CourtEventResponse = CourtEventResponse(
       id = courtAppearanceId,
       offenderNo = offenderNo,
       caseId = courtCaseId,
       courtId = courtId,
       courtEventCharges = emptyList(),
-      createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+      createdDateTime = LocalDateTime.now(),
       createdByUsername = "Q1251T",
       courtEventType = CodeDescription("CRT", "Court Appearance"),
       outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournment", dispositionCode = "I", conviction = false),
@@ -312,7 +315,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       startDate = startDate,
       status = "I",
       sentenceTerms = sentenceTerms,
-      createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+      createdDateTime = LocalDateTime.now(),
       createdByUsername = "Q1251T",
       prisonId = "MDI",
       fineAmount = BigDecimal.valueOf(1.10),
@@ -388,8 +391,10 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     offenderNo: String = "G4803UT",
     caseId: Long = 3,
     courtId: String = "BATHMC",
+    eventId: Long = 528456562,
     caseInfoNumber: String? = "caseRef1",
     caseIndentifiers: List<CaseIdentifierResponse> = emptyList(),
+    sentences: List<SentenceResponse> = emptyList(),
   ): CourtCaseResponse = CourtCaseResponse(
     bookingId = bookingId,
     id = caseId,
@@ -400,20 +405,20 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     courtId = courtId,
     courtEvents = listOf(
       CourtEventResponse(
-        id = 528456562,
+        id = eventId,
         caseId = caseId,
         offenderNo = "A3864DZ",
-        eventDateTime = "2024-02-01T10:00:00",
+        eventDateTime = LocalDateTime.parse("2024-02-01T10:00:00"),
         courtEventType = CodeDescription("CRT", "Court Appearance"),
         eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
         directionCode = CodeDescription("OUT", "Out"),
         courtId = courtId,
         outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournment", dispositionCode = "I", conviction = false),
-        createdDateTime = "2024-02-08T14:36:16.485181",
+        createdDateTime = LocalDateTime.parse("2024-02-08T14:36:16.485181"),
         createdByUsername = "PRISONER_MANAGER_API",
         courtEventCharges = listOf(
           CourtEventChargeResponse(
-            eventId = 528456562,
+            eventId = eventId,
             offencesCount = 1,
             offenceDate = LocalDate.parse("2024-01-02"),
             resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F", conviction = false),
@@ -441,6 +446,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
             orderType = "AUTO",
             orderStatus = "A",
             sentencePurposes = emptyList(),
+            eventId = eventId,
           ),
         ),
       ),
@@ -460,11 +466,12 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         mostSeriousFlag = false,
       ),
     ),
-    createdDateTime = "2024-02-08T14:36:16.370572",
+    createdDateTime = LocalDateTime.parse("2024-02-08T14:36:16.370572"),
     createdByUsername = "PRISONER_MANAGER_API",
     lidsCaseNumber = 1,
     primaryCaseInfoNumber = caseInfoNumber,
     caseInfoNumbers = caseIndentifiers,
+    sentences = sentences,
   )
 
   fun courtCaseIdsPagedResponse(

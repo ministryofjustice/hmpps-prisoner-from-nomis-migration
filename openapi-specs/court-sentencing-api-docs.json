@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-02-25.5061.04f931e"
+    "version": "2025-03-05.5237.a358790"
   },
   "servers": [
     {
@@ -2109,6 +2109,24 @@
               "type": "string",
               "format": "date"
             }
+          },
+          {
+            "name": "statuses",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "default": [
+                "ACTIVE"
+              ],
+              "items": {
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "INACTIVE"
+                ]
+              }
+            }
           }
         ],
         "responses": {
@@ -2642,14 +2660,31 @@
         }
       }
     },
-    "/charge-outcome/all": {
+    "/charge-outcome/status": {
       "get": {
         "tags": [
           "charge-outcome-controller"
         ],
-        "summary": "Get all charge outcomes",
-        "description": "This endpoint will get all charge outcomes",
+        "summary": "Get all charge outcomes by statuses",
+        "description": "This endpoint will get all charge outcomes by statuses",
         "operationId": "getAllChargeOutcomes",
+        "parameters": [
+          {
+            "name": "statuses",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "INACTIVE"
+                ]
+              }
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Returns charge outcomes",
@@ -2746,14 +2781,31 @@
         }
       }
     },
-    "/appearance-type/all": {
+    "/appearance-type/status": {
       "get": {
         "tags": [
           "appearance-type-controller"
         ],
-        "summary": "Get all appearance types",
-        "description": "This endpoint will get all appearance types",
+        "summary": "Get all appearance types by statuses",
+        "description": "This endpoint will get all appearance types by statuses",
         "operationId": "getAllAppearanceTypes",
+        "parameters": [
+          {
+            "name": "statuses",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "INACTIVE"
+                ]
+              }
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Returns appearance types",
@@ -2847,14 +2899,31 @@
         }
       }
     },
-    "/appearance-outcome/all": {
+    "/appearance-outcome/status": {
       "get": {
         "tags": [
           "appearance-outcome-controller"
         ],
-        "summary": "Get all appearance outcomes",
-        "description": "This endpoint will get all appearance outcomes",
+        "summary": "Get all appearance outcomes by status",
+        "description": "This endpoint will get all appearance outcomes by status",
         "operationId": "getAllAppearanceOutcomes",
+        "parameters": [
+          {
+            "name": "statuses",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "ACTIVE",
+                  "INACTIVE"
+                ]
+              }
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Returns appearance outcomes",
@@ -2975,8 +3044,12 @@
       "LegacyCreatePeriodLength": {
         "type": "object",
         "properties": {
-          "periodType": {
-            "type": "string"
+          "periodLengthId": {
+            "$ref": "#/components/schemas/NomisPeriodLengthId"
+          },
+          "periodLengthUuid": {
+            "type": "string",
+            "format": "uuid"
           },
           "periodYears": {
             "type": "integer",
@@ -3000,7 +3073,7 @@
         },
         "required": [
           "legacyData",
-          "periodType"
+          "periodLengthId"
         ]
       },
       "LegacyCreateSentence": {
@@ -3042,6 +3115,28 @@
           "legacyData",
           "periodLengths",
           "prisonId"
+        ]
+      },
+      "NomisPeriodLengthId": {
+        "type": "object",
+        "properties": {
+          "offenderBookingId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sentenceSequence": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "termSequence": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "offenderBookingId",
+          "sentenceSequence",
+          "termSequence"
         ]
       },
       "PeriodLengthLegacyData": {
@@ -3117,7 +3212,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "17:06:48.841529485"
+            "example": "10:10:11.671340365"
           },
           "outcomeDispositionCode": {
             "type": "string"
@@ -3255,10 +3350,6 @@
             "format": "uuid"
           },
           "chargeUuid": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "lifetimeChargeUuid": {
             "type": "string",
             "format": "uuid"
           },
@@ -3406,7 +3497,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "17:06:48.841529485"
+            "example": "10:10:11.671340365"
           },
           "courtCode": {
             "type": "string"
@@ -3429,6 +3520,10 @@
       "CreatePeriodLength": {
         "type": "object",
         "properties": {
+          "periodLengthUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
           "years": {
             "type": "integer",
             "format": "int32"
@@ -3459,10 +3554,14 @@
               "OVERALL_SENTENCE_LENGTH",
               "UNSUPPORTED"
             ]
+          },
+          "prisonId": {
+            "type": "string"
           }
         },
         "required": [
           "periodOrder",
+          "prisonId",
           "type"
         ]
       },
@@ -3565,6 +3664,22 @@
           "courtCaseUuid"
         ]
       },
+      "LegacyPeriodLengthCreatedResponse": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sentenceTermNOMISId": {
+            "$ref": "#/components/schemas/NomisPeriodLengthId"
+          }
+        },
+        "required": [
+          "sentenceTermNOMISId",
+          "uuid"
+        ]
+      },
       "LegacySentenceCreatedResponse": {
         "type": "object",
         "properties": {
@@ -3579,13 +3694,25 @@
             "type": "string",
             "format": "uuid"
           },
+          "appearanceUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
           "courtCaseId": {
             "type": "string"
+          },
+          "createdPeriodLengths": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LegacyPeriodLengthCreatedResponse"
+            }
           }
         },
         "required": [
+          "appearanceUuid",
           "chargeLifetimeUuid",
           "courtCaseId",
+          "createdPeriodLengths",
           "lifetimeUuid",
           "prisonerId"
         ]
@@ -3716,8 +3843,8 @@
       "MigrationCreatePeriodLength": {
         "type": "object",
         "properties": {
-          "periodType": {
-            "type": "string"
+          "periodLengthId": {
+            "$ref": "#/components/schemas/NomisPeriodLengthId"
           },
           "periodYears": {
             "type": "integer",
@@ -3741,7 +3868,7 @@
         },
         "required": [
           "legacyData",
-          "periodType"
+          "periodLengthId"
         ]
       },
       "MigrationCreateSentence": {
@@ -3857,13 +3984,36 @@
             "items": {
               "$ref": "#/components/schemas/MigrationCreateSentenceResponse"
             }
+          },
+          "sentenceTerms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MigrationCreatePeriodLengthResponse"
+            }
           }
         },
         "required": [
           "appearances",
           "charges",
           "courtCaseUuid",
+          "sentenceTerms",
           "sentences"
+        ]
+      },
+      "MigrationCreatePeriodLengthResponse": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sentenceTermNOMISId": {
+            "$ref": "#/components/schemas/NomisPeriodLengthId"
+          }
+        },
+        "required": [
+          "sentenceTermNOMISId",
+          "uuid"
         ]
       },
       "MigrationCreateSentenceResponse": {
@@ -4045,10 +4195,15 @@
           },
           "legacyData": {
             "$ref": "#/components/schemas/PeriodLengthLegacyData"
+          },
+          "periodLengthUuid": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
           "periodLengthType",
+          "periodLengthUuid",
           "periodOrder"
         ]
       },
@@ -4258,9 +4413,14 @@
           },
           "sentenceTermCode": {
             "type": "string"
+          },
+          "periodLengthUuid": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "required": [
+          "periodLengthUuid",
           "sentenceTermCode"
         ]
       },
@@ -4278,6 +4438,10 @@
             "format": "uuid"
           },
           "lifetimeUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "appearanceUuid": {
             "type": "string",
             "format": "uuid"
           },
@@ -4313,6 +4477,7 @@
         },
         "required": [
           "active",
+          "appearanceUuid",
           "chargeLifetimeUuid",
           "courtCaseId",
           "lifetimeUuid",
@@ -4422,7 +4587,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "17:06:48.841529485"
+            "example": "10:10:11.671340365"
           },
           "charges": {
             "type": "array",
@@ -4453,7 +4618,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "17:06:48.841529485"
+            "example": "10:10:11.671340365"
           },
           "courtId": {
             "type": "string"
@@ -4551,10 +4716,6 @@
             "type": "string",
             "format": "uuid"
           },
-          "lifetimeUuid": {
-            "type": "string",
-            "format": "uuid"
-          },
           "offenceCode": {
             "type": "string"
           },
@@ -4581,7 +4742,6 @@
         },
         "required": [
           "chargeUuid",
-          "lifetimeUuid",
           "offenceCode"
         ]
       },
@@ -4775,7 +4935,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "17:06:48.841529485"
+            "example": "10:10:11.671340365"
           },
           "courtCode": {
             "type": "string"

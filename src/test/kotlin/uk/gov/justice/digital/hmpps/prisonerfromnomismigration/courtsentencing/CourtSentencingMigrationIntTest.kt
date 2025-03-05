@@ -33,13 +33,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseIdentifierResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventChargeResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenceResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenceResultCodeResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResultCodeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
@@ -51,7 +51,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApi
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 private const val OFFENDER_NO = "AN12345"
@@ -1016,18 +1015,19 @@ fun dpsCourtCaseCreateResponseWithTwoAppearancesAndTwoCharges(): MigrationCreate
     appearances = courtAppearancesIds,
     charges = courtChargesIds,
     sentences = emptyList(),
+    sentenceTerms = emptyList(),
   )
 }
 
-fun buildCaseIdentifierResponse(reference: String = "AB12345678"): CaseIdentifierResponse = CaseIdentifierResponse(type = "CASE/INFO#", reference = reference, createDateTime = "2020-01-01T00:00:00")
+fun buildCaseIdentifierResponse(reference: String = "AB12345678"): CaseIdentifierResponse = CaseIdentifierResponse(type = "CASE/INFO#", reference = reference, createDateTime = LocalDateTime.parse("2020-01-01T00:00:00"))
 
 fun buildCourtEventResponseCourtEventResponse(
   courtAppearanceId: Long = NOMIS_APPEARANCE_1_ID,
   offenderNo: String = OFFENDER_NO,
   courtCaseId: Long = NOMIS_CASE_ID,
   courtId: String = "DER",
-  eventDateTime: String = "2020-01-01T12:00:00",
-  nextEventDateTime: String = "2020-02-01T00:00:00",
+  eventDateTime: LocalDateTime = LocalDateTime.parse("2020-01-01T12:00:00"),
+  nextEventDateTime: LocalDateTime = LocalDateTime.parse("2020-02-01T00:00:00"),
   courtEventCharges: List<CourtEventChargeResponse> = listOf(
     CourtEventChargeResponse(
       eventId = NOMIS_APPEARANCE_1_ID,
@@ -1064,7 +1064,7 @@ fun buildCourtEventResponseCourtEventResponse(
   caseId = courtCaseId,
   courtId = courtId,
   courtEventCharges = courtEventCharges,
-  createdDateTime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+  createdDateTime = LocalDateTime.now(),
   createdByUsername = "Q1251T",
   courtEventType = CodeDescription("CRT", "Court Appearance"),
   outcomeReasonCode = OffenceResultCodeResponse(

@@ -14,16 +14,21 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateFine
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreatePeriodLength
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateSentence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationSentenceId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.PeriodLengthLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.SentenceLegacyData
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CaseIdentifierResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtCaseResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventChargeResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CourtEventResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderChargeResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceTermResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceTermResponse
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -31,13 +36,13 @@ import java.util.UUID
 fun CourtCaseResponse.toMigrationDpsCourtCase() = MigrationCreateCourtCase(
   prisonerId = this.offenderNo,
   appearances = this.courtEvents.map { ca ->
-    ca.toMigrationDpsCourtAppearance()
+    ca.toMigrationDpsCourtAppearance(this.sentences)
   },
   courtCaseLegacyData = CourtCaseLegacyData(
     caseReferences = this.caseInfoNumbers.map {
       CaseReferenceLegacyData(
         offenderCaseReference = it.reference,
-        updatedDate = LocalDateTime.parse(it.createDateTime),
+        updatedDate = LocalDateTime.parse(it.createDateTime.toString()),
       )
     },
   ),
@@ -57,7 +62,7 @@ fun CourtEventResponse.toDpsCourtAppearance(
 ) = LegacyCreateCourtAppearance(
   courtCode = this.courtId,
   courtCaseUuid = dpsCaseId,
-  appearanceDate = LocalDateTime.parse(this.eventDateTime).toLocalDate(),
+  appearanceDate = this.eventDateTime.toLocalDate(),
   appearanceTypeUuid = this.courtEventType.toDpsAppearanceTypeId(),
   legacyData =
   CourtAppearanceLegacyData(
@@ -68,14 +73,14 @@ fun CourtEventResponse.toDpsCourtAppearance(
     outcomeConvictionFlag = this.outcomeReasonCode?.conviction,
     outcomeDispositionCode = this.outcomeReasonCode?.dispositionCode,
     nomisOutcomeCode = this.outcomeReasonCode?.code,
-    nextEventDateTime = this.nextEventDateTime?.let { LocalDateTime.parse(this.nextEventDateTime) },
-    appearanceTime = LocalDateTime.parse(this.eventDateTime).toLocalTime().toString(),
+    nextEventDateTime = this.nextEventDateTime,
+    appearanceTime = this.eventDateTime.toLocalTime().toString(),
   ),
 )
 
-fun CourtEventResponse.toMigrationDpsCourtAppearance() = MigrationCreateCourtAppearance(
+fun CourtEventResponse.toMigrationDpsCourtAppearance(sentences: List<SentenceResponse>) = MigrationCreateCourtAppearance(
   courtCode = this.courtId,
-  appearanceDate = LocalDateTime.parse(this.eventDateTime).toLocalDate(),
+  appearanceDate = this.eventDateTime.toLocalDate(),
   appearanceTypeUuid = this.courtEventType.toDpsAppearanceTypeId(),
   legacyData =
   CourtAppearanceLegacyData(
@@ -86,10 +91,17 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance() = MigrationCreateCourtApp
     nomisOutcomeCode = this.outcomeReasonCode?.code,
     outcomeConvictionFlag = this.outcomeReasonCode?.conviction,
     outcomeDispositionCode = this.outcomeReasonCode?.dispositionCode,
-    nextEventDateTime = this.nextEventDateTime?.let { LocalDateTime.parse(this.nextEventDateTime) },
-    appearanceTime = LocalDateTime.parse(this.eventDateTime).toLocalTime().toString(),
+    nextEventDateTime = this.nextEventDateTime,
+    appearanceTime = this.eventDateTime.toLocalTime().toString(),
   ),
-  charges = this.courtEventCharges.map { charge -> charge.offenderCharge.toDpsMigrationCharge(chargeId = charge.offenderCharge.id) },
+  charges = this.courtEventCharges.map { charge ->
+    // find sentence where sentence.offenderCharges contains charge
+    val sentencesForAppearance = sentences.filter { sentence -> sentence.courtOrder?.eventId == this.id }
+    val dpsSentence =
+      sentencesForAppearance.find { sentence -> sentence.offenderCharges.any { it.id == charge.offenderCharge.id } }
+        ?.toDpsMigrationSentence()
+    charge.offenderCharge.toDpsMigrationCharge(chargeId = charge.offenderCharge.id, dpsSentence = dpsSentence)
+  },
 )
 
 fun OffenderChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharge(
@@ -118,7 +130,7 @@ fun CourtEventChargeResponse.toDpsCharge() = LegacyUpdateCharge(
   offenceEndDate = this.offenceEndDate,
 )
 
-fun OffenderChargeResponse.toDpsMigrationCharge(chargeId: Long) = MigrationCreateCharge(
+fun OffenderChargeResponse.toDpsMigrationCharge(chargeId: Long, dpsSentence: MigrationCreateSentence?) = MigrationCreateCharge(
   offenceCode = this.offence.offenceCode,
   offenceStartDate = this.offenceDate,
   legacyData =
@@ -130,6 +142,7 @@ fun OffenderChargeResponse.toDpsMigrationCharge(chargeId: Long) = MigrationCreat
   ),
   offenceEndDate = this.offenceEndDate,
   chargeNOMISId = chargeId.toString(),
+  sentence = dpsSentence,
 )
 
 fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsConsecUuid: String?) = LegacyCreateSentence(
@@ -139,27 +152,47 @@ fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsConsecUui
   // can be "OUT"
   prisonId = this.prisonId,
   legacyData = this.toSentenceLegacyData(),
-  periodLengths = this.sentenceTerms.map { it.toPeriodLegacyData() },
+  periodLengths = this.sentenceTerms.map { it.toPeriodLegacyData(this) },
   // TODO confirm what this is used for
   chargeNumber = this.lineSequence?.toString(),
   fine = this.fineAmount?.let { LegacyCreateFine(fineAmount = it) },
+  // TODO this adds a dependency on the sentence - how will this work?
   consecutiveToLifetimeUuid = dpsConsecUuid?.let { UUID.fromString(it) },
+)
+
+fun SentenceResponse.toDpsMigrationSentence() = MigrationCreateSentence(
+  // TODO around 10% of nomis sentences have > 1 charge and 27 have no charges, so we need to handle this.
+  active = this.status == "A",
+  legacyData = this.toSentenceLegacyData(),
+  periodLengths = this.sentenceTerms.map { it.toPeriodMigrationData(this) },
+  chargeNumber = this.lineSequence?.toString(),
+  fine = this.fineAmount?.let { MigrationCreateFine(fineAmount = it) },
+  consecutiveToSentenceId = this.consecSequence?.let {
+    MigrationSentenceId(
+      offenderBookingId = this.bookingId,
+      sequence = this.consecSequence,
+    )
+  },
+  sentenceId = MigrationSentenceId(offenderBookingId = this.bookingId, sequence = this.sentenceSeq.toInt()),
 )
 
 fun SentenceResponse.toSentenceLegacyData() = SentenceLegacyData(
   sentenceCalcType = this.calculationType.code,
   sentenceCategory = this.category.code,
   sentenceTypeDesc = this.calculationType.description,
-  postedDate = this.createdDateTime,
+  postedDate = this.createdDateTime.toString(),
 )
 
-fun SentenceTermResponse.toPeriodLegacyData() = LegacyCreatePeriodLength(
+fun SentenceTermResponse.toPeriodLegacyData(nomisSentence: SentenceResponse) = LegacyCreatePeriodLength(
   periodYears = this.years,
   periodMonths = this.months,
   periodDays = this.days,
   periodWeeks = this.weeks,
-  // TO BE REMOVED from the dto by DPS
-  periodType = "",
+  periodLengthId = NomisPeriodLengthId(
+    offenderBookingId = nomisSentence.bookingId,
+    sentenceSequence = nomisSentence.sentenceSeq.toInt(),
+    termSequence = this.termSequence.toInt(),
+  ),
   legacyData = PeriodLengthLegacyData(
     lifeSentence = this.lifeSentenceFlag,
     sentenceTermCode = this.sentenceTermType?.code,
@@ -167,7 +200,24 @@ fun SentenceTermResponse.toPeriodLegacyData() = LegacyCreatePeriodLength(
   ),
 )
 
-fun CaseIdentifierResponse.toDpsCaseReference() = CaseReferenceLegacyData(offenderCaseReference = this.reference, updatedDate = LocalDateTime.parse(this.createDateTime))
+fun SentenceTermResponse.toPeriodMigrationData(nomisSentence: SentenceResponse) = MigrationCreatePeriodLength(
+  periodYears = this.years,
+  periodMonths = this.months,
+  periodDays = this.days,
+  periodWeeks = this.weeks,
+  periodLengthId = NomisPeriodLengthId(
+    offenderBookingId = nomisSentence.bookingId,
+    sentenceSequence = nomisSentence.sentenceSeq.toInt(),
+    termSequence = this.termSequence.toInt(),
+  ),
+  legacyData = PeriodLengthLegacyData(
+    lifeSentence = this.lifeSentenceFlag,
+    sentenceTermCode = this.sentenceTermType?.code,
+    sentenceTermDescription = this.sentenceTermType?.description,
+  ),
+)
+
+fun CaseIdentifierResponse.toDpsCaseReference() = CaseReferenceLegacyData(offenderCaseReference = this.reference, updatedDate = this.createDateTime)
 
 const val VIDEO_LINK_DPS_APPEARANCE_TYPE_UUID = "1da09b6e-55cb-4838-a157-ee6944f2094c"
 const val COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID = "63e8fce0-033c-46ad-9edf-391b802d547a"
