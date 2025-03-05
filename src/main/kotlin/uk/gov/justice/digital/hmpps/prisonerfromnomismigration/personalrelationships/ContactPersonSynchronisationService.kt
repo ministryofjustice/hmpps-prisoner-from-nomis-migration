@@ -693,11 +693,30 @@ class ContactPersonSynchronisationService(
 
   suspend fun personEmploymentUpdated(event: PersonEmploymentEvent) {
     val telemetry =
-      mapOf("personId" to event.personId, "employmentSequence" to event.employmentSequence)
-    telemetryClient.trackEvent(
-      "contactperson-person-employment-synchronisation-updated-success",
-      telemetry,
-    )
+      telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisSequenceNumber" to event.employmentSequence)
+
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent(
+        "contactperson-employment-synchronisation-updated-skipped",
+        telemetry,
+      )
+    } else {
+      track("contactperson-employment-synchronisation-updated", telemetry) {
+        val dpsContactEmploymentId = mappingApiService.getByNomisEmploymentIds(
+          nomisPersonId = event.personId,
+          nomisSequenceNumber = event.employmentSequence,
+        ).dpsId.also {
+          telemetry["dpsContactEmploymentId"] = it
+        }
+        val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
+        val nomisEmployment = nomisPerson.employments.find { it.sequence == event.employmentSequence }
+          ?: throw IllegalStateException("Employment ${event.employmentSequence} for person ${event.personId} not found in NOMIS")
+        dpsApiService.updateContactEmployment(
+          dpsContactEmploymentId.toLong(),
+          nomisEmployment.toDpsUpdateContactEmploymentRequest(nomisPersonId = event.personId),
+        )
+      }
+    }
   }
 
   suspend fun personEmploymentDeleted(event: PersonEmploymentEvent) {
