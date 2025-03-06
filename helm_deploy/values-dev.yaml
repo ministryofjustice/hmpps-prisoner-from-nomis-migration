@@ -27,6 +27,7 @@ generic-service:
     API_BASE_URL_PERSONAL_RELATIONSHIPS: https://personal-relationships-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_ORGANISATIONS: https://organisations-api-dev.hmpps.service.justice.gov.uk
     FEATURE_EVENT_PERSONALRELATIONSHIPS_OFFENDER_PHYSICAL_DETAILS-CHANGED: false
+    FEATURE_EVENT_PERSONALRELATIONSHIPS_PRISON-OFFENDER-EVENTS_PRISONER_BOOKING_MOVED: false
 
   scheduledDowntime:
     enabled: true
