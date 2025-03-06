@@ -109,8 +109,6 @@ hmpps.sqs:
   queues:
     migrationcasenotes:
       dlqMaxReceiveCount: 2
-    migrationprisonperson:
-      dlqMaxReceiveCount: 1
     eventsentencing:
       dlqMaxReceiveCount: 2
     eventalerts:
@@ -121,8 +119,6 @@ hmpps.sqs:
       dlqMaxReceiveCount: 2
     eventcourtsentencing:
       dlqMaxReceiveCount: 2
-    eventprisonperson:
-      dlqMaxReceiveCount: 1
     eventcsip:
       dlqMaxReceiveCount: 2
     eventpersonalrelationships:

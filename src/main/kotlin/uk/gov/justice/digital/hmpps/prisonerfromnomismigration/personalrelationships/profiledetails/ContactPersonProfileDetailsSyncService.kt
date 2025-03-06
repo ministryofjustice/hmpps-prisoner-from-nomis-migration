@@ -12,8 +12,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.P
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ProfileDetailsChangedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerDomesticStatusRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerNumberOfChildrenRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.synchronisationUser
 import java.time.LocalDateTime
+
+internal val synchronisationUser = "DPS_SYNCHRONISATION"
 
 enum class ContactPersonProfileType(val telemetryName: String) {
   MARITAL("domestic-status"),

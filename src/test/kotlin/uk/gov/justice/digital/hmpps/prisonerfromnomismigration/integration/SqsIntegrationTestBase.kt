@@ -34,7 +34,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.Inciden
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonperson.PrisonPersonDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ACTIVITIES_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ALERTS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ALLOCATIONS_QUEUE_ID
@@ -50,7 +49,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCIDENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.LOCATIONS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ORGANISATIONS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.PERSONALRELATIONSHIPS_SYNC_QUEUE_ID
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.PRISONPERSON_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_SYNC_QUEUE_ID
@@ -82,7 +80,6 @@ import java.util.concurrent.TimeUnit
   AlertsDpsApiExtension::class,
   CaseNotesApiExtension::class,
   CourtSentencingDpsApiExtension::class,
-  PrisonPersonDpsApiExtension::class,
   ContactPersonDpsApiExtension::class,
   OrganisationsDpsApiExtension::class,
   NomisSyncApiExtension::class,
@@ -166,19 +163,9 @@ class SqsIntegrationTestBase : TestBase() {
   internal val courtSentencingMigrationDlqUrl by lazy { courtSentencingMigrationQueue.dlqUrl as String }
   internal val awsSqsCourtSentencingMigrationDlqClient by lazy { courtSentencingMigrationQueue.sqsDlqClient }
 
-  internal val prisonPersonOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId("eventprisonperson") as HmppsQueue }
-  internal val prisonPersonQueueOffenderEventsUrl by lazy { prisonPersonOffenderEventsQueue.queueUrl }
-  internal val prisonPersonQueueOffenderEventsDlqUrl by lazy { prisonPersonOffenderEventsQueue.dlqUrl as String }
-  internal val awsSqsPrisonPersonOffenderEventsClient by lazy { prisonPersonOffenderEventsQueue.sqsClient }
-  internal val awsSqsPrisonPersonOffenderEventDlqClient by lazy { prisonPersonOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
-
   internal val caseNotesOffenderMigrationQueue by lazy { hmppsQueueService.findByQueueId(CASENOTES_QUEUE_ID) as HmppsQueue }
   internal val caseNotesQueueOffenderMigrationDlqUrl by lazy { caseNotesOffenderMigrationQueue.dlqUrl as String }
   internal val awsSqsCaseNotesOffenderMigrationDlqClient by lazy { caseNotesOffenderMigrationQueue.sqsDlqClient as SqsAsyncClient }
-
-  internal val prisonPersonMigrationQueue by lazy { hmppsQueueService.findByQueueId(PRISONPERSON_QUEUE_ID) as HmppsQueue }
-  internal val prisonPersonMigrationDlqUrl by lazy { prisonPersonMigrationQueue.dlqUrl as String }
-  internal val prisonPersonMigrationDlqClient by lazy { prisonPersonMigrationQueue.sqsDlqClient as SqsAsyncClient }
 
   internal val personalRelationshipsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(PERSONALRELATIONSHIPS_SYNC_QUEUE_ID) as HmppsQueue }
   internal val awsSqsPersonalRelationshipsOffenderEventsClient by lazy { personalRelationshipsOffenderEventsQueue.sqsClient }
@@ -203,8 +190,6 @@ class SqsIntegrationTestBase : TestBase() {
       alertsOffenderEventsQueue,
       caseNotesOffenderEventsQueue,
       courtSentencingOffenderEventsQueue,
-      prisonPersonOffenderEventsQueue,
-      prisonPersonMigrationQueue,
       personalRelationshipsOffenderEventsQueue,
       organisationsOffenderEventsQueue,
     )
