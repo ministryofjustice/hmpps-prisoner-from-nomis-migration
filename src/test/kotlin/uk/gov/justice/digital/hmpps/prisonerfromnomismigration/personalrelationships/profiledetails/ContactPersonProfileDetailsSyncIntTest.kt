@@ -31,9 +31,9 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.MediaType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ProfileDetailsChangedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerDomesticStatusResponse
@@ -70,7 +70,7 @@ class ContactPersonProfileDetailsSyncIntTest(
                   profileDetails(
                     type = "MARITAL",
                     code = "M",
-                    createDateTime = "2024-09-04T12:34:56",
+                    createDateTime = LocalDateTime.parse("2024-09-04T12:34:56"),
                     createdBy = "A_USER",
                     modifiedDateTime = null,
                     modifiedBy = null,
@@ -118,7 +118,7 @@ class ContactPersonProfileDetailsSyncIntTest(
                   profileDetails(
                     type = "CHILD",
                     code = "2",
-                    createDateTime = "2024-09-04T12:34:56",
+                    createDateTime = LocalDateTime.parse("2024-09-04T12:34:56"),
                     createdBy = "A_USER",
                     modifiedDateTime = null,
                     modifiedBy = null,
@@ -163,7 +163,7 @@ class ContactPersonProfileDetailsSyncIntTest(
                   profileDetails(
                     type = "MARITAL",
                     code = null,
-                    modifiedDateTime = "2024-09-05T12:34:56",
+                    modifiedDateTime = LocalDateTime.parse("2024-09-05T12:34:56"),
                     modifiedBy = "ANOTHER_USER",
                   ),
                 ),
@@ -364,7 +364,7 @@ class ContactPersonProfileDetailsSyncIntTest(
                   profileDetails(
                     type = "MARITAL",
                     code = "M",
-                    createDateTime = "2024-09-04T12:34:56",
+                    createDateTime = LocalDateTime.parse("2024-09-04T12:34:56"),
                     createdBy = "A_USER",
                     modifiedDateTime = null,
                     modifiedBy = null,
@@ -525,7 +525,7 @@ class ContactPersonProfileDetailsSyncIntTest(
 
   private fun booking(
     bookingId: Long = 12345,
-    startDateTime: String = "2024-09-03T12:34:56",
+    startDateTime: LocalDateTime = LocalDateTime.parse("2024-09-03T12:34:56"),
     latestBooking: Boolean = true,
     profileDetails: List<ProfileDetailsResponse> = listOf(profileDetails()),
   ) = BookingProfileDetailsResponse(
@@ -538,9 +538,9 @@ class ContactPersonProfileDetailsSyncIntTest(
   private fun profileDetails(
     type: String = "MARITAL",
     code: String? = "M",
-    createDateTime: String = "2024-09-04T12:34:56",
+    createDateTime: LocalDateTime = LocalDateTime.parse("2024-09-04T12:34:56"),
     createdBy: String = "A_USER",
-    modifiedDateTime: String? = null,
+    modifiedDateTime: LocalDateTime? = null,
     modifiedBy: String? = null,
     auditModuleName: String = "NOMIS",
   ) = ProfileDetailsResponse(

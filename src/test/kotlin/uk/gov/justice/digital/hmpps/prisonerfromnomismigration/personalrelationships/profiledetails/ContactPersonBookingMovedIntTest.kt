@@ -23,9 +23,9 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerDomesticStatusResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerNumberOfChildrenResponse
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
@@ -73,7 +73,7 @@ class ContactPersonBookingMovedIntTest(
           bookingResponse(
             bookingId = 1,
             latestBooking = true,
-            startDateTime = "$yesterday",
+            startDateTime = yesterday,
             profileDetailsResponse("MARITAL", "M"),
           ),
         )
@@ -82,15 +82,15 @@ class ContactPersonBookingMovedIntTest(
           bookingResponse(
             bookingId = 2,
             latestBooking = false,
-            startDateTime = "$yesterday",
+            startDateTime = yesterday,
             profileDetailsResponse("MARITAL", "C"),
           ),
           bookingResponse(
             bookingId = movedBookingId,
             latestBooking = true,
-            startDateTime = "$today",
+            startDateTime = today,
             // The domestic status was updated after the booking started so should be sync'd to DPS
-            profileDetailsResponse("MARITAL", "D", modifiedTime = "$now"),
+            profileDetailsResponse("MARITAL", "D", modifiedTime = now),
           ),
         )
 
@@ -148,7 +148,7 @@ class ContactPersonBookingMovedIntTest(
           bookingResponse(
             bookingId = 1,
             latestBooking = true,
-            startDateTime = "$yesterday",
+            startDateTime = yesterday,
             profileDetailsResponse("MARITAL", "M"),
           ),
         )
@@ -157,15 +157,15 @@ class ContactPersonBookingMovedIntTest(
           bookingResponse(
             bookingId = 2,
             latestBooking = false,
-            startDateTime = "$yesterday",
+            startDateTime = yesterday,
             profileDetailsResponse("MARITAL", "C"),
           ),
           bookingResponse(
             bookingId = movedBookingId,
             latestBooking = true,
-            startDateTime = "$today",
+            startDateTime = today,
             // The modified time is before the booking start time so was not new
-            profileDetailsResponse("MARITAL", "D", modifiedTime = "$yesterday"),
+            profileDetailsResponse("MARITAL", "D", modifiedTime = yesterday),
           ),
         )
 
@@ -219,7 +219,7 @@ class ContactPersonBookingMovedIntTest(
           bookingResponse(
             bookingId = 1,
             latestBooking = true,
-            startDateTime = "$yesterday",
+            startDateTime = yesterday,
             profileDetailsResponse("MARITAL", "M"),
             profileDetailsResponse("CHILD", "3"),
           ),
@@ -229,18 +229,18 @@ class ContactPersonBookingMovedIntTest(
           bookingResponse(
             bookingId = 2,
             latestBooking = false,
-            startDateTime = "$yesterday",
+            startDateTime = yesterday,
             profileDetailsResponse("MARITAL", "C"),
             profileDetailsResponse("CHILD", null),
           ),
           bookingResponse(
             bookingId = movedBookingId,
             latestBooking = true,
-            startDateTime = "$today",
+            startDateTime = today,
             // The domestic status was not updated so won't be sync'd to DPS
-            profileDetailsResponse("MARITAL", "C", modifiedTime = "$yesterday"),
+            profileDetailsResponse("MARITAL", "C", modifiedTime = yesterday),
             // The number of children was updated after the booking started so should be sync'd to DPS
-            profileDetailsResponse("CHILD", "4", modifiedTime = "$now"),
+            profileDetailsResponse("CHILD", "4", modifiedTime = now),
           ),
         )
 
@@ -493,7 +493,7 @@ class ContactPersonBookingMovedIntTest(
   fun bookingResponse(
     bookingId: Long = 1,
     latestBooking: Boolean = true,
-    startDateTime: String = "2024-01-03T12:34:56",
+    startDateTime: LocalDateTime = LocalDateTime.parse("2024-01-03T12:34:56"),
     vararg profileDetails: ProfileDetailsResponse = arrayOf(profileDetailsResponse("MARITAL", "M")),
   ) = BookingProfileDetailsResponse(
     bookingId = bookingId,
@@ -502,10 +502,10 @@ class ContactPersonBookingMovedIntTest(
     profileDetails = profileDetails.asList(),
   )
 
-  fun profileDetailsResponse(profileType: String, code: String?, modifiedTime: String = "2024-02-03T12:34:56") = ProfileDetailsResponse(
+  fun profileDetailsResponse(profileType: String, code: String?, modifiedTime: LocalDateTime = LocalDateTime.parse("2024-02-03T12:34:56")) = ProfileDetailsResponse(
     type = profileType,
     code = code,
-    createDateTime = "2024-01-03T12:34:56",
+    createDateTime = LocalDateTime.parse("2024-01-03T12:34:56"),
     createdBy = "A_USER",
     modifiedDateTime = modifiedTime,
     modifiedBy = "ANOTHER_USER",

@@ -10,9 +10,9 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDateTime
 
@@ -27,24 +27,24 @@ class ContactPersonProfileDetailsNomisApiMockServer(private val objectMapper: Ob
       bookings = listOf(
         BookingProfileDetailsResponse(
           bookingId = 1,
-          startDateTime = "2024-02-03T12:34:56",
+          startDateTime = LocalDateTime.parse("2024-02-03T12:34:56"),
           latestBooking = true,
           profileDetails = listOf(
             ProfileDetailsResponse(
               type = "MARITAL",
               code = "M",
-              createDateTime = LocalDateTime.now().toString(),
+              createDateTime = LocalDateTime.now(),
               createdBy = "A_USER",
-              modifiedDateTime = LocalDateTime.now().toString(),
+              modifiedDateTime = LocalDateTime.now(),
               modifiedBy = "ANOTHER_USER",
               auditModuleName = "NOMIS",
             ),
             ProfileDetailsResponse(
               type = "CHILD",
               code = "3",
-              createDateTime = LocalDateTime.now().toString(),
+              createDateTime = LocalDateTime.now(),
               createdBy = "A_USER",
-              modifiedDateTime = LocalDateTime.now().toString(),
+              modifiedDateTime = LocalDateTime.now(),
               modifiedBy = "ANOTHER_USER",
               auditModuleName = "NOMIS",
             ),
