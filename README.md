@@ -69,7 +69,7 @@ configuration two tasks are created:
 
 So, for example, running
 ```shell
-./gradlew clean writeNonAssociationsJson compileKotlin compileTestKotlin
+./gradlew writeNonAssociationsJson compileKotlin compileTestKotlin
 ```
 
 Will download the non associations Open API specification from dev, generate the model and then compile the code.

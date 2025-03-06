@@ -109,7 +109,7 @@ val models = listOf(
   ),
   ModelConfiguration(
     name = "court-sentencing",
-    packageName = "court.sentencing",
+    packageName = "courtsentencing",
     url = "https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
   ),
   ModelConfiguration(
@@ -172,7 +172,7 @@ models.forEach {
     description = "Generate model from API JSON definition for ${it.name}"
     generatorName.set("kotlin")
     skipValidateSpec.set(true)
-    inputSpec.set("openapi-specs/${it.input}")
+    inputSpec.set(it.input)
     outputDir.set("$buildDirectory/generated/${it.output}")
     modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.${it.packageName}.model")
     apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.${it.packageName}.api")
