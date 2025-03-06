@@ -6,8 +6,9 @@ import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.StringValuePattern
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -16,6 +17,8 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatus.BAD_REQUEST
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -25,6 +28,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.P
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerDomesticStatusResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerNumberOfChildrenResponse
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlin.collections.component1
@@ -45,21 +49,22 @@ class ContactPersonBookingMovedIntTest(
   private val yesterday = today.minusDays(1)
 
   @Nested
-  @DisplayName("prison-offender-events.prisoner.booking.moved")
+  @DisplayName("prison-offender-events.prisoner.booking.moved event")
   inner class BookingMoved {
+
+    @BeforeEach
+    fun setUp() {
+      dpsApi.stubSyncDomesticStatus(fromOffenderNo, SyncPrisonerDomesticStatusResponse(123, true))
+      dpsApi.stubSyncDomesticStatus(toOffenderNo, SyncPrisonerDomesticStatusResponse(345, true))
+      dpsApi.stubSyncNumberOfChildren(fromOffenderNo, SyncPrisonerNumberOfChildrenResponse(567, true))
+      dpsApi.stubSyncNumberOfChildren(toOffenderNo, SyncPrisonerNumberOfChildrenResponse(789, true))
+
+      nomisSyncApi.stubSyncProfileDetails(toOffenderNo, "MARITAL")
+      nomisSyncApi.stubSyncProfileDetails(toOffenderNo, "CHILD")
+    }
+
     @Nested
     inner class HappyPath {
-      @BeforeEach
-      fun setUp() {
-        dpsApi.stubSyncDomesticStatus(fromOffenderNo, SyncPrisonerDomesticStatusResponse(123, true))
-        dpsApi.stubSyncDomesticStatus(toOffenderNo, SyncPrisonerDomesticStatusResponse(345, true))
-        dpsApi.stubSyncNumberOfChildren(fromOffenderNo, SyncPrisonerNumberOfChildrenResponse(567, true))
-        dpsApi.stubSyncNumberOfChildren(toOffenderNo, SyncPrisonerNumberOfChildrenResponse(789, true))
-
-        nomisSyncApi.stubSyncProfileDetails(toOffenderNo, "MARITAL")
-        nomisSyncApi.stubSyncProfileDetails(toOffenderNo, "CHILD")
-      }
-
       @Test
       fun `domestic status changed in NOMIS`() {
         // stub profile details returned from NOMIS
@@ -305,18 +310,135 @@ class ContactPersonBookingMovedIntTest(
     @Nested
     inner class Errors {
       @Test
-      @Disabled("TODO")
       fun `Call to get NOMIS data fails`() {
+        // error when getting NOMIS details
+        nomisApi.stubGetProfileDetails(fromOffenderNo, HttpStatus.INTERNAL_SERVER_ERROR)
+
+        // Send the event
+        sendBookingMovedEvent().also {
+          waitForDlqMessage()
+        }
+
+        // there should be no DPS updates
+        dpsApi.verify(
+          prisonerNumber = fromOffenderNo,
+          type = "ignored",
+          profileType = "domestic-status",
+        )
+        dpsApi.verify(
+          prisonerNumber = toOffenderNo,
+          type = "ignored",
+          profileType = "domestic-status",
+        )
+
+        // there should be no NOMIS updates
+        nomisSyncApi.verify(
+          count = 0,
+          putRequestedFor(urlPathEqualTo("/contactperson/sync/profile-details/$toOffenderNo/MARITAL")),
+        )
+
+        // check telemetry
+        verify(telemetryClient).trackEvent(
+          eq("contact-person-booking-moved-error"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "bookingId" to movedBookingId.toString(),
+                "toOffenderNo" to toOffenderNo,
+                "fromOffenderNo" to fromOffenderNo,
+                "error" to "500 Internal Server Error from GET http://localhost:8081/prisoners/$fromOffenderNo/profile-details",
+              ),
+            )
+          },
+          isNull(),
+        )
       }
 
       @Test
-      @Disabled("TODO")
       fun `Call to put DPS data fails`() {
+        // stub profile details returned from NOMIS
+        stubGetProfileDetails(fromOffenderNo, bookingResponse())
+        stubGetProfileDetails(toOffenderNo, bookingResponse())
+
+        // stub error from DPS update
+        dpsApi.stubSyncDomesticStatus(fromOffenderNo, BAD_REQUEST)
+
+        // there should be no DPS updates
+        dpsApi.verify(
+          prisonerNumber = fromOffenderNo,
+          type = "ignored",
+          profileType = "domestic-status",
+        )
+        dpsApi.verify(
+          prisonerNumber = toOffenderNo,
+          type = "ignored",
+          profileType = "domestic-status",
+        )
+
+        // Send the event
+        sendBookingMovedEvent().also {
+          waitForDlqMessage()
+        }
+
+        // check telemetry
+        verify(telemetryClient).trackEvent(
+          eq("contact-person-booking-moved-error"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "bookingId" to movedBookingId.toString(),
+                "toOffenderNo" to toOffenderNo,
+                "fromOffenderNo" to fromOffenderNo,
+                "error" to "400 Bad Request from PUT http://localhost:8097/sync/$fromOffenderNo/domestic-status",
+              ),
+            )
+          },
+          isNull(),
+        )
       }
 
       @Test
-      @Disabled("TODO")
       fun `Call to sync back to NOMIS fails`() {
+        // stub profile details returned from NOMIS
+        stubGetProfileDetails(fromOffenderNo, bookingResponse())
+        stubGetProfileDetails(toOffenderNo, bookingResponse())
+
+        // stub error when calling sync service to sync back to NOMIS
+        nomisSyncApi.stubSyncProfileDetails(toOffenderNo, "MARITAL", BAD_REQUEST)
+
+        // Send the event
+        sendBookingMovedEvent().also {
+          waitForDlqMessage()
+        }
+
+        // DPS should have been updated
+        dpsApi.verify(
+          prisonerNumber = fromOffenderNo,
+          type = "updated",
+          profileType = "domestic-status",
+        )
+        dpsApi.verify(
+          prisonerNumber = toOffenderNo,
+          type = "updated",
+          profileType = "domestic-status",
+        )
+
+        // check telemetry
+        verify(telemetryClient).trackEvent(
+          eq("contact-person-booking-moved-error"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "bookingId" to movedBookingId.toString(),
+                "toOffenderNo" to toOffenderNo,
+                "fromOffenderNo" to fromOffenderNo,
+                "syncToDps" to "B1234BB-MARITAL,A1234AA-MARITAL",
+                "error" to "400 Bad Request from PUT http://localhost:8098/contactperson/sync/profile-details/$toOffenderNo/MARITAL",
+              ),
+            )
+          },
+          isNull(),
+        )
       }
     }
   }
@@ -380,7 +502,7 @@ class ContactPersonBookingMovedIntTest(
     profileDetails = profileDetails.asList(),
   )
 
-  fun profileDetailsResponse(profileType: String, code: String?, modifiedTime: String = "2024-01-03T12:34:56") = ProfileDetailsResponse(
+  fun profileDetailsResponse(profileType: String, code: String?, modifiedTime: String = "2024-02-03T12:34:56") = ProfileDetailsResponse(
     type = profileType,
     code = code,
     createDateTime = "2024-01-03T12:34:56",
@@ -388,4 +510,12 @@ class ContactPersonBookingMovedIntTest(
     modifiedDateTime = modifiedTime,
     modifiedBy = "ANOTHER_USER",
   )
+
+  private fun waitForDlqMessage() = await untilAsserted {
+    assertThat(
+      awsSqsPersonalRelationshipsOffenderEventsDlqClient.countAllMessagesOnQueue(
+        personalRelationshipsQueueOffenderEventsDlqUrl,
+      ).get(),
+    ).isEqualTo(1)
+  }
 }

@@ -40,4 +40,5 @@ class ContactPersonNomisSyncApiMockServer {
   }
 
   fun verify(pattern: RequestPatternBuilder) = nomisSyncApi.verify(pattern)
+  fun verify(count: Int, pattern: RequestPatternBuilder) = nomisSyncApi.verify(count, pattern)
 }
