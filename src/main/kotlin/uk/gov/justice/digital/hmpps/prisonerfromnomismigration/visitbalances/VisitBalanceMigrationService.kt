@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitorders
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitorders
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
@@ -12,8 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerMigrationDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitorders.VisitBalanceDpsApiExtension.Companion.dpsVisitBalanceServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitorders.VisitBalanceDpsApiMockServer.Companion.visitBalanceMigrationDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiExtension.Companion.dpsVisitBalanceServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiMockServer.Companion.visitBalanceMigrationDto
 import java.time.LocalDate
 
 @SpringAPIServiceTest
