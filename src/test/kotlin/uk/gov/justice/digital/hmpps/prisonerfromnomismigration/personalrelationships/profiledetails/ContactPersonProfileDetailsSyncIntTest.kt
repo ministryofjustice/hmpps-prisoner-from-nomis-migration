@@ -155,6 +155,7 @@ class ContactPersonProfileDetailsSyncIntTest(
       fun `should sync a null value`() = runTest {
         nomisApi.stubGetProfileDetails(
           offenderNo = "A1234AA",
+          profileTypes = listOf("MARITAL"),
           response = nomisResponse(
             bookings = listOf(
               booking(
@@ -189,6 +190,7 @@ class ContactPersonProfileDetailsSyncIntTest(
       @Test
       fun `should ignore a null value that has just been created`() = runTest {
         nomisApi.stubGetProfileDetails(
+          profileTypes = listOf("MARITAL"),
           response = nomisResponse(
             bookings = listOf(
               booking(
@@ -217,6 +219,7 @@ class ContactPersonProfileDetailsSyncIntTest(
       @Test
       fun `should ignore an update created by the synchronisation service`() = runTest {
         nomisApi.stubGetProfileDetails(
+          profileTypes = listOf("MARITAL"),
           response = nomisResponse(
             bookings = listOf(
               booking(
@@ -242,6 +245,7 @@ class ContactPersonProfileDetailsSyncIntTest(
       @Test
       fun `should ignore a historical booking`() = runTest {
         nomisApi.stubGetProfileDetails(
+          profileTypes = listOf("MARITAL"),
           response = nomisResponse(
             bookings = listOf(
               booking(
@@ -268,6 +272,7 @@ class ContactPersonProfileDetailsSyncIntTest(
       @Test
       fun `should only sync the profile type requested`() = runTest {
         nomisApi.stubGetProfileDetails(
+          profileTypes = listOf("MARITAL"),
           response = nomisResponse(
             bookings = listOf(
               booking(
@@ -329,7 +334,7 @@ class ContactPersonProfileDetailsSyncIntTest(
 
       @Test
       fun `should handle failed DPS API call`() = runTest {
-        nomisApi.stubGetProfileDetails("A1234AA", response = nomisResponse(offenderNo = "A1234AA"))
+        nomisApi.stubGetProfileDetails("A1234AA", profileTypes = listOf("MARITAL"), response = nomisResponse(offenderNo = "A1234AA"))
         dpsApi.stubSyncDomesticStatus(status = INTERNAL_SERVER_ERROR)
 
         sendProfileDetailsChangedEvent().also { waitForDlqMessage() }

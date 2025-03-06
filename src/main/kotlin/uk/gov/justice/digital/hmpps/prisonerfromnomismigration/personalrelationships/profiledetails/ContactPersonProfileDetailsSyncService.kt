@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.BookingProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ProfileDetailsChangedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerDomesticStatusRequest
@@ -17,6 +18,11 @@ import java.time.LocalDateTime
 enum class ContactPersonProfileType(val telemetryName: String) {
   MARITAL("domestic-status"),
   CHILD("number-of-children"),
+  ;
+
+  companion object {
+    fun all() = entries.map { it.name }
+  }
 }
 
 @Service
@@ -33,12 +39,17 @@ class ContactPersonProfileDetailsSyncService(
       }
   }
 
-  suspend fun profileDetailsChanged(offenderNo: String, bookingId: Long? = null, profileType: ContactPersonProfileType) {
+  suspend fun profileDetailsChanged(
+    offenderNo: String,
+    bookingId: Long? = null,
+    profileType: ContactPersonProfileType,
+    nomisResponse: PrisonerProfileDetailsResponse? = null,
+  ) {
     val telemetry = telemetryOf("offenderNo" to offenderNo)
     bookingId?.run { telemetry["bookingId"] = bookingId.toString() }
 
     track("contact-person-${profileType.telemetryName}-synchronisation", telemetry) {
-      val nomisResponse = nomisApi.getProfileDetails(offenderNo, listOf(profileType.name), bookingId)
+      val nomisResponse = nomisResponse ?: nomisApi.getProfileDetails(offenderNo, listOf(profileType.name), bookingId)
 
       val booking = findBooking(bookingId, nomisResponse.bookings)
       bookingId ?: run { telemetry["bookingId"] = booking.bookingId.toString() }
@@ -100,6 +111,7 @@ class ContactPersonProfileDetailsSyncService(
   } else {
     null
   }
+
   private fun ProfileDetailsResponse.lastModified(): Pair<LocalDateTime, String> = (modifiedDateTime ?: createDateTime).toLocalDateTime() to (modifiedBy ?: createdBy)
 
   private fun String.toLocalDateTime() = LocalDateTime.parse(this)
