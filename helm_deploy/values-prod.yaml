@@ -16,6 +16,7 @@ generic-service:
     API_BASE_URL_CORE_PERSON: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
     API_BASE_URL_CSIP: https://csip-api.hmpps.service.justice.gov.uk
     API_BASE_URL_VISITS: https://visit-scheduler.prison.service.justice.gov.uk
+    API_BASE_URL_VISIT_BALANCE: https://hmpps-visit-allocation-api.prison.service.justice.gov.uk
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk
     API_BASE_URL_SENTENCING: https://adjustments-api.hmpps.service.justice.gov.uk
     API_BASE_URL_ACTIVITIES: https://activities-api.prison.service.justice.gov.uk
@@ -136,6 +137,6 @@ generic-prometheus-alerts:
     coreperson:
       - "syscon-devs-prod-migration_coreperson_queue"
       - "syscon-devs-prod-migration_coreperson_dlq"
-    visitorders:
-      - "syscon-devs-prod-migration_visitorders_queue"
-      - "syscon-devs-prod-migration_visitorders_dlq"
+    visitbalance:
+      - "syscon-devs-prod-migration_visitbalance_queue"
+      - "syscon-devs-prod-migration_visitbalance_dlq"

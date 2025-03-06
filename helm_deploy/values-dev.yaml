@@ -16,6 +16,7 @@ generic-service:
     API_BASE_URL_CORE_PERSON: https://prisoner-nomis-migration-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_CSIP: https://csip-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_VISITS: https://visit-scheduler-dev.prison.service.justice.gov.uk
+    API_BASE_URL_VISIT_BALANCE: https://hmpps-visit-allocation-api-dev.prison.service.justice.gov.uk
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_SENTENCING: https://adjustments-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_ACTIVITIES: https://activities-api-dev.prison.service.justice.gov.uk
@@ -104,9 +105,9 @@ generic-prometheus-alerts:
     coreperson:
       - "syscon-devs-dev-migration_coreperson_queue"
       - "syscon-devs-dev-migration_coreperson_dlq"
-    visitorders:
-      - "syscon-devs-dev-migration_visitorders_queue"
-      - "syscon-devs-dev-migration_visitorders_dlq"
+    visitbalance:
+      - "syscon-devs-dev-migration_visitbalance_queue"
+      - "syscon-devs-dev-migration_visitbalance_dlq"
 
 cron:
   retry_dlqs_schedule: "*/10 7-20 * * 1-5"
