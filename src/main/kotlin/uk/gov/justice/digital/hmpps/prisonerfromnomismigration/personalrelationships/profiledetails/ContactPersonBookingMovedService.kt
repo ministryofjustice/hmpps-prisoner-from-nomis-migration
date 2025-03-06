@@ -40,25 +40,29 @@ class ContactPersonBookingMovedService(
     telemetry: MutableMap<String, String>,
     mustHaveChanged: Boolean = false,
   ) {
-    nomisApiService.getProfileDetails(offenderNo, listOf("MARITAL"))
-      .bookings.firstOrNull { it.latestBooking }
-      ?.also { booking ->
-        booking.profileDetails.forEach { profileDetail ->
-          if (!mustHaveChanged || (profileDetail.lastModifiedDateTime() > booking.startDateTime)) {
-            val profileType = ContactPersonProfileType.valueOf(profileDetail.type)
-            syncService.profileDetailsChanged(
-              offenderNo = offenderNo,
-              profileType = ContactPersonProfileType.valueOf(profileDetail.type),
-            )
-              .also { telemetry.addToTelemetry("syncToDps", "$offenderNo-$profileType") }
+    nomisApiService.getProfileDetails(offenderNo, ContactPersonProfileType.all()).also { nomisResponse ->
+      nomisResponse.bookings.firstOrNull { it.latestBooking }
+        ?.also { booking ->
+          booking.profileDetails.forEach { profileDetail ->
+            if (!mustHaveChanged || (profileDetail.lastModifiedDateTime() > booking.startDateTime)) {
+              val profileType = ContactPersonProfileType.valueOf(profileDetail.type)
+              syncService.profileDetailsChanged(
+                offenderNo = offenderNo,
+                profileType = ContactPersonProfileType.valueOf(profileDetail.type),
+                nomisResponse = nomisResponse,
+              )
+                .also { telemetry.addToTelemetry("syncToDps", "$offenderNo-$profileType") }
+            }
           }
         }
-      }
+    }
   }
 
   suspend fun syncOffenderToNomis(offenderNo: String, telemetry: MutableMap<String, String>) {
-    nomisSyncApiService.syncProfileDetails(offenderNo, "MARITAL")
-      .also { telemetry.addToTelemetry("syncToNomis", "$offenderNo-MARITAL") }
+    ContactPersonProfileType.all().forEach { profileType ->
+      nomisSyncApiService.syncProfileDetails(offenderNo, profileType)
+        .also { telemetry.addToTelemetry("syncToNomis", "$offenderNo-$profileType") }
+    }
   }
 }
 
