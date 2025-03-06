@@ -30,7 +30,6 @@ const val INCIDENTS_QUEUE_ID = "migrationincidents"
 const val CORE_PERSON_QUEUE_ID = "migrationcoreperson"
 const val CSIP_QUEUE_ID = "migrationcsip"
 const val CASENOTES_QUEUE_ID = "migrationcasenotes"
-const val PRISONPERSON_QUEUE_ID = "migrationprisonperson"
 const val COURT_SENTENCING_QUEUE_ID = "migrationcourtsentencing"
 const val PERSONALRELATIONSHIPS_QUEUE_ID = "migrationpersonalrelationships"
 const val ORGANISATIONS_QUEUE_ID = "migrationorganisations"
@@ -56,7 +55,6 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   CSIP(CSIP_QUEUE_ID, "csip"),
   INCIDENTS(INCIDENTS_QUEUE_ID, "incidents"),
   CASENOTES(CASENOTES_QUEUE_ID, "casenotes"),
-  PRISONPERSON(PRISONPERSON_QUEUE_ID, "prisonperson"),
   COURT_SENTENCING(COURT_SENTENCING_QUEUE_ID, "court-sentencing"),
   PERSONALRELATIONSHIPS(PERSONALRELATIONSHIPS_QUEUE_ID, "contactperson"),
   ORGANISATIONS(ORGANISATIONS_QUEUE_ID, "corporate"),
