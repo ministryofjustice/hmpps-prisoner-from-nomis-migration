@@ -119,7 +119,7 @@ data class OffenderChargeEvent(
 )
 
 data class OffenderSentenceEvent(
-  val sentenceSequence: Int,
+  val sentenceSeq: Int,
   val sentenceLevel: String,
   val sentenceCategory: String,
   val caseId: Long?,
