@@ -39,11 +39,11 @@ import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.util.AbstractMap.SimpleEntry
 
 private const val NOMIS_SENTENCE_SEQUENCE = 1
-private const val DPS_SENTENCE_ID = "cc1"
+private const val DPS_SENTENCE_ID = "c1c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3e"
 private const val DPS_APPEARANCE_ID = "d8c1e3e3-3e3e-3e3e-3e3e-3e3e3e3d7d7d"
 private const val DPS_CHARGE_ID = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"
 private const val DPS_CHARGE_2_ID = "d1c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3e"
-private const val EXISTING_DPS_SENTENCE_ID = "cc2"
+private const val EXISTING_DPS_SENTENCE_ID = "c2c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3e"
 private const val OFFENDER_ID_DISPLAY = "A3864DZ"
 private const val NOMIS_BOOKING_ID = 12344321L
 private const val NOMIS_COURT_CASE_ID = 1234L
