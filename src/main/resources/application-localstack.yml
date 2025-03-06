@@ -22,9 +22,6 @@ hmpps.sqs:
     migrationcasenotes:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    migrationprisonperson:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
     migrationcourtsentencing:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
@@ -69,9 +66,6 @@ hmpps.sqs:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     eventcourtsentencing:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
-    eventprisonperson:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     eventpersonalrelationships:

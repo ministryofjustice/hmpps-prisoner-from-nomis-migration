@@ -142,10 +142,6 @@ val models = listOf(
     url = "https://nomis-sync-prisoner-mapping-dev.hmpps.service.justice.gov.uk/v3/api-docs",
   ),
   ModelConfiguration(
-    name = "prison-person",
-    packageName = "prisonperson",
-  ),
-  ModelConfiguration(
     name = "sentencing-adjustments",
     packageName = "sentencing.adjustments",
     url = "https://adjustments-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
