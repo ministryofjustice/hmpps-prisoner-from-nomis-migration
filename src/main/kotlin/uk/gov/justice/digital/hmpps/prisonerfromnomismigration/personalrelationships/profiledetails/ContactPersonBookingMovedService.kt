@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelation
 
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.ProfileDetailsResponse
 
@@ -23,10 +24,15 @@ class ContactPersonBookingMovedService(
       "fromOffenderNo" to fromOffenderNo,
     )
 
-    syncOffenderToDps(fromOffenderNo, telemetry)
-    syncOffenderToDps(toOffenderNo, telemetry, mustHaveChanged = true)
-    syncOffenderToNomis(toOffenderNo, telemetry)
-    telemetryClient.trackEvent("contact-person-booking-moved", telemetry, null)
+    runCatching {
+      syncOffenderToDps(fromOffenderNo, telemetry)
+      syncOffenderToDps(toOffenderNo, telemetry, mustHaveChanged = true)
+      syncOffenderToNomis(toOffenderNo, telemetry)
+      telemetryClient.trackEvent("contact-person-booking-moved", telemetry, null)
+    }.onFailure { e ->
+      raiseErrorTelemetry(e, telemetry)
+      throw e
+    }
   }
 
   private fun MutableMap<String, String>.addToTelemetry(telemetryKey: String, addProfileType: String) {
@@ -63,6 +69,11 @@ class ContactPersonBookingMovedService(
       nomisSyncApiService.syncProfileDetails(offenderNo, profileType)
         .also { telemetry.addToTelemetry("syncToNomis", "$offenderNo-$profileType") }
     }
+  }
+
+  private fun raiseErrorTelemetry(e: Throwable, telemetry: MutableMap<String, String>) {
+    telemetry["error"] = e.message.toString()
+    telemetryClient.trackEvent("contact-person-booking-moved-error", telemetry.toMap())
   }
 }
 
