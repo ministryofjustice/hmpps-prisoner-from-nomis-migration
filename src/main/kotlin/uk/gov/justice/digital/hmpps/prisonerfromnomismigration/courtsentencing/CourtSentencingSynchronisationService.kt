@@ -12,6 +12,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyChargeCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtAppearanceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateWholeCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
@@ -329,11 +331,11 @@ class CourtSentencingSynchronisationService(
 
   private suspend fun tryToCreateSentenceMapping(
     nomisSentence: SentenceResponse,
-    dpsSentenceResponse: CreateSentenceResponse,
+    dpsSentenceResponse: LegacySentenceCreatedResponse,
     telemetry: Map<String, Any>,
   ): MappingResponse {
     val mapping = SentenceMappingDto(
-      dpsSentenceId = dpsSentenceResponse.sentenceUuid,
+      dpsSentenceId = dpsSentenceResponse.lifetimeUuid.toString(),
       nomisSentenceSequence = nomisSentence.sentenceSeq.toInt(),
       nomisBookingId = nomisSentence.bookingId,
       mappingType = SentenceMappingDto.MappingType.NOMIS_CREATED,
@@ -749,14 +751,15 @@ class CourtSentencingSynchronisationService(
               },
             ),
           ).run {
+            log.info("Created sentence with dps response $this")
             tryToCreateSentenceMapping(
               nomisSentence = nomisSentence,
               dpsSentenceResponse = this,
-              telemetry = telemetry + ("dpsSentenceId" to this.sentenceUuid),
+              telemetry = telemetry + ("dpsSentenceId" to this.lifetimeUuid) + ("dpsSentenceTerms" to this.createdPeriodLengths.toString()),
             ).also { mappingCreateResult ->
               val mappingSuccessTelemetry =
                 (if (mappingCreateResult == MappingResponse.MAPPING_CREATED) mapOf() else mapOf("mapping" to "initial-failure"))
-              val additionalTelemetry = mappingSuccessTelemetry + ("dpsSentenceId" to this.sentenceUuid)
+              val additionalTelemetry = mappingSuccessTelemetry + ("dpsSentenceId" to this.lifetimeUuid)
 
               telemetryClient.trackEvent(
                 "sentence-synchronisation-created-success",

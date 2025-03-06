@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-03-05.5237.a358790"
+    "version": "2025-03-06.5263.34f3eb2"
   },
   "servers": [
     {
@@ -3212,7 +3212,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:10:11.671340365"
+            "example": "10:03:55.357402858"
           },
           "outcomeDispositionCode": {
             "type": "string"
@@ -3497,7 +3497,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:10:11.671340365"
+            "example": "10:03:55.357402858"
           },
           "courtCode": {
             "type": "string"
@@ -4587,7 +4587,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:10:11.671340365"
+            "example": "10:03:55.357402858"
           },
           "charges": {
             "type": "array",
@@ -4618,7 +4618,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:10:11.671340365"
+            "example": "10:03:55.357402858"
           },
           "courtId": {
             "type": "string"
@@ -4935,7 +4935,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:10:11.671340365"
+            "example": "10:03:55.357402858"
           },
           "courtCode": {
             "type": "string"

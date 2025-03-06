@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
@@ -14,7 +13,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateSentence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateCharge
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateWholeCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityIgnoreNotFound
@@ -105,7 +106,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
     .awaitBodilessEntity()
 
   // TODO not currently implemented in DPS
-  suspend fun createSentence(sentence: LegacyCreateSentence): CreateSentenceResponse = webClient
+  suspend fun createSentence(sentence: LegacyCreateSentence): LegacySentenceCreatedResponse = webClient
     .post()
     .uri("/legacy/sentence")
     .bodyValue(sentence)
@@ -118,7 +119,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
     .retrieve()
     .awaitBodilessEntityIgnoreNotFound()
 
-  suspend fun updateSentence(sentenceId: String, sentence: LegacyCreateSentence): CreateSentenceResponse = webClient
+  suspend fun updateSentence(sentenceId: String, sentence: LegacyCreateSentence): LegacySentenceCreatedResponse = webClient
     .put()
     .uri("/legacy/sentence/{sentenceId}", sentenceId)
     .bodyValue(sentence)
@@ -134,13 +135,3 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .awaitBodilessEntity()
   }
 }
-
-// TODO remove when DPS API is updated
-data class LegacyUpdateWholeCharge(
-  val offenceCode: String,
-)
-
-data class CreateSentenceResponse(
-  @field:JsonProperty("sentenceUuid")
-  val sentenceUuid: String,
-)
