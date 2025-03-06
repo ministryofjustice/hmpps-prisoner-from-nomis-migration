@@ -5,9 +5,9 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerAlertsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AlertResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAlertsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerDetails
 
 @Service
 class AlertsNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {

@@ -3,8 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.CreateAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.ResyncAlert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.UpdateAlert
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
-import java.time.LocalDateTime
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AlertResponse
 
 fun AlertResponse.toDPSCreateAlert() = CreateAlert(
   alertCode = this.alertCode.code,
@@ -29,10 +28,10 @@ fun AlertResponse.toDPSResyncAlert() = ResyncAlert(
   activeFrom = this.date,
   activeTo = this.expiryDate,
   authorisedBy = this.authorisedBy,
-  createdAt = LocalDateTime.parse(this.audit.createDatetime),
+  createdAt = this.audit.createDatetime,
   createdBy = this.audit.createUsername,
   createdByDisplayName = this.audit.createDisplayName ?: this.audit.createUsername,
-  lastModifiedAt = this.audit.modifyDatetime?.let { LocalDateTime.parse(this.audit.modifyDatetime) },
+  lastModifiedAt = this.audit.modifyDatetime,
   lastModifiedBy = this.audit.modifyUserId,
   lastModifiedByDisplayName = this.audit.modifyDisplayName ?: this.audit.modifyUserId,
   isActive = this.isActive,

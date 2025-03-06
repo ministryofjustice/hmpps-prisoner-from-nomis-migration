@@ -38,14 +38,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.MIGRATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AlertResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.AbstractMap.SimpleEntry
 import java.util.UUID
 
@@ -1703,7 +1702,7 @@ private fun alert(bookingId: Long = 123456, alertSequence: Long = 3) = AlertResp
   isActive = true,
   isVerified = false,
   audit = NomisAudit(
-    createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+    createDatetime = LocalDateTime.now(),
     createUsername = "Q1251T",
   ),
 )

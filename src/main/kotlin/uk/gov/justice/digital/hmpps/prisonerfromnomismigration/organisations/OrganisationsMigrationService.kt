@@ -10,8 +10,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationEmailAddress
@@ -132,9 +132,9 @@ fun CorporateOrganisation.toDpsMigrateOrganisationRequest(): MigrateOrganisation
   organisationTypes = types.map { organisationType ->
     MigrateOrganisationType(
       type = organisationType.type.code,
-      createDateTime = organisationType.audit.createDatetime.toDateTime(),
+      createDateTime = organisationType.audit.createDatetime,
       createUsername = organisationType.audit.createUsername,
-      modifyDateTime = organisationType.audit.modifyDatetime.toDateTime(),
+      modifyDateTime = organisationType.audit.modifyDatetime,
       modifyUsername = organisationType.audit.modifyUserId,
     )
   },
@@ -144,9 +144,9 @@ fun CorporateOrganisation.toDpsMigrateOrganisationRequest(): MigrateOrganisation
       number = phone.number,
       extension = phone.extension,
       type = phone.type.code,
-      createDateTime = phone.audit.createDatetime.toDateTime(),
+      createDateTime = phone.audit.createDatetime,
       createUsername = phone.audit.createUsername,
-      modifyDateTime = phone.audit.modifyDatetime.toDateTime(),
+      modifyDateTime = phone.audit.modifyDatetime,
       modifyUsername = phone.audit.modifyUserId,
     )
   },
@@ -178,15 +178,15 @@ fun CorporateOrganisation.toDpsMigrateOrganisationRequest(): MigrateOrganisation
           number = phone.number,
           extension = phone.extension,
           type = phone.type.code,
-          createDateTime = phone.audit.createDatetime.toDateTime(),
+          createDateTime = phone.audit.createDatetime,
           createUsername = phone.audit.createUsername,
-          modifyDateTime = phone.audit.modifyDatetime.toDateTime(),
+          modifyDateTime = phone.audit.modifyDatetime,
           modifyUsername = phone.audit.modifyUserId,
         )
       },
-      createDateTime = it.audit.createDatetime.toDateTime(),
+      createDateTime = it.audit.createDatetime,
       createUsername = it.audit.createUsername,
-      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyDateTime = it.audit.modifyDatetime,
       modifyUsername = it.audit.modifyUserId,
     )
   },
@@ -194,9 +194,9 @@ fun CorporateOrganisation.toDpsMigrateOrganisationRequest(): MigrateOrganisation
     MigrateOrganisationEmailAddress(
       nomisEmailAddressId = it.id,
       email = it.internetAddress,
-      createDateTime = it.audit.createDatetime.toDateTime(),
+      createDateTime = it.audit.createDatetime,
       createUsername = it.audit.createUsername,
-      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyDateTime = it.audit.modifyDatetime,
       modifyUsername = it.audit.modifyUserId,
     )
   },
@@ -204,15 +204,15 @@ fun CorporateOrganisation.toDpsMigrateOrganisationRequest(): MigrateOrganisation
     MigrateOrganisationWebAddress(
       nomisWebAddressId = it.id,
       webAddress = it.internetAddress,
-      createDateTime = it.audit.createDatetime.toDateTime(),
+      createDateTime = it.audit.createDatetime,
       createUsername = it.audit.createUsername,
-      modifyDateTime = it.audit.modifyDatetime.toDateTime(),
+      modifyDateTime = it.audit.modifyDatetime,
       modifyUsername = it.audit.modifyUserId,
     )
   },
-  createDateTime = this.audit.createDatetime.toDateTime(),
+  createDateTime = this.audit.createDatetime,
   createUsername = this.audit.createUsername,
-  modifyDateTime = this.audit.modifyDatetime.toDateTime(),
+  modifyDateTime = this.audit.modifyDatetime,
   modifyUsername = this.audit.modifyUserId,
 )
 
@@ -228,4 +228,3 @@ private fun MigrateOrganisationResponse.toCorporateMappingsDto(migrationId: Stri
 )
 
 private fun IdPair.toCorporateMappingIdDto() = CorporateMappingIdDto(dpsId = this.dpsId.toString(), nomisId = this.nomisId)
-private fun String?.toDateTime() = this?.let { java.time.LocalDateTime.parse(it) }

@@ -26,11 +26,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto.MappingType.NOMIS_CREATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporatePhoneNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporatePhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.dpsOrganisationsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncAddressResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateAddressPhoneResponse
@@ -54,6 +54,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
   @Autowired
@@ -115,7 +116,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             comment = "Good people",
             audit = NomisAudit(
               createUsername = "J.SPEAK",
-              createDatetime = "2024-09-01T13:31",
+              createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
             ),
           ),
         )
@@ -396,9 +397,9 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             comment = "Good people",
             audit = NomisAudit(
               createUsername = "J.SPEAK",
-              createDatetime = "2024-09-01T13:31",
+              createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
               modifyUserId = "T.SMITH",
-              modifyDatetime = "2024-10-01T13:31",
+              modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
             ),
           ),
         )
@@ -595,9 +596,9 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
               businessHours = "10am to 10pm Monday to Friday",
               audit = NomisAudit(
                 createUsername = "J.SPEAK",
-                createDatetime = "2024-09-01T13:31",
+                createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 modifyUserId = "T.SMITH",
-                modifyDatetime = "2024-10-01T13:31",
+                modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
               ),
             ),
           ),
@@ -919,9 +920,9 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
               businessHours = "10am to 10pm Monday to Friday",
               audit = NomisAudit(
                 createUsername = "J.SPEAK",
-                createDatetime = "2024-09-01T13:31",
+                createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 modifyUserId = "T.SMITH",
-                modifyDatetime = "2024-10-01T13:31",
+                modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
               ),
             ),
           ),
@@ -1123,9 +1124,9 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
               type = CodeDescription("HOME", "Home Phone"),
               audit = NomisAudit(
                 createUsername = "J.SPEAK",
-                createDatetime = "2024-09-01T13:31",
+                createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 modifyUserId = "T.SMITH",
-                modifyDatetime = "2024-10-01T13:31",
+                modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
               ),
             ),
           ),
@@ -1415,9 +1416,9 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
               type = CodeDescription("HOME", "Home Phone"),
               audit = NomisAudit(
                 createUsername = "J.SPEAK",
-                createDatetime = "2024-09-01T13:31",
+                createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 modifyUserId = "T.SMITH",
-                modifyDatetime = "2024-10-01T13:31",
+                modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
               ),
             ),
           ),
@@ -1616,9 +1617,9 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
                 type = CodeDescription("HOME", "Home Phone"),
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                   modifyUserId = "T.SMITH",
-                  modifyDatetime = "2024-10-01T13:31",
+                  modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
                 ),
               ),
             ).copy(id = nomisAddressId),
@@ -1942,9 +1943,9 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
                 type = CodeDescription("HOME", "Home Phone"),
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                   modifyUserId = "T.SMITH",
-                  modifyDatetime = "2024-10-01T13:31",
+                  modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
                 ),
               ),
             ).copy(id = nomisAddressId),
@@ -2137,9 +2138,9 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
               internetAddress = "www.test.com",
               audit = NomisAudit(
                 createUsername = "J.SPEAK",
-                createDatetime = "2024-09-01T13:31",
+                createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 modifyUserId = "T.SMITH",
-                modifyDatetime = "2024-10-01T13:31",
+                modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
               ),
             ),
           ),
@@ -2439,9 +2440,9 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
               internetAddress = "jane@test.com",
               audit = NomisAudit(
                 createUsername = "J.SPEAK",
-                createDatetime = "2024-09-01T13:31",
+                createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 modifyUserId = "T.SMITH",
-                modifyDatetime = "2024-10-01T13:31",
+                modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
               ),
             ),
           ),
@@ -2747,9 +2748,9 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
               internetAddress = "www.test.com",
               audit = NomisAudit(
                 createUsername = "J.SPEAK",
-                createDatetime = "2024-09-01T13:31",
+                createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 modifyUserId = "T.SMITH",
-                modifyDatetime = "2024-10-01T13:31",
+                modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
               ),
             ),
           ),
@@ -2809,9 +2810,9 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
               internetAddress = "jane@test.com",
               audit = NomisAudit(
                 createUsername = "J.SPEAK",
-                createDatetime = "2024-09-01T13:31",
+                createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 modifyUserId = "T.SMITH",
-                modifyDatetime = "2024-10-01T13:31",
+                modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
               ),
             ),
           ),
@@ -2872,9 +2873,9 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
               internetAddress = "jane@test.com",
               audit = NomisAudit(
                 createUsername = "J.SPEAK",
-                createDatetime = "2024-09-01T13:31",
+                createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 modifyUserId = "T.SMITH",
-                modifyDatetime = "2024-10-01T13:31",
+                modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
               ),
             ),
           ),
@@ -2958,9 +2959,9 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
               internetAddress = "www.test.com",
               audit = NomisAudit(
                 createUsername = "J.SPEAK",
-                createDatetime = "2024-09-01T13:31",
+                createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                 modifyUserId = "T.SMITH",
-                modifyDatetime = "2024-10-01T13:31",
+                modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
               ),
             ),
           ),
@@ -3270,16 +3271,16 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
                 type = CodeDescription("TEA", "Teacher"),
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                   modifyUserId = "T.SMITH",
-                  modifyDatetime = "2024-10-01T13:31",
+                  modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
                 ),
               ),
               CorporateOrganisationType(
                 type = CodeDescription("BSKILLS", "Basic Skills Provider"),
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-10-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-10-01T13:31"),
                 ),
               ),
             ),
@@ -3383,18 +3384,18 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
                 type = CodeDescription("TEA", "Teacher"),
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                   modifyUserId = "T.SMITH",
-                  modifyDatetime = "2024-10-01T13:31",
+                  modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
                 ),
               ),
               CorporateOrganisationType(
                 type = CodeDescription("BSKILLS", "Basic Skills Provider"),
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-10-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-10-01T13:31"),
                   modifyUserId = "T.SMITH",
-                  modifyDatetime = "2024-11-01T13:31",
+                  modifyDatetime = LocalDateTime.parse("2024-11-01T13:31"),
                 ),
               ),
             ),
@@ -3498,9 +3499,9 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
                 type = CodeDescription("TEA", "Teacher"),
                 audit = NomisAudit(
                   createUsername = "J.SPEAK",
-                  createDatetime = "2024-09-01T13:31",
+                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
                   modifyUserId = "T.SMITH",
-                  modifyDatetime = "2024-10-01T13:31",
+                  modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
                 ),
               ),
             ),
