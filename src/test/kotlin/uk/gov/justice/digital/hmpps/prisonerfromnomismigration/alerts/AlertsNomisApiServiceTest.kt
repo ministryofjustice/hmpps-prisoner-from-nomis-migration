@@ -15,12 +15,11 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AlertResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @SpringAPIServiceTest
 @Import(AlertsNomisApiService::class, AlertsConfiguration::class, AlertsNomisApiMockServer::class)
@@ -70,7 +69,7 @@ class AlertsNomisApiServiceTest {
           isActive = true,
           isVerified = false,
           audit = NomisAudit(
-            createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            createDatetime = LocalDateTime.now(),
             createUsername = "Q1251T",
           ),
         ),

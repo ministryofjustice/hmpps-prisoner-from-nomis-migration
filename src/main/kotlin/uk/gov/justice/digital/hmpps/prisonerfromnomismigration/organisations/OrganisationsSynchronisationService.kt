@@ -13,11 +13,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateInternetAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporatePhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateInternetAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporatePhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateEmailRequest
@@ -35,7 +35,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
-import java.time.LocalDateTime
 
 @Service
 class OrganisationsSynchronisationService(
@@ -659,7 +658,7 @@ fun CorporateOrganisation.toDpsCreateOrganisationRequest() = SyncCreateOrganisat
   active = active,
   deactivatedDate = expiryDate,
   createdBy = this.audit.createUsername,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
 )
 fun CorporateOrganisation.toDpsUpdateOrganisationRequest(dpsOrganisationId: Long) = SyncUpdateOrganisationRequest(
   organisationId = dpsOrganisationId,
@@ -671,7 +670,7 @@ fun CorporateOrganisation.toDpsUpdateOrganisationRequest(dpsOrganisationId: Long
   active = active,
   deactivatedDate = expiryDate,
   updatedBy = this.audit.modifyUserId!!,
-  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+  updatedTime = this.audit.modifyDatetime!!,
 )
 fun CorporateAddress.toDpsCreateOrganisationAddressRequest(dpsOrganisationId: Long) = SyncCreateAddressRequest(
   organisationId = dpsOrganisationId,
@@ -694,7 +693,7 @@ fun CorporateAddress.toDpsCreateOrganisationAddressRequest(dpsOrganisationId: Lo
   serviceAddress = this.isServices,
   comments = this.comment,
   createdBy = this.audit.createUsername,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
 )
 fun CorporateAddress.toDpsUpdateOrganisationAddressRequest(dpsOrganisationId: Long) = SyncUpdateAddressRequest(
   organisationId = dpsOrganisationId,
@@ -717,14 +716,14 @@ fun CorporateAddress.toDpsUpdateOrganisationAddressRequest(dpsOrganisationId: Lo
   serviceAddress = this.isServices,
   comments = this.comment,
   updatedBy = this.audit.modifyUserId!!,
-  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+  updatedTime = this.audit.modifyDatetime!!,
 )
 
 fun CorporatePhoneNumber.toDpsCreateOrganisationPhoneRequest(dpsOrganisationId: Long) = SyncCreatePhoneRequest(
   organisationId = dpsOrganisationId,
   phoneType = this.type.code,
   createdBy = this.audit.createUsername,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
   phoneNumber = this.number,
   extNumber = this.extension,
 )
@@ -733,7 +732,7 @@ fun CorporatePhoneNumber.toDpsCreateOrganisationAddressPhoneRequest(dpsOrganisat
   organisationAddressId = dpsOrganisationAddressId,
   phoneType = this.type.code,
   createdBy = this.audit.createUsername,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
   phoneNumber = this.number,
   extNumber = this.extension,
 )
@@ -741,7 +740,7 @@ fun CorporatePhoneNumber.toDpsCreateOrganisationAddressPhoneRequest(dpsOrganisat
 fun CorporatePhoneNumber.toDpsUpdateOrganisationAddressPhoneRequest() = SyncUpdateAddressPhoneRequest(
   phoneType = this.type.code,
   updatedBy = this.audit.modifyUserId!!,
-  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+  updatedTime = this.audit.modifyDatetime!!,
   phoneNumber = this.number,
   extNumber = this.extension,
 )
@@ -750,7 +749,7 @@ fun CorporatePhoneNumber.toDpsUpdateOrganisationPhoneRequest(dpsOrganisationId: 
   organisationId = dpsOrganisationId,
   phoneType = this.type.code,
   updatedBy = this.audit.modifyUserId!!,
-  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+  updatedTime = this.audit.modifyDatetime!!,
   phoneNumber = this.number,
   extNumber = this.extension,
 )
@@ -758,37 +757,37 @@ fun CorporateInternetAddress.toDpsCreateOrganisationWebAddressRequest(dpsOrganis
   organisationId = dpsOrganisationId,
   webAddress = this.internetAddress,
   createdBy = this.audit.createUsername,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
 )
 fun CorporateInternetAddress.toDpsUpdateOrganisationWebAddressRequest(dpsOrganisationId: Long) = SyncUpdateWebRequest(
   organisationId = dpsOrganisationId,
   webAddress = this.internetAddress,
   updatedBy = this.audit.modifyUserId!!,
-  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+  updatedTime = this.audit.modifyDatetime!!,
 )
 fun CorporateInternetAddress.toDpsCreateOrganisationEmailRequest(dpsOrganisationId: Long) = SyncCreateEmailRequest(
   organisationId = dpsOrganisationId,
   emailAddress = this.internetAddress,
   createdBy = this.audit.createUsername,
-  createdTime = this.audit.createDatetime.toDateTime(),
+  createdTime = this.audit.createDatetime,
 )
 fun CorporateInternetAddress.toDpsCreateOrganisationEmailRequestForUpdateSwitch(dpsOrganisationId: Long) = SyncCreateEmailRequest(
   emailAddress = this.internetAddress,
   organisationId = dpsOrganisationId,
   createdBy = this.audit.modifyUserId!!,
-  createdTime = this.audit.modifyDatetime!!.toDateTime(),
+  createdTime = this.audit.modifyDatetime!!,
 )
 fun CorporateInternetAddress.toDpsCreateOrganisationWebAddressRequestForUpdateSwitch(dpsOrganisationId: Long) = SyncCreateWebRequest(
   webAddress = this.internetAddress,
   organisationId = dpsOrganisationId,
   createdBy = this.audit.modifyUserId!!,
-  createdTime = this.audit.modifyDatetime!!.toDateTime(),
+  createdTime = this.audit.modifyDatetime!!,
 )
 fun CorporateInternetAddress.toDpsUpdateOrganisationEmailRequest(dpsOrganisationId: Long) = SyncUpdateEmailRequest(
   organisationId = dpsOrganisationId,
   emailAddress = this.internetAddress,
   updatedBy = this.audit.modifyUserId!!,
-  updatedTime = this.audit.modifyDatetime!!.toDateTime(),
+  updatedTime = this.audit.modifyDatetime!!,
 )
 fun List<CorporateOrganisationType>.toDpsUpdateOrganisationTypesRequest(dpsOrganisationId: Long) = SyncUpdateTypesRequest(
   organisationId = dpsOrganisationId,
@@ -796,11 +795,9 @@ fun List<CorporateOrganisationType>.toDpsUpdateOrganisationTypesRequest(dpsOrgan
     SyncOrganisationType(
       type = it.type.code,
       createdBy = it.audit.createUsername,
-      createdTime = it.audit.createDatetime.toDateTime(),
+      createdTime = it.audit.createDatetime,
       updatedBy = it.audit.modifyUserId,
-      updatedTime = it.audit.modifyDatetime?.toDateTime(),
+      updatedTime = it.audit.modifyDatetime,
     )
   },
 )
-
-private fun String.toDateTime() = this.let { LocalDateTime.parse(it) }

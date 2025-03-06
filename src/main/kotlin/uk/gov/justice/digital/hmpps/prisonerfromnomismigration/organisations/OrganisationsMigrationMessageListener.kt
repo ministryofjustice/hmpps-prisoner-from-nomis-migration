@@ -9,8 +9,8 @@ import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ORGANISATIONS_QUEUE_ID

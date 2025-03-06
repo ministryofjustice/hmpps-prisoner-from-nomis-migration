@@ -29,14 +29,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateInternetAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporatePhoneNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateInternetAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisationIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporatePhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.migrateOrganisationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.IdPair
@@ -265,9 +265,9 @@ class OrganisationsMigrationIntTest : SqsIntegrationTestBase() {
                 type = CodeDescription("DOCTOR", "Doctor"),
                 audit = NomisAudit(
                   modifyUserId = "ADJUA.MENSAH",
-                  modifyDatetime = "2024-02-02T10:23",
+                  modifyDatetime = LocalDateTime.parse("2024-02-02T10:23"),
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-02-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                 ),
               ),
             ),
@@ -281,9 +281,9 @@ class OrganisationsMigrationIntTest : SqsIntegrationTestBase() {
                     type = CodeDescription("HOM", "Home"),
                     audit = NomisAudit(
                       modifyUserId = "ADJUA.MENSAH",
-                      modifyDatetime = "2024-04-02T10:23",
+                      modifyDatetime = LocalDateTime.parse("2024-04-02T10:23"),
                       createUsername = "ADJUA.BEEK",
-                      createDatetime = "2022-04-02T10:23",
+                      createDatetime = LocalDateTime.parse("2022-04-02T10:23"),
                     ),
                     extension = "ext 5555",
                   ),
@@ -293,9 +293,9 @@ class OrganisationsMigrationIntTest : SqsIntegrationTestBase() {
                 mailAddress = true,
                 audit = NomisAudit(
                   modifyUserId = "ADJUA.MENSAH",
-                  modifyDatetime = "2024-03-02T10:23",
+                  modifyDatetime = LocalDateTime.parse("2024-03-02T10:23"),
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-03-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-03-02T10:23"),
                 ),
                 type = CodeDescription("HOME", "Home"),
                 flat = "Flat 1B",
@@ -323,7 +323,7 @@ class OrganisationsMigrationIntTest : SqsIntegrationTestBase() {
                 isServices = false,
                 audit = NomisAudit(
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-03-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-03-02T10:23"),
                 ),
               ),
             ),
@@ -334,9 +334,9 @@ class OrganisationsMigrationIntTest : SqsIntegrationTestBase() {
                 type = CodeDescription("MOB", "Mobile"),
                 audit = NomisAudit(
                   modifyUserId = "ADJUA.MENSAH",
-                  modifyDatetime = "2024-02-02T10:23",
+                  modifyDatetime = LocalDateTime.parse("2024-02-02T10:23"),
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-02-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                 ),
                 extension = "ext 5555",
               ),
@@ -346,7 +346,7 @@ class OrganisationsMigrationIntTest : SqsIntegrationTestBase() {
                 type = CodeDescription("FAX", "Fax"),
                 audit = NomisAudit(
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-02-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                 ),
               ),
             ),
@@ -357,9 +357,9 @@ class OrganisationsMigrationIntTest : SqsIntegrationTestBase() {
                 type = "EMAIL",
                 audit = NomisAudit(
                   modifyUserId = "ADJUA.MENSAH",
-                  modifyDatetime = "2024-02-02T10:23",
+                  modifyDatetime = LocalDateTime.parse("2024-02-02T10:23"),
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-02-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                 ),
               ),
               CorporateInternetAddress(
@@ -368,17 +368,17 @@ class OrganisationsMigrationIntTest : SqsIntegrationTestBase() {
                 type = "WEB",
                 audit = NomisAudit(
                   modifyUserId = "ADJUA.MENSAH",
-                  modifyDatetime = "2024-02-02T10:23",
+                  modifyDatetime = LocalDateTime.parse("2024-02-02T10:23"),
                   createUsername = "ADJUA.BEEK",
-                  createDatetime = "2022-02-02T10:23",
+                  createDatetime = LocalDateTime.parse("2022-02-02T10:23"),
                 ),
               ),
             ),
             audit = NomisAudit(
               modifyUserId = "ADJUA.MENSAH",
-              modifyDatetime = "2024-01-02T10:23",
+              modifyDatetime = LocalDateTime.parse("2024-01-02T10:23"),
               createUsername = "ADJUA.BEEK",
-              createDatetime = "2022-01-02T10:23",
+              createDatetime = LocalDateTime.parse("2022-01-02T10:23"),
             ),
           ),
           CorporateOrganisation(
@@ -391,9 +391,9 @@ class OrganisationsMigrationIntTest : SqsIntegrationTestBase() {
             internetAddresses = emptyList(),
             audit = NomisAudit(
               modifyUserId = "ADJUA.MENSAH",
-              modifyDatetime = "2024-01-02T10:23",
+              modifyDatetime = LocalDateTime.parse("2024-01-02T10:23"),
               createUsername = "ADJUA.BEEK",
-              createDatetime = "2022-01-02T10:23",
+              createDatetime = LocalDateTime.parse("2022-01-02T10:23"),
             ),
           ),
         )

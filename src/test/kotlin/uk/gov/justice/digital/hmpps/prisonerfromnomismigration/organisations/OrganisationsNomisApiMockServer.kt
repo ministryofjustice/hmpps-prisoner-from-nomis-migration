@@ -8,18 +8,17 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateInternetAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisation
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporateOrganisationIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CorporatePhoneNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateInternetAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisationIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporatePhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @Component
 class OrganisationsNomisApiMockServer(private val objectMapper: ObjectMapper) {
@@ -104,9 +103,9 @@ fun corporateAddress(): CorporateAddress = CorporateAddress(
   businessHours = "10am to 10pm Monday to Friday",
   audit = NomisAudit(
     createUsername = "J.SPEAK",
-    createDatetime = "2024-09-01T13:31",
+    createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
     modifyUserId = "T.SMITH",
-    modifyDatetime = "2024-10-01T13:31",
+    modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
   ),
 )
 fun CorporateOrganisation.withPhone(phone: CorporatePhoneNumber = corporatePhone()): CorporateOrganisation = copy(phoneNumbers = listOf(phone))
@@ -118,9 +117,9 @@ fun corporatePhone(): CorporatePhoneNumber = CorporatePhoneNumber(
   extension = "ext 123",
   audit = NomisAudit(
     createUsername = "J.SPEAK",
-    createDatetime = "2024-09-01T13:31",
+    createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
     modifyUserId = "T.SMITH",
-    modifyDatetime = "2024-10-01T13:31",
+    modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
   ),
 )
 fun CorporateOrganisation.withInternetAddress(internetAddress: CorporateInternetAddress): CorporateOrganisation = this.copy(internetAddresses = listOf(internetAddress))
@@ -131,9 +130,9 @@ fun corporateWebAddress(): CorporateInternetAddress = CorporateInternetAddress(
   type = "WEB",
   audit = NomisAudit(
     createUsername = "J.SPEAK",
-    createDatetime = "2024-09-01T13:31",
+    createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
     modifyUserId = "T.SMITH",
-    modifyDatetime = "2024-10-01T13:31",
+    modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
   ),
 )
 fun corporateEmail(): CorporateInternetAddress = CorporateInternetAddress(
@@ -142,13 +141,13 @@ fun corporateEmail(): CorporateInternetAddress = CorporateInternetAddress(
   type = "EMAIL",
   audit = NomisAudit(
     createUsername = "J.SPEAK",
-    createDatetime = "2024-09-01T13:31",
+    createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
     modifyUserId = "T.SMITH",
-    modifyDatetime = "2024-10-01T13:31",
+    modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
   ),
 )
 
 fun nomisAudit() = NomisAudit(
-  createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+  createDatetime = LocalDateTime.now(),
   createUsername = "Q1251T",
 )

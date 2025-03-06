@@ -9,15 +9,14 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AlertResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.NomisAudit
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerAlertsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.PrisonerDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AlertResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAlertsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @Component
 class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
@@ -34,7 +33,7 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
       isActive = true,
       isVerified = false,
       audit = NomisAudit(
-        createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+        createDatetime = LocalDateTime.now(),
         createUsername = "Q1251T",
       ),
     ),
@@ -74,7 +73,7 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
       isActive = true,
       isVerified = false,
       audit = NomisAudit(
-        createDatetime = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+        createDatetime = LocalDateTime.now(),
         createUsername = "Q1251T",
       ),
     ),
