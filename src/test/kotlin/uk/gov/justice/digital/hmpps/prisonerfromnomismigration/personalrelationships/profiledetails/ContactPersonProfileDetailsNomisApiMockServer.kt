@@ -21,7 +21,7 @@ class ContactPersonProfileDetailsNomisApiMockServer(private val objectMapper: Ob
   fun stubGetProfileDetails(
     offenderNo: String = "A1234AA",
     bookingId: Long? = 12345,
-    profileTypes: List<String> = listOf("MARITAL"),
+    profileTypes: List<String> = ContactPersonProfileType.all(),
     response: PrisonerProfileDetailsResponse = PrisonerProfileDetailsResponse(
       offenderNo = offenderNo,
       bookings = listOf(
