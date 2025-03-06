@@ -146,6 +146,11 @@ val models = listOf(
     packageName = "sentencing.adjustments",
     url = "https://adjustments-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
   ),
+  ModelConfiguration(
+    name = "visit-balance",
+    packageName = "visit.balance",
+    url = "https://hmpps-visit-allocation-api-dev.prison.service.justice.gov.uk/v3/api-docs",
+  ),
 )
 
 tasks {

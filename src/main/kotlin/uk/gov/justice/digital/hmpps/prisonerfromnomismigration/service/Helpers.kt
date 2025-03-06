@@ -34,6 +34,7 @@ const val COURT_SENTENCING_QUEUE_ID = "migrationcourtsentencing"
 const val PERSONALRELATIONSHIPS_QUEUE_ID = "migrationpersonalrelationships"
 const val ORGANISATIONS_QUEUE_ID = "migrationorganisations"
 const val SENTENCING_ADJUSTMENTS_QUEUE_ID = "migrationsentencing"
+const val VISIT_BALANCE_QUEUE_ID = "migrationvisitbalance"
 
 const val VISITS_SYNC_QUEUE_ID = "eventvisits"
 const val SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID = "eventsentencing"
@@ -59,6 +60,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   PERSONALRELATIONSHIPS(PERSONALRELATIONSHIPS_QUEUE_ID, "contactperson"),
   ORGANISATIONS(ORGANISATIONS_QUEUE_ID, "corporate"),
   SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_QUEUE_ID, "sentencing-adjustments"),
+  VISIT_BALANCE(VISIT_BALANCE_QUEUE_ID, "visitbalance"),
 }
 
 enum class SynchronisationType(val queueId: String) {

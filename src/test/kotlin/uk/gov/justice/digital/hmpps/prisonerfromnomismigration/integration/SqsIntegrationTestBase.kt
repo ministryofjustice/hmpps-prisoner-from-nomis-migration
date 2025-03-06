@@ -52,6 +52,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.PERSONALR
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_SYNC_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISIT_BALANCE_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitorders.VisitBalanceDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.LocationsApiExtension
@@ -82,6 +84,7 @@ import java.util.concurrent.TimeUnit
   CourtSentencingDpsApiExtension::class,
   ContactPersonDpsApiExtension::class,
   OrganisationsDpsApiExtension::class,
+  VisitBalanceDpsApiExtension::class,
   NomisSyncApiExtension::class,
 )
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -100,6 +103,7 @@ class SqsIntegrationTestBase : TestBase() {
   internal val allocationsMigrationQueue by lazy { hmppsQueueService.findByQueueId(ALLOCATIONS_QUEUE_ID) as HmppsQueue }
   internal val incidentsMigrationQueue by lazy { hmppsQueueService.findByQueueId(INCIDENTS_QUEUE_ID) as HmppsQueue }
   internal val csipMigrationQueue by lazy { hmppsQueueService.findByQueueId(CSIP_QUEUE_ID) as HmppsQueue }
+  internal val visitBalanceMigrationQueue by lazy { hmppsQueueService.findByQueueId(VISIT_BALANCE_QUEUE_ID) as HmppsQueue }
 
   internal val awsSqsVisitsMigrationDlqClient by lazy { visitsMigrationQueue.sqsDlqClient }
 
@@ -108,6 +112,7 @@ class SqsIntegrationTestBase : TestBase() {
   internal val awsSqsAllocationsMigrationDlqClient by lazy { allocationsMigrationQueue.sqsDlqClient }
   internal val awsSqsIncidentsMigrationDlqClient by lazy { incidentsMigrationQueue.sqsDlqClient }
   internal val awsSqsCSIPMigrationDlqClient by lazy { csipMigrationQueue.sqsDlqClient }
+  internal val awsSqsVisitBalanceMigrationDlqClient by lazy { visitBalanceMigrationQueue.sqsDlqClient }
   internal val visitsMigrationDlqUrl by lazy { visitsMigrationQueue.dlqUrl }
 
   internal val appointmentsMigrationDlqUrl by lazy { appointmentsMigrationQueue.dlqUrl }
@@ -115,6 +120,7 @@ class SqsIntegrationTestBase : TestBase() {
   internal val allocationsMigrationDlqUrl by lazy { allocationsMigrationQueue.dlqUrl }
   internal val incidentsMigrationDlqUrl by lazy { incidentsMigrationQueue.dlqUrl }
   internal val csipMigrationDlqUrl by lazy { csipMigrationQueue.dlqUrl }
+  internal val visitBalanceMigrationDlqUrl by lazy { visitBalanceMigrationQueue.dlqUrl }
 
   internal val visitsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(VISITS_SYNC_QUEUE_ID) as HmppsQueue }
   internal val visitsQueueOffenderEventsUrl by lazy { visitsOffenderEventsQueue.queueUrl }
@@ -187,6 +193,7 @@ class SqsIntegrationTestBase : TestBase() {
       incidentsMigrationQueue,
       csipMigrationQueue,
       visitsMigrationQueue,
+      visitBalanceMigrationQueue,
       alertsOffenderEventsQueue,
       caseNotesOffenderEventsQueue,
       courtSentencingOffenderEventsQueue,

@@ -76,6 +76,8 @@ generic-service:
       PERSONAL_RELATIONSHIPS_CLIENT_SECRET: "PERSONAL_RELATIONSHIPS_CLIENT_SECRET"
       ORGANISATIONS_CLIENT_ID: "ORGANISATIONS_CLIENT_ID"
       ORGANISATIONS_CLIENT_SECRET: "ORGANISATIONS_CLIENT_SECRET"
+      VISIT_BALANCE_CLIENT_ID: "VISIT_BALANCE_CLIENT_ID"
+      VISIT_BALANCE_CLIENT_SECRET: "VISIT_BALANCE_CLIENT_SECRET"
     sqs-migration-visits-queue:
       HMPPS_SQS_QUEUES_MIGRATIONVISITS_QUEUE_NAME: "sqs_name"
     sqs-migration-visits-dlq:
@@ -124,10 +126,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONSENTENCING_QUEUE_NAME: "sqs_name"
     sqs-migration-sentencing-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONSENTENCING_DLQ_NAME: "sqs_name"
-    sqs-migration-visitorders-queue:
-      HMPPS_SQS_QUEUES_MIGRATIONVISITORDERS_QUEUE_NAME: "sqs_name"
-    sqs-migration-visitorders-dlq:
-      HMPPS_SQS_QUEUES_MIGRATIONVISITORDERS_DLQ_NAME: "sqs_name"
+    sqs-migration-visitbalance-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONVISITBALANCE_QUEUE_NAME: "sqs_name"
+    sqs-migration-visitbalance-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONVISITBALANCE_DLQ_NAME: "sqs_name"
     prison-events-visits-queue:
       HMPPS_SQS_QUEUES_EVENTVISITS_QUEUE_NAME: "sqs_name"
     prison-events-visits-dl-queue:
