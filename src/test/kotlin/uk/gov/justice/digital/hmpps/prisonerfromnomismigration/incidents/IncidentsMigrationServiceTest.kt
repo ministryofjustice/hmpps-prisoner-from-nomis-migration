@@ -51,11 +51,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IncidentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IncidentMappingDto.MappingType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Staff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
@@ -1076,8 +1076,8 @@ fun aMigrationRequest() = NomisSyncRequest(
     type = "ASSAULT",
     prison = NomisCode(code = "BXI", description = "Brixton"),
     lockedResponse = false,
-    incidentDateTime = "2023-04-12T16:45:00",
-    reportedDateTime = "2023-04-14T17:55:00",
+    incidentDateTime = LocalDateTime.parse("2023-04-12T16:45:00"),
+    reportedDateTime = LocalDateTime.parse("2023-04-14T17:55:00"),
     reportingStaff = NomisStaff(username = "BQL16C", staffId = 16288, firstName = "JANE", lastName = "BAKER"),
     history = listOf(),
     offenderParties = listOf(),
@@ -1086,7 +1086,7 @@ fun aMigrationRequest() = NomisSyncRequest(
     requirements = listOf(),
     followUpDate = LocalDate.parse("2023-05-16"),
     createdBy = "JSMITH",
-    createDateTime = "2024-07-15T18:35:00",
+    createDateTime = LocalDateTime.parse("2024-07-15T18:35:00"),
   ),
 )
 
@@ -1099,8 +1099,8 @@ fun aNomisIncidentResponse() = IncidentResponse(
   type = "ASSAULT",
   agency = CodeDescription(code = "BXI", description = "Brixton"),
   lockedResponse = false,
-  incidentDateTime = "2023-04-12T16:45:00",
-  reportedDateTime = "2023-04-14T17:55:00",
+  incidentDateTime = LocalDateTime.parse("2023-04-12T16:45:00"),
+  reportedDateTime = LocalDateTime.parse("2023-04-14T17:55:00"),
   reportingStaff = Staff(username = "BQL16C", staffId = 16288, firstName = "JANE", lastName = "BAKER"),
   history = listOf(),
   offenderParties = listOf(),
@@ -1109,7 +1109,7 @@ fun aNomisIncidentResponse() = IncidentResponse(
   requirements = listOf(),
   followUpDate = LocalDate.parse("2023-05-16"),
   createdBy = "JSMITH",
-  createDateTime = "2024-07-15T18:35:00",
+  createDateTime = LocalDateTime.parse("2024-07-15T18:35:00"),
 )
 
 fun pages(total: Long, startId: Long = 1): PageImpl<IncidentIdResponse> = PageImpl<IncidentIdResponse>(

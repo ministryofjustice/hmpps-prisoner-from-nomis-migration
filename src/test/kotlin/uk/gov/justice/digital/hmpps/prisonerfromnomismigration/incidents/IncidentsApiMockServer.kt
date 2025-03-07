@@ -39,6 +39,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.S
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.StaffInvolvement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.StatusHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.math.min
 
@@ -77,7 +78,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       id = UUID.randomUUID(),
       reportReference = nomisIncidentId,
       type = ReportWithDetails.Type.ATTEMPTED_ESCAPE_FROM_ESCORT,
-      incidentDateAndTime = "2021-07-05T10:35:17",
+      incidentDateAndTime = LocalDateTime.parse("2021-07-05T10:35:17"),
       prisonId = "ASI",
       location = "ASI",
       title = "There was an incident in the exercise yard",
@@ -87,17 +88,17 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       event = Event(
         id = UUID.randomUUID(),
         eventReference = nomisIncidentId,
-        eventDateAndTime = "2021-07-05T10:35:17",
+        eventDateAndTime = LocalDateTime.parse("2021-07-05T10:35:17"),
         prisonId = "ASI",
         location = "ASI",
         title = "There was a problem",
         description = "Fighting was happening",
-        createdAt = "2021-07-23T10:35:17",
-        modifiedAt = "2021-07-23T10:35:17",
+        createdAt = LocalDateTime.parse("2021-07-23T10:35:17"),
+        modifiedAt = LocalDateTime.parse("2021-07-23T10:35:17"),
         modifiedBy = "JSMITH",
       ),
       reportedBy = "FSTAFF_GEN",
-      reportedAt = "2021-07-07T10:35:17",
+      reportedAt = LocalDateTime.parse("2021-07-07T10:35:17"),
       status = ReportWithDetails.Status.DRAFT,
       assignedTo = "BJONES",
       questions = listOf(
@@ -110,7 +111,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             Response(
               response = "Yes",
               recordedBy = "JSMITH",
-              recordedAt = "2021-07-05T10:35:17",
+              recordedAt = LocalDateTime.parse("2021-07-05T10:35:17"),
               additionalInformation = null,
               sequence = 1,
             ),
@@ -120,7 +121,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       history = listOf(
         History(
           type = History.Type.ABSCONDER,
-          changedAt = "2021-07-05T10:35:17",
+          changedAt = LocalDateTime.parse("2021-07-05T10:35:17"),
           changedBy = "JSMITH",
           questions = listOf(
             HistoricalQuestion(
@@ -131,7 +132,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
                   response = "Yes",
                   sequence = 1,
                   recordedBy = "Fred Jones",
-                  recordedAt = "2021-07-05T10:35:17",
+                  recordedAt = LocalDateTime.parse("2021-07-05T10:35:17"),
                   additionalInformation = "more info",
                 ),
               ),
@@ -144,7 +145,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       historyOfStatuses = listOf(
         StatusHistory(
           status = StatusHistory.Status.DRAFT,
-          changedAt = "2021-07-05T10:35:17",
+          changedAt = LocalDateTime.parse("2021-07-05T10:35:17"),
           changedBy = "JSMITH",
         ),
       ),
@@ -154,6 +155,8 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           staffUsername = "Dave Jones",
           staffRole = StaffInvolvement.StaffRole.ACTIVELY_INVOLVED,
           comment = "Dave was hit",
+          firstName = "Dave",
+          lastName = "Jones",
         ),
       ),
       prisonersInvolved = listOf(
@@ -163,45 +166,50 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           prisonerRole = PrisonerInvolvement.PrisonerRole.ABSCONDER,
           outcome = PrisonerInvolvement.Outcome.PLACED_ON_REPORT,
           comment = "There were issues",
+          firstName = "Dave",
+          lastName = "Jones",
         ),
         PrisonerInvolvement(
           sequence = 2,
           prisonerNumber = "A1234BC",
           prisonerRole = PrisonerInvolvement.PrisonerRole.ABSCONDER,
           outcome = PrisonerInvolvement.Outcome.PLACED_ON_REPORT,
+          firstName = "Dave",
+          lastName = "Jones",
         ),
       ),
       correctionRequests = listOf(
         CorrectionRequest(
           sequence = 1,
-          reason = CorrectionRequest.Reason.MISTAKE,
           descriptionOfChange = "There was a change",
           correctionRequestedBy = "Fred Black",
-          correctionRequestedAt = "2021-07-05T10:35:17",
+          correctionRequestedAt = LocalDateTime.parse("2021-07-05T10:35:17"),
         ),
       ),
-      createdAt = "2021-07-05T10:35:17",
-      modifiedAt = "2021-07-15T10:35:17",
+      createdAt = LocalDateTime.parse("2021-07-05T10:35:17"),
+      modifiedAt = LocalDateTime.parse("2021-07-15T10:35:17"),
       modifiedBy = "JSMITH",
       createdInNomis = true,
       lastModifiedInNomis = true,
+      staffInvolvementDone = true,
+      prisonerInvolvementDone = true,
     )
 
     fun dpsBasicIncidentReport(dpsIncidentId: String = DPS_INCIDENT_ID, prisonId: String = "ASI") = ReportBasic(
       id = UUID.fromString(dpsIncidentId),
       reportReference = "1234",
       type = ReportBasic.Type.SELF_HARM,
-      incidentDateAndTime = "2021-07-05T10:35:17",
+      incidentDateAndTime = LocalDateTime.parse("2021-07-05T10:35:17"),
       prisonId = prisonId,
       location = prisonId,
       title = "There was an incident in the exercise yard",
       description = "Fred and Jimmy were fighting outside.",
       reportedBy = "JSMITH",
-      reportedAt = "2021-07-05T10:35:17",
+      reportedAt = LocalDateTime.parse("2021-07-05T10:35:17"),
       status = ReportBasic.Status.DRAFT,
       assignedTo = "BJONES",
-      createdAt = "2021-07-05T10:35:17",
-      modifiedAt = "2021-07-05T10:35:17",
+      createdAt = LocalDateTime.parse("2021-07-05T10:35:17"),
+      modifiedAt = LocalDateTime.parse("2021-07-05T10:35:17"),
       modifiedBy = "JSMITH",
       createdInNomis = true,
       lastModifiedInNomis = true,
