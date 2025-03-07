@@ -10,10 +10,10 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjustmentIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.KeyDateAdjustmentResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentenceAdjustmentResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.SentencingAdjustmentsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AdjustmentIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.KeyDateAdjustmentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceAdjustmentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentencingAdjustmentsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent

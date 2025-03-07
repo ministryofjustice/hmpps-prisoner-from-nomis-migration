@@ -66,15 +66,15 @@ class ContactPersonProfileDetailsNomisApiServiceTest {
         assertThat(offenderNo).isEqualTo("A1234AA")
         assertThat(bookings)
           .extracting("bookingId", "startDateTime", "latestBooking")
-          .containsExactly(tuple(1L, "2024-02-03T12:34:56", true))
+          .containsExactly(tuple(1L, LocalDateTime.parse("2024-02-03T12:34:56"), true))
         assertThat(bookings[0].profileDetails)
           .extracting("type", "code", "createdBy", "modifiedBy", "auditModuleName")
           .containsExactly(
             tuple("MARITAL", "M", "A_USER", "ANOTHER_USER", "NOMIS"),
             tuple("CHILD", "3", "A_USER", "ANOTHER_USER", "NOMIS"),
           )
-        assertThat(LocalDateTime.parse(bookings[0].profileDetails[0].createDateTime).toLocalDate()).isEqualTo(LocalDate.now())
-        assertThat(LocalDateTime.parse(bookings[0].profileDetails[0].modifiedDateTime!!).toLocalDate()).isEqualTo(LocalDate.now())
+        assertThat(bookings[0].profileDetails[0].createDateTime.toLocalDate()).isEqualTo(LocalDate.now())
+        assertThat(bookings[0].profileDetails[0].modifiedDateTime!!.toLocalDate()).isEqualTo(LocalDate.now())
       }
     }
 

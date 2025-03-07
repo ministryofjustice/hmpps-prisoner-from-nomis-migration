@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.AdjustmentIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AdjustmentIdResponse
 import java.time.LocalDate
 
 @SpringAPIServiceTest
