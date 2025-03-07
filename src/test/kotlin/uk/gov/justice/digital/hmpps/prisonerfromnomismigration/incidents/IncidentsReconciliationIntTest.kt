@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.incidentsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import java.time.LocalDateTime
 
 class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
   @Autowired
@@ -248,7 +249,7 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will show mismatch differences in report`() {
-        incidentsNomisApi.stubGetIncident(33, offenderParty = "Z4321YX", status = "INREQ", type = "ABSCOND", reportedDateTime = "2021-07-08T10:35:18")
+        incidentsNomisApi.stubGetIncident(33, offenderParty = "Z4321YX", status = "INREQ", type = "ABSCOND", reportedDateTime = LocalDateTime.parse("2021-07-08T10:35:18"))
 
         webTestClient.put().uri("/incidents/reports/reconciliation")
           .exchange()
@@ -289,7 +290,7 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will show mismatch reportedDateTime in report`() {
-        incidentsNomisApi.stubGetIncident(33, reportedDateTime = "2021-07-08T10:35:18")
+        incidentsNomisApi.stubGetIncident(33, reportedDateTime = LocalDateTime.parse("2021-07-08T10:35:18"))
 
         webTestClient.put().uri("/incidents/reports/reconciliation")
           .exchange()

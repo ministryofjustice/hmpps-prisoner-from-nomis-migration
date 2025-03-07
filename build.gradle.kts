@@ -63,7 +63,7 @@ kotlin {
   }
 }
 
-data class ModelConfiguration(val name: String, val packageName: String, val url: String? = null) {
+data class ModelConfiguration(val name: String, val packageName: String, val url: String) {
   fun toBuildModelTaskName(): String = "build${nameToCamel()}ApiModel"
   fun toWriteJsonTaskName(): String = "write${nameToCamel()}Json"
   private val snakeRegex = "-[a-zA-Z]".toRegex()
@@ -128,10 +128,6 @@ val models = listOf(
     url = "https://locations-inside-prison-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
   ),
   ModelConfiguration(
-    name = "nomis-sync",
-    packageName = "nomissync",
-  ),
-  ModelConfiguration(
     name = "nomis-prisoner",
     packageName = "nomisprisoner",
     url = "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk/v3/api-docs",
@@ -182,17 +178,15 @@ models.forEach {
     generateModelTests.set(false)
     generateModelDocumentation.set(false)
   }
-  it.url?.let { url ->
-    tasks.register(it.toWriteJsonTaskName()) {
-      group = "Write JSON"
-      description = "Write JSON for ${it.name}"
-      doLast {
-        val json = URI.create(url).toURL().readText()
-        val formattedJson = ObjectMapper().let { mapper ->
-          mapper.writerWithDefaultPrettyPrinter().writeValueAsString(mapper.readTree(json))
-        }
-        Files.write(Paths.get(it.input), formattedJson.toByteArray())
+  tasks.register(it.toWriteJsonTaskName()) {
+    group = "Write JSON"
+    description = "Write JSON for ${it.name}"
+    doLast {
+      val json = URI.create(it.url).toURL().readText()
+      val formattedJson = ObjectMapper().let { mapper ->
+        mapper.writerWithDefaultPrettyPrinter().writeValueAsString(mapper.readTree(json))
       }
+      Files.write(Paths.get(it.input), formattedJson.toByteArray())
     }
   }
 }

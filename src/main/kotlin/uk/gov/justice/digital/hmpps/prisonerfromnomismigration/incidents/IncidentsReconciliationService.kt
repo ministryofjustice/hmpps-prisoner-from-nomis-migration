@@ -13,9 +13,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.asPages
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBoth
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.ReportWithDetails
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentAgencyId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentAgencyId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.doApiCallWithRetries
+import java.time.LocalDateTime
 import java.util.UUID
 
 @Service
@@ -220,7 +221,7 @@ data class IncidentReportDetail(
   val type: String? = null,
   val status: String? = null,
   val reportedBy: String,
-  val reportedDateTime: String,
+  val reportedDateTime: LocalDateTime,
   val offenderParties: List<String>? = null,
   val totalStaffParties: Int? = null,
   val totalQuestions: Int? = null,

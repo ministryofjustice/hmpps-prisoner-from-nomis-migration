@@ -12,26 +12,27 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.History
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HistoryQuestion
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.HistoryResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentAgencyId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentsCount
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.IncidentsReconciliationResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Offender
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.OffenderParty
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Question
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Requirement
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Response
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.Staff
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomissync.model.StaffParty
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.History
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.HistoryQuestion
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.HistoryResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentAgencyId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentsCount
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentsReconciliationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Offender
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderParty
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Question
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Requirement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Response
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Staff
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffParty
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.lang.Long.min
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Component
 class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
@@ -76,7 +77,7 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     nomisIncidentId: Long = 1234,
     offenderParty: String = "A1234BC",
     status: String = "AWAN",
-    reportedDateTime: String = "2021-07-07T10:35:17",
+    reportedDateTime: LocalDateTime = LocalDateTime.parse("2021-07-07T10:35:17"),
     type: String = "ATT_ESC_E",
   ) {
     nomisApi.stubFor(
@@ -115,7 +116,7 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
                       sequence = 4,
                       question = "Was anybody hurt?",
                       answers = listOf(),
-                      createDateTime = "2021-07-05T10:35:17",
+                      createDateTime = LocalDateTime.parse("2021-07-05T10:35:17"),
                       createdBy = "JSMITH",
                     ),
                   ),
@@ -143,7 +144,7 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
                       sequence = 1,
                       question = "Was anybody hurt?",
                       answers = listOf(),
-                      createDateTime = "2021-07-05T10:35:17",
+                      createDateTime = LocalDateTime.parse("2021-07-05T10:35:17"),
                       createdBy = "JSMITH",
                     ),
                   ),
@@ -200,33 +201,12 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetIncidentAgenciesWithError(status: HttpStatus) {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/incidents/reconciliation/agencies"))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(status.value())
-            .withBody("""{"message":"Error"}"""),
-        ),
-    )
-  }
-
   fun stubGetReconciliationAgencyIncidentCounts(agencyId: String = "ASI", open: Long = 3, closed: Long = 3) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/incidents/reconciliation/agency/$agencyId/counts"))
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
             .withBody(incidentAgencyCount(agencyId, open, closed)),
-        ),
-    )
-  }
-  fun stubGetIncidentForAgencyReconciliationWithError(agencyId: String = "ASI", status: HttpStatus) {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/incidents/reconciliation/agency/$agencyId/counts"))
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json").withStatus(status.value())
-            .withBody("""{"message":"Error"}"""),
         ),
     )
   }
@@ -273,7 +253,7 @@ private fun incidentResponse(
   nomisIncidentId: Long = 1234,
   offenderParty: String = "A1234BC",
   status: String = "AWAN",
-  reportedDateTime: String = "2021-07-07T10:35:17",
+  reportedDateTime: LocalDateTime = LocalDateTime.parse("2021-07-07T10:35:17"),
   type: String = "ATT_ESC_E",
 ): IncidentResponse = IncidentResponse(
   incidentId = nomisIncidentId,
@@ -293,7 +273,7 @@ private fun incidentResponse(
   ),
   type = type,
   lockedResponse = false,
-  incidentDateTime = "2017-04-12T16:45:00",
+  incidentDateTime = LocalDateTime.parse("2017-04-12T16:45:00"),
   reportingStaff = Staff(
     username = "FSTAFF_GEN",
     staffId = 485572,
@@ -301,10 +281,10 @@ private fun incidentResponse(
     lastName = "STAFF",
   ),
   followUpDate = LocalDate.parse("2017-04-12"),
-  createDateTime = "2021-07-23T10:35:17",
+  createDateTime = LocalDateTime.parse("2021-07-23T10:35:17"),
   createdBy = "JIM SMITH",
   lastModifiedBy = "JIM_ADM",
-  lastModifiedDateTime = "2021-07-23T10:35:17",
+  lastModifiedDateTime = LocalDateTime.parse("2021-07-23T10:35:17"),
   reportedDateTime = reportedDateTime,
   staffParties =
   listOf(
@@ -318,7 +298,7 @@ private fun incidentResponse(
       sequence = 1,
       role = CodeDescription("ACT", "Actively Involved"),
       comment = "Dave was hit",
-      createDateTime = "2021-07-23T10:35:17",
+      createDateTime = LocalDateTime.parse("2021-07-23T10:35:17"),
       createdBy = "JIM SMITH",
     ),
   ),
@@ -328,7 +308,7 @@ private fun incidentResponse(
       Offender(offenderParty, firstName = "Fred", lastName = "smith"),
       sequence = 1,
       role = CodeDescription("ABS", "Absconder"),
-      createDateTime = "2024-02-06T12:36:00",
+      createDateTime = LocalDateTime.parse("2024-02-06T12:36:00"),
       createdBy = "JIM",
       comment = "This is a comment",
       outcome = CodeDescription("AAA", "SOME OUTCOME"),
@@ -338,7 +318,7 @@ private fun incidentResponse(
       Offender(offenderParty, firstName = "Fred", lastName = "smith"),
       sequence = 2,
       role = CodeDescription("ABS", "Absconder"),
-      createDateTime = "2024-02-06T12:46:00",
+      createDateTime = LocalDateTime.parse("2024-02-06T12:46:00"),
       createdBy = "JIM",
     ),
   ),
@@ -353,7 +333,7 @@ private fun incidentResponse(
       ),
       sequence = 1,
       comment = "Complete the incident report",
-      createDateTime = "2021-07-05T10:35:17",
+      createDateTime = LocalDateTime.parse("2021-07-05T10:35:17"),
       createdBy = "JSMITH",
       date = LocalDate.parse("2021-07-06"),
     ),
@@ -373,7 +353,7 @@ private fun incidentResponse(
             firstName = "JIM",
             lastName = "SMITH",
           ),
-          createDateTime = "2021-07-05T10:35:17",
+          createDateTime = LocalDateTime.parse("2021-07-05T10:35:17"),
           createdBy = "JSMITH",
           questionResponseId = null,
           answer = "Yes",
@@ -382,7 +362,7 @@ private fun incidentResponse(
 
         ),
       ),
-      createDateTime = "2021-07-05T10:35:17",
+      createDateTime = LocalDateTime.parse("2021-07-05T10:35:17"),
       createdBy = "JSMITH",
     ),
   ),
@@ -391,14 +371,14 @@ private fun incidentResponse(
       questionnaireId = 1234,
       type = "ATT_ESC_E",
       description = "Escape Attempt",
-      incidentChangeDateTime = "2021-07-05T10:35:17",
+      incidentChangeDateTime = LocalDateTime.parse("2021-07-05T10:35:17"),
       incidentChangeStaff = Staff(
         username = "JSMITH",
         staffId = 485572,
         firstName = "JIM",
         lastName = "SMITH",
       ),
-      createDateTime = "2021-07-05T10:35:17",
+      createDateTime = LocalDateTime.parse("2021-07-05T10:35:17"),
       createdBy = "JSMITH",
       questions = listOf(
         HistoryQuestion(
