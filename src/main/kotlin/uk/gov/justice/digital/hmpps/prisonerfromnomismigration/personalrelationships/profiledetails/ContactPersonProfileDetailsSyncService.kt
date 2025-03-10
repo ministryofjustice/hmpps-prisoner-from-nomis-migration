@@ -45,6 +45,7 @@ class ContactPersonProfileDetailsSyncService(
     bookingId: Long? = null,
     profileType: ContactPersonProfileType,
     nomisResponse: PrisonerProfileDetailsResponse? = null,
+    forceSync: Boolean = false,
   ) {
     val telemetry = telemetryOf("offenderNo" to offenderNo)
     bookingId?.run { telemetry["bookingId"] = bookingId.toString() }
@@ -60,12 +61,14 @@ class ContactPersonProfileDetailsSyncService(
         ?: throw DomesticStatusChangedException("No ${profileType.name} profile type found for bookingId $bookingId")
       val (lastModifiedTime, lastModifiedBy) = profileDetails.lastModified()
 
-      getIgnoreReason(nomisResponse.bookings.size, booking.latestBooking, bookingId, profileDetails)
-        ?.let { ignoreReason ->
-          telemetry["reason"] = ignoreReason
-          telemetryClient.trackEvent("contact-person-${profileType.telemetryName}-synchronisation-ignored", telemetry)
-          return
-        }
+      if (!forceSync) {
+        getIgnoreReason(nomisResponse.bookings.size, booking.latestBooking, bookingId, profileDetails)
+          ?.let { ignoreReason ->
+            telemetry["reason"] = ignoreReason
+            telemetryClient.trackEvent("contact-person-${profileType.telemetryName}-synchronisation-ignored", telemetry)
+            return
+          }
+      }
 
       when (profileType) {
         ContactPersonProfileType.MARITAL -> {

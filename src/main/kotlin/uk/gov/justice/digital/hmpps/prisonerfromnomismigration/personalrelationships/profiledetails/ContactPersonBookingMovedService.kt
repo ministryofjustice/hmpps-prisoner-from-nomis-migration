@@ -56,6 +56,7 @@ class ContactPersonBookingMovedService(
                 offenderNo = offenderNo,
                 profileType = ContactPersonProfileType.valueOf(profileDetail.type),
                 nomisResponse = nomisResponse,
+                forceSync = true,
               )
                 .also { telemetry.addToTelemetry("syncToDps", "$offenderNo-$profileType") }
             }

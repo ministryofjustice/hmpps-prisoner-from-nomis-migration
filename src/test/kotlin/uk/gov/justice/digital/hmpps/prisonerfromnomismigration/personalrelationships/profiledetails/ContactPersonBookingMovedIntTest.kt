@@ -305,6 +305,82 @@ class ContactPersonBookingMovedIntTest(
           isNull(),
         )
       }
+
+      @Test
+      fun `domestic status changed in DPS`() {
+        // stub profile details returned from NOMIS
+        stubGetProfileDetails(
+          fromOffenderNo,
+          bookingResponse(
+            bookingId = 1,
+            latestBooking = true,
+            startDateTime = yesterday,
+            // The domestic status was last updated in DPS - but should still be sync'd to DPS in this scenario
+            profileDetailsResponse("MARITAL", "M", auditModuleName = synchronisationUser),
+          ),
+        )
+        stubGetProfileDetails(
+          toOffenderNo,
+          bookingResponse(
+            bookingId = 2,
+            latestBooking = false,
+            startDateTime = yesterday,
+            profileDetailsResponse("MARITAL", "C"),
+          ),
+          bookingResponse(
+            bookingId = movedBookingId,
+            latestBooking = true,
+            startDateTime = today,
+            // The domestic status was last updated in DPS - but should still be sync'd to DPS in this scenario
+            profileDetailsResponse("MARITAL", "D", modifiedTime = now, auditModuleName = synchronisationUser),
+          ),
+        )
+
+        // Send the event
+        sendBookingMovedEvent().also {
+          waitForAnyProcessingToComplete("contact-person-booking-moved")
+        }
+
+        // check DPS updates
+        dpsApi.verify(
+          prisonerNumber = fromOffenderNo,
+          type = "updated",
+          profileType = "domestic-status",
+          dpsUpdates = mapOf(
+            "domesticStatusCode" to equalTo("M"),
+          ),
+        )
+        dpsApi.verify(
+          prisonerNumber = toOffenderNo,
+          type = "updated",
+          profileType = "domestic-status",
+          dpsUpdates = mapOf(
+            "domesticStatusCode" to equalTo("D"),
+          ),
+        )
+
+        // check NOMIS updates
+        nomisSyncApi.verify(
+          putRequestedFor(urlPathEqualTo("/contactperson/sync/profile-details/$toOffenderNo/MARITAL")),
+        )
+
+        // check telemetry
+        verify(telemetryClient).trackEvent(
+          eq("contact-person-booking-moved"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "bookingId" to movedBookingId.toString(),
+                "toOffenderNo" to toOffenderNo,
+                "fromOffenderNo" to fromOffenderNo,
+                "syncToDps" to "$fromOffenderNo-MARITAL,$toOffenderNo-MARITAL",
+                "syncToNomis" to "$toOffenderNo-MARITAL,$toOffenderNo-CHILD",
+              ),
+            )
+          },
+          isNull(),
+        )
+      }
     }
 
     @Nested
@@ -502,13 +578,19 @@ class ContactPersonBookingMovedIntTest(
     profileDetails = profileDetails.asList(),
   )
 
-  fun profileDetailsResponse(profileType: String, code: String?, modifiedTime: LocalDateTime = LocalDateTime.parse("2024-02-03T12:34:56")) = ProfileDetailsResponse(
+  fun profileDetailsResponse(
+    profileType: String,
+    code: String?,
+    modifiedTime: LocalDateTime = LocalDateTime.parse("2024-02-03T12:34:56"),
+    auditModuleName: String = "NOMIS_MODULE",
+  ) = ProfileDetailsResponse(
     type = profileType,
     code = code,
     createDateTime = LocalDateTime.parse("2024-01-03T12:34:56"),
     createdBy = "A_USER",
     modifiedDateTime = modifiedTime,
     modifiedBy = "ANOTHER_USER",
+    auditModuleName = auditModuleName,
   )
 
   private fun waitForDlqMessage() = await untilAsserted {
