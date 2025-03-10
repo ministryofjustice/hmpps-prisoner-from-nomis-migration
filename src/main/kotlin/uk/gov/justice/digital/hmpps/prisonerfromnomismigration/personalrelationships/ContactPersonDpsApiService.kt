@@ -6,8 +6,11 @@ import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityIgnoreNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.CodedValue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ContactsAndRestrictions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerContactRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddressPhone
@@ -239,4 +242,42 @@ class ContactPersonDpsApiService(@Qualifier("personalRelationshipsApiWebClient")
       .retrieve()
       .awaitBodilessEntityIgnoreNotFound()
   }
+
+  suspend fun replaceMergedPrisonerContacts(prisonerNumber: String, mergePrisonerContactRequest: MergePrisonerContactRequest): MergePrisonerContactResponse = webClient.post()
+    .uri("/sync/prisoner/{prisonerNumber}/contact/replace", prisonerNumber)
+    .bodyValue(mergePrisonerContactRequest)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
 }
+
+// FAKE DTOs - replace with real ones when delivered by DPS
+
+data class SyncPrisonerRelationship(
+  val id: Long,
+  val contactType: CodedValue,
+  val relationshipType: CodedValue,
+  val currentTerm: Boolean,
+  val active: Boolean,
+  val approvedVisitor: Boolean,
+  val nextOfKin: Boolean,
+  val emergencyContact: Boolean,
+  val contactId: Long,
+  val restrictions: List<MigratePrisonerContactRestriction>,
+  val expiryDate: java.time.LocalDate? = null,
+  val comment: String? = null,
+  val createDateTime: java.time.LocalDateTime? = null,
+  val createUsername: String? = null,
+  val modifyDateTime: java.time.LocalDateTime? = null,
+  val modifyUsername: String? = null,
+)
+
+data class MergePrisonerContactRequest(
+  val prisonerContacts: List<SyncPrisonerRelationship>,
+  val removedPrisonerNumber: String,
+)
+
+data class MergePrisonerContactResponse(
+  val prisonerContacts: List<ContactsAndRestrictions>,
+  val relationshipsRemoved: List<Long>,
+  val restrictionsRemoved: List<Long>,
+)
