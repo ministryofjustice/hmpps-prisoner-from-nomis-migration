@@ -70,6 +70,7 @@ generic-service:
     FEATURE_EVENT_PERSONALRELATIONSHIPS_PERSON_IDENTIFIERS-DELETED: false
     FEATURE_EVENT_PERSONALRELATIONSHIPS_OFFENDER_PHYSICAL_DETAILS-CHANGED: false
     FEATURE_EVENT_PERSONALRELATIONSHIPS_PRISON-OFFENDER-EVENTS_PRISONER_BOOKING_MOVED: false
+    FEATURE_EVENT_PERSONCONTACTS_PRISON-OFFENDER-EVENTS_PRISONER_MERGED: false
 
 generic-prometheus-alerts:
   rdsAlertsDatabases:
@@ -130,6 +131,10 @@ generic-prometheus-alerts:
       - "syscon-devs-prod-migration_personalrelationships_dlq"
       - "syscon-devs-prod-prisoner_from_nomis_personalrelationships_queue"
       - "syscon-devs-prod-prisoner_from_nomis_personalrelationships_dl_queue"
+      - "syscon-devs-prod-prisoner_from_nomis_personalrelationships_domain_queue"
+      - "syscon-devs-prod-prisoner_from_nomis_personalrelationships_domain_dl_queue"
+      - "syscon-devs-prod-prisoner_from_nomis_personcontacts_domain_queue"
+      - "syscon-devs-prod-prisoner_from_nomis_personcontacts_domain_dl_queue"
     organisations:
       - "syscon-devs-prod-migration_organisations_queue"
       - "syscon-devs-prod-migration_organisations_dlq"
