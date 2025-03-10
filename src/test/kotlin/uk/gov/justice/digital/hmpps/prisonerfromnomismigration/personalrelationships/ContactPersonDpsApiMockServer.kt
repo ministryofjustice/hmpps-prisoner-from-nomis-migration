@@ -16,10 +16,12 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.AddressAndPhones
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.CodedValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ContactsAndRestrictions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerContactRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddressPhone
@@ -114,6 +116,53 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       employments = request.employments.map { IdPair(elementType = IdPair.ElementType.EMPLOYMENT, nomisId = it.sequence, dpsId = it.sequence * 10) },
       restrictions = request.restrictions.map { IdPair(elementType = IdPair.ElementType.RESTRICTION, nomisId = it.id, dpsId = it.id * 10) },
       relationships = request.contacts.map { ContactsAndRestrictions(relationship = IdPair(elementType = IdPair.ElementType.RESTRICTION, nomisId = it.id, dpsId = it.id * 10), restrictions = it.restrictions.map { restriction -> IdPair(elementType = IdPair.ElementType.RESTRICTION, nomisId = restriction.id, dpsId = restriction.id * 10) }) },
+    )
+
+    fun mergePrisonerContactRequest() = MergePrisonerContactRequest(
+      prisonerContacts = listOf(syncPrisonerRelationship()),
+      removedPrisonerNumber = "A1000KT",
+    )
+
+    fun mergePrisonerContactResponse() = MergePrisonerContactResponse(
+      prisonerContacts = listOf(
+        ContactsAndRestrictions(
+          relationship = IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT, nomisId = 12345, dpsId = 1234567),
+          restrictions = listOf(IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT_RESTRICTION, nomisId = 12345, dpsId = 1234567)),
+        ),
+      ),
+      relationshipsRemoved = listOf(),
+      restrictionsRemoved = listOf(),
+    )
+
+    fun syncPrisonerRelationship() = SyncPrisonerRelationship(
+      id = 321,
+      contactId = 1233,
+      contactType = CodedValue(code = "S", description = ""),
+      relationshipType = CodedValue(code = "BRO", description = ""),
+      emergencyContact = false,
+      nextOfKin = false,
+      approvedVisitor = false,
+      createUsername = "J.SMITH",
+      createDateTime = LocalDateTime.parse("2024-01-01T12:13"),
+      currentTerm = true,
+      active = true,
+      restrictions = listOf(
+        MigratePrisonerContactRestriction(
+          id = 456,
+          restrictionType = CodedValue(code = "BAN", description = ""),
+          startDate = LocalDate.now(),
+          comment = null,
+          expiryDate = null,
+          createDateTime = LocalDateTime.parse("2024-01-01T12:13"),
+          createUsername = "J.SMITH",
+          modifyDateTime = null,
+          modifyUsername = null,
+        ),
+      ),
+      expiryDate = null,
+      comment = null,
+      modifyDateTime = null,
+      modifyUsername = null,
     )
 
     fun createContactRequest() = SyncCreateContactRequest(
@@ -747,6 +796,17 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(status)
             .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+  fun stubReplaceMergedPrisonerContacts(prisonerNumber: String, response: MergePrisonerContactResponse = mergePrisonerContactResponse()) {
+    stubFor(
+      post("/sync/prisoner/$prisonerNumber/contact/replace")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
         ),
     )
   }

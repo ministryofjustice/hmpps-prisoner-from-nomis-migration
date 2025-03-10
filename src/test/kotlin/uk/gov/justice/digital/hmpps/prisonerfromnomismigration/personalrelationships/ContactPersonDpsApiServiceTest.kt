@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createPrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createPrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.mergePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.migrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactAddressRequest
@@ -969,6 +970,32 @@ class ContactPersonDpsApiServiceTest {
       dpsContactPersonServer.stubDeleteContactRestriction(contactRestrictionId, status = 404)
 
       assertDoesNotThrow { apiService.deleteContactRestriction(contactRestrictionId) }
+    }
+  }
+
+  @Nested
+  inner class ReplaceMergedPrisonerContacts {
+    @Test
+    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+      dpsContactPersonServer.stubReplaceMergedPrisonerContacts("A1234KT")
+
+      apiService.replaceMergedPrisonerContacts("A1234KT", mergePrisonerContactRequest = mergePrisonerContactRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the replace endpoint`() = runTest {
+      dpsContactPersonServer.stubReplaceMergedPrisonerContacts("A1234KT")
+
+      apiService.replaceMergedPrisonerContacts("A1234KT", mergePrisonerContactRequest = mergePrisonerContactRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/sync/prisoner/A1234KT/contact/replace")),
+      )
     }
   }
 }
