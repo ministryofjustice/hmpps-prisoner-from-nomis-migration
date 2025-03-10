@@ -22,13 +22,13 @@ import org.springframework.http.HttpStatus.BAD_REQUEST
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerDomesticStatusResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerNumberOfChildrenResponse
-import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlin.collections.component1
@@ -519,8 +519,7 @@ class ContactPersonBookingMovedIntTest(
     }
   }
 
-  private fun sendBookingMovedEvent(): SendMessageResponse? = awsSqsSentencingOffenderEventsClient.sendMessage(
-    personalRelationshipsQueueOffenderEventsUrl,
+  private fun sendBookingMovedEvent(): SendMessageResponse? = personalRelationshipsDomainEventsQueue.sendMessage(
     bookingMovedDomainEvent(
       eventType = "prison-offender-events.prisoner.booking.moved",
       bookingId = movedBookingId,
@@ -595,9 +594,7 @@ class ContactPersonBookingMovedIntTest(
 
   private fun waitForDlqMessage() = await untilAsserted {
     assertThat(
-      awsSqsPersonalRelationshipsOffenderEventsDlqClient.countAllMessagesOnQueue(
-        personalRelationshipsQueueOffenderEventsDlqUrl,
-      ).get(),
+      personalRelationshipsDomainEventsQueue.countAllMessagesOnDLQQueue(),
     ).isEqualTo(1)
   }
 }

@@ -131,3 +131,5 @@ hmpps.sqs:
       dlqMaxReceiveCount: 2
     eventpersonalrelationships:
       dlqMaxReceiveCount: 1
+    domaineventpersonalrelationships:
+      dlqMaxReceiveCount: 1

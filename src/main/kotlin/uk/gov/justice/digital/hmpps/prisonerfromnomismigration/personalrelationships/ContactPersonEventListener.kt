@@ -19,7 +19,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_RESTRICTION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PHONE_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.profiledetails.ContactPersonBookingMovedService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.profiledetails.ContactPersonProfileDetailsSyncService
 import java.util.concurrent.CompletableFuture
 
@@ -29,7 +28,6 @@ class ContactPersonEventListener(
   private val eventFeatureSwitch: EventFeatureSwitch,
   private val service: ContactPersonSynchronisationService,
   private val profileDetailService: ContactPersonProfileDetailsSyncService,
-  private val moveBookingService: ContactPersonBookingMovedService,
 ) {
 
   private companion object {
@@ -72,7 +70,6 @@ class ContactPersonEventListener(
               "PERSON_IDENTIFIERS-UPDATED" -> service.personIdentifierUpdated(sqsMessage.Message.fromJson())
               "PERSON_IDENTIFIERS-DELETED" -> service.personIdentifierDeleted(sqsMessage.Message.fromJson())
               "OFFENDER_PHYSICAL_DETAILS-CHANGED" -> profileDetailService.profileDetailsChanged(sqsMessage.Message.fromJson())
-              "prison-offender-events.prisoner.booking.moved" -> moveBookingService.bookingMoved(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
