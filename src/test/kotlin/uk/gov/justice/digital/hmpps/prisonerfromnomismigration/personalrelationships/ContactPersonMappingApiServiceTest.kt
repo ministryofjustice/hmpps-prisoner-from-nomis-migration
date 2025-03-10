@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonSimpleMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
@@ -1089,6 +1090,29 @@ class ContactPersonMappingApiServiceTest {
   }
 
   @Nested
+  inner class ReplaceMappingsForPrisoner {
+    @Test
+    internal fun `will pass oath2 token to replace endpoint`() = runTest {
+      mockServer.stubReplaceMappingsForPrisoner("A1234KT")
+
+      apiService.replaceMappingsForPrisoner(
+        "A1234KT",
+        ContactPersonPrisonerMappingsDto(
+          mappingType = ContactPersonPrisonerMappingsDto.MappingType.MIGRATED,
+          personContactMapping = emptyList(),
+          personContactRestrictionMapping = emptyList(),
+          personContactMappingsToRemoveByDpsId = emptyList(),
+          personContactRestrictionMappingsToRemoveByDpsId = emptyList(),
+        ),
+      )
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner/A1234KT")).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+  }
+
+  @Nested
   inner class CreatePersonMapping {
     @Test
     internal fun `will pass oath2 token to create person mapping endpoint`() = runTest {
@@ -1096,7 +1120,7 @@ class ContactPersonMappingApiServiceTest {
 
       apiService.createPersonMapping(
         PersonMappingDto(
-          mappingType = PersonMappingDto.MappingType.NOMIS_CREATED,
+          mappingType = NOMIS_CREATED,
           nomisId = 1234567,
           dpsId = "1234567",
         ),

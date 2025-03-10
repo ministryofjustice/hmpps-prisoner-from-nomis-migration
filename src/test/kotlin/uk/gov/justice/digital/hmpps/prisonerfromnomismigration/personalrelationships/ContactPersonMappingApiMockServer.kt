@@ -130,6 +130,17 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
       ),
     )
   }
+
+  fun stubReplaceMappingsForPrisoner(offenderNo: String) {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/replace/prisoner/$offenderNo").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(200),
+      ),
+    )
+  }
+
   fun stubCreatePersonMapping() {
     mappingApi.stubFor(
       post("/mapping/contact-person/person").willReturn(

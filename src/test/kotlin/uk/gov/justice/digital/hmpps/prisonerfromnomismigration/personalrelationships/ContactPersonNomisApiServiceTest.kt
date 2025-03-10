@@ -126,4 +126,29 @@ class ContactPersonNomisApiServiceTest {
       assertThat(pages.content[1].personId).isEqualTo(1234568)
     }
   }
+
+  @Nested
+  inner class GetContactsForPrisoner {
+    @Test
+    fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubContactsForPrisoner("A1234KT")
+
+      apiService.getContactsForPrisoner("A1234KT")
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubContactsForPrisoner("A1234KT")
+
+      apiService.getContactsForPrisoner("A1234KT")
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/prisoners/A1234KT/contacts")),
+      )
+    }
+  }
 }

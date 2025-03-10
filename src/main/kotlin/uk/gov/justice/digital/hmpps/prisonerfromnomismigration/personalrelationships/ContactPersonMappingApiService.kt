@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactRestrictionMappingDto
@@ -259,6 +260,14 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
       Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<PersonMappingDto>>() {})))
     }
     .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun replaceMappingsForPrisoner(offenderNo: String, mappings: ContactPersonPrisonerMappingsDto) {
+    webClient.post()
+      .uri("/mapping/contact-person/replace/prisoner/{offenderNo}", offenderNo)
+      .bodyValue(mappings)
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 
   suspend fun createPersonMapping(mappings: PersonMappingDto): CreateMappingResult<PersonMappingDto> = webClient.post()
     .uri("/mapping/contact-person/person")

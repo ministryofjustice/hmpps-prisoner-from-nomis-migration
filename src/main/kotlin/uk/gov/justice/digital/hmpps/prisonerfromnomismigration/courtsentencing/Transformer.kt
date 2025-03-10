@@ -170,7 +170,7 @@ fun SentenceResponse.toDpsMigrationSentence() = MigrationCreateSentence(
   consecutiveToSentenceId = this.consecSequence?.let {
     MigrationSentenceId(
       offenderBookingId = this.bookingId,
-      sequence = this.consecSequence,
+      sequence = it,
     )
   },
   sentenceId = MigrationSentenceId(offenderBookingId = this.bookingId, sequence = this.sentenceSeq.toInt()),

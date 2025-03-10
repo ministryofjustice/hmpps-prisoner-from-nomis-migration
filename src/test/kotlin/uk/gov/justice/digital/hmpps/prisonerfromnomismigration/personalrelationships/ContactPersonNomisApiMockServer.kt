@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactForPerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactForPrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactPerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactRestriction
@@ -23,6 +24,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonPhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerWithContacts
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDate
@@ -74,6 +77,20 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(pagePersonIdResponse(count = count, content = content)),
+      ),
+    )
+  }
+
+  fun stubContactsForPrisoner(
+    offenderNo: String,
+    contacts: PrisonerWithContacts = prisonerWithContacts(),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/$offenderNo/contacts")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(contacts)),
       ),
     )
   }
@@ -172,4 +189,37 @@ fun ContactPerson.withContact(contactId: Long, offenderNo: String, restriction: 
 fun nomisAudit() = NomisAudit(
   createDatetime = LocalDateTime.now(),
   createUsername = "Q1251T",
+)
+
+fun prisonerWithContacts() = PrisonerWithContacts(
+  contacts = listOf(prisonerContact()),
+)
+
+fun prisonerContact() = PrisonerContact(
+  id = 1,
+  relationshipType = CodeDescription(code = "BOF", description = "Boyfriend"),
+  contactType = CodeDescription(code = "S", description = "Social/ Family"),
+  active = true,
+  emergencyContact = true,
+  nextOfKin = false,
+  approvedVisitor = false,
+  restrictions = listOf(
+    ContactRestriction(
+      id = 1,
+      type = CodeDescription(code = "BAN", description = "Banned"),
+      enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"),
+      effectiveDate = LocalDate.parse("2020-01-01"),
+      audit = nomisAudit(),
+    ),
+  ),
+  audit = nomisAudit(),
+  bookingId = 1234,
+  bookingSequence = 1,
+  person = ContactForPerson(
+    personId = 4321,
+    lastName = "BRIGHT",
+    firstName = "JANE",
+  ),
+  expiryDate = null,
+  comment = null,
 )
