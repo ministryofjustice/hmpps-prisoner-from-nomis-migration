@@ -45,6 +45,8 @@ const val LOCATIONS_SYNC_QUEUE_ID = "eventlocations"
 const val CASENOTES_SYNC_QUEUE_ID = "eventcasenotes"
 const val ALERTS_SYNC_QUEUE_ID = "eventalerts"
 const val PERSONALRELATIONSHIPS_SYNC_QUEUE_ID = "eventpersonalrelationships"
+const val PERSONALRELATIONSHIPS_DOMAIN_SYNC_QUEUE_ID = "domaineventpersonalrelationships"
+const val PERSONCONTACTS_DOMAIN_SYNC_QUEUE_ID = "domaineventpersoncontacts"
 const val ORGANISATIONS_SYNC_QUEUE_ID = "eventorganisations"
 
 enum class MigrationType(val queueId: String, val telemetryName: String) {

@@ -5,6 +5,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.doesOriginateInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
@@ -827,6 +828,13 @@ class ContactPersonSynchronisationService(
         telemetry,
       )
     }
+  }
+
+  fun prisonerMerged(prisonerMergeEvent: PrisonerMergeDomainEvent) {
+    telemetryClient.trackEvent(
+      "contactperson-prisoner-merged-synchronisation-success",
+      mapOf("retainedOffenderNo" to prisonerMergeEvent.additionalInformation.nomsNumber, "removedOffenderNo" to prisonerMergeEvent.additionalInformation.removedNomsNumber),
+    )
   }
 
   private suspend fun tryToCreateMapping(

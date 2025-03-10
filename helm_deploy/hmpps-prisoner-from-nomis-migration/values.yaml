@@ -164,6 +164,14 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTPERSONALRELATIONSHIPS_QUEUE_NAME: "sqs_name"
     prison-events-personalrelationships-dl-queue:
       HMPPS_SQS_QUEUES_EVENTPERSONALRELATIONSHIPS_DLQ_NAME: "sqs_name"
+    prison-events-personalrelationships-domain-queue:
+      HMPPS_SQS_QUEUES_DOMAINEVENTPERSONALRELATIONSHIPS_QUEUE_NAME: "sqs_name"
+    prison-events-personalrelationships-domain-dl-queue:
+      HMPPS_SQS_QUEUES_DOMAINEVENTPERSONALRELATIONSHIPS_DLQ_NAME: "sqs_name"
+    prison-events-personcontacts-domain-queue:
+      HMPPS_SQS_QUEUES_DOMAINEVENTPERSONCONTACTS_QUEUE_NAME: "sqs_name"
+    prison-events-personcontacts-domain-dl-queue:
+      HMPPS_SQS_QUEUES_DOMAINEVENTPERSONCONTACTS_DLQ_NAME: "sqs_name"
     prison-events-organisations-queue:
       HMPPS_SQS_QUEUES_EVENTORGANISATIONS_QUEUE_NAME: "sqs_name"
     prison-events-organisations-dl-queue:
