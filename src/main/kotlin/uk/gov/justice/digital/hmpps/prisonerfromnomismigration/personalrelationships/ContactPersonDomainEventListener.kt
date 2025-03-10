@@ -30,7 +30,7 @@ class ContactPersonDomainEventListener(
       when (sqsMessage.Type) {
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
-          if (eventFeatureSwitch.isEnabled(eventType, "personalrelationships")) {
+          if (eventFeatureSwitch.isEnabled(eventType, "personcontacts")) {
             when (eventType) {
               "prison-offender-events.prisoner.merged" -> service.prisonerMerged(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
@@ -40,7 +40,7 @@ class ContactPersonDomainEventListener(
           }
         }
 
-        else -> log.info("Received a message I wasn't expecting {}", sqsMessage.Type)
+        else -> log.info("Received a non SNS message I wasn't expecting {}", sqsMessage.Type)
       }
     }
   }

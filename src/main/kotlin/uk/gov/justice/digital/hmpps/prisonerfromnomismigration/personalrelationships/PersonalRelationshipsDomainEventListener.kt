@@ -31,7 +31,7 @@ class PersonalRelationshipsDomainEventListener(
       when (sqsMessage.Type) {
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
-          if (eventFeatureSwitch.isEnabled(eventType, "personcontacts")) {
+          if (eventFeatureSwitch.isEnabled(eventType, "personalrelationships")) {
             when (eventType) {
               "prison-offender-events.prisoner.booking.moved" -> moveBookingService.bookingMoved(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)

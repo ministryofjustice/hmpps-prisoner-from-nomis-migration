@@ -830,10 +830,20 @@ class ContactPersonSynchronisationService(
     }
   }
 
-  fun prisonerMerged(prisonerMergeEvent: PrisonerMergeDomainEvent) {
+  suspend fun prisonerMerged(prisonerMergeEvent: PrisonerMergeDomainEvent) {
+    val retainedOffenderNumber = prisonerMergeEvent.additionalInformation.nomsNumber
+    val removedOffenderNumber = prisonerMergeEvent.additionalInformation.removedNomsNumber
+    val telemetry = mutableMapOf(
+      "offenderNo" to retainedOffenderNumber,
+      "bookingId" to prisonerMergeEvent.additionalInformation.bookingId,
+      "removedOffenderNo" to removedOffenderNumber,
+    )
+
+    val contacts = nomisApiService.getContactsForPrisoner(retainedOffenderNumber).contacts
+
     telemetryClient.trackEvent(
-      "contactperson-prisoner-merged-synchronisation-success",
-      mapOf("retainedOffenderNo" to prisonerMergeEvent.additionalInformation.nomsNumber, "removedOffenderNo" to prisonerMergeEvent.additionalInformation.removedNomsNumber),
+      "from-nomis-synch-contactperson-merge",
+      telemetry + ("contactsCount" to contacts.size),
     )
   }
 

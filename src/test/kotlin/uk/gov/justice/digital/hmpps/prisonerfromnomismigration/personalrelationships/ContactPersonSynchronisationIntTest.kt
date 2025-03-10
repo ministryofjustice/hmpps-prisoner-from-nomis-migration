@@ -16,6 +16,7 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -5402,6 +5403,55 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             assertThat(it["dpsContactId"]).isEqualTo(nomisPersonId.toString())
             assertThat(it["nomisContactId"]).isEqualTo(nomisContactId.toString())
             assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("prison-offender-events.prisoner.merged")
+  inner class PrisonerMerged {
+    val offenderNumberRetained = "A1234KT"
+    val offenderNumberRemoved = "A1000KT"
+
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubContactsForPrisoner(
+          offenderNo = offenderNumberRetained,
+          contacts = prisonerWithContacts().copy(
+            contacts = listOf(
+              uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.prisonerContact(),
+              uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.prisonerContact(),
+            ),
+          ),
+        )
+
+        personContactsDomainEventsQueue.sendMessage(
+          mergeDomainEvent(
+            bookingId = 1234,
+            offenderNo = offenderNumberRetained,
+            removedOffenderNo = offenderNumberRemoved,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will retrieve all contacts for the retained prisoner number`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/prisoners/$offenderNumberRetained/contacts")))
+      }
+
+      @Test
+      fun `will track telemetry for the merge`() {
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-contactperson-merge"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNumberRetained)
+            assertThat(it["removedOffenderNo"]).isEqualTo(offenderNumberRemoved)
+            assertThat(it["contactsCount"]).isEqualTo("2")
           },
           isNull(),
         )
