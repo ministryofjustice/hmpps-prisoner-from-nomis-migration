@@ -12,6 +12,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPrisonerMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonSimpleMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonContactRestrictionMappingDto
@@ -21,15 +23,20 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonRestrictionMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactPerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonEmailAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonEmployment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonPhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.CodedValue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerContactRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactEmailRequest
@@ -839,11 +846,29 @@ class ContactPersonSynchronisationService(
       "removedOffenderNo" to removedOffenderNumber,
     )
 
-    val contacts = nomisApiService.getContactsForPrisoner(retainedOffenderNumber).contacts
+    val nomisContacts = nomisApiService.getContactsForPrisoner(retainedOffenderNumber).contacts
+    val dpsChangedResponse = dpsApiService.replaceMergedPrisonerContacts(
+      MergePrisonerContactRequest(
+        prisonerContacts = nomisContacts.map { it.toDpsSyncPrisonerRelationship() },
+        removedPrisonerNumber = removedOffenderNumber,
+        retainedPrisonerNumber = retainedOffenderNumber,
+      ),
+    )
 
+    // TODO: deal with mapping retries
+    mappingApiService.replaceMappingsForPrisoner(
+      offenderNo = retainedOffenderNumber,
+      mappings = ContactPersonPrisonerMappingsDto(
+        mappingType = ContactPersonPrisonerMappingsDto.MappingType.NOMIS_CREATED,
+        personContactMapping = dpsChangedResponse.prisonerContacts.map { ContactPersonSimpleMappingIdDto(nomisId = it.relationship.nomisId, dpsId = "${it.relationship.dpsId}") },
+        personContactRestrictionMapping = dpsChangedResponse.prisonerContacts.flatMap { it.restrictions.map { restriction -> ContactPersonSimpleMappingIdDto(nomisId = restriction.nomisId, dpsId = "${restriction.dpsId}") } },
+        personContactMappingsToRemoveByDpsId = dpsChangedResponse.relationshipsRemoved.map { "$it" },
+        personContactRestrictionMappingsToRemoveByDpsId = dpsChangedResponse.restrictionsRemoved.map { "$it" },
+      ),
+    )
     telemetryClient.trackEvent(
       "from-nomis-synch-contactperson-merge",
-      telemetry + ("contactsCount" to contacts.size),
+      telemetry + ("contactsCount" to nomisContacts.size),
     )
   }
 
@@ -1295,6 +1320,50 @@ fun PersonContact.toDpsCreatePrisonerContactRequest(nomisPersonId: Long) = SyncC
   createdBy = this.audit.createUsername,
   createdTime = this.audit.createDatetime,
 )
+
+// TODO - use real DTO when available
+fun PrisonerContact.toDpsSyncPrisonerRelationship() = SyncPrisonerRelationship(
+  id = this.id,
+  restrictions = this.restrictions.map { restriction ->
+    MigratePrisonerContactRestriction(
+      id = restriction.id,
+      restrictionType = restriction.type.toCodedValue(),
+      startDate = restriction.effectiveDate,
+      expiryDate = restriction.expiryDate,
+      comment = restriction.comment,
+      createDateTime = restriction.audit.createDatetime,
+      createUsername = if (restriction.audit.hasBeenModified()) {
+        restriction.audit.createUsername
+      } else {
+        restriction.enteredStaff.username
+      },
+      modifyDateTime = restriction.audit.modifyDatetime,
+      modifyUsername = if (restriction.audit.hasBeenModified()) {
+        restriction.enteredStaff.username
+      } else {
+        restriction.audit.modifyUserId
+      },
+    )
+  },
+  contactId = this.person.personId,
+  contactType = this.contactType.toCodedValue(),
+  relationshipType = this.relationshipType.toCodedValue(),
+  active = this.active,
+  currentTerm = this.bookingSequence == 1L,
+  nextOfKin = this.nextOfKin,
+  emergencyContact = this.emergencyContact,
+  approvedVisitor = this.approvedVisitor,
+  comment = this.comment,
+  expiryDate = this.expiryDate,
+  createDateTime = this.audit.createDatetime,
+  createUsername = this.audit.createUsername,
+  modifyDateTime = this.audit.modifyDatetime,
+  modifyUsername = this.audit.modifyUserId,
+)
+
+private fun CodeDescription.toCodedValue() = CodedValue(code = this.code, description = this.description)
+private fun NomisAudit.hasBeenModified() = this.modifyUserId != null
+
 fun PersonContact.toDpsUpdatePrisonerContactRequest(nomisPersonId: Long) = SyncUpdatePrisonerContactRequest(
   // these will be mutable in DPS but we still supply them
   contactId = nomisPersonId,

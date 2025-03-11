@@ -66,7 +66,6 @@ class ContactPersonDpsApiExtension :
     val dpsContactPersonServer = ContactPersonDpsApiMockServer()
     lateinit var objectMapper: ObjectMapper
 
-    @Suppress("unused")
     inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsContactPersonServer.getRequestBody(pattern, objectMapper)
     inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsContactPersonServer.getRequestBodies(pattern, objectMapper)
   }

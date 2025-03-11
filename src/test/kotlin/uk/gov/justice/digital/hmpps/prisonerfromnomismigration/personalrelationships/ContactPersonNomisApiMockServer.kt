@@ -192,10 +192,10 @@ fun nomisAudit() = NomisAudit(
 )
 
 fun prisonerWithContacts() = PrisonerWithContacts(
-  contacts = listOf(prisonerContact()),
+  contacts = listOf(prisonerWithContact()),
 )
 
-fun prisonerContact() = PrisonerContact(
+fun prisonerWithContact() = PrisonerContact(
   id = 1,
   relationshipType = CodeDescription(code = "BOF", description = "Boyfriend"),
   contactType = CodeDescription(code = "S", description = "Social/ Family"),
@@ -203,15 +203,7 @@ fun prisonerContact() = PrisonerContact(
   emergencyContact = true,
   nextOfKin = false,
   approvedVisitor = false,
-  restrictions = listOf(
-    ContactRestriction(
-      id = 1,
-      type = CodeDescription(code = "BAN", description = "Banned"),
-      enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"),
-      effectiveDate = LocalDate.parse("2020-01-01"),
-      audit = nomisAudit(),
-    ),
-  ),
+  restrictions = listOf(prisonerWithContactRestriction()),
   audit = nomisAudit(),
   bookingId = 1234,
   bookingSequence = 1,
@@ -222,4 +214,12 @@ fun prisonerContact() = PrisonerContact(
   ),
   expiryDate = null,
   comment = null,
+)
+
+fun prisonerWithContactRestriction() = ContactRestriction(
+  id = 1,
+  type = CodeDescription(code = "BAN", description = "Banned"),
+  enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"),
+  effectiveDate = LocalDate.parse("2020-01-01"),
+  audit = nomisAudit(),
 )
