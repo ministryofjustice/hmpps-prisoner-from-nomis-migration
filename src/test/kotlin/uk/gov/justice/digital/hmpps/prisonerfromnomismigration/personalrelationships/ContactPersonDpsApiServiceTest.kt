@@ -977,9 +977,9 @@ class ContactPersonDpsApiServiceTest {
   inner class ReplaceMergedPrisonerContacts {
     @Test
     internal fun `will pass oath2 token to contact endpoint`() = runTest {
-      dpsContactPersonServer.stubReplaceMergedPrisonerContacts("A1234KT")
+      dpsContactPersonServer.stubReplaceMergedPrisonerContacts()
 
-      apiService.replaceMergedPrisonerContacts("A1234KT", mergePrisonerContactRequest = mergePrisonerContactRequest())
+      apiService.replaceMergedPrisonerContacts(mergePrisonerContactRequest = mergePrisonerContactRequest())
 
       dpsContactPersonServer.verify(
         postRequestedFor(anyUrl())
@@ -989,12 +989,12 @@ class ContactPersonDpsApiServiceTest {
 
     @Test
     fun `will call the replace endpoint`() = runTest {
-      dpsContactPersonServer.stubReplaceMergedPrisonerContacts("A1234KT")
+      dpsContactPersonServer.stubReplaceMergedPrisonerContacts()
 
-      apiService.replaceMergedPrisonerContacts("A1234KT", mergePrisonerContactRequest = mergePrisonerContactRequest())
+      apiService.replaceMergedPrisonerContacts(mergePrisonerContactRequest = mergePrisonerContactRequest())
 
       dpsContactPersonServer.verify(
-        postRequestedFor(urlPathEqualTo("/sync/prisoner/A1234KT/contact/replace")),
+        postRequestedFor(urlPathEqualTo("/sync/prisoner-contact/merge")),
       )
     }
   }

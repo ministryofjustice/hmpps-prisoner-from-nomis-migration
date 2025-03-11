@@ -121,6 +121,7 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun mergePrisonerContactRequest() = MergePrisonerContactRequest(
       prisonerContacts = listOf(syncPrisonerRelationship()),
       removedPrisonerNumber = "A1000KT",
+      retainedPrisonerNumber = "A1234KT",
     )
 
     fun mergePrisonerContactResponse() = MergePrisonerContactResponse(
@@ -799,9 +800,9 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
-  fun stubReplaceMergedPrisonerContacts(prisonerNumber: String, response: MergePrisonerContactResponse = mergePrisonerContactResponse()) {
+  fun stubReplaceMergedPrisonerContacts(response: MergePrisonerContactResponse = mergePrisonerContactResponse()) {
     stubFor(
-      post("/sync/prisoner/$prisonerNumber/contact/replace")
+      post("/sync/prisoner-contact/merge")
         .willReturn(
           aResponse()
             .withStatus(200)

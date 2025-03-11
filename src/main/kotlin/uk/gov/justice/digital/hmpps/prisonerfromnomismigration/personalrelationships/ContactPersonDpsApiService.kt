@@ -243,8 +243,8 @@ class ContactPersonDpsApiService(@Qualifier("personalRelationshipsApiWebClient")
       .awaitBodilessEntityIgnoreNotFound()
   }
 
-  suspend fun replaceMergedPrisonerContacts(prisonerNumber: String, mergePrisonerContactRequest: MergePrisonerContactRequest): MergePrisonerContactResponse = webClient.post()
-    .uri("/sync/prisoner/{prisonerNumber}/contact/replace", prisonerNumber)
+  suspend fun replaceMergedPrisonerContacts(mergePrisonerContactRequest: MergePrisonerContactRequest): MergePrisonerContactResponse = webClient.post()
+    .uri("/sync/prisoner-contact/merge")
     .bodyValue(mergePrisonerContactRequest)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
@@ -274,6 +274,7 @@ data class SyncPrisonerRelationship(
 data class MergePrisonerContactRequest(
   val prisonerContacts: List<SyncPrisonerRelationship>,
   val removedPrisonerNumber: String,
+  val retainedPrisonerNumber: String,
 )
 
 data class MergePrisonerContactResponse(
