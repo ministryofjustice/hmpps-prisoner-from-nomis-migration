@@ -141,9 +141,6 @@ internal class ActivitiesApiServiceTest {
               "payPerSession": "H",
               "runsOnBankHoliday": true,
               "dpsLocationId": "c4ff80c3-3148-4e2f-a4c2-4f278ad8349a",
-              "internalLocationDescription": null,
-              "internalLocationCode": null,
-              "internalLocationId": null,
               "outsideWork": true,
               "scheduleRules": [
                 {
