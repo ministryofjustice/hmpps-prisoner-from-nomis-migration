@@ -12,6 +12,8 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.eq
+import org.mockito.Mockito.times
+import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
@@ -5586,6 +5588,48 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
             assertThat(it["removedOffenderNo"]).isEqualTo(offenderNumberRemoved)
             assertThat(it["contactsCount"]).isEqualTo("2")
           },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class MappingFailure {
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubContactsForPrisoner(offenderNo = offenderNumberRetained)
+        dpsApiMock.stubReplaceMergedPrisonerContacts()
+        mappingApiMock.stubReplaceMappingsForPrisonerFailureFollowedBySuccess(offenderNumberRetained)
+
+        personContactsDomainEventsQueue.sendMessage(
+          mergeDomainEvent(
+            bookingId = 1234,
+            offenderNo = offenderNumberRetained,
+            removedOffenderNo = offenderNumberRemoved,
+          ),
+        ).also { waitForAnyProcessingToComplete("from-nomis-synch-contactperson-merge") }
+      }
+
+      @Test
+      fun `will retrieve all contacts for the retained prisoner number once`() {
+        nomisApiMock.verify(1, getRequestedFor(urlPathEqualTo("/prisoners/$offenderNumberRetained/contacts")))
+      }
+
+      @Test
+      fun `will replace the contacts in DPS once `() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/prisoner-contact/merge")))
+      }
+
+      @Test
+      fun `will try replace mappings for prisoner until succeeds `() {
+        mappingApiMock.verify(2, postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner/$offenderNumberRetained")))
+      }
+
+      @Test
+      fun `will track telemetry for the merge`() {
+        verify(telemetryClient, times(1)).trackEvent(
+          eq("from-nomis-synch-contactperson-merge"),
+          any(),
           isNull(),
         )
       }
