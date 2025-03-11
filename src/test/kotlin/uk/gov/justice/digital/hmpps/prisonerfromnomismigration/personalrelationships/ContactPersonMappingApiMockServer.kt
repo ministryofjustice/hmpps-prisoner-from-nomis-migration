@@ -147,6 +147,8 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
     )
   }
 
+  fun stubReplaceMappingsForPrisonerFailureFollowedBySuccess(offenderNo: String) = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/contact-person/replace/prisoner/$offenderNo")
+
   fun stubCreatePersonMapping() {
     mappingApi.stubFor(
       post("/mapping/contact-person/person").willReturn(

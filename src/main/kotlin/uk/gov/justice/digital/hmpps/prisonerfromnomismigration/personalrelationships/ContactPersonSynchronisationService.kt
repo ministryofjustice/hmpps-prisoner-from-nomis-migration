@@ -846,7 +846,9 @@ class ContactPersonSynchronisationService(
       "removedOffenderNo" to removedOffenderNumber,
     )
 
-    val nomisContacts = nomisApiService.getContactsForPrisoner(retainedOffenderNumber).contacts
+    val nomisContacts = nomisApiService.getContactsForPrisoner(retainedOffenderNumber).contacts.also {
+      telemetry["contactsCount"] = it.size
+    }
     val dpsChangedResponse = dpsApiService.replaceMergedPrisonerContacts(
       MergePrisonerContactRequest(
         prisonerContacts = nomisContacts.map { it.toDpsSyncPrisonerRelationship() },
@@ -855,20 +857,16 @@ class ContactPersonSynchronisationService(
       ),
     )
 
-    // TODO: deal with mapping retries
-    mappingApiService.replaceMappingsForPrisoner(
+    tryToReplaceMappings(
       offenderNo = retainedOffenderNumber,
-      mappings = ContactPersonPrisonerMappingsDto(
+      mapping = ContactPersonPrisonerMappingsDto(
         mappingType = ContactPersonPrisonerMappingsDto.MappingType.NOMIS_CREATED,
         personContactMapping = dpsChangedResponse.prisonerContacts.map { ContactPersonSimpleMappingIdDto(nomisId = it.relationship.nomisId, dpsId = "${it.relationship.dpsId}") },
         personContactRestrictionMapping = dpsChangedResponse.prisonerContacts.flatMap { it.restrictions.map { restriction -> ContactPersonSimpleMappingIdDto(nomisId = restriction.nomisId, dpsId = "${restriction.dpsId}") } },
         personContactMappingsToRemoveByDpsId = dpsChangedResponse.relationshipsRemoved.map { "$it" },
         personContactRestrictionMappingsToRemoveByDpsId = dpsChangedResponse.restrictionsRemoved.map { "$it" },
       ),
-    )
-    telemetryClient.trackEvent(
-      "from-nomis-synch-contactperson-merge",
-      telemetry + ("contactsCount" to nomisContacts.size),
+      telemetry = telemetry,
     )
   }
 
@@ -1012,6 +1010,28 @@ class ContactPersonSynchronisationService(
         messageType = ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_RESTRICTION_MAPPING.name,
         synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
         message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+
+  private suspend fun tryToReplaceMappings(
+    offenderNo: String,
+    mapping: ContactPersonPrisonerMappingsDto,
+    telemetry: Map<String, Any>,
+  ) {
+    try {
+      mappingApiService.replaceMappingsForPrisoner(offenderNo, mapping)
+      telemetryClient.trackEvent(
+        "from-nomis-synch-contactperson-merge",
+        telemetry,
+      )
+    } catch (e: Exception) {
+      log.error("Failed to replace prisoner person for $mapping", e)
+      queueService.sendMessage(
+        messageType = ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_MAPPINGS.name,
+        synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
+        message = ContactPersonPrisonerMappings(offenderNo = offenderNo, mappings = mapping),
         telemetryAttributes = telemetry.valuesAsStrings(),
       )
     }
@@ -1261,6 +1281,16 @@ class ContactPersonSynchronisationService(
       .also {
         telemetryClient.trackEvent(
           "contactperson-person-restriction-mapping-synchronisation-created",
+          retryMessage.telemetryAttributes,
+        )
+      }
+  }
+
+  suspend fun retryReplacePrisonerPersonMappings(retryMessage: InternalMessage<ContactPersonPrisonerMappings>) {
+    mappingApiService.replaceMappingsForPrisoner(retryMessage.body.offenderNo, retryMessage.body.mappings)
+      .also {
+        telemetryClient.trackEvent(
+          "from-nomis-synch-contactperson-merge",
           retryMessage.telemetryAttributes,
         )
       }
