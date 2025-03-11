@@ -481,9 +481,6 @@ class ActivitiesMigrationServiceTest {
           assertThat(it.payPerSession).isEqualTo(ActivityMigrateRequest.PayPerSession.H)
           assertThat(it.runsOnBankHoliday).isEqualTo(false)
           assertThat(it.dpsLocationId).isEqualTo(dpsLocationId)
-          assertThat(it.internalLocationId).isNull()
-          assertThat(it.internalLocationCode).isNull()
-          assertThat(it.internalLocationDescription).isNull()
           assertThat(it.outsideWork).isEqualTo(true)
           with(it.payRates.first { it.nomisPayBand == "1" }) {
             assertThat(incentiveLevel).isEqualTo("BAS")

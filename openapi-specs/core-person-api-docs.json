@@ -1,100 +1,86 @@
 {
-  "openapi": "3.1.0",
-  "info": {
-    "title": "HMPPS Core Person Record",
-    "contact": {
-      "name": "HMPPS Person Record",
-      "email": "hmpps-person-record@digital.justice.gov.uk"
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "HMPPS Core Person Record",
+    "description" : "<div>\n  <h2 id=\"overview\">Overview</h2>\n  <p>This service provides a number of endpoints for searching for a person record within Core Person Record. This may be a Person from Nomis , Delius Or HMCTS source systems.</p>\n  <h2 id=\"data-provided\">Data provided</h2>\n  <p>The vast majority of the data is sourced from the CPR Record which gets the data from Nomis, Delius & HMCTS source systems.</p>\n  <div>The data returned for each person record is essentially data that has been retrieved from Nomis, Delius or HMCTS. This includes the\n    following:\n    <ul>\n      <li>Identifiers from any of the following source systems : Nomis, Delius & HMCTS</li>\n      <li>Source System itself, so whether it from Nomis, Delius or HMCTS source system.</li>\n    </ul>\n    See the schema definition for the API for full details.\n  </div>\n  <h2 id=\"role-restrictions\">Role restrictions</h2>\n  <p>\n    Role restrictions in this service are applied by a `@PreAuthorize` annotation at either resource or service level.\n    Furthermore the annotation can be applied at individual method level or class level.\n  </p>\n  <p>\n    Each endpoint in this API documentation should normally include what restrictions are applied. If there is any doubt\n    then it is worth looking at the github repository\n    <a href = \"https://github.com/ministryofjustice/hmpps-person-record/blob/main/src/main/kotlin/uk/gov/justice/digital/hmpps/personrecord/api/controller/SearchController.kt\"> here</a> and looking at the endpoint in question.\n  </p>\n\n  The following roles are currently in use in this service:\n  <ul>\n    <li>\n      ROLE_CORE_PERSON_RECORD_API__SEARCH__RO. This role grants access to all of the search endpoints.\n    </li>\n  </ul>\n  <h2 id=\"types-of-endpoints\">Types of endpoints</h2>\n  <h3>Retrieve person record by UUID</h3>\n  <p>\n   Search for a person representation using a UUID, this will give back a person record with data including Identifiers associated with that UUID.\n  </p>\n</div>",
+    "contact" : {
+      "name" : "HMPPS Person Record",
+      "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version": "2025-01-28.12831.270a9a4"
+    "version" : "2025-03-10.14121.e77266e"
   },
-  "servers": [
-    {
-      "url": "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
-      "description": "Development"
-    },
-    {
-      "url": "https://hmpps-person-record-preprod.hmpps.service.justice.gov.uk",
-      "description": "Pre-Production"
-    },
-    {
-      "url": "https://hmpps-person-record.hmpps.service.justice.gov.uk",
-      "description": "Production"
-    },
-    {
-      "url": "http://localhost:8080",
-      "description": "Local"
-    }
-  ],
-  "security": [
-    {
-      "bearer-jwt": [
-        "read"
-      ]
-    }
-  ],
-  "tags": [
-    {
-      "name": "Search",
-      "description": "APIs for person search"
-    }
-  ],
-  "paths": {
-    "/syscon-sync/{prisonNumber}": {
-      "put": {
-        "tags": [
-          "Syscon Sync"
-        ],
-        "description": "Create a prison record",
-        "operationId": "create",
-        "parameters": [
-          {
-            "name": "prisonNumber",
-            "in": "path",
-            "description": "The identifier of the offender source system (NOMIS)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+  "servers" : [ {
+    "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
+    "description" : "Development"
+  }, {
+    "url" : "https://hmpps-person-record-preprod.hmpps.service.justice.gov.uk",
+    "description" : "Pre-Production"
+  }, {
+    "url" : "https://hmpps-person-record.hmpps.service.justice.gov.uk",
+    "description" : "Production"
+  }, {
+    "url" : "http://localhost:8080",
+    "description" : "Local"
+  } ],
+  "security" : [ {
+    "bearer-jwt" : [ "read" ]
+  } ],
+  "tags" : [ {
+    "name" : "Search",
+    "description" : "APIs for person search"
+  } ],
+  "paths" : {
+    "/syscon-sync/{prisonNumber}" : {
+      "put" : {
+        "tags" : [ "Syscon Sync" ],
+        "description" : "Create a prison record",
+        "operationId" : "create",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "description" : "The identifier of the offender source system (NOMIS)",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/Prisoner"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Prisoner"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "404": {
-            "description": "Requested resource not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+        "responses" : {
+          "200" : {
+            "description" : "Data created in CPR",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CreateResponse"
                 }
               }
             }
           },
-          "200": {
-            "description": "Data created in CPR",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreateResponse"
+          "404" : {
+            "description" : "Requested resource not found.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
           },
-          "500": {
-            "description": "Unrecoverable error occurred whilst processing request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+          "500" : {
+            "description" : "Unrecoverable error occurred whilst processing request.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -102,29 +88,25 @@
         }
       }
     },
-    "/queue-admin/retry-dlq/{dlqName}": {
-      "put": {
-        "tags": [
-          "hmpps-queue-resource"
-        ],
-        "operationId": "retryDlq",
-        "parameters": [
-          {
-            "name": "dlqName",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+    "/queue-admin/retry-dlq/{dlqName}" : {
+      "put" : {
+        "tags" : [ "hmpps-queue-resource" ],
+        "operationId" : "retryDlq",
+        "parameters" : [ {
+          "name" : "dlqName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/RetryDlqResult"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RetryDlqResult"
                 }
               }
             }
@@ -132,21 +114,19 @@
         }
       }
     },
-    "/queue-admin/retry-all-dlqs": {
-      "put": {
-        "tags": [
-          "hmpps-queue-resource"
-        ],
-        "operationId": "retryAllDlqs",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/RetryDlqResult"
+    "/queue-admin/retry-all-dlqs" : {
+      "put" : {
+        "tags" : [ "hmpps-queue-resource" ],
+        "operationId" : "retryAllDlqs",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/RetryDlqResult"
                   }
                 }
               }
@@ -155,29 +135,25 @@
         }
       }
     },
-    "/queue-admin/purge-queue/{queueName}": {
-      "put": {
-        "tags": [
-          "hmpps-queue-resource"
-        ],
-        "operationId": "purgeQueue",
-        "parameters": [
-          {
-            "name": "queueName",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+    "/queue-admin/purge-queue/{queueName}" : {
+      "put" : {
+        "tags" : [ "hmpps-queue-resource" ],
+        "operationId" : "purgeQueue",
+        "parameters" : [ {
+          "name" : "queueName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/PurgeQueueResult"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PurgeQueueResult"
                 }
               }
             }
@@ -185,30 +161,26 @@
         }
       }
     },
-    "/updatefromprobation": {
-      "post": {
-        "tags": [
-          "update-from-probation"
-        ],
-        "operationId": "populate",
-        "parameters": [
-          {
-            "name": "startPage",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
+    "/updatefromprobation" : {
+      "post" : {
+        "tags" : [ "update-from-probation" ],
+        "operationId" : "populate",
+        "parameters" : [ {
+          "name" : "startPage",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string"
                 }
               }
             }
@@ -216,54 +188,77 @@
         }
       }
     },
-    "/search/prisoner/{prisonNumber}": {
-      "get": {
-        "tags": [
-          "Search"
-        ],
-        "description": "Search for person record and associated records with a prison number within the system",
-        "operationId": "searchByPrisonNumber",
-        "parameters": [
-          {
-            "name": "prisonNumber",
-            "in": "path",
-            "description": "The identifier of the offender source system (NOMIS)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+    "/populatepersonmatch" : {
+      "post" : {
+        "tags" : [ "populate-person-match" ],
+        "operationId" : "populate_1",
+        "parameters" : [ {
+          "name" : "startPage",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
           }
-        ],
-        "responses": {
-          "404": {
-            "description": "Requested resource not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string"
                 }
               }
             }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PersonIdentifierRecord"
+          }
+        }
+      }
+    },
+    "/search/prisoner/{prisonNumber}" : {
+      "get" : {
+        "tags" : [ "Search" ],
+        "description" : "Search for person record and associated records with a prison number within the system",
+        "operationId" : "searchByPrisonNumber",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "description" : "The identifier of the offender source system (NOMIS)",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PersonIdentifierRecord"
                   }
                 }
               }
             }
           },
-          "500": {
-            "description": "Unrecoverable error occurred whilst processing request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+          "404" : {
+            "description" : "Requested resource not found.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Unrecoverable error occurred whilst processing request.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -271,54 +266,78 @@
         }
       }
     },
-    "/search/offender/{crn}": {
-      "get": {
-        "tags": [
-          "Search"
-        ],
-        "description": "Search for person record and associated records with a CRN within the system",
-        "operationId": "searchByCrn",
-        "parameters": [
-          {
-            "name": "crn",
-            "in": "path",
-            "description": "The identifier of the probation source system (nDelius)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+    "/search/person/{uuid}" : {
+      "get" : {
+        "tags" : [ "Search" ],
+        "description" : "Retrieve person record by UUID",
+        "operationId" : "getCanonicalRecord",
+        "parameters" : [ {
+          "name" : "uuid",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
           }
-        ],
-        "responses": {
-          "404": {
-            "description": "Requested resource not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CanonicalRecord"
                 }
               }
             }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PersonIdentifierRecord"
+          }
+        }
+      }
+    },
+    "/search/offender/{crn}" : {
+      "get" : {
+        "tags" : [ "Search" ],
+        "description" : "Search for person record and associated records with a CRN within the system",
+        "operationId" : "searchByCrn",
+        "parameters" : [ {
+          "name" : "crn",
+          "in" : "path",
+          "description" : "The identifier of the probation source system (nDelius)",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PersonIdentifierRecord"
                   }
                 }
               }
             }
           },
-          "500": {
-            "description": "Unrecoverable error occurred whilst processing request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+          "404" : {
+            "description" : "Requested resource not found.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Unrecoverable error occurred whilst processing request.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -326,54 +345,50 @@
         }
       }
     },
-    "/search/defendant/{defendantId}": {
-      "get": {
-        "tags": [
-          "Search"
-        ],
-        "description": "Search for person record and associated records with a defendant identifier within the system",
-        "operationId": "searchByDefendantId",
-        "parameters": [
-          {
-            "name": "defendantId",
-            "in": "path",
-            "description": "The identifier of the HMCTS (courts and tribunals) source system",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
+    "/search/defendant/{defendantId}" : {
+      "get" : {
+        "tags" : [ "Search" ],
+        "description" : "Search for person record and associated records with a defendant identifier within the system",
+        "operationId" : "searchByDefendantId",
+        "parameters" : [ {
+          "name" : "defendantId",
+          "in" : "path",
+          "description" : "The identifier of the HMCTS (courts and tribunals) source system",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "responses": {
-          "404": {
-            "description": "Requested resource not found.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/PersonIdentifierRecord"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PersonIdentifierRecord"
                   }
                 }
               }
             }
           },
-          "500": {
-            "description": "Unrecoverable error occurred whilst processing request.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
+          "404" : {
+            "description" : "Requested resource not found.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Unrecoverable error occurred whilst processing request.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -381,39 +396,34 @@
         }
       }
     },
-    "/queue-admin/get-dlq-messages/{dlqName}": {
-      "get": {
-        "tags": [
-          "hmpps-queue-resource"
-        ],
-        "operationId": "getDlqMessages",
-        "parameters": [
-          {
-            "name": "dlqName",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "maxMessages",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "default": 100
-            }
+    "/queue-admin/get-dlq-messages/{dlqName}" : {
+      "get" : {
+        "tags" : [ "hmpps-queue-resource" ],
+        "operationId" : "getDlqMessages",
+        "parameters" : [ {
+          "name" : "dlqName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/GetDlqResult"
+        }, {
+          "name" : "maxMessages",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 100
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GetDlqResult"
                 }
               }
             }
@@ -422,456 +432,606 @@
       }
     }
   },
-  "components": {
-    "schemas": {
-      "Address": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
+  "components" : {
+    "schemas" : {
+      "Address" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
           },
-          "type": {
-            "type": "string"
+          "type" : {
+            "type" : "string"
           },
-          "flat": {
-            "type": "string"
+          "flat" : {
+            "type" : "string"
           },
-          "premise": {
-            "type": "string"
+          "premise" : {
+            "type" : "string"
           },
-          "street": {
-            "type": "string"
+          "street" : {
+            "type" : "string"
           },
-          "locality": {
-            "type": "string"
+          "locality" : {
+            "type" : "string"
           },
-          "town": {
-            "type": "string"
+          "town" : {
+            "type" : "string"
           },
-          "postcode": {
-            "type": "string"
+          "postcode" : {
+            "type" : "string"
           },
-          "county": {
-            "type": "string"
+          "county" : {
+            "type" : "string"
           },
-          "country": {
-            "type": "string"
+          "country" : {
+            "type" : "string"
           },
-          "noFixedAddress": {
-            "type": "string"
+          "noFixedAddress" : {
+            "type" : "string"
           },
-          "startDate": {
-            "type": "string",
-            "format": "date"
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
           },
-          "endDate": {
-            "type": "string",
-            "format": "date"
+          "endDate" : {
+            "type" : "string",
+            "format" : "date"
           },
-          "comment": {
-            "type": "string"
+          "comment" : {
+            "type" : "string"
           },
-          "isPrimary": {
-            "type": "boolean"
+          "isPrimary" : {
+            "type" : "boolean"
           },
-          "mail": {
-            "type": "boolean"
+          "mail" : {
+            "type" : "boolean"
           }
         }
       },
-      "Email": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
+      "Email" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
           },
-          "emailAddress": {
-            "type": "string"
+          "emailAddress" : {
+            "type" : "string"
           }
         }
       },
-      "Identifier": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string"
+      "Identifier" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string"
           },
-          "value": {
-            "type": "string"
+          "value" : {
+            "type" : "string"
           }
         }
       },
-      "Names": {
-        "type": "object",
-        "properties": {
-          "title": {
-            "type": "string"
+      "Names" : {
+        "type" : "object",
+        "properties" : {
+          "title" : {
+            "type" : "string"
           },
-          "firstName": {
-            "type": "string"
+          "firstName" : {
+            "type" : "string"
           },
-          "middleName1": {
-            "type": "string"
+          "middleName1" : {
+            "type" : "string"
           },
-          "middleName2": {
-            "type": "string"
+          "middleName2" : {
+            "type" : "string"
           },
-          "lastName": {
-            "type": "string"
+          "lastName" : {
+            "type" : "string"
           },
-          "dateOfBirth": {
-            "type": "string",
-            "format": "date"
+          "dateOfBirth" : {
+            "type" : "string",
+            "format" : "date"
           },
-          "birthPlace": {
-            "type": "string"
+          "birthPlace" : {
+            "type" : "string"
           },
-          "birthCountry": {
-            "type": "string"
+          "birthCountry" : {
+            "type" : "string"
           },
-          "nameType": {
-            "type": "string",
-            "enum": [
-              "CURRENT",
-              "ALIAS",
-              "NICKNAME",
-              "MAIDEN"
-            ]
+          "nameType" : {
+            "type" : "string",
+            "enum" : [ "CURRENT", "ALIAS", "NICKNAME", "MAIDEN" ]
           },
-          "sex": {
-            "type": "string",
-            "enum": [
-              "MALE",
-              "FEMALE",
-              "NOT_KNOWN",
-              "NOT_SPECIFIED",
-              "REFUSED"
-            ]
+          "sex" : {
+            "type" : "string",
+            "enum" : [ "MALE", "FEMALE", "NOT_KNOWN", "NOT_SPECIFIED", "REFUSED" ]
           },
-          "raceCode": {
-            "type": "string"
+          "raceCode" : {
+            "type" : "string"
           },
-          "created": {
-            "type": "string",
-            "format": "date"
+          "created" : {
+            "type" : "string",
+            "format" : "date"
           },
-          "offenderId": {
-            "type": "string"
+          "offenderId" : {
+            "type" : "string"
           },
-          "workingName": {
-            "type": "boolean"
+          "workingName" : {
+            "type" : "boolean"
           },
-          "identifiers": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Identifier"
+          "identifiers" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Identifier"
             }
           }
         },
-        "required": [
-          "identifiers"
-        ]
+        "required" : [ "identifiers" ]
       },
-      "PhoneNumber": {
-        "type": "object",
-        "properties": {
-          "phoneId": {
-            "type": "integer",
-            "format": "int64"
+      "PhoneNumber" : {
+        "type" : "object",
+        "properties" : {
+          "phoneId" : {
+            "type" : "integer",
+            "format" : "int64"
           },
-          "phoneNumber": {
-            "type": "string"
+          "phoneNumber" : {
+            "type" : "string"
           },
-          "phoneType": {
-            "type": "string",
-            "enum": [
-              "HOME",
-              "MOBILE",
-              "BUSINESS"
-            ]
+          "phoneType" : {
+            "type" : "string",
+            "enum" : [ "HOME", "MOBILE", "BUSINESS" ]
           },
-          "phoneExtension": {
-            "type": "string"
+          "phoneExtension" : {
+            "type" : "string"
           }
         }
       },
-      "Prisoner": {
-        "type": "object",
-        "properties": {
-          "nationality": {
-            "type": "string"
+      "Prisoner" : {
+        "type" : "object",
+        "properties" : {
+          "nationality" : {
+            "type" : "string"
           },
-          "secondaryNationality": {
-            "type": "string"
+          "secondaryNationality" : {
+            "type" : "string"
           },
-          "religion": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Religion"
+          "religion" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Religion"
             }
           },
-          "sexualOrientation": {
-            "type": "string"
+          "sexualOrientation" : {
+            "type" : "string"
           },
-          "interestToImmigration": {
-            "type": "boolean"
+          "interestToImmigration" : {
+            "type" : "boolean"
           },
-          "disability": {
-            "type": "boolean"
+          "disability" : {
+            "type" : "boolean"
           },
-          "status": {
-            "type": "string"
+          "status" : {
+            "type" : "string"
           },
-          "sentenceStartDates": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "date"
+          "sentenceStartDates" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "date"
             }
           },
-          "phoneNumbers": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PhoneNumber"
+          "phoneNumbers" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PhoneNumber"
             }
           },
-          "emails": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Email"
+          "emails" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Email"
             }
           },
-          "offenders": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Names"
+          "offenders" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Names"
             }
           },
-          "addresses": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Address"
+          "addresses" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Address"
             }
           }
         },
-        "required": [
-          "addresses",
-          "emails",
-          "offenders",
-          "phoneNumbers",
-          "religion",
-          "sentenceStartDates"
-        ]
+        "required" : [ "addresses", "emails", "offenders", "phoneNumbers", "religion", "sentenceStartDates" ]
       },
-      "Religion": {
-        "type": "object",
-        "properties": {
-          "startDate": {
-            "type": "string",
-            "format": "date"
+      "Religion" : {
+        "type" : "object",
+        "properties" : {
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
           },
-          "endDate": {
-            "type": "string",
-            "format": "date"
+          "endDate" : {
+            "type" : "string",
+            "format" : "date"
           },
-          "religion": {
-            "type": "string"
+          "religion" : {
+            "type" : "string"
           },
-          "status": {
-            "type": "string"
+          "status" : {
+            "type" : "string"
           },
-          "createdUserId": {
-            "type": "string"
+          "createdUserId" : {
+            "type" : "string"
           },
-          "updatedUserId": {
-            "type": "string"
+          "updatedUserId" : {
+            "type" : "string"
           }
         }
       },
-      "ErrorResponse": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "integer",
-            "format": "int32"
+      "ErrorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
           },
-          "errorCode": {
-            "type": "string"
+          "errorCode" : {
+            "type" : "string"
           },
-          "userMessage": {
-            "type": "string"
+          "userMessage" : {
+            "type" : "string"
           },
-          "developerMessage": {
-            "type": "string"
+          "developerMessage" : {
+            "type" : "string"
           },
-          "moreInfo": {
-            "type": "string"
+          "moreInfo" : {
+            "type" : "string"
           }
         },
-        "required": [
-          "status"
-        ]
+        "required" : [ "status" ]
       },
-      "AddressId": {
-        "type": "object",
-        "properties": {
-          "prisonAddressId": {
-            "type": "integer",
-            "format": "int64"
+      "AddressId" : {
+        "type" : "object",
+        "properties" : {
+          "prisonAddressId" : {
+            "type" : "integer",
+            "format" : "int64"
           },
-          "cprAddressId": {
-            "type": "string"
+          "cprAddressId" : {
+            "type" : "string"
           }
         }
       },
-      "CreateResponse": {
-        "type": "object",
-        "properties": {
-          "addressIds": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AddressId"
+      "CreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "addressIds" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AddressId"
             }
           },
-          "phoneIds": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PhoneId"
+          "phoneIds" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PhoneId"
             }
           },
-          "emailIds": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EmailId"
+          "emailIds" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EmailId"
             }
           }
         },
-        "required": [
-          "addressIds",
-          "emailIds",
-          "phoneIds"
-        ]
+        "required" : [ "addressIds", "emailIds", "phoneIds" ]
       },
-      "EmailId": {
-        "type": "object",
-        "properties": {
-          "prisonEmailId": {
-            "type": "integer",
-            "format": "int64"
+      "EmailId" : {
+        "type" : "object",
+        "properties" : {
+          "prisonEmailId" : {
+            "type" : "integer",
+            "format" : "int64"
           },
-          "cprEmailId": {
-            "type": "string"
+          "cprEmailId" : {
+            "type" : "string"
           }
         }
       },
-      "PhoneId": {
-        "type": "object",
-        "properties": {
-          "prisonPhoneId": {
-            "type": "integer",
-            "format": "int64"
+      "PhoneId" : {
+        "type" : "object",
+        "properties" : {
+          "prisonPhoneId" : {
+            "type" : "integer",
+            "format" : "int64"
           },
-          "cprPhoneId": {
-            "type": "string"
+          "cprPhoneId" : {
+            "type" : "string"
           }
         }
       },
-      "RetryDlqResult": {
-        "type": "object",
-        "properties": {
-          "messagesFoundCount": {
-            "type": "integer",
-            "format": "int32"
+      "RetryDlqResult" : {
+        "type" : "object",
+        "properties" : {
+          "messagesFoundCount" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         },
-        "required": [
-          "messagesFoundCount"
-        ]
+        "required" : [ "messagesFoundCount" ]
       },
-      "PurgeQueueResult": {
-        "type": "object",
-        "properties": {
-          "messagesFoundCount": {
-            "type": "integer",
-            "format": "int32"
+      "PurgeQueueResult" : {
+        "type" : "object",
+        "properties" : {
+          "messagesFoundCount" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         },
-        "required": [
-          "messagesFoundCount"
-        ]
+        "required" : [ "messagesFoundCount" ]
       },
-      "PersonIdentifierRecord": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "description": "The person identifier. For nDelius this is CRN",
-            "example": "P819069"
+      "PersonIdentifierRecord" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "description" : "The person identifier. For nDelius this is CRN",
+            "example" : "P819069"
           },
-          "sourceSystem": {
-            "type": "string",
-            "description": "The source system",
-            "example": "NOMIS"
+          "sourceSystem" : {
+            "type" : "string",
+            "description" : "The source system",
+            "example" : "NOMIS"
           }
         },
-        "required": [
-          "id",
-          "sourceSystem"
-        ]
+        "required" : [ "id", "sourceSystem" ]
       },
-      "DlqMessage": {
-        "type": "object",
-        "properties": {
-          "body": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "object"
+      "CanonicalAddress" : {
+        "type" : "object",
+        "properties" : {
+          "noFixedAbode" : {
+            "type" : "string",
+            "description" : "Person no fixed abode",
+            "example" : "True"
+          },
+          "startDate" : {
+            "type" : "string",
+            "description" : "Person address start date",
+            "example" : "02/02/2020"
+          },
+          "endDate" : {
+            "type" : "string",
+            "description" : "Person address end date",
+            "example" : "04/04/2023"
+          },
+          "postcode" : {
+            "type" : "string",
+            "description" : "Person address postcode",
+            "example" : "SW1H 9AJ"
+          },
+          "subBuildingName" : {
+            "type" : "string",
+            "description" : "Person address sub building name",
+            "example" : "Sub building 2"
+          },
+          "buildingName" : {
+            "type" : "string",
+            "description" : "Person address building Name",
+            "example" : "Main Building"
+          },
+          "buildingNumber" : {
+            "type" : "string",
+            "description" : "Person address building number",
+            "example" : 102
+          },
+          "thoroughfareName" : {
+            "type" : "string",
+            "description" : "Person address thoroughfareName",
+            "example" : "Petty France"
+          },
+          "dependentLocality" : {
+            "type" : "string",
+            "description" : "Person address dependentLocality",
+            "example" : "Westminster"
+          },
+          "postTown" : {
+            "type" : "string",
+            "description" : "Person address postTown",
+            "example" : "London"
+          },
+          "county" : {
+            "type" : "string",
+            "description" : "Person address county",
+            "example" : "Greater London"
+          },
+          "country" : {
+            "type" : "string",
+            "description" : "Person address country",
+            "example" : "United Kingdom"
+          },
+          "uprn" : {
+            "type" : "string",
+            "description" : "Person address uprn",
+            "example" : 100120991537
+          }
+        }
+      },
+      "CanonicalAlias" : {
+        "type" : "object",
+        "properties" : {
+          "firstName" : {
+            "type" : "string",
+            "description" : "Person alias first name",
+            "example" : "Jon"
+          },
+          "lastName" : {
+            "type" : "string",
+            "description" : "Person alias last name",
+            "example" : "do"
+          },
+          "middleNames" : {
+            "type" : "string",
+            "description" : "Person alias middle names",
+            "example" : "Morgain"
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "Person alias title",
+            "example" : "Mr"
+          }
+        }
+      },
+      "CanonicalIdentifier" : {
+        "type" : "object",
+        "description" : "Possible identifier types",
+        "properties" : {
+          "identifierType" : {
+            "type" : "string",
+            "description" : "Person Identifier type",
+            "enum" : [ "PNC", "CRO", "NATIONAL_INSURANCE_NUMBER", "DRIVER_LICENSE_NUMBER", "ARREST_SUMMONS_NUMBER", "CRN", "PRISON_NUMBER", "DEFENDANT_ID", "C_ID" ],
+            "example" : "CRN"
+          },
+          "identifierValue" : {
+            "type" : "array",
+            "description" : "Person Identifier value",
+            "example" : "B123456",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "identifierType", "identifierValue" ]
+      },
+      "CanonicalRecord" : {
+        "type" : "object",
+        "properties" : {
+          "cprUUID" : {
+            "type" : "string",
+            "description" : "Person CPR uuid",
+            "example" : "f91ef118-a51f-4874-9409-c0538b4ca6fd"
+          },
+          "firstName" : {
+            "type" : "string",
+            "description" : "Person first name",
+            "example" : "John"
+          },
+          "middleNames" : {
+            "type" : "string",
+            "description" : "Person middle names",
+            "example" : "Morgan"
+          },
+          "lastName" : {
+            "type" : "string",
+            "description" : "Person last name",
+            "example" : "Doe"
+          },
+          "dateOfBirth" : {
+            "type" : "string",
+            "description" : "Person date of birth",
+            "example" : "01/01/1990"
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "Person title",
+            "example" : "Mr"
+          },
+          "sex" : {
+            "type" : "string",
+            "description" : "Person sex",
+            "example" : "Male"
+          },
+          "religion" : {
+            "type" : "string",
+            "description" : "Person religion",
+            "example" : "Christian"
+          },
+          "ethnicity" : {
+            "type" : "string",
+            "description" : "Person ethnicity",
+            "example" : "British"
+          },
+          "aliases" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CanonicalAlias"
             }
           },
-          "messageId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "body",
-          "messageId"
-        ]
-      },
-      "GetDlqResult": {
-        "type": "object",
-        "properties": {
-          "messagesFoundCount": {
-            "type": "integer",
-            "format": "int32"
+          "nationalities" : {
+            "type" : "array",
+            "items" : {
+              "description" : "List of nationality codes",
+              "example" : {
+                "nationalityCode" : "UK"
+              }
+            }
           },
-          "messagesReturnedCount": {
-            "type": "integer",
-            "format": "int32"
+          "addresses" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CanonicalAddress"
+            }
           },
-          "messages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DlqMessage"
+          "identifiers" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CanonicalIdentifier"
             }
           }
         },
-        "required": [
-          "messages",
-          "messagesFoundCount",
-          "messagesReturnedCount"
-        ]
+        "required" : [ "addresses", "aliases", "identifiers", "nationalities" ]
+      },
+      "DlqMessage" : {
+        "type" : "object",
+        "properties" : {
+          "body" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "object"
+            }
+          },
+          "messageId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "body", "messageId" ]
+      },
+      "GetDlqResult" : {
+        "type" : "object",
+        "properties" : {
+          "messagesFoundCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "messagesReturnedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "messages" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DlqMessage"
+            }
+          }
+        },
+        "required" : [ "messages", "messagesFoundCount", "messagesReturnedCount" ]
       }
     },
-    "securitySchemes": {
-      "bearer-jwt": {
-        "type": "http",
-        "description": "A HMPPS Auth access token with the `ROLE_CORE_PERSON_RECORD_API__SEARCH__RO` role.",
-        "name": "Authorization",
-        "in": "header",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
+    "securitySchemes" : {
+      "bearer-jwt" : {
+        "type" : "http",
+        "description" : "A HMPPS Auth access token with the `ROLE_CORE_PERSON_RECORD_API__SEARCH__RO` role.",
+        "name" : "Authorization",
+        "in" : "header",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT"
       }
     }
   }
