@@ -10,6 +10,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPrisonerMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_MAPPINGS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CONTACT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CONTACT_RESTRICTION_MAPPING
@@ -94,6 +96,7 @@ class ContactPersonEventListener(
       RETRY_SYNCHRONISATION_CONTACT_RESTRICTION_MAPPING -> service.retryCreateContactRestrictionMapping(message.fromJson())
       RETRY_SYNCHRONISATION_PERSON_RESTRICTION_MAPPING -> service.retryCreatePersonRestrictionMapping(message.fromJson())
       RETRY_SYNCHRONISATION_EMPLOYMENT_MAPPING -> service.retryCreateEmploymentMapping(message.fromJson())
+      RETRY_REPLACE_PRISONER_PERSON_MAPPINGS -> service.retryReplacePrisonerPersonMappings(message.fromJson())
     }
   }
 }
@@ -163,6 +166,11 @@ data class ProfileDetailsChangedEvent(
   val profileType: String,
 )
 
+data class ContactPersonPrisonerMappings(
+  val mappings: ContactPersonPrisonerMappingsDto,
+  val offenderNo: String,
+)
+
 enum class ContactPersonSynchronisationMessageType {
   RETRY_SYNCHRONISATION_PERSON_MAPPING,
   RETRY_SYNCHRONISATION_CONTACT_MAPPING,
@@ -173,4 +181,5 @@ enum class ContactPersonSynchronisationMessageType {
   RETRY_SYNCHRONISATION_EMPLOYMENT_MAPPING,
   RETRY_SYNCHRONISATION_CONTACT_RESTRICTION_MAPPING,
   RETRY_SYNCHRONISATION_PERSON_RESTRICTION_MAPPING,
+  RETRY_REPLACE_PRISONER_PERSON_MAPPINGS,
 }
