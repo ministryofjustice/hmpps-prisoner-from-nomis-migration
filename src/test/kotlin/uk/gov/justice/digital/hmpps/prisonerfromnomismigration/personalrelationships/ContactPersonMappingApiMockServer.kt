@@ -24,12 +24,18 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonRestrictionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.objectMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
 import java.util.*
 
 @Component
 class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) {
+
+  companion object {
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = mappingApi.getRequestBody(pattern, objectMapper = objectMapper)
+  }
 
   fun stubGetByNomisPersonIdOrNull(
     nomisPersonId: Long = 123456,
@@ -941,7 +947,6 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
         ).willSetStateTo(Scenario.STARTED),
     )
   }
-
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)

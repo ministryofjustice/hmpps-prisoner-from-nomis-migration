@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
@@ -33,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonRestrictionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactForPerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactForPrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactRestrictionEnteredStaff
@@ -45,6 +47,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension.Companion.dpsContactPersonServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.contact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.contactAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.contactAddressPhone
@@ -53,8 +56,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.contactIdentity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.contactPhone
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.contactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.mergePrisonerContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.prisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.prisonerContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ContactsAndRestrictions
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactEmailRequest
@@ -5415,6 +5421,16 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class PrisonerMerged {
     val offenderNumberRetained = "A1234KT"
     val offenderNumberRemoved = "A1000KT"
+    val nomisContactId1 = 123L
+    val dpsPrisonerContactId1 = 1123L
+    val nomisContactId1RestrictionId1 = 1231L
+    val nomisContactId1RestrictionId2 = 1232L
+    val dpsPrisonerContactId1RestrictionId1 = 11231L
+    val dpsPrisonerContactId1RestrictionId2 = 11232L
+    val nomisContactId2 = 234L
+    val dpsPrisonerContactId2 = 1234L
+    val nomisContactId2RestrictionId1 = 2341L
+    val dpsPrisonerContactId2RestrictionId1 = 12341L
 
     @Nested
     inner class HappyPath {
@@ -5424,11 +5440,62 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           offenderNo = offenderNumberRetained,
           contacts = prisonerWithContacts().copy(
             contacts = listOf(
-              uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.prisonerContact(),
-              uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.prisonerContact(),
+              prisonerWithContact().copy(
+                id = nomisContactId1,
+                relationshipType = CodeDescription(code = "BOF", description = "Boyfriend"),
+                contactType = CodeDescription(code = "S", description = "Social/ Family"),
+                active = true,
+                emergencyContact = true,
+                nextOfKin = false,
+                approvedVisitor = false,
+                bookingSequence = 1,
+                person = ContactForPerson(
+                  personId = 4321,
+                  lastName = "BRIGHT",
+                  firstName = "JANE",
+                ),
+                restrictions = listOf(
+                  prisonerWithContactRestriction().copy(
+                    id = nomisContactId1RestrictionId1,
+                    type = CodeDescription(code = "BAN", description = "Banned"),
+                  ),
+                  prisonerWithContactRestriction().copy(id = nomisContactId1RestrictionId2),
+                ),
+              ),
+              prisonerWithContact().copy(
+                id = nomisContactId2,
+                bookingSequence = 2,
+                restrictions = listOf(
+                  prisonerWithContactRestriction().copy(id = nomisContactId2RestrictionId1),
+                ),
+              ),
             ),
           ),
         )
+        dpsApiMock.stubReplaceMergedPrisonerContacts(
+          mergePrisonerContactResponse().copy(
+            prisonerContacts = listOf(
+              ContactsAndRestrictions(
+                relationship = IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT, nomisId = nomisContactId1, dpsId = dpsPrisonerContactId1),
+                restrictions = listOf(
+                  IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT_RESTRICTION, nomisId = nomisContactId1RestrictionId1, dpsId = dpsPrisonerContactId1RestrictionId1),
+                  IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT_RESTRICTION, nomisId = nomisContactId1RestrictionId2, dpsId = dpsPrisonerContactId1RestrictionId2),
+                ),
+              ),
+              ContactsAndRestrictions(
+                relationship = IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT, nomisId = nomisContactId2, dpsId = dpsPrisonerContactId2),
+                restrictions = listOf(
+                  IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT_RESTRICTION, nomisId = nomisContactId2RestrictionId1, dpsId = dpsPrisonerContactId2RestrictionId1),
+                ),
+              ),
+
+            ),
+            restrictionsRemoved = listOf(1, 2),
+            relationshipsRemoved = listOf(10, 20),
+          ),
+        )
+
+        mappingApiMock.stubReplaceMappingsForPrisoner(offenderNumberRetained)
 
         personContactsDomainEventsQueue.sendMessage(
           mergeDomainEvent(
@@ -5442,6 +5509,72 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will retrieve all contacts for the retained prisoner number`() {
         nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/prisoners/$offenderNumberRetained/contacts")))
+      }
+
+      @Test
+      fun `will replace the contacts in DPS`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact/merge")))
+      }
+
+      @Test
+      fun `all contacts will be sent to DPS along with the prisoner numbers merged`() {
+        val request: MergePrisonerContactRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact/merge")))
+        assertThat(request.removedPrisonerNumber).isEqualTo(offenderNumberRemoved)
+        assertThat(request.retainedPrisonerNumber).isEqualTo(offenderNumberRetained)
+        assertThat(request.prisonerContacts).hasSize(2)
+        with(request.prisonerContacts[0]) {
+          assertThat(id).isEqualTo(nomisContactId1)
+          assertThat(restrictions).hasSize(2)
+          assertThat(restrictions[0].id).isEqualTo(nomisContactId1RestrictionId1)
+          assertThat(restrictions[1].id).isEqualTo(nomisContactId1RestrictionId2)
+        }
+        with(request.prisonerContacts[1]) {
+          assertThat(id).isEqualTo(nomisContactId2)
+          assertThat(restrictions).hasSize(1)
+          assertThat(restrictions[0].id).isEqualTo(nomisContactId2RestrictionId1)
+        }
+      }
+
+      @Test
+      fun `will replace mappings for prisoner`() {
+        mappingApiMock.verify(postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner/$offenderNumberRetained")))
+      }
+
+      @Test
+      fun `will send mappings to be created`() {
+        val request: ContactPersonPrisonerMappingsDto = ContactPersonMappingApiMockServer.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner/$offenderNumberRetained")))
+
+        assertThat(request.mappingType).isEqualTo(ContactPersonPrisonerMappingsDto.MappingType.NOMIS_CREATED)
+        assertThat(request.personContactMapping).hasSize(2)
+        with(request.personContactMapping[0]) {
+          assertThat(dpsId).isEqualTo("$dpsPrisonerContactId1")
+          assertThat(nomisId).isEqualTo(nomisContactId1)
+        }
+        with(request.personContactMapping[1]) {
+          assertThat(dpsId).isEqualTo("$dpsPrisonerContactId2")
+          assertThat(nomisId).isEqualTo(nomisContactId2)
+        }
+        assertThat(request.personContactRestrictionMapping).hasSize(3)
+        with(request.personContactRestrictionMapping[0]) {
+          assertThat(dpsId).isEqualTo("$dpsPrisonerContactId1RestrictionId1")
+          assertThat(nomisId).isEqualTo(nomisContactId1RestrictionId1)
+        }
+        with(request.personContactRestrictionMapping[1]) {
+          assertThat(dpsId).isEqualTo("$dpsPrisonerContactId1RestrictionId2")
+          assertThat(nomisId).isEqualTo(nomisContactId1RestrictionId2)
+        }
+        with(request.personContactRestrictionMapping[2]) {
+          assertThat(dpsId).isEqualTo("$dpsPrisonerContactId2RestrictionId1")
+          assertThat(nomisId).isEqualTo(nomisContactId2RestrictionId1)
+        }
+      }
+
+      @Test
+      fun `will send mappings to be deleted`() {
+        val request: ContactPersonPrisonerMappingsDto = ContactPersonMappingApiMockServer.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner/$offenderNumberRetained")))
+
+        assertThat(request.personContactMappingsToRemoveByDpsId).containsExactlyInAnyOrder("10", "20")
+        assertThat(request.personContactRestrictionMappingsToRemoveByDpsId).containsExactlyInAnyOrder("1", "2")
       }
 
       @Test
