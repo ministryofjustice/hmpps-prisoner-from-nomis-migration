@@ -63,9 +63,10 @@ kotlin {
   }
 }
 
-data class ModelConfiguration(val name: String, val packageName: String, val url: String) {
+data class ModelConfiguration(val name: String, val packageName: String, val url: String, val models: String = "") {
   fun toBuildModelTaskName(): String = "build${nameToCamel()}ApiModel"
   fun toWriteJsonTaskName(): String = "write${nameToCamel()}Json"
+  fun toReadProductionVersionTaskName(): String = "read${nameToCamel()}ProductionVersion"
   private val snakeRegex = "-[a-zA-Z]".toRegex()
   private fun nameToCamel(): String = snakeRegex.replace(name) {
     it.value.replace("-", "").uppercase()
@@ -81,31 +82,25 @@ val models = listOf(
     name = "activities",
     packageName = "activities",
     url = "https://activities-api-dev.prison.service.justice.gov.uk/v3/api-docs",
+    models = "ActivityMigrateRequest,ActivityMigrateResponse,AllocationMigrateRequest,AllocationMigrateResponse,AppointmentInstance,AppointmentMigrateRequest,NomisPayRate,NomisScheduleRule,Slot",
   ),
   ModelConfiguration(
     name = "alerts",
     packageName = "alerts",
     url = "https://alerts-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+    models = "Alert,AlertCodeSummary,CreateAlert,ResyncAlert,ResyncedAlert,UpdateAlert",
   ),
   ModelConfiguration(
     name = "casenotes",
     packageName = "casenotes",
     url = "https://dev.offender-case-notes.service.justice.gov.uk/v3/api-docs",
-  ),
-  ModelConfiguration(
-    name = "personal-relationships",
-    packageName = "personalrelationships",
-    url = "https://personal-relationships-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
-  ),
-  ModelConfiguration(
-    name = "organisations",
-    packageName = "organisations",
-    url = "https://organisations-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+    models = "Author,CaseNote,CaseNoteAmendment,ErrorResponse,MigrateAmendmentRequest,MigrateCaseNoteRequest,MigrationResult,MoveCaseNotesRequest,SyncCaseNoteAmendmentRequest,SyncCaseNoteRequest,SyncResult",
   ),
   ModelConfiguration(
     name = "core-person",
     packageName = "coreperson",
     url = "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+    models = "Address,AddressId,CreateResponse,Email,EmailId,Identifier,Names,PhoneId,PhoneNumber,Prisoner,Religion",
   ),
   ModelConfiguration(
     name = "court-sentencing",
@@ -116,16 +111,19 @@ val models = listOf(
     name = "csip",
     packageName = "csip",
     url = "https://csip-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+    models = "DefaultLegacyActioned,MoveCsipRequest,PersonSummaryRequest,ResponseMapping,SyncAttendeeRequest,SyncContributoryFactorRequest,SyncCsipRequest,SyncDecisionAndActionsRequest,SyncInterviewRequest,SyncInvestigationRequest,SyncNeedRequest,SyncPlanRequest,SyncReferralRequest,SyncResponse,SyncReviewRequest,SyncScreeningOutcomeRequest",
   ),
   ModelConfiguration(
     name = "incidents",
     packageName = "incidents",
     url = "https://incident-reporting-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+    models = "CorrectionRequest,Event,HistoricalQuestion,HistoricalResponse,History,NomisCode,NomisHistory,NomisHistoryQuestion,NomisHistoryResponse,NomisOffender,NomisOffenderParty,NomisQuestion,NomisReport,NomisRequirement,NomisResponse,NomisStaff,NomisStaffParty,NomisStatus,NomisSyncReportId,NomisSyncRequest,PrisonerInvolvement,Question,ReportBasic,ReportWithDetails,Response,SimplePageReportBasic,StaffInvolvement,StatusHistory",
   ),
   ModelConfiguration(
     name = "locations",
     packageName = "locations",
     url = "https://locations-inside-prison-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+    models = "Capacity,Certification,ChangeHistory,ErrorResponse,LegacyLocation,NomisSyncLocationRequest,NonResidentialUsageDto",
   ),
   ModelConfiguration(
     name = "nomis-prisoner",
@@ -138,9 +136,20 @@ val models = listOf(
     url = "https://nomis-sync-prisoner-mapping-dev.hmpps.service.justice.gov.uk/v3/api-docs",
   ),
   ModelConfiguration(
+    name = "organisations",
+    packageName = "organisations",
+    url = "https://organisations-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+  ),
+  ModelConfiguration(
+    name = "personal-relationships",
+    packageName = "personalrelationships",
+    url = "https://personal-relationships-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+  ),
+  ModelConfiguration(
     name = "sentencing-adjustments",
     packageName = "sentencing.adjustments",
     url = "https://adjustments-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+    models = "LegacyAdjustment,LegacyAdjustmentCreatedResponse",
   ),
   ModelConfiguration(
     name = "visit-balance",
@@ -174,7 +183,7 @@ models.forEach {
     modelPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.${it.packageName}.model")
     apiPackage.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.${it.packageName}.api")
     configOptions.set(configValues)
-    globalProperties.set(mapOf("models" to ""))
+    globalProperties.set(mapOf("models" to it.models))
     generateModelTests.set(false)
     generateModelDocumentation.set(false)
   }
@@ -187,6 +196,18 @@ models.forEach {
         mapper.writerWithDefaultPrettyPrinter().writeValueAsString(mapper.readTree(json))
       }
       Files.write(Paths.get(it.input), formattedJson.toByteArray())
+    }
+  }
+  tasks.register(it.toReadProductionVersionTaskName()) {
+    group = "Read current production version"
+    description = "Read current production version for ${it.name}"
+    doLast {
+      val productionUrl = it.url.replace("-dev".toRegex(), "")
+        .replace("dev.".toRegex(), "")
+        .replace("/v3/api-docs".toRegex(), "/info")
+      val json = URI.create(productionUrl).toURL().readText()
+      val version = ObjectMapper().readTree(json).at("/build/version").asText()
+      println(version)
     }
   }
 }
