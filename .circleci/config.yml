@@ -12,6 +12,22 @@ parameters:
     type: integer
     default: 13
 jobs:
+  compile:
+    executor:
+      name: hmpps/java
+      tag: "21.0"
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - gradle-{{ checksum "build.gradle.kts" }}
+            - gradle-
+      - run:
+          command: ./gradlew compileKotlin
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: gradle-{{ checksum "build.gradle.kts" }}
   validate:
     executor:
       name: hmpps/java
@@ -69,6 +85,10 @@ workflows:
   version: 2
   build-test-and-deploy:
     jobs:
+      - compile:
+          filters:
+            tags:
+              ignore: /.*/
       - validate:
           filters:
             tags:
@@ -77,6 +97,8 @@ workflows:
           filters:
             tags:
               ignore: /.*/
+          requires:
+            - compile
       - hmpps/helm_lint:
           name: helm_lint
       - hmpps/build_multiplatform_docker:
