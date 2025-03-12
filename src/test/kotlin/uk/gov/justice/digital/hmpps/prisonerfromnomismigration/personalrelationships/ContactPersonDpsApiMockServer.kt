@@ -21,7 +21,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerContactRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddressPhone
@@ -124,14 +123,13 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
 
     fun mergePrisonerContactResponse() = MergePrisonerContactResponse(
-      prisonerContacts = listOf(
+      relationshipsCreated = listOf(
         ContactsAndRestrictions(
           relationship = IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT, nomisId = 12345, dpsId = 1234567),
           restrictions = listOf(IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT_RESTRICTION, nomisId = 12345, dpsId = 1234567)),
         ),
       ),
       relationshipsRemoved = listOf(),
-      restrictionsRemoved = listOf(),
     )
 
     fun syncPrisonerRelationship() = SyncPrisonerRelationship(
@@ -147,7 +145,7 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       currentTerm = true,
       active = true,
       restrictions = listOf(
-        MigratePrisonerContactRestriction(
+        SyncRelationshipRestriction(
           id = 456,
           restrictionType = CodedValue(code = "BAN", description = ""),
           startDate = LocalDate.now(),
@@ -163,6 +161,7 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       comment = null,
       modifyDateTime = null,
       modifyUsername = null,
+      prisonerNumber = "A1234KT",
     )
 
     fun createContactRequest() = SyncCreateContactRequest(
