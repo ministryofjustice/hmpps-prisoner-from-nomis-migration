@@ -9,9 +9,9 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "7.1.3"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "7.1.4"
   kotlin("plugin.spring") version "2.1.10"
-  id("org.openapi.generator") version "7.11.0"
+  id("org.openapi.generator") version "7.12.0"
 }
 
 configurations {
@@ -21,9 +21,9 @@ configurations {
 }
 
 dependencies {
-  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:1.4.0-beta")
+  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:1.4.0")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
-  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:5.3.1")
+  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:5.3.2")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 
   implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.5")
@@ -41,17 +41,17 @@ dependencies {
   // Leaving at 2.9.0 to match the version used in App Insights https://github.com/microsoft/ApplicationInsights-Java/blob/3.6.2/dependencyManagement/build.gradle.kts#L16
   implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:2.12.0")
 
-  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:1.3.1")
+  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:1.4.0")
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.25") {
     exclude(group = "io.swagger.core.v3")
   }
-  testImplementation("io.swagger.core.v3:swagger-core-jakarta:2.2.28")
+  testImplementation("io.swagger.core.v3:swagger-core-jakarta:2.2.29")
 
-  testImplementation("org.wiremock:wiremock-standalone:3.12.0")
-  testImplementation("org.testcontainers:localstack:1.20.5")
+  testImplementation("org.wiremock:wiremock-standalone:3.12.1")
+  testImplementation("org.testcontainers:localstack:1.20.6")
   testImplementation("com.amazonaws:aws-java-sdk-core:1.12.782")
   testImplementation("org.awaitility:awaitility-kotlin:4.3.0")
-  testImplementation("org.testcontainers:postgresql:1.20.5")
+  testImplementation("org.testcontainers:postgresql:1.20.6")
   testImplementation("io.mockk:mockk:1.13.17")
   testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
 }

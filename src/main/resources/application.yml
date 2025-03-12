@@ -230,3 +230,5 @@ reports:
   incidents:
     reconciliation:
       page-size: 20
+
+springdoc.swagger-ui.version: 5.20.0
