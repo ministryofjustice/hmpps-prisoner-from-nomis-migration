@@ -36,7 +36,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.CodedValue
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerContactRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactEmailRequest
@@ -851,7 +850,7 @@ class ContactPersonSynchronisationService(
     }
     val dpsChangedResponse = dpsApiService.replaceMergedPrisonerContacts(
       MergePrisonerContactRequest(
-        prisonerContacts = nomisContacts.map { it.toDpsSyncPrisonerRelationship() },
+        prisonerContacts = nomisContacts.map { it.toDpsSyncPrisonerRelationship(retainedOffenderNumber) },
         removedPrisonerNumber = removedOffenderNumber,
         retainedPrisonerNumber = retainedOffenderNumber,
       ),
@@ -861,10 +860,10 @@ class ContactPersonSynchronisationService(
       offenderNo = retainedOffenderNumber,
       mapping = ContactPersonPrisonerMappingsDto(
         mappingType = ContactPersonPrisonerMappingsDto.MappingType.NOMIS_CREATED,
-        personContactMapping = dpsChangedResponse.prisonerContacts.map { ContactPersonSimpleMappingIdDto(nomisId = it.relationship.nomisId, dpsId = "${it.relationship.dpsId}") },
-        personContactRestrictionMapping = dpsChangedResponse.prisonerContacts.flatMap { it.restrictions.map { restriction -> ContactPersonSimpleMappingIdDto(nomisId = restriction.nomisId, dpsId = "${restriction.dpsId}") } },
-        personContactMappingsToRemoveByDpsId = dpsChangedResponse.relationshipsRemoved.map { "$it" },
-        personContactRestrictionMappingsToRemoveByDpsId = dpsChangedResponse.restrictionsRemoved.map { "$it" },
+        personContactMapping = dpsChangedResponse.relationshipsCreated.map { ContactPersonSimpleMappingIdDto(nomisId = it.relationship.nomisId, dpsId = "${it.relationship.dpsId}") },
+        personContactRestrictionMapping = dpsChangedResponse.relationshipsCreated.flatMap { it.restrictions.map { restriction -> ContactPersonSimpleMappingIdDto(nomisId = restriction.nomisId, dpsId = "${restriction.dpsId}") } },
+        personContactMappingsToRemoveByDpsId = dpsChangedResponse.relationshipsRemoved.map { "${it.prisonerContactId}" },
+        personContactRestrictionMappingsToRemoveByDpsId = dpsChangedResponse.relationshipsRemoved.flatMap { contact -> contact.prisonerContactRestrictionIds.map { "$it" } },
       ),
       telemetry = telemetry,
     )
@@ -1352,10 +1351,10 @@ fun PersonContact.toDpsCreatePrisonerContactRequest(nomisPersonId: Long) = SyncC
 )
 
 // TODO - use real DTO when available
-fun PrisonerContact.toDpsSyncPrisonerRelationship() = SyncPrisonerRelationship(
+fun PrisonerContact.toDpsSyncPrisonerRelationship(offenderNo: String) = SyncPrisonerRelationship(
   id = this.id,
   restrictions = this.restrictions.map { restriction ->
-    MigratePrisonerContactRestriction(
+    SyncRelationshipRestriction(
       id = restriction.id,
       restrictionType = restriction.type.toCodedValue(),
       startDate = restriction.effectiveDate,
@@ -1389,6 +1388,7 @@ fun PrisonerContact.toDpsSyncPrisonerRelationship() = SyncPrisonerRelationship(
   createUsername = this.audit.createUsername,
   modifyDateTime = this.audit.modifyDatetime,
   modifyUsername = this.audit.modifyUserId,
+  prisonerNumber = offenderNo,
 )
 
 private fun CodeDescription.toCodedValue() = CodedValue(code = this.code, description = this.description)

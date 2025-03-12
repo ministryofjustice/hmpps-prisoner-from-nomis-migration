@@ -10,7 +10,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ContactsAndRestrictions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerContactRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddressPhone
@@ -41,6 +40,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateEmploymentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRestrictionRequest
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Service
 class ContactPersonDpsApiService(@Qualifier("personalRelationshipsApiWebClient") private val webClient: WebClient) {
@@ -252,33 +253,52 @@ class ContactPersonDpsApiService(@Qualifier("personalRelationshipsApiWebClient")
 
 // FAKE DTOs - replace with real ones when delivered by DPS
 
+data class MergePrisonerContactResponse(
+  val relationshipsCreated: List<ContactsAndRestrictions>,
+  val relationshipsRemoved: List<PrisonerRelationshipIds>,
+)
+
+data class PrisonerRelationshipIds(
+  val prisonerNumber: String,
+  val contactId: Long,
+  val prisonerContactId: Long,
+  val prisonerContactRestrictionIds: List<Long> = emptyList(),
+)
+
+data class MergePrisonerContactRequest(
+  val retainedPrisonerNumber: String,
+  val prisonerContacts: List<SyncPrisonerRelationship>,
+  val removedPrisonerNumber: String,
+)
+
 data class SyncPrisonerRelationship(
   val id: Long,
+  val contactId: Long,
   val contactType: CodedValue,
   val relationshipType: CodedValue,
   val currentTerm: Boolean,
   val active: Boolean,
+  val expiryDate: LocalDate? = null,
   val approvedVisitor: Boolean,
   val nextOfKin: Boolean,
   val emergencyContact: Boolean,
-  val contactId: Long,
-  val restrictions: List<MigratePrisonerContactRestriction>,
-  val expiryDate: java.time.LocalDate? = null,
-  val comment: String? = null,
-  val createDateTime: java.time.LocalDateTime? = null,
-  val createUsername: String? = null,
-  val modifyDateTime: java.time.LocalDateTime? = null,
-  val modifyUsername: String? = null,
+  val comment: String?,
+  val prisonerNumber: String,
+  val restrictions: List<SyncRelationshipRestriction> = emptyList(),
+  var createDateTime: LocalDateTime? = null,
+  var createUsername: String? = null,
+  var modifyDateTime: LocalDateTime? = null,
+  var modifyUsername: String? = null,
 )
 
-data class MergePrisonerContactRequest(
-  val prisonerContacts: List<SyncPrisonerRelationship>,
-  val removedPrisonerNumber: String,
-  val retainedPrisonerNumber: String,
-)
-
-data class MergePrisonerContactResponse(
-  val prisonerContacts: List<ContactsAndRestrictions>,
-  val relationshipsRemoved: List<Long>,
-  val restrictionsRemoved: List<Long>,
+data class SyncRelationshipRestriction(
+  val id: Long,
+  val restrictionType: CodedValue,
+  val comment: String?,
+  val startDate: LocalDate,
+  val expiryDate: LocalDate? = null,
+  var createDateTime: LocalDateTime? = null,
+  var createUsername: String? = null,
+  var modifyDateTime: LocalDateTime? = null,
+  var modifyUsername: String? = null,
 )

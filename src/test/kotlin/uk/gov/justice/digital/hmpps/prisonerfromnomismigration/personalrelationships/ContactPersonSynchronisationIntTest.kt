@@ -183,7 +183,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the contact in DPS from the person`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/contact")))
-        val createContactRequest: SyncCreateContactRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact")))
+        val createContactRequest: SyncCreateContactRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact")))
         with(createContactRequest) {
           assertThat(title).isEqualTo("MR")
           assertThat(lastName).isEqualTo("SMITH")
@@ -480,7 +480,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update the contact in DPS from the NOMIS person`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/contact/$dpsContactId")))
-        val updateContactRequest: SyncUpdateContactRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact/$dpsContactId")))
+        val updateContactRequest: SyncUpdateContactRequest = getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact/$dpsContactId")))
         with(updateContactRequest) {
           assertThat(title).isEqualTo("MR")
           assertThat(lastName).isEqualTo("SMITH")
@@ -684,7 +684,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the address in DPS from the person`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/contact-address")))
-        val request: SyncCreateContactAddressRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact-address")))
+        val request: SyncCreateContactAddressRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact-address")))
         with(request) {
           // DPS and NOMIS contact/person id are the same
           assertThat(contactId).isEqualTo(nomisPersonId)
@@ -1061,7 +1061,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update the contact address in DPS from the NOMIS address`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/contact-address/$dpsContactAddressId")))
-        val request: SyncUpdateContactAddressRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-address/$dpsContactAddressId")))
+        val request: SyncUpdateContactAddressRequest = getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-address/$dpsContactAddressId")))
         with(request) {
           // DPS and NOMIS contact/person id are the same
           assertThat(contactId).isEqualTo(nomisPersonId)
@@ -1264,7 +1264,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the phone in DPS from the person`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/contact-phone")))
-        val request: SyncCreateContactPhoneRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact-phone")))
+        val request: SyncCreateContactPhoneRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact-phone")))
         with(request) {
           // DPS and NOMIS contact/person id are the same
           assertThat(contactId).isEqualTo(nomisPersonId)
@@ -1592,7 +1592,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update the phone in DPS from the person`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/contact-phone/$dpsContactPhoneId")))
-        val request: SyncUpdateContactPhoneRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-phone/$dpsContactPhoneId")))
+        val request: SyncUpdateContactPhoneRequest = getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-phone/$dpsContactPhoneId")))
         with(request) {
           // DPS and NOMIS contact/person id are the same
           assertThat(contactId).isEqualTo(nomisPersonId)
@@ -1815,7 +1815,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the address phone in DPS from the person`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/contact-address-phone")))
-        val request: SyncCreateContactAddressPhoneRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact-address-phone")))
+        val request: SyncCreateContactAddressPhoneRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact-address-phone")))
         with(request) {
           assertThat(contactAddressId).isEqualTo(dpsContactAddressId)
           assertThat(phoneType).isEqualTo("MOB")
@@ -2169,7 +2169,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update the address phone in DPS from the person`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/contact-address-phone/$dpsContactAddressPhoneId")))
-        val request: SyncUpdateContactAddressPhoneRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-address-phone/$dpsContactAddressPhoneId")))
+        val request: SyncUpdateContactAddressPhoneRequest = getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-address-phone/$dpsContactAddressPhoneId")))
         with(request) {
           assertThat(phoneType).isEqualTo("MOB")
           assertThat(phoneNumber).isEqualTo("07973 555 555")
@@ -2374,7 +2374,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the email in DPS from the person`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/contact-email")))
-        val request: SyncCreateContactEmailRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact-email")))
+        val request: SyncCreateContactEmailRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact-email")))
         with(request) {
           // DPS and NOMIS contact/person id are the same
           assertThat(contactId).isEqualTo(nomisPersonId)
@@ -2674,7 +2674,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update the email in DPS from the person`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/contact-email/$dpsContactEmailId")))
-        val request: SyncUpdateContactEmailRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-email/$dpsContactEmailId")))
+        val request: SyncUpdateContactEmailRequest = getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-email/$dpsContactEmailId")))
         with(request) {
           // DPS and NOMIS contact/person id are the same
           assertThat(contactId).isEqualTo(nomisPersonId)
@@ -2878,7 +2878,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the employment in DPS from the person`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/employment")))
-        val request: SyncCreateEmploymentRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/employment")))
+        val request: SyncCreateEmploymentRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/employment")))
         with(request) {
           // DPS and NOMIS contact/person id are the same
           assertThat(contactId).isEqualTo(nomisPersonId)
@@ -3217,7 +3217,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update the employment in DPS from the person`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/employment/$dpsContactEmploymentId")))
-        val request: SyncUpdateEmploymentRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/employment/$dpsContactEmploymentId")))
+        val request: SyncUpdateEmploymentRequest = getRequestBody(putRequestedFor(urlPathEqualTo("/sync/employment/$dpsContactEmploymentId")))
         with(request) {
           // DPS and NOMIS contact/person id are the same
           assertThat(contactId).isEqualTo(nomisPersonId)
@@ -3424,7 +3424,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the identifier in DPS from the person`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/contact-identity")))
-        val request: SyncCreateContactIdentityRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact-identity")))
+        val request: SyncCreateContactIdentityRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact-identity")))
         with(request) {
           // DPS and NOMIS contact/person id are the same
           assertThat(contactId).isEqualTo(nomisPersonId)
@@ -3758,7 +3758,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update the identifier in DPS from the person`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/contact-identity/$dpsContactIdentityId")))
-        val request: SyncUpdateContactIdentityRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-identity/$dpsContactIdentityId")))
+        val request: SyncUpdateContactIdentityRequest = getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-identity/$dpsContactIdentityId")))
         with(request) {
           // DPS and NOMIS contact/person id are the same
           assertThat(contactId).isEqualTo(nomisPersonId)
@@ -3971,7 +3971,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the restriction in DPS from the person`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/contact-restriction")))
-        val request: SyncCreateContactRestrictionRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact-restriction")))
+        val request: SyncCreateContactRestrictionRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/contact-restriction")))
         with(request) {
           // DPS and NOMIS contact/person id are the same
           assertThat(contactId).isEqualTo(nomisPersonId)
@@ -4050,7 +4050,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update the restriction in DPS`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/contact-restriction/$dpsContactRestrictionId")))
-        val request: SyncUpdateContactRestrictionRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-restriction/$dpsContactRestrictionId")))
+        val request: SyncUpdateContactRestrictionRequest = getRequestBody(putRequestedFor(urlPathEqualTo("/sync/contact-restriction/$dpsContactRestrictionId")))
         with(request) {
           // DPS and NOMIS contact/person id are the same
           assertThat(contactId).isEqualTo(nomisPersonId)
@@ -4426,7 +4426,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the prisoner contact in DPS from the person`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact")))
-        val createPrisonerContactRequest: SyncCreatePrisonerContactRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact")))
+        val createPrisonerContactRequest: SyncCreatePrisonerContactRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact")))
         with(createPrisonerContactRequest) {
           assertThat(prisonerNumber).isEqualTo(offenderNo)
           assertThat(expiryDate).isEqualTo(LocalDate.parse("2025-01-01"))
@@ -4805,7 +4805,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will update the prisoner contact in DPS from the NOMIS person`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/prisoner-contact/$dpsPrisonerContactId")))
-        val updatePrisonerContactRequest: SyncUpdatePrisonerContactRequest = ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/prisoner-contact/$dpsPrisonerContactId")))
+        val updatePrisonerContactRequest: SyncUpdatePrisonerContactRequest = getRequestBody(putRequestedFor(urlPathEqualTo("/sync/prisoner-contact/$dpsPrisonerContactId")))
         with(updatePrisonerContactRequest) {
           assertThat(prisonerNumber).isEqualTo(offenderNo)
           assertThat(expiryDate).isEqualTo(LocalDate.parse("2025-01-01"))
@@ -5030,7 +5030,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will create the contact restriction DPS`() {
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction")))
-        val request: SyncCreatePrisonerContactRestrictionRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction")))
+        val request: SyncCreatePrisonerContactRestrictionRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction")))
         with(request) {
           assertThat(prisonerContactId).isEqualTo(dpsPrisonerContactId)
           assertThat(restrictionType).isEqualTo("BAN")
@@ -5123,7 +5123,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will update the restriction in DPS`() {
         dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction/$dpsPrisonerContactRestrictionId")))
         val request: SyncUpdatePrisonerContactRestrictionRequest =
-          ContactPersonDpsApiExtension.getRequestBody(putRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction/$dpsPrisonerContactRestrictionId")))
+          getRequestBody(putRequestedFor(urlPathEqualTo("/sync/prisoner-contact-restriction/$dpsPrisonerContactRestrictionId")))
         with(request) {
           assertThat(restrictionType).isEqualTo("BAN")
           assertThat(startDate).isEqualTo(LocalDate.parse("2020-01-01"))
@@ -5476,7 +5476,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         dpsApiMock.stubReplaceMergedPrisonerContacts(
           mergePrisonerContactResponse().copy(
-            prisonerContacts = listOf(
+            relationshipsCreated = listOf(
               ContactsAndRestrictions(
                 relationship = IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT, nomisId = nomisContactId1, dpsId = dpsPrisonerContactId1),
                 restrictions = listOf(
@@ -5492,8 +5492,20 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
               ),
 
             ),
-            restrictionsRemoved = listOf(1, 2),
-            relationshipsRemoved = listOf(10, 20),
+            relationshipsRemoved = listOf(
+              PrisonerRelationshipIds(
+                prisonerNumber = offenderNumberRemoved,
+                contactId = 123,
+                prisonerContactId = 10,
+                prisonerContactRestrictionIds = listOf(1),
+              ),
+              PrisonerRelationshipIds(
+                prisonerNumber = offenderNumberRemoved,
+                contactId = 123,
+                prisonerContactId = 20,
+                prisonerContactRestrictionIds = listOf(2),
+              ),
+            ),
           ),
         )
 
@@ -5520,7 +5532,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `all contacts will be sent to DPS along with the prisoner numbers merged`() {
-        val request: MergePrisonerContactRequest = ContactPersonDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact/merge")))
+        val request: MergePrisonerContactRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact/merge")))
         assertThat(request.removedPrisonerNumber).isEqualTo(offenderNumberRemoved)
         assertThat(request.retainedPrisonerNumber).isEqualTo(offenderNumberRetained)
         assertThat(request.prisonerContacts).hasSize(2)
