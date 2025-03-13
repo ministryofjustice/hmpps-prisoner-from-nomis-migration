@@ -2,7 +2,7 @@ name: check-api-docs
 
 on:
   schedule:
-    - cron: "30 7 * * MON-FRI" # Every weekday at 07:30 UTC
+    - cron: "50 7 * * MON-FRI" # Every weekday at 07:50 UTC
   workflow_dispatch:
 
 permissions:
