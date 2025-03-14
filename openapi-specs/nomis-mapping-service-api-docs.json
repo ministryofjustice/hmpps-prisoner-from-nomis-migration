@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-03-13.6145.c0f7bbb-mike-manual-update"
+    "version" : "2025-03-13.6145.c0f7bbb"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -15358,6 +15358,13 @@
             "description" : "Court Charge mappings",
             "items" : {
               "$ref" : "#/components/schemas/CourtChargeMappingDto"
+            }
+          },
+          "sentences" : {
+            "type" : "array",
+            "description" : "Sentence mappings",
+            "items" : {
+              "$ref" : "#/components/schemas/SentenceMappingDto"
             }
           },
           "label" : {
