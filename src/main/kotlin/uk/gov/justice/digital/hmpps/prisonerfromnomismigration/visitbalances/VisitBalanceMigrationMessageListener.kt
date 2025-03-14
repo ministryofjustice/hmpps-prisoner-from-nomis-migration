@@ -9,8 +9,8 @@ import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerVisitOrderBalanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerVisitBalanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISIT_BALANCE_QUEUE_ID
@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture
 class VisitBalanceMigrationMessageListener(
   objectMapper: ObjectMapper,
   migrationService: VisitBalanceMigrationService,
-) : MigrationMessageListener<VisitBalanceMigrationFilter, PrisonerId, PrisonerVisitOrderBalanceResponse, VisitBalanceMappingDto>(
+) : MigrationMessageListener<VisitBalanceMigrationFilter, VisitBalanceIdResponse, PrisonerVisitBalanceResponse, VisitBalanceMappingDto>(
   objectMapper,
   migrationService,
 ) {
@@ -38,7 +38,7 @@ class VisitBalanceMigrationMessageListener(
 
   override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<VisitBalanceMigrationFilter>> = objectMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = objectMapper.readValue(json)
+  override fun parseContextNomisId(json: String): MigrationMessage<*, VisitBalanceIdResponse> = objectMapper.readValue(json)
 
   override fun parseContextMapping(json: String): MigrationMessage<*, VisitBalanceMappingDto> = objectMapper.readValue(json)
 }

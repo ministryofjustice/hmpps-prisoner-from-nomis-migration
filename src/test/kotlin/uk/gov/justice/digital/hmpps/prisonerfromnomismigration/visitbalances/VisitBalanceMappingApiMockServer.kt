@@ -16,14 +16,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
-import java.util.*
 
 @Component
 class VisitBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubCreateMappingsForMigration() {
     mappingApi.stubFor(
-      post("/mapping/visit-balance/migrate").willReturn(
+      post("/mapping/visit-balance").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(201),
@@ -31,11 +30,11 @@ class VisitBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubCreateMappingsForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/visit-balance/migrate")
+  fun stubCreateMappingsForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/visit-balance")
 
   fun stubCreateMappingsForMigration(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(
-      post("/mapping/visit-balance/migrate").willReturn(
+      post("/mapping/visit-balance").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
@@ -54,8 +53,8 @@ class VisitBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
               objectMapper = objectMapper,
               content = listOf(
                 VisitBalanceMappingDto(
-                  dpsId = UUID.randomUUID().toString(),
-                  nomisPrisonNumber = "A1234BC",
+                  dpsId = "A1234BC",
+                  nomisVisitBalanceId = 12345L,
                   mappingType = VisitBalanceMappingDto.MappingType.MIGRATED,
                   label = migrationId,
                   whenCreated = LocalDateTime.now().toString(),
@@ -71,17 +70,17 @@ class VisitBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetByNomisPrisonNumberOrNull(
-    nomisPrisonNumber: String = "A1234BC",
+  fun stubGetByNomisIdOrNull(
+    nomisVisitBalanceId: Long = 12345,
     mapping: VisitBalanceMappingDto? = VisitBalanceMappingDto(
-      nomisPrisonNumber = nomisPrisonNumber,
-      dpsId = UUID.randomUUID().toString(),
+      nomisVisitBalanceId = nomisVisitBalanceId,
+      dpsId = "A1234BC",
       mappingType = VisitBalanceMappingDto.MappingType.MIGRATED,
     ),
   ) {
     mapping?.apply {
       mappingApi.stubFor(
-        get(urlEqualTo("/mapping/visit-balance/nomis-prison-number/$nomisPrisonNumber")).willReturn(
+        get(urlEqualTo("/mapping/visit-balance/nomis-id/$nomisVisitBalanceId")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
@@ -90,7 +89,7 @@ class VisitBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
       )
     } ?: run {
       mappingApi.stubFor(
-        get(urlEqualTo("/mapping/visit-balance/nomis-prison-number/$nomisPrisonNumber")).willReturn(
+        get(urlEqualTo("/mapping/visit-balance/nomis-id/$nomisVisitBalanceId")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
@@ -100,14 +99,14 @@ class VisitBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
     }
   }
 
-  fun stubGetByNomisPrisonNumber(
-    nomisPrisonNumber: String = "A1234BC",
+  fun stubGetByNomisId(
+    nomisVisitBalanceId: Long = 12345,
     mapping: VisitBalanceMappingDto? = VisitBalanceMappingDto(
-      nomisPrisonNumber = "A1234BC",
-      dpsId = UUID.randomUUID().toString(),
+      nomisVisitBalanceId = nomisVisitBalanceId,
+      dpsId = "A1234BC",
       mappingType = VisitBalanceMappingDto.MappingType.MIGRATED,
     ),
-  ) = stubGetByNomisPrisonNumberOrNull(nomisPrisonNumber, mapping)
+  ) = stubGetByNomisIdOrNull(nomisVisitBalanceId, mapping)
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)

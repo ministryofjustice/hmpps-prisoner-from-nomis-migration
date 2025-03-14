@@ -4,24 +4,50 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerVisitOrderBalanceResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerVisitBalanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDate
 
 @Component
 class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
+  fun stubGetVisitBalanceIds(totalElements: Long = 20, pageSize: Long = 20, firstVisitBalanceId: Long = 10000L) {
+    val content: List<VisitBalanceIdResponse> = (1..kotlin.math.min(pageSize, totalElements)).map {
+      VisitBalanceIdResponse(visitBalanceId = firstVisitBalanceId + it - 1)
+    }
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/visit-balances/ids")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(
+            pageContent(
+              objectMapper = NomisApiExtension.Companion.objectMapper,
+              content = content,
+              pageSize = pageSize,
+              pageNumber = 0,
+              totalElements = totalElements,
+              size = pageSize.toInt(),
+            ),
+          ),
+      ),
+    )
+  }
+
   fun stubGetVisitBalance(
-    prisonNumber: String = "A1234BC",
-    visitBalance: PrisonerVisitOrderBalanceResponse = visitBalance(prisonNumber = prisonNumber),
+    nomisVisitBalanceId: Long = 12345L,
+    prisonNumber: String = "A0001BC",
+    visitBalance: PrisonerVisitBalanceResponse = visitBalance(prisonNumber = prisonNumber),
   ) {
     nomisApi.stubFor(
-      get(urlEqualTo("/prisoners/$prisonNumber/visit-orders/balance")).willReturn(
+      get(urlEqualTo("/visit-balances/$nomisVisitBalanceId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
@@ -33,12 +59,12 @@ class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
   }
 
   fun stubGetVisitBalance(
-    prisonNumber: String = "A1234BC",
+    nomisVisitBalanceId: Long = 12345L,
     status: HttpStatus,
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     nomisApi.stubFor(
-      get(urlEqualTo("/prisoners/$prisonNumber/visit-orders/balance")).willReturn(
+      get(urlEqualTo("/visit-balances/$nomisVisitBalanceId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -51,62 +77,9 @@ class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
 
-fun visitBalance(prisonNumber: String = "A1234BC"): PrisonerVisitOrderBalanceResponse = PrisonerVisitOrderBalanceResponse(
+fun visitBalance(prisonNumber: String = "A1234BC"): PrisonerVisitBalanceResponse = PrisonerVisitBalanceResponse(
+  prisonNumber = prisonNumber,
   remainingPrivilegedVisitOrders = 2,
   remainingVisitOrders = 3,
-  visitOrderBalanceAdjustments = listOf(
-    VisitBalanceAdjustmentResponse(
-      remainingVisitOrders = 6,
-      remainingPrivilegedVisitOrders = 2,
-      previousRemainingVisitOrders = 4,
-      previousRemainingPrivilegedVisitOrders = 2,
-      adjustmentReason = CodeDescription("IEP", "IEP Entitlement"),
-      adjustmentDate = LocalDate.of(2024, 11, 11),
-      comment = "Adj 4",
-      expiryBalance = 2,
-      expiryDate = LocalDate.of(2024, 12, 9),
-      endorsedStaffId = 1,
-      authorisedStaffId = 1,
-
-    ),
-    VisitBalanceAdjustmentResponse(
-      remainingVisitOrders = -1,
-      remainingPrivilegedVisitOrders = 8,
-      previousRemainingVisitOrders = null,
-      previousRemainingPrivilegedVisitOrders = null,
-      adjustmentReason = CodeDescription("VO_ISSUE", "Visit Order of type VO is issued."),
-      adjustmentDate = LocalDate.of(2024, 11, 4),
-      comment = "Adj 3",
-      expiryBalance = null,
-      expiryDate = null,
-      endorsedStaffId = 234,
-      authorisedStaffId = 652,
-    ),
-    VisitBalanceAdjustmentResponse(
-      remainingVisitOrders = null,
-      remainingPrivilegedVisitOrders = null,
-      previousRemainingVisitOrders = -2,
-      previousRemainingPrivilegedVisitOrders = 6,
-      adjustmentReason = CodeDescription("AUTO_EXP", "Automatic Expiry"),
-      adjustmentDate = LocalDate.of(2024, 10, 29),
-      comment = "Adj 2",
-      expiryBalance = -2,
-      expiryDate = null,
-      endorsedStaffId = 1,
-      authorisedStaffId = 1,
-    ),
-    VisitBalanceAdjustmentResponse(
-      remainingVisitOrders = 1,
-      remainingPrivilegedVisitOrders = 6,
-      previousRemainingVisitOrders = 2,
-      previousRemainingPrivilegedVisitOrders = 4,
-      adjustmentReason = CodeDescription("IEP", "IEP Entitlement"),
-      adjustmentDate = LocalDate.of(2024, 10, 28),
-      comment = "Adj 1",
-      expiryBalance = 2,
-      expiryDate = LocalDate.of(2024, 11, 25),
-      endorsedStaffId = 1,
-      authorisedStaffId = 1,
-    ),
-  ),
+  lastIEPAllocationDate = LocalDate.parse("2020-01-01"),
 )

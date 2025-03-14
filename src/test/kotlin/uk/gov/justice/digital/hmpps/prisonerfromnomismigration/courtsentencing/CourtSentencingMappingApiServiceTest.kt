@@ -108,6 +108,7 @@ class CourtSentencingMappingApiServiceTest {
           mappingType = CourtCaseAllMappingDto.MappingType.DPS_CREATED,
           courtCharges = emptyList(),
           courtAppearances = emptyList(),
+          sentences = emptyList(),
         ),
         object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseAllMappingDto>>() {},
       )
@@ -128,6 +129,7 @@ class CourtSentencingMappingApiServiceTest {
           mappingType = CourtCaseAllMappingDto.MappingType.DPS_CREATED,
           courtCharges = emptyList(),
           courtAppearances = emptyList(),
+          sentences = emptyList(),
         ),
         object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseAllMappingDto>>() {},
       )

@@ -115,6 +115,7 @@ class CourtSentencingMigrationService(
       courtAppearances = buildCourtAppearanceMapping(dpsCourtCaseCreateResponse.appearances),
       label = context.migrationId,
       mappingType = CourtCaseAllMappingDto.MappingType.MIGRATED,
+      sentences = emptyList(),
     )
     try {
       courtSentencingMappingService.createMapping(

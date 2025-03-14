@@ -31,7 +31,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceMappingDto.MappingType.MIGRATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerVisitOrderBalanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerVisitBalanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
@@ -105,21 +105,21 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        nomisApi.stubGetPrisonerIds(totalElements = 2, pageSize = 10, firstOffenderNo = "A0001BC")
-        mappingApiMock.stubGetByNomisPrisonNumberOrNull(
-          nomisPrisonNumber = "A0001BC",
+        nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 2, pageSize = 10, firstVisitBalanceId = 10000)
+        mappingApiMock.stubGetByNomisIdOrNull(
+          nomisVisitBalanceId = 10000,
           mapping = VisitBalanceMappingDto(
-            dpsId = "10000",
-            nomisPrisonNumber = "A0001BC",
+            dpsId = "A0001BC",
+            nomisVisitBalanceId = 10000,
             mappingType = MIGRATED,
             label = "2020-01-01T00:00:00",
           ),
         )
-        mappingApiMock.stubGetByNomisPrisonNumberOrNull(
-          nomisPrisonNumber = "A0002BC",
+        mappingApiMock.stubGetByNomisIdOrNull(
+          nomisVisitBalanceId = 20000,
           mapping = VisitBalanceMappingDto(
-            dpsId = "20000",
-            nomisPrisonNumber = "A0002BC",
+            dpsId = "A0002BC",
+            nomisVisitBalanceId = 20000,
             mappingType = MIGRATED,
             label = "2020-01-01T00:00:00",
           ),
@@ -153,17 +153,17 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        nomisApi.stubGetPrisonerIds(totalElements = 2, pageSize = 10, firstOffenderNo = "A0001BC")
-        mappingApiMock.stubGetByNomisPrisonNumberOrNull(nomisPrisonNumber = "A0001BC", mapping = null)
-        mappingApiMock.stubGetByNomisPrisonNumberOrNull(nomisPrisonNumber = "A0002BC", mapping = null)
+        nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 2, pageSize = 10, firstVisitBalanceId = 10000L)
+        mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
+        mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 20000, mapping = null)
 
         nomisVisitBalanceApiMock.stubGetVisitBalance(
-          prisonNumber = "A0001BC",
-          visitBalance(prisonNumber = "A0001BC").copy(remainingPrivilegedVisitOrders = 3),
+          nomisVisitBalanceId = 10000,
+          visitBalance = visitBalance(prisonNumber = "A0001BC").copy(remainingPrivilegedVisitOrders = 3),
         )
         nomisVisitBalanceApiMock.stubGetVisitBalance(
-          prisonNumber = "A0002BC",
-          visitBalance(prisonNumber = "A0002BC").copy(remainingPrivilegedVisitOrders = 4),
+          nomisVisitBalanceId = 10001,
+          visitBalance = visitBalance(prisonNumber = "A0002BC").copy(remainingPrivilegedVisitOrders = 4),
         )
         dpsApiMock.stubMigrateVisitBalance()
         mappingApiMock.stubCreateMappingsForMigration()
@@ -173,30 +173,30 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will get the count of the number offenders to migrate`() {
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/ids/all")))
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/visit-balances/ids")))
       }
 
       @Test
       fun `will get visit balance details for each offender`() {
-        nomisVisitBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/prisoners/A0001BC/visit-orders/balance")))
-        nomisVisitBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/prisoners/A0002BC/visit-orders/balance")))
+        nomisVisitBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/visit-balances/10000")))
+        nomisVisitBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/visit-balances/10001")))
       }
 
       @Test
       fun `will create mapping for each person and children`() {
         mappingApiMock.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/visit-balance/migrate"))
+          postRequestedFor(urlPathEqualTo("/mapping/visit-balance"))
             .withRequestBodyJsonPath("mappingType", "MIGRATED")
             .withRequestBodyJsonPath("label", migrationResult.migrationId)
             .withRequestBodyJsonPath("dpsId", "A0001BC")
-            .withRequestBodyJsonPath("nomisPrisonNumber", "A0001BC"),
+            .withRequestBodyJsonPath("nomisVisitBalanceId", 10000),
         )
         mappingApiMock.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/visit-balance/migrate"))
+          postRequestedFor(urlPathEqualTo("/mapping/visit-balance"))
             .withRequestBodyJsonPath("mappingType", "MIGRATED")
             .withRequestBodyJsonPath("label", migrationResult.migrationId)
             .withRequestBodyJsonPath("dpsId", "A0002BC")
-            .withRequestBodyJsonPath("nomisPrisonNumber", "A0002BC"),
+            .withRequestBodyJsonPath("nomisVisitBalanceId", 10001),
         )
       }
 
@@ -205,16 +205,16 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient).trackEvent(
           eq("visitbalance-migration-entity-migrated"),
           check {
-            assertThat(it["nomisPrisonNumber"]).isEqualTo("A0002BC")
-            assertThat(it["dpsPrisonerId"]).isEqualTo("A0002BC")
+            assertThat(it["nomisVisitBalanceId"]).isEqualTo("10000")
+            assertThat(it["dpsPrisonerId"]).isEqualTo("A0001BC")
           },
           isNull(),
         )
         verify(telemetryClient).trackEvent(
           eq("visitbalance-migration-entity-migrated"),
           check {
-            assertThat(it["nomisPrisonNumber"]).isEqualTo("A0001BC")
-            assertThat(it["dpsPrisonerId"]).isEqualTo("A0001BC")
+            assertThat(it["nomisVisitBalanceId"]).isEqualTo("10001")
+            assertThat(it["dpsPrisonerId"]).isEqualTo("A0002BC")
           },
           isNull(),
         )
@@ -244,17 +244,19 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
       @BeforeAll
       fun setUp() {
         stubMigrateVisitBalances(
-          listOf("A0001BC", "A0002BC"),
-          PrisonerVisitOrderBalanceResponse(
+          listOf(10000, 10001),
+          PrisonerVisitBalanceResponse(
+            prisonNumber = "A0001BC",
             remainingVisitOrders = 1,
             remainingPrivilegedVisitOrders = 4,
-            visitOrderBalanceAdjustments = listOf(),
+            lastIEPAllocationDate = LocalDate.parse("2025-02-01"),
           ),
 
-          PrisonerVisitOrderBalanceResponse(
+          PrisonerVisitBalanceResponse(
+            prisonNumber = "A0002BC",
             remainingVisitOrders = 2,
             remainingPrivilegedVisitOrders = 3,
-            visitOrderBalanceAdjustments = listOf(),
+            lastIEPAllocationDate = null,
           ),
         )
 
@@ -262,7 +264,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
         dpsRequests =
           VisitBalanceDpsApiExtension.getRequestBodies(postRequestedFor(urlPathMatching("/visits/allocation/prisoner/migrate")))
         mappingRequests =
-          MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/visit-balance/migrate")))
+          MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/visit-balance")))
       }
 
       @Test
@@ -270,27 +272,27 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
         dpsRequests.find { it.prisonerId == "A0001BC" }?.let {
           assertThat(it.voBalance).isEqualTo(1)
           assertThat(it.pvoBalance).isEqualTo(4)
-          assertThat(it.lastVoAllocationDate).isEqualTo(LocalDate.parse("2025-01-15"))
+          assertThat(it.lastVoAllocationDate).isEqualTo(LocalDate.parse("2025-02-01"))
         }
         dpsRequests.find { it.prisonerId == "A0002BC" }?.let {
           assertThat(it.voBalance).isEqualTo(2)
           assertThat(it.pvoBalance).isEqualTo(3)
-          assertThat(it.lastVoAllocationDate).isEqualTo(LocalDate.parse("2025-01-15"))
+          assertThat(it.lastVoAllocationDate).isEqualTo(LocalDate.parse("2002-02-01"))
         }
       }
 
       @Test
       fun `will create mappings for nomis person to dps visit balance`() {
-        with(mappingRequests.find { it.nomisPrisonNumber == "A0001BC" } ?: throw AssertionError("Request not found")) {
-          assertThat(mappingType).isEqualTo(VisitBalanceMappingDto.MappingType.MIGRATED)
+        with(mappingRequests.find { it.nomisVisitBalanceId == 10000L } ?: throw AssertionError("Request not found")) {
+          assertThat(mappingType).isEqualTo(MIGRATED)
           assertThat(label).isEqualTo(migrationResult.migrationId)
-          assertThat(nomisPrisonNumber).isEqualTo("A0001BC")
+          assertThat(nomisVisitBalanceId).isEqualTo(10000)
           assertThat(dpsId).isEqualTo("A0001BC")
         }
-        with(mappingRequests.find { it.nomisPrisonNumber == "A0002BC" } ?: throw AssertionError("Request not found")) {
-          assertThat(mappingType).isEqualTo(VisitBalanceMappingDto.MappingType.MIGRATED)
+        with(mappingRequests.find { it.nomisVisitBalanceId == 10001L } ?: throw AssertionError("Request not found")) {
+          assertThat(mappingType).isEqualTo(MIGRATED)
           assertThat(label).isEqualTo(migrationResult.migrationId)
-          assertThat(nomisPrisonNumber).isEqualTo("A0002BC")
+          assertThat(nomisVisitBalanceId).isEqualTo(10001)
           assertThat(dpsId).isEqualTo("A0002BC")
         }
       }
@@ -302,9 +304,10 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001BC")
-        mappingApiMock.stubGetByNomisPrisonNumberOrNull(nomisPrisonNumber = "A0001BC", mapping = null)
+        nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 1, pageSize = 10, firstVisitBalanceId = 10000)
+        mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
         nomisVisitBalanceApiMock.stubGetVisitBalance(
+          nomisVisitBalanceId = 10000,
           prisonNumber = "A0001BC",
           visitBalance(prisonNumber = "A0001BC").copy(remainingPrivilegedVisitOrders = 3),
         )
@@ -316,18 +319,18 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will get details for person only once`() {
-        nomisVisitBalanceApiMock.verify(1, getRequestedFor(urlPathEqualTo("/prisoners/A0001BC/visit-orders/balance")))
+        nomisVisitBalanceApiMock.verify(1, getRequestedFor(urlPathEqualTo("/visit-balances/10000")))
       }
 
       @Test
       fun `will attempt create mapping twice before succeeding`() {
         mappingApiMock.verify(
           2,
-          postRequestedFor(urlPathEqualTo("/mapping/visit-balance/migrate"))
+          postRequestedFor(urlPathEqualTo("/mapping/visit-balance"))
             .withRequestBodyJsonPath("mappingType", "MIGRATED")
             .withRequestBodyJsonPath("label", migrationResult.migrationId)
             .withRequestBodyJsonPath("dpsId", "A0001BC")
-            .withRequestBodyJsonPath("nomisPrisonNumber", "A0001BC"),
+            .withRequestBodyJsonPath("nomisVisitBalanceId", 10000),
         )
       }
 
@@ -336,7 +339,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient).trackEvent(
           eq("visitbalance-migration-entity-migrated"),
           check {
-            assertThat(it["nomisPrisonNumber"]).isEqualTo("A0001BC")
+            assertThat(it["nomisVisitBalanceId"]).isEqualTo("10000")
             assertThat(it["dpsPrisonerId"]).isEqualTo("A0001BC")
           },
           isNull(),
@@ -363,9 +366,10 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001BC")
-        mappingApiMock.stubGetByNomisPrisonNumberOrNull(nomisPrisonNumber = "A0001BC", mapping = null)
+        nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 1, pageSize = 10, firstVisitBalanceId = 10000)
+        mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
         nomisVisitBalanceApiMock.stubGetVisitBalance(
+          nomisVisitBalanceId = 10000,
           prisonNumber = "A0001BC",
           visitBalance(prisonNumber = "A0001BC").copy(remainingPrivilegedVisitOrders = 3),
         )
@@ -374,13 +378,13 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
               duplicate = VisitBalanceMappingDto(
-                dpsId = "DPS-A0001BC",
-                nomisPrisonNumber = "A0001BC",
+                dpsId = "A0001BC",
+                nomisVisitBalanceId = 10000,
                 mappingType = MIGRATED,
               ),
               existing = VisitBalanceMappingDto(
-                dpsId = "DPS-A0001XX",
-                nomisPrisonNumber = "A0001BC",
+                dpsId = "A0001XX",
+                nomisVisitBalanceId = 10001,
                 mappingType = MIGRATED,
               ),
             ),
@@ -395,18 +399,18 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will get details for person only once`() {
-        nomisVisitBalanceApiMock.verify(1, getRequestedFor(urlPathEqualTo("/prisoners/A0001BC/visit-orders/balance")))
+        nomisVisitBalanceApiMock.verify(1, getRequestedFor(urlPathEqualTo("/visit-balances/10000")))
       }
 
       @Test
       fun `will attempt create mapping once before failing`() {
         mappingApiMock.verify(
           1,
-          postRequestedFor(urlPathEqualTo("/mapping/visit-balance/migrate"))
+          postRequestedFor(urlPathEqualTo("/mapping/visit-balance"))
             .withRequestBodyJsonPath("mappingType", "MIGRATED")
             .withRequestBodyJsonPath("label", migrationResult.migrationId)
             .withRequestBodyJsonPath("dpsId", "A0001BC")
-            .withRequestBodyJsonPath("nomisPrisonNumber", "A0001BC"),
+            .withRequestBodyJsonPath("nomisVisitBalanceId", 10000),
         )
       }
 
@@ -415,10 +419,10 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient).trackEvent(
           eq("nomis-migration-visitbalance-duplicate"),
           check {
-            assertThat(it["duplicateNomisPrisonNumber"]).isEqualTo("A0001BC")
-            assertThat(it["duplicateDpsPrisonerId"]).isEqualTo("DPS-A0001BC")
-            assertThat(it["existingNomisPrisonNumber"]).isEqualTo("A0001BC")
-            assertThat(it["existingDpsPrisonerId"]).isEqualTo("DPS-A0001XX")
+            assertThat(it["duplicateNomisVisitBalanceId"]).isEqualTo("10000")
+            assertThat(it["duplicateDpsPrisonerId"]).isEqualTo("A0001BC")
+            assertThat(it["existingNomisVisitBalanceId"]).isEqualTo("10001")
+            assertThat(it["existingDpsPrisonerId"]).isEqualTo("A0001XX")
           },
           isNull(),
         )
@@ -811,14 +815,16 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
     internal fun `will terminate a running migration`() {
       // slow the API calls so there is time to cancel before it completes
       nomisApi.setGlobalFixedDelay(1000)
-      nomisApi.stubGetPrisonerIds(totalElements = 2, pageSize = 10, firstOffenderNo = "A0001BC")
-      mappingApiMock.stubGetByNomisPrisonNumberOrNull(nomisPrisonNumber = "A0001BC", mapping = null)
-      mappingApiMock.stubGetByNomisPrisonNumberOrNull(nomisPrisonNumber = "A0002BC", mapping = null)
+      nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 2, pageSize = 10, firstVisitBalanceId = 10000)
+      mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
+      mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 20000, mapping = null)
       nomisVisitBalanceApiMock.stubGetVisitBalance(
+        nomisVisitBalanceId = 10000,
         prisonNumber = "A0001BC",
         visitBalance(prisonNumber = "A0001BC").copy(remainingPrivilegedVisitOrders = 3),
       )
       nomisVisitBalanceApiMock.stubGetVisitBalance(
+        nomisVisitBalanceId = 20000,
         prisonNumber = "A0002BC",
         visitBalance(prisonNumber = "A0002BC").copy(remainingPrivilegedVisitOrders = 4),
       )
@@ -875,14 +881,14 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
     )
   }
 
-  private fun stubMigrateVisitBalances(prisonNumbers: List<String>, vararg visitBalances: PrisonerVisitOrderBalanceResponse) {
+  private fun stubMigrateVisitBalances(visitBalanceIds: List<Long>, vararg visitBalances: PrisonerVisitBalanceResponse) {
     nomisApi.resetAll()
     dpsApiMock.resetAll()
     mappingApiMock.resetAll()
-    nomisApi.stubGetPrisonerIds(totalElements = 2, pageSize = 10, firstOffenderNo = "A0001BC")
+    nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 2, pageSize = 10, firstVisitBalanceId = 10000)
     visitBalances.forEachIndexed { index, nomisVisitBalance ->
-      nomisVisitBalanceApiMock.stubGetVisitBalance(prisonNumbers[index], nomisVisitBalance)
-      mappingApiMock.stubGetByNomisPrisonNumberOrNull(nomisPrisonNumber = prisonNumbers[index], mapping = null)
+      nomisVisitBalanceApiMock.stubGetVisitBalance(nomisVisitBalanceId = visitBalanceIds[index], visitBalance = nomisVisitBalance)
+      mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = visitBalanceIds[index], mapping = null)
       dpsApiMock.stubMigrateVisitBalance()
     }
     mappingApiMock.stubCreateMappingsForMigration()

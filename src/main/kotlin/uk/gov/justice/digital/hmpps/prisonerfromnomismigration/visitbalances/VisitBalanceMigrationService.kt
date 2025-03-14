@@ -10,8 +10,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceMappingDto.MappingType.MIGRATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerVisitOrderBalanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerVisitBalanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
@@ -27,7 +27,7 @@ class VisitBalanceMigrationService(
   @Value("\${visitbalance.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<VisitBalanceMigrationFilter, PrisonerId, VisitBalanceMappingDto>(
+) : MigrationService<VisitBalanceMigrationFilter, VisitBalanceIdResponse, VisitBalanceMappingDto>(
   mappingService = visitBalanceMappingService,
   migrationType = MigrationType.VISIT_BALANCE,
   pageSize = pageSize,
@@ -38,26 +38,26 @@ class VisitBalanceMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  // TODO Set up filtering
   override suspend fun getIds(
     migrationFilter: VisitBalanceMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<PrisonerId> = nomisApiService.getPrisonerIds(
+  ): PageImpl<VisitBalanceIdResponse> = visitBalanceNomisApiService.getVisitBalanceIds(
+    prisonId = migrationFilter.prisonId,
     pageNumber = pageNumber,
     pageSize = pageSize,
   )
 
-  override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
-    val nomisPrisonNumber = context.body.offenderNo
-    val alreadyMigratedMapping = visitBalanceMappingService.getByNomisPrisonNumberOrNull(nomisPrisonNumber)
+  override suspend fun migrateNomisEntity(context: MigrationContext<VisitBalanceIdResponse>) {
+    val nomisVisitBalanceId = context.body.visitBalanceId
+    val alreadyMigratedMapping = visitBalanceMappingService.getByNomisVisitBalanceIdOrNull(nomisVisitBalanceId)
 
     alreadyMigratedMapping?.run {
-      log.info("Will not migrate the nomis prisoner=$nomisPrisonNumber since it was already mapped during migration ${this.label}")
+      log.info("Will not migrate the nomis visit balance id={} and prison number={} since it was already mapped during migration {}", nomisVisitBalanceId, dpsId, label)
     } ?: run {
-      val visitBalance = visitBalanceNomisApiService.getVisitBalance(prisonNumber = nomisPrisonNumber)
-      dpsApiService.migrateVisitBalance(visitBalance.toMigrationDto(nomisPrisonNumber))
-      val mapping = VisitBalanceMappingDto(nomisPrisonNumber = nomisPrisonNumber, dpsId = nomisPrisonNumber, mappingType = MIGRATED, label = context.migrationId)
+      val visitBalance = visitBalanceNomisApiService.getVisitBalance(nomisVisitBalanceId)
+      dpsApiService.migrateVisitBalance(visitBalance.toMigrationDto())
+      val mapping = VisitBalanceMappingDto(nomisVisitBalanceId = nomisVisitBalanceId, dpsId = visitBalance.prisonNumber, mappingType = MIGRATED, label = context.migrationId)
       createMappingOrOnFailureDo(context, mapping) {
         queueService.sendMessage(
           MigrationMessageType.RETRY_MIGRATION_MAPPING,
@@ -90,9 +90,9 @@ class VisitBalanceMigrationService(
           "nomis-migration-visitbalance-duplicate",
           mapOf(
             "duplicateDpsPrisonerId" to duplicateErrorDetails.duplicate.dpsId,
-            "duplicateNomisPrisonNumber" to duplicateErrorDetails.duplicate.nomisPrisonNumber,
+            "duplicateNomisVisitBalanceId" to duplicateErrorDetails.duplicate.nomisVisitBalanceId,
             "existingDpsPrisonerId" to duplicateErrorDetails.existing.dpsId,
-            "existingNomisPrisonNumber" to duplicateErrorDetails.existing.nomisPrisonNumber,
+            "existingNomisVisitBalanceId" to duplicateErrorDetails.existing.nomisVisitBalanceId,
             "migrationId" to context.migrationId,
           ),
         )
@@ -100,7 +100,7 @@ class VisitBalanceMigrationService(
         telemetryClient.trackEvent(
           "visitbalance-migration-entity-migrated",
           mapOf(
-            "nomisPrisonNumber" to mapping.nomisPrisonNumber,
+            "nomisVisitBalanceId" to mapping.nomisVisitBalanceId,
             "dpsPrisonerId" to mapping.dpsId,
             "migrationId" to context.migrationId,
           ),
@@ -110,10 +110,9 @@ class VisitBalanceMigrationService(
   }
 }
 
-fun PrisonerVisitOrderBalanceResponse.toMigrationDto(nomisPrisonNumber: String) = VisitAllocationPrisonerMigrationDto(
+fun PrisonerVisitBalanceResponse.toMigrationDto() = VisitAllocationPrisonerMigrationDto(
   voBalance = remainingVisitOrders,
   pvoBalance = remainingPrivilegedVisitOrders,
-  // TOD add in the correct value
-  lastVoAllocationDate = LocalDate.of(2025, 1, 15),
-  prisonerId = nomisPrisonNumber,
+  lastVoAllocationDate = lastIEPAllocationDate ?: LocalDate.now().minusDays(14),
+  prisonerId = prisonNumber,
 )

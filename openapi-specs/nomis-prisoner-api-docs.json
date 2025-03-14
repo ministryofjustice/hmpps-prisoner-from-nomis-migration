@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-03-10.11585.5313e2f"
+    "version" : "2025-03-14.11690.cef5be8"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -790,7 +790,7 @@
       "get" : {
         "tags" : [ "profile-details-resource" ],
         "summary" : "Get profile details for a prisoner",
-        "description" : "Retrieves profile details for a prisoner and all of their aliases and bookings. Requires ROLE_NOMIS_PRISON_PERSON",
+        "description" : "Retrieves profile details for a prisoner and all of their aliases and bookings. Requires ROLE_NOMIS_CONTACTPERSONS",
         "operationId" : "getProfileDetails",
         "parameters" : [ {
           "name" : "offenderNo",
@@ -831,6 +831,17 @@
             "example" : 12345
           },
           "example" : 12345
+        }, {
+          "name" : "latestBookingOnly",
+          "in" : "query",
+          "description" : "Latest booking only?",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "description" : "Latest booking only?",
+            "example" : true
+          },
+          "example" : true
         } ],
         "responses" : {
           "200" : {
@@ -854,7 +865,7 @@
             }
           },
           "403" : {
-            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISON_PERSON",
+            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSONS",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -878,7 +889,7 @@
       "put" : {
         "tags" : [ "profile-details-resource" ],
         "summary" : "Upsert profile details for a prisoner",
-        "description" : "Upserts profile details on the latest booking for a prisoner, if it exists. Requires ROLE_NOMIS_PRISON_PERSON",
+        "description" : "Upserts profile details on the latest booking for a prisoner, if it exists. Requires ROLE_NOMIS_CONTACTPERSONS",
         "operationId" : "upsertPhysicalAttributes",
         "parameters" : [ {
           "name" : "offenderNo",
@@ -924,7 +935,7 @@
             }
           },
           "403" : {
-            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISON_PERSON",
+            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSONS",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -11018,9 +11029,9 @@
     },
     "/visit-orders/visit-balance-adjustment/{visitBalanceAdjustmentId}" : {
       "get" : {
-        "tags" : [ "visit-order-balance-resource" ],
+        "tags" : [ "visit-balance-resource" ],
         "summary" : "Get specific offender visit balance adjustment",
-        "description" : "Retrieves offender visit balance adjustment. Requires ROLE_NOMIS_VISIT_ORDERS",
+        "description" : "Retrieves offender visit balance adjustment. Requires ROLE_NOMIS_VISIT_BALANCE",
         "operationId" : "getVisitBalanceAdjustment",
         "parameters" : [ {
           "name" : "visitBalanceAdjustmentId",
@@ -11057,7 +11068,7 @@
             }
           },
           "403" : {
-            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_VISIT_ORDERS",
+            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_VISIT_BALANCE",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -11068,6 +11079,146 @@
           },
           "404" : {
             "description" : "Adjustment does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/visit-balances/{visitBalanceId}" : {
+      "get" : {
+        "tags" : [ "visit-balance-resource" ],
+        "summary" : "Get visit balance data for a booking",
+        "description" : "Retrieves visit order balance details for the last month for a booking. Requires ROLE_NOMIS_VISIT_BALANCE",
+        "operationId" : "getVisitBalanceByIdToMigrate",
+        "parameters" : [ {
+          "name" : "visitBalanceId",
+          "in" : "path",
+          "description" : "Visit balance (offender booking) id.",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Visit balance (offender booking) id.",
+            "example" : 12345
+          },
+          "example" : 12345
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Visit balance returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonerVisitBalanceResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_VISIT_BALANCE",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Prisoner does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/visit-balances/ids" : {
+      "get" : {
+        "tags" : [ "visit-balance-resource" ],
+        "summary" : "Find paged visit balance ids",
+        "description" : "\n      Returns the visit balance ids (which are booking ids) for the latest booking for offenders with balance entries.\n      Requires role NOMIS_VISIT_BALANCE",
+        "operationId" : "findVisitBalanceIds",
+        "parameters" : [ {
+          "name" : "pageRequest",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Pageable"
+          }
+        }, {
+          "name" : "prisonId",
+          "in" : "query",
+          "description" : "Prison id",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison id"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageVisitBalanceIdResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires role NOMIS_VISIT_BALANCE",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -11542,6 +11693,68 @@
         }
       }
     },
+    "/prisoners/{prisonNumber}/visit-orders/balance" : {
+      "get" : {
+        "tags" : [ "visit-balance-resource" ],
+        "summary" : "Get visit order balance data for a prisoner",
+        "description" : "Retrieves visit order balance details for the last month for a prisoner. Requires ROLE_NOMIS_VISIT_BALANCE",
+        "operationId" : "getVisitBalanceToMigrate",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "description" : "Prison number aka Offender No.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison number aka Offender No.",
+            "example" : "A1234AK"
+          },
+          "example" : "A1234AK"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Visit balance returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonerVisitBalanceResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_VISIT_BALANCE",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Prisoner does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/{offenderNo}" : {
       "get" : {
         "tags" : [ "prisoners-resource" ],
@@ -11594,68 +11807,6 @@
           },
           "404" : {
             "description" : "Prisoner not found",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/prisoners/{offenderNo}/visit-orders/balance/to-migrate" : {
-      "get" : {
-        "tags" : [ "visit-order-balance-resource" ],
-        "summary" : "Get visit order balance data for a prisoner",
-        "description" : "Retrieves visit order balance details for the last month for a prisoner. Requires ROLE_NOMIS_VISIT_ORDERS",
-        "operationId" : "getVisitOrderBalanceToMigrate",
-        "parameters" : [ {
-          "name" : "offenderNo",
-          "in" : "path",
-          "description" : "Offender No AKA prisoner number",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Offender No AKA prisoner number",
-            "example" : "A1234AK"
-          },
-          "example" : "A1234AK"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Visit Orders Returned",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/PrisonerVisitOrderBalanceResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_VISIT_ORDERS",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Prisoner does not exist",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -12532,7 +12683,7 @@
       "get" : {
         "tags" : [ "prisoners-resource" ],
         "summary" : "Gets the identifier for all prisoners.",
-        "description" : "Requires role SYNCHRONISATION_REPORTING, NOMIS_ALERTS, NOMIS_PRISON_PERSON or NOMIS_CORE_PERSON.",
+        "description" : "Requires role SYNCHRONISATION_REPORTING, NOMIS_ALERTS, 'ROLE_NOMIS_SENTENCING' or NOMIS_CORE_PERSON.",
         "operationId" : "getAllPrisoners",
         "parameters" : [ {
           "name" : "pageRequest",
@@ -12564,7 +12715,7 @@
             }
           },
           "403" : {
-            "description" : "Forbidden to access this endpoint when role SYNCHRONISATION_REPORTING or ROLE_NOMIS_ALERTS not present",
+            "description" : "Forbidden to access this endpoint when role SYNCHRONISATION_REPORTING, 'ROLE_NOMIS_SENTENCING' or ROLE_NOMIS_ALERTS not present",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -12678,72 +12829,6 @@
           },
           "403" : {
             "description" : "Forbidden to access this endpoint when role SYNCHRONISATION_REPORTING not present",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/prisoners/booking-id/{bookingId}/sentencing/court-cases" : {
-      "get" : {
-        "tags" : [ "sentencing-resource" ],
-        "summary" : "get court cases for an offender booking",
-        "description" : "Requires role NOMIS_SENTENCING. Retrieves a court case by id",
-        "operationId" : "getCourtCasesByOffenderBooking",
-        "parameters" : [ {
-          "name" : "bookingId",
-          "in" : "path",
-          "description" : "Booking Id",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Booking Id",
-            "example" : 12345
-          },
-          "example" : 12345
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "the list of court cases",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/CourtCaseResponse"
-                  }
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden to access this endpoint when role NOMIS_SENTENCING not present",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Offender booking not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -21741,9 +21826,6 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "unpaged" : {
-            "type" : "boolean"
-          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -21754,6 +21836,9 @@
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "unpaged" : {
+            "type" : "boolean"
           }
         }
       },
@@ -21785,7 +21870,7 @@
       },
       "VisitBalanceAdjustmentResponse" : {
         "type" : "object",
-        "description" : "The visit orders balance changes held against a booking for a prisoner",
+        "description" : "The visit order balance changes held against a booking for a prisoner",
         "properties" : {
           "remainingVisitOrders" : {
             "type" : "integer",
@@ -21839,8 +21924,98 @@
             "type" : "integer",
             "format" : "int64",
             "description" : "Which staff member authorised the adjustment"
+          },
+          "createUsername" : {
+            "type" : "string",
+            "description" : "Who created the adjustment"
+          }
+        },
+        "required" : [ "adjustmentDate", "createUsername" ]
+      },
+      "PrisonerVisitBalanceResponse" : {
+        "type" : "object",
+        "description" : "The visit balance held against a prisoner's latest booking",
+        "properties" : {
+          "prisonNumber" : {
+            "type" : "string",
+            "description" : "Prison number aka noms id / offender id display",
+            "example" : "A1234BC"
+          },
+          "remainingVisitOrders" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Total number of unallocated (remaining) visit orders"
+          },
+          "remainingPrivilegedVisitOrders" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Total number of unallocated (remaining) privileged visit orders"
+          },
+          "lastIEPAllocationDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The date of the last IEP Allocation date via the batch process, if it exists"
+          }
+        },
+        "required" : [ "prisonNumber", "remainingPrivilegedVisitOrders", "remainingVisitOrders" ]
+      },
+      "PageVisitBalanceIdResponse" : {
+        "type" : "object",
+        "properties" : {
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VisitBalanceIdResponse"
+            }
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "empty" : {
+            "type" : "boolean"
           }
         }
+      },
+      "VisitBalanceIdResponse" : {
+        "type" : "object",
+        "description" : "visit balance id",
+        "properties" : {
+          "visitBalanceId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The visit balance (booking) id"
+          }
+        },
+        "required" : [ "visitBalanceId" ]
       },
       "SplashConditionDto" : {
         "type" : "object",
@@ -22275,30 +22450,6 @@
           }
         },
         "required" : [ "code", "description" ]
-      },
-      "PrisonerVisitOrderBalanceResponse" : {
-        "type" : "object",
-        "description" : "The list of visit orders held against a prisoner",
-        "properties" : {
-          "remainingVisitOrders" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "Total number of unallocated (remaining) visit orders"
-          },
-          "remainingPrivilegedVisitOrders" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "Total number of unallocated (remaining) privileged visit orders"
-          },
-          "visitOrderBalanceAdjustments" : {
-            "type" : "array",
-            "description" : "Balance adjustments for this prisoner over the last 28 days",
-            "items" : {
-              "$ref" : "#/components/schemas/VisitBalanceAdjustmentResponse"
-            }
-          }
-        },
-        "required" : [ "remainingPrivilegedVisitOrders", "remainingVisitOrders", "visitOrderBalanceAdjustments" ]
       },
       "OffenceResponse" : {
         "type" : "object",

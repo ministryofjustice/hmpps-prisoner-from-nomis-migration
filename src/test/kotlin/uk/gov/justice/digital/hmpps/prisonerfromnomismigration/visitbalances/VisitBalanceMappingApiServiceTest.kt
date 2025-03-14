@@ -12,12 +12,12 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse.Status._409_CONFLICT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceMappingDto.MappingType.MIGRATED
-import java.util.UUID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceMappingDto.MappingType.NOMIS_CREATED
 
 @SpringAPIServiceTest
 @Import(VisitBalanceMappingApiService::class, VisitBalanceMappingApiMockServer::class)
@@ -29,12 +29,12 @@ class VisitBalanceMappingApiServiceTest {
   private lateinit var mockServer: VisitBalanceMappingApiMockServer
 
   @Nested
-  inner class GetByNomisPrisonNumberOrNull {
+  inner class GetByNomisVisitBalanceIdOrNull {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      mockServer.stubGetByNomisPrisonNumberOrNull(nomisPrisonNumber = "A1234BC")
+      mockServer.stubGetByNomisIdOrNull(nomisVisitBalanceId = 12345L)
 
-      apiService.getByNomisPrisonNumberOrNull(nomisPrisonNumber = "A1234BC")
+      apiService.getByNomisVisitBalanceIdOrNull(nomisVisitBalanceId = 12345L)
 
       mockServer.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -43,49 +43,49 @@ class VisitBalanceMappingApiServiceTest {
 
     @Test
     internal fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubGetByNomisPrisonNumberOrNull()
+      mockServer.stubGetByNomisIdOrNull()
 
-      apiService.getByNomisPrisonNumberOrNull(nomisPrisonNumber = "A1234BC")
+      apiService.getByNomisVisitBalanceIdOrNull(nomisVisitBalanceId = 12345L)
 
       mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/mapping/visit-balance/nomis-prison-number/A1234BC")),
+        getRequestedFor(urlPathEqualTo("/mapping/visit-balance/nomis-id/12345")),
       )
     }
 
     @Test
     fun `will return dpsId when mapping exists`() = runTest {
-      mockServer.stubGetByNomisPrisonNumberOrNull(
-        nomisPrisonNumber = "A1234BC",
+      mockServer.stubGetByNomisIdOrNull(
+        nomisVisitBalanceId = 12345L,
         mapping = VisitBalanceMappingDto(
           dpsId = "1234567",
-          nomisPrisonNumber = "A1234BC",
+          nomisVisitBalanceId = 12345L,
           mappingType = MIGRATED,
         ),
       )
 
-      val mapping = apiService.getByNomisPrisonNumberOrNull(nomisPrisonNumber = "A1234BC")!!
+      val mapping = apiService.getByNomisVisitBalanceIdOrNull(nomisVisitBalanceId = 12345L)!!
 
       assertThat(mapping.dpsId).isEqualTo("1234567")
     }
 
     @Test
     fun `will return null if mapping does not exist`() = runTest {
-      mockServer.stubGetByNomisPrisonNumberOrNull(
-        nomisPrisonNumber = "A1234BC",
+      mockServer.stubGetByNomisIdOrNull(
+        nomisVisitBalanceId = 12345L,
         mapping = null,
       )
 
-      assertThat(apiService.getByNomisPrisonNumberOrNull(nomisPrisonNumber = "A1234BC")).isNull()
+      assertThat(apiService.getByNomisVisitBalanceIdOrNull(nomisVisitBalanceId = 12345L)).isNull()
     }
   }
 
   @Nested
-  inner class GetByNomisPrisonNumber {
+  inner class GetByNomisVisitBalanceId {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      mockServer.stubGetByNomisPrisonNumber(nomisPrisonNumber = "A1234BC")
+      mockServer.stubGetByNomisId(nomisVisitBalanceId = 12345L)
 
-      apiService.getByNomisPrisonNumber(nomisPrisonNumber = "A1234BC")
+      apiService.getByNomisVisitBalanceId(nomisVisitBalanceId = 12345L)
 
       mockServer.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -94,27 +94,27 @@ class VisitBalanceMappingApiServiceTest {
 
     @Test
     internal fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubGetByNomisPrisonNumber(nomisPrisonNumber = "A1234BC")
+      mockServer.stubGetByNomisId(nomisVisitBalanceId = 12345L)
 
-      apiService.getByNomisPrisonNumber(nomisPrisonNumber = "A1234BC")
+      apiService.getByNomisVisitBalanceId(nomisVisitBalanceId = 12345L)
 
       mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/mapping/visit-balance/nomis-prison-number/A1234BC")),
+        getRequestedFor(urlPathEqualTo("/mapping/visit-balance/nomis-id/12345")),
       )
     }
 
     @Test
     fun `will return dpsId`() = runTest {
-      mockServer.stubGetByNomisPrisonNumber(
-        nomisPrisonNumber = "A1234BC",
+      mockServer.stubGetByNomisId(
+        nomisVisitBalanceId = 12345L,
         mapping = VisitBalanceMappingDto(
           dpsId = "1234567",
-          nomisPrisonNumber = "A1234BC",
+          nomisVisitBalanceId = 12345L,
           mappingType = MIGRATED,
         ),
       )
 
-      val mapping = apiService.getByNomisPrisonNumber(nomisPrisonNumber = "A1234BC")
+      val mapping = apiService.getByNomisVisitBalanceId(nomisVisitBalanceId = 12345L)
 
       assertThat(mapping.dpsId).isEqualTo("1234567")
     }
@@ -128,15 +128,15 @@ class VisitBalanceMappingApiServiceTest {
 
       apiService.createMapping(
         VisitBalanceMappingDto(
-          mappingType = VisitBalanceMappingDto.MappingType.MIGRATED,
+          mappingType = MIGRATED,
           label = "2020-01-01T10:00",
-          dpsId = UUID.randomUUID().toString(),
-          nomisPrisonNumber = "A1234KT",
+          dpsId = "A1234KT",
+          nomisVisitBalanceId = 12345L,
         ),
       )
 
       mockServer.verify(
-        postRequestedFor(urlPathEqualTo("/mapping/visit-balance/migrate")).withHeader("Authorization", equalTo("Bearer ABCDE")),
+        postRequestedFor(urlPathEqualTo("/mapping/visit-balance")).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -146,10 +146,10 @@ class VisitBalanceMappingApiServiceTest {
 
       val result = apiService.createMapping(
         VisitBalanceMappingDto(
-          mappingType = VisitBalanceMappingDto.MappingType.MIGRATED,
+          mappingType = MIGRATED,
           label = "2020-01-01T10:00",
-          dpsId = UUID.randomUUID().toString(),
-          nomisPrisonNumber = "A1234KT",
+          dpsId = "A1234KT",
+          nomisVisitBalanceId = 12345L,
         ),
       )
 
@@ -158,42 +158,42 @@ class VisitBalanceMappingApiServiceTest {
 
     @Test
     fun `will return error when 409 conflict`() = runTest {
-      val nomisPrisonNumber = "A4321BC"
-      val dpsId = "956d4326-b0c3-47ac-ab12-f0165109a6c5"
-      val existingDpsId = "f612a10f-4827-4022-be96-d882193dfabd"
+      val dpsId = "A4321BC"
+      val nomisVisitBalanceId = 12345L
+      val existingDpsId = "A4321BC"
 
       mockServer.stubCreateMappingsForMigration(
         error = DuplicateMappingErrorResponse(
           moreInfo = DuplicateErrorContentObject(
             duplicate = VisitBalanceMappingDto(
               dpsId = dpsId,
-              nomisPrisonNumber = nomisPrisonNumber,
-              mappingType = VisitBalanceMappingDto.MappingType.NOMIS_CREATED,
+              nomisVisitBalanceId = nomisVisitBalanceId,
+              mappingType = NOMIS_CREATED,
             ),
             existing = VisitBalanceMappingDto(
               dpsId = existingDpsId,
-              nomisPrisonNumber = nomisPrisonNumber,
-              mappingType = VisitBalanceMappingDto.MappingType.NOMIS_CREATED,
+              nomisVisitBalanceId = nomisVisitBalanceId,
+              mappingType = NOMIS_CREATED,
             ),
           ),
           errorCode = 1409,
-          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          status = _409_CONFLICT,
           userMessage = "Duplicate mapping",
         ),
       )
 
       val result = apiService.createMapping(
         VisitBalanceMappingDto(
-          mappingType = VisitBalanceMappingDto.MappingType.MIGRATED,
+          mappingType = MIGRATED,
           label = "2020-01-01T10:00",
-          dpsId = UUID.randomUUID().toString(),
-          nomisPrisonNumber = "A1234KT",
+          dpsId = "A1234KT",
+          nomisVisitBalanceId = 12345L,
         ),
       )
 
       assertThat(result.isError).isTrue()
       assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
-      assertThat(result.errorResponse!!.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
+      assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
     }
   }
 
