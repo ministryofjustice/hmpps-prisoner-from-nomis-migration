@@ -28,9 +28,9 @@ class VisitBalanceNomisApiServiceTest {
   inner class GetPerson {
     @Test
     fun `will pass oath2 token to service`() = runTest {
-      mockServer.stubGetVisitBalance(prisonNumber = "A1234BC")
+      mockServer.stubGetVisitBalance(nomisVisitBalanceId = 10000)
 
-      apiService.getVisitBalance(prisonNumber = "A1234BC")
+      apiService.getVisitBalance(visitBalanceId = 10000)
 
       mockServer.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -39,32 +39,33 @@ class VisitBalanceNomisApiServiceTest {
 
     @Test
     fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubGetVisitBalance(prisonNumber = "A1237BC")
+      mockServer.stubGetVisitBalance(nomisVisitBalanceId = 10000)
 
-      apiService.getVisitBalance(prisonNumber = "A1237BC")
+      apiService.getVisitBalance(visitBalanceId = 10000)
 
       mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/prisoners/A1237BC/visit-orders/balance")),
+        getRequestedFor(urlPathEqualTo("/visit-balances/10000")),
       )
     }
 
     @Test
     fun `will return the visit balance details`() = runTest {
-      mockServer.stubGetVisitBalance(prisonNumber = "A1234BC")
+      mockServer.stubGetVisitBalance(nomisVisitBalanceId = 10000, prisonNumber = "A0001BC")
 
-      val visitBalance = apiService.getVisitBalance(prisonNumber = "A1234BC")
+      val visitBalance = apiService.getVisitBalance(visitBalanceId = 10000)
 
       assertThat(visitBalance.remainingVisitOrders).isEqualTo(3)
       assertThat(visitBalance.remainingPrivilegedVisitOrders).isEqualTo(2)
-      assertThat(visitBalance.visitOrderBalanceAdjustments.size).isEqualTo(4)
+      assertThat(visitBalance.prisonNumber).isEqualTo("A0001BC")
+      assertThat(visitBalance.lastIEPAllocationDate).isEqualTo("2020-01-01")
     }
 
     @Test
     fun `will throw error when person does not exist`() = runTest {
-      mockServer.stubGetVisitBalance(prisonNumber = "A1234BC", status = HttpStatus.NOT_FOUND)
+      mockServer.stubGetVisitBalance(nomisVisitBalanceId = 10000, status = HttpStatus.NOT_FOUND)
 
       assertThrows<WebClientResponseException.NotFound> {
-        apiService.getVisitBalance(prisonNumber = "A1234BC")
+        apiService.getVisitBalance(visitBalanceId = 10000)
       }
     }
   }
