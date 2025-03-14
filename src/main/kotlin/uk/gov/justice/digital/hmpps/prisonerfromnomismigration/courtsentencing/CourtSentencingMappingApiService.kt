@@ -17,11 +17,47 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSentencingMigrationSummary
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 
 @Service
-class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CourtCaseAllMappingDto>(domainUrl = "/mapping/court-sentencing/court-cases", webClient) {
+class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CourtCaseMigrationMapping>(domainUrl = "/mapping/court-sentencing/prisoner", webClient) {
+
+  suspend fun createMapping(
+    offenderNo: String,
+    mapping: CourtCaseMigrationMappingDto,
+    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<CourtSentencingMigrationSummary>>,
+  ): CreateMappingResult<CourtSentencingMigrationSummary> = webClient.post()
+    .uri("/mapping/court-sentencing/prisoner/{offenderNo}/court-cases", offenderNo)
+    .bodyValue(
+      mapping,
+    )
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<CourtSentencingMigrationSummary>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun createMapping(
+    mapping: CourtCaseAllMappingDto,
+    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseAllMappingDto>>,
+  ): CreateMappingResult<CourtCaseAllMappingDto> = webClient.post()
+    .uri("/mapping/court-sentencing/court-cases")
+    .bodyValue(
+      mapping,
+    )
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<CourtCaseAllMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
+
   suspend fun getCourtCaseOrNullByNomisId(courtCaseId: Long): CourtCaseMappingDto? = webClient.get()
     .uri(
       "/mapping/court-sentencing/court-cases/nomis-court-case-id/{courtCase}",
@@ -57,7 +93,14 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     .bodyToMono(Unit::class.java)
     .map { CreateMappingResult<CourtAppearanceAllMappingDto>() }
     .onErrorResume(WebClientResponseException.Conflict::class.java) {
-      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CourtAppearanceAllMappingDto>>() {})))
+      Mono.just(
+        CreateMappingResult(
+          it.getResponseBodyAs(
+            object :
+              ParameterizedTypeReference<DuplicateErrorResponse<CourtAppearanceAllMappingDto>>() {},
+          ),
+        ),
+      )
     }
     .awaitFirstOrDefault(CreateMappingResult<CourtAppearanceAllMappingDto>())
 
@@ -80,7 +123,14 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     .bodyToMono(Unit::class.java)
     .map { CreateMappingResult<CourtChargeMappingDto>() }
     .onErrorResume(WebClientResponseException.Conflict::class.java) {
-      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CourtChargeMappingDto>>() {})))
+      Mono.just(
+        CreateMappingResult(
+          it.getResponseBodyAs(
+            object :
+              ParameterizedTypeReference<DuplicateErrorResponse<CourtChargeMappingDto>>() {},
+          ),
+        ),
+      )
     }
     .awaitFirstOrDefault(CreateMappingResult())
 
@@ -146,4 +196,12 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     )
     .retrieve()
     .awaitBodilessEntity()
+
+  suspend fun getOffenderMigrationSummaryOrNull(offenderNo: String): CourtSentencingMigrationSummary? = webClient.get()
+    .uri(
+      "/mapping/court-sentencing/prisoner/{offenderNo}/migration-summary",
+      offenderNo,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 }

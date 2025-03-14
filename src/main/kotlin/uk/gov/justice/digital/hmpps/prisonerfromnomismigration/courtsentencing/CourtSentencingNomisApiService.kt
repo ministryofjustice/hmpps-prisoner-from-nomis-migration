@@ -9,6 +9,8 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
@@ -34,6 +36,14 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     .uri(
       "/court-cases/{courtCaseId}",
       courtCaseId,
+    )
+    .retrieve()
+    .awaitBody()
+
+  suspend fun getCourtCasesForMigration(offenderNo: String): List<CourtCaseResponse> = webClient.get()
+    .uri(
+      "/prisoners/{offenderNo}/sentencing/court-cases",
+      offenderNo,
     )
     .retrieve()
     .awaitBody()
@@ -106,4 +116,12 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     .retrieve()
     .bodyToMono(typeReference<RestResponsePage<CourtCaseIdResponse>>())
     .awaitSingle()
+
+  suspend fun getByNomisPrisonNumberOrNull(nomisPrisonNumber: String): CorePersonMappingDto? = webClient.get()
+    .uri(
+      "/mapping/core-person/person/nomis-prison-number/{nomisPrisonNumber}",
+      nomisPrisonNumber,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 }
