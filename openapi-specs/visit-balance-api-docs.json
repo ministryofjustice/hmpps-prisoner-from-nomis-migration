@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-03-05.179.a81eafc"
+    "version" : "2025-03-12.192.5791055"
   },
   "servers" : [ {
     "url" : "https://hmpps-visit-allocation-api-dev.prison.service.justice.gov.uk",
@@ -351,7 +351,7 @@
             "enum" : [ "AUTO_EXP", "CANC", "DISC", "GOV", "IEP", "PVO_CANCEL", "PVO_IEP", "PVO_ISSUE", "VO_CANCEL", "VO_ISSUE" ],
             "example" : "VO_ISSUE"
           },
-          "changeSource" : {
+          "changeLogSource" : {
             "type" : "string",
             "description" : "The source of the change being made",
             "enum" : [ "SYSTEM", "STAFF" ],
@@ -363,7 +363,7 @@
             "example" : "Manually adjusted for phone credit"
           }
         },
-        "required" : [ "adjustmentReasonCode", "changeSource", "changeToPvoBalance", "changeToVoBalance", "comment", "createdDate", "oldPvoBalance", "oldVoBalance", "prisonerId" ]
+        "required" : [ "adjustmentReasonCode", "changeLogSource", "changeToPvoBalance", "changeToVoBalance", "comment", "createdDate", "oldPvoBalance", "oldVoBalance", "prisonerId" ]
       },
       "VisitAllocationPrisonerMigrationDto" : {
         "type" : "object",
