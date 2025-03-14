@@ -23963,15 +23963,10 @@
             "type": "integer",
             "format": "int64",
             "description": "Which staff member authorised the adjustment"
-          },
-          "createUsername": {
-            "type": "string",
-            "description": "Who created the adjustment"
           }
         },
         "required": [
-          "adjustmentDate",
-          "createUsername"
+          "adjustmentDate"
         ]
       },
       "PrisonerVisitBalanceResponse": {
