@@ -213,7 +213,6 @@ class CourtSentencingSynchronisationService(
       mappingType = CourtCaseAllMappingDto.MappingType.NOMIS_CREATED,
       courtCharges = emptyList(),
       courtAppearances = emptyList(),
-      sentences = emptyList(),
     )
     try {
       mappingApiService.createMapping(
