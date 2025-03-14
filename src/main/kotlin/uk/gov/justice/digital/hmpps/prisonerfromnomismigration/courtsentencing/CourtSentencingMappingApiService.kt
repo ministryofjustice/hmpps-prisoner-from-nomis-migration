@@ -46,7 +46,7 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     mapping: CourtCaseAllMappingDto,
     errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseAllMappingDto>>,
   ): CreateMappingResult<CourtCaseAllMappingDto> = webClient.post()
-    .uri(createMappingUrl())
+    .uri("/mapping/court-sentencing/court-cases")
     .bodyValue(
       mapping,
     )
