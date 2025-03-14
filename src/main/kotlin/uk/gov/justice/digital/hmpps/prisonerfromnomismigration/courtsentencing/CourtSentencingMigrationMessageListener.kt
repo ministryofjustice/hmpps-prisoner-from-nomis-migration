@@ -8,9 +8,9 @@ import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.COURT_SENTENCING_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture
 class CourtSentencingMigrationMessageListener(
   objectMapper: ObjectMapper,
   courtSentencingMigrationService: CourtSentencingMigrationService,
-) : MigrationMessageListener<CourtSentencingMigrationFilter, CourtCaseIdResponse, CourtCaseResponse, CourtCaseAllMappingDto>(
+) : MigrationMessageListener<CourtSentencingMigrationFilter, PrisonerId, List<CourtCaseResponse>, CourtCaseMigrationMapping>(
   objectMapper,
   courtSentencingMigrationService,
 ) {
@@ -38,7 +38,12 @@ class CourtSentencingMigrationMessageListener(
 
   override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<CourtSentencingMigrationFilter>> = objectMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, CourtCaseIdResponse> = objectMapper.readValue(json)
+  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = objectMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, CourtCaseAllMappingDto> = objectMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, CourtCaseMigrationMapping> = objectMapper.readValue(json)
 }
+
+data class CourtCaseMigrationMapping(
+  val offenderNo: String,
+  val mapping: CourtCaseMigrationMappingDto,
+)

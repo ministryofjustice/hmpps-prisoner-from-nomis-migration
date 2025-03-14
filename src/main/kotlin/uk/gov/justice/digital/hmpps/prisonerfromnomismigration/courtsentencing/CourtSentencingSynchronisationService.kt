@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClientResponseException
@@ -41,8 +40,6 @@ class CourtSentencingSynchronisationService(
   private val dpsApiService: CourtSentencingDpsApiService,
   private val queueService: SynchronisationQueueService,
   private val telemetryClient: TelemetryClient,
-  @Value("\${courtsentencing.has-migrated-data:false}")
-  private val hasMigratedAllData: Boolean,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -213,6 +210,7 @@ class CourtSentencingSynchronisationService(
       mappingType = CourtCaseAllMappingDto.MappingType.NOMIS_CREATED,
       courtCharges = emptyList(),
       courtAppearances = emptyList(),
+      sentences = emptyList(),
     )
     try {
       mappingApiService.createMapping(

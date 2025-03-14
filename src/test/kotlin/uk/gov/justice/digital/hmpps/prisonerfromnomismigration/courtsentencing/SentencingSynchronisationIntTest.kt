@@ -191,6 +191,81 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      @DisplayName("Happy path - When mapping does not exist yet")
+      inner class NoMappingMultipleSentences {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingNomisApiMockServer.stubGetSentence(
+            bookingId = NOMIS_BOOKING_ID,
+            sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            caseId = NOMIS_COURT_CASE_ID,
+          )
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+          mockTwoChargeMappingGets()
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+          )
+          dpsCourtSentencingServer.stubPostSentenceForCreate(sentenceId = DPS_SENTENCE_ID)
+          courtSentencingMappingApiMockServer.stubPostSentenceMapping()
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-INSERTED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will create a sentence in DPS`() {
+          await untilAsserted {
+            dpsCourtSentencingServer.verify(
+              postRequestedFor(urlPathEqualTo("/legacy/sentence"))
+                .withRequestBody(matchingJsonPath("chargeLifetimeUuid", equalTo(DPS_CHARGE_ID)))
+                .withRequestBody(matchingJsonPath("active", equalTo("false")))
+                .withRequestBody(matchingJsonPath("prisonId", equalTo("MDI")))
+                .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1")))
+                .withRequestBody(matchingJsonPath("periodLengths[0].periodYears", equalTo("1")))
+                .withRequestBody(matchingJsonPath("periodLengths[0].periodMonths", equalTo("3"))),
+            )
+          }
+        }
+
+        @Test
+        fun `will create mapping between DPS and NOMIS ids`() {
+          await untilAsserted {
+            courtSentencingMappingApiMockServer.verify(
+              postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences"))
+                .withRequestBody(matchingJsonPath("dpsSentenceId", equalTo(DPS_SENTENCE_ID)))
+                .withRequestBody(matchingJsonPath("nomisSentenceSequence", equalTo(NOMIS_SENTENCE_SEQUENCE.toString())))
+                .withRequestBody(matchingJsonPath("nomisBookingId", equalTo(NOMIS_BOOKING_ID.toString())))
+                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-synchronisation-created-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["dpsSentenceId"]).isEqualTo(DPS_SENTENCE_ID)
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
       @DisplayName("Happy path - with consecutive sentence")
       inner class NoMappingWithConsecutiveSentence {
         @BeforeEach

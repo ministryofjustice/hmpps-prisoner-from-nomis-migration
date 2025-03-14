@@ -7,7 +7,7 @@
       "name": "HMPPS Digital Studio",
       "email": "feedback@digital.justice.gov.uk"
     },
-    "version": "2025-03-06.5263.34f3eb2"
+    "version": "2025-03-11.5326.b8f6acd"
   },
   "servers": [
     {
@@ -1530,7 +1530,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MigrationCreateCourtCase"
+                "$ref": "#/components/schemas/MigrationCreateCourtCases"
               }
             }
           },
@@ -1542,7 +1542,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MigrationCreateCourtCaseResponse"
+                  "$ref": "#/components/schemas/MigrationCreateCourtCasesResponse"
                 }
               }
             }
@@ -1552,7 +1552,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MigrationCreateCourtCaseResponse"
+                  "$ref": "#/components/schemas/MigrationCreateCourtCasesResponse"
                 }
               }
             }
@@ -1562,7 +1562,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MigrationCreateCourtCaseResponse"
+                  "$ref": "#/components/schemas/MigrationCreateCourtCasesResponse"
                 }
               }
             }
@@ -3191,12 +3191,6 @@
       "CourtAppearanceLegacyData": {
         "type": "object",
         "properties": {
-          "eventId": {
-            "type": "string"
-          },
-          "caseId": {
-            "type": "string"
-          },
           "postedDate": {
             "type": "string"
           },
@@ -3212,7 +3206,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:03:55.357402858"
+            "example": "18:04:15.616955212"
           },
           "outcomeDispositionCode": {
             "type": "string"
@@ -3497,7 +3491,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:03:55.357402858"
+            "example": "18:04:15.616955212"
           },
           "courtCode": {
             "type": "string"
@@ -3630,9 +3624,6 @@
           "appearanceUuid": {
             "type": "string",
             "format": "uuid"
-          },
-          "eventId": {
-            "type": "string"
           }
         },
         "required": [
@@ -3732,7 +3723,8 @@
         "type": "object",
         "properties": {
           "chargeNOMISId": {
-            "type": "string"
+            "type": "integer",
+            "format": "int64"
           },
           "offenceCode": {
             "type": "string"
@@ -3754,12 +3746,17 @@
           "merged": {
             "type": "boolean"
           },
-          "mergedFromCourtCaseUuid": {
-            "type": "string"
+          "mergedFromCaseId": {
+            "type": "integer",
+            "format": "int64"
           },
-          "mergedChargeLifetimeUuid": {
-            "type": "string",
-            "format": "uuid"
+          "mergedFromEventId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "mergedChargeNOMISId": {
+            "type": "integer",
+            "format": "int64"
           }
         },
         "required": [
@@ -3771,6 +3768,10 @@
       "MigrationCreateCourtAppearance": {
         "type": "object",
         "properties": {
+          "eventId": {
+            "type": "integer",
+            "format": "int64"
+          },
           "courtCode": {
             "type": "string"
           },
@@ -3797,14 +3798,16 @@
           "appearanceTypeUuid",
           "charges",
           "courtCode",
+          "eventId",
           "legacyData"
         ]
       },
       "MigrationCreateCourtCase": {
         "type": "object",
         "properties": {
-          "prisonerId": {
-            "type": "string"
+          "caseId": {
+            "type": "integer",
+            "format": "int64"
           },
           "active": {
             "type": "boolean"
@@ -3825,7 +3828,25 @@
         "required": [
           "active",
           "appearances",
-          "courtCaseLegacyData",
+          "caseId",
+          "courtCaseLegacyData"
+        ]
+      },
+      "MigrationCreateCourtCases": {
+        "type": "object",
+        "properties": {
+          "prisonerId": {
+            "type": "string"
+          },
+          "courtCases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MigrationCreateCourtCase"
+            }
+          }
+        },
+        "required": [
+          "courtCases",
           "prisonerId"
         ]
       },
@@ -3890,13 +3911,7 @@
             "$ref": "#/components/schemas/SentenceLegacyData"
           },
           "consecutiveToSentenceId": {
-            "$ref": "#/components/schemas/MigrationSentenceId",
-            "description": "The consecutive to sentence Id if the sentence is in the same court case"
-          },
-          "consecutiveToSentenceLifetimeUuid": {
-            "type": "string",
-            "format": "uuid",
-            "description": "The consecutive to lifetime uuid if the sentence is not in the same court case"
+            "$ref": "#/components/schemas/MigrationSentenceId"
           },
           "periodLengths": {
             "type": "array",
@@ -3932,33 +3947,35 @@
       "MigrationCreateChargeResponse": {
         "type": "object",
         "properties": {
-          "lifetimeChargeUuid": {
+          "chargeUuid": {
             "type": "string",
             "format": "uuid"
           },
           "chargeNOMISId": {
-            "type": "string"
+            "type": "integer",
+            "format": "int64"
           }
         },
         "required": [
           "chargeNOMISId",
-          "lifetimeChargeUuid"
+          "chargeUuid"
         ]
       },
       "MigrationCreateCourtAppearanceResponse": {
         "type": "object",
         "properties": {
-          "lifetimeUuid": {
+          "appearanceUuid": {
             "type": "string",
             "format": "uuid"
           },
           "eventId": {
-            "type": "string"
+            "type": "integer",
+            "format": "int64"
           }
         },
         "required": [
-          "eventId",
-          "lifetimeUuid"
+          "appearanceUuid",
+          "eventId"
         ]
       },
       "MigrationCreateCourtCaseResponse": {
@@ -3966,6 +3983,25 @@
         "properties": {
           "courtCaseUuid": {
             "type": "string"
+          },
+          "caseId": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "caseId",
+          "courtCaseUuid"
+        ]
+      },
+      "MigrationCreateCourtCasesResponse": {
+        "type": "object",
+        "properties": {
+          "courtCases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MigrationCreateCourtCaseResponse"
+            }
           },
           "appearances": {
             "type": "array",
@@ -3995,7 +4031,7 @@
         "required": [
           "appearances",
           "charges",
-          "courtCaseUuid",
+          "courtCases",
           "sentenceTerms",
           "sentences"
         ]
@@ -4003,7 +4039,7 @@
       "MigrationCreatePeriodLengthResponse": {
         "type": "object",
         "properties": {
-          "uuid": {
+          "periodLengthUuid": {
             "type": "string",
             "format": "uuid"
           },
@@ -4012,14 +4048,14 @@
           }
         },
         "required": [
-          "sentenceTermNOMISId",
-          "uuid"
+          "periodLengthUuid",
+          "sentenceTermNOMISId"
         ]
       },
       "MigrationCreateSentenceResponse": {
         "type": "object",
         "properties": {
-          "lifetimeSentenceUuid": {
+          "sentenceUuid": {
             "type": "string",
             "format": "uuid"
           },
@@ -4028,8 +4064,8 @@
           }
         },
         "required": [
-          "lifetimeSentenceUuid",
-          "sentenceNOMISId"
+          "sentenceNOMISId",
+          "sentenceUuid"
         ]
       },
       "LegacyCourtAppearanceCreatedResponse": {
@@ -4587,7 +4623,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:03:55.357402858"
+            "example": "18:04:15.616955212"
           },
           "charges": {
             "type": "array",
@@ -4618,7 +4654,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:03:55.357402858"
+            "example": "18:04:15.616955212"
           },
           "courtId": {
             "type": "string"
@@ -4765,9 +4801,6 @@
             "type": "integer",
             "format": "int32"
           },
-          "isSubList": {
-            "type": "boolean"
-          },
           "dispositionCode": {
             "type": "string"
           }
@@ -4775,7 +4808,6 @@
         "required": [
           "displayOrder",
           "dispositionCode",
-          "isSubList",
           "nomisCode",
           "outcomeName",
           "outcomeType",
@@ -4935,7 +4967,7 @@
           },
           "appearanceTime": {
             "type": "string",
-            "example": "10:03:55.357402858"
+            "example": "18:04:15.616955212"
           },
           "courtCode": {
             "type": "string"

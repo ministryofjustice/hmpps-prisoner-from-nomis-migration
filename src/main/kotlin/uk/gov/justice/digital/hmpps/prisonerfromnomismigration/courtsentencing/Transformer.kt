@@ -34,7 +34,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 fun CourtCaseResponse.toMigrationDpsCourtCase() = MigrationCreateCourtCase(
-  prisonerId = this.offenderNo,
+  caseId = this.id,
   appearances = this.courtEvents.map { ca ->
     ca.toMigrationDpsCourtAppearance(this.sentences)
   },
@@ -54,9 +54,6 @@ fun CourtCaseResponse.toLegacyDpsCourtCase() = LegacyCreateCourtCase(
   active = this.caseStatus.code == "A",
 )
 
-private const val WARRANT_TYPE_DEFAULT = "REMAND"
-private const val OUTCOME_DEFAULT = "3034"
-
 fun CourtEventResponse.toDpsCourtAppearance(
   dpsCaseId: String,
 ) = LegacyCreateCourtAppearance(
@@ -66,8 +63,6 @@ fun CourtEventResponse.toDpsCourtAppearance(
   appearanceTypeUuid = this.courtEventType.toDpsAppearanceTypeId(),
   legacyData =
   CourtAppearanceLegacyData(
-    eventId = this.id.toString(),
-    caseId = this.caseId?.toString(),
     postedDate = LocalDate.now().toString(),
     outcomeDescription = this.outcomeReasonCode?.description,
     outcomeConvictionFlag = this.outcomeReasonCode?.conviction,
@@ -82,10 +77,9 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance(sentences: List<SentenceRes
   courtCode = this.courtId,
   appearanceDate = this.eventDateTime.toLocalDate(),
   appearanceTypeUuid = this.courtEventType.toDpsAppearanceTypeId(),
+  eventId = this.id,
   legacyData =
   CourtAppearanceLegacyData(
-    eventId = this.id.toString(),
-    caseId = this.caseId?.toString(),
     postedDate = LocalDate.now().toString(),
     outcomeDescription = this.outcomeReasonCode?.description,
     nomisOutcomeCode = this.outcomeReasonCode?.code,
@@ -141,7 +135,7 @@ fun OffenderChargeResponse.toDpsMigrationCharge(chargeId: Long, dpsSentence: Mig
     outcomeDispositionCode = this.resultCode1?.dispositionCode,
   ),
   offenceEndDate = this.offenceEndDate,
-  chargeNOMISId = chargeId.toString(),
+  chargeNOMISId = chargeId,
   sentence = dpsSentence,
 )
 

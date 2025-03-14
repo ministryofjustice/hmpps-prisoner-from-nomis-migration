@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
 import java.util.UUID
 
 class CourtSentencingDpsApiExtension :
@@ -46,6 +47,8 @@ class CourtSentencingDpsApiExtension :
   }
 }
 
+private const val NOMIS_CASE_ID = 12345L
+
 class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8094
@@ -68,10 +71,15 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubPostCourtCaseForCreateMigration(
+  fun stubPostCourtCasesForCreateMigration(
     courtCaseId: String = UUID.randomUUID().toString(),
-    response: MigrationCreateCourtCaseResponse = MigrationCreateCourtCaseResponse(
-      courtCaseUuid = courtCaseId,
+    response: MigrationCreateCourtCasesResponse = MigrationCreateCourtCasesResponse(
+      courtCases = listOf(
+        MigrationCreateCourtCaseResponse(
+          courtCaseUuid = courtCaseId,
+          caseId = NOMIS_CASE_ID,
+        ),
+      ),
       charges = emptyList(),
       appearances = emptyList(),
       sentences = emptyList(),
