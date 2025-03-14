@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-03-13.6145.c0f7bbb-mike-manual-update"
+    "version" : "2025-03-14.6155.78b67b4-peter-manual-update"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -1175,8 +1175,8 @@
     "/mapping/visit-balance" : {
       "post" : {
         "tags" : [ "visit-balance-mapping-resource" ],
-        "summary" : "Creates a prisoner visit order balance mapping",
-        "description" : "Creates a prisoner visit order balance mapping. Requires ROLE_NOMIS_VISIT_BALANCE",
+        "summary" : "Creates a prisoner visit balance mapping",
+        "description" : "Creates a prisoner visit balance mapping. Requires ROLE_NOMIS_VISIT_BALANCE",
         "operationId" : "createMapping_2",
         "requestBody" : {
           "content" : {
@@ -4777,23 +4777,24 @@
         }
       }
     },
-    "/mapping/visit-balance/nomis-prison-number/{nomisPrisonNumber}" : {
+    "/mapping/visit-balance/nomis-id/{nomisVisitBalanceId}" : {
       "get" : {
         "tags" : [ "visit-balance-mapping-resource" ],
-        "summary" : "Get prisoner visit order balance mapping by Nomis prison number",
-        "description" : "Retrieves the prisoner visit order balance mapping by Nomis prison number (aka offender number). Requires role ROLE_NOMIS_VISIT_BALANCE",
+        "summary" : "Get prisoner visit balance mapping by Nomis visit balance id",
+        "description" : "Retrieves the prisoner visit balance mapping by Nomis visit balance id. Requires role ROLE_NOMIS_VISIT_BALANCE",
         "operationId" : "getMappingByNomisId_1",
         "parameters" : [ {
-          "name" : "nomisPrisonNumber",
+          "name" : "nomisVisitBalanceId",
           "in" : "path",
-          "description" : "NOMIS prison number aka offender no.",
+          "description" : "NOMIS visit balance id.",
           "required" : true,
           "schema" : {
-            "type" : "string",
-            "description" : "NOMIS prison number aka offender no.",
-            "example" : "A1234BC"
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "NOMIS visit balance id.",
+            "example" : 1
           },
-          "example" : "A1234BC"
+          "example" : 1
         } ],
         "responses" : {
           "200" : {
@@ -4901,24 +4902,24 @@
     "/mapping/visit-balance/dps-id/{dpsId}" : {
       "get" : {
         "tags" : [ "visit-balance-mapping-resource" ],
-        "summary" : "Get visit order balance mapping by Dps id",
-        "description" : "Retrieves the visit order balance mapping by Dps id. Requires role ROLE_NOMIS_VISIT_BALANCE",
+        "summary" : "Get visit balance mapping by DPS id",
+        "description" : "Retrieves the visit balance mapping by DPS id. Requires role ROLE_NOMIS_VISIT_BALANCE",
         "operationId" : "getMappingByDpsId",
         "parameters" : [ {
           "name" : "dpsId",
           "in" : "path",
-          "description" : "Dps id",
+          "description" : "DPS id",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Dps id",
+            "description" : "DPS id",
             "example" : "A1234BC"
           },
           "example" : "A1234BC"
         } ],
         "responses" : {
           "200" : {
-            "description" : "Visit order balance mapping data",
+            "description" : "Visit balance mapping data",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -4961,20 +4962,20 @@
       },
       "delete" : {
         "tags" : [ "visit-balance-mapping-resource" ],
-        "summary" : "Deletes Prisoner visit order balance mapping",
-        "description" : "Deletes Prisoner visit order balance mapping by DPS id. Requires role NOMIS_VISIT_BALANCE",
+        "summary" : "Deletes Prisoner visit balance mapping",
+        "description" : "Deletes Prisoner visit balance mapping by DPS id. Requires role NOMIS_VISIT_BALANCE",
         "operationId" : "deleteMappingByDpsId",
         "parameters" : [ {
           "name" : "dpsId",
           "in" : "path",
-          "description" : "Dps id",
+          "description" : "DPS id",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Dps id",
-            "example" : "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+            "description" : "DPS id",
+            "example" : "A1234BC"
           },
-          "example" : "edcd118c-41ba-42ea-b5c4-404b453ad58b"
+          "example" : "A1234BC"
         } ],
         "responses" : {
           "204" : {
@@ -14450,9 +14451,10 @@
         "type" : "object",
         "description" : "Prisoner Visit Order Balance mapping",
         "properties" : {
-          "nomisPrisonNumber" : {
-            "type" : "string",
-            "description" : "NOMIS Prison Number"
+          "nomisVisitBalanceId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "NOMIS Visit Balance (offender booking) ID"
           },
           "dpsId" : {
             "type" : "string",
@@ -14476,7 +14478,7 @@
             "pattern" : "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
           }
         },
-        "required" : [ "dpsId", "mappingType", "nomisPrisonNumber" ]
+        "required" : [ "dpsId", "mappingType", "nomisVisitBalanceId" ]
       },
       "SentencingAdjustmentMappingDto" : {
         "type" : "object",

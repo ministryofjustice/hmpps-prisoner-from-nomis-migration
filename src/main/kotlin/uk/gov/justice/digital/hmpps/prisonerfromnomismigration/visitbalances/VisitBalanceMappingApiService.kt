@@ -18,7 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 class VisitBalanceMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<VisitBalanceMappingDto>(domainUrl = "/mapping/visit-balance", webClient) {
 
   suspend fun createMapping(mappings: VisitBalanceMappingDto): CreateMappingResult<VisitBalanceMappingDto> = webClient.post()
-    .uri("/mapping/visit-balance/migrate")
+    .uri("/mapping/visit-balance")
     .bodyValue(mappings)
     .retrieve()
     .bodyToMono(Unit::class.java)
@@ -28,18 +28,18 @@ class VisitBalanceMappingApiService(@Qualifier("mappingApiWebClient") webClient:
     }
     .awaitFirstOrDefault(CreateMappingResult())
 
-  suspend fun getByNomisPrisonNumberOrNull(nomisPrisonNumber: String): VisitBalanceMappingDto? = webClient.get()
+  suspend fun getByNomisVisitBalanceIdOrNull(nomisVisitBalanceId: Long): VisitBalanceMappingDto? = webClient.get()
     .uri(
-      "/mapping/visit-balance/nomis-prison-number/{nomisPrisonNumber}",
-      nomisPrisonNumber,
+      "/mapping/visit-balance/nomis-id/{nomisVisitBalanceId}",
+      nomisVisitBalanceId,
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-  suspend fun getByNomisPrisonNumber(nomisPrisonNumber: String): VisitBalanceMappingDto = webClient.get()
+  suspend fun getByNomisVisitBalanceId(nomisVisitBalanceId: Long): VisitBalanceMappingDto = webClient.get()
     .uri(
-      "/mapping/visit-balance/nomis-prison-number/{nomisPrisonNumber}",
-      nomisPrisonNumber,
+      "/mapping/visit-balance/nomis-id/{nomisVisitBalanceId}",
+      nomisVisitBalanceId,
     )
     .retrieve()
     .awaitBody()
