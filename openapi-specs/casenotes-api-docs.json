@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-03-10.8763.04b1c41"
+    "version" : "2025-03-13.8824.316068d"
   },
   "servers" : [ {
     "url" : "https://offender-case-notes.service.justice.gov.uk",
@@ -481,82 +481,6 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/SearchNotesResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/migrate/case-notes/{personIdentifier}" : {
-      "post" : {
-        "tags" : [ "Sync Case Notes" ],
-        "summary" : "Endpoint repurposed to remove duplicate case notes",
-        "description" : "\nRequires one of the following roles: \n* ROLE_PRISONER_CASE_NOTES__SYNC__RW",
-        "operationId" : "migrateCaseNotes",
-        "parameters" : [ {
-          "name" : "personIdentifier",
-          "in" : "path",
-          "description" : "Person Identifier",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          },
-          "example" : "A1234AA"
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "type" : "array",
-                "items" : {
-                  "$ref" : "#/components/schemas/MigrateCaseNoteRequest"
-                }
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "Case Notes successfully migrated",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/MigrationResult"
-                  }
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad request",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorised, requires a valid Oauth2 token",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1586,108 +1510,6 @@
         },
         "required" : [ "content", "hasCaseNotes", "metadata" ]
       },
-      "MigrateAmendmentRequest" : {
-        "type" : "object",
-        "properties" : {
-          "text" : {
-            "type" : "string",
-            "description" : "The text of the note"
-          },
-          "system" : {
-            "type" : "string",
-            "enum" : [ "DPS", "NOMIS" ]
-          },
-          "author" : {
-            "$ref" : "#/components/schemas/Author"
-          },
-          "createdDateTime" : {
-            "type" : "string",
-            "format" : "date-time"
-          }
-        },
-        "required" : [ "author", "createdDateTime", "system", "text" ]
-      },
-      "MigrateCaseNoteRequest" : {
-        "type" : "object",
-        "properties" : {
-          "legacyId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The nomis id for the case note, reflected back for mapping",
-            "example" : 1645251
-          },
-          "locationId" : {
-            "type" : "string",
-            "description" : "Location where case note was made",
-            "example" : "MDI"
-          },
-          "type" : {
-            "type" : "string",
-            "description" : "Type of case note",
-            "example" : "GEN"
-          },
-          "subType" : {
-            "type" : "string",
-            "description" : "Sub Type of case note",
-            "example" : "OBS"
-          },
-          "occurrenceDateTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Occurrence time of case note. If not provided it will be defaulted to the time of the request.",
-            "example" : "2024-09-01T10:25:00"
-          },
-          "text" : {
-            "type" : "string",
-            "description" : "The text of the note"
-          },
-          "systemGenerated" : {
-            "type" : "boolean",
-            "description" : "Boolean flag to indicate if case note is system generated"
-          },
-          "system" : {
-            "type" : "string",
-            "enum" : [ "DPS", "NOMIS" ]
-          },
-          "author" : {
-            "$ref" : "#/components/schemas/Author",
-            "description" : "The details of the author of the case note"
-          },
-          "createdDateTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Created date time from audit field in nomis to allow ordering by creation date",
-            "example" : "2024-09-01T10:25:00"
-          },
-          "createdByUsername" : {
-            "type" : "string",
-            "description" : "Username of the user that created the case note"
-          },
-          "amendments" : {
-            "type" : "array",
-            "description" : "Amendments to the original case note",
-            "items" : {
-              "$ref" : "#/components/schemas/MigrateAmendmentRequest"
-            },
-            "uniqueItems" : true
-          }
-        },
-        "required" : [ "amendments", "author", "createdByUsername", "createdDateTime", "legacyId", "locationId", "occurrenceDateTime", "subType", "system", "systemGenerated", "text", "type" ]
-      },
-      "MigrationResult" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "legacyId" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        },
-        "required" : [ "id", "legacyId" ]
-      },
       "CreateCaseNoteRequest" : {
         "type" : "object",
         "properties" : {
@@ -1733,11 +1555,11 @@
             },
             "uniqueItems" : true
           },
-          "occurredFrom" : {
+          "from" : {
             "type" : "string",
             "format" : "date-time"
           },
-          "occurredTo" : {
+          "to" : {
             "type" : "string",
             "format" : "date-time"
           },
@@ -1754,9 +1576,16 @@
               "type" : "string"
             },
             "uniqueItems" : true
+          },
+          "prisonCode" : {
+            "type" : "string"
+          },
+          "dateType" : {
+            "type" : "string",
+            "enum" : [ "CREATED_AT", "OCCURRED_AT" ]
           }
         },
-        "required" : [ "authorIds", "personIdentifiers", "typeSubTypes" ]
+        "required" : [ "authorIds", "dateType", "personIdentifiers", "typeSubTypes" ]
       },
       "LatestNote" : {
         "type" : "object",
@@ -1815,11 +1644,11 @@
             },
             "uniqueItems" : true
           },
-          "occurredFrom" : {
+          "from" : {
             "type" : "string",
             "format" : "date-time"
           },
-          "occurredTo" : {
+          "to" : {
             "type" : "string",
             "format" : "date-time"
           },
@@ -1829,9 +1658,16 @@
               "type" : "string"
             },
             "uniqueItems" : true
+          },
+          "prisonCode" : {
+            "type" : "string"
+          },
+          "dateType" : {
+            "type" : "string",
+            "enum" : [ "CREATED_AT", "OCCURRED_AT" ]
           }
         },
-        "required" : [ "authorIds", "typeSubTypes" ]
+        "required" : [ "authorIds", "dateType", "typeSubTypes" ]
       },
       "NoteUsageResponseUsageByAuthorIdResponse" : {
         "type" : "object",
@@ -2099,15 +1935,15 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "unpaged" : {
-            "type" : "boolean"
-          },
           "paged" : {
             "type" : "boolean"
           },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "unpaged" : {
+            "type" : "boolean"
           }
         }
       },
