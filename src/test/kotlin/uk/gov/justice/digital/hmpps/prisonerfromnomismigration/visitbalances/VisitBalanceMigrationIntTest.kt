@@ -277,7 +277,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
         dpsRequests.find { it.prisonerId == "A0002BC" }?.let {
           assertThat(it.voBalance).isEqualTo(2)
           assertThat(it.pvoBalance).isEqualTo(3)
-          assertThat(it.lastVoAllocationDate).isEqualTo(LocalDate.parse("2002-02-01"))
+          assertThat(it.lastVoAllocationDate).isEqualTo(LocalDate.now().minusDays(14))
         }
       }
 
