@@ -30,10 +30,10 @@ class ContactPersonProfileDetailsMigrationService(
   val nomisIdsApiService: NomisApiService,
   val dpsApiService: ContactPersonProfileDetailsDpsApiService,
   @Value("\${personalrelationships.profiledetails.page.size:1000}") pageSize: Long,
-  @Value("\${personalrelationships.profiledetails.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value("\${personalrelationships.profiledetails.complete-check.delay-seconds:60}") completeCheckDelaySeconds: Int,
   @Value("\${personalrelationships.profiledetails.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
-  @Value("\${personalrelationships.profiledetails.complete-check.count}") completeCheckCount: Int,
-  @Value("\${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
+  @Value("\${personalrelationships.profiledetails.complete-check.count:9}") completeCheckCount: Int,
+  @Value("\${complete-check.scheduled-retry-seconds:10}") completeCheckScheduledRetrySeconds: Int,
 ) : MigrationService<ContactPersonProfileDetailsMigrationFilter, PrisonerId, ContactPersonProfileDetailsMigrationMappingRequest>(
   mappingService = migrationMappingService,
   migrationType = MigrationType.PERSONALRELATIONSHIPS_PROFILEDETAIL,
