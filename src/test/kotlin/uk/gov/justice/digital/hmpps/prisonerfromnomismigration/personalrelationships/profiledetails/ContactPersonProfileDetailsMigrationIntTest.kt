@@ -2,10 +2,12 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelation
 
 import com.github.tomakehurst.wiremock.client.WireMock.containing
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -90,11 +92,12 @@ class ContactPersonProfileDetailsMigrationIntTest(
       @BeforeEach
       fun setUp() = runTest {
         stubMigrationDependencies()
-        migrationService.startMigration(ContactPersonProfileDetailsMigrationFilter())
-          .also {
-            migrationId = it.migrationId
-            waitUntilCompleted()
-          }
+        migrationId = performMigration()
+      }
+
+      @Test
+      fun `will request all prisoner ids`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/ids/all")))
       }
 
       @Test
@@ -185,6 +188,139 @@ class ContactPersonProfileDetailsMigrationIntTest(
         )
       }
     }
+
+    @Nested
+    inner class SinglePrisoner {
+      @BeforeEach
+      fun setUp() = runTest {
+        stubMigrationDependencies(1)
+        migrationId = performMigration(prisonerNumber = "A0001KT")
+      }
+
+      @Test
+      fun `will NOT request all prisoner ids`() {
+        nomisApi.verify(0, getRequestedFor(urlPathEqualTo("/prisoners/ids/all")))
+      }
+
+      @Test
+      fun `will migrate domestic status to DPS`() {
+        dpsApi.verify(
+          postRequestedFor(urlEqualTo("/migrate/domestic-status"))
+            .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
+            .withRequestBodyJsonPath("current.domesticStatusCode", "1")
+            .withRequestBodyJsonPath("history[0].domesticStatusCode", "3"),
+        )
+      }
+
+      @Test
+      fun `will migrate number of children to DPS`() {
+        dpsApi.verify(
+          postRequestedFor(urlEqualTo("/migrate/number-of-children"))
+            .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
+            .withRequestBodyJsonPath("current.numberOfChildren", "2")
+            .withRequestBodyJsonPath("history[0].numberOfChildren", "4"),
+        )
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-profiledetails-migration-entity-migrated"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "offenderNo" to "A0001KT",
+                "migrationId" to migrationId,
+                "domesticStatusDpsIds" to "1, 2, 3",
+                "numberOfChildrenDpsIds" to "4, 5, 6",
+                "migrationType" to "CONTACTPERSON_PROFILEDETAILS",
+              ),
+            )
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will create mappings`() {
+        mappingApi.verify(
+          putRequestedFor(urlEqualTo("/mapping/contact-person/profile-details/migration"))
+            .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
+            .withRequestBodyJsonPath("migrationId", migrationId)
+            .withRequestBodyJsonPath("domesticStatusDpsIds", "1, 2, 3")
+            .withRequestBodyJsonPath("numberOfChildrenDpsIds", "4, 5, 6"),
+        )
+      }
+    }
+
+    @Nested
+    inner class MappingsErrorRecovery {
+      val offenderNo = "A1234AA"
+
+      @BeforeEach
+      fun setUp() = runTest {
+        nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = offenderNo)
+        nomisProfileDetailsApi.stubGetProfileDetails(
+          offenderNo = offenderNo,
+          bookingId = null,
+          response = profileDetailsResponse(offenderNo),
+        )
+        dpsApi.stubMigrateDomesticStatus(migrateDomesticStatusResponse(offenderNo))
+        dpsApi.stubMigrateNumberOfChildren(migrateNumberOfChildrenResponse(offenderNo))
+        // The mappings will succeed after a retry
+        mappingApi.stubPutMappingFailureFollowedBySuccess()
+
+        migrationId = performMigration()
+      }
+
+      @Test
+      fun `will migrate domestic status to DPS`() {
+        dpsApi.verify(
+          postRequestedFor(urlEqualTo("/migrate/domestic-status"))
+            .withRequestBodyJsonPath("prisonerNumber", offenderNo),
+        )
+      }
+
+      @Test
+      fun `will migrate number of children to DPS`() {
+        dpsApi.verify(
+          postRequestedFor(urlEqualTo("/migrate/number-of-children"))
+            .withRequestBodyJsonPath("prisonerNumber", offenderNo),
+        )
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-profiledetails-migration-entity-migrated"),
+          check {
+            assertThat(it).containsAllEntriesOf(
+              mapOf(
+                "offenderNo" to offenderNo,
+                "migrationId" to migrationId,
+              ),
+            )
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will create mappings after a retry`() {
+        mappingApi.verify(
+          2,
+          putRequestedFor(urlEqualTo("/mapping/contact-person/profile-details/migration"))
+            .withRequestBodyJsonPath("prisonerNumber", offenderNo),
+        )
+      }
+    }
+
+    private suspend fun performMigration(prisonerNumber: String? = null): String = migrationService.startMigration(ContactPersonProfileDetailsMigrationFilter(prisonerNumber))
+      .also {
+        waitUntilCompleted()
+      }.let {
+        it.migrationId
+      }
 
     private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
       verify(telemetryClient).trackEvent(
