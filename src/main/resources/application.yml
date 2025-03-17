@@ -219,6 +219,8 @@ hmpps.sqs:
       propagateTracing: false
     migrationpersonalrelationships:
       propagateTracing: false
+    migrationpersonalrelationshipsprofiledetails:
+      propagateTracing: false
     migrationorganisations:
       propagateTracing: false
     migrationcoreperson:

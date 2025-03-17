@@ -32,6 +32,7 @@ const val CSIP_QUEUE_ID = "migrationcsip"
 const val CASENOTES_QUEUE_ID = "migrationcasenotes"
 const val COURT_SENTENCING_QUEUE_ID = "migrationcourtsentencing"
 const val PERSONALRELATIONSHIPS_QUEUE_ID = "migrationpersonalrelationships"
+const val PERSONALRELATIONSHIPS_PROFILEDETAILS_QUEUE_ID = "migrationpersonalrelationshipsprofiledetails"
 const val ORGANISATIONS_QUEUE_ID = "migrationorganisations"
 const val SENTENCING_ADJUSTMENTS_QUEUE_ID = "migrationsentencing"
 const val VISIT_BALANCE_QUEUE_ID = "migrationvisitbalance"
@@ -60,6 +61,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   CASENOTES(CASENOTES_QUEUE_ID, "casenotes"),
   COURT_SENTENCING(COURT_SENTENCING_QUEUE_ID, "court-sentencing"),
   PERSONALRELATIONSHIPS(PERSONALRELATIONSHIPS_QUEUE_ID, "contactperson"),
+  PERSONALRELATIONSHIPS_PROFILEDETAIL(PERSONALRELATIONSHIPS_PROFILEDETAILS_QUEUE_ID, "contactperson-profiledetails"),
   ORGANISATIONS(ORGANISATIONS_QUEUE_ID, "corporate"),
   SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_QUEUE_ID, "sentencing-adjustments"),
   VISIT_BALANCE(VISIT_BALANCE_QUEUE_ID, "visitbalance"),

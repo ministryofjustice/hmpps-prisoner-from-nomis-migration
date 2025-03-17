@@ -33,7 +33,11 @@ class ContactPersonProfileDetailsNomisApiServiceTest {
   inner class GetProfileDetails {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      profileDetailsNomisApi.stubGetProfileDetails(offenderNo = "A1234AA", profileTypes = listOf("MARITAL", "CHILD"), bookingId = 12345)
+      profileDetailsNomisApi.stubGetProfileDetails(
+        offenderNo = "A1234AA",
+        profileTypes = listOf("MARITAL", "CHILD"),
+        bookingId = 12345,
+      )
 
       apiService.getProfileDetails(offenderNo = "A1234AA", profileTypes = listOf("MARITAL", "CHILD"), bookingId = 12345)
 
@@ -44,7 +48,11 @@ class ContactPersonProfileDetailsNomisApiServiceTest {
 
     @Test
     internal fun `will pass parameters to the service`() = runTest {
-      profileDetailsNomisApi.stubGetProfileDetails(offenderNo = "A1234AA", profileTypes = listOf("MARITAL", "CHILD"), bookingId = 12345)
+      profileDetailsNomisApi.stubGetProfileDetails(
+        offenderNo = "A1234AA",
+        profileTypes = listOf("MARITAL", "CHILD"),
+        bookingId = 12345,
+      )
 
       apiService.getProfileDetails(offenderNo = "A1234AA", profileTypes = listOf("MARITAL", "CHILD"), bookingId = 12345)
 
@@ -58,9 +66,28 @@ class ContactPersonProfileDetailsNomisApiServiceTest {
 
     @Test
     fun `will return profile details`() = runTest {
-      profileDetailsNomisApi.stubGetProfileDetails(offenderNo = "A1234AA", profileTypes = listOf("MARITAL", "CHILD"), bookingId = 12345)
+      profileDetailsNomisApi.stubGetProfileDetails(
+        offenderNo = "A1234AA",
+        profileTypes = listOf("MARITAL", "CHILD"),
+        bookingId = 12345,
+        response = profileDetailsResponse(
+          offenderNo = "A1234AA",
+          bookings = listOf(
+            booking(
+              profileDetails = listOf(
+                profileDetails("MARITAL", "M"),
+                profileDetails("CHILD", "3"),
+              ),
+            ),
+          ),
+        ),
+      )
 
-      val profileDetailsResponse = apiService.getProfileDetails(offenderNo = "A1234AA", profileTypes = listOf("MARITAL", "CHILD"), bookingId = 12345)
+      val profileDetailsResponse = apiService.getProfileDetails(
+        offenderNo = "A1234AA",
+        profileTypes = listOf("MARITAL", "CHILD"),
+        bookingId = 12345,
+      )
 
       with(profileDetailsResponse) {
         assertThat(offenderNo).isEqualTo("A1234AA")
