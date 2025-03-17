@@ -19,8 +19,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.CodedValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ContactsAndRestrictions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.IdPair
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerContactAndRestrictionIds
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddressPhone
@@ -41,6 +44,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncEmployment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerRelationship
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncRelationshipRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactEmailRequest
@@ -124,7 +129,8 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
     fun mergePrisonerContactResponse() = MergePrisonerContactResponse(
       relationshipsCreated = listOf(
-        ContactsAndRestrictions(
+        PrisonerContactAndRestrictionIds(
+          contactId = 1234567,
           relationship = IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT, nomisId = 12345, dpsId = 1234567),
           restrictions = listOf(IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT_RESTRICTION, nomisId = 12345, dpsId = 1234567)),
         ),

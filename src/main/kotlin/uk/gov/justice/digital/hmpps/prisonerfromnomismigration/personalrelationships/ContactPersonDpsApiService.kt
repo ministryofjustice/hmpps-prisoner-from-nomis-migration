@@ -6,8 +6,8 @@ import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityIgnoreNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.CodedValue
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ContactsAndRestrictions
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContact
@@ -40,8 +40,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateEmploymentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRestrictionRequest
-import java.time.LocalDate
-import java.time.LocalDateTime
 
 @Service
 class ContactPersonDpsApiService(@Qualifier("personalRelationshipsApiWebClient") private val webClient: WebClient) {
@@ -250,55 +248,3 @@ class ContactPersonDpsApiService(@Qualifier("personalRelationshipsApiWebClient")
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 }
-
-// FAKE DTOs - replace with real ones when delivered by DPS
-
-data class MergePrisonerContactResponse(
-  val relationshipsCreated: List<ContactsAndRestrictions>,
-  val relationshipsRemoved: List<PrisonerRelationshipIds>,
-)
-
-data class PrisonerRelationshipIds(
-  val prisonerNumber: String,
-  val contactId: Long,
-  val prisonerContactId: Long,
-  val prisonerContactRestrictionIds: List<Long> = emptyList(),
-)
-
-data class MergePrisonerContactRequest(
-  val retainedPrisonerNumber: String,
-  val prisonerContacts: List<SyncPrisonerRelationship>,
-  val removedPrisonerNumber: String,
-)
-
-data class SyncPrisonerRelationship(
-  val id: Long,
-  val contactId: Long,
-  val contactType: CodedValue,
-  val relationshipType: CodedValue,
-  val currentTerm: Boolean,
-  val active: Boolean,
-  val expiryDate: LocalDate? = null,
-  val approvedVisitor: Boolean,
-  val nextOfKin: Boolean,
-  val emergencyContact: Boolean,
-  val comment: String?,
-  val prisonerNumber: String,
-  val restrictions: List<SyncRelationshipRestriction> = emptyList(),
-  var createDateTime: LocalDateTime? = null,
-  var createUsername: String? = null,
-  var modifyDateTime: LocalDateTime? = null,
-  var modifyUsername: String? = null,
-)
-
-data class SyncRelationshipRestriction(
-  val id: Long,
-  val restrictionType: CodedValue,
-  val comment: String?,
-  val startDate: LocalDate,
-  val expiryDate: LocalDate? = null,
-  var createDateTime: LocalDateTime? = null,
-  var createUsername: String? = null,
-  var modifyDateTime: LocalDateTime? = null,
-  var modifyUsername: String? = null,
-)
