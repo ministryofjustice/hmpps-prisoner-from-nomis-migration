@@ -61,8 +61,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.mergePrisonerContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.prisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.prisonerContactRestriction
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ContactsAndRestrictions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.IdPair
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerContactAndRestrictionIds
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerRelationshipIds
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactEmailRequest
@@ -5477,14 +5479,16 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
         dpsApiMock.stubReplaceMergedPrisonerContacts(
           mergePrisonerContactResponse().copy(
             relationshipsCreated = listOf(
-              ContactsAndRestrictions(
+              PrisonerContactAndRestrictionIds(
+                contactId = 123,
                 relationship = IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT, nomisId = nomisContactId1, dpsId = dpsPrisonerContactId1),
                 restrictions = listOf(
                   IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT_RESTRICTION, nomisId = nomisContactId1RestrictionId1, dpsId = dpsPrisonerContactId1RestrictionId1),
                   IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT_RESTRICTION, nomisId = nomisContactId1RestrictionId2, dpsId = dpsPrisonerContactId1RestrictionId2),
                 ),
               ),
-              ContactsAndRestrictions(
+              PrisonerContactAndRestrictionIds(
+                contactId = 123,
                 relationship = IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT, nomisId = nomisContactId2, dpsId = dpsPrisonerContactId2),
                 restrictions = listOf(
                   IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT_RESTRICTION, nomisId = nomisContactId2RestrictionId1, dpsId = dpsPrisonerContactId2RestrictionId1),
