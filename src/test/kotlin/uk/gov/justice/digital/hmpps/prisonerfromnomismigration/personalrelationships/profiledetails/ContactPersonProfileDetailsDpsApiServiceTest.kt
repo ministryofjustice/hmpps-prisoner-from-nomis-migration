@@ -20,8 +20,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerDomesticStatusRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerNumberOfChildrenRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.NumberOfChildrenDetailsRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerDomesticStatusMigrationResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerNumberOfChildrenMigrationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerDomesticStatusResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerNumberOfChildrenResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerDomesticStatusRequest
@@ -172,7 +170,7 @@ class ContactPersonProfileDetailsDpsApiServiceTest {
 
     @Test
     fun `should pass auth token to the service`() = runTest {
-      dpsApi.stubMigrateDomesticStatus(aResponse())
+      dpsApi.stubMigrateDomesticStatus()
 
       apiService.migrateDomesticStatus(aRequest())
 
@@ -184,7 +182,7 @@ class ContactPersonProfileDetailsDpsApiServiceTest {
 
     @Test
     fun `should pass data to the service`() = runTest {
-      dpsApi.stubMigrateDomesticStatus(aResponse())
+      dpsApi.stubMigrateDomesticStatus()
 
       apiService.migrateDomesticStatus(aRequest())
 
@@ -205,7 +203,7 @@ class ContactPersonProfileDetailsDpsApiServiceTest {
 
     @Test
     fun `should parse the response`() = runTest {
-      dpsApi.stubMigrateDomesticStatus(aResponse())
+      dpsApi.stubMigrateDomesticStatus()
 
       val response = apiService.migrateDomesticStatus(aRequest())
 
@@ -231,12 +229,6 @@ class ContactPersonProfileDetailsDpsApiServiceTest {
         DomesticStatusDetailsRequest(createdBy, createdDateTime, domesticStatus),
       ),
     )
-
-    private fun aResponse(prisonerNumber: String = "A1234AA", currentDpsId: Long = 1, historyDpsIds: List<Long> = listOf(2, 3)) = PrisonerDomesticStatusMigrationResponse(
-      prisonerNumber = prisonerNumber,
-      current = currentDpsId,
-      history = historyDpsIds,
-    )
   }
 
   @Nested
@@ -248,7 +240,7 @@ class ContactPersonProfileDetailsDpsApiServiceTest {
 
     @Test
     fun `should pass auth token to the service`() = runTest {
-      dpsApi.stubMigrateNumberOfChildren(aResponse())
+      dpsApi.stubMigrateNumberOfChildren(migrateNumberOfChildrenResponse())
 
       apiService.migrateNumberOfChildren(aRequest())
 
@@ -260,7 +252,7 @@ class ContactPersonProfileDetailsDpsApiServiceTest {
 
     @Test
     fun `should pass data to the service`() = runTest {
-      dpsApi.stubMigrateNumberOfChildren(aResponse())
+      dpsApi.stubMigrateNumberOfChildren(migrateNumberOfChildrenResponse())
 
       apiService.migrateNumberOfChildren(aRequest())
 
@@ -281,13 +273,13 @@ class ContactPersonProfileDetailsDpsApiServiceTest {
 
     @Test
     fun `should parse the response`() = runTest {
-      dpsApi.stubMigrateNumberOfChildren(aResponse())
+      dpsApi.stubMigrateNumberOfChildren(migrateNumberOfChildrenResponse())
 
       val response = apiService.migrateNumberOfChildren(aRequest())
 
       assertThat(response.prisonerNumber).isEqualTo(prisonerNumber)
-      assertThat(response.current).isEqualTo(1)
-      assertThat(response.history).containsExactlyElementsOf(listOf(2, 3))
+      assertThat(response.current).isEqualTo(4)
+      assertThat(response.history).containsExactlyElementsOf(listOf(5, 6))
     }
 
     @Test
@@ -306,12 +298,6 @@ class ContactPersonProfileDetailsDpsApiServiceTest {
         NumberOfChildrenDetailsRequest(createdBy, createdDateTime, numberOfChildren),
         NumberOfChildrenDetailsRequest(createdBy, createdDateTime, numberOfChildren),
       ),
-    )
-
-    private fun aResponse(prisonerNumber: String = "A1234AA", currentDpsId: Long = 1, historyDpsIds: List<Long> = listOf(2, 3)) = PrisonerNumberOfChildrenMigrationResponse(
-      prisonerNumber = prisonerNumber,
-      current = currentDpsId,
-      history = historyDpsIds,
     )
   }
 }

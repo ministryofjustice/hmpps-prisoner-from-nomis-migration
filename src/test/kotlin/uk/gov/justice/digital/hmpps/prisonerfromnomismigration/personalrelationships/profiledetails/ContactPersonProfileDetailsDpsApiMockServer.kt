@@ -81,7 +81,7 @@ class ContactPersonProfileDetailsDpsApiMockServer {
   }
 
   fun stubMigrateDomesticStatus(
-    response: PrisonerDomesticStatusMigrationResponse,
+    response: PrisonerDomesticStatusMigrationResponse = migrateDomesticStatusResponse(),
   ) {
     dpsContactPersonServer.stubFor(
       post(urlPathMatching("/migrate/domestic-status"))
@@ -110,7 +110,7 @@ class ContactPersonProfileDetailsDpsApiMockServer {
   }
 
   fun stubMigrateNumberOfChildren(
-    response: PrisonerNumberOfChildrenMigrationResponse,
+    response: PrisonerNumberOfChildrenMigrationResponse = migrateNumberOfChildrenResponse(),
   ) {
     dpsContactPersonServer.stubFor(
       post(urlPathMatching("/migrate/number-of-children"))
@@ -141,3 +141,15 @@ class ContactPersonProfileDetailsDpsApiMockServer {
   fun verify(pattern: RequestPatternBuilder) = dpsContactPersonServer.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = dpsContactPersonServer.verify(count, pattern)
 }
+
+fun migrateDomesticStatusResponse(prisonerNumber: String = "A1234AA", currentDpsId: Long = 1, historyDpsIds: List<Long> = listOf(2, 3)) = PrisonerDomesticStatusMigrationResponse(
+  prisonerNumber = prisonerNumber,
+  current = currentDpsId,
+  history = historyDpsIds,
+)
+
+fun migrateNumberOfChildrenResponse(prisonerNumber: String = "A1234AA", currentDpsId: Long = 4, historyDpsIds: List<Long> = listOf(5, 6)) = PrisonerNumberOfChildrenMigrationResponse(
+  prisonerNumber = prisonerNumber,
+  current = currentDpsId,
+  history = historyDpsIds,
+)
