@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonProfileDetailsMigrationMappingRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
@@ -60,35 +61,32 @@ class ContactPersonProfileDetailsMigrationService(
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     val prisonerNumber = context.body.offenderNo
     val migrationId = context.migrationId
-    val telemetry = mutableMapOf(
-      "offenderNo" to prisonerNumber,
-      "migrationId" to migrationId,
-      "migrationType" to "CONTACTPERSON_PROFILEDETAILS",
-    )
 
     val nomisResponse = nomisApiService.getProfileDetails(prisonerNumber, ContactPersonProfileType.all())
 
     val domesticStatusDpsIds =
       dpsApiService.migrateDomesticStatus(nomisResponse.toMigrateDomesticStatus(prisonerNumber))
         .let { (listOf(it.current) + it.history).joinToString() }
-        .also { telemetry["domesticStatusDpsIds"] = it }
 
     val numberOfChildrenDpsIds =
       dpsApiService.migrateNumberOfChildren(nomisResponse.toMigrateNumberOfChildren(prisonerNumber))
         .let { (listOf(it.current) + it.history).joinToString() }
-        .also { telemetry["numberOfChildrenDpsIds"] = it }
 
-    migrationMappingService.createMapping(
-      ContactPersonProfileDetailsMigrationMappingRequest(
-        prisonerNumber,
-        migrationId,
-        domesticStatusDpsIds,
-        numberOfChildrenDpsIds,
-      ),
-      object :
-        ParameterizedTypeReference<DuplicateErrorResponse<ContactPersonProfileDetailsMigrationMappingRequest>>() {},
-    ).also {
-      telemetryClient.trackEvent("contactperson-profiledetails-migration-entity-migrated", telemetry, null)
+    val mapping = ContactPersonProfileDetailsMigrationMappingRequest(
+      prisonerNumber,
+      migrationId,
+      domesticStatusDpsIds,
+      numberOfChildrenDpsIds,
+    )
+
+    createMappingOrOnFailureDo(mapping) {
+      requeueCreateMapping(mapping, context)
+    }
+  }
+
+  override suspend fun retryCreateMapping(context: MigrationContext<ContactPersonProfileDetailsMigrationMappingRequest>) {
+    createMappingOrOnFailureDo(context.body) {
+      throw it
     }
   }
 
@@ -123,4 +121,48 @@ class ContactPersonProfileDetailsMigrationService(
     createdBy = modifiedBy ?: createdBy,
     createdTime = modifiedDateTime ?: createDateTime,
   )
+
+  private suspend fun createMappingOrOnFailureDo(
+    mapping: ContactPersonProfileDetailsMigrationMappingRequest,
+    failureHandler: suspend (error: Throwable) -> Unit,
+  ) {
+    runCatching {
+      createMapping(mapping)
+    }.onSuccess {
+      telemetryClient.trackEvent(
+        "contactperson-profiledetails-migration-entity-migrated",
+        mapOf(
+          "offenderNo" to mapping.prisonerNumber,
+          "migrationId" to mapping.migrationId,
+          "domesticStatusDpsIds" to mapping.domesticStatusDpsIds,
+          "numberOfChildrenDpsIds" to mapping.numberOfChildrenDpsIds,
+          "migrationType" to "CONTACTPERSON_PROFILEDETAILS",
+        ),
+        null,
+      )
+    }.onFailure {
+      failureHandler(it)
+    }
+  }
+
+  private suspend fun createMapping(mapping: ContactPersonProfileDetailsMigrationMappingRequest) {
+    migrationMappingService.createMapping(
+      mapping,
+      object :
+        ParameterizedTypeReference<DuplicateErrorResponse<ContactPersonProfileDetailsMigrationMappingRequest>>() {},
+    )
+  }
+
+  private suspend fun requeueCreateMapping(
+    mapping: ContactPersonProfileDetailsMigrationMappingRequest,
+    context: MigrationContext<*>,
+  ) {
+    queueService.sendMessage(
+      MigrationMessageType.RETRY_MIGRATION_MAPPING,
+      MigrationContext(
+        context = context,
+        body = mapping,
+      ),
+    )
+  }
 }
