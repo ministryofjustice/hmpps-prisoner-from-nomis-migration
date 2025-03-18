@@ -54,6 +54,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SENTENCIN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISITS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISIT_BALANCE_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISIT_BALANCE_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
@@ -179,6 +180,7 @@ class SqsIntegrationTestBase : TestBase() {
   internal val organisationsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(ORGANISATIONS_SYNC_QUEUE_ID) as HmppsQueue }
   internal val personalRelationshipsDomainEventsQueue by lazy { hmppsQueueService.findByQueueId(PERSONALRELATIONSHIPS_DOMAIN_SYNC_QUEUE_ID) as HmppsQueue }
   internal val personContactsDomainEventsQueue by lazy { hmppsQueueService.findByQueueId(PERSONCONTACTS_DOMAIN_SYNC_QUEUE_ID) as HmppsQueue }
+  internal val visitBalanceOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(VISIT_BALANCE_SYNC_QUEUE_ID) as HmppsQueue }
 
   private val allQueues by lazy {
     listOf(
@@ -200,6 +202,7 @@ class SqsIntegrationTestBase : TestBase() {
       personalRelationshipsDomainEventsQueue,
       personContactsDomainEventsQueue,
       organisationsOffenderEventsQueue,
+      visitBalanceOffenderEventsQueue,
     )
   }
 

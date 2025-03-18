@@ -42,6 +42,7 @@ const val PERSONALRELATIONSHIPS_SYNC_QUEUE_ID = "eventpersonalrelationships"
 const val PERSONALRELATIONSHIPS_DOMAIN_SYNC_QUEUE_ID = "domaineventpersonalrelationships"
 const val PERSONCONTACTS_DOMAIN_SYNC_QUEUE_ID = "domaineventpersoncontacts"
 const val ORGANISATIONS_SYNC_QUEUE_ID = "eventorganisations"
+const val VISIT_BALANCE_SYNC_QUEUE_ID = "eventvisitbalance"
 
 enum class MigrationType(val queueId: String, val telemetryName: String) {
   VISITS(VISITS_QUEUE_ID, "visits"),
@@ -70,6 +71,7 @@ enum class SynchronisationType(val queueId: String) {
   COURT_SENTENCING(COURT_SENTENCING_SYNC_QUEUE_ID),
   PERSONALRELATIONSHIPS(PERSONALRELATIONSHIPS_SYNC_QUEUE_ID),
   ORGANISATIONS(ORGANISATIONS_SYNC_QUEUE_ID),
+  VISIT_BALANCE(VISIT_BALANCE_SYNC_QUEUE_ID),
 }
 
 fun Any.asMap(): Map<String, String> = this::class.memberProperties
