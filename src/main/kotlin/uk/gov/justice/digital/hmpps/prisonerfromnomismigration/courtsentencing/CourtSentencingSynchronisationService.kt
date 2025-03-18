@@ -717,7 +717,7 @@ class CourtSentencingSynchronisationService(
         "nomisBookingId" to event.bookingId.toString(),
       )
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent("sentence-synchronisation-created-skipped", telemetry)
+      telemetryClient.trackEvent("sentence-synchronisation-created-skipped", telemetry + ("reason" to "created in dps"))
     } else {
       if (isSentenceInScope(event)) {
         val caseId = event.caseId!!

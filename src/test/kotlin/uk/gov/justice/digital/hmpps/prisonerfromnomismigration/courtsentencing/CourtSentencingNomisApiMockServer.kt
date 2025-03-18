@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceTermResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.COURT_SENTENCING_PRISONER_IDS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.math.BigDecimal
@@ -75,38 +76,40 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
   }
 
   // this migration version does not have offenderNo validation
-  fun stubGetCourtCaseForMigration(
+  fun stubGetCourtCasesByOffenderForMigration(
     caseId: Long,
     bookingId: Long = 2,
-    offenderNo: String = "G4803UT",
+    offenderNo: String = "AN1",
     courtId: String = "BATHMC",
     caseInfoNumber: String? = "caseRef1",
     caseIndentifiers: List<CaseIdentifierResponse> = emptyList(),
     courtEvents: List<CourtEventResponse> = emptyList(),
     combinedCaseId: Long? = null,
     sentences: List<SentenceResponse> = emptyList(),
-    response: CourtCaseResponse = CourtCaseResponse(
-      bookingId = bookingId,
-      id = caseId,
-      offenderNo = offenderNo,
-      caseSequence = 22,
-      caseStatus = CodeDescription("A", "Active"),
-      legalCaseType = CodeDescription("A", "Adult"),
-      courtId = "MDI",
-      courtEvents = courtEvents,
-      offenderCharges = emptyList(),
-      createdDateTime = LocalDateTime.now(),
-      createdByUsername = "Q1251T",
-      lidsCaseNumber = 1,
-      primaryCaseInfoNumber = "caseRef1",
-      caseInfoNumbers = caseIndentifiers,
-      combinedCaseId = combinedCaseId,
-      sentences = sentences,
+    response: List<CourtCaseResponse> = listOf(
+      CourtCaseResponse(
+        bookingId = bookingId,
+        id = caseId,
+        offenderNo = offenderNo,
+        caseSequence = 22,
+        caseStatus = CodeDescription("A", "Active"),
+        legalCaseType = CodeDescription("A", "Adult"),
+        courtId = "MDI",
+        courtEvents = courtEvents,
+        offenderCharges = emptyList(),
+        createdDateTime = LocalDateTime.now(),
+        createdByUsername = "Q1251T",
+        lidsCaseNumber = 1,
+        primaryCaseInfoNumber = "caseRef1",
+        caseInfoNumbers = caseIndentifiers,
+        combinedCaseId = combinedCaseId,
+        sentences = sentences,
+      ),
     ),
   ) {
     nomisApi.stubFor(
       get(
-        WireMock.urlPathEqualTo("/court-cases/$caseId"),
+        WireMock.urlPathEqualTo("/prisoners/$offenderNo/sentencing/court-cases"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
@@ -116,14 +119,14 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     )
   }
 
-  fun stubGetCourtCaseForMigration(
-    caseId: Long,
+  fun stubGetCourtCasesByOffenderForMigration(
+    offenderNo: String,
     status: HttpStatus,
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     nomisApi.stubFor(
       get(
-        WireMock.urlPathEqualTo("/court-cases/$caseId"),
+        WireMock.urlPathEqualTo("/prisoners/{offenderNo}/sentencing/court-cases"),
       )
         .willReturn(
           aResponse()
@@ -345,24 +348,24 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     )
   }
 
-  fun stubMultipleGetCourtCaseIdCounts(totalElements: Long, pageSize: Long) {
+  fun stubMultipleGetPrisonerIdCounts(totalElements: Long, pageSize: Long) {
     // for each page create a response for each case id starting from 1 up to `totalElements`
 
     val pages = (totalElements / pageSize) + 1
     (0..pages).forEach { page ->
-      val startCaseId = (page * pageSize) + 1
-      val endCaseId = java.lang.Long.min((page * pageSize) + pageSize, totalElements)
+      val startOffenderId = (page * pageSize) + 1
+      val endOffenderId = java.lang.Long.min((page * pageSize) + pageSize, totalElements)
       nomisApi.stubFor(
         get(
-          WireMock.urlPathEqualTo("/court-cases/ids"),
+          WireMock.urlPathEqualTo(COURT_SENTENCING_PRISONER_IDS),
         )
           .withQueryParam("page", WireMock.equalTo(page.toString()))
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
               .withBody(
-                courtCaseIdsPagedResponse(
+                prisonerIdsPagedResponse(
                   totalElements = totalElements,
-                  caseIds = (startCaseId..endCaseId).map { it },
+                  ids = (startOffenderId..endOffenderId).map { "AN$it" },
                   pageNumber = page,
                   pageSize = pageSize,
                 ),
@@ -372,15 +375,15 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     }
   }
 
-  fun stubMultipleGetCourtCases(intProgression: IntProgression) {
+  fun stubMultipleGetCourtCasesByOffender(intProgression: IntProgression) {
     (intProgression).forEach {
       nomisApi.stubFor(
         get(
-          WireMock.urlPathEqualTo("/court-cases/$it"),
+          WireMock.urlPathEqualTo("/prisoners/AN$it/sentencing/court-cases"),
         )
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(objectMapper.writeValueAsString(courtCaseResponse(caseId = it.toLong()))),
+              .withBody(objectMapper.writeValueAsString(listOf(courtCaseResponse(caseId = it.toLong())))),
           ),
       )
     }
@@ -474,15 +477,15 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     sentences = sentences,
   )
 
-  fun courtCaseIdsPagedResponse(
+  fun prisonerIdsPagedResponse(
     totalElements: Long = 10,
-    caseIds: List<Long> = (0L..10L).toList(),
+    ids: List<String> = (0L..10L).map { "AN$it" }.toList(),
     pageSize: Long = 10,
     pageNumber: Long = 0,
   ): String {
-    val content = caseIds.map { """{ "caseId": $it}""" }
+    val content = ids.map { """{ "offenderNo": "$it"}""" }
       .joinToString { it }
-    return pageContent(content, pageSize, pageNumber, totalElements, caseIds.size)
+    return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
   }
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)

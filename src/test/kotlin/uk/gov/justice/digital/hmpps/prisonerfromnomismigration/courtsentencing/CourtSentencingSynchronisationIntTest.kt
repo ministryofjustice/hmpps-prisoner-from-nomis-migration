@@ -753,7 +753,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        courtSentencingNomisApiMockServer.stubGetCourtCaseForMigration(
+        courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(
           caseId = NOMIS_COURT_CASE_ID,
           bookingId = NOMIS_BOOKING_ID,
           offenderNo = OFFENDER_ID_DISPLAY,

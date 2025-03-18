@@ -11,11 +11,11 @@ import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.typeReference
@@ -99,22 +99,20 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     .retrieve()
     .awaitBody()
 
-  suspend fun getCourtCaseIds(
+  suspend fun getPrisonerIds(
     fromDate: LocalDate?,
     toDate: LocalDate?,
     pageNumber: Long,
     pageSize: Long,
-  ): PageImpl<CourtCaseIdResponse> = webClient.get()
+  ): PageImpl<PrisonerId> = webClient.get()
     .uri {
-      it.path("/court-cases/ids")
-        .queryParam("fromDate", fromDate)
-        .queryParam("toDate", toDate)
+      it.path("/prisoners/ids")
         .queryParam("page", pageNumber)
         .queryParam("size", pageSize)
         .build()
     }
     .retrieve()
-    .bodyToMono(typeReference<RestResponsePage<CourtCaseIdResponse>>())
+    .bodyToMono(typeReference<RestResponsePage<PrisonerId>>())
     .awaitSingle()
 
   suspend fun getByNomisPrisonNumberOrNull(nomisPrisonNumber: String): CorePersonMappingDto? = webClient.get()

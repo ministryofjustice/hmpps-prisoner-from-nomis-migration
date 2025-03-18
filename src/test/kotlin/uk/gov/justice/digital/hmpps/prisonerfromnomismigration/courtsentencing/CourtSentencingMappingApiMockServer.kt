@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSentencingMigrationSummary
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -44,6 +45,34 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
   fun stubGetByNomisId(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/court-sentencing/court-cases/nomis-court-case-id/\\d+")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubGetMigrationSummaryByOffenderNo(
+    offenderNo: String = UUID.randomUUID().toString(),
+    summary: CourtSentencingMigrationSummary = CourtSentencingMigrationSummary(
+      offenderNo = offenderNo,
+      mappingsCount = 1,
+    ),
+  ) {
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/court-sentencing/prisoner/$/migration-summary")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(summary)),
+      ),
+    )
+  }
+
+  fun stubGetMigrationSummaryByOffenderNo(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/prisoner/\\s+/migration-summary")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -116,6 +145,79 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
               }""",
             ),
         ),
+    )
+  }
+
+  fun stubPostMigrationMapping() {
+    mappingApi.stubFor(
+      post(urlPathMatching("/mapping/court-sentencing/prisoner/\\S+/court-cases")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubPostMigrationMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      post(urlPathMatching("/mapping/court-sentencing/prisoner/\\S+/court-cases")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubPostMigrationMappingFailureFollowedBySuccess() {
+    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/court-sentencing/prisoner/\\S+/court-cases")
+  }
+
+  fun createMigrationMappingCount() = createMappingCount("/mapping/court-sentencing/prisoner/\\S+/court-cases")
+
+  fun stubMigrationMappingCreateConflict() {
+    mappingApi.stubFor(
+      post(urlPathMatching("/mapping/court-sentencing/prisoner/\\S+/court-cases"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "courtCases": [],
+                  "courtAppearances": [],
+                  "courtCharges": [],
+                  "sentences": [],
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                 },
+                 "duplicate" : {
+                  "courtCases": [],
+                  "courtAppearances": [],
+                  "courtCharges": [],
+                  "sentences": [],
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                  }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
+  fun verifyCreateMappingMigrationOffenderIds(
+    offenderNos: Array<String>,
+    times: Int = 1,
+  ) = offenderNos.forEach {
+    verify(
+      times,
+      WireMock.postRequestedFor(urlPathMatching("/mapping/court-sentencing/prisoner/\\S+/court-cases")),
     )
   }
 
@@ -504,19 +606,13 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
-  fun stubCourtCaseMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
-    val content = """{
-      "dpsCourtCaseId": "191747",
-      "nomisCourtCaseId": 123,
-      "label": "2022-02-14T09:58:45",
-      "whenCreated": "$whenCreated",
-      "mappingType": "MIGRATED"
-    }"""
+  fun stubCourtSentencingSummaryByMigrationId(offenderNo: String = "AN12345", whenCreated: String = "2020-01-01T11:10:00", count: Int = 278887) {
+    val summary = CourtSentencingMigrationSummary(offenderNo = offenderNo, mappingsCount = count, whenCreated = whenCreated)
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/court-sentencing/court-cases/migration-id/.*")).willReturn(
+      get(urlPathMatching("/mapping/court-sentencing/prisoner/migration-id/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody(mappingApi.pageContent(content, count)),
+          .withBody(mappingApi.pageContent(objectMapper.writeValueAsString(summary), count)),
       ),
     )
   }
@@ -533,32 +629,9 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
-  fun verifyCreateMappingCourtCaseIds(
-    migrationId: String,
-    nomsCourtCaseIds: Array<String>,
-    times: Int = 1,
-  ) = nomsCourtCaseIds.forEach {
-    verify(
-      times,
-      WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/court-sentencing/court-cases"))
-        .withRequestBody(
-          WireMock.matchingJsonPath(
-            "nomisCourtCaseId",
-            WireMock.equalTo(it),
-          ),
-        )
-        .withRequestBody(
-          WireMock.matchingJsonPath(
-            "label",
-            WireMock.equalTo(migrationId),
-          ),
-        ),
-    )
-  }
-
   fun createCourtCaseMappingCount() = createMappingCount("/mapping/court-sentencing/court-cases")
 
-  fun createMappingCount(url: String) = mappingApi.findAll(WireMock.postRequestedFor(WireMock.urlPathEqualTo(url))).count()
+  fun createMappingCount(url: String) = mappingApi.findAll(WireMock.postRequestedFor(WireMock.urlPathMatching(url))).count()
 
   fun verifyCreateMappingCourtCase(
     dpsCourtCaseId: String,

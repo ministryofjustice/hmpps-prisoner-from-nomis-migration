@@ -28,15 +28,15 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
   suspend fun createMapping(
     offenderNo: String,
     mapping: CourtCaseMigrationMappingDto,
-    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<CourtSentencingMigrationSummary>>,
-  ): CreateMappingResult<CourtSentencingMigrationSummary> = webClient.post()
+    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseMigrationMappingDto>>,
+  ): CreateMappingResult<CourtCaseMigrationMappingDto> = webClient.post()
     .uri("/mapping/court-sentencing/prisoner/{offenderNo}/court-cases", offenderNo)
     .bodyValue(
       mapping,
     )
     .retrieve()
     .bodyToMono(Unit::class.java)
-    .map { CreateMappingResult<CourtSentencingMigrationSummary>() }
+    .map { CreateMappingResult<CourtCaseMigrationMappingDto>() }
     .onErrorResume(WebClientResponseException.Conflict::class.java) {
       Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
     }
