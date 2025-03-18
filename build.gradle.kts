@@ -94,7 +94,7 @@ val models = listOf(
     name = "casenotes",
     packageName = "casenotes",
     url = "https://dev.offender-case-notes.service.justice.gov.uk/v3/api-docs",
-    models = "Author,CaseNote,CaseNoteAmendment,ErrorResponse,MigrateAmendmentRequest,MigrateCaseNoteRequest,MigrationResult,MoveCaseNotesRequest,SyncCaseNoteAmendmentRequest,SyncCaseNoteRequest,SyncResult",
+    models = "Author,ErrorResponse,MoveCaseNotesRequest,SyncCaseNoteAmendmentRequest,SyncCaseNoteRequest,SyncResult",
   ),
   ModelConfiguration(
     name = "core-person",

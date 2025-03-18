@@ -15,10 +15,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto.MappingType.NOMIS_CREATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerCaseNoteMappingsDto
 import java.util.UUID
 
 private const val OFFENDER_NUMBER = "G4803UT"
@@ -43,18 +41,16 @@ class CaseNotesMappingApiServiceTest {
     @Test
     fun `will pass oath2 token to service`() {
       runTest {
-        caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(OFFENDER_NUMBER)
+        caseNotesMappingApiMockServer.stubPostMappingsBatch()
 
-        apiService.createMapping(
-          offenderNo = OFFENDER_NUMBER,
-          PrisonerCaseNoteMappingsDto(
-            mappingType = PrisonerCaseNoteMappingsDto.MappingType.NOMIS_CREATED,
-            mappings = listOf(
-              CaseNoteMappingIdDto(
-                nomisCaseNoteId = 123456,
-                dpsCaseNoteId = UUID.randomUUID().toString(),
-                nomisBookingId = 123,
-              ),
+        apiService.createMappings(
+          listOf(
+            CaseNoteMappingDto(
+              nomisCaseNoteId = 123456,
+              dpsCaseNoteId = UUID.randomUUID().toString(),
+              nomisBookingId = 123,
+              offenderNo = OFFENDER_NUMBER,
+              mappingType = NOMIS_CREATED,
             ),
           ),
           errorJavaClass,
@@ -70,24 +66,25 @@ class CaseNotesMappingApiServiceTest {
     fun `will pass ids to service`() = runTest {
       val dpsCaseNoteId1 = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
       val dpsCaseNoteId2 = "cb3bf3b9-c23c-4787-9450-59259ab62b06"
-      caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(OFFENDER_NUMBER)
+      caseNotesMappingApiMockServer.stubPostMappingsBatch()
 
-      apiService.createMapping(
-        offenderNo = OFFENDER_NUMBER,
-        PrisonerCaseNoteMappingsDto(
-          mappingType = PrisonerCaseNoteMappingsDto.MappingType.NOMIS_CREATED,
-          label = "2024-06-06",
-          mappings = listOf(
-            CaseNoteMappingIdDto(
-              nomisCaseNoteId = 123456,
-              dpsCaseNoteId = dpsCaseNoteId1,
-              nomisBookingId = 1,
-            ),
-            CaseNoteMappingIdDto(
-              nomisCaseNoteId = 123457,
-              dpsCaseNoteId = dpsCaseNoteId2,
-              nomisBookingId = 1,
-            ),
+      apiService.createMappings(
+        listOf(
+          CaseNoteMappingDto(
+            nomisCaseNoteId = 123456,
+            dpsCaseNoteId = dpsCaseNoteId1,
+            nomisBookingId = 1,
+            offenderNo = OFFENDER_NUMBER,
+            mappingType = NOMIS_CREATED,
+            label = "2024-06-06",
+          ),
+          CaseNoteMappingDto(
+            nomisCaseNoteId = 123457,
+            dpsCaseNoteId = dpsCaseNoteId2,
+            nomisBookingId = 1,
+            offenderNo = OFFENDER_NUMBER,
+            mappingType = NOMIS_CREATED,
+            label = "2024-06-06",
           ),
         ),
         errorJavaClass,
@@ -95,32 +92,33 @@ class CaseNotesMappingApiServiceTest {
 
       caseNotesMappingApiMockServer.verify(
         postRequestedFor(anyUrl())
-          .withRequestBody(matchingJsonPath("$.mappingType", equalTo("NOMIS_CREATED")))
-          .withRequestBody(matchingJsonPath("$.label", equalTo("2024-06-06")))
-          .withRequestBody(matchingJsonPath("$.mappings[0].nomisCaseNoteId", equalTo("123456")))
-          .withRequestBody(matchingJsonPath("$.mappings[0].dpsCaseNoteId", equalTo(dpsCaseNoteId1)))
-          .withRequestBody(matchingJsonPath("$.mappings[0].nomisBookingId", equalTo("1")))
-          .withRequestBody(matchingJsonPath("$.mappingType", equalTo("NOMIS_CREATED")))
-          .withRequestBody(matchingJsonPath("$.mappings[1].nomisCaseNoteId", equalTo("123457")))
-          .withRequestBody(matchingJsonPath("$.mappings[1].dpsCaseNoteId", equalTo(dpsCaseNoteId2)))
-          .withRequestBody(matchingJsonPath("$.mappings[1].nomisBookingId", equalTo("1"))),
+          .withRequestBody(matchingJsonPath("$[0].offenderNo", equalTo(OFFENDER_NUMBER)))
+          .withRequestBody(matchingJsonPath("$[0].mappingType", equalTo("NOMIS_CREATED")))
+          .withRequestBody(matchingJsonPath("$[0].label", equalTo("2024-06-06")))
+          .withRequestBody(matchingJsonPath("$[0].nomisCaseNoteId", equalTo("123456")))
+          .withRequestBody(matchingJsonPath("$[0].dpsCaseNoteId", equalTo(dpsCaseNoteId1)))
+          .withRequestBody(matchingJsonPath("$[0].nomisBookingId", equalTo("1")))
+          .withRequestBody(matchingJsonPath("$[1].offenderNo", equalTo(OFFENDER_NUMBER)))
+          .withRequestBody(matchingJsonPath("$[1].mappingType", equalTo("NOMIS_CREATED")))
+          .withRequestBody(matchingJsonPath("$[1].label", equalTo("2024-06-06")))
+          .withRequestBody(matchingJsonPath("$[1].nomisCaseNoteId", equalTo("123457")))
+          .withRequestBody(matchingJsonPath("$[1].dpsCaseNoteId", equalTo(dpsCaseNoteId2)))
+          .withRequestBody(matchingJsonPath("$[1].nomisBookingId", equalTo("1"))),
       )
     }
 
     @Test
     fun `will return success when no errors`() = runTest {
-      caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(OFFENDER_NUMBER)
+      caseNotesMappingApiMockServer.stubPostMappingsBatch()
 
-      val result = apiService.createMapping(
-        offenderNo = OFFENDER_NUMBER,
-        PrisonerCaseNoteMappingsDto(
-          mappingType = PrisonerCaseNoteMappingsDto.MappingType.NOMIS_CREATED,
-          mappings = listOf(
-            CaseNoteMappingIdDto(
-              nomisCaseNoteId = 123456,
-              dpsCaseNoteId = UUID.randomUUID().toString(),
-              nomisBookingId = 1,
-            ),
+      val result = apiService.createMappings(
+        mappings = listOf(
+          CaseNoteMappingDto(
+            nomisCaseNoteId = 123456,
+            dpsCaseNoteId = UUID.randomUUID().toString(),
+            nomisBookingId = 1,
+            offenderNo = OFFENDER_NUMBER,
+            mappingType = NOMIS_CREATED,
           ),
         ),
         errorJavaClass,
@@ -134,8 +132,7 @@ class CaseNotesMappingApiServiceTest {
       val dpsCaseNoteId = UUID.fromString("956d4326-b0c3-47ac-ab12-f0165109a6c5")
       val existingCaseNoteId = UUID.fromString("f612a10f-4827-4022-be96-d882193dfabd")
 
-      caseNotesMappingApiMockServer.stubPostMappingsByPrisoner(
-        offenderNo = OFFENDER_NUMBER,
+      caseNotesMappingApiMockServer.stubPostMappingsBatch(
         error = DuplicateMappingErrorResponse(
           moreInfo = DuplicateErrorContentObject(
             duplicate = CaseNoteMappingDto(
@@ -159,16 +156,14 @@ class CaseNotesMappingApiServiceTest {
         ),
       )
 
-      val result = apiService.createMapping(
-        offenderNo = OFFENDER_NUMBER,
-        PrisonerCaseNoteMappingsDto(
-          mappingType = PrisonerCaseNoteMappingsDto.MappingType.NOMIS_CREATED,
-          mappings = listOf(
-            CaseNoteMappingIdDto(
-              nomisCaseNoteId = 123456,
-              dpsCaseNoteId = UUID.randomUUID().toString(),
-              nomisBookingId = 1,
-            ),
+      val result = apiService.createMappings(
+        mappings = listOf(
+          CaseNoteMappingDto(
+            nomisCaseNoteId = 123456,
+            dpsCaseNoteId = dpsCaseNoteId.toString(),
+            nomisBookingId = 1,
+            offenderNo = OFFENDER_NUMBER,
+            mappingType = NOMIS_CREATED,
           ),
         ),
         errorJavaClass,

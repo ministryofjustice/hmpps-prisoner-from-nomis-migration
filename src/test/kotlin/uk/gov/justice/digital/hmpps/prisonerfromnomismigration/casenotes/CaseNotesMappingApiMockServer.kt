@@ -21,8 +21,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
-import java.time.LocalDateTime
 import java.util.*
 
 @Component
@@ -90,64 +88,10 @@ class CaseNotesMappingApiMockServer(private val objectMapper: ObjectMapper) {
     mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/casenotes")
   }
 
-  fun stubPostMappingsByPrisoner(offenderNo: String) {
-    mappingApi.stubFor(
-      post("/mapping/casenotes/$offenderNo/all").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(201),
-      ),
-    )
-  }
-
-  fun stubPostMappingsByPrisonerFailureFollowedBySuccess(offenderNo: String) {
-    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/casenotes/$offenderNo/all")
-  }
-
-  fun stubPostMappingsByPrisoner(offenderNo: String, error: DuplicateMappingErrorResponse) {
-    mappingApi.stubFor(
-      post("/mapping/casenotes/$offenderNo/all").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubMigrationCount(recordsMigrated: Long) {
-    mappingApi.stubFor(
-      get(urlPathMatching("/mapping/casenotes/migration-id/.*/grouped-by-booking")).willReturn(
-        okJson(
-          """
-            {
-              "totalElements": $recordsMigrated,
-              "content": [
-                {
-                  "whenCreated": "${LocalDateTime.now()}"
-                }
-              ]           
-            }
-          """.trimIndent(),
-        ),
-      ),
-    )
-  }
-
   fun stubGetMappings(mappings: List<CaseNoteMappingDto>) {
     mappingApi.stubFor(
       post("/mapping/casenotes/nomis-casenote-id").willReturn(
         okJson(objectMapper.writeValueAsString(mappings)),
-      ),
-    )
-  }
-
-  fun stubGetMappingsError(status: HttpStatus) {
-    mappingApi.stubFor(
-      post("/mapping/casenotes/nomis-casenote-id").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value()),
       ),
     )
   }
@@ -176,6 +120,17 @@ class CaseNotesMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubPostMappingsBatch(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/casenotes/batch").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun stubDeleteMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
       delete(urlPathMatching("/mapping/casenotes/dps-casenote-id/.*")).willReturn(
@@ -183,43 +138,6 @@ class CaseNotesMappingApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
           .withBody(objectMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubSingleItemByMigrationId(migrationId: String = "2023-01-01T11:10:00", count: Int = 108278887) {
-    mappingApi.stubFor(
-      get(urlPathMatching("/mapping/casenotes/migration-id/.*")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(
-            pageContent(
-              objectMapper = objectMapper,
-              content = listOf(
-                CaseNoteMappingDto(
-                  dpsCaseNoteId = UUID.randomUUID().toString(),
-                  nomisCaseNoteId = 123456,
-                  offenderNo = UUID.randomUUID().toString(),
-                  nomisBookingId = 1,
-                  mappingType = MIGRATED,
-                  label = migrationId,
-                  whenCreated = migrationId,
-                ),
-              ),
-              pageSize = 1L,
-              pageNumber = 0L,
-              totalElements = count.toLong(),
-              size = 1,
-            ),
-          ),
-      ),
-    )
-  }
-
-  fun stubGetCount(count: Long) {
-    mappingApi.stubFor(
-      post("/mapping/migration-id/{migrationId}/count-by-prisoner").willReturn(
-        okJson(objectMapper.writeValueAsString(count)),
       ),
     )
   }
@@ -244,14 +162,6 @@ class CaseNotesMappingApiMockServer(private val objectMapper: ObjectMapper) {
     mappingApi.stubFor(
       put(urlPathMatching("/mapping/casenotes/merge/booking-id/.+/to/.+")).willReturn(
         okJson(objectMapper.writeValueAsString(response)),
-      ),
-    )
-  }
-
-  fun stubUpdateMappingsByBookingIdError(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    mappingApi.stubFor(
-      put(urlPathMatching("/mapping/casenotes/merge/booking-id/.+/to/.+")).willReturn(
-        jsonResponse(objectMapper.writeValueAsString(error), status.value()),
       ),
     )
   }
