@@ -5,10 +5,6 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
-import org.springframework.web.reactive.function.client.awaitBody
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.CaseNote
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrateCaseNoteRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MoveCaseNotesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncResult
@@ -31,13 +27,6 @@ class CaseNotesApiService(@Qualifier("caseNotesApiWebClient") private val webCli
       .awaitBodilessEntity()
   }
 
-  suspend fun migrateCaseNotes(offenderNo: String, dpsCaseNotes: List<MigrateCaseNoteRequest>): List<MigrationResult> = webClient.post()
-    .uri("/migrate/case-notes/{offenderNo}", offenderNo)
-    .contentType(MediaType.APPLICATION_JSON)
-    .bodyValue(dpsCaseNotes)
-    .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
-
   suspend fun moveCaseNotes(request: MoveCaseNotesRequest) {
     webClient.put()
       .uri("/move/case-notes")
@@ -46,9 +35,4 @@ class CaseNotesApiService(@Qualifier("caseNotesApiWebClient") private val webCli
       .retrieve()
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
   }
-
-  suspend fun getCaseNotesForPrisoner(offenderIdentifier: String): List<CaseNote> = webClient.get()
-    .uri("/sync/case-notes/{offenderIdentifier}", offenderIdentifier)
-    .retrieve()
-    .awaitBody()
 }
