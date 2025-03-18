@@ -8,7 +8,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
@@ -23,20 +22,23 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.MediaType
+import org.springframework.test.web.reactive.server.returnResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
-import uk.gov.justice.hmpps.test.kotlin.auth.WithMockAuthUser
 import java.time.Duration
 import java.time.LocalDate
 
-@WithMockAuthUser
 class ContactPersonProfileDetailsMigrationIntTest(
   @Autowired private val nomisProfileDetailsApi: ContactPersonProfileDetailsNomisApiMockServer,
   @Autowired private val mappingApi: ContactPersonProfileDetailsMappingApiMockServer,
   @Autowired private val dpsApi: ContactPersonProfileDetailsDpsApiMockServer,
-  @Autowired private val migrationService: ContactPersonProfileDetailsMigrationService,
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
 ) : SqsIntegrationTestBase() {
 
@@ -45,10 +47,8 @@ class ContactPersonProfileDetailsMigrationIntTest(
     private lateinit var migrationId: String
 
     @BeforeEach
-    internal fun deleteHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-      }
+    internal fun deleteHistoryRecords() = runTest {
+      migrationHistoryRepository.deleteAll()
     }
 
     private fun stubMigrationDependencies(entities: Int = 2) {
@@ -85,6 +85,38 @@ class ContactPersonProfileDetailsMigrationIntTest(
           dpsApi.stubMigrateNumberOfChildren(migrateNumberOfChildrenResponse(offenderNo))
           mappingApi.stubPutMapping()
         }
+    }
+
+    @Nested
+    inner class Security {
+      @Test
+      fun `access forbidden when no role`() {
+        webTestClient.post().uri("/migrate/contact-person-profile-details")
+          .headers(setAuthorisation(roles = listOf()))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(ContactPersonProfileDetailsMigrationFilter())
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access forbidden with wrong role`() {
+        webTestClient.post().uri("/migrate/contact-person-profile-details")
+          .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(ContactPersonProfileDetailsMigrationFilter())
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access unauthorised with no auth token`() {
+        webTestClient.post().uri("/migrate/contact-person-profile-details")
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(ContactPersonProfileDetailsMigrationFilter())
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
     }
 
     @Nested
@@ -315,19 +347,151 @@ class ContactPersonProfileDetailsMigrationIntTest(
       }
     }
 
-    private suspend fun performMigration(prisonerNumber: String? = null): String = migrationService.startMigration(ContactPersonProfileDetailsMigrationFilter(prisonerNumber))
-      .also {
-        waitUntilCompleted()
-      }.let {
-        it.migrationId
+    @Nested
+    inner class CancelMigration {
+      @Test
+      fun `access forbidden when no role`() {
+        webTestClient.post().uri("/migrate/contact-person-profile-details/2020-01-01T00:00:00/cancel")
+          .headers(setAuthorisation(roles = listOf()))
+          .exchange()
+          .expectStatus().isForbidden
       }
 
-    private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
-      verify(telemetryClient).trackEvent(
-        eq("contactperson-profiledetails-migration-completed"),
-        any(),
-        isNull(),
-      )
+      @Test
+      fun `access forbidden with wrong role`() {
+        webTestClient.post().uri("/migrate/contact-person-profile-details/2020-01-01T00:00:00/cancel")
+          .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access unauthorised with no auth token`() {
+        webTestClient.post().uri("/migrate/contact-person-profile-details/2020-01-01T00:00:00/cancel")
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      fun `not found for unknown migration id`() {
+        webTestClient.post().uri("/migrate/contact-person-profile-details/2020-01-01T00:00:00/cancel")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isNotFound
+      }
+
+      @Test
+      fun `will cancel the migration`() {
+        stubMigrationDependencies(10)
+        migrationId = performMigration()
+
+        webTestClient.post().uri("/migrate/contact-person-profile-details/$migrationId/cancel")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isAccepted
+
+        webTestClient.get().uri("/migrate/contact-person-profile-details/history/$migrationId")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationId)
+          .jsonPath("$.status").isEqualTo("CANCELLED_REQUESTED")
+
+        await atMost (Duration.ofSeconds(60)) untilAsserted {
+          webTestClient.get().uri("/migrate/contact-person-profile-details/history/$migrationId")
+            .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
+            .header("Content-Type", "application/json")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.migrationId").isEqualTo(migrationId)
+            .jsonPath("$.status").isEqualTo("CANCELLED")
+        }
+      }
     }
+  }
+
+  @Nested
+  inner class GetMigration {
+
+    @Test
+    fun `access forbidden when no role`() {
+      webTestClient.get().uri("/migrate/contact-person-profile-details/history/2020-01-01T00:00:00")
+        .headers(setAuthorisation(roles = listOf()))
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `access forbidden with wrong role`() {
+      webTestClient.get().uri("/migrate/contact-person-profile-details/history/2020-01-01T00:00:00")
+        .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `access unauthorised with no auth token`() {
+      webTestClient.get().uri("/migrate/contact-person-profile-details/history/2020-01-01T00:00:00")
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    fun `not found for unknown migration id`() {
+      webTestClient.get().uri("/migrate/contact-person-profile-details/history/2025-05-05T00:00:00")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isNotFound
+    }
+
+    @Test
+    fun `will get the migration`() = runTest {
+      val migrationId = "2020-01-01T00:00:00"
+      migrationHistoryRepository.save(
+        MigrationHistory(
+          migrationId = migrationId,
+          migrationType = MigrationType.PERSONALRELATIONSHIPS_PROFILEDETAIL,
+          status = MigrationStatus.COMPLETED,
+          estimatedRecordCount = 1,
+        ),
+      )
+
+      webTestClient.get().uri("/migrate/contact-person-profile-details/history/$migrationId")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.migrationId").isEqualTo(migrationId)
+        .jsonPath("$.status").isEqualTo("COMPLETED")
+    }
+  }
+
+  private fun performMigration(prisonerNumber: String? = null): String = webTestClient.post()
+    .uri("/migrate/contact-person-profile-details")
+    .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+    .contentType(MediaType.APPLICATION_JSON)
+    .apply { prisonerNumber?.let { bodyValue("""{"prisonerNumber":"$prisonerNumber"}""") } ?: bodyValue("{}") }
+    .exchange()
+    .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
+    .migrationId
+    .also {
+      waitUntilCompleted()
+    }
+
+  private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
+    verify(telemetryClient).trackEvent(
+      eq("contactperson-profiledetails-migration-completed"),
+      any(),
+      isNull(),
+    )
   }
 }
