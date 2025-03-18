@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-03-14.11690.cef5be8"
+    "version" : "2025-03-14.11715.25ff637"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -12325,6 +12325,26 @@
             "example" : "A1234KT"
           },
           "example" : "A1234KT"
+        }, {
+          "name" : "active-only",
+          "in" : "query",
+          "description" : "When true only return contacts that are active",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : true
+          },
+          "example" : false
+        }, {
+          "name" : "latest-booking-only",
+          "in" : "query",
+          "description" : "When true only return contacts that related to latest booking",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : true
+          },
+          "example" : false
         } ],
         "responses" : {
           "200" : {
@@ -18277,9 +18297,14 @@
           "recordedBy" : {
             "type" : "string",
             "description" : "The username of the person who recorded the review"
+          },
+          "reviewSequence" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The sequence number of the review, allowing for dps to set "
           }
         },
-        "required" : [ "caseNote", "closeCSIP", "csipUpdated", "dpsId", "peopleInformed", "recordedBy", "recordedDate", "remainOnCSIP" ]
+        "required" : [ "caseNote", "closeCSIP", "csipUpdated", "dpsId", "peopleInformed", "recordedBy", "recordedDate", "remainOnCSIP", "reviewSequence" ]
       },
       "SaferCustodyScreeningRequest" : {
         "type" : "object",
