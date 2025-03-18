@@ -22,6 +22,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomai
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteAmendment
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse.SourceSystem
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -467,3 +471,31 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
     private fun generateUUID(i: Int): String = "00001111-2222-3333-4444-000000${i.toString().padStart(6, '0')}"
   }
 }
+
+fun caseNoteTemplate(
+  caseNoteId: Long,
+  bookingId: Long,
+  text: String = "text",
+  auditModuleName: String = "OIDCXXXX",
+  type: String = "GEN",
+  createdDatetime: String = "2021-02-03T04:05:06",
+) = CaseNoteResponse(
+  caseNoteId = caseNoteId,
+  bookingId = bookingId,
+  caseNoteText = text,
+  caseNoteType = CodeDescription(type, "desc"),
+  auditModuleName = auditModuleName,
+  caseNoteSubType = CodeDescription("OUTCOME", "desc"),
+  authorUsername = "me",
+  authorStaffId = 123456L,
+  authorFirstName = "First",
+  authorLastName = "Last",
+  amendments = listOf(CaseNoteAmendment("$text amend", "me", LocalDateTime.parse("2021-02-03T04:05:07"), CaseNoteAmendment.SourceSystem.NOMIS)),
+  createdDatetime = LocalDateTime.parse(createdDatetime),
+  creationDateTime = LocalDateTime.parse("2023-04-05T06:07:08"),
+  createdUsername = "John",
+  noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
+  occurrenceDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
+  prisonId = "SWI",
+  sourceSystem = SourceSystem.NOMIS,
+)
