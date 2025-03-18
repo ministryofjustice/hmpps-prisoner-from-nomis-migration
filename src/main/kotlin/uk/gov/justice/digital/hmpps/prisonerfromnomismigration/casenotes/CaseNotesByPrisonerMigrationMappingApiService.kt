@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes
 
 import kotlinx.coroutines.reactive.awaitFirstOrDefault
-import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
@@ -10,12 +9,11 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerCaseNoteMappingsDto
 
 @Service
-class CaseNotesByPrisonerMigrationMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CaseNoteMigrationMapping>(domainUrl = "/mapping/casenotes", webClient) {
+class CaseNotesByPrisonerMigrationMappingApiService(@Qualifier("mappingApiWebClient") private val webClient: WebClient) {
   suspend fun createMapping(
     offenderNo: String,
     prisonerMapping: PrisonerCaseNoteMappingsDto,
@@ -46,13 +44,4 @@ class CaseNotesByPrisonerMigrationMappingApiService(@Qualifier("mappingApiWebCli
       Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
     }
     .awaitFirstOrDefault(CreateMappingResult())
-
-  override suspend fun getMigrationCount(migrationId: String): Long = webClient.get()
-    .uri("$domainUrl/migration-id/{migrationId}/count-by-prisoner", migrationId)
-    .retrieve()
-    .bodyToMono(Long::class.java)
-    .onErrorResume(WebClientResponseException.NotFound::class.java) {
-      Mono.empty()
-    }
-    .awaitSingleOrNull() ?: 0
 }

@@ -122,8 +122,6 @@ complete-check:
 hmpps.sqs:
   provider: localstack
   queues:
-    migrationcasenotes:
-      dlqMaxReceiveCount: 2
     eventsentencing:
       dlqMaxReceiveCount: 2
     eventalerts:
