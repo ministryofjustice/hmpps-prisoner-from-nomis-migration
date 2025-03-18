@@ -753,7 +753,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(
+        courtSentencingNomisApiMockServer.stubGetCourtCaseNoOffenderVersion(
           caseId = NOMIS_COURT_CASE_ID,
           bookingId = NOMIS_BOOKING_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
@@ -921,7 +921,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
-      @DisplayName("When mapping exists")
+      @DisplayName("Identifier deleted")
       inner class HandlesDeletedEvent {
         @BeforeEach
         fun setUp() {

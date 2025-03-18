@@ -137,6 +137,66 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     )
   }
 
+  // this migration version does not have offenderNo validation
+  fun stubGetCourtCaseNoOffenderVersion(
+    caseId: Long,
+    bookingId: Long = 2,
+    offenderNo: String = "G4803UT",
+    courtId: String = "BATHMC",
+    caseInfoNumber: String? = "caseRef1",
+    caseIndentifiers: List<CaseIdentifierResponse> = emptyList(),
+    courtEvents: List<CourtEventResponse> = emptyList(),
+    combinedCaseId: Long? = null,
+    sentences: List<SentenceResponse> = emptyList(),
+    response: CourtCaseResponse = CourtCaseResponse(
+      bookingId = bookingId,
+      id = caseId,
+      offenderNo = offenderNo,
+      caseSequence = 22,
+      caseStatus = CodeDescription("A", "Active"),
+      legalCaseType = CodeDescription("A", "Adult"),
+      courtId = "MDI",
+      courtEvents = courtEvents,
+      offenderCharges = emptyList(),
+      createdDateTime = LocalDateTime.now(),
+      createdByUsername = "Q1251T",
+      lidsCaseNumber = 1,
+      primaryCaseInfoNumber = "caseRef1",
+      caseInfoNumbers = caseIndentifiers,
+      combinedCaseId = combinedCaseId,
+      sentences = sentences,
+    ),
+  ) {
+    nomisApi.stubFor(
+      get(
+        WireMock.urlPathEqualTo("/court-cases/$caseId"),
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubGetCourtCaseNoOffenderVersion(
+    caseId: Long,
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(
+        WireMock.urlPathEqualTo("/court-cases/$caseId"),
+      )
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(NomisApiExtension.objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
   fun stubGetCourtAppearance(
     offenderNo: String = "A3864DZ",
     courtAppearanceId: Long = 3,
