@@ -100,10 +100,6 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONCSIP_QUEUE_NAME: "sqs_name"
     sqs-migration-csip-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONCSIP_DLQ_NAME: "sqs_name"
-    sqs-migration-casenotes-queue:
-      HMPPS_SQS_QUEUES_MIGRATIONCASENOTES_QUEUE_NAME: "sqs_name"
-    sqs-migration-casenotes-dlq:
-      HMPPS_SQS_QUEUES_MIGRATIONCASENOTES_DLQ_NAME: "sqs_name"
     sqs-migration-courtsentencing-queue:
       HMPPS_SQS_QUEUES_MIGRATIONCOURTSENTENCING_QUEUE_NAME: "sqs_name"
     sqs-migration-courtsentencing-dlq:

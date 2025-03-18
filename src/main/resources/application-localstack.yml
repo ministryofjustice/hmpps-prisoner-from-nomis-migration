@@ -19,9 +19,6 @@ hmpps.sqs:
     migrationcsip:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    migrationcasenotes:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
     migrationcourtsentencing:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

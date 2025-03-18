@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.SynchronisationContext
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.reflect.full.memberProperties
@@ -17,11 +16,6 @@ class MigrationMessage<M, T>(
   val context: MigrationContext<T>,
 ) : LocalMessage<M>(type)
 
-class SynchronisationMessage<M, T>(
-  type: M,
-  val context: SynchronisationContext<T>,
-) : LocalMessage<M>(type)
-
 const val VISITS_QUEUE_ID = "migrationvisits"
 const val APPOINTMENTS_QUEUE_ID = "migrationappointments"
 const val ACTIVITIES_QUEUE_ID = "migrationactivities"
@@ -29,7 +23,6 @@ const val ALLOCATIONS_QUEUE_ID = "migrationallocations"
 const val INCIDENTS_QUEUE_ID = "migrationincidents"
 const val CORE_PERSON_QUEUE_ID = "migrationcoreperson"
 const val CSIP_QUEUE_ID = "migrationcsip"
-const val CASENOTES_QUEUE_ID = "migrationcasenotes"
 const val COURT_SENTENCING_QUEUE_ID = "migrationcourtsentencing"
 const val PERSONALRELATIONSHIPS_QUEUE_ID = "migrationpersonalrelationships"
 const val PERSONALRELATIONSHIPS_PROFILEDETAILS_QUEUE_ID = "migrationpersonalrelationshipsprofiledetails"
@@ -58,7 +51,6 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   CORE_PERSON(CORE_PERSON_QUEUE_ID, "coreperson"),
   CSIP(CSIP_QUEUE_ID, "csip"),
   INCIDENTS(INCIDENTS_QUEUE_ID, "incidents"),
-  CASENOTES(CASENOTES_QUEUE_ID, "casenotes"),
   COURT_SENTENCING(COURT_SENTENCING_QUEUE_ID, "court-sentencing"),
   PERSONALRELATIONSHIPS(PERSONALRELATIONSHIPS_QUEUE_ID, "contactperson"),
   PERSONALRELATIONSHIPS_PROFILEDETAIL(PERSONALRELATIONSHIPS_PROFILEDETAILS_QUEUE_ID, "contactperson-profiledetails"),
