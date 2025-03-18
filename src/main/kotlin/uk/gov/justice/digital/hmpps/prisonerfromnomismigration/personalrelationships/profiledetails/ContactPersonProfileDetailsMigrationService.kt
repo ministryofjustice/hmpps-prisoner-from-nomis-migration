@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonProfileDetailsMigrationMappingRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonProfileDetailsMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
@@ -35,7 +35,7 @@ class ContactPersonProfileDetailsMigrationService(
   @Value("\${personalrelationships.profiledetails.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value("\${personalrelationships.profiledetails.complete-check.count:9}") completeCheckCount: Int,
   @Value("\${complete-check.scheduled-retry-seconds:10}") completeCheckScheduledRetrySeconds: Int,
-) : MigrationService<ContactPersonProfileDetailsMigrationFilter, PrisonerId, ContactPersonProfileDetailsMigrationMappingRequest>(
+) : MigrationService<ContactPersonProfileDetailsMigrationFilter, PrisonerId, ContactPersonProfileDetailsMigrationMappingDto>(
   mappingService = migrationMappingService,
   migrationType = MigrationType.PERSONALRELATIONSHIPS_PROFILEDETAIL,
   pageSize = pageSize,
@@ -72,7 +72,7 @@ class ContactPersonProfileDetailsMigrationService(
       dpsApiService.migrateNumberOfChildren(nomisResponse.toMigrateNumberOfChildren(prisonerNumber))
         .let { (listOf(it.current) + it.history).joinToString() }
 
-    val mapping = ContactPersonProfileDetailsMigrationMappingRequest(
+    val mapping = ContactPersonProfileDetailsMigrationMappingDto(
       prisonerNumber,
       migrationId,
       domesticStatusDpsIds,
@@ -84,7 +84,7 @@ class ContactPersonProfileDetailsMigrationService(
     }
   }
 
-  override suspend fun retryCreateMapping(context: MigrationContext<ContactPersonProfileDetailsMigrationMappingRequest>) {
+  override suspend fun retryCreateMapping(context: MigrationContext<ContactPersonProfileDetailsMigrationMappingDto>) {
     createMappingOrOnFailureDo(context.body) {
       throw it
     }
@@ -123,7 +123,7 @@ class ContactPersonProfileDetailsMigrationService(
   )
 
   private suspend fun createMappingOrOnFailureDo(
-    mapping: ContactPersonProfileDetailsMigrationMappingRequest,
+    mapping: ContactPersonProfileDetailsMigrationMappingDto,
     failureHandler: suspend (error: Throwable) -> Unit,
   ) {
     runCatching {
@@ -145,16 +145,16 @@ class ContactPersonProfileDetailsMigrationService(
     }
   }
 
-  private suspend fun createMapping(mapping: ContactPersonProfileDetailsMigrationMappingRequest) {
+  private suspend fun createMapping(mapping: ContactPersonProfileDetailsMigrationMappingDto) {
     migrationMappingService.createMapping(
       mapping,
       object :
-        ParameterizedTypeReference<DuplicateErrorResponse<ContactPersonProfileDetailsMigrationMappingRequest>>() {},
+        ParameterizedTypeReference<DuplicateErrorResponse<ContactPersonProfileDetailsMigrationMappingDto>>() {},
     )
   }
 
   private suspend fun requeueCreateMapping(
-    mapping: ContactPersonProfileDetailsMigrationMappingRequest,
+    mapping: ContactPersonProfileDetailsMigrationMappingDto,
     context: MigrationContext<*>,
   ) {
     queueService.sendMessage(

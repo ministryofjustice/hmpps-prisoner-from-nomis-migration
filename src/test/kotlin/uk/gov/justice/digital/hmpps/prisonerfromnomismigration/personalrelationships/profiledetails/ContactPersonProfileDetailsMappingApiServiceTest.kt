@@ -15,7 +15,7 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonProfileDetailsMigrationMappingRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonProfileDetailsMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonConfiguration
 
 @SpringAPIServiceTest
@@ -34,13 +34,13 @@ class ContactPersonProfileDetailsMappingApiServiceTest {
       mappingApi.stubPutMapping()
 
       apiService.createMapping(
-        ContactPersonProfileDetailsMigrationMappingRequest(
+        ContactPersonProfileDetailsMigrationMappingDto(
           prisonerNumber = "A1234AA",
           migrationId = "label",
           domesticStatusDpsIds = "1,2,3",
           numberOfChildrenDpsIds = "1,2,3",
         ),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<ContactPersonProfileDetailsMigrationMappingRequest>>() {},
+        object : ParameterizedTypeReference<DuplicateErrorResponse<ContactPersonProfileDetailsMigrationMappingDto>>() {},
       )
 
       mappingApi.verify(
@@ -53,13 +53,13 @@ class ContactPersonProfileDetailsMappingApiServiceTest {
       mappingApi.stubPutMapping()
 
       apiService.createMapping(
-        ContactPersonProfileDetailsMigrationMappingRequest(
+        ContactPersonProfileDetailsMigrationMappingDto(
           prisonerNumber = "A1234AA",
           migrationId = "label",
           domesticStatusDpsIds = "1,2,3",
           numberOfChildrenDpsIds = "1,2,3",
         ),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<ContactPersonProfileDetailsMigrationMappingRequest>>() {},
+        object : ParameterizedTypeReference<DuplicateErrorResponse<ContactPersonProfileDetailsMigrationMappingDto>>() {},
       )
 
       mappingApi.verify(
@@ -77,13 +77,13 @@ class ContactPersonProfileDetailsMappingApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.createMapping(
-          ContactPersonProfileDetailsMigrationMappingRequest(
+          ContactPersonProfileDetailsMigrationMappingDto(
             prisonerNumber = "A1234AA",
             migrationId = "label",
             domesticStatusDpsIds = "1,2,3",
             numberOfChildrenDpsIds = "1,2,3",
           ),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<ContactPersonProfileDetailsMigrationMappingRequest>>() {},
+          object : ParameterizedTypeReference<DuplicateErrorResponse<ContactPersonProfileDetailsMigrationMappingDto>>() {},
         )
       }
     }
