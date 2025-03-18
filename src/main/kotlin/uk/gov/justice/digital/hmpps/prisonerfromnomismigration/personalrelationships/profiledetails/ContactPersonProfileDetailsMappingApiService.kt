@@ -10,21 +10,21 @@ import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonProfileDetailsMigrationMappingRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonProfileDetailsMigrationMappingDto
 
 @Service
-class ContactPersonProfileDetailsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<ContactPersonProfileDetailsMigrationMappingRequest>(domainUrl = "/mapping/contact-person/profile-details/migration", webClient) {
+class ContactPersonProfileDetailsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<ContactPersonProfileDetailsMigrationMappingDto>(domainUrl = "/mapping/contact-person/profile-details/migration", webClient) {
   override suspend fun createMapping(
-    mapping: ContactPersonProfileDetailsMigrationMappingRequest,
-    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<ContactPersonProfileDetailsMigrationMappingRequest>>,
-  ): CreateMappingResult<ContactPersonProfileDetailsMigrationMappingRequest> = webClient.put()
+    mapping: ContactPersonProfileDetailsMigrationMappingDto,
+    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<ContactPersonProfileDetailsMigrationMappingDto>>,
+  ): CreateMappingResult<ContactPersonProfileDetailsMigrationMappingDto> = webClient.put()
     .uri(createMappingUrl())
     .bodyValue(
       mapping,
     )
     .retrieve()
     .bodyToMono(Unit::class.java)
-    .map { CreateMappingResult<ContactPersonProfileDetailsMigrationMappingRequest>() }
+    .map { CreateMappingResult<ContactPersonProfileDetailsMigrationMappingDto>() }
     .onErrorResume(WebClientResponseException.Conflict::class.java) {
       Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
     }

@@ -8,7 +8,7 @@ import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonProfileDetailsMigrationMappingRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonProfileDetailsMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture
 class ContactPersonProfileDetailsMigrationMessageListener(
   objectMapper: ObjectMapper,
   migrationService: ContactPersonProfileDetailsMigrationService,
-) : MigrationMessageListener<ContactPersonProfileDetailsMigrationFilter, PrisonerId, PrisonerProfileDetailsResponse, ContactPersonProfileDetailsMigrationMappingRequest>(
+) : MigrationMessageListener<ContactPersonProfileDetailsMigrationFilter, PrisonerId, PrisonerProfileDetailsResponse, ContactPersonProfileDetailsMigrationMappingDto>(
   objectMapper,
   migrationService,
 ) {
@@ -40,5 +40,5 @@ class ContactPersonProfileDetailsMigrationMessageListener(
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = objectMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, ContactPersonProfileDetailsMigrationMappingRequest> = objectMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, ContactPersonProfileDetailsMigrationMappingDto> = objectMapper.readValue(json)
 }
