@@ -5,7 +5,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerReceiveDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.doesOriginateInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
@@ -870,6 +872,12 @@ class ContactPersonSynchronisationService(
       ),
       telemetry = telemetry,
     )
+  }
+  suspend fun prisonerBookingMoved(prisonerBookingMovedEvent: PrisonerBookingMovedDomainEvent) {
+    log.info("TODO: prisonerBookingMoved {}", prisonerBookingMovedEvent)
+  }
+  suspend fun resetPrisonerContactsForAdmission(prisonerReceivedEvent: PrisonerReceiveDomainEvent) {
+    log.info("TODO: resetPrisonerContactsForAdmission {}", prisonerReceivedEvent)
   }
 
   private suspend fun tryToCreateMapping(

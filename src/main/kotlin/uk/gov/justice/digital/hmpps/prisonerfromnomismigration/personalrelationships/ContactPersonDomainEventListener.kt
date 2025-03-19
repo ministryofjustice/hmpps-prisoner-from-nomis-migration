@@ -33,6 +33,8 @@ class ContactPersonDomainEventListener(
           if (eventFeatureSwitch.isEnabled(eventType, "personcontacts")) {
             when (eventType) {
               "prison-offender-events.prisoner.merged" -> service.prisonerMerged(sqsMessage.Message.fromJson())
+              "prison-offender-events.prisoner.booking.moved" -> service.prisonerBookingMoved(sqsMessage.Message.fromJson())
+              "prisoner-offender-search.prisoner.received" -> service.resetPrisonerContactsForAdmission(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
