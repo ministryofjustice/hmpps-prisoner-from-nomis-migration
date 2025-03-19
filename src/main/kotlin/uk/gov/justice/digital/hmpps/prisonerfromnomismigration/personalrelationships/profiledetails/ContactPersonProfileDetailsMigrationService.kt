@@ -62,25 +62,38 @@ class ContactPersonProfileDetailsMigrationService(
     val prisonerNumber = context.body.offenderNo
     val migrationId = context.migrationId
 
-    val nomisResponse = nomisApiService.getProfileDetails(prisonerNumber, ContactPersonProfileType.all())
+    runCatching {
+      val nomisResponse = nomisApiService.getProfileDetails(prisonerNumber, ContactPersonProfileType.all())
 
-    val domesticStatusDpsIds =
-      dpsApiService.migrateDomesticStatus(nomisResponse.toMigrateDomesticStatus(prisonerNumber))
-        .let { (listOf(it.current) + it.history).joinToString() }
+      val domesticStatusDpsIds =
+        dpsApiService.migrateDomesticStatus(nomisResponse.toMigrateDomesticStatus(prisonerNumber))
+          .let { (listOf(it.current) + it.history).joinToString() }
 
-    val numberOfChildrenDpsIds =
-      dpsApiService.migrateNumberOfChildren(nomisResponse.toMigrateNumberOfChildren(prisonerNumber))
-        .let { (listOf(it.current) + it.history).joinToString() }
+      val numberOfChildrenDpsIds =
+        dpsApiService.migrateNumberOfChildren(nomisResponse.toMigrateNumberOfChildren(prisonerNumber))
+          .let { (listOf(it.current) + it.history).joinToString() }
 
-    val mapping = ContactPersonProfileDetailsMigrationMappingDto(
-      prisonerNumber,
-      migrationId,
-      domesticStatusDpsIds,
-      numberOfChildrenDpsIds,
-    )
+      val mapping = ContactPersonProfileDetailsMigrationMappingDto(
+        prisonerNumber,
+        migrationId,
+        domesticStatusDpsIds,
+        numberOfChildrenDpsIds,
+      )
 
-    createMappingOrOnFailureDo(mapping) {
-      requeueCreateMapping(mapping, context)
+      createMappingOrOnFailureDo(mapping) {
+        requeueCreateMapping(mapping, context)
+      }
+    }.onFailure {
+      telemetryClient.trackEvent(
+        "contactperson-profiledetails-migration-entity-failed",
+        mapOf(
+          "offenderNo" to prisonerNumber,
+          "migrationId" to migrationId,
+          "reason" to "${it.message}",
+        ),
+        null,
+      )
+      throw it
     }
   }
 
