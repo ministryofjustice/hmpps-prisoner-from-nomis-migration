@@ -138,3 +138,5 @@ hmpps.sqs:
       dlqMaxReceiveCount: 1
     domaineventpersonalrelationships:
       dlqMaxReceiveCount: 1
+    migrationpersonalrelationshipsprofiledetails:
+      dlqMaxReceiveCount: 1
