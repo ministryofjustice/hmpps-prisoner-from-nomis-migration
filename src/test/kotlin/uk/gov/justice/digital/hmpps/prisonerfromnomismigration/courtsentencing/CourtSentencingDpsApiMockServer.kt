@@ -336,5 +336,5 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createCourtCaseMigrationCount() = findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/court-case/migration"))).count()
+  fun createCourtCaseByOffenderMigrationCount() = findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/court-case/migration"))).count()
 }

@@ -5,9 +5,12 @@ import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Schema(description = "Filter specifying what should be migrated from NOMIS to DPS")
+@Schema(description = "Filter to allow initial migration testing with 1 offender")
 data class CourtSentencingMigrationFilter(
 
+  val offenderNo: String? = null,
+
+  // only offender no is used to filter - TODO remove dates
   @Schema(
     description = "Only include court cases created on or after this date",
     example = "2020-03-23",

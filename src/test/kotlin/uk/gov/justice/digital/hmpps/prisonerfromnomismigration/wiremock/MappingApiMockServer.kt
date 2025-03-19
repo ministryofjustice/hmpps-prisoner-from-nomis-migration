@@ -585,7 +585,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubMappingCreateFailureFollowedBySuccess(url: String) {
     stubFor(
-      post(urlPathEqualTo(url))
+      post(urlPathMatching(url))
         .inScenario("Retry create Scenario")
         .whenScenarioStateIs(STARTED)
         .willReturn(
@@ -597,7 +597,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
 
     stubFor(
-      post(urlPathEqualTo(url))
+      post(urlPathMatching(url))
         .inScenario("Retry create Scenario")
         .whenScenarioStateIs("Cause create Success")
         .willReturn(created())

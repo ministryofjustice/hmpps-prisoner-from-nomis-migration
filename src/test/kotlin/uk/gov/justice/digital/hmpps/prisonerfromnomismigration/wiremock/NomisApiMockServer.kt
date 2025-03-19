@@ -33,7 +33,7 @@ class NomisApiExtension :
     const val APPOINTMENTS_ID_URL = "/appointments/ids"
     const val ACTIVITIES_ID_URL = "/activities/ids"
     const val ALLOCATIONS_ID_URL = "/allocations/ids"
-    const val COURT_CASES_ID_URL = "/court-cases/ids"
+    const val COURT_SENTENCING_PRISONER_IDS = "/prisoners/ids/all"
 
     @JvmField
     val nomisApi = NomisApiMockServer()
