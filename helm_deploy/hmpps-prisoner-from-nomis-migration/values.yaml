@@ -176,6 +176,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTORGANISATIONS_QUEUE_NAME: "sqs_name"
     prison-events-organisations-dl-queue:
       HMPPS_SQS_QUEUES_EVENTORGANISATIONS_DLQ_NAME: "sqs_name"
+    prison-events-visitbalance-queue:
+      HMPPS_SQS_QUEUES_EVENTVISITBALANCE_QUEUE_NAME: "sqs_name"
+    prison-events-visitbalance-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTVISITBALANCE_DLQ_NAME: "sqs_name"
     rds-database:
       SPRING_FLYWAY_USER: "database_username"
       SPRING_FLYWAY_PASSWORD: "database_password"

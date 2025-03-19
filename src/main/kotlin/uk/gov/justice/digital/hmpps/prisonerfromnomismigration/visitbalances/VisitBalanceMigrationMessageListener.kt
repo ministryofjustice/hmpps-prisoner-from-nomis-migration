@@ -31,7 +31,7 @@ class VisitBalanceMigrationMessageListener(
     maxConcurrentMessages = "8",
     maxMessagesPerPoll = "8",
   )
-  @WithSpan(value = "dps-syscon-migration_visitorders_queue", kind = SpanKind.SERVER)
+  @WithSpan(value = "dps-syscon-migration_visitbalance_queue", kind = SpanKind.SERVER)
   fun onVisitBalanceMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
 
   override fun parseContextFilter(json: String): MigrationMessage<*, VisitBalanceMigrationFilter> = objectMapper.readValue(json)

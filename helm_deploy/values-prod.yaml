@@ -71,6 +71,9 @@ generic-service:
     FEATURE_EVENT_PERSONALRELATIONSHIPS_OFFENDER_PHYSICAL_DETAILS-CHANGED: false
     FEATURE_EVENT_PERSONALRELATIONSHIPS_PRISON-OFFENDER-EVENTS_PRISONER_BOOKING_MOVED: false
     FEATURE_EVENT_PERSONCONTACTS_PRISON-OFFENDER-EVENTS_PRISONER_MERGED: false
+    FEATURE_EVENT_OFFENDER_VISIT_BALANCE_ADJS-INSERTED: false
+    FEATURE_EVENT_OFFENDER_VISIT_BALANCE_ADJS-UPDATED: false
+    FEATURE_EVENT_OFFENDER_VISIT_BALANCE_ADJS-DELETED: false
 
 generic-prometheus-alerts:
   rdsAlertsDatabases:
@@ -144,3 +147,5 @@ generic-prometheus-alerts:
     visitbalance:
       - "syscon-devs-prod-migration_visitbalance_queue"
       - "syscon-devs-prod-migration_visitbalance_dlq"
+      - "syscon-devs-prod-prisoner_from_nomis_visitbalance_queue"
+      - "syscon-devs-prod-prisoner_from_nomis_visitbalance_dl_queue"

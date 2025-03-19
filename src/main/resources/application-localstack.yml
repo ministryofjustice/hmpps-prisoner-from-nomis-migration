@@ -80,3 +80,6 @@ hmpps.sqs:
     eventorganisations:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventvisitbalance:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}

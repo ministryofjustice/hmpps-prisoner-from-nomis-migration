@@ -109,6 +109,8 @@ generic-prometheus-alerts:
     visitbalance:
       - "syscon-devs-dev-migration_visitbalance_queue"
       - "syscon-devs-dev-migration_visitbalance_dlq"
+      - "syscon-devs-dev-prisoner_from_nomis_visitbalance_queue"
+      - "syscon-devs-dev-prisoner_from_nomis_visitbalance_dl_queue"
 
 cron:
   retry_dlqs_schedule: "*/10 7-20 * * 1-5"
