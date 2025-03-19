@@ -5531,12 +5531,12 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will replace the contacts in DPS`() {
-        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact/merge")))
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/admin/merge")))
       }
 
       @Test
       fun `all contacts will be sent to DPS along with the prisoner numbers merged`() {
-        val request: MergePrisonerContactRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact/merge")))
+        val request: MergePrisonerContactRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/admin/merge")))
         assertThat(request.removedPrisonerNumber).isEqualTo(offenderNumberRemoved)
         assertThat(request.retainedPrisonerNumber).isEqualTo(offenderNumberRetained)
         assertThat(request.prisonerContacts).hasSize(2)
@@ -5633,7 +5633,7 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will replace the contacts in DPS once `() {
-        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/prisoner-contact/merge")))
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/admin/merge")))
       }
 
       @Test
