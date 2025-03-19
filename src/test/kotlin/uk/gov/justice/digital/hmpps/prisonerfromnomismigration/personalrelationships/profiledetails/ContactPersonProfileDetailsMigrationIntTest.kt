@@ -24,6 +24,8 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
@@ -415,6 +417,51 @@ class ContactPersonProfileDetailsMigrationIntTest(
             .jsonPath("$.migrationId").isEqualTo(migrationId)
             .jsonPath("$.status").isEqualTo("CANCELLED")
         }
+      }
+    }
+
+    @Nested
+    inner class FailureTelemetry {
+      @Test
+      fun `will publish failure telemetry where NOMIS get fails`() {
+        stubMigrationDependencies(1)
+        nomisProfileDetailsApi.stubGetProfileDetails("A0001KT", NOT_FOUND)
+        migrationId = performMigration()
+
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-profiledetails-migration-entity-failed"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "offenderNo" to "A0001KT",
+                "migrationId" to migrationId,
+                "reason" to "404 Not Found from GET http://localhost:8081/prisoners/A0001KT/profile-details",
+              ),
+            )
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will publish failure telemetry where DPS update fails`() {
+        stubMigrationDependencies(1)
+        dpsApi.stubMigrateDomesticStatus(BAD_REQUEST)
+        migrationId = performMigration()
+
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-profiledetails-migration-entity-failed"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "offenderNo" to "A0001KT",
+                "migrationId" to migrationId,
+                "reason" to "400 Bad Request from POST http://localhost:8097/migrate/domestic-status",
+              ),
+            )
+          },
+          isNull(),
+        )
       }
     }
   }
