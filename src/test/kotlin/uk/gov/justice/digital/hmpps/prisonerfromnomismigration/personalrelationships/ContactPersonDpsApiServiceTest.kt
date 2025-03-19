@@ -26,6 +26,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createPrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.mergePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.migrateContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.resetPrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactEmailRequest
@@ -994,7 +995,33 @@ class ContactPersonDpsApiServiceTest {
       apiService.replaceMergedPrisonerContacts(mergePrisonerContactRequest = mergePrisonerContactRequest())
 
       dpsContactPersonServer.verify(
-        postRequestedFor(urlPathEqualTo("/sync/prisoner-contact/merge")),
+        postRequestedFor(urlPathEqualTo("/sync/admin/merge")),
+      )
+    }
+  }
+
+  @Nested
+  inner class ResetPrisonerContacts {
+    @Test
+    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+      dpsContactPersonServer.stubResetPrisonerContacts()
+
+      apiService.resetPrisonerContacts(resetPrisonerContactRequest = resetPrisonerContactRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the replace endpoint`() = runTest {
+      dpsContactPersonServer.stubResetPrisonerContacts()
+
+      apiService.resetPrisonerContacts(resetPrisonerContactRequest = resetPrisonerContactRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/sync/admin/reset")),
       )
     }
   }

@@ -24,6 +24,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerContactAndRestrictionIds
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddressPhone
@@ -128,6 +130,22 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
 
     fun mergePrisonerContactResponse() = MergePrisonerContactResponse(
+      relationshipsCreated = listOf(
+        PrisonerContactAndRestrictionIds(
+          contactId = 1234567,
+          relationship = IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT, nomisId = 12345, dpsId = 1234567),
+          restrictions = listOf(IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT_RESTRICTION, nomisId = 12345, dpsId = 1234567)),
+        ),
+      ),
+      relationshipsRemoved = listOf(),
+    )
+
+    fun resetPrisonerContactRequest() = ResetPrisonerContactRequest(
+      prisonerContacts = listOf(syncPrisonerRelationship()),
+      prisonerNumber = "A1234KT",
+    )
+
+    fun resetPrisonerContactResponse() = ResetPrisonerContactResponse(
       relationshipsCreated = listOf(
         PrisonerContactAndRestrictionIds(
           contactId = 1234567,
@@ -806,7 +824,18 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
   fun stubReplaceMergedPrisonerContacts(response: MergePrisonerContactResponse = mergePrisonerContactResponse()) {
     stubFor(
-      post("/sync/prisoner-contact/merge")
+      post("/sync/admin/merge")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+  fun stubResetPrisonerContacts(response: ResetPrisonerContactResponse = resetPrisonerContactResponse()) {
+    stubFor(
+      post("/sync/admin/reset")
         .willReturn(
           aResponse()
             .withStatus(200)
