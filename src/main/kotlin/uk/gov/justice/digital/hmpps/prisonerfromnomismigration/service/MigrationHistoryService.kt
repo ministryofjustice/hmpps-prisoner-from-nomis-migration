@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.CANCELLED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.CANCELLED_REQUESTED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.STARTED
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import java.time.LocalDateTime
@@ -127,6 +128,14 @@ class MigrationHistoryService(
       GetQueueAttributesRequest.builder().queueUrl(this.dlqUrl).attributeNames(QueueAttributeName.ALL).build(),
     ).await()
   }
+
+  suspend fun isMigrationInProgress(type: MigrationType): Boolean {
+    val migrationProperties = migrationHistoryRepository.findFirstByMigrationTypeOrderByWhenStartedDesc(type)
+    return when (migrationProperties?.status) {
+      STARTED, CANCELLED_REQUESTED -> true
+      else -> false
+    }
+  }
 }
 
 enum class MigrationStatus {
@@ -137,6 +146,7 @@ enum class MigrationStatus {
 }
 
 class NotFoundException(message: String) : RuntimeException(message)
+class MigrationAlreadyInProgressException(message: String) : RuntimeException(message)
 
 data class InProgressMigration(
   val recordsMigrated: Long? = null,

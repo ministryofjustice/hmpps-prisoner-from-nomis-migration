@@ -41,6 +41,11 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
   suspend fun getMigrationCount(migrationId: String): Long = mappingService.getMigrationCount(migrationId)
 
   suspend fun startMigration(migrationFilter: FILTER): MigrationContext<FILTER> {
+    // ensure that we aren't in the middle of a migration already
+    if (migrationHistoryService.isMigrationInProgress(migrationType)) {
+      throw MigrationAlreadyInProgressException("Migration already in progress for $migrationFilter")
+    }
+
     val count = getIds(
       migrationFilter,
       pageSize = 1,
