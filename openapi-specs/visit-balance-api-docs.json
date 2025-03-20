@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-03-12.192.5791055"
+    "version" : "2025-03-19.216.a03be49"
   },
   "servers" : [ {
     "url" : "https://hmpps-visit-allocation-api-dev.prison.service.justice.gov.uk",
@@ -103,7 +103,7 @@
     },
     "/visits/allocation/prisoner/sync" : {
       "post" : {
-        "tags" : [ "nomis-sync-controller" ],
+        "tags" : [ "nomis-controller" ],
         "summary" : "Endpoint to sync ongoing changes to prisoner VO / PVO balances from NOMIS to DPS.",
         "description" : "Takes a set of changes to a prisoners and syncs them onto DPS.",
         "operationId" : "syncPrisonerVisitOrders",
@@ -146,7 +146,7 @@
     },
     "/visits/allocation/prisoner/migrate" : {
       "post" : {
-        "tags" : [ "nomis-sync-controller" ],
+        "tags" : [ "nomis-controller" ],
         "summary" : "Endpoint to migrate prisoner VO / PVO balances from NOMIS to DPS.",
         "description" : "Takes a prisoner and 'onboards' them onto DPS, syncing their balance with NOMIS.",
         "operationId" : "migratePrisonerVisitOrders",
@@ -363,7 +363,7 @@
             "example" : "Manually adjusted for phone credit"
           }
         },
-        "required" : [ "adjustmentReasonCode", "changeLogSource", "changeToPvoBalance", "changeToVoBalance", "comment", "createdDate", "oldPvoBalance", "oldVoBalance", "prisonerId" ]
+        "required" : [ "adjustmentReasonCode", "changeLogSource", "comment", "createdDate", "oldPvoBalance", "oldVoBalance", "prisonerId" ]
       },
       "VisitAllocationPrisonerMigrationDto" : {
         "type" : "object",
