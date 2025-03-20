@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerVisitBalanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
 
@@ -12,6 +13,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestRespo
 class VisitBalanceNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
   suspend fun getVisitBalance(visitBalanceId: Long): PrisonerVisitBalanceResponse = webClient.get()
     .uri("/visit-balances/{visitBalanceId}", visitBalanceId)
+    .retrieve()
+    .awaitBody()
+
+  suspend fun getVisitBalanceAdjustment(visitBalanceAdjustmentId: Long): VisitBalanceAdjustmentResponse = webClient.get()
+    .uri("/visit-balances/visit-balance-adjustment/{visitBalanceAdjustmentId}", visitBalanceAdjustmentId)
     .retrieve()
     .awaitBody()
 

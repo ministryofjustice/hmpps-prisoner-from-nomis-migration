@@ -72,6 +72,17 @@ class VisitBalanceDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubSyncVisitBalance() {
+    stubFor(
+      post("/visits/allocation/prisoner/sync")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
   fun stubHealthPing(status: Int) {
     stubFor(
       get("/health/ping").willReturn(
