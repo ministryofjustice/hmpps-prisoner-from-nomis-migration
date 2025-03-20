@@ -9,7 +9,9 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerVisitBalanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -73,6 +75,22 @@ class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubGetVisitBalanceAdjustment(
+    nomisVisitBalanceAdjustmentId: Long = 12345L,
+    visitBalanceAdjustment: VisitBalanceAdjustmentResponse = visitBalanceAdjustment(),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/visit-balances/visit-balance-adjustment/$nomisVisitBalanceAdjustmentId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(
+            objectMapper.writeValueAsString(visitBalanceAdjustment),
+          ),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
@@ -82,4 +100,22 @@ fun visitBalance(prisonNumber: String = "A1234BC"): PrisonerVisitBalanceResponse
   remainingPrivilegedVisitOrders = 2,
   remainingVisitOrders = 3,
   lastIEPAllocationDate = LocalDate.parse("2020-01-01"),
+)
+
+fun visitBalanceAdjustment(): VisitBalanceAdjustmentResponse = VisitBalanceAdjustmentResponse(
+  adjustmentReason = CodeDescription(
+    code = "IEP",
+    description = "Incentive Earned Privilege",
+  ),
+  adjustmentDate = LocalDate.parse("2025-01-01"),
+  createUsername = "FRED_ADM",
+  visitOrderChange = 2,
+  previousVisitOrderCount = 12,
+  privilegedVisitOrderChange = 1,
+  previousPrivilegedVisitOrderCount = 4,
+  comment = "Some comment",
+  expiryBalance = 5,
+  expiryDate = LocalDate.parse("2025-08-01"),
+  endorsedStaffId = 1234,
+  authorisedStaffId = 5432,
 )

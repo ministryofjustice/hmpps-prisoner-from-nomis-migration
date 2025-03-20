@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerMigrationDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncDto
 
 @Service
 class VisitBalanceDpsApiService(@Qualifier("visitBalanceApiWebClient") private val webClient: WebClient) {
@@ -12,6 +13,14 @@ class VisitBalanceDpsApiService(@Qualifier("visitBalanceApiWebClient") private v
     webClient.post()
       .uri("/visits/allocation/prisoner/migrate")
       .bodyValue(visitBalanceMigrateDto)
+      .retrieve()
+      .awaitBodilessEntityOrLogAndRethrowBadRequest()
+  }
+
+  suspend fun syncVisitBalance(visitBalanceSyncDto: VisitAllocationPrisonerSyncDto) {
+    webClient.post()
+      .uri("/visits/allocation/prisoner/sync")
+      .bodyValue(visitBalanceSyncDto)
       .retrieve()
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
   }

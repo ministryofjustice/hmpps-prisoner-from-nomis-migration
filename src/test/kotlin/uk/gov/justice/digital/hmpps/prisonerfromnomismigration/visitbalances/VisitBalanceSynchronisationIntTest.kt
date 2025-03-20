@@ -1,5 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances
 
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -9,10 +12,17 @@ import org.mockito.Mockito.eq
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
+import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiExtension.Companion.dpsVisitBalanceServer
 
 class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
+  @Autowired
+  private lateinit var nomisApiMock: VisitBalanceNomisApiMockServer
+
+  private val dpsApiMock = dpsVisitBalanceServer
 
   @Nested
   @DisplayName("OFFENDER_VISIT_BALANCE_ADJS-INSERTED")
@@ -34,12 +44,22 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
+      fun `will not make a call to Nomis`() {
+        nomisApiMock.verify(0, getRequestedFor(urlPathEqualTo("/visit-balances/visit-balance-adjustment/$visitBalanceAdjId")))
+      }
+
+      @Test
+      fun `will not update in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
+      }
+
+      @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("visitbalance-adjustment-synchronisation-inserted-notimplemented"),
+          eq("visitbalance-adjustment-synchronisation-created-skipped"),
           check {
             assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber.toString())
+            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
           },
           isNull(),
         )
@@ -50,6 +70,9 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenCreatedInNomis {
       @BeforeEach
       fun setUp() {
+        nomisApiMock.stubGetVisitBalanceAdjustment(visitBalanceAdjId)
+        dpsApiMock.stubSyncVisitBalance()
+
         visitBalanceOffenderEventsQueue.sendMessage(
           visitBalanceAdjustmentEvent(
             eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
@@ -59,12 +82,36 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
+      fun `will retrieve the adjustment details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/visit-balances/visit-balance-adjustment/$visitBalanceAdjId")))
+      }
+
+      @Test
+      fun `will create the adjustment in DPS`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
+        val request: VisitAllocationPrisonerSyncDto = VisitBalanceDpsApiExtension.getRequestBody(
+          postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")),
+        )
+        with(request) {
+          assertThat(prisonerId).isEqualTo(nomisPrisonNumber)
+          assertThat(oldVoBalance).isEqualTo(12)
+          assertThat(changeToVoBalance).isEqualTo(2)
+          assertThat(oldPvoBalance).isEqualTo(4)
+          assertThat(changeToPvoBalance).isEqualTo(1)
+          assertThat(comment).isEqualTo("Some comment")
+          assertThat(adjustmentReasonCode.value).isEqualTo("IEP")
+          assertThat(changeLogSource.value).isEqualTo("STAFF")
+          assertThat(createdDate).isEqualTo("2025-01-01")
+        }
+      }
+
+      @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("visitbalance-adjustment-synchronisation-inserted-notimplemented"),
+          eq("visitbalance-adjustment-synchronisation-created-success"),
           check {
             assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber.toString())
+            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
           },
           isNull(),
         )
@@ -97,7 +144,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           eq("visitbalance-adjustment-synchronisation-updated-notimplemented"),
           check {
             assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber.toString())
+            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
           },
           isNull(),
         )
@@ -126,7 +173,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           eq("visitbalance-adjustment-synchronisation-updated-notimplemented"),
           check {
             assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(nomisVisitBalanceAdjId.toString())
-            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber.toString())
+            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
           },
           isNull(),
         )
@@ -159,7 +206,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           eq("visitbalance-adjustment-synchronisation-deleted-notimplemented"),
           check {
             assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(nomisVisitBalanceAdjId.toString())
-            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber.toString())
+            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
           },
           isNull(),
         )
