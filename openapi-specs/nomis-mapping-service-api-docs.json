@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-03-18.6171.e50a28f"
+    "version" : "2025-03-19.6190.66542c8"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -11539,6 +11539,58 @@
         }
       }
     },
+    "/mapping/casenotes/{offenderNo}/all" : {
+      "get" : {
+        "tags" : [ "case-notes-mapping-resource" ],
+        "summary" : "Gets all case note mappings for a prisoner",
+        "description" : "Gets all the mapping between nomis case note ids and dps case note id related to specific prisoner created either via migration or synchronisation. Requires ROLE_NOMIS_ALERTS",
+        "operationId" : "getMappingsForPrisoner_1",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "description" : "NOMIS offender no",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "NOMIS offender no",
+            "example" : "A1234KT"
+          },
+          "example" : "A1234KT"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Mappings for prisoner",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AllPrisonerCaseNoteMappingsDto"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Access forbidden for this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/casenotes/nomis-casenote-id/{caseNoteId}" : {
       "get" : {
         "tags" : [ "case-notes-mapping-resource" ],
@@ -16698,6 +16750,20 @@
             "type" : "boolean"
           }
         }
+      },
+      "AllPrisonerCaseNoteMappingsDto" : {
+        "type" : "object",
+        "description" : "All mappings for a prisoner created either via migration or synchronisation",
+        "properties" : {
+          "mappings" : {
+            "type" : "array",
+            "description" : "Mappings",
+            "items" : {
+              "$ref" : "#/components/schemas/CaseNoteMappingDto"
+            }
+          }
+        },
+        "required" : [ "mappings" ]
       },
       "AllPrisonerAlertMappingsDto" : {
         "type" : "object",
