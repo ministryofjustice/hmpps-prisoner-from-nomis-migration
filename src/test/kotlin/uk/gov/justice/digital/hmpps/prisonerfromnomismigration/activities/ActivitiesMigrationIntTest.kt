@@ -3,6 +3,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
@@ -21,6 +22,7 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserters
@@ -241,6 +243,122 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
       // doesn't retry
       mappingApi.verifyCreateActivityMappings(1, times = 1)
+    }
+
+    @Nested
+    inner class PreventMultipleMigrations {
+      @Test
+      fun `will not run a new migration if existing is in progress`() {
+        runBlocking {
+          migrationHistoryRepository.save(
+            MigrationHistory(
+              migrationId = "2020-01-01T00:00:00",
+              whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+              whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+              status = MigrationStatus.STARTED,
+              estimatedRecordCount = 123_567,
+              filter = "",
+              recordsMigrated = 123_560,
+              recordsFailed = 7,
+              migrationType = MigrationType.ACTIVITIES,
+            ),
+          )
+        }
+        webTestClient.post().uri("/migrate/activities")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+          .header("Content-Type", "application/json")
+          .body(BodyInserters.fromValue("""{ "prisonId": "BXI" }"""))
+          .exchange()
+          .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+      }
+
+      @Test
+      fun `will not run a new migration if existing is being cancelled`() {
+        runBlocking {
+          migrationHistoryRepository.save(
+            MigrationHistory(
+              migrationId = "2020-01-01T00:00:00",
+              whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+              whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+              status = MigrationStatus.CANCELLED_REQUESTED,
+              estimatedRecordCount = 123_567,
+              filter = "",
+              recordsMigrated = 123_560,
+              recordsFailed = 7,
+              migrationType = MigrationType.ACTIVITIES,
+            ),
+          )
+        }
+        webTestClient.post().uri("/migrate/activities")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+          .header("Content-Type", "application/json")
+          .body(BodyInserters.fromValue("""{ "prisonId": "BXI" }"""))
+          .exchange()
+          .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+      }
+
+      @Test
+      fun `will run a new migration if existing is completed`() {
+        runBlocking {
+          migrationHistoryRepository.save(
+            MigrationHistory(
+              migrationId = "2020-01-01T00:00:00",
+              whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+              whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+              status = MigrationStatus.COMPLETED,
+              estimatedRecordCount = 123_567,
+              filter = "",
+              recordsMigrated = 123_560,
+              recordsFailed = 7,
+              migrationType = MigrationType.ACTIVITIES,
+            ),
+          )
+        }
+        stubMigrationDependencies()
+        webTestClient.performMigration()
+      }
+
+      @Test
+      fun `will run a new migration if existing is cancelled`() {
+        runBlocking {
+          migrationHistoryRepository.save(
+            MigrationHistory(
+              migrationId = "2020-01-01T00:00:00",
+              whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+              whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+              status = MigrationStatus.CANCELLED,
+              estimatedRecordCount = 123_567,
+              filter = "",
+              recordsMigrated = 123_560,
+              recordsFailed = 7,
+              migrationType = MigrationType.ACTIVITIES,
+            ),
+          )
+        }
+        stubMigrationDependencies()
+        webTestClient.performMigration()
+      }
+
+      @Test
+      fun `will run a new migration if a different migration type has started`() {
+        runBlocking {
+          migrationHistoryRepository.save(
+            MigrationHistory(
+              migrationId = "2020-01-01T00:00:00",
+              whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+              whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+              status = MigrationStatus.STARTED,
+              estimatedRecordCount = 123_567,
+              filter = "",
+              recordsMigrated = 123_560,
+              recordsFailed = 7,
+              migrationType = MigrationType.VISIT_BALANCE,
+            ),
+          )
+        }
+        stubMigrationDependencies()
+        webTestClient.performMigration()
+      }
     }
   }
 

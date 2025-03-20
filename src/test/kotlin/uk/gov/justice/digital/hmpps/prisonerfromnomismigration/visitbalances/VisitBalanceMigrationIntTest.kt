@@ -23,6 +23,7 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
@@ -439,6 +440,152 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
           .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
           .jsonPath("$.status").isEqualTo("COMPLETED")
           .jsonPath("$.recordsMigrated").isEqualTo("0")
+      }
+    }
+
+    @Nested
+    inner class PreventMultipleMigrations {
+      @Test
+      fun `will not run a new migration if existing is in progress`() {
+        runBlocking {
+          migrationHistoryRepository.save(
+            MigrationHistory(
+              migrationId = "2020-01-01T00:00:00",
+              whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+              whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+              status = MigrationStatus.STARTED,
+              estimatedRecordCount = 123_567,
+              filter = "",
+              recordsMigrated = 123_560,
+              recordsFailed = 7,
+              migrationType = MigrationType.VISIT_BALANCE,
+            ),
+          )
+        }
+        webTestClient.post().uri("/migrate/visit-balance")
+          .headers(setAuthorisation(roles = listOf("MIGRATE_VISIT_BALANCE")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(VisitBalanceMigrationFilter())
+          .exchange()
+          .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+      }
+
+      @Test
+      fun `will not run a new migration if existing is being cancelled`() {
+        runBlocking {
+          migrationHistoryRepository.save(
+            MigrationHistory(
+              migrationId = "2020-01-01T00:00:00",
+              whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+              whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+              status = MigrationStatus.CANCELLED_REQUESTED,
+              estimatedRecordCount = 123_567,
+              filter = "",
+              recordsMigrated = 123_560,
+              recordsFailed = 7,
+              migrationType = MigrationType.VISIT_BALANCE,
+            ),
+          )
+        }
+        webTestClient.post().uri("/migrate/visit-balance")
+          .headers(setAuthorisation(roles = listOf("MIGRATE_VISIT_BALANCE")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(VisitBalanceMigrationFilter())
+          .exchange()
+          .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+      }
+
+      @Test
+      fun `will run a new migration if existing is completed`() {
+        runBlocking {
+          migrationHistoryRepository.save(
+            MigrationHistory(
+              migrationId = "2020-01-01T00:00:00",
+              whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+              whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+              status = MigrationStatus.COMPLETED,
+              estimatedRecordCount = 123_567,
+              filter = "",
+              recordsMigrated = 123_560,
+              recordsFailed = 7,
+              migrationType = MigrationType.VISIT_BALANCE,
+            ),
+          )
+        }
+        nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 1, pageSize = 10, firstVisitBalanceId = 10000)
+        mappingApiMock.stubGetByNomisIdOrNull(
+          nomisVisitBalanceId = 10000,
+          mapping = VisitBalanceMappingDto(
+            dpsId = "A0001BC",
+            nomisVisitBalanceId = 10000,
+            mappingType = MIGRATED,
+            label = "2020-01-01T00:00:00",
+          ),
+        )
+        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        performMigration()
+      }
+
+      @Test
+      fun `will run a new migration if existing is cancelled`() {
+        runBlocking {
+          migrationHistoryRepository.save(
+            MigrationHistory(
+              migrationId = "2020-01-01T00:00:00",
+              whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+              whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+              status = MigrationStatus.CANCELLED,
+              estimatedRecordCount = 123_567,
+              filter = "",
+              recordsMigrated = 123_560,
+              recordsFailed = 7,
+              migrationType = MigrationType.VISIT_BALANCE,
+            ),
+          )
+        }
+        nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 1, pageSize = 10, firstVisitBalanceId = 10000)
+        mappingApiMock.stubGetByNomisIdOrNull(
+          nomisVisitBalanceId = 10000,
+          mapping = VisitBalanceMappingDto(
+            dpsId = "A0001BC",
+            nomisVisitBalanceId = 10000,
+            mappingType = MIGRATED,
+            label = "2020-01-01T00:00:00",
+          ),
+        )
+        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        performMigration()
+      }
+
+      @Test
+      fun `will run a new migration if a different migration type has started`() {
+        runBlocking {
+          migrationHistoryRepository.save(
+            MigrationHistory(
+              migrationId = "2020-01-01T00:00:00",
+              whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+              whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+              status = MigrationStatus.STARTED,
+              estimatedRecordCount = 123_567,
+              filter = "",
+              recordsMigrated = 123_560,
+              recordsFailed = 7,
+              migrationType = MigrationType.ACTIVITIES,
+            ),
+          )
+        }
+        nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 1, pageSize = 10, firstVisitBalanceId = 10000)
+        mappingApiMock.stubGetByNomisIdOrNull(
+          nomisVisitBalanceId = 10000,
+          mapping = VisitBalanceMappingDto(
+            dpsId = "A0001BC",
+            nomisVisitBalanceId = 10000,
+            mappingType = MIGRATED,
+            label = "2020-01-01T00:00:00",
+          ),
+        )
+        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        performMigration()
       }
     }
   }

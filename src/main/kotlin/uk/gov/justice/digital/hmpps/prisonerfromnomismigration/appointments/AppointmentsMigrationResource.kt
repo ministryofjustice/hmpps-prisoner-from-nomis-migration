@@ -59,6 +59,11 @@ class AppointmentsMigrationResource(
         description = "Incorrect permissions to start migration",
         content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
+      ApiResponse(
+        responseCode = "409",
+        description = "Migration already in progress",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
     ],
   )
   suspend fun migrateAppointments(
