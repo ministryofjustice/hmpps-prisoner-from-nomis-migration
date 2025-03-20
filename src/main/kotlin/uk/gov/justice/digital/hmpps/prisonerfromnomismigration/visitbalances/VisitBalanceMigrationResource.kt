@@ -171,4 +171,44 @@ class VisitBalanceMigrationResource(
     ],
   )
   suspend fun activeMigration() = migrationHistoryService.getActiveMigrationDetails(MigrationType.VISIT_BALANCE)
+
+  @PostMapping("/{migrationId}/refresh")
+  @ResponseStatus(value = HttpStatus.NO_CONTENT)
+  @Operation(
+    summary = "Refreshes the statistics on a completed migration.",
+    description = """This will read from the mapping table to get the latest count of migration records.
+      It will also then count the number of failures on the main queue and update the history record.
+      This is useful if the migration has been marked as completed when there were still messages on the dead letter
+      queue that where then processed later.
+      Requires role <b>MIGRATE_VISIT_BALANCE</b>""",
+    responses = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Refresh completed",
+      ),
+      ApiResponse(
+        responseCode = "400",
+        description = "Migration is not in a completed state",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Incorrect permissions to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Migration not found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
+  )
+  suspend fun refresh(
+    @PathVariable @Schema(description = "Migration Id", example = "2020-03-24T12:00:00") migrationId: String,
+  ) = migrationService.refresh(migrationId)
 }

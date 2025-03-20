@@ -910,7 +910,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
 
   @Nested
   @DisplayName("POST /migrate/visit-balance/{migrationId}/cancel")
-  inner class TerminateMigrationVisitBalance {
+  inner class CancelMigrationVisitBalance {
     @BeforeEach
     internal fun setUp() {
       webTestClient.delete().uri("/history")
@@ -1007,6 +1007,121 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
           .jsonPath("$.migrationId").isEqualTo(migrationId)
           .jsonPath("$.status").isEqualTo("CANCELLED")
       }
+    }
+  }
+
+  @Nested
+  @DisplayName("POST /migrate/visit-balance/{migrationId}/refresh")
+  inner class RefreshMigrationVisitBalance {
+    @BeforeEach
+    internal fun setUp() {
+      webTestClient.delete().uri("/history")
+        .headers(setAuthorisation(roles = listOf("MIGRATION_ADMIN")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().is2xxSuccessful
+    }
+
+    @Nested
+    inner class Security {
+      @Test
+      fun `access forbidden when no role`() {
+        webTestClient.post().uri("/migrate/visit-balance/{migrationId}/refresh", "some id")
+          .headers(setAuthorisation(roles = listOf()))
+          .contentType(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access forbidden with wrong role`() {
+        webTestClient.post().uri("/migrate/visit-balance/{migrationId}/refresh", "some id")
+          .headers(setAuthorisation(roles = listOf("BANANAS")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access unauthorised with no auth token`() {
+        webTestClient.post().uri("/migrate/visit-balance/{migrationId}/refresh", "some id")
+          .contentType(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+    }
+
+    @Test
+    internal fun `will return a not found if no migration found`() {
+      webTestClient.post().uri("/migrate/visit-balance/{migrationId}/refresh", "some id")
+        .headers(setAuthorisation(roles = listOf("MIGRATE_VISIT_BALANCE")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isNotFound
+    }
+
+    @Test
+    internal fun `will return bad request if no completed migration found`() {
+      runBlocking {
+        migrationHistoryRepository.save(
+          MigrationHistory(
+            migrationId = "2019-01-01T00:00:00",
+            whenStarted = LocalDateTime.parse("2019-01-01T00:00:00"),
+            whenEnded = LocalDateTime.parse("2019-01-01T01:00:00"),
+            status = MigrationStatus.STARTED,
+            estimatedRecordCount = 123_567,
+            filter = "",
+            recordsMigrated = 123_567,
+            recordsFailed = 0,
+            migrationType = MigrationType.VISIT_BALANCE,
+          ),
+        )
+      }
+
+      webTestClient.post().uri("/migrate/visit-balance/{migrationId}/refresh", "2019-01-01T00:00:00")
+        .headers(setAuthorisation(roles = listOf("MIGRATE_VISIT_BALANCE")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest
+    }
+
+    @Test
+    internal fun `will refresh a completed migration`() {
+      val migrationId = "2019-01-01T02:01:03"
+      runBlocking {
+        migrationHistoryRepository.save(
+          MigrationHistory(
+            migrationId = migrationId,
+            whenStarted = LocalDateTime.parse("2019-01-01T00:00:00"),
+            whenEnded = LocalDateTime.parse("2019-01-01T01:00:00"),
+            status = MigrationStatus.COMPLETED,
+            estimatedRecordCount = 123_567,
+            filter = "",
+            recordsMigrated = 123_567,
+            recordsFailed = 123,
+            migrationType = MigrationType.VISIT_BALANCE,
+          ),
+        )
+      }
+      mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 4)
+
+      webTestClient.post().uri("/migrate/visit-balance/{migrationId}/refresh", migrationId)
+        .headers(setAuthorisation(roles = listOf("MIGRATE_VISIT_BALANCE")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isNoContent
+
+      webTestClient.get().uri("/migrate/visit-balance/history/{migrationId}", migrationId)
+        .headers(setAuthorisation(roles = listOf("MIGRATE_VISIT_BALANCE")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.migrationId").isEqualTo(migrationId)
+        .jsonPath("$.status").isEqualTo("COMPLETED")
+        .jsonPath("$.recordsMigrated").isEqualTo(4)
+        .jsonPath("$.recordsFailed").isEqualTo(0)
+        .jsonPath("$.estimatedRecordCount").isEqualTo(123_567)
     }
   }
 

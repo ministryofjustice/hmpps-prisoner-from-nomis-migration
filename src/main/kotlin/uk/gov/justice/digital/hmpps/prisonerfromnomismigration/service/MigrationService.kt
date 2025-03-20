@@ -4,6 +4,7 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -227,6 +228,18 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
         body = MigrationStatusCheck(),
       ),
       message = MigrationMessageType.CANCEL_MIGRATION,
+    )
+  }
+
+  suspend fun refresh(migrationId: String) {
+    val migration = migrationHistoryService.get(migrationId)
+    if (migration.status != MigrationStatus.COMPLETED) {
+      throw BadRequestException("Migration $migrationId is not completed")
+    }
+    migrationHistoryService.recordMigrationCompleted(
+      migrationId = migrationId,
+      recordsFailed = queueService.countMessagesThatHaveFailed(migration.migrationType),
+      recordsMigrated = getMigrationCount(migrationId),
     )
   }
 
