@@ -291,6 +291,59 @@ class ContactPersonProfileDetailsMigrationIntTest(
     }
 
     @Nested
+    inner class Ignored {
+      val offenderNo = "A0001KT"
+
+      @BeforeEach
+      fun setUp() = runTest {
+        nomisApi.stubGetPrisonerIds(totalElements = 1.toLong(), pageSize = 10, firstOffenderNo = offenderNo)
+        nomisProfileDetailsApi.stubGetProfileDetails(
+          offenderNo = offenderNo,
+          bookingId = null,
+          response = profileDetailsResponse(offenderNo, listOf()),
+        )
+        dpsApi.stubMigrateDomesticStatus(migrateDomesticStatusResponse(offenderNo))
+        dpsApi.stubMigrateNumberOfChildren(migrateNumberOfChildrenResponse(offenderNo))
+        mappingApi.stubPutMapping()
+        migrationId = performMigration(prisonerNumber = offenderNo)
+      }
+
+      @Test
+      fun `will request all prisoner ids`() {
+        nomisApi.verify(0, getRequestedFor(urlPathEqualTo("/prisoners/ids/all")))
+      }
+
+      @Test
+      fun `will NOT call NOMIS or DPS APIs`() {
+        nomisApi.verify(0, getRequestedFor(urlEqualTo("/prisoners/$offenderNo/profile-details")))
+        dpsApi.verify(0, postRequestedFor(urlEqualTo("/migrate/domestic-status")))
+        dpsApi.verify(0, postRequestedFor(urlEqualTo("/migrate/number-of-children")))
+      }
+
+      @Test
+      fun `will NOT create mappings`() {
+        mappingApi.verify(0, putRequestedFor(urlEqualTo("/mapping/contact-person/profile-details/migration")))
+      }
+
+      @Test
+      fun `will publish ignore telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("contactperson-profiledetails-migration-entity-ignored"),
+          check {
+            assertThat(it).containsExactlyInAnyOrderEntriesOf(
+              mapOf(
+                "offenderNo" to "A0001KT",
+                "migrationId" to migrationId,
+                "reason" to "Prisoner has no latest booking",
+              ),
+            )
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
     inner class MappingsErrorRecovery {
       val offenderNo = "A1234AA"
 

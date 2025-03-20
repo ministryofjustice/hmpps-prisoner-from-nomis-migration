@@ -65,6 +65,12 @@ class ContactPersonProfileDetailsMigrationService(
     runCatching {
       val nomisResponse = nomisApiService.getProfileDetails(prisonerNumber, ContactPersonProfileType.all())
 
+      nomisResponse.getIgnoreReason()
+        ?.run {
+          publishTelemetry("ignored", prisonerNumber, migrationId, this)
+          return
+        }
+
       val domesticStatusDpsIds =
         dpsApiService.migrateDomesticStatus(nomisResponse.toMigrateDomesticStatus(prisonerNumber))
           .let { (listOf(it.current) + it.history).joinToString() }
@@ -84,18 +90,26 @@ class ContactPersonProfileDetailsMigrationService(
         requeueCreateMapping(mapping, context)
       }
     }.onFailure {
-      telemetryClient.trackEvent(
-        "contactperson-profiledetails-migration-entity-failed",
-        mapOf(
-          "offenderNo" to prisonerNumber,
-          "migrationId" to migrationId,
-          "reason" to "${it.message}",
-        ),
-        null,
-      )
+      publishTelemetry("failed", prisonerNumber, migrationId, it.message)
       throw it
     }
   }
+
+  private fun PrisonerProfileDetailsResponse.getIgnoreReason() = when {
+    this.bookings.none { it.latestBooking } -> "Prisoner has no latest booking"
+    else -> null
+  }
+
+  private fun publishTelemetry(type: String, prisonerNumber: String, migrationId: String, reason: String? = null) = telemetryClient.trackEvent(
+    "contactperson-profiledetails-migration-entity-$type",
+    mutableMapOf(
+      "offenderNo" to prisonerNumber,
+      "migrationId" to migrationId,
+    ).apply {
+      reason?.also { this["reason"] = it }
+    }.toMap(),
+    null,
+  )
 
   override suspend fun retryCreateMapping(context: MigrationContext<ContactPersonProfileDetailsMigrationMappingDto>) {
     createMappingOrOnFailureDo(context.body) {
