@@ -64,33 +64,30 @@ class CourtSentencingMigrationService(
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     val offenderNo = context.body.offenderNo
-    courtSentencingMappingService.getOffenderMigrationSummaryOrNull(offenderNo)?.run {
-      log.info("Will not migrate the nomis court cases for offenderNo $offenderNo as offender has already been migrated. (Has a record in the court_case_prisoner_migration table)")
-    } ?: run {
-      val nomisCourtCases = courtSentencingNomisApiService.getCourtCasesForMigration(offenderNo = offenderNo)
-      val dpsCases = handleLinkedCases(nomisCourtCases, offenderNo, context).map { it.toMigrationDpsCourtCase() }
-      courtSentencingDpsService.createCourtCaseMigration(
-        MigrationCreateCourtCases(
-          prisonerId = offenderNo,
-          courtCases = dpsCases,
-        ),
-      )
-        .also { dpsCourtCaseCreateResponse ->
-          createMigrationMapping(
-            offenderNo = offenderNo,
-            dpsCourtCasesCreateResponse = dpsCourtCaseCreateResponse,
-            context,
-          )
-          telemetryClient.trackEvent(
-            "court-sentencing-migration-entity-migrated",
-            mapOf(
-              "offenderNo" to offenderNo,
-              "migrationId" to context.migrationId,
-            ),
-            null,
-          )
-        }
-    }
+    val nomisCourtCases = courtSentencingNomisApiService.getCourtCasesForMigration(offenderNo = offenderNo)
+    val dpsCases = handleLinkedCases(nomisCourtCases, offenderNo, context).map { it.toMigrationDpsCourtCase() }
+    // idempotent migration - will migrate without checking for existing migration
+    courtSentencingDpsService.createCourtCaseMigration(
+      MigrationCreateCourtCases(
+        prisonerId = offenderNo,
+        courtCases = dpsCases,
+      ),
+    )
+      .also { dpsCourtCaseCreateResponse ->
+        createMigrationMapping(
+          offenderNo = offenderNo,
+          dpsCourtCasesCreateResponse = dpsCourtCaseCreateResponse,
+          context,
+        )
+        telemetryClient.trackEvent(
+          "court-sentencing-migration-entity-migrated",
+          mapOf(
+            "offenderNo" to offenderNo,
+            "migrationId" to context.migrationId,
+          ),
+          null,
+        )
+      }
   }
 
   // temp until DPS handles linked cases
