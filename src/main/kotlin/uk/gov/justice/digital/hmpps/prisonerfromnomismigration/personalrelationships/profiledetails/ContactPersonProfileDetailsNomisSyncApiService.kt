@@ -6,7 +6,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 
 @Service
-class ContactPersonNomisSyncApiService(@Qualifier("nomisSyncApiWebClient") private val webClient: WebClient) {
+class ContactPersonProfileDetailsNomisSyncApiService(@Qualifier("nomisSyncApiWebClient") private val webClient: WebClient) {
   suspend fun syncProfileDetails(prisonerNumber: String, profileType: String) = webClient.put()
     .uri("/contactperson/sync/profile-details/{prisonerNumber}/{profileType}", prisonerNumber, profileType)
     .retrieve()
