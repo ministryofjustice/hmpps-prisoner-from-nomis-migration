@@ -11,7 +11,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPrisonerMappingsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_MAPPINGS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_BOOKING_CHANGED_MAPPINGS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_BOOKING_MOVED_MAPPINGS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_PRISONER_MERGED_MAPPINGS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CONTACT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CONTACT_RESTRICTION_MAPPING
@@ -96,7 +98,9 @@ class ContactPersonEventListener(
       RETRY_SYNCHRONISATION_CONTACT_RESTRICTION_MAPPING -> service.retryCreateContactRestrictionMapping(message.fromJson())
       RETRY_SYNCHRONISATION_PERSON_RESTRICTION_MAPPING -> service.retryCreatePersonRestrictionMapping(message.fromJson())
       RETRY_SYNCHRONISATION_EMPLOYMENT_MAPPING -> service.retryCreateEmploymentMapping(message.fromJson())
-      RETRY_REPLACE_PRISONER_PERSON_MAPPINGS -> service.retryReplacePrisonerPersonMappings(message.fromJson())
+      RETRY_REPLACE_PRISONER_PERSON_PRISONER_MERGED_MAPPINGS -> service.retryReplacePrisonerPersonPrisonerMergedMappings(message.fromJson())
+      RETRY_REPLACE_PRISONER_PERSON_BOOKING_CHANGED_MAPPINGS -> service.retryReplacePrisonerPersonBookingChangeMappings(message.fromJson())
+      RETRY_REPLACE_PRISONER_PERSON_BOOKING_MOVED_MAPPINGS -> service.retryReplacePrisonerPersonBookingMovedMappings(message.fromJson())
     }
   }
 }
@@ -181,5 +185,7 @@ enum class ContactPersonSynchronisationMessageType {
   RETRY_SYNCHRONISATION_EMPLOYMENT_MAPPING,
   RETRY_SYNCHRONISATION_CONTACT_RESTRICTION_MAPPING,
   RETRY_SYNCHRONISATION_PERSON_RESTRICTION_MAPPING,
-  RETRY_REPLACE_PRISONER_PERSON_MAPPINGS,
+  RETRY_REPLACE_PRISONER_PERSON_PRISONER_MERGED_MAPPINGS,
+  RETRY_REPLACE_PRISONER_PERSON_BOOKING_CHANGED_MAPPINGS,
+  RETRY_REPLACE_PRISONER_PERSON_BOOKING_MOVED_MAPPINGS,
 }
