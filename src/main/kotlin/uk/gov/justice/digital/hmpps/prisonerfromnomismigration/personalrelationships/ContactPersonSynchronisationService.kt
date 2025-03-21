@@ -36,9 +36,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_BOOKING_CHANGED_MAPPINGS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_BOOKING_MOVED_MAPPINGS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_PRISONER_MERGED_MAPPINGS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.CodedValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateContactEmailRequest
@@ -861,7 +865,7 @@ class ContactPersonSynchronisationService(
       ),
     )
 
-    tryToReplaceMappings(
+    tryToReplacePrisonerMergedMappings(
       offenderNo = retainedOffenderNumber,
       mapping = ContactPersonPrisonerMappingsDto(
         mappingType = ContactPersonPrisonerMappingsDto.MappingType.NOMIS_CREATED,
@@ -877,7 +881,35 @@ class ContactPersonSynchronisationService(
     log.info("TODO: prisonerBookingMoved {}", prisonerBookingMovedEvent)
   }
   suspend fun resetPrisonerContactsForAdmission(prisonerReceivedEvent: PrisonerReceiveDomainEvent) {
-    log.info("TODO: resetPrisonerContactsForAdmission {}", prisonerReceivedEvent)
+    when (prisonerReceivedEvent.additionalInformation.reason) {
+      "READMISSION_SWITCH_BOOKING", "NEW_ADMISSION" -> {
+        val offenderNo = prisonerReceivedEvent.additionalInformation.nomsNumber
+        val telemetry = mutableMapOf<String, Any>(
+          "offenderNo" to offenderNo,
+        )
+
+        val nomisContacts = nomisApiService.getContactsForPrisoner(offenderNo).contacts.also {
+          telemetry["contactsCount"] = it.size
+        }
+        val dpsChangedResponse = dpsApiService.resetPrisonerContacts(
+          ResetPrisonerContactRequest(
+            prisonerContacts = nomisContacts.map { it.toDpsSyncPrisonerRelationship(offenderNo) },
+            prisonerNumber = offenderNo,
+          ),
+        )
+        tryToReplaceBookingChangedMappings(
+          offenderNo = offenderNo,
+          mapping = ContactPersonPrisonerMappingsDto(
+            mappingType = ContactPersonPrisonerMappingsDto.MappingType.NOMIS_CREATED,
+            personContactMapping = dpsChangedResponse.relationshipsCreated.map { ContactPersonSimpleMappingIdDto(nomisId = it.relationship.nomisId, dpsId = "${it.relationship.dpsId}") },
+            personContactRestrictionMapping = dpsChangedResponse.relationshipsCreated.flatMap { it.restrictions.map { restriction -> ContactPersonSimpleMappingIdDto(nomisId = restriction.nomisId, dpsId = "${restriction.dpsId}") } },
+            personContactMappingsToRemoveByDpsId = dpsChangedResponse.relationshipsRemoved.map { "${it.prisonerContactId}" },
+            personContactRestrictionMappingsToRemoveByDpsId = dpsChangedResponse.relationshipsRemoved.flatMap { contact -> contact.prisonerContactRestrictionIds.map { "$it" } },
+          ),
+          telemetry = telemetry,
+        )
+      }
+    }
   }
 
   private suspend fun tryToCreateMapping(
@@ -1025,7 +1057,7 @@ class ContactPersonSynchronisationService(
     }
   }
 
-  private suspend fun tryToReplaceMappings(
+  private suspend fun tryToReplacePrisonerMergedMappings(
     offenderNo: String,
     mapping: ContactPersonPrisonerMappingsDto,
     telemetry: Map<String, Any>,
@@ -1039,7 +1071,49 @@ class ContactPersonSynchronisationService(
     } catch (e: Exception) {
       log.error("Failed to replace prisoner person for $mapping", e)
       queueService.sendMessage(
-        messageType = ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_MAPPINGS.name,
+        messageType = RETRY_REPLACE_PRISONER_PERSON_PRISONER_MERGED_MAPPINGS.name,
+        synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
+        message = ContactPersonPrisonerMappings(offenderNo = offenderNo, mappings = mapping),
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+  private suspend fun tryToReplaceBookingChangedMappings(
+    offenderNo: String,
+    mapping: ContactPersonPrisonerMappingsDto,
+    telemetry: Map<String, Any>,
+  ) {
+    try {
+      mappingApiService.replaceMappingsForPrisoner(offenderNo, mapping)
+      telemetryClient.trackEvent(
+        "from-nomis-synch-contactperson-booking-changed",
+        telemetry,
+      )
+    } catch (e: Exception) {
+      log.error("Failed to replace prisoner person for $mapping", e)
+      queueService.sendMessage(
+        messageType = RETRY_REPLACE_PRISONER_PERSON_BOOKING_CHANGED_MAPPINGS.name,
+        synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
+        message = ContactPersonPrisonerMappings(offenderNo = offenderNo, mappings = mapping),
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+  private suspend fun tryToReplaceBookingMovedMappings(
+    offenderNo: String,
+    mapping: ContactPersonPrisonerMappingsDto,
+    telemetry: Map<String, Any>,
+  ) {
+    try {
+      mappingApiService.replaceMappingsForPrisoner(offenderNo, mapping)
+      telemetryClient.trackEvent(
+        "from-nomis-synch-contactperson-booking-moved",
+        telemetry,
+      )
+    } catch (e: Exception) {
+      log.error("Failed to replace prisoner person for $mapping", e)
+      queueService.sendMessage(
+        messageType = RETRY_REPLACE_PRISONER_PERSON_BOOKING_MOVED_MAPPINGS.name,
         synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
         message = ContactPersonPrisonerMappings(offenderNo = offenderNo, mappings = mapping),
         telemetryAttributes = telemetry.valuesAsStrings(),
@@ -1296,11 +1370,29 @@ class ContactPersonSynchronisationService(
       }
   }
 
-  suspend fun retryReplacePrisonerPersonMappings(retryMessage: InternalMessage<ContactPersonPrisonerMappings>) {
+  suspend fun retryReplacePrisonerPersonPrisonerMergedMappings(retryMessage: InternalMessage<ContactPersonPrisonerMappings>) {
     mappingApiService.replaceMappingsForPrisoner(retryMessage.body.offenderNo, retryMessage.body.mappings)
       .also {
         telemetryClient.trackEvent(
           "from-nomis-synch-contactperson-merge",
+          retryMessage.telemetryAttributes,
+        )
+      }
+  }
+  suspend fun retryReplacePrisonerPersonBookingChangeMappings(retryMessage: InternalMessage<ContactPersonPrisonerMappings>) {
+    mappingApiService.replaceMappingsForPrisoner(retryMessage.body.offenderNo, retryMessage.body.mappings)
+      .also {
+        telemetryClient.trackEvent(
+          "from-nomis-synch-contactperson-booking-changed",
+          retryMessage.telemetryAttributes,
+        )
+      }
+  }
+  suspend fun retryReplacePrisonerPersonBookingMovedMappings(retryMessage: InternalMessage<ContactPersonPrisonerMappings>) {
+    mappingApiService.replaceMappingsForPrisoner(retryMessage.body.offenderNo, retryMessage.body.mappings)
+      .also {
+        telemetryClient.trackEvent(
+          "from-nomis-synch-contactperson-booking-moved",
           retryMessage.telemetryAttributes,
         )
       }
