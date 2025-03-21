@@ -28,7 +28,7 @@ class GeneralMappingService(
   private val organisationsMappingApiService: OrganisationsMappingApiService,
   private val visitBalanceMappingApiService: VisitBalanceMappingApiService,
 ) {
-  suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long? = when (migrationType) {
+  suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long = when (migrationType) {
     MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
     MigrationType.VISITS -> visitMappingService.getMigrationCount(migrationId)
     MigrationType.ACTIVITIES -> activityMappingService.getMigrationCount(migrationId)
