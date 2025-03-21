@@ -18,6 +18,8 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.prisonerDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.prisonerReceivedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -5918,6 +5920,324 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry for the merge`() {
         verify(telemetryClient, times(1)).trackEvent(
           eq("from-nomis-synch-contactperson-booking-changed"),
+          any(),
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("prison-offender-events.prisoner.booking.moved")
+  inner class BookingMoved {
+    val fromOffenderNumber = "A1234KT"
+    val toOffenderNumber = "A1000KT"
+    val bookingId = 98776L
+    val nomisContactId1 = 123L
+    val dpsPrisonerContactId1 = 1123L
+    val nomisContactId1RestrictionId1 = 1231L
+    val nomisContactId1RestrictionId2 = 1232L
+    val dpsPrisonerContactId1RestrictionId1 = 11231L
+    val dpsPrisonerContactId1RestrictionId2 = 11232L
+    val nomisContactId2 = 234L
+    val dpsPrisonerContactId2 = 1234L
+    val nomisContactId2RestrictionId1 = 2341L
+    val dpsPrisonerContactId2RestrictionId1 = 12341L
+
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubContactsForPrisoner(
+          offenderNo = fromOffenderNumber,
+          contacts = prisonerWithContacts().copy(
+            contacts = listOf(
+              prisonerWithContact().copy(
+                id = nomisContactId1,
+                relationshipType = CodeDescription(code = "BOF", description = "Boyfriend"),
+                contactType = CodeDescription(code = "S", description = "Social/ Family"),
+                active = true,
+                emergencyContact = true,
+                nextOfKin = false,
+                approvedVisitor = false,
+                bookingSequence = 1,
+                person = ContactForPerson(
+                  personId = 4321,
+                  lastName = "BRIGHT",
+                  firstName = "JANE",
+                ),
+                restrictions = listOf(
+                  prisonerWithContactRestriction().copy(
+                    id = nomisContactId1RestrictionId1,
+                    type = CodeDescription(code = "BAN", description = "Banned"),
+                  ),
+                  prisonerWithContactRestriction().copy(id = nomisContactId1RestrictionId2),
+                ),
+              ),
+              prisonerWithContact().copy(
+                id = nomisContactId2,
+                bookingSequence = 2,
+                restrictions = listOf(
+                  prisonerWithContactRestriction().copy(id = nomisContactId2RestrictionId1),
+                ),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubResetPrisonerContacts(
+          resetPrisonerContactResponse().copy(
+            relationshipsCreated = listOf(
+              PrisonerContactAndRestrictionIds(
+                contactId = 123,
+                relationship = IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT, nomisId = nomisContactId1, dpsId = dpsPrisonerContactId1),
+                restrictions = listOf(
+                  IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT_RESTRICTION, nomisId = nomisContactId1RestrictionId1, dpsId = dpsPrisonerContactId1RestrictionId1),
+                  IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT_RESTRICTION, nomisId = nomisContactId1RestrictionId2, dpsId = dpsPrisonerContactId1RestrictionId2),
+                ),
+              ),
+              PrisonerContactAndRestrictionIds(
+                contactId = 123,
+                relationship = IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT, nomisId = nomisContactId2, dpsId = dpsPrisonerContactId2),
+                restrictions = listOf(
+                  IdPair(elementType = IdPair.ElementType.PRISONER_CONTACT_RESTRICTION, nomisId = nomisContactId2RestrictionId1, dpsId = dpsPrisonerContactId2RestrictionId1),
+                ),
+              ),
+
+            ),
+            relationshipsRemoved = listOf(
+              PrisonerRelationshipIds(
+                prisonerNumber = fromOffenderNumber,
+                contactId = 123,
+                prisonerContactId = 10,
+                prisonerContactRestrictionIds = listOf(1),
+              ),
+              PrisonerRelationshipIds(
+                prisonerNumber = fromOffenderNumber,
+                contactId = 123,
+                prisonerContactId = 20,
+                prisonerContactRestrictionIds = listOf(2),
+              ),
+            ),
+          ),
+        )
+
+        mappingApiMock.stubReplaceMappingsForPrisoner(fromOffenderNumber)
+      }
+
+      @Nested
+      inner class ToPrisonerActive {
+
+        @BeforeEach
+        fun setUp() {
+          nomisApiMock.stubGetPrisonerDetails(offenderNo = toOffenderNumber, prisonerDetails().copy(location = "MDI", active = true))
+
+          personContactsDomainEventsQueue.sendMessage(
+            bookingMovedDomainEvent(
+              bookingId = bookingId,
+              movedFromNomsNumber = fromOffenderNumber,
+              movedToNomsNumber = toOffenderNumber,
+            ),
+          ).also {
+            waitForAnyProcessingToComplete("from-nomis-synch-contactperson-booking-moved", "from-nomis-synch-contactperson-booking-moved-ignored")
+          }
+        }
+
+        @Test
+        fun `will retrieve all contacts for the prisoner`() {
+          nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/prisoners/$fromOffenderNumber/contacts")))
+        }
+
+        @Test
+        fun `will reset the contacts in DPS`() {
+          dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/admin/reset")))
+        }
+
+        @Test
+        fun `all contacts will be sent to DPS along`() {
+          val request: ResetPrisonerContactRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/admin/reset")))
+          assertThat(request.prisonerNumber).isEqualTo(fromOffenderNumber)
+          assertThat(request.prisonerContacts).hasSize(2)
+          with(request.prisonerContacts[0]) {
+            assertThat(id).isEqualTo(nomisContactId1)
+            assertThat(restrictions).hasSize(2)
+            assertThat(restrictions[0].id).isEqualTo(nomisContactId1RestrictionId1)
+            assertThat(restrictions[1].id).isEqualTo(nomisContactId1RestrictionId2)
+          }
+          with(request.prisonerContacts[1]) {
+            assertThat(id).isEqualTo(nomisContactId2)
+            assertThat(restrictions).hasSize(1)
+            assertThat(restrictions[0].id).isEqualTo(nomisContactId2RestrictionId1)
+          }
+        }
+
+        @Test
+        fun `will replace mappings for prisoner`() {
+          mappingApiMock.verify(postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner/$fromOffenderNumber")))
+        }
+
+        @Test
+        fun `will send mappings to be created`() {
+          val request: ContactPersonPrisonerMappingsDto = ContactPersonMappingApiMockServer.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner/$fromOffenderNumber")))
+
+          assertThat(request.mappingType).isEqualTo(ContactPersonPrisonerMappingsDto.MappingType.NOMIS_CREATED)
+          assertThat(request.personContactMapping).hasSize(2)
+          with(request.personContactMapping[0]) {
+            assertThat(dpsId).isEqualTo("$dpsPrisonerContactId1")
+            assertThat(nomisId).isEqualTo(nomisContactId1)
+          }
+          with(request.personContactMapping[1]) {
+            assertThat(dpsId).isEqualTo("$dpsPrisonerContactId2")
+            assertThat(nomisId).isEqualTo(nomisContactId2)
+          }
+          assertThat(request.personContactRestrictionMapping).hasSize(3)
+          with(request.personContactRestrictionMapping[0]) {
+            assertThat(dpsId).isEqualTo("$dpsPrisonerContactId1RestrictionId1")
+            assertThat(nomisId).isEqualTo(nomisContactId1RestrictionId1)
+          }
+          with(request.personContactRestrictionMapping[1]) {
+            assertThat(dpsId).isEqualTo("$dpsPrisonerContactId1RestrictionId2")
+            assertThat(nomisId).isEqualTo(nomisContactId1RestrictionId2)
+          }
+          with(request.personContactRestrictionMapping[2]) {
+            assertThat(dpsId).isEqualTo("$dpsPrisonerContactId2RestrictionId1")
+            assertThat(nomisId).isEqualTo(nomisContactId2RestrictionId1)
+          }
+        }
+
+        @Test
+        fun `will send mappings to be deleted`() {
+          val request: ContactPersonPrisonerMappingsDto = ContactPersonMappingApiMockServer.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner/$fromOffenderNumber")))
+
+          assertThat(request.personContactMappingsToRemoveByDpsId).containsExactlyInAnyOrder("10", "20")
+          assertThat(request.personContactRestrictionMappingsToRemoveByDpsId).containsExactlyInAnyOrder("1", "2")
+        }
+
+        @Test
+        fun `will track telemetry for the merge`() {
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-contactperson-booking-moved"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(fromOffenderNumber)
+              assertThat(it["whichPrisoner"]).isEqualTo("FROM")
+              assertThat(it["bookingId"]).isEqualTo("$bookingId")
+              assertThat(it["contactsCount"]).isEqualTo("2")
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class ToPrisonerInActive {
+
+        @BeforeEach
+        fun setUp() {
+          nomisApiMock.stubContactsForPrisoner(offenderNo = toOffenderNumber)
+          nomisApiMock.stubGetPrisonerDetails(offenderNo = toOffenderNumber, prisonerDetails().copy(location = "OUT", active = false))
+          mappingApiMock.stubReplaceMappingsForPrisoner(toOffenderNumber)
+
+          personContactsDomainEventsQueue.sendMessage(
+            bookingMovedDomainEvent(
+              bookingId = bookingId,
+              movedFromNomsNumber = fromOffenderNumber,
+              movedToNomsNumber = toOffenderNumber,
+            ),
+          ).also {
+            waitForAnyProcessingToComplete("from-nomis-synch-contactperson-booking-moved", times = 2)
+          }
+        }
+
+        @Test
+        fun `will retrieve all contacts for both prisoners`() {
+          nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/prisoners/$fromOffenderNumber/contacts")))
+          nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/prisoners/$toOffenderNumber/contacts")))
+        }
+
+        @Test
+        fun `will reset the contacts in DPS for both prisoner`() {
+          dpsApiMock.verify(
+            postRequestedFor(urlPathEqualTo("/sync/admin/reset"))
+              .withRequestBodyJsonPath("prisonerNumber", fromOffenderNumber),
+          )
+          dpsApiMock.verify(
+            postRequestedFor(urlPathEqualTo("/sync/admin/reset"))
+              .withRequestBodyJsonPath("prisonerNumber", toOffenderNumber),
+          )
+        }
+
+        @Test
+        fun `will replace mappings for both prisoners`() {
+          mappingApiMock.verify(postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner/$fromOffenderNumber")))
+          mappingApiMock.verify(postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner/$toOffenderNumber")))
+        }
+
+        @Test
+        fun `will track telemetry for the move`() {
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-contactperson-booking-moved"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(fromOffenderNumber)
+              assertThat(it["whichPrisoner"]).isEqualTo("FROM")
+              assertThat(it["bookingId"]).isEqualTo("$bookingId")
+              assertThat(it["contactsCount"]).isEqualTo("2")
+            },
+            isNull(),
+          )
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-contactperson-booking-moved"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(toOffenderNumber)
+              assertThat(it["whichPrisoner"]).isEqualTo("TO")
+              assertThat(it["bookingId"]).isEqualTo("$bookingId")
+              assertThat(it["contactsCount"]).isEqualTo("1")
+            },
+            isNull(),
+          )
+        }
+      }
+    }
+
+    @Nested
+    inner class MappingFailure {
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubContactsForPrisoner(offenderNo = fromOffenderNumber)
+        dpsApiMock.stubResetPrisonerContacts()
+        mappingApiMock.stubReplaceMappingsForPrisonerFailureFollowedBySuccess(fromOffenderNumber)
+
+        nomisApiMock.stubGetPrisonerDetails(offenderNo = toOffenderNumber, prisonerDetails().copy(location = "MDI", active = true))
+
+        personContactsDomainEventsQueue.sendMessage(
+          bookingMovedDomainEvent(
+            bookingId = bookingId,
+            movedFromNomsNumber = fromOffenderNumber,
+            movedToNomsNumber = toOffenderNumber,
+          ),
+        )
+          .also {
+            waitForAnyProcessingToComplete("from-nomis-synch-contactperson-booking-moved", "from-nomis-synch-contactperson-booking-moved-ignored")
+          }
+      }
+
+      @Test
+      fun `will retrieve all contacts for the retained prisoner number once`() {
+        nomisApiMock.verify(1, getRequestedFor(urlPathEqualTo("/prisoners/$fromOffenderNumber/contacts")))
+      }
+
+      @Test
+      fun `will replace the contacts in DPS once `() {
+        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/admin/reset")))
+      }
+
+      @Test
+      fun `will try replace mappings for prisoner until succeeds `() {
+        mappingApiMock.verify(2, postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner/$fromOffenderNumber")))
+      }
+
+      @Test
+      fun `will track telemetry for the merge`() {
+        verify(telemetryClient, times(1)).trackEvent(
+          eq("from-nomis-synch-contactperson-booking-moved"),
           any(),
           isNull(),
         )

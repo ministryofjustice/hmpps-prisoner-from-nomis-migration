@@ -8,7 +8,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerReceiveDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.MoveBookingForPrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.WhichMoveBookingPrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.doesOriginateInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
@@ -36,6 +38,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RESYNCHRONISE_MOVE_BOOKING_TARGET
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_BOOKING_CHANGED_MAPPINGS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_BOOKING_MOVED_MAPPINGS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_PRISONER_MERGED_MAPPINGS
@@ -878,7 +881,90 @@ class ContactPersonSynchronisationService(
     )
   }
   suspend fun prisonerBookingMoved(prisonerBookingMovedEvent: PrisonerBookingMovedDomainEvent) {
-    log.info("TODO: prisonerBookingMoved {}", prisonerBookingMovedEvent)
+    val bookingId = prisonerBookingMovedEvent.additionalInformation.bookingId
+    val movedToNomsNumber = prisonerBookingMovedEvent.additionalInformation.movedToNomsNumber
+    val movedFromNomsNumber = prisonerBookingMovedEvent.additionalInformation.movedFromNomsNumber
+
+    resetAfterPrisonerBookingMoved(
+      MoveBookingForPrisoner(
+        bookingId = bookingId,
+        offenderNo = movedFromNomsNumber,
+        whichPrisoner = WhichMoveBookingPrisoner.FROM,
+      ),
+    )
+
+    // the target prisoner may need reset as well depending if the reset hasn't already been
+    // done by the receive event - in which case it will be skipped.
+    // send message to guarantee this eventually processed
+    queueService.sendMessage(
+      messageType = RESYNCHRONISE_MOVE_BOOKING_TARGET.name,
+      synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
+      message = MoveBookingForPrisoner(
+        bookingId = bookingId,
+        offenderNo = movedToNomsNumber,
+        whichPrisoner = WhichMoveBookingPrisoner.TO,
+      ),
+    )
+  }
+
+  suspend fun resetAfterPrisonerBookingMovedIfNecessary(movePrisonerMessage: InternalMessage<MoveBookingForPrisoner>) {
+    val movePrisoner = movePrisonerMessage.body
+    val bookingId = movePrisoner.bookingId
+    val offenderNo = movePrisoner.offenderNo
+
+    val prisonerDetails = nomisApiService.getPrisonerDetails(movePrisonerMessage.body.offenderNo)
+    if (prisonerDetails.active) {
+      // no need to do anything since the prisoner receive event would have been processed given the
+      // prisoner is active
+      telemetryClient.trackEvent(
+        "from-nomis-synch-contactperson-booking-moved-ignored",
+        mapOf(
+          "bookingId" to bookingId,
+          "whichPrisoner" to movePrisoner.whichPrisoner.name,
+          "offenderNo" to offenderNo,
+        ),
+      )
+    } else {
+      resetAfterPrisonerBookingMoved(
+        MoveBookingForPrisoner(
+          bookingId = bookingId,
+          offenderNo = offenderNo,
+          whichPrisoner = WhichMoveBookingPrisoner.TO,
+        ),
+      )
+    }
+  }
+
+  private suspend fun resetAfterPrisonerBookingMoved(moveBooking: MoveBookingForPrisoner) {
+    val bookingId = moveBooking.bookingId
+    val offenderNo = moveBooking.offenderNo
+
+    val telemetry = mutableMapOf<String, Any>(
+      "bookingId" to bookingId,
+      "whichPrisoner" to moveBooking.whichPrisoner.name,
+      "offenderNo" to offenderNo,
+    )
+
+    val nomisContacts = nomisApiService.getContactsForPrisoner(offenderNo).contacts.also {
+      telemetry["contactsCount"] = it.size
+    }
+    val dpsChangedResponse = dpsApiService.resetPrisonerContacts(
+      ResetPrisonerContactRequest(
+        prisonerContacts = nomisContacts.map { it.toDpsSyncPrisonerRelationship(offenderNo) },
+        prisonerNumber = offenderNo,
+      ),
+    )
+    tryToReplaceBookingMovedMappings(
+      offenderNo = offenderNo,
+      mapping = ContactPersonPrisonerMappingsDto(
+        mappingType = ContactPersonPrisonerMappingsDto.MappingType.NOMIS_CREATED,
+        personContactMapping = dpsChangedResponse.relationshipsCreated.map { ContactPersonSimpleMappingIdDto(nomisId = it.relationship.nomisId, dpsId = "${it.relationship.dpsId}") },
+        personContactRestrictionMapping = dpsChangedResponse.relationshipsCreated.flatMap { it.restrictions.map { restriction -> ContactPersonSimpleMappingIdDto(nomisId = restriction.nomisId, dpsId = "${restriction.dpsId}") } },
+        personContactMappingsToRemoveByDpsId = dpsChangedResponse.relationshipsRemoved.map { "${it.prisonerContactId}" },
+        personContactRestrictionMappingsToRemoveByDpsId = dpsChangedResponse.relationshipsRemoved.flatMap { contact -> contact.prisonerContactRestrictionIds.map { "$it" } },
+      ),
+      telemetry = telemetry,
+    )
   }
   suspend fun resetPrisonerContactsForAdmission(prisonerReceivedEvent: PrisonerReceiveDomainEvent) {
     when (prisonerReceivedEvent.additionalInformation.reason) {

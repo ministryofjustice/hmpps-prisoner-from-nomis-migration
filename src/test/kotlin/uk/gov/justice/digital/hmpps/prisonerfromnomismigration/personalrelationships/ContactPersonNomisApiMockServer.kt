@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerWithContacts
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
@@ -91,6 +92,16 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(objectMapper.writeValueAsString(contacts)),
+      ),
+    )
+  }
+  fun stubGetPrisonerDetails(offenderNo: String, prisonerDetails: PrisonerDetails = prisonerDetails()) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/$offenderNo")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(prisonerDetails)),
       ),
     )
   }
@@ -223,3 +234,5 @@ fun prisonerWithContactRestriction() = ContactRestriction(
   effectiveDate = LocalDate.parse("2020-01-01"),
   audit = nomisAudit(),
 )
+
+fun prisonerDetails(): PrisonerDetails = PrisonerDetails(offenderNo = "A1234KT", bookingId = 1234, location = "MDI", active = true)
