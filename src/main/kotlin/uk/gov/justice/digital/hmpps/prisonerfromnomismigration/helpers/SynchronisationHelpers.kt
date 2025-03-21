@@ -27,3 +27,13 @@ inline fun TelemetryEnabled.track(name: String, telemetry: MutableMap<String, An
     throw e
   }
 }
+
+enum class WhichMoveBookingPrisoner {
+  FROM,
+  TO,
+}
+data class MoveBookingForPrisoner(
+  val bookingId: Long,
+  val offenderNo: String,
+  val whichPrisoner: WhichMoveBookingPrisoner,
+)

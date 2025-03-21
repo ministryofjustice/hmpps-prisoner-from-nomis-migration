@@ -13,6 +13,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBook
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerReceiveDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.ReceivePrisonerAdditionalInformationEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.MoveBookingForPrisoner
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.WhichMoveBookingPrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
@@ -281,15 +283,6 @@ class AlertsSynchronisationService(
     }
   }
 
-  enum class WhichMoveBookingPrisoner {
-    FROM,
-    TO,
-  }
-  data class MoveBookingForPrisoner(
-    val bookingId: Long,
-    val offenderNo: String,
-    val whichPrisoner: WhichMoveBookingPrisoner,
-  )
   suspend fun synchronisePrisonerBookingMovedForPrisoner(movePrisoner: MoveBookingForPrisoner) {
     val bookingId = movePrisoner.bookingId
     val offenderNo = movePrisoner.offenderNo

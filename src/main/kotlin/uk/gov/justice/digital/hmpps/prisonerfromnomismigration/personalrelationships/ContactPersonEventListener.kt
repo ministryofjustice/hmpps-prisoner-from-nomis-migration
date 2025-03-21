@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPrisonerMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RESYNCHRONISE_MOVE_BOOKING_TARGET
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_BOOKING_CHANGED_MAPPINGS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_BOOKING_MOVED_MAPPINGS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_PRISONER_MERGED_MAPPINGS
@@ -101,6 +102,7 @@ class ContactPersonEventListener(
       RETRY_REPLACE_PRISONER_PERSON_PRISONER_MERGED_MAPPINGS -> service.retryReplacePrisonerPersonPrisonerMergedMappings(message.fromJson())
       RETRY_REPLACE_PRISONER_PERSON_BOOKING_CHANGED_MAPPINGS -> service.retryReplacePrisonerPersonBookingChangeMappings(message.fromJson())
       RETRY_REPLACE_PRISONER_PERSON_BOOKING_MOVED_MAPPINGS -> service.retryReplacePrisonerPersonBookingMovedMappings(message.fromJson())
+      RESYNCHRONISE_MOVE_BOOKING_TARGET -> service.resetAfterPrisonerBookingMovedIfNecessary(message.fromJson())
     }
   }
 }
@@ -188,4 +190,5 @@ enum class ContactPersonSynchronisationMessageType {
   RETRY_REPLACE_PRISONER_PERSON_PRISONER_MERGED_MAPPINGS,
   RETRY_REPLACE_PRISONER_PERSON_BOOKING_CHANGED_MAPPINGS,
   RETRY_REPLACE_PRISONER_PERSON_BOOKING_MOVED_MAPPINGS,
+  RESYNCHRONISE_MOVE_BOOKING_TARGET,
 }
