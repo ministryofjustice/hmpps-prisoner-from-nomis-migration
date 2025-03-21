@@ -997,7 +997,11 @@ fun dpsMigrationCreateResponseWithTwoAppearancesAndTwoCharges(): MigrationCreate
   )
 }
 
-fun buildCaseIdentifierResponse(reference: String = "AB12345678"): CaseIdentifierResponse = CaseIdentifierResponse(type = "CASE/INFO#", reference = reference, createDateTime = LocalDateTime.parse("2020-01-01T00:00:00"))
+fun buildCaseIdentifierResponse(reference: String = "AB12345678"): CaseIdentifierResponse = CaseIdentifierResponse(
+  type = "CASE/INFO#",
+  reference = reference,
+  createDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
+)
 
 fun buildCourtEventResponse(
   courtAppearanceId: Long = NOMIS_APPEARANCE_1_ID,

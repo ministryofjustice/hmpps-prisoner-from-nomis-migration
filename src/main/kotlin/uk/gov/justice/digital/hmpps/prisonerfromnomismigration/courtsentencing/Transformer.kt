@@ -47,6 +47,7 @@ fun CourtCaseResponse.toMigrationDpsCourtCase() = MigrationCreateCourtCase(
     },
   ),
   active = this.caseStatus.code == "A",
+
 )
 
 fun CourtCaseResponse.toLegacyDpsCourtCase() = LegacyCreateCourtCase(
@@ -94,7 +95,7 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance(sentences: List<SentenceRes
     val dpsSentence =
       sentencesForAppearance.find { sentence -> sentence.offenderCharges.any { it.id == charge.offenderCharge.id } }
         ?.toDpsMigrationSentence()
-    charge.offenderCharge.toDpsMigrationCharge(chargeId = charge.offenderCharge.id, dpsSentence = dpsSentence)
+    charge.toDpsMigrationCharge(chargeId = charge.offenderCharge.id, dpsSentence = dpsSentence)
   },
 )
 
@@ -124,8 +125,8 @@ fun CourtEventChargeResponse.toDpsCharge() = LegacyUpdateCharge(
   offenceEndDate = this.offenceEndDate,
 )
 
-fun OffenderChargeResponse.toDpsMigrationCharge(chargeId: Long, dpsSentence: MigrationCreateSentence?) = MigrationCreateCharge(
-  offenceCode = this.offence.offenceCode,
+fun CourtEventChargeResponse.toDpsMigrationCharge(chargeId: Long, dpsSentence: MigrationCreateSentence?) = MigrationCreateCharge(
+  offenceCode = this.offenderCharge.offence.offenceCode,
   offenceStartDate = this.offenceDate,
   legacyData =
   ChargeLegacyData(
