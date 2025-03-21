@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.profiledetails
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -9,14 +9,13 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.profiledetails.ContactPersonBookingMovedService
 import java.util.concurrent.CompletableFuture
 
 @Service
-class PersonalRelationshipsDomainEventListener(
+class ContactPersonProfileDetailsDomainEventListener(
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
-  private val moveBookingService: ContactPersonBookingMovedService,
+  private val moveBookingService: ContactPersonProfileDetailsBookingMovedService,
 ) {
 
   private companion object {
@@ -31,7 +30,7 @@ class PersonalRelationshipsDomainEventListener(
       when (sqsMessage.Type) {
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
-          if (eventFeatureSwitch.isEnabled(eventType, "personalrelationships")) {
+          if (eventFeatureSwitch.isEnabled(eventType, "personalrelationshipsprofiledetails")) {
             when (eventType) {
               "prison-offender-events.prisoner.booking.moved" -> moveBookingService.bookingMoved(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)

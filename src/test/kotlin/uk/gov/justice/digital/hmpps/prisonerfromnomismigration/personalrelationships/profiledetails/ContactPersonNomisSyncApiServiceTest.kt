@@ -15,10 +15,10 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 
 @SpringAPIServiceTest
-@Import(ContactPersonNomisSyncApiService::class, ContactPersonNomisSyncApiMockServer::class)
+@Import(ContactPersonProfileDetailsNomisSyncApiService::class, ContactPersonNomisSyncApiMockServer::class)
 class ContactPersonNomisSyncApiServiceTest {
   @Autowired
-  private lateinit var apiService: ContactPersonNomisSyncApiService
+  private lateinit var apiService: ContactPersonProfileDetailsNomisSyncApiService
 
   @Autowired
   private lateinit var nomisSyncApi: ContactPersonNomisSyncApiMockServer
