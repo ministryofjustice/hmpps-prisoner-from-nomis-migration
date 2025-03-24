@@ -64,8 +64,6 @@ generic-prometheus-alerts:
     csip:
       - "syscon-devs-dev-prisoner_from_nomis_csip_queue"
       - "syscon-devs-dev-prisoner_from_nomis_csip_dl_queue"
-      - "syscon-devs-dev-migration_csip_queue"
-      - "syscon-devs-dev-migration_csip_dlq"
     locations:
       - "syscon-devs-dev-prisoner_from_nomis_locations_queue"
       - "syscon-devs-dev-prisoner_from_nomis_locations_dl_queue"
