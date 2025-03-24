@@ -111,6 +111,7 @@ class SqsIntegrationTestBase : TestBase() {
   internal val awsSqsActivitiesMigrationDlqClient by lazy { activitiesMigrationQueue.sqsDlqClient }
   internal val awsSqsAllocationsMigrationDlqClient by lazy { allocationsMigrationQueue.sqsDlqClient }
   internal val awsSqsIncidentsMigrationDlqClient by lazy { incidentsMigrationQueue.sqsDlqClient }
+  internal val awsSqsVisitBalanceMigrationDlqClient by lazy { visitBalanceMigrationQueue.sqsDlqClient }
   internal val visitsMigrationDlqUrl by lazy { visitsMigrationQueue.dlqUrl }
 
   internal val appointmentsMigrationDlqUrl by lazy { appointmentsMigrationQueue.dlqUrl }
