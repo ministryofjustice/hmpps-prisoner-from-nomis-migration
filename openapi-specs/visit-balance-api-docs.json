@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-03-19.216.a03be49"
+    "version" : "2025-03-21.231.51b52e3"
   },
   "servers" : [ {
     "url" : "https://hmpps-visit-allocation-api-dev.prison.service.justice.gov.uk",
@@ -227,6 +227,68 @@
         }
       }
     },
+    "/visits/allocation/prisoner/{prisonerId}/balance" : {
+      "get" : {
+        "tags" : [ "balance-controller" ],
+        "summary" : "Endpoint to get a prisoners current balance.",
+        "description" : "Takes a prisoner id and return their current visit order balance.",
+        "operationId" : "getPrisonerBalance",
+        "parameters" : [ {
+          "name" : "prisonerId",
+          "in" : "path",
+          "description" : "prisonerId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "prisonerId",
+            "example" : "AA123456"
+          },
+          "example" : "AA123456"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Prisoner balance returned.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonerBalanceDto"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to get prisoner balance.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Prisoner balance not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/queue-admin/get-dlq-messages/{dlqName}" : {
       "get" : {
         "tags" : [ "hmpps-queue-resource" ],
@@ -392,7 +454,7 @@
             "example" : "2025-02-28"
           }
         },
-        "required" : [ "lastVoAllocationDate", "prisonerId", "pvoBalance", "voBalance" ]
+        "required" : [ "prisonerId", "pvoBalance", "voBalance" ]
       },
       "VisitAllocationEventJobDto" : {
         "type" : "object",
@@ -410,6 +472,29 @@
           }
         },
         "required" : [ "allocationJobReference", "totalActivePrisons" ]
+      },
+      "PrisonerBalanceDto" : {
+        "type" : "object",
+        "properties" : {
+          "prisonerId" : {
+            "type" : "string",
+            "description" : "nomsNumber of the prisoner",
+            "example" : "AA123456"
+          },
+          "voBalance" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The current VO balance (can be negative)",
+            "example" : 5
+          },
+          "pvoBalance" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The current PVO balance (can be negative)",
+            "example" : 2
+          }
+        },
+        "required" : [ "prisonerId", "pvoBalance", "voBalance" ]
       },
       "DlqMessage" : {
         "type" : "object",
