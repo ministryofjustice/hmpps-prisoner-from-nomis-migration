@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-03-20.11745.8aa6401"
+    "version" : "2025-03-21.11809.d7306f6"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -11759,7 +11759,7 @@
       "get" : {
         "tags" : [ "prisoners-resource" ],
         "summary" : "Gets the prisoner's details",
-        "description" : "Requires role NOMIS_ALERTS.",
+        "description" : "Requires role NOMIS_ALERTS or NOMIS_CONTACTPERSONS.",
         "operationId" : "getPrisonerDetails",
         "parameters" : [ {
           "name" : "offenderNo",
@@ -11796,7 +11796,7 @@
             }
           },
           "403" : {
-            "description" : "Forbidden to access this endpoint when role NOMIS_ALERTS not present",
+            "description" : "Forbidden to access this endpoint when role NOMIS_ALERTS or NOMIS_CONTACTPERSONS not present",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -21916,6 +21916,9 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -21926,9 +21929,6 @@
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           }
         }
       },
