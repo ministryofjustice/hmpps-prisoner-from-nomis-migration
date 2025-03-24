@@ -211,8 +211,6 @@ hmpps.sqs:
       propagateTracing: false
     migrationincidents:
       propagateTracing: false
-    migrationcsip:
-      propagateTracing: false
     migrationcourtsentencing:
       propagateTracing: false
     migrationpersonalrelationships:
