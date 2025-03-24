@@ -1,17 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip
 
-import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CSIPFactorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CSIPIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CSIPResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.typeReference
-import java.time.LocalDate
 
 @Service
 class CSIPNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
@@ -30,22 +25,4 @@ class CSIPNomisApiService(@Qualifier("nomisApiWebClient") private val webClient:
     .uri("/csip/booking/{bookingId}", bookingId)
     .retrieve()
     .awaitBody()
-
-  suspend fun getCSIPIds(
-    fromDate: LocalDate?,
-    toDate: LocalDate?,
-    pageNumber: Long,
-    pageSize: Long,
-  ): PageImpl<CSIPIdResponse> = webClient.get()
-    .uri {
-      it.path("/csip/ids")
-        .queryParam("fromDate", fromDate)
-        .queryParam("toDate", toDate)
-        .queryParam("page", pageNumber)
-        .queryParam("size", pageSize)
-        .build()
-    }
-    .retrieve()
-    .bodyToMono(typeReference<RestResponsePage<CSIPIdResponse>>())
-    .awaitSingle()
 }

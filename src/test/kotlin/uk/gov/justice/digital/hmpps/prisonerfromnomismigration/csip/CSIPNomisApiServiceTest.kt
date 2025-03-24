@@ -141,37 +141,4 @@ class CSIPNomisApiServiceTest {
       }
     }
   }
-
-  @Nested
-  @DisplayName("GET /csip/ids")
-  inner class GetCSIPIdsToMigrate {
-    @Test
-    internal fun `will pass oath2 token to service`() = runTest {
-      csipNomisApiMockServer.stubGetPagedCSIPIds()
-
-      nomisApiService.getCSIPIds(fromDate = null, toDate = null, pageNumber = 0, pageSize = 20)
-
-      csipNomisApiMockServer.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `will call the Nomis endpoint`() = runTest {
-      csipNomisApiMockServer.stubGetPagedCSIPIds(1, 20)
-
-      nomisApiService.getCSIPIds(fromDate = null, toDate = null, pageNumber = 0, pageSize = 20)
-
-      csipNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/csip/ids")))
-    }
-
-    @Test
-    fun `will return csipIds`() = runTest {
-      csipNomisApiMockServer.stubGetPagedCSIPIds(3, 10)
-
-      val csipIds = nomisApiService.getCSIPIds(fromDate = null, toDate = null, pageNumber = 0, pageSize = 20)
-
-      assertThat(csipIds).hasSize(3)
-    }
-  }
 }
