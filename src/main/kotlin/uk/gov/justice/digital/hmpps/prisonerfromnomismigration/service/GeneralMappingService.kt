@@ -6,7 +6,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.Alloca
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonMappingApiService
@@ -20,7 +19,6 @@ class GeneralMappingService(
   private val activityMappingService: ActivitiesMappingService,
   private val allocationsMappingService: AllocationsMappingService,
   private val corePersonMappingApiService: CorePersonMappingApiService,
-  private val csipMappingService: CSIPMappingService,
   private val incidentsMappingService: IncidentsMappingService,
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
   private val contactPersonMappingApiService: ContactPersonMappingApiService,
@@ -34,7 +32,6 @@ class GeneralMappingService(
     MigrationType.ACTIVITIES -> activityMappingService.getMigrationCount(migrationId)
     MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
     MigrationType.CORE_PERSON -> corePersonMappingApiService.getMigrationCount(migrationId)
-    MigrationType.CSIP -> csipMappingService.getMigrationCount(migrationId)
     MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
     MigrationType.PERSONALRELATIONSHIPS -> contactPersonMappingApiService.getMigrationCount(migrationId)

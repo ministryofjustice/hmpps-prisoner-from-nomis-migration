@@ -218,20 +218,6 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun verifyCreateCSIPFullMapping(dpsCSIPId: String, dpsCSIPFactorId: String, times: Int = 1) = verify(
-    times,
-    WireMock.postRequestedFor(WireMock.urlPathEqualTo(CSIP_CREATE_MAPPING_URL))
-      .withRequestBody(
-        WireMock.matchingJsonPath("dpsCSIPReportId", WireMock.equalTo(dpsCSIPId)),
-      )
-      .withRequestBody(
-        WireMock.matchingJsonPath(
-          "factorMappings[0].dpsId",
-          WireMock.equalTo(dpsCSIPFactorId),
-        ),
-      ),
-  )
-
   fun verifyCreateCSIPReportMapping(dpsCSIPId: String, times: Int = 1) = verify(
     times,
     WireMock.postRequestedFor(WireMock.urlPathEqualTo(CSIP_CREATE_MAPPING_URL)).withRequestBody(
