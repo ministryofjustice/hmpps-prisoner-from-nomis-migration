@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-03-21.231.51b52e3"
+    "version" : "2025-03-25.251.88e888c"
   },
   "servers" : [ {
     "url" : "https://hmpps-visit-allocation-api-dev.prison.service.justice.gov.uk",
@@ -375,7 +375,8 @@
           "prisonerId" : {
             "type" : "string",
             "description" : "nomsNumber of the prisoner",
-            "example" : "AA123456"
+            "example" : "AA123456",
+            "minLength" : 1
           },
           "oldVoBalance" : {
             "type" : "integer",
@@ -410,7 +411,7 @@
           "adjustmentReasonCode" : {
             "type" : "string",
             "description" : "The reason for the adjustment",
-            "enum" : [ "AUTO_EXP", "CANC", "DISC", "GOV", "IEP", "PVO_CANCEL", "PVO_IEP", "PVO_ISSUE", "VO_CANCEL", "VO_ISSUE" ],
+            "enum" : [ "AUTO_EXP", "CANC", "DISC", "GOV", "IEP", "PVO_CANCEL", "PVO_IEP", "PVO_ISSUE", "VO_CANCEL", "VO_ISSUE", "VO_RECREDIT" ],
             "example" : "VO_ISSUE"
           },
           "changeLogSource" : {
@@ -425,7 +426,7 @@
             "example" : "Manually adjusted for phone credit"
           }
         },
-        "required" : [ "adjustmentReasonCode", "changeLogSource", "comment", "createdDate", "oldPvoBalance", "oldVoBalance", "prisonerId" ]
+        "required" : [ "adjustmentReasonCode", "changeLogSource", "createdDate", "prisonerId" ]
       },
       "VisitAllocationPrisonerMigrationDto" : {
         "type" : "object",
@@ -433,7 +434,8 @@
           "prisonerId" : {
             "type" : "string",
             "description" : "nomsNumber of the prisoner",
-            "example" : "AA123456"
+            "example" : "AA123456",
+            "minLength" : 1
           },
           "voBalance" : {
             "type" : "integer",
