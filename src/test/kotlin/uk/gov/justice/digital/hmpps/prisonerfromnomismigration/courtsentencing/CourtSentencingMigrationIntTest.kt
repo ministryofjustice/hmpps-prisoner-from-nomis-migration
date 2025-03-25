@@ -414,6 +414,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(it["reason"]).isEqualTo("skipped linked(s) cases for this offender")
           assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NO)
           assertThat(it["migrationId"]).isNotNull
+          assertThat(it["caseIds"]).isEqualTo("[$NOMIS_CASE_ID]")
         },
         isNull(),
       )

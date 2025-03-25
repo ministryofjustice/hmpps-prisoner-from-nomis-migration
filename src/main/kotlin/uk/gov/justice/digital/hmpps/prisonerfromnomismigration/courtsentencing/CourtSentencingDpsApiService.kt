@@ -105,7 +105,6 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
     .retrieve()
     .awaitBodilessEntity()
 
-  // TODO not currently implemented in DPS
   suspend fun createSentence(sentence: LegacyCreateSentence): LegacySentenceCreatedResponse = webClient
     .post()
     .uri("/legacy/sentence")
