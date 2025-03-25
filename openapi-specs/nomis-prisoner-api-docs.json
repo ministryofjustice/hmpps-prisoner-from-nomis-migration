@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-03-21.11809.d7306f6"
+    "version" : "2025-03-24.11832.15e6027"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -13460,7 +13460,7 @@
       "get" : {
         "tags" : [ "non-association-resource" ],
         "summary" : "Get non-associations by booking ID",
-        "description" : "Get non-associations for the given booking ID. Requires role NOMIS_NON_ASSOCIATIONS",
+        "description" : "Get non-associations for the given booking ID. Returns empty list if none found. Requires role NOMIS_NON_ASSOCIATIONS",
         "operationId" : "getByBookingId",
         "parameters" : [ {
           "name" : "bookingId",
@@ -13483,16 +13483,6 @@
                   "items" : {
                     "$ref" : "#/components/schemas/NonAssociationIdResponse"
                   }
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "No non-associations found for the given booking ID",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -14476,74 +14466,6 @@
           },
           "404" : {
             "description" : "Not found",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/csip/ids" : {
-      "get" : {
-        "tags" : [ "csip-resource" ],
-        "summary" : "get csip IDs by filter",
-        "description" : "Retrieves a paged list of csip ids by filter. Requires ROLE_NOMIS_CSIP.",
-        "operationId" : "getIdsByFilter_2",
-        "parameters" : [ {
-          "name" : "pageRequest",
-          "in" : "query",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/Pageable"
-          }
-        }, {
-          "name" : "fromDate",
-          "in" : "query",
-          "description" : "Filter results by those that were created on or after the given date",
-          "required" : false,
-          "schema" : {
-            "type" : "string",
-            "format" : "date"
-          },
-          "example" : "2021-11-03"
-        }, {
-          "name" : "toDate",
-          "in" : "query",
-          "description" : "Filter results by those that were created on or before the given date",
-          "required" : false,
-          "schema" : {
-            "type" : "string",
-            "format" : "date"
-          },
-          "example" : "2021-11-03"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Pageable list of ids are returned",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/PageCSIPIdResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden to access this endpoint when role NOMIS_CSIP not present",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -21916,9 +21838,6 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "unpaged" : {
-            "type" : "boolean"
-          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -21929,6 +21848,9 @@
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "unpaged" : {
+            "type" : "boolean"
           }
         }
       },
@@ -26164,52 +26086,6 @@
           }
         },
         "required" : [ "csipId" ]
-      },
-      "PageCSIPIdResponse" : {
-        "type" : "object",
-        "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "totalPages" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
-          "size" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "content" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/CSIPIdResponse"
-            }
-          },
-          "number" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "empty" : {
-            "type" : "boolean"
-          }
-        }
       },
       "CourtCaseIdResponse" : {
         "type" : "object",
