@@ -34,8 +34,8 @@ class VisitBalanceEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType, "visitbalance")) {
             when (eventType) {
+              // Note. We only receive comment changes in UPDATED events (so dps are not interested in this event)
               "OFFENDER_VISIT_BALANCE_ADJS-INSERTED" -> service.visitBalanceAdjustmentInserted(sqsMessage.Message.fromJson())
-              "OFFENDER_VISIT_BALANCE_ADJS-UPDATED" -> service.visitBalanceAdjustmentUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_VISIT_BALANCE_ADJS-DELETED" -> service.visitBalanceAdjustmentDeleted(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)

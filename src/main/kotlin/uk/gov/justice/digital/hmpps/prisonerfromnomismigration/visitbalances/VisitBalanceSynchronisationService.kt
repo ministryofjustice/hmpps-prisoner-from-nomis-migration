@@ -34,20 +34,12 @@ class VisitBalanceSynchronisationService(
     }
   }
 
-  suspend fun visitBalanceAdjustmentUpdated(event: VisitBalanceOffenderEvent) {
-    val telemetry = telemetryOf(
-      "visitBalanceAdjustmentId" to event.visitBalanceAdjustmentId,
-      "nomisPrisonNumber" to event.offenderIdDisplay,
-    )
-    telemetryClient.trackEvent("visitbalance-adjustment-synchronisation-updated-notimplemented", telemetry)
-  }
-
   suspend fun visitBalanceAdjustmentDeleted(event: VisitBalanceOffenderEvent) {
     val telemetry = telemetryOf(
       "visitBalanceAdjustmentId" to event.visitBalanceAdjustmentId,
       "nomisPrisonNumber" to event.offenderIdDisplay,
     )
-    telemetryClient.trackEvent("visitbalance-adjustment-synchronisation-deleted-notimplemented", telemetry)
+    telemetryClient.trackEvent("visitbalance-adjustment-synchronisation-deleted-unexpected", telemetry)
   }
 }
 

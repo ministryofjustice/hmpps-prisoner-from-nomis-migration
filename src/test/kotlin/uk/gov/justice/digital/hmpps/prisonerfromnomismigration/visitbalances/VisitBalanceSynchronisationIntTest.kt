@@ -120,68 +120,6 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("OFFENDER_VISIT_BALANCE_ADJS-UPDATED")
-  inner class VisitBalanceAdjustmentUpdated {
-    private val visitBalanceAdjId = 123456L
-    private val nomisPrisonNumber = "A1234BC"
-
-    @Nested
-    inner class WhenUpdatedInDps {
-      @BeforeEach
-      fun setUp() {
-        visitBalanceOffenderEventsQueue.sendMessage(
-          visitBalanceAdjustmentEvent(
-            eventType = "OFFENDER_VISIT_BALANCE_ADJS-UPDATED",
-            visitBalanceAdjId = visitBalanceAdjId,
-            auditModuleName = "DPS_SYNCHRONISATION",
-          ),
-        ).also { waitForAnyProcessingToComplete() }
-      }
-
-      @Test
-      fun `will track telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("visitbalance-adjustment-synchronisation-updated-notimplemented"),
-          check {
-            assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
-          },
-          isNull(),
-        )
-      }
-    }
-
-    @Nested
-    inner class WhenUpdatedInNomis {
-      private val nomisVisitBalanceAdjId = 123456L
-      private val nomisPrisonNumber = "A1234BC"
-
-      @BeforeEach
-      fun setUp() {
-        visitBalanceOffenderEventsQueue.sendMessage(
-          visitBalanceAdjustmentEvent(
-            eventType = "OFFENDER_VISIT_BALANCE_ADJS-UPDATED",
-            visitBalanceAdjId = nomisVisitBalanceAdjId,
-            auditModuleName = "NOMIS_SYNCHRONISATION",
-          ),
-        ).also { waitForAnyProcessingToComplete() }
-      }
-
-      @Test
-      fun `will track telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("visitbalance-adjustment-synchronisation-updated-notimplemented"),
-          check {
-            assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(nomisVisitBalanceAdjId.toString())
-            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
-          },
-          isNull(),
-        )
-      }
-    }
-  }
-
-  @Nested
   @DisplayName("OFFENDER_VISIT_BALANCE_ADJS-DELETED")
   inner class VisitBalanceAdjustmentDeleted {
     private val nomisVisitBalanceAdjId = 123456L
@@ -203,7 +141,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("visitbalance-adjustment-synchronisation-deleted-notimplemented"),
+          eq("visitbalance-adjustment-synchronisation-deleted-unexpected"),
           check {
             assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(nomisVisitBalanceAdjId.toString())
             assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
@@ -232,7 +170,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("visitbalance-adjustment-synchronisation-deleted-notimplemented"),
+          eq("visitbalance-adjustment-synchronisation-deleted-unexpected"),
           check {
             assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(nomisVisitBalanceAdjId.toString())
             assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber.toString())
