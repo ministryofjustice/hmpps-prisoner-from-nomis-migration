@@ -96,7 +96,7 @@ class CourtSentencingMigrationService(
     offenderNo: String,
     context: MigrationContext<PrisonerId>,
   ): List<CourtCaseResponse> {
-    nomisCourtCases.any { it.combinedCaseId != null }.let {
+    if (nomisCourtCases.any { it.combinedCaseId != null }) {
       val caseIds = nomisCourtCases.filter { it.combinedCaseId != null }.map { it.id }
       log.info(
         "Skipping linked(s) cases for offenderNo $offenderNo cases affected: $caseIds \n",
