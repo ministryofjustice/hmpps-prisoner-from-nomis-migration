@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerVisitBalanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceDetailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture
 class VisitBalanceMigrationMessageListener(
   objectMapper: ObjectMapper,
   migrationService: VisitBalanceMigrationService,
-) : MigrationMessageListener<VisitBalanceMigrationFilter, VisitBalanceIdResponse, PrisonerVisitBalanceResponse, VisitBalanceMappingDto>(
+) : MigrationMessageListener<VisitBalanceMigrationFilter, VisitBalanceIdResponse, VisitBalanceDetailResponse, VisitBalanceMappingDto>(
   objectMapper,
   migrationService,
 ) {

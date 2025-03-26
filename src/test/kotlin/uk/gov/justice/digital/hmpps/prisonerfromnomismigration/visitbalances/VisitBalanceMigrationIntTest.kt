@@ -32,7 +32,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceMappingDto.MappingType.MIGRATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerVisitBalanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceDetailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
@@ -246,14 +246,14 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         stubMigrateVisitBalances(
           listOf(10000, 10001),
-          PrisonerVisitBalanceResponse(
+          VisitBalanceDetailResponse(
             prisonNumber = "A0001BC",
             remainingVisitOrders = 1,
             remainingPrivilegedVisitOrders = 4,
             lastIEPAllocationDate = LocalDate.parse("2025-02-01"),
           ),
 
-          PrisonerVisitBalanceResponse(
+          VisitBalanceDetailResponse(
             prisonNumber = "A0002BC",
             remainingVisitOrders = 2,
             remainingPrivilegedVisitOrders = 3,
@@ -1143,7 +1143,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
     )
   }
 
-  private fun stubMigrateVisitBalances(visitBalanceIds: List<Long>, vararg visitBalances: PrisonerVisitBalanceResponse) {
+  private fun stubMigrateVisitBalances(visitBalanceIds: List<Long>, vararg visitBalances: VisitBalanceDetailResponse) {
     nomisApi.resetAll()
     dpsApiMock.resetAll()
     mappingApiMock.resetAll()
