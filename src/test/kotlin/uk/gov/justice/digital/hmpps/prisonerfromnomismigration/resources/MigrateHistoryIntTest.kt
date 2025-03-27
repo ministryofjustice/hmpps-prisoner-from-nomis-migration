@@ -12,7 +12,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISIT_BALANCE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceMappingApiMockServer
 import java.time.LocalDateTime
@@ -37,12 +38,12 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
             migrationId = "2020-01-01T00:00:00",
             whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
             whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
-            status = MigrationStatus.COMPLETED,
+            status = COMPLETED,
             estimatedRecordCount = 123_567,
-            filter = "",
+            filter = """"prisonIds":["HEI"],"visitTypes":["SCON"],"ignoreMissingRoom":false""",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = VISIT_BALANCE,
+            migrationType = VISITS,
           ),
         )
         migrationHistoryRepository.save(
@@ -50,12 +51,12 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
             migrationId = "2020-01-02T00:00:00",
             whenStarted = LocalDateTime.parse("2020-01-02T00:00:00"),
             whenEnded = LocalDateTime.parse("2020-01-02T01:00:00"),
-            status = MigrationStatus.COMPLETED,
+            status = COMPLETED,
             estimatedRecordCount = 123_567,
-            filter = "",
+            filter = """"prisonIds":["WWI"],"visitTypes":["SCON"],"ignoreMissingRoom":false""",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = VISIT_BALANCE,
+            migrationType = VISITS,
           ),
         )
         migrationHistoryRepository.save(
@@ -63,26 +64,25 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
             migrationId = "2020-01-02T02:00:00",
             whenStarted = LocalDateTime.parse("2020-01-02T02:00:00"),
             whenEnded = LocalDateTime.parse("2020-01-02T03:00:00"),
-            status = MigrationStatus.COMPLETED,
+            status = COMPLETED,
             estimatedRecordCount = 123_567,
-            filter = "",
+            filter = """"prisonIds":["BXI"],"visitTypes":["SCON"],"ignoreMissingRoom":false""",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = VISIT_BALANCE,
+            migrationType = VISITS,
           ),
         )
-        // record of a different type
         migrationHistoryRepository.save(
           MigrationHistory(
             migrationId = "2020-01-03T02:00:00",
             whenStarted = LocalDateTime.parse("2020-01-03T02:00:00"),
             whenEnded = LocalDateTime.parse("2020-01-03T03:00:00"),
-            status = MigrationStatus.COMPLETED,
+            status = COMPLETED,
             estimatedRecordCount = 123_567,
-            filter = "",
+            filter = """"prisonIds":["BXI"],"visitTypes":["SCON"],"ignoreMissingRoom":false""",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = MigrationType.ACTIVITIES,
+            migrationType = VISITS,
           ),
         )
       }
@@ -123,17 +123,102 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    internal fun `can read all records of the specified type`() {
-      webTestClient.get().uri("/migrate/history/all/{migrationType}", VISIT_BALANCE)
+    internal fun `can read all records with no filter`() {
+      webTestClient.get().uri("/migrate/history/all/{migrationType}", VISITS)
         .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
         .expectBody()
-        .jsonPath("$.size()").isEqualTo(3)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-02T02:00:00")
-        .jsonPath("$[1].migrationId").isEqualTo("2020-01-02T00:00:00")
-        .jsonPath("$[2].migrationId").isEqualTo("2020-01-01T00:00:00")
+        .jsonPath("$.size()").isEqualTo(4)
+        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
+        .jsonPath("$[1].migrationId").isEqualTo("2020-01-02T02:00:00")
+        .jsonPath("$[2].migrationId").isEqualTo("2020-01-02T00:00:00")
+        .jsonPath("$[3].migrationId").isEqualTo("2020-01-01T00:00:00")
+    }
+
+    @Test
+    internal fun `can filter so only records after a date are returned`() {
+      webTestClient.get().uri {
+        it.path("/migrate/history/all/$VISITS")
+          .queryParam("fromDateTime", "2020-01-02T02:00:00")
+          .build()
+      }
+        .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.size()").isEqualTo(2)
+        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
+        .jsonPath("$[1].migrationId").isEqualTo("2020-01-02T02:00:00")
+    }
+
+    @Test
+    internal fun `can filter so only records before a date are returned`() {
+      webTestClient.get().uri {
+        it.path("/migrate/history/all/$VISITS")
+          .queryParam("toDateTime", "2020-01-02T00:00:00")
+          .build()
+      }
+        .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.size()").isEqualTo(2)
+        .jsonPath("$[0].migrationId").isEqualTo("2020-01-02T00:00:00")
+        .jsonPath("$[1].migrationId").isEqualTo("2020-01-01T00:00:00")
+    }
+
+    @Test
+    internal fun `can filter so only records between dates are returned`() {
+      webTestClient.get().uri {
+        it.path("/migrate/history/all/$VISITS")
+          .queryParam("fromDateTime", "2020-01-03T01:59:59")
+          .queryParam("toDateTime", "2020-01-03T02:00:01")
+          .build()
+      }
+        .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.size()").isEqualTo(1)
+        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
+    }
+
+    @Test
+    internal fun `can filter so only records with failed records are returned`() {
+      webTestClient.get().uri {
+        it.path("/migrate/history/all/$VISITS")
+          .queryParam("includeOnlyFailures", "true")
+          .build()
+      }
+        .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.size()").isEqualTo(2)
+        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
+        .jsonPath("$[1].migrationId").isEqualTo("2020-01-01T00:00:00")
+    }
+
+    @Test
+    internal fun `can filter by prisonId`() {
+      webTestClient.get().uri {
+        it.path("/migrate/history/all/$VISITS")
+          .queryParam("prisonId", "WWI")
+          .build()
+      }
+        .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$.size()").isEqualTo(1)
+        .jsonPath("$[0].migrationId").isEqualTo("2020-01-02T00:00:00")
     }
   }
 
