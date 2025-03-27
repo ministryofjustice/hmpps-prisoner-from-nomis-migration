@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.resources
 
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
@@ -48,12 +49,8 @@ class MigrateIntTest : SqsIntegrationTestBase() {
   @DisplayName("POST /migrate/cancel/{migrationId}")
   inner class CancelMigrationVisitBalance {
     @BeforeEach
-    internal fun setUp() {
-      webTestClient.delete().uri("/history")
-        .headers(setAuthorisation(roles = listOf("MIGRATION_ADMIN")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().is2xxSuccessful
+    internal fun setUp() = runTest {
+      migrationHistoryRepository.deleteAll()
     }
 
     @Nested
@@ -150,12 +147,8 @@ class MigrateIntTest : SqsIntegrationTestBase() {
   @DisplayName("POST /migrate/refresh/{migrationId}")
   inner class RefreshMigrationVisitBalance {
     @BeforeEach
-    internal fun setUp() {
-      webTestClient.delete().uri("/history")
-        .headers(setAuthorisation(roles = listOf("MIGRATION_ADMIN")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().is2xxSuccessful
+    internal fun setUp() = runTest {
+      migrationHistoryRepository.deleteAll()
     }
 
     @Nested

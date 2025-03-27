@@ -81,7 +81,6 @@ class MigrationHistoryService(
 
   fun findAll(filter: HistoryFilter) = migrationHistoryRepository.findAllWithFilter(filter)
 
-  suspend fun deleteAll() = migrationHistoryRepository.deleteAll()
   suspend fun get(migrationId: String): MigrationHistory = migrationHistoryRepository.findById(migrationId) ?: throw NotFoundException(migrationId)
 
   suspend fun isCancelling(migrationId: String) = migrationHistoryRepository.findById(migrationId)?.status in listOf(CANCELLED_REQUESTED, CANCELLED)
