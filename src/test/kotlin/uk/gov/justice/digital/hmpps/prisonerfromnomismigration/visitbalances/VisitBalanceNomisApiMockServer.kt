@@ -10,8 +10,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerVisitBalanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceDetailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -46,7 +46,7 @@ class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetVisitBalance(
     nomisVisitBalanceId: Long = 12345L,
     prisonNumber: String = "A0001BC",
-    visitBalance: PrisonerVisitBalanceResponse = visitBalance(prisonNumber = prisonNumber),
+    visitBalance: VisitBalanceDetailResponse = visitBalance(prisonNumber = prisonNumber),
   ) {
     nomisApi.stubFor(
       get(urlEqualTo("/visit-balances/$nomisVisitBalanceId")).willReturn(
@@ -95,7 +95,7 @@ class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
 
-fun visitBalance(prisonNumber: String = "A1234BC"): PrisonerVisitBalanceResponse = PrisonerVisitBalanceResponse(
+fun visitBalance(prisonNumber: String = "A1234BC"): VisitBalanceDetailResponse = VisitBalanceDetailResponse(
   prisonNumber = prisonNumber,
   remainingPrivilegedVisitOrders = 2,
   remainingVisitOrders = 3,

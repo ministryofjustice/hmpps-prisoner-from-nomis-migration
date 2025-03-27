@@ -10,7 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceMappingDto.MappingType.MIGRATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerVisitBalanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceDetailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -110,7 +110,7 @@ class VisitBalanceMigrationService(
   }
 }
 
-fun PrisonerVisitBalanceResponse.toMigrationDto() = VisitAllocationPrisonerMigrationDto(
+fun VisitBalanceDetailResponse.toMigrationDto() = VisitAllocationPrisonerMigrationDto(
   voBalance = remainingVisitOrders,
   pvoBalance = remainingPrivilegedVisitOrders,
   lastVoAllocationDate = lastIEPAllocationDate ?: LocalDate.now().minusDays(14),
