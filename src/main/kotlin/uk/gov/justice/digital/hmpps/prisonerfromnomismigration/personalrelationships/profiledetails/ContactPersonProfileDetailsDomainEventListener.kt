@@ -16,6 +16,7 @@ class ContactPersonProfileDetailsDomainEventListener(
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
   private val moveBookingService: ContactPersonProfileDetailsBookingMovedService,
+  private val prisonerMergedService: ContactPersonProfileDetailsPrisonerMergedService,
 ) {
 
   private companion object {
@@ -33,6 +34,7 @@ class ContactPersonProfileDetailsDomainEventListener(
           if (eventFeatureSwitch.isEnabled(eventType, "personalrelationshipsprofiledetails")) {
             when (eventType) {
               "prison-offender-events.prisoner.booking.moved" -> moveBookingService.bookingMoved(sqsMessage.Message.fromJson())
+              "prison-offender-events.prisoner.merged" -> prisonerMergedService.prisonerMerged(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {

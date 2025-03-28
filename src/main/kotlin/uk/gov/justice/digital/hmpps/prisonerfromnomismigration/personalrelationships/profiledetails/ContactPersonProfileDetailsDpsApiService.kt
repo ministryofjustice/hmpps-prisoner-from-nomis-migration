@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelation
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerDomesticStatusRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerNumberOfChildrenRequest
@@ -52,4 +53,13 @@ class ContactPersonProfileDetailsDpsApiService(@Qualifier("personalRelationships
     .bodyValue(request)
     .retrieve()
     .awaitBody()
+
+  suspend fun mergeProfileDetails(
+    keepingPrisonerNumber: String,
+    removedPrisonerNumber: String,
+  ) = webClient
+    .put()
+    .uri("/merge/keep/{keepingPrisonerNumber}/remove/{removedPrisonerNumber}", keepingPrisonerNumber, removedPrisonerNumber)
+    .retrieve()
+    .awaitBodilessEntity()
 }

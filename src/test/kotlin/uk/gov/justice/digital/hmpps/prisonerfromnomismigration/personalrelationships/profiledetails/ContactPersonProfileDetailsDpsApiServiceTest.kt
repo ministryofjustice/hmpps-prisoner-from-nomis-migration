@@ -300,4 +300,31 @@ class ContactPersonProfileDetailsDpsApiServiceTest {
       ),
     )
   }
+
+  @Nested
+  inner class MergeProfileDetails {
+    private val keepingPrisonerNumber = "A1234AA"
+    private val removedPrisonerNumber = "B1234BB"
+
+    @Test
+    fun `should pass auth token to the service`() = runTest {
+      dpsApi.stubMergeProfileDetails(keepingPrisonerNumber, removedPrisonerNumber)
+
+      apiService.mergeProfileDetails(keepingPrisonerNumber, removedPrisonerNumber)
+
+      dpsApi.verify(
+        putRequestedFor(urlPathMatching("/merge/keep/$keepingPrisonerNumber/remove/$removedPrisonerNumber"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should throw when API returns an error`() = runTest {
+      dpsApi.stubMergeProfileDetails(keepingPrisonerNumber, removedPrisonerNumber, INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.mergeProfileDetails(keepingPrisonerNumber, removedPrisonerNumber)
+      }
+    }
+  }
 }
