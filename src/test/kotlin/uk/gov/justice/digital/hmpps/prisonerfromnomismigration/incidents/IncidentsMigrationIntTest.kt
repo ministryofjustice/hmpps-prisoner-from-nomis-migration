@@ -1,11 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -19,28 +18,24 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.test.web.reactive.server.WebTestClient
-import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserters
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.incidentsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingApiMockServer.Companion.INCIDENTS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsNomisApiMockServer.Companion.INCIDENTS_ID_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCIDENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.Duration
-import java.time.LocalDateTime
 
 private const val DPS_INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
 private const val NOMIS_INCIDENT_ID = 1234L
 
-class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
+class IncidentsMigrationIntTest(
+  @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
+) : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var incidentsNomisApi: IncidentsNomisApiMockServer
@@ -48,19 +43,12 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var incidentsMappingApi: IncidentsMappingApiMockServer
 
-  @Autowired
-  private lateinit var migrationHistoryRepository: MigrationHistoryRepository
-
   @Nested
   @DisplayName("POST /migrate/incidents")
   inner class MigrationIncidents {
     @BeforeEach
-    internal fun setUp() {
-      webTestClient.delete().uri("/history")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().is2xxSuccessful
+    internal fun setUp() = runTest {
+      migrationHistoryRepository.deleteAll()
     }
 
     private fun WebTestClient.performMigration(body: String = "{ }") = post().uri("/migrate/incidents")
@@ -154,8 +142,8 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
       verify(telemetryClient, times(26)).trackEvent(eq("incidents-migration-entity-migrated"), any(), isNull())
 
       await untilAsserted {
-        webTestClient.get().uri("/migrate/incidents/history")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
+        webTestClient.get().uri("/migrate/history/all/{migrationType}", INCIDENTS)
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isOk
@@ -290,425 +278,6 @@ class IncidentsMigrationIntTest : SqsIntegrationTestBase() {
         },
         isNull(),
       )
-    }
-  }
-
-  @Nested
-  @DisplayName("GET /migrate/incidents/history")
-  inner class GetAll {
-    @BeforeEach
-    internal fun createHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
-            status = COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_560,
-            recordsFailed = 7,
-            migrationType = INCIDENTS,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-02T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-02T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-02T01:00:00"),
-            status = COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_567,
-            recordsFailed = 0,
-            migrationType = INCIDENTS,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-02T02:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-02T02:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-02T03:00:00"),
-            status = COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_567,
-            recordsFailed = 0,
-            migrationType = INCIDENTS,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-03T02:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-03T02:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-03T03:00:00"),
-            status = COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_560,
-            recordsFailed = 7,
-            migrationType = INCIDENTS,
-          ),
-        )
-      }
-    }
-
-    @AfterEach
-    internal fun deleteHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-      }
-    }
-
-    @Test
-    internal fun `must have valid token to get history`() {
-      webTestClient.get().uri("/migrate/incidents/history")
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isUnauthorized
-    }
-
-    @Test
-    internal fun `must have correct role to get history`() {
-      webTestClient.get().uri("/migrate/incidents/history")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isForbidden
-    }
-
-    @Test
-    internal fun `can read all records with no filter`() {
-      webTestClient.get().uri("/migrate/incidents/history")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.size()").isEqualTo(4)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
-        .jsonPath("$[1].migrationId").isEqualTo("2020-01-02T02:00:00")
-        .jsonPath("$[2].migrationId").isEqualTo("2020-01-02T00:00:00")
-        .jsonPath("$[3].migrationId").isEqualTo("2020-01-01T00:00:00")
-    }
-
-    @Test
-    internal fun `can filter so only records after a date are returned`() {
-      webTestClient.get().uri {
-        it.path("/migrate/incidents/history")
-          .queryParam("fromDateTime", "2020-01-02T02:00:00")
-          .build()
-      }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.size()").isEqualTo(2)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
-        .jsonPath("$[1].migrationId").isEqualTo("2020-01-02T02:00:00")
-    }
-
-    @Test
-    internal fun `can filter so only records before a date are returned`() {
-      webTestClient.get().uri {
-        it.path("/migrate/incidents/history")
-          .queryParam("toDateTime", "2020-01-02T00:00:00")
-          .build()
-      }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.size()").isEqualTo(2)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-02T00:00:00")
-        .jsonPath("$[1].migrationId").isEqualTo("2020-01-01T00:00:00")
-    }
-
-    @Test
-    internal fun `can filter so only records between dates are returned`() {
-      webTestClient.get().uri {
-        it.path("/migrate/incidents/history")
-          .queryParam("fromDateTime", "2020-01-03T01:59:59")
-          .queryParam("toDateTime", "2020-01-03T02:00:01")
-          .build()
-      }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.size()").isEqualTo(1)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
-    }
-
-    @Test
-    internal fun `can filter so only records with failed records are returned`() {
-      webTestClient.get().uri {
-        it.path("/migrate/incidents/history")
-          .queryParam("includeOnlyFailures", "true")
-          .build()
-      }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.size()").isEqualTo(2)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
-        .jsonPath("$[1].migrationId").isEqualTo("2020-01-01T00:00:00")
-    }
-  }
-
-  @Nested
-  @DisplayName("GET /migrate/incidents/history/{migrationId}")
-  inner class Get {
-    @BeforeEach
-    internal fun createHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
-            status = COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_560,
-            recordsFailed = 7,
-            migrationType = INCIDENTS,
-          ),
-        )
-      }
-    }
-
-    @AfterEach
-    internal fun deleteHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-      }
-    }
-
-    @Test
-    internal fun `must have valid token to get history`() {
-      webTestClient.get().uri("/migrate/incidents/history/2020-01-01T00:00:00")
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isUnauthorized
-    }
-
-    @Test
-    internal fun `must have correct role to get history`() {
-      webTestClient.get().uri("/migrate/incidents/history/2020-01-01T00:00:00")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isForbidden
-    }
-
-    @Test
-    internal fun `can read record`() {
-      webTestClient.get().uri("/migrate/incidents/history/2020-01-01T00:00:00")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.migrationId").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$.status").isEqualTo("COMPLETED")
-    }
-  }
-
-  @Nested
-  @DisplayName("GET /migrate/incidents/active-migration")
-  inner class GetActiveMigration {
-    @BeforeEach
-    internal fun createHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
-            status = MigrationStatus.STARTED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_560,
-            recordsFailed = 7,
-            migrationType = INCIDENTS,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2019-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2019-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2019-01-01T01:00:00"),
-            status = COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_567,
-            recordsFailed = 0,
-            migrationType = INCIDENTS,
-          ),
-        )
-      }
-    }
-
-    @AfterEach
-    internal fun deleteHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-      }
-    }
-
-    @Test
-    internal fun `must have valid token to get active migration data`() {
-      webTestClient.get().uri("/migrate/incidents/active-migration")
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isUnauthorized
-    }
-
-    @Test
-    internal fun `must have correct role to get action migration data`() {
-      webTestClient.get().uri("/migrate/incidents/active-migration")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isForbidden
-    }
-
-    @Test
-    internal fun `will return dto with null contents if no migrations are found`() {
-      deleteHistoryRecords()
-      webTestClient.get().uri("/migrate/incidents/active-migration")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.migrationId").doesNotExist()
-        .jsonPath("$.whenStarted").doesNotExist()
-        .jsonPath("$.recordsMigrated").doesNotExist()
-        .jsonPath("$.estimatedRecordCount").doesNotExist()
-        .jsonPath("$.status").doesNotExist()
-        .jsonPath("$.migrationType").doesNotExist()
-    }
-
-    @Test
-    internal fun `can read active migration data`() {
-      incidentsMappingApi.stubIncidentsMappingByMigrationId(count = 123456)
-      webTestClient.get().uri("/migrate/incidents/active-migration")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.migrationId").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$.whenStarted").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$.recordsMigrated").isEqualTo(123456)
-        .jsonPath("$.toBeProcessedCount").isEqualTo(0)
-        .jsonPath("$.beingProcessedCount").isEqualTo(0)
-        .jsonPath("$.recordsFailed").isEqualTo(0)
-        .jsonPath("$.estimatedRecordCount").isEqualTo(123567)
-        .jsonPath("$.status").isEqualTo("STARTED")
-        .jsonPath("$.migrationType").isEqualTo("INCIDENTS")
-    }
-  }
-
-  @Nested
-  @DisplayName("POST /migrate/incidents/{migrationId}/terminate/")
-  inner class TerminateMigrationIncidents {
-    @BeforeEach
-    internal fun setUp() {
-      webTestClient.delete().uri("/history")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().is2xxSuccessful
-    }
-
-    @Test
-    internal fun `must have valid token to terminate a migration`() {
-      webTestClient.post().uri("/migrate/incidents/{migrationId}/cancel/", "some id")
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isUnauthorized
-    }
-
-    @Test
-    internal fun `must have correct role to terminate a migration`() {
-      webTestClient.post().uri("/migrate/incidents/{migrationId}/cancel", "some id")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isForbidden
-    }
-
-    @Test
-    internal fun `will return a not found if no running migration found`() {
-      webTestClient.post().uri("/migrate/incidents/{migrationId}/cancel", "some id")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isNotFound
-    }
-
-    @Test
-    internal fun `will terminate a running migration`() {
-      val count = 30L
-      nomisApi.stubGetInitialCount(INCIDENTS_ID_URL, count) { incidentIdsPagedResponse(it) }
-      incidentsNomisApi.stubMultipleGetIncidentIdCounts(totalElements = count, pageSize = 10)
-      incidentsMappingApi.stubIncidentsMappingByMigrationId(count = count.toInt())
-
-      val migrationId = webTestClient.post().uri("/migrate/incidents")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue(
-            """
-            {
-              "fromDate": "2020-01-01",
-              "toDate": "2020-01-02"
-            }
-            """.trimIndent(),
-          ),
-        )
-        .exchange()
-        .expectStatus().isAccepted
-        .returnResult<MigrationContext<IncidentsMigrationFilter>>()
-        .responseBody.blockFirst()!!.migrationId
-
-      webTestClient.post().uri("/migrate/incidents/{migrationId}/cancel", migrationId)
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isAccepted
-
-      webTestClient.get().uri("/migrate/incidents/history/{migrationId}", migrationId)
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.migrationId").isEqualTo(migrationId)
-        .jsonPath("$.status").isEqualTo("CANCELLED_REQUESTED")
-
-      await atMost Duration.ofSeconds(60) untilAsserted {
-        webTestClient.get().uri("/migrate/incidents/history/{migrationId}", migrationId)
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
-          .header("Content-Type", "application/json")
-          .exchange()
-          .expectStatus().isOk
-          .expectBody()
-          .jsonPath("$.migrationId").isEqualTo(migrationId)
-          .jsonPath("$.status").isEqualTo("CANCELLED")
-      }
     }
   }
 }

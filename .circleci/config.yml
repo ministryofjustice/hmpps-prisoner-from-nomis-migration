@@ -7,10 +7,10 @@ parameters:
     default: syscon-alerts-security
   test-executor-packages:
     type: string
-    default: "activities alerts appointments courtsentencing csip incidents locations sentencing visits personalrelationships casenotes organisations"
+    default: "activities alerts appointments courtsentencing csip incidents locations sentencing visits personalrelationships casenotes organisations coreperson visitbalances"
   test-executors-count:
     type: integer
-    default: 13
+    default: 15
 jobs:
   validate:
     executor:

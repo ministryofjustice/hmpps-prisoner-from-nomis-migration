@@ -10,7 +10,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -53,10 +52,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderNationalityDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderSexualOrientation
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
@@ -65,7 +61,9 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
+class CorePersonMigrationIntTest(
+  @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
+) : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var nomisCorePersonApiMock: CorePersonNomisApiMockServer
 
@@ -73,9 +71,6 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var mappingApiMock: CorePersonMappingApiMockServer
-
-  @Autowired
-  private lateinit var migrationHistoryRepository: MigrationHistoryRepository
 
   @Nested
   @DisplayName("POST /migrate/core-person")
@@ -156,8 +151,8 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will mark migration as complete`() {
-        webTestClient.get().uri("/migrate/core-person/history/${migrationResult.migrationId}")
-          .headers(setAuthorisation(roles = listOf("MIGRATE_CORE_PERSON")))
+        webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isOk
@@ -264,8 +259,8 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will record the number of prisoners migrated`() {
-        webTestClient.get().uri("/migrate/core-person/history/${migrationResult.migrationId}")
-          .headers(setAuthorisation(roles = listOf("MIGRATE_CORE_PERSON")))
+        webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isOk
@@ -845,8 +840,8 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will record the number of core persons migrated`() {
-        webTestClient.get().uri("/migrate/core-person/history/${migrationResult.migrationId}")
-          .headers(setAuthorisation(roles = listOf("MIGRATE_CORE_PERSON")))
+        webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isOk
@@ -936,8 +931,8 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will record the number of core persons (offenders) migrated`() {
-        webTestClient.get().uri("/migrate/core-person/history/${migrationResult.migrationId}")
-          .headers(setAuthorisation(roles = listOf("MIGRATE_CORE_PERSON")))
+        webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isOk
@@ -945,438 +940,6 @@ class CorePersonMigrationIntTest : SqsIntegrationTestBase() {
           .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
           .jsonPath("$.status").isEqualTo("COMPLETED")
           .jsonPath("$.recordsMigrated").isEqualTo("0")
-      }
-    }
-  }
-
-  @Nested
-  @DisplayName("GET /migrate/core-person/history")
-  inner class GetAll {
-    @BeforeEach
-    internal fun createHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
-            status = MigrationStatus.COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_560,
-            recordsFailed = 7,
-            migrationType = MigrationType.CORE_PERSON,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-02T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-02T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-02T01:00:00"),
-            status = MigrationStatus.COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_567,
-            recordsFailed = 0,
-            migrationType = MigrationType.CORE_PERSON,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-02T02:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-02T02:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-02T03:00:00"),
-            status = MigrationStatus.COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_567,
-            recordsFailed = 0,
-            migrationType = MigrationType.CORE_PERSON,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-03T02:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-03T02:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-03T03:00:00"),
-            status = MigrationStatus.COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_560,
-            recordsFailed = 7,
-            migrationType = MigrationType.CORE_PERSON,
-          ),
-        )
-      }
-    }
-
-    @AfterEach
-    internal fun deleteHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-      }
-    }
-
-    @Nested
-    inner class Security {
-      @Test
-      fun `access forbidden when no role`() {
-        webTestClient.get().uri("/migrate/core-person/history")
-          .headers(setAuthorisation(roles = listOf()))
-          .exchange()
-          .expectStatus().isForbidden
-      }
-
-      @Test
-      fun `access forbidden with wrong role`() {
-        webTestClient.get().uri("/migrate/core-person/history")
-          .headers(setAuthorisation(roles = listOf("BANANAS")))
-          .exchange()
-          .expectStatus().isForbidden
-      }
-
-      @Test
-      fun `access unauthorised with no auth token`() {
-        webTestClient.get().uri("/migrate/core-person/history")
-          .header("Content-Type", "application/json")
-          .exchange()
-          .expectStatus().isUnauthorized
-      }
-    }
-
-    @Test
-    internal fun `can read all records`() {
-      webTestClient.get().uri("/migrate/core-person/history")
-        .headers(setAuthorisation(roles = listOf("MIGRATE_CORE_PERSON")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.size()").isEqualTo(4)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
-        .jsonPath("$[1].migrationId").isEqualTo("2020-01-02T02:00:00")
-        .jsonPath("$[2].migrationId").isEqualTo("2020-01-02T00:00:00")
-        .jsonPath("$[3].migrationId").isEqualTo("2020-01-01T00:00:00")
-    }
-
-    @Test
-    fun `can also use the syscon generic role`() {
-      webTestClient.get().uri("/migrate/core-person/history")
-        .headers(setAuthorisation(roles = listOf("MIGRATE_NOMIS_SYSCON")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-    }
-  }
-
-  @Nested
-  @DisplayName("GET /migrate/core-person/history/{migrationId}")
-  inner class Get {
-    @BeforeEach
-    internal fun createHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
-            status = MigrationStatus.COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_560,
-            recordsFailed = 7,
-            migrationType = MigrationType.CORE_PERSON,
-          ),
-        )
-      }
-    }
-
-    @AfterEach
-    internal fun deleteHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-      }
-    }
-
-    @Nested
-    inner class Security {
-      @Test
-      fun `access forbidden when no role`() {
-        webTestClient.get().uri("/migrate/core-person/history/2020-01-01T00:00:00")
-          .headers(setAuthorisation(roles = listOf()))
-          .exchange()
-          .expectStatus().isForbidden
-      }
-
-      @Test
-      fun `access forbidden with wrong role`() {
-        webTestClient.get().uri("/migrate/core-person/history/2020-01-01T00:00:00")
-          .headers(setAuthorisation(roles = listOf("BANANAS")))
-          .exchange()
-          .expectStatus().isForbidden
-      }
-
-      @Test
-      fun `access unauthorised with no auth token`() {
-        webTestClient.get().uri("/migrate/core-person/history/2020-01-01T00:00:00")
-          .header("Content-Type", "application/json")
-          .exchange()
-          .expectStatus().isUnauthorized
-      }
-    }
-
-    @Test
-    internal fun `can read record`() {
-      webTestClient.get().uri("/migrate/core-person/history/2020-01-01T00:00:00")
-        .headers(setAuthorisation(roles = listOf("MIGRATE_CORE_PERSON")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.migrationId").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$.status").isEqualTo("COMPLETED")
-    }
-
-    @Test
-    fun `can also use the syscon generic role`() {
-      webTestClient.get().uri("/migrate/core-person/history/2020-01-01T00:00:00")
-        .headers(setAuthorisation(roles = listOf("MIGRATE_NOMIS_SYSCON")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-    }
-  }
-
-  @Nested
-  @DisplayName("GET /migrate/core-person/active-migration")
-  inner class GetActiveMigration {
-    @BeforeEach
-    internal fun createHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
-            status = MigrationStatus.STARTED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_560,
-            recordsFailed = 7,
-            migrationType = MigrationType.CORE_PERSON,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2019-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2019-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2019-01-01T01:00:00"),
-            status = MigrationStatus.COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_567,
-            recordsFailed = 0,
-            migrationType = MigrationType.CORE_PERSON,
-          ),
-        )
-      }
-    }
-
-    @AfterEach
-    internal fun deleteHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-      }
-    }
-
-    @Nested
-    inner class Security {
-      @Test
-      fun `access forbidden when no role`() {
-        webTestClient.get().uri("/migrate/core-person/active-migration")
-          .headers(setAuthorisation(roles = listOf()))
-          .exchange()
-          .expectStatus().isForbidden
-      }
-
-      @Test
-      fun `access forbidden with wrong role`() {
-        webTestClient.get().uri("/migrate/core-person/active-migration")
-          .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
-          .exchange()
-          .expectStatus().isForbidden
-      }
-
-      @Test
-      fun `access unauthorised with no auth token`() {
-        webTestClient.get().uri("/migrate/core-person/active-migration")
-          .header("Content-Type", "application/json")
-          .exchange()
-          .expectStatus().isUnauthorized
-      }
-    }
-
-    @Test
-    internal fun `will return dto with null contents if no migrations are found`() {
-      deleteHistoryRecords()
-      webTestClient.get().uri("/migrate/core-person/active-migration")
-        .headers(setAuthorisation(roles = listOf("MIGRATE_CORE_PERSON")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.migrationId").doesNotExist()
-        .jsonPath("$.whenStarted").doesNotExist()
-        .jsonPath("$.recordsMigrated").doesNotExist()
-        .jsonPath("$.estimatedRecordCount").doesNotExist()
-        .jsonPath("$.status").doesNotExist()
-        .jsonPath("$.migrationType").doesNotExist()
-    }
-
-    @Test
-    internal fun `can read active migration data`() {
-      mappingApiMock.stubGetMigrationDetails(migrationId = "2020-01-01T00%3A00%3A00", count = 123456)
-      webTestClient.get().uri("/migrate/core-person/active-migration")
-        .headers(setAuthorisation(roles = listOf("MIGRATE_CORE_PERSON")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.migrationId").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$.whenStarted").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$.recordsMigrated").isEqualTo(123456)
-        .jsonPath("$.toBeProcessedCount").isEqualTo(0)
-        .jsonPath("$.beingProcessedCount").isEqualTo(0)
-        .jsonPath("$.recordsFailed").isEqualTo(0)
-        .jsonPath("$.estimatedRecordCount").isEqualTo(123567)
-        .jsonPath("$.status").isEqualTo("STARTED")
-        .jsonPath("$.migrationType").isEqualTo("CORE_PERSON")
-    }
-
-    @Test
-    fun `can also use the syscon generic role`() {
-      mappingApiMock.stubGetMigrationDetails(migrationId = "2020-01-01T00%3A00%3A00", count = 123456)
-      webTestClient.get().uri("/migrate/core-person/active-migration")
-        .headers(setAuthorisation(roles = listOf("MIGRATE_NOMIS_SYSCON")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-    }
-  }
-
-  @Nested
-  @DisplayName("POST /migrate/core-person/{migrationId}/cancel")
-  inner class TerminateMigrationCorePerson {
-    @BeforeEach
-    internal fun setUp() {
-      webTestClient.delete().uri("/history")
-        .headers(setAuthorisation(roles = listOf("MIGRATION_ADMIN")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().is2xxSuccessful
-    }
-
-    @Nested
-    inner class Security {
-      @Test
-      fun `access forbidden when no role`() {
-        webTestClient.post().uri("/migrate/core-person/{migrationId}/cancel", "some id")
-          .headers(setAuthorisation(roles = listOf()))
-          .contentType(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus().isForbidden
-      }
-
-      @Test
-      fun `access forbidden with wrong role`() {
-        webTestClient.post().uri("/migrate/core-person/{migrationId}/cancel", "some id")
-          .headers(setAuthorisation(roles = listOf("BANANAS")))
-          .contentType(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus().isForbidden
-      }
-
-      @Test
-      fun `access unauthorised with no auth token`() {
-        webTestClient.post().uri("/migrate/core-person/{migrationId}/cancel", "some id")
-          .contentType(MediaType.APPLICATION_JSON)
-          .exchange()
-          .expectStatus().isUnauthorized
-      }
-    }
-
-    @Test
-    internal fun `will return a not found if no running migration found`() {
-      webTestClient.post().uri("/migrate/core-person/{migrationId}/cancel", "some id")
-        .headers(setAuthorisation(roles = listOf("MIGRATE_CORE_PERSON")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isNotFound
-    }
-
-    @Test
-    internal fun `will terminate a running migration`() {
-      // slow the API calls so there is time to cancel before it completes
-      nomisApi.setGlobalFixedDelay(1000)
-      nomisApi.stubGetPrisonerIds(totalElements = 2, pageSize = 10, firstOffenderNo = "A0001BC")
-      mappingApiMock.stubGetByNomisPrisonNumberOrNull(nomisPrisonNumber = "A0001BC", mapping = null)
-      mappingApiMock.stubGetByNomisPrisonNumberOrNull(nomisPrisonNumber = "A0002BC", mapping = null)
-      nomisCorePersonApiMock.stubGetCorePerson(
-        prisonNumber = "A0001BC",
-        corePerson(prisonNumber = "A0001BC").copy(
-          offenders = listOf(
-            corePerson().offenders!![0].copy(
-              firstName = "JOHN",
-              lastName = "SMITH",
-            ),
-          ),
-        ),
-      )
-      nomisCorePersonApiMock.stubGetCorePerson(
-        prisonNumber = "A0002BC",
-        corePerson(prisonNumber = "A0002BC").copy(
-          offenders = listOf(
-            corePerson().offenders!![0].copy(
-              firstName = "ADDO",
-              lastName = "ABOAGYE",
-            ),
-          ),
-        ),
-      )
-
-      cprApiMock.stubMigrateCorePerson()
-      mappingApiMock.stubCreateMappingsForMigration()
-      mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
-
-      val migrationId = performMigration().migrationId
-
-      webTestClient.post().uri("/migrate/core-person/{migrationId}/cancel", migrationId)
-        .headers(setAuthorisation(roles = listOf("MIGRATE_CORE_PERSON")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isAccepted
-
-      webTestClient.get().uri("/migrate/core-person/history/{migrationId}", migrationId)
-        .headers(setAuthorisation(roles = listOf("MIGRATE_CORE_PERSON")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.migrationId").isEqualTo(migrationId)
-        .jsonPath("$.status").isEqualTo("CANCELLED_REQUESTED")
-
-      await atMost Duration.ofSeconds(60) untilAsserted {
-        webTestClient.get().uri("/migrate/core-person/history/{migrationId}", migrationId)
-          .headers(setAuthorisation(roles = listOf("MIGRATE_CORE_PERSON")))
-          .header("Content-Type", "application/json")
-          .exchange()
-          .expectStatus().isOk
-          .expectBody()
-          .jsonPath("$.migrationId").isEqualTo(migrationId)
-          .jsonPath("$.status").isEqualTo("CANCELLED")
       }
     }
   }
