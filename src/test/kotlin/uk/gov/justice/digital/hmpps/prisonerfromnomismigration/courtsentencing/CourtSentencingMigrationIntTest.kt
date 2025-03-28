@@ -2,14 +2,13 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -33,7 +32,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
@@ -42,11 +40,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResultCodeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.COURT_SENTENCING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -69,11 +64,9 @@ private const val DPS_COURT_CASE_ID = "99C"
 
 data class MigrationResult(val migrationId: String)
 
-class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
-
-  @Autowired
-  private lateinit var migrationHistoryRepository: MigrationHistoryRepository
-
+class CourtSentencingMigrationIntTest(
+  @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
+) : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var courtSentencingMappingApiMockServer: CourtSentencingMappingApiMockServer
 
@@ -84,12 +77,8 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
   @DisplayName("POST /migrate/court-sentencing")
   inner class MigrationCourtCases {
     @BeforeEach
-    internal fun setUp() {
-      webTestClient.delete().uri("/history")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().is2xxSuccessful
+    internal fun setUp() = runTest {
+      migrationHistoryRepository.deleteAll()
     }
 
     private fun WebTestClient.performMigration(body: String = "{ }"): MigrationResult = post().uri("/migrate/court-sentencing")
@@ -455,8 +444,8 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
       verify(telemetryClient, times(26)).trackEvent(eq("court-sentencing-migration-entity-migrated"), any(), isNull())
 
       await untilAsserted {
-        webTestClient.get().uri("/migrate/court-sentencing/history")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
+        webTestClient.get().uri("/migrate/history/all/{migrationType}", COURT_SENTENCING)
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isOk
@@ -466,7 +455,7 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
           .jsonPath("$[0].whenStarted").isNotEmpty
           .jsonPath("$[0].whenEnded").isNotEmpty
           .jsonPath("$[0].estimatedRecordCount").isEqualTo(26)
-          .jsonPath("$[0].migrationType").isEqualTo(MigrationType.COURT_SENTENCING.name)
+          .jsonPath("$[0].migrationType").isEqualTo(COURT_SENTENCING.name)
           .jsonPath("$[0].status").isEqualTo("COMPLETED")
           .jsonPath("$[0].recordsMigrated").isEqualTo(25)
           .jsonPath("$[0].recordsFailed").isEqualTo(1)
@@ -529,429 +518,6 @@ class CourtSentencingMigrationIntTest : SqsIntegrationTestBase() {
         },
         isNull(),
       )
-    }
-  }
-
-  @Nested
-  @DisplayName("GET /migrate/court-sentencing/history")
-  inner class GetAll {
-    @BeforeEach
-    internal fun createHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
-            status = COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_560,
-            recordsFailed = 7,
-            migrationType = MigrationType.COURT_SENTENCING,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-02T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-02T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-02T01:00:00"),
-            status = COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_567,
-            recordsFailed = 0,
-            migrationType = MigrationType.COURT_SENTENCING,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-02T02:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-02T02:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-02T03:00:00"),
-            status = COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_567,
-            recordsFailed = 0,
-            migrationType = MigrationType.COURT_SENTENCING,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-03T02:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-03T02:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-03T03:00:00"),
-            status = COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_560,
-            recordsFailed = 7,
-            migrationType = MigrationType.COURT_SENTENCING,
-          ),
-        )
-      }
-    }
-
-    @AfterEach
-    internal fun deleteHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-      }
-    }
-
-    @Test
-    internal fun `must have valid token to get history`() {
-      webTestClient.get().uri("/migrate/court-sentencing/history")
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isUnauthorized
-    }
-
-    @Test
-    internal fun `must have correct role to get history`() {
-      webTestClient.get().uri("/migrate/court-sentencing/history")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isForbidden
-    }
-
-    @Test
-    internal fun `can read all records with no filter`() {
-      webTestClient.get().uri("/migrate/court-sentencing/history")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.size()").isEqualTo(4)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
-        .jsonPath("$[1].migrationId").isEqualTo("2020-01-02T02:00:00")
-        .jsonPath("$[2].migrationId").isEqualTo("2020-01-02T00:00:00")
-        .jsonPath("$[3].migrationId").isEqualTo("2020-01-01T00:00:00")
-    }
-
-    @Test
-    internal fun `can filter so only records after a date are returned`() {
-      webTestClient.get().uri {
-        it.path("/migrate/court-sentencing/history")
-          .queryParam("fromDateTime", "2020-01-02T02:00:00")
-          .build()
-      }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.size()").isEqualTo(2)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
-        .jsonPath("$[1].migrationId").isEqualTo("2020-01-02T02:00:00")
-    }
-
-    @Test
-    internal fun `can filter so only records before a date are returned`() {
-      webTestClient.get().uri {
-        it.path("/migrate/court-sentencing/history")
-          .queryParam("toDateTime", "2020-01-02T00:00:00")
-          .build()
-      }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.size()").isEqualTo(2)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-02T00:00:00")
-        .jsonPath("$[1].migrationId").isEqualTo("2020-01-01T00:00:00")
-    }
-
-    @Test
-    internal fun `can filter so only records between dates are returned`() {
-      webTestClient.get().uri {
-        it.path("/migrate/court-sentencing/history")
-          .queryParam("fromDateTime", "2020-01-03T01:59:59")
-          .queryParam("toDateTime", "2020-01-03T02:00:01")
-          .build()
-      }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.size()").isEqualTo(1)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
-    }
-
-    @Test
-    internal fun `can filter so only records with failed records are returned`() {
-      webTestClient.get().uri {
-        it.path("/migrate/court-sentencing/history")
-          .queryParam("includeOnlyFailures", "true")
-          .build()
-      }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.size()").isEqualTo(2)
-        .jsonPath("$[0].migrationId").isEqualTo("2020-01-03T02:00:00")
-        .jsonPath("$[1].migrationId").isEqualTo("2020-01-01T00:00:00")
-    }
-  }
-
-  @Nested
-  @DisplayName("GET /migrate/court-sentencing/history/{migrationId}")
-  inner class Get {
-    @BeforeEach
-    internal fun createHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
-            status = COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_560,
-            recordsFailed = 7,
-            migrationType = MigrationType.COURT_SENTENCING,
-          ),
-        )
-      }
-    }
-
-    @AfterEach
-    internal fun deleteHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-      }
-    }
-
-    @Test
-    internal fun `must have valid token to get history`() {
-      webTestClient.get().uri("/migrate/court-sentencing/history/2020-01-01T00:00:00")
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isUnauthorized
-    }
-
-    @Test
-    internal fun `must have correct role to get history`() {
-      webTestClient.get().uri("/migrate/court-sentencing/history/2020-01-01T00:00:00")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isForbidden
-    }
-
-    @Test
-    internal fun `can read record`() {
-      webTestClient.get().uri("/migrate/court-sentencing/history/2020-01-01T00:00:00")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.migrationId").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$.status").isEqualTo("COMPLETED")
-    }
-  }
-
-  @Nested
-  @DisplayName("GET /migrate/court-sentencing/active-migration")
-  inner class GetActiveMigration {
-    @BeforeEach
-    internal fun createHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2020-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
-            status = MigrationStatus.STARTED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_560,
-            recordsFailed = 7,
-            migrationType = MigrationType.COURT_SENTENCING,
-          ),
-        )
-        migrationHistoryRepository.save(
-          MigrationHistory(
-            migrationId = "2019-01-01T00:00:00",
-            whenStarted = LocalDateTime.parse("2019-01-01T00:00:00"),
-            whenEnded = LocalDateTime.parse("2019-01-01T01:00:00"),
-            status = COMPLETED,
-            estimatedRecordCount = 123_567,
-            filter = "",
-            recordsMigrated = 123_567,
-            recordsFailed = 0,
-            migrationType = MigrationType.COURT_SENTENCING,
-          ),
-        )
-      }
-    }
-
-    @AfterEach
-    internal fun deleteHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-      }
-    }
-
-    @Test
-    internal fun `must have valid token to get active migration data`() {
-      webTestClient.get().uri("/migrate/court-sentencing/active-migration")
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isUnauthorized
-    }
-
-    @Test
-    internal fun `must have correct role to get action migration data`() {
-      webTestClient.get().uri("/migrate/court-sentencing/active-migration")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isForbidden
-    }
-
-    @Test
-    internal fun `will return dto with null contents if no migrations are found`() {
-      deleteHistoryRecords()
-      webTestClient.get().uri("/migrate/court-sentencing/active-migration")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.migrationId").doesNotExist()
-        .jsonPath("$.whenStarted").doesNotExist()
-        .jsonPath("$.recordsMigrated").doesNotExist()
-        .jsonPath("$.estimatedRecordCount").doesNotExist()
-        .jsonPath("$.status").doesNotExist()
-        .jsonPath("$.migrationType").doesNotExist()
-    }
-
-    @Test
-    internal fun `can read active migration data`() {
-      courtSentencingMappingApiMockServer.stubCourtSentencingSummaryByMigrationId(count = 123456)
-      webTestClient.get().uri("/migrate/court-sentencing/active-migration")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.migrationId").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$.whenStarted").isEqualTo("2020-01-01T00:00:00")
-        .jsonPath("$.recordsMigrated").isEqualTo(123456)
-        .jsonPath("$.toBeProcessedCount").isEqualTo(0)
-        .jsonPath("$.beingProcessedCount").isEqualTo(0)
-        .jsonPath("$.recordsFailed").isEqualTo(0)
-        .jsonPath("$.estimatedRecordCount").isEqualTo(123567)
-        .jsonPath("$.status").isEqualTo("STARTED")
-        .jsonPath("$.migrationType").isEqualTo(MigrationType.COURT_SENTENCING.name)
-    }
-  }
-
-  @Nested
-  @DisplayName("POST /migrate/court-sentencing/{migrationId}/terminate/")
-  inner class TerminateMigrationSentencing {
-    @BeforeEach
-    internal fun setUp() {
-      webTestClient.delete().uri("/history")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATION_ADMIN")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().is2xxSuccessful
-    }
-
-    @Test
-    internal fun `must have valid token to terminate a migration`() {
-      webTestClient.post().uri("/migrate/court-sentencing/{migrationId}/cqncel/", "some id")
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isUnauthorized
-    }
-
-    @Test
-    internal fun `must have correct role to terminate a migration`() {
-      webTestClient.post().uri("/migrate/court-sentencing/{migrationId}/cancel", "some id")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isForbidden
-    }
-
-    @Test
-    internal fun `will return a not found if no running migration found`() {
-      webTestClient.post().uri("/migrate/court-sentencing/{migrationId}/cancel", "some id")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isNotFound
-    }
-
-    @Test
-    internal fun `will terminate a running migration`() {
-      val count = 30L
-      nomisApi.stubGetInitialCount(
-        NomisApiExtension.COURT_SENTENCING_PRISONER_IDS,
-        count,
-      ) { courtSentencingNomisApiMockServer.prisonerIdsPagedResponse(it) }
-      courtSentencingNomisApiMockServer.stubMultipleGetPrisonerIdCounts(totalElements = count, pageSize = 10)
-      courtSentencingMappingApiMockServer.stubCourtSentencingSummaryByMigrationId(count = count.toInt())
-      courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
-
-      val migrationId = webTestClient.post().uri("/migrate/court-sentencing")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .body(
-          BodyInserters.fromValue(
-            """
-            {
-              "fromDate": "2020-01-01",
-              "toDate": "2020-01-02"
-            }
-            """.trimIndent(),
-          ),
-        )
-        .exchange()
-        .expectStatus().isAccepted
-        .returnResult<MigrationContext<CourtSentencingMigrationFilter>>()
-        .responseBody.blockFirst()!!.migrationId
-
-      webTestClient.post().uri("/migrate/court-sentencing/{migrationId}/cancel", migrationId)
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isAccepted
-
-      webTestClient.get().uri("/migrate/court-sentencing/history/{migrationId}", migrationId)
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$.migrationId").isEqualTo(migrationId)
-        .jsonPath("$.status").isEqualTo("CANCELLED_REQUESTED")
-
-      await atMost Duration.ofSeconds(60) untilAsserted {
-        webTestClient.get().uri("/migrate/court-sentencing/history/{migrationId}", migrationId)
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
-          .header("Content-Type", "application/json")
-          .exchange()
-          .expectStatus().isOk
-          .expectBody()
-          .jsonPath("$.migrationId").isEqualTo(migrationId)
-          .jsonPath("$.status").isEqualTo("CANCELLED")
-      }
     }
   }
 }
