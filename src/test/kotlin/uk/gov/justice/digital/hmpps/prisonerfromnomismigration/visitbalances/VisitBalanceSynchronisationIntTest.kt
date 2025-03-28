@@ -45,7 +45,10 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will not make a call to Nomis`() {
-        nomisApiMock.verify(0, getRequestedFor(urlPathEqualTo("/visit-balances/visit-balance-adjustment/$visitBalanceAdjId")))
+        nomisApiMock.verify(
+          0,
+          getRequestedFor(urlPathEqualTo("/visit-balances/visit-balance-adjustment/$visitBalanceAdjId")),
+        )
       }
 
       @Test
@@ -68,86 +71,151 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @Nested
     inner class WhenCreatedInNomis {
-      @BeforeEach
-      fun setUp() {
-        nomisApiMock.stubGetVisitBalanceAdjustment(visitBalanceAdjId)
-        dpsApiMock.stubSyncVisitBalance()
 
-        visitBalanceOffenderEventsQueue.sendMessage(
-          visitBalanceAdjustmentEvent(
-            eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
-            visitBalanceAdjId = visitBalanceAdjId,
-          ),
-        ).also { waitForAnyProcessingToComplete() }
-      }
+      @Nested
+      inner class HappyPath {
+        @BeforeEach
+        fun setUp() {
+          nomisApiMock.stubGetVisitBalanceAdjustment(visitBalanceAdjId)
+          dpsApiMock.stubSyncVisitBalance()
 
-      @Test
-      fun `will retrieve the adjustment details from NOMIS`() {
-        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/visit-balances/visit-balance-adjustment/$visitBalanceAdjId")))
-      }
+          visitBalanceOffenderEventsQueue.sendMessage(
+            visitBalanceAdjustmentEvent(
+              eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
+              visitBalanceAdjId = visitBalanceAdjId,
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
 
-      @Test
-      fun `will create the adjustment in DPS`() {
-        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
-        val request: VisitAllocationPrisonerSyncDto = VisitBalanceDpsApiExtension.getRequestBody(
-          postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")),
-        )
-        with(request) {
-          assertThat(prisonerId).isEqualTo(nomisPrisonNumber)
-          assertThat(oldVoBalance).isEqualTo(12)
-          assertThat(changeToVoBalance).isEqualTo(2)
-          assertThat(oldPvoBalance).isEqualTo(4)
-          assertThat(changeToPvoBalance).isEqualTo(1)
-          assertThat(comment).isEqualTo("Some comment")
-          assertThat(adjustmentReasonCode.value).isEqualTo("IEP")
-          assertThat(changeLogSource.value).isEqualTo("STAFF")
-          assertThat(createdDate).isEqualTo("2025-01-01")
+        @Test
+        fun `will retrieve the adjustment details from NOMIS`() {
+          nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/visit-balances/visit-balance-adjustment/$visitBalanceAdjId")))
+        }
+
+        @Test
+        fun `will create the adjustment in DPS`() {
+          dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
+          val request: VisitAllocationPrisonerSyncDto = VisitBalanceDpsApiExtension.getRequestBody(
+            postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")),
+          )
+          with(request) {
+            assertThat(prisonerId).isEqualTo(nomisPrisonNumber)
+            assertThat(oldVoBalance).isEqualTo(12)
+            assertThat(changeToVoBalance).isEqualTo(2)
+            assertThat(oldPvoBalance).isEqualTo(4)
+            assertThat(changeToPvoBalance).isEqualTo(1)
+            assertThat(comment).isEqualTo("Some comment")
+            assertThat(adjustmentReasonCode.value).isEqualTo("IEP")
+            assertThat(changeLogSource.value).isEqualTo("STAFF")
+            assertThat(createdDate).isEqualTo("2025-01-01")
+          }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("visitbalance-adjustment-synchronisation-created-success"),
+            check {
+              assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+              assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+            },
+            isNull(),
+          )
         }
       }
 
-      @Test
-      fun `will track telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("visitbalance-adjustment-synchronisation-created-success"),
-          check {
-            assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
-          },
-          isNull(),
-        )
+      @Nested
+      inner class HappyPathPassingNullEntries {
+        @BeforeEach
+        fun setUp() {
+          nomisApiMock.stubGetVisitBalanceAdjustment(
+            visitBalanceAdjId,
+            visitBalanceAdjustment().copy(
+              previousVisitOrderCount = null,
+              visitOrderChange = null,
+              previousPrivilegedVisitOrderCount = null,
+              privilegedVisitOrderChange = null,
+              comment = null,
+            ),
+          )
+          dpsApiMock.stubSyncVisitBalance()
+
+          visitBalanceOffenderEventsQueue.sendMessage(
+            visitBalanceAdjustmentEvent(
+              eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
+              visitBalanceAdjId = visitBalanceAdjId,
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will retrieve the adjustment details from NOMIS`() {
+          nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/visit-balances/visit-balance-adjustment/$visitBalanceAdjId")))
+        }
+
+        @Test
+        fun `will create the adjustment in DPS`() {
+          dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
+          val request: VisitAllocationPrisonerSyncDto = VisitBalanceDpsApiExtension.getRequestBody(
+            postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")),
+          )
+          with(request) {
+            assertThat(prisonerId).isEqualTo(nomisPrisonNumber)
+            assertThat(oldVoBalance).isNull()
+            assertThat(changeToVoBalance).isNull()
+            assertThat(oldPvoBalance).isNull()
+            assertThat(changeToPvoBalance).isNull()
+            assertThat(comment).isNull()
+            assertThat(adjustmentReasonCode.value).isEqualTo("IEP")
+            assertThat(changeLogSource.value).isEqualTo("STAFF")
+            assertThat(createdDate).isEqualTo("2025-01-01")
+          }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("visitbalance-adjustment-synchronisation-created-success"),
+            check {
+              assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+              assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+            },
+            isNull(),
+          )
+        }
       }
     }
-  }
-
-  @Nested
-  @DisplayName("OFFENDER_VISIT_BALANCE_ADJS-DELETED")
-  inner class VisitBalanceAdjustmentDeleted {
-    private val nomisVisitBalanceAdjId = 123456L
-    private val nomisPrisonNumber = "A1234BC"
 
     @Nested
-    inner class WhenDeletedInDps {
-      @BeforeEach
-      fun setUp() {
-        visitBalanceOffenderEventsQueue.sendMessage(
-          visitBalanceAdjustmentEvent(
-            eventType = "OFFENDER_VISIT_BALANCE_ADJS-DELETED",
-            visitBalanceAdjId = nomisVisitBalanceAdjId,
-            auditModuleName = "DPS_SYNCHRONISATION",
-          ),
-        ).also { waitForAnyProcessingToComplete() }
-      }
+    @DisplayName("OFFENDER_VISIT_BALANCE_ADJS-DELETED")
+    inner class VisitBalanceAdjustmentDeleted {
+      private val nomisVisitBalanceAdjId = 123456L
+      private val nomisPrisonNumber = "A1234BC"
 
-      @Test
-      fun `will track telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("visitbalance-adjustment-synchronisation-deleted-unexpected"),
-          check {
-            assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(nomisVisitBalanceAdjId.toString())
-            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
-          },
-          isNull(),
-        )
+      @Nested
+      inner class WhenDeletedInDps {
+        @BeforeEach
+        fun setUp() {
+          visitBalanceOffenderEventsQueue.sendMessage(
+            visitBalanceAdjustmentEvent(
+              eventType = "OFFENDER_VISIT_BALANCE_ADJS-DELETED",
+              visitBalanceAdjId = nomisVisitBalanceAdjId,
+              auditModuleName = "DPS_SYNCHRONISATION",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("visitbalance-adjustment-synchronisation-deleted-unexpected"),
+            check {
+              assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(nomisVisitBalanceAdjId.toString())
+              assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+            },
+            isNull(),
+          )
+        }
       }
     }
 
