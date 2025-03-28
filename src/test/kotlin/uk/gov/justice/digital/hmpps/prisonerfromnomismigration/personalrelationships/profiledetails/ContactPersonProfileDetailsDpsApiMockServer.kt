@@ -138,6 +138,34 @@ class ContactPersonProfileDetailsDpsApiMockServer {
     )
   }
 
+  fun stubMergeProfileDetails(keepingPrisonerNumber: String = "A1234AA", removedPrisonerNumber: String = "B1234BB") {
+    dpsContactPersonServer.stubFor(
+      put(urlPathMatching("/merge/keep/$keepingPrisonerNumber/remove/$removedPrisonerNumber"))
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubMergeProfileDetails(
+    keepingPrisonerNumber: String = "A1234AA",
+    removedPrisonerNumber: String = "B1234BB",
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    dpsContactPersonServer.stubFor(
+      put(urlPathMatching("/merge/keep/$keepingPrisonerNumber/remove/$removedPrisonerNumber"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = dpsContactPersonServer.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = dpsContactPersonServer.verify(count, pattern)
 }
