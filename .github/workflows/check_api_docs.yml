@@ -1,8 +1,8 @@
-name: check-api-docs
+name: Check API docs are up to date
 
 on:
   schedule:
-    - cron: "10 7 * * MON-FRI" # Every weekday at 07:50 UTC
+    - cron: "10 7 * * MON-FRI" # Every weekday at 07:10 UTC
   workflow_dispatch:
 
 permissions:
