@@ -45,14 +45,12 @@ class VisitBalanceSynchronisationService(
 
 fun VisitBalanceAdjustmentResponse.toSyncDto(nomisPrisonNumber: String) = VisitAllocationPrisonerSyncDto(
   prisonerId = nomisPrisonNumber,
-  // TODO VisitAllocationPrisonerSyncDto should allow nullable field
-  oldVoBalance = previousVisitOrderCount ?: 0,
+  oldVoBalance = previousVisitOrderCount,
   changeToVoBalance = visitOrderChange,
-  // TODO VisitAllocationPrisonerSyncDto should allow nullable field
-  oldPvoBalance = previousPrivilegedVisitOrderCount ?: 0,
+  oldPvoBalance = previousPrivilegedVisitOrderCount,
   changeToPvoBalance = privilegedVisitOrderChange,
   createdDate = adjustmentDate,
   adjustmentReasonCode = VisitAllocationPrisonerSyncDto.AdjustmentReasonCode.valueOf(adjustmentReason.code),
   changeLogSource = if (createUsername == "OMS_OWNER") VisitAllocationPrisonerSyncDto.ChangeLogSource.SYSTEM else VisitAllocationPrisonerSyncDto.ChangeLogSource.STAFF,
-  comment = comment ?: "",
+  comment = comment,
 )
