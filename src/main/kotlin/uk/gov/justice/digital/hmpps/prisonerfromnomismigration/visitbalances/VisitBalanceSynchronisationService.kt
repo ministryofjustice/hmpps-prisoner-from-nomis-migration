@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances
 
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.doesOriginateInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -40,6 +41,15 @@ class VisitBalanceSynchronisationService(
       "nomisPrisonNumber" to event.offenderIdDisplay,
     )
     telemetryClient.trackEvent("visitbalance-adjustment-synchronisation-deleted-unexpected", telemetry)
+  }
+
+  suspend fun synchronisePrisonerBookingMoved(bookingMovedEvent: PrisonerBookingMovedDomainEvent) {
+    val telemetry = telemetryOf(
+      "bookingId" to bookingMovedEvent.additionalInformation.bookingId,
+      "movedFromNomsNumber" to bookingMovedEvent.additionalInformation.movedFromNomsNumber,
+      "movedToNomsNumber" to bookingMovedEvent.additionalInformation.movedToNomsNumber,
+    )
+    telemetryClient.trackEvent("visitbalance-adjustment-synchronisation-booking-moved", telemetry)
   }
 }
 
