@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
@@ -78,6 +79,40 @@ class CourtSentencingNomisApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getCourtCase(offenderNo = OFFENDER_NO, courtCaseId = NOMIS_COURT_CASE_ID)
+      }
+    }
+  }
+
+  @Nested
+  inner class GetCourtCasesChangedByMerge {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      courtSentencingNomisApiMockServer.stubGetCourtCasesChangedByMerge(offenderNo = OFFENDER_NO)
+
+      apiService.getCourtCasesChangedByMerge(offenderNo = OFFENDER_NO)
+
+      courtSentencingNomisApiMockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS ids to service`() = runTest {
+      courtSentencingNomisApiMockServer.stubGetCourtCasesChangedByMerge(offenderNo = OFFENDER_NO)
+
+      apiService.getCourtCasesChangedByMerge(offenderNo = OFFENDER_NO)
+
+      courtSentencingNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/prisoners/$OFFENDER_NO/sentencing/court-cases/post-merge")),
+      )
+    }
+
+    @Test
+    fun `will throw error when prisoner has never had a merge`() = runTest {
+      courtSentencingNomisApiMockServer.stubGetCourtCasesChangedByMerge(offenderNo = OFFENDER_NO, HttpStatus.BAD_REQUEST)
+
+      assertThrows<WebClientResponseException.BadRequest> {
+        apiService.getCourtCasesChangedByMerge(offenderNo = OFFENDER_NO)
       }
     }
   }

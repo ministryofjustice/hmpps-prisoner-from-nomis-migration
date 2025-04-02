@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
@@ -18,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResultCodeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PostPrisonerMergeCaseChanges
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceTermResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
@@ -109,7 +111,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
   ) {
     nomisApi.stubFor(
       get(
-        WireMock.urlPathEqualTo("/prisoners/$offenderNo/sentencing/court-cases"),
+        urlPathEqualTo("/prisoners/$offenderNo/sentencing/court-cases"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
@@ -126,7 +128,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
   ) {
     nomisApi.stubFor(
       get(
-        WireMock.urlPathEqualTo("/prisoners/{offenderNo}/sentencing/court-cases"),
+        urlPathEqualTo("/prisoners/{offenderNo}/sentencing/court-cases"),
       )
         .willReturn(
           aResponse()
@@ -169,7 +171,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
   ) {
     nomisApi.stubFor(
       get(
-        WireMock.urlPathEqualTo("/court-cases/$caseId"),
+        urlPathEqualTo("/court-cases/$caseId"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
@@ -186,13 +188,52 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
   ) {
     nomisApi.stubFor(
       get(
-        WireMock.urlPathEqualTo("/court-cases/$caseId"),
+        urlPathEqualTo("/court-cases/$caseId"),
       )
         .willReturn(
           aResponse()
             .withStatus(status.value())
             .withHeader("Content-Type", "application/json")
             .withBody(NomisApiExtension.objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubGetCourtCasesChangedByMerge(
+    offenderNo: String = "AK000KT",
+    courtCasesCreated: List<CourtCaseResponse> = emptyList(),
+    courtCasesDeactivated: List<CourtCaseResponse> = emptyList(),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/prisoners/$offenderNo/sentencing/court-cases/post-merge"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              objectMapper.writeValueAsString(
+                PostPrisonerMergeCaseChanges(
+                  courtCasesCreated = courtCasesCreated,
+                  courtCasesDeactivated = courtCasesDeactivated,
+                ),
+              ),
+            ),
+        ),
+    )
+  }
+
+  fun stubGetCourtCasesChangedByMerge(
+    offenderNo: String = "AK000KT",
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/prisoners/$offenderNo/sentencing/court-cases/post-merge"))
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(
+              objectMapper.writeValueAsString(error),
+            ),
         ),
     )
   }
@@ -417,7 +458,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       val endOffenderId = java.lang.Long.min((page * pageSize) + pageSize, totalElements)
       nomisApi.stubFor(
         get(
-          WireMock.urlPathEqualTo(COURT_SENTENCING_PRISONER_IDS),
+          urlPathEqualTo(COURT_SENTENCING_PRISONER_IDS),
         )
           .withQueryParam("page", WireMock.equalTo(page.toString()))
           .willReturn(
@@ -439,7 +480,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     (intProgression).forEach {
       nomisApi.stubFor(
         get(
-          WireMock.urlPathEqualTo("/prisoners/AN$it/sentencing/court-cases"),
+          urlPathEqualTo("/prisoners/AN$it/sentencing/court-cases"),
         )
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())

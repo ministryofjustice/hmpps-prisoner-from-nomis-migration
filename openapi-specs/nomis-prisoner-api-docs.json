@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-03-27.11877.0d0902a"
+    "version" : "2025-04-02.11904.10f0958"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -12021,6 +12021,78 @@
         }
       }
     },
+    "/prisoners/{offenderNo}/sentencing/court-cases/post-merge" : {
+      "get" : {
+        "tags" : [ "sentencing-resource" ],
+        "summary" : "Get court cases affected by the last prisoner merge of two prisoner records",
+        "description" : "Requires role NOMIS_SENTENCING. The court cases returned - if any -  includes cases that may have been cloned onto the active booking and those deactivated",
+        "operationId" : "getCourtCasesChangedByMergePrisoners",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "description" : "Offender No",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Offender No",
+            "example" : "AA12345"
+          },
+          "example" : "AA12345"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "the lists of court cases affected. Not all merges result in cases being changed, so these lists might be empty even if the current booking has a court case",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PostPrisonerMergeCaseChanges"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "This prisoner has no merge recorded",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint when role NOMIS_SENTENCING not present",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Offender not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/{offenderNo}/sentencing/court-appearances/{id}" : {
       "get" : {
         "tags" : [ "sentencing-resource" ],
@@ -23155,6 +23227,27 @@
           }
         },
         "required" : [ "lifeSentenceFlag", "startDate", "termSequence" ]
+      },
+      "PostPrisonerMergeCaseChanges" : {
+        "type" : "object",
+        "description" : "Court Cases (and related charges and sentences) created or updated due to the latest prisoner merge",
+        "properties" : {
+          "courtCasesCreated" : {
+            "type" : "array",
+            "description" : "Court cases and related child entities create due to the merge after being copied from a previous booking",
+            "items" : {
+              "$ref" : "#/components/schemas/CourtCaseResponse"
+            }
+          },
+          "courtCasesDeactivated" : {
+            "type" : "array",
+            "description" : "Court cases and related child entities deactivated due to the merge after being cloned from a previous booking",
+            "items" : {
+              "$ref" : "#/components/schemas/CourtCaseResponse"
+            }
+          }
+        },
+        "required" : [ "courtCasesCreated", "courtCasesDeactivated" ]
       },
       "BookingProfileDetailsResponse" : {
         "type" : "object",

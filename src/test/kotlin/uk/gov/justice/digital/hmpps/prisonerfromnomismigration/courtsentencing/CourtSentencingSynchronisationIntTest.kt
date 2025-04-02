@@ -34,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
@@ -2975,6 +2976,39 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             )
           }
         }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("prison-offender-events.prisoner.merged")
+  inner class PrisonerMerged {
+    val offenderNumberRetained = "A1234KT"
+    val offenderNumberRemoved = "A1000KT"
+
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() {
+        courtSentencingOffenderEventsQueue.sendMessage(
+          mergeDomainEvent(
+            bookingId = 1234,
+            offenderNo = offenderNumberRetained,
+            removedOffenderNo = offenderNumberRemoved,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry for the merge`() {
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-court-case-merge"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNumberRetained)
+            assertThat(it["removedOffenderNo"]).isEqualTo(offenderNumberRemoved)
+          },
+          isNull(),
+        )
       }
     }
   }

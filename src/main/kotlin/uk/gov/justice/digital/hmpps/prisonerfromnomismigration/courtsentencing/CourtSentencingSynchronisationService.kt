@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateWholeCharge
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
@@ -930,6 +931,21 @@ class CourtSentencingSynchronisationService(
         )
       }
     }
+  }
+
+  suspend fun prisonerMerged(prisonerMergeEvent: PrisonerMergeDomainEvent) {
+    val retainedOffenderNumber = prisonerMergeEvent.additionalInformation.nomsNumber
+    val removedOffenderNumber = prisonerMergeEvent.additionalInformation.removedNomsNumber
+    val telemetry = mutableMapOf(
+      "offenderNo" to retainedOffenderNumber,
+      "bookingId" to prisonerMergeEvent.additionalInformation.bookingId,
+      "removedOffenderNo" to removedOffenderNumber,
+    )
+
+    telemetryClient.trackEvent(
+      "from-nomis-synch-court-case-merge",
+      telemetry,
+    )
   }
 
   suspend fun retryCreateCourtChargeMapping(retryMessage: InternalMessage<CourtChargeMappingDto>) {
