@@ -13,6 +13,7 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncDto
@@ -242,6 +243,42 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           check {
             assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(nomisVisitBalanceAdjId.toString())
             assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("prison-offender-events.prisoner.booking.moved")
+  inner class BookingMoved {
+    @Nested
+    inner class HappyPath {
+      val bookingId = 123456L
+      private val movedFromNomsNumber = "A1000KT"
+      private val movedToNomsNumber = "A1234KT"
+
+      @BeforeEach
+      fun setUp() {
+        visitBalanceOffenderEventsQueue.sendMessage(
+          bookingMovedDomainEvent(
+            bookingId = bookingId,
+            movedFromNomsNumber = movedFromNomsNumber,
+            movedToNomsNumber = movedToNomsNumber,
+          ),
+        )
+        waitForAnyProcessingToComplete("visitbalance-adjustment-synchronisation-booking-moved")
+      }
+
+      @Test
+      fun `will track telemetry for the booking move`() {
+        verify(telemetryClient).trackEvent(
+          eq("visitbalance-adjustment-synchronisation-booking-moved"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["movedFromNomsNumber"]).isEqualTo(movedFromNomsNumber)
+            assertThat(it["movedToNomsNumber"]).isEqualTo(movedToNomsNumber)
           },
           isNull(),
         )
