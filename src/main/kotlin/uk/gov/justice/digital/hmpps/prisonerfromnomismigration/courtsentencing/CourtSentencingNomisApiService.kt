@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PostPrisonerMergeCaseChanges
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
@@ -43,6 +44,14 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
   suspend fun getCourtCasesForMigration(offenderNo: String): List<CourtCaseResponse> = webClient.get()
     .uri(
       "/prisoners/{offenderNo}/sentencing/court-cases",
+      offenderNo,
+    )
+    .retrieve()
+    .awaitBody()
+
+  suspend fun getCourtCasesChangedByMerge(offenderNo: String): PostPrisonerMergeCaseChanges = webClient.get()
+    .uri(
+      "/prisoners/{offenderNo}/sentencing/court-cases/post-merge",
       offenderNo,
     )
     .retrieve()

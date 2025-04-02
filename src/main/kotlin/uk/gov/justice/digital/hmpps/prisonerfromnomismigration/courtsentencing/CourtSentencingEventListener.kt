@@ -53,6 +53,7 @@ class CourtSentencingEventListener(
               "OFFENDER_CASE_IDENTIFIERS-INSERTED",
               "OFFENDER_CASE_IDENTIFIERS-UPDATED",
               -> courtSentencingSynchronisationService.nomisCaseIdentifiersUpdated(eventType, sqsMessage.Message.fromJson())
+              "prison-offender-events.prisoner.merged" -> courtSentencingSynchronisationService.prisonerMerged(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
