@@ -44,7 +44,12 @@ class VisitBalanceSynchronisationService(
   }
 
   suspend fun synchronisePrisonerBookingMoved(bookingMovedEvent: PrisonerBookingMovedDomainEvent) {
-    telemetryClient.trackEvent("visitbalance-adjustment-synchronisation-booking-moved")
+    val telemetry = telemetryOf(
+      "bookingId" to bookingMovedEvent.additionalInformation.bookingId,
+      "movedFromNomsNumber" to bookingMovedEvent.additionalInformation.movedFromNomsNumber,
+      "movedToNomsNumber" to bookingMovedEvent.additionalInformation.movedToNomsNumber,
+    )
+    telemetryClient.trackEvent("visitbalance-adjustment-synchronisation-booking-moved", telemetry)
   }
 }
 
