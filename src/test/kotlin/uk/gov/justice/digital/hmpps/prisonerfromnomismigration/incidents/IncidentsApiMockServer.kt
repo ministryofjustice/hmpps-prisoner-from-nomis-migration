@@ -77,7 +77,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun dpsIncidentReport(nomisIncidentId: String = "1234") = ReportWithDetails(
       id = UUID.randomUUID(),
       reportReference = nomisIncidentId,
-      type = ReportWithDetails.Type.ATTEMPTED_ESCAPE_FROM_ESCORT,
+      type = ReportWithDetails.Type.ATTEMPTED_ESCAPE_FROM_ESCORT_1,
       incidentDateAndTime = LocalDateTime.parse("2021-07-05T10:35:17"),
       prisonId = "ASI",
       location = "ASI",
@@ -120,7 +120,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
       history = listOf(
         History(
-          type = History.Type.ABSCONDER,
+          type = History.Type.ABSCOND_1,
           changedAt = LocalDateTime.parse("2021-07-05T10:35:17"),
           changedBy = "JSMITH",
           questions = listOf(
@@ -198,7 +198,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun dpsBasicIncidentReport(dpsIncidentId: String = DPS_INCIDENT_ID, prisonId: String = "ASI") = ReportBasic(
       id = UUID.fromString(dpsIncidentId),
       reportReference = "1234",
-      type = ReportBasic.Type.SELF_HARM,
+      type = ReportBasic.Type.SELF_HARM_1,
       incidentDateAndTime = LocalDateTime.parse("2021-07-05T10:35:17"),
       prisonId = prisonId,
       location = prisonId,
