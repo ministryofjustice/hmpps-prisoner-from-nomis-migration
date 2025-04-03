@@ -2987,9 +2987,10 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     val offenderNumberRemoved = "A1000KT"
 
     @Nested
-    inner class HappyPath {
+    inner class HappyPathWhenNoCasesChangedByMerge {
       @BeforeEach
       fun setUp() {
+        courtSentencingNomisApiMockServer.stubGetCourtCasesChangedByMerge(offenderNo = offenderNumberRetained, courtCasesCreated = emptyList(), courtCasesDeactivated = emptyList())
         courtSentencingOffenderEventsQueue.sendMessage(
           mergeDomainEvent(
             bookingId = 1234,
@@ -3000,12 +3001,31 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
+      fun `will callback to NOMIS to find the cases changed by the merge`() {
+        courtSentencingNomisApiMockServer.verify(
+          getRequestedFor(urlPathEqualTo("/prisoners/$offenderNumberRetained/sentencing/court-cases/post-merge")),
+        )
+      }
+
+      @Test
+      fun `will not call DPS to synchronise any cases`() {
+        dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will not call mapping service to synchronise any case mappings`() {
+        courtSentencingMappingApiMockServer.verify(0, postRequestedFor(anyUrl()))
+      }
+
+      @Test
       fun `will track telemetry for the merge`() {
         verify(telemetryClient).trackEvent(
           eq("from-nomis-synch-court-case-merge"),
           check {
             assertThat(it["offenderNo"]).isEqualTo(offenderNumberRetained)
             assertThat(it["removedOffenderNo"]).isEqualTo(offenderNumberRemoved)
+            assertThat(it["courtCasesCreatedCount"]).isEqualTo("0")
+            assertThat(it["courtCasesDeactivatedCount"]).isEqualTo("0")
           },
           isNull(),
         )
