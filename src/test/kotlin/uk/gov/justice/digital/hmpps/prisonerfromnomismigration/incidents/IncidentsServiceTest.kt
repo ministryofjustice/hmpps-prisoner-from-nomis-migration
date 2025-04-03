@@ -128,7 +128,7 @@ internal class IncidentsServiceTest {
         with(incident) {
           assertThat(id).isNotNull()
           assertThat(reportReference).isEqualTo("$NOMIS_INCIDENT_ID")
-          assertThat(type).isEqualTo(ReportWithDetails.Type.ATTEMPTED_ESCAPE_FROM_ESCORT)
+          assertThat(type).isEqualTo(ReportWithDetails.Type.ATTEMPTED_ESCAPE_FROM_ESCORT_1)
           assertThat(incidentDateAndTime).isEqualTo("2021-07-05T10:35:17")
           assertThat(prisonId).isEqualTo("ASI")
           assertThat(title).isEqualTo("There was an incident in the exercise yard")
@@ -179,7 +179,7 @@ internal class IncidentsServiceTest {
         with(incident) {
           assertThat(id).isEqualTo(UUID.fromString("fb4b2e91-91e7-457b-aa17-797f8c5c2f42"))
           assertThat(reportReference).isEqualTo("$NOMIS_INCIDENT_ID")
-          assertThat(type).isEqualTo(ReportBasic.Type.SELF_HARM)
+          assertThat(type).isEqualTo(ReportBasic.Type.SELF_HARM_1)
           assertThat(incidentDateAndTime).isEqualTo("2021-07-05T10:35:17")
           assertThat(prisonId).isEqualTo("ASI")
           assertThat(title).isEqualTo("There was an incident in the exercise yard")
