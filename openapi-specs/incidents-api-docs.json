@@ -11,7 +11,7 @@
       "name" : "MIT",
       "identifier" : "MIT"
     },
-    "version" : "2025-03-07.4647.c9a1485"
+    "version" : "2025-04-02.4966.1bff9d4"
   },
   "servers" : [ {
     "url" : "/",
@@ -749,7 +749,7 @@
             "type" : "string",
             "default" : "null",
             "description" : "Filter by given incident type",
-            "enum" : [ "ABSCONDER", "ASSAULT", "ATTEMPTED_ESCAPE_FROM_CUSTODY", "ATTEMPTED_ESCAPE_FROM_ESCORT", "BOMB_THREAT", "BREACH_OF_SECURITY", "DEATH_IN_CUSTODY", "DEATH_OTHER", "DISORDER", "DRONE_SIGHTING", "ESCAPE_FROM_CUSTODY", "ESCAPE_FROM_ESCORT", "FINDS", "FIRE", "FOOD_REFUSAL", "FULL_CLOSE_DOWN_SEARCH", "KEY_LOCK_INCIDENT", "MISCELLANEOUS", "RADIO_COMPROMISE", "RELEASED_IN_ERROR", "SELF_HARM", "TEMPORARY_RELEASE_FAILURE", "TOOL_LOSS", "DAMAGE", "OLD_ASSAULT", "OLD_ASSAULT1", "OLD_ASSAULT2", "OLD_ASSAULT3", "OLD_BARRICADE", "OLD_CONCERTED_INDISCIPLINE", "OLD_DISORDER", "OLD_DRONE_SIGHTING", "OLD_DRONE_SIGHTING1", "OLD_DRUGS", "OLD_FINDS", "OLD_FINDS1", "OLD_FINDS2", "OLD_FINDS3", "OLD_FINDS4", "OLD_FIREARM_ETC", "OLD_HOSTAGE", "OLD_KEY_LOCK_INCIDENT", "OLD_MOBILES", "OLD_ROOF_CLIMB", "OLD_TEMPORARY_RELEASE_FAILURE", "OLD_TEMPORARY_RELEASE_FAILURE1", "OLD_TEMPORARY_RELEASE_FAILURE2" ],
+            "enum" : [ "ABSCOND_1", "ASSAULT_1", "ASSAULT_2", "ASSAULT_3", "ASSAULT_4", "ASSAULT_5", "ATTEMPTED_ESCAPE_FROM_PRISON_1", "ATTEMPTED_ESCAPE_FROM_ESCORT_1", "BARRICADE_1", "BOMB_1", "BREACH_OF_SECURITY_1", "CLOSE_DOWN_SEARCH_1", "CONCERTED_INDISCIPLINE_1", "DAMAGE_1", "DEATH_PRISONER_1", "DEATH_OTHER_1", "DISORDER_1", "DISORDER_2", "DRONE_SIGHTING_1", "DRONE_SIGHTING_2", "DRONE_SIGHTING_3", "DRUGS_1", "ESCAPE_FROM_PRISON_1", "ESCAPE_FROM_ESCORT_1", "FIND_1", "FIND_2", "FIND_3", "FIND_4", "FIND_5", "FIND_6", "FIRE_1", "FIREARM_1", "FOOD_REFUSAL_1", "HOSTAGE_1", "INCIDENT_AT_HEIGHT_1", "KEY_OR_LOCK_1", "KEY_OR_LOCK_2", "MISCELLANEOUS_1", "MOBILE_PHONE_1", "RADIO_COMPROMISE_1", "RELEASE_IN_ERROR_1", "SELF_HARM_1", "TEMPORARY_RELEASE_FAILURE_1", "TEMPORARY_RELEASE_FAILURE_2", "TEMPORARY_RELEASE_FAILURE_3", "TEMPORARY_RELEASE_FAILURE_4", "TOOL_LOSS_1" ],
             "example" : "DAMAGE"
           },
           "example" : "DAMAGE"
@@ -3149,7 +3149,8 @@
           "description" : "The name of the schema field which will be used as a dynamic filter.",
           "required" : true,
           "schema" : {
-            "type" : "string"
+            "type" : "string",
+            "minLength" : 1
           },
           "example" : "name"
         }, {
@@ -4369,6 +4370,68 @@
         }
       }
     },
+    "/constants/type-families" : {
+      "get" : {
+        "tags" : [ "Constants" ],
+        "summary" : "List codes and descriptions of incident types families",
+        "operationId" : "typeFamilies",
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429" : {
+            "description" : "Too Many Requests",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "Returns codes and descriptions",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/TypeFamilyConstantDescription"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/constants/statuses" : {
       "get" : {
         "tags" : [ "Constants" ],
@@ -5530,7 +5593,7 @@
           "type" : {
             "type" : "string",
             "description" : "Incident report type",
-            "enum" : [ "ABSCONDER", "ASSAULT", "ATTEMPTED_ESCAPE_FROM_CUSTODY", "ATTEMPTED_ESCAPE_FROM_ESCORT", "BOMB_THREAT", "BREACH_OF_SECURITY", "DEATH_IN_CUSTODY", "DEATH_OTHER", "DISORDER", "DRONE_SIGHTING", "ESCAPE_FROM_CUSTODY", "ESCAPE_FROM_ESCORT", "FINDS", "FIRE", "FOOD_REFUSAL", "FULL_CLOSE_DOWN_SEARCH", "KEY_LOCK_INCIDENT", "MISCELLANEOUS", "RADIO_COMPROMISE", "RELEASED_IN_ERROR", "SELF_HARM", "TEMPORARY_RELEASE_FAILURE", "TOOL_LOSS", "DAMAGE", "OLD_ASSAULT", "OLD_ASSAULT1", "OLD_ASSAULT2", "OLD_ASSAULT3", "OLD_BARRICADE", "OLD_CONCERTED_INDISCIPLINE", "OLD_DISORDER", "OLD_DRONE_SIGHTING", "OLD_DRONE_SIGHTING1", "OLD_DRUGS", "OLD_FINDS", "OLD_FINDS1", "OLD_FINDS2", "OLD_FINDS3", "OLD_FINDS4", "OLD_FIREARM_ETC", "OLD_HOSTAGE", "OLD_KEY_LOCK_INCIDENT", "OLD_MOBILES", "OLD_ROOF_CLIMB", "OLD_TEMPORARY_RELEASE_FAILURE", "OLD_TEMPORARY_RELEASE_FAILURE1", "OLD_TEMPORARY_RELEASE_FAILURE2" ]
+            "enum" : [ "ABSCOND_1", "ASSAULT_1", "ASSAULT_2", "ASSAULT_3", "ASSAULT_4", "ASSAULT_5", "ATTEMPTED_ESCAPE_FROM_PRISON_1", "ATTEMPTED_ESCAPE_FROM_ESCORT_1", "BARRICADE_1", "BOMB_1", "BREACH_OF_SECURITY_1", "CLOSE_DOWN_SEARCH_1", "CONCERTED_INDISCIPLINE_1", "DAMAGE_1", "DEATH_PRISONER_1", "DEATH_OTHER_1", "DISORDER_1", "DISORDER_2", "DRONE_SIGHTING_1", "DRONE_SIGHTING_2", "DRONE_SIGHTING_3", "DRUGS_1", "ESCAPE_FROM_PRISON_1", "ESCAPE_FROM_ESCORT_1", "FIND_1", "FIND_2", "FIND_3", "FIND_4", "FIND_5", "FIND_6", "FIRE_1", "FIREARM_1", "FOOD_REFUSAL_1", "HOSTAGE_1", "INCIDENT_AT_HEIGHT_1", "KEY_OR_LOCK_1", "KEY_OR_LOCK_2", "MISCELLANEOUS_1", "MOBILE_PHONE_1", "RADIO_COMPROMISE_1", "RELEASE_IN_ERROR_1", "SELF_HARM_1", "TEMPORARY_RELEASE_FAILURE_1", "TEMPORARY_RELEASE_FAILURE_2", "TEMPORARY_RELEASE_FAILURE_3", "TEMPORARY_RELEASE_FAILURE_4", "TOOL_LOSS_1" ]
           },
           "incidentDateAndTime" : {
             "type" : "string",
@@ -5735,7 +5798,7 @@
           "type" : {
             "type" : "string",
             "description" : "Previous incident report type",
-            "enum" : [ "ABSCONDER", "ASSAULT", "ATTEMPTED_ESCAPE_FROM_CUSTODY", "ATTEMPTED_ESCAPE_FROM_ESCORT", "BOMB_THREAT", "BREACH_OF_SECURITY", "DEATH_IN_CUSTODY", "DEATH_OTHER", "DISORDER", "DRONE_SIGHTING", "ESCAPE_FROM_CUSTODY", "ESCAPE_FROM_ESCORT", "FINDS", "FIRE", "FOOD_REFUSAL", "FULL_CLOSE_DOWN_SEARCH", "KEY_LOCK_INCIDENT", "MISCELLANEOUS", "RADIO_COMPROMISE", "RELEASED_IN_ERROR", "SELF_HARM", "TEMPORARY_RELEASE_FAILURE", "TOOL_LOSS", "DAMAGE", "OLD_ASSAULT", "OLD_ASSAULT1", "OLD_ASSAULT2", "OLD_ASSAULT3", "OLD_BARRICADE", "OLD_CONCERTED_INDISCIPLINE", "OLD_DISORDER", "OLD_DRONE_SIGHTING", "OLD_DRONE_SIGHTING1", "OLD_DRUGS", "OLD_FINDS", "OLD_FINDS1", "OLD_FINDS2", "OLD_FINDS3", "OLD_FINDS4", "OLD_FIREARM_ETC", "OLD_HOSTAGE", "OLD_KEY_LOCK_INCIDENT", "OLD_MOBILES", "OLD_ROOF_CLIMB", "OLD_TEMPORARY_RELEASE_FAILURE", "OLD_TEMPORARY_RELEASE_FAILURE1", "OLD_TEMPORARY_RELEASE_FAILURE2" ]
+            "enum" : [ "ABSCOND_1", "ASSAULT_1", "ASSAULT_2", "ASSAULT_3", "ASSAULT_4", "ASSAULT_5", "ATTEMPTED_ESCAPE_FROM_PRISON_1", "ATTEMPTED_ESCAPE_FROM_ESCORT_1", "BARRICADE_1", "BOMB_1", "BREACH_OF_SECURITY_1", "CLOSE_DOWN_SEARCH_1", "CONCERTED_INDISCIPLINE_1", "DAMAGE_1", "DEATH_PRISONER_1", "DEATH_OTHER_1", "DISORDER_1", "DISORDER_2", "DRONE_SIGHTING_1", "DRONE_SIGHTING_2", "DRONE_SIGHTING_3", "DRUGS_1", "ESCAPE_FROM_PRISON_1", "ESCAPE_FROM_ESCORT_1", "FIND_1", "FIND_2", "FIND_3", "FIND_4", "FIND_5", "FIND_6", "FIRE_1", "FIREARM_1", "FOOD_REFUSAL_1", "HOSTAGE_1", "INCIDENT_AT_HEIGHT_1", "KEY_OR_LOCK_1", "KEY_OR_LOCK_2", "MISCELLANEOUS_1", "MOBILE_PHONE_1", "RADIO_COMPROMISE_1", "RELEASE_IN_ERROR_1", "SELF_HARM_1", "TEMPORARY_RELEASE_FAILURE_1", "TEMPORARY_RELEASE_FAILURE_2", "TEMPORARY_RELEASE_FAILURE_3", "TEMPORARY_RELEASE_FAILURE_4", "TOOL_LOSS_1" ]
           },
           "changedAt" : {
             "type" : "string",
@@ -5816,7 +5879,7 @@
           },
           "type" : {
             "type" : "string",
-            "enum" : [ "ABSCONDER", "ASSAULT", "ATTEMPTED_ESCAPE_FROM_CUSTODY", "ATTEMPTED_ESCAPE_FROM_ESCORT", "BOMB_THREAT", "BREACH_OF_SECURITY", "DEATH_IN_CUSTODY", "DEATH_OTHER", "DISORDER", "DRONE_SIGHTING", "ESCAPE_FROM_CUSTODY", "ESCAPE_FROM_ESCORT", "FINDS", "FIRE", "FOOD_REFUSAL", "FULL_CLOSE_DOWN_SEARCH", "KEY_LOCK_INCIDENT", "MISCELLANEOUS", "RADIO_COMPROMISE", "RELEASED_IN_ERROR", "SELF_HARM", "TEMPORARY_RELEASE_FAILURE", "TOOL_LOSS", "DAMAGE", "OLD_ASSAULT", "OLD_ASSAULT1", "OLD_ASSAULT2", "OLD_ASSAULT3", "OLD_BARRICADE", "OLD_CONCERTED_INDISCIPLINE", "OLD_DISORDER", "OLD_DRONE_SIGHTING", "OLD_DRONE_SIGHTING1", "OLD_DRUGS", "OLD_FINDS", "OLD_FINDS1", "OLD_FINDS2", "OLD_FINDS3", "OLD_FINDS4", "OLD_FIREARM_ETC", "OLD_HOSTAGE", "OLD_KEY_LOCK_INCIDENT", "OLD_MOBILES", "OLD_ROOF_CLIMB", "OLD_TEMPORARY_RELEASE_FAILURE", "OLD_TEMPORARY_RELEASE_FAILURE1", "OLD_TEMPORARY_RELEASE_FAILURE2" ]
+            "enum" : [ "ABSCOND_1", "ASSAULT_1", "ASSAULT_2", "ASSAULT_3", "ASSAULT_4", "ASSAULT_5", "ATTEMPTED_ESCAPE_FROM_PRISON_1", "ATTEMPTED_ESCAPE_FROM_ESCORT_1", "BARRICADE_1", "BOMB_1", "BREACH_OF_SECURITY_1", "CLOSE_DOWN_SEARCH_1", "CONCERTED_INDISCIPLINE_1", "DAMAGE_1", "DEATH_PRISONER_1", "DEATH_OTHER_1", "DISORDER_1", "DISORDER_2", "DRONE_SIGHTING_1", "DRONE_SIGHTING_2", "DRONE_SIGHTING_3", "DRUGS_1", "ESCAPE_FROM_PRISON_1", "ESCAPE_FROM_ESCORT_1", "FIND_1", "FIND_2", "FIND_3", "FIND_4", "FIND_5", "FIND_6", "FIRE_1", "FIREARM_1", "FOOD_REFUSAL_1", "HOSTAGE_1", "INCIDENT_AT_HEIGHT_1", "KEY_OR_LOCK_1", "KEY_OR_LOCK_2", "MISCELLANEOUS_1", "MOBILE_PHONE_1", "RADIO_COMPROMISE_1", "RELEASE_IN_ERROR_1", "SELF_HARM_1", "TEMPORARY_RELEASE_FAILURE_1", "TEMPORARY_RELEASE_FAILURE_2", "TEMPORARY_RELEASE_FAILURE_3", "TEMPORARY_RELEASE_FAILURE_4", "TOOL_LOSS_1" ]
           },
           "incidentDateAndTime" : {
             "type" : "string",
@@ -6254,7 +6317,7 @@
           "type" : {
             "type" : "string",
             "description" : "Incident report type",
-            "enum" : [ "ABSCONDER", "ASSAULT", "ATTEMPTED_ESCAPE_FROM_CUSTODY", "ATTEMPTED_ESCAPE_FROM_ESCORT", "BOMB_THREAT", "BREACH_OF_SECURITY", "DEATH_IN_CUSTODY", "DEATH_OTHER", "DISORDER", "DRONE_SIGHTING", "ESCAPE_FROM_CUSTODY", "ESCAPE_FROM_ESCORT", "FINDS", "FIRE", "FOOD_REFUSAL", "FULL_CLOSE_DOWN_SEARCH", "KEY_LOCK_INCIDENT", "MISCELLANEOUS", "RADIO_COMPROMISE", "RELEASED_IN_ERROR", "SELF_HARM", "TEMPORARY_RELEASE_FAILURE", "TOOL_LOSS", "DAMAGE", "OLD_ASSAULT", "OLD_ASSAULT1", "OLD_ASSAULT2", "OLD_ASSAULT3", "OLD_BARRICADE", "OLD_CONCERTED_INDISCIPLINE", "OLD_DISORDER", "OLD_DRONE_SIGHTING", "OLD_DRONE_SIGHTING1", "OLD_DRUGS", "OLD_FINDS", "OLD_FINDS1", "OLD_FINDS2", "OLD_FINDS3", "OLD_FINDS4", "OLD_FIREARM_ETC", "OLD_HOSTAGE", "OLD_KEY_LOCK_INCIDENT", "OLD_MOBILES", "OLD_ROOF_CLIMB", "OLD_TEMPORARY_RELEASE_FAILURE", "OLD_TEMPORARY_RELEASE_FAILURE1", "OLD_TEMPORARY_RELEASE_FAILURE2" ]
+            "enum" : [ "ABSCOND_1", "ASSAULT_1", "ASSAULT_2", "ASSAULT_3", "ASSAULT_4", "ASSAULT_5", "ATTEMPTED_ESCAPE_FROM_PRISON_1", "ATTEMPTED_ESCAPE_FROM_ESCORT_1", "BARRICADE_1", "BOMB_1", "BREACH_OF_SECURITY_1", "CLOSE_DOWN_SEARCH_1", "CONCERTED_INDISCIPLINE_1", "DAMAGE_1", "DEATH_PRISONER_1", "DEATH_OTHER_1", "DISORDER_1", "DISORDER_2", "DRONE_SIGHTING_1", "DRONE_SIGHTING_2", "DRONE_SIGHTING_3", "DRUGS_1", "ESCAPE_FROM_PRISON_1", "ESCAPE_FROM_ESCORT_1", "FIND_1", "FIND_2", "FIND_3", "FIND_4", "FIND_5", "FIND_6", "FIRE_1", "FIREARM_1", "FOOD_REFUSAL_1", "HOSTAGE_1", "INCIDENT_AT_HEIGHT_1", "KEY_OR_LOCK_1", "KEY_OR_LOCK_2", "MISCELLANEOUS_1", "MOBILE_PHONE_1", "RADIO_COMPROMISE_1", "RELEASE_IN_ERROR_1", "SELF_HARM_1", "TEMPORARY_RELEASE_FAILURE_1", "TEMPORARY_RELEASE_FAILURE_2", "TEMPORARY_RELEASE_FAILURE_3", "TEMPORARY_RELEASE_FAILURE_4", "TOOL_LOSS_1" ]
           },
           "incidentDateAndTime" : {
             "type" : "string",
@@ -6336,7 +6399,7 @@
           "newType" : {
             "type" : "string",
             "description" : "The new type",
-            "enum" : [ "ABSCONDER", "ASSAULT", "ATTEMPTED_ESCAPE_FROM_CUSTODY", "ATTEMPTED_ESCAPE_FROM_ESCORT", "BOMB_THREAT", "BREACH_OF_SECURITY", "DEATH_IN_CUSTODY", "DEATH_OTHER", "DISORDER", "DRONE_SIGHTING", "ESCAPE_FROM_CUSTODY", "ESCAPE_FROM_ESCORT", "FINDS", "FIRE", "FOOD_REFUSAL", "FULL_CLOSE_DOWN_SEARCH", "KEY_LOCK_INCIDENT", "MISCELLANEOUS", "RADIO_COMPROMISE", "RELEASED_IN_ERROR", "SELF_HARM", "TEMPORARY_RELEASE_FAILURE", "TOOL_LOSS", "DAMAGE", "OLD_ASSAULT", "OLD_ASSAULT1", "OLD_ASSAULT2", "OLD_ASSAULT3", "OLD_BARRICADE", "OLD_CONCERTED_INDISCIPLINE", "OLD_DISORDER", "OLD_DRONE_SIGHTING", "OLD_DRONE_SIGHTING1", "OLD_DRUGS", "OLD_FINDS", "OLD_FINDS1", "OLD_FINDS2", "OLD_FINDS3", "OLD_FINDS4", "OLD_FIREARM_ETC", "OLD_HOSTAGE", "OLD_KEY_LOCK_INCIDENT", "OLD_MOBILES", "OLD_ROOF_CLIMB", "OLD_TEMPORARY_RELEASE_FAILURE", "OLD_TEMPORARY_RELEASE_FAILURE1", "OLD_TEMPORARY_RELEASE_FAILURE2" ],
+            "enum" : [ "ABSCOND_1", "ASSAULT_1", "ASSAULT_2", "ASSAULT_3", "ASSAULT_4", "ASSAULT_5", "ATTEMPTED_ESCAPE_FROM_PRISON_1", "ATTEMPTED_ESCAPE_FROM_ESCORT_1", "BARRICADE_1", "BOMB_1", "BREACH_OF_SECURITY_1", "CLOSE_DOWN_SEARCH_1", "CONCERTED_INDISCIPLINE_1", "DAMAGE_1", "DEATH_PRISONER_1", "DEATH_OTHER_1", "DISORDER_1", "DISORDER_2", "DRONE_SIGHTING_1", "DRONE_SIGHTING_2", "DRONE_SIGHTING_3", "DRUGS_1", "ESCAPE_FROM_PRISON_1", "ESCAPE_FROM_ESCORT_1", "FIND_1", "FIND_2", "FIND_3", "FIND_4", "FIND_5", "FIND_6", "FIRE_1", "FIREARM_1", "FOOD_REFUSAL_1", "HOSTAGE_1", "INCIDENT_AT_HEIGHT_1", "KEY_OR_LOCK_1", "KEY_OR_LOCK_2", "MISCELLANEOUS_1", "MOBILE_PHONE_1", "RADIO_COMPROMISE_1", "RELEASE_IN_ERROR_1", "SELF_HARM_1", "TEMPORARY_RELEASE_FAILURE_1", "TEMPORARY_RELEASE_FAILURE_2", "TEMPORARY_RELEASE_FAILURE_3", "TEMPORARY_RELEASE_FAILURE_4", "TOOL_LOSS_1" ],
             "example" : "DAMAGE"
           }
         },
@@ -6587,7 +6650,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "description", "id", "name" ]
+        "required" : [ "id", "name" ]
       },
       "ReportDefinitionSummary" : {
         "type" : "object",
@@ -6913,7 +6976,7 @@
             }
           }
         },
-        "required" : [ "description", "id", "name", "sections" ]
+        "required" : [ "id", "name", "sections" ]
       },
       "DashboardSectionDefinition" : {
         "type" : "object",
@@ -7025,16 +7088,21 @@
       },
       "TypeConstantDescription" : {
         "type" : "object",
-        "description" : "Report type constant",
+        "description" : "Report incident type constant",
         "properties" : {
+          "familyCode" : {
+            "type" : "string",
+            "description" : "Machine-readable identifier for this family of incident types",
+            "example" : "DISORDER"
+          },
           "code" : {
             "type" : "string",
-            "description" : "Machine-readable identifier of this value",
+            "description" : "Machine-readable identifier of this incident type",
             "example" : "DISORDER"
           },
           "description" : {
             "type" : "string",
-            "description" : "Human-readable description of this value",
+            "description" : "Human-readable description of this family of incident types (all incident types in one family share a description)",
             "example" : "Disorder"
           },
           "active" : {
@@ -7045,12 +7113,30 @@
           "nomisCode" : {
             "type" : "string",
             "deprecated" : true,
-            "description" : "Machine-readable NOMIS identifier of this value, which may be null for newer incident types",
+            "description" : "Machine-readable NOMIS identifier of this incident type, which may be null for newer ones",
             "example" : "DISORDER1"
           }
         },
         "readOnly" : true,
-        "required" : [ "active", "code", "description" ]
+        "required" : [ "active", "code", "description", "familyCode" ]
+      },
+      "TypeFamilyConstantDescription" : {
+        "type" : "object",
+        "description" : "Report incident type family constant",
+        "properties" : {
+          "code" : {
+            "type" : "string",
+            "description" : "Machine-readable identifier of this family",
+            "example" : "DRONE_SIGHTING"
+          },
+          "description" : {
+            "type" : "string",
+            "description" : "Human-readable description of this family",
+            "example" : "Drone sighting"
+          }
+        },
+        "readOnly" : true,
+        "required" : [ "code", "description" ]
       },
       "StatusConstantDescription" : {
         "type" : "object",
