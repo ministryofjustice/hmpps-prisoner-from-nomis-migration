@@ -942,9 +942,11 @@ class CourtSentencingSynchronisationService(
       "removedOffenderNo" to removedOffenderNumber,
     )
 
+    val (courtCasesCreated, courtCasesDeactivated) = nomisApiService.getCourtCasesChangedByMerge(offenderNo = retainedOffenderNumber)
+
     telemetryClient.trackEvent(
       "from-nomis-synch-court-case-merge",
-      telemetry,
+      telemetry + mapOf("courtCasesCreatedCount" to courtCasesCreated.size, "courtCasesDeactivatedCount" to courtCasesDeactivated.size),
     )
   }
 
