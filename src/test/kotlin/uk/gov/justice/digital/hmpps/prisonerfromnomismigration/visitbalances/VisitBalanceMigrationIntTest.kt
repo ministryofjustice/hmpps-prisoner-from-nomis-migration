@@ -157,13 +157,13 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
         mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
         mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 20000, mapping = null)
 
-        nomisVisitBalanceApiMock.stubGetVisitBalance(
+        nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(
           nomisVisitBalanceId = 10000,
-          visitBalance = visitBalance(prisonNumber = "A0001BC").copy(remainingPrivilegedVisitOrders = 3),
+          visitBalance = visitBalanceDetail(prisonNumber = "A0001BC").copy(remainingPrivilegedVisitOrders = 3),
         )
-        nomisVisitBalanceApiMock.stubGetVisitBalance(
+        nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(
           nomisVisitBalanceId = 10001,
-          visitBalance = visitBalance(prisonNumber = "A0002BC").copy(remainingPrivilegedVisitOrders = 4),
+          visitBalance = visitBalanceDetail(prisonNumber = "A0002BC").copy(remainingPrivilegedVisitOrders = 4),
         )
         dpsApiMock.stubMigrateVisitBalance()
         mappingApiMock.stubCreateMappingsForMigration()
@@ -306,10 +306,10 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 1, pageSize = 10, firstVisitBalanceId = 10000)
         mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
-        nomisVisitBalanceApiMock.stubGetVisitBalance(
+        nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(
           nomisVisitBalanceId = 10000,
           prisonNumber = "A0001BC",
-          visitBalance(prisonNumber = "A0001BC").copy(remainingPrivilegedVisitOrders = 3),
+          visitBalanceDetail(prisonNumber = "A0001BC").copy(remainingPrivilegedVisitOrders = 3),
         )
         dpsApiMock.stubMigrateVisitBalance()
         mappingApiMock.stubCreateMappingsForMigrationFailureFollowedBySuccess()
@@ -368,10 +368,10 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 1, pageSize = 10, firstVisitBalanceId = 10000)
         mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
-        nomisVisitBalanceApiMock.stubGetVisitBalance(
+        nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(
           nomisVisitBalanceId = 10000,
           prisonNumber = "A0001BC",
-          visitBalance(prisonNumber = "A0001BC").copy(remainingPrivilegedVisitOrders = 3),
+          visitBalanceDetail(prisonNumber = "A0001BC").copy(remainingPrivilegedVisitOrders = 3),
         )
         dpsApiMock.stubMigrateVisitBalance()
         mappingApiMock.stubCreateMappingsForMigration(
@@ -613,7 +613,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
     mappingApiMock.resetAll()
     nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 2, pageSize = 10, firstVisitBalanceId = 10000)
     visitBalances.forEachIndexed { index, nomisVisitBalance ->
-      nomisVisitBalanceApiMock.stubGetVisitBalance(nomisVisitBalanceId = visitBalanceIds[index], visitBalance = nomisVisitBalance)
+      nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(nomisVisitBalanceId = visitBalanceIds[index], visitBalance = nomisVisitBalance)
       mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = visitBalanceIds[index], mapping = null)
       dpsApiMock.stubMigrateVisitBalance()
     }

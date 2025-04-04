@@ -1,5 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances
 
+import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -9,15 +12,21 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.eq
+import org.mockito.internal.verification.Times
+import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.waitForMessageCountOnQueue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiExtension.Companion.dpsVisitBalanceServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 
 class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
   @Autowired
@@ -77,8 +86,8 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class HappyPath {
         @BeforeEach
         fun setUp() {
-          nomisApiMock.stubGetVisitBalanceAdjustment(visitBalanceAdjId)
-          dpsApiMock.stubSyncVisitBalance()
+          nomisApiMock.stubGetVisitBalanceAdjustment(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
+          dpsApiMock.stubSyncVisitBalanceAdjustment()
 
           visitBalanceOffenderEventsQueue.sendMessage(
             visitBalanceAdjustmentEvent(
@@ -130,7 +139,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           nomisApiMock.stubGetVisitBalanceAdjustment(
-            visitBalanceAdjId,
+            nomisVisitBalanceAdjustmentId = visitBalanceAdjId,
             visitBalanceAdjustment().copy(
               previousVisitOrderCount = null,
               visitOrderChange = null,
@@ -139,7 +148,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
               comment = null,
             ),
           )
-          dpsApiMock.stubSyncVisitBalance()
+          dpsApiMock.stubSyncVisitBalanceAdjustment()
 
           visitBalanceOffenderEventsQueue.sendMessage(
             visitBalanceAdjustmentEvent(
@@ -261,6 +270,16 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
+        nomisApiMock.stubGetVisitBalanceForPrisoner(prisonNumber = movedFromNomsNumber)
+        nomisApiMock.stubGetVisitBalanceForPrisoner(
+          prisonNumber = movedToNomsNumber,
+          VisitBalanceResponse(
+            remainingVisitOrders = 11,
+            remainingPrivilegedVisitOrders = 7,
+          ),
+        )
+        dpsApiMock.stubSyncVisitBalances()
+
         visitBalanceOffenderEventsQueue.sendMessage(
           bookingMovedDomainEvent(
             bookingId = bookingId,
@@ -269,6 +288,25 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
         waitForAnyProcessingToComplete("visitbalance-adjustment-synchronisation-booking-moved")
+      }
+
+      @Test
+      fun `will retrieve balances from Nomis for the bookings that has changed`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/prisoners/$movedFromNomsNumber/visit-orders/balance")))
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/prisoners/$movedToNomsNumber/visit-orders/balance")))
+      }
+
+      @Test
+      fun `will send both offender balances to DPS`() {
+        dpsApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync/booking"))
+            .withRequestBodyJsonPath("firstPrisonerId", movedFromNomsNumber)
+            .withRequestBodyJsonPath("firstPrisonerVoBalance", "24")
+            .withRequestBodyJsonPath("firstPrisonerPvoBalance", "3")
+            .withRequestBodyJsonPath("secondPrisonerId", movedToNomsNumber)
+            .withRequestBodyJsonPath("secondPrisonerVoBalance", "11")
+            .withRequestBodyJsonPath("secondPrisonerPvoBalance", "7"),
+        )
       }
 
       @Test
@@ -282,6 +320,90 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           },
           isNull(),
         )
+      }
+    }
+
+    @Nested
+    inner class HappyPathWithNomisFailures {
+      val bookingId = 123456L
+      private val movedFromNomsNumber = "A1000KT"
+      private val movedToNomsNumber = "A1234KT"
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetVisitBalanceForPrisoner(prisonNumber = movedFromNomsNumber, status = HttpStatus.INTERNAL_SERVER_ERROR)
+        visitBalanceOffenderEventsQueue.sendMessage(
+          bookingMovedDomainEvent(
+            bookingId = bookingId,
+            movedFromNomsNumber = movedFromNomsNumber,
+            movedToNomsNumber = movedToNomsNumber,
+          ),
+        )
+        awsSqsVisitBalanceOffenderEventDlqClient.waitForMessageCountOnQueue(visitBalanceOffenderEventsDlqUrl, 1)
+      }
+
+      @Test
+      fun `will retrieve balances from Nomis for the bookings that has changed`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/prisoners/$movedFromNomsNumber/visit-orders/balance")))
+        nomisApiMock.verify(0, getRequestedFor(urlPathEqualTo("/prisoners/$movedToNomsNumber/visit-orders/balance")))
+      }
+
+      @Test
+      fun `will not create the adjustment in the visit allocation service`() {
+        dpsApiMock.verify(exactly(0), anyRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will not create telemetry tracking`() {
+        verify(telemetryClient, Times(0)).trackEvent(any(), any(), isNull())
+      }
+
+      @Test
+      fun `will attempt call to Nomis several times and keep failing`() {
+        nomisApiMock.verify(2, getRequestedFor(urlPathEqualTo("/prisoners/$movedFromNomsNumber/visit-orders/balance")))
+      }
+    }
+
+    @Nested
+    inner class HappyPathWithDpsFailures {
+      val bookingId = 123456L
+      private val movedFromNomsNumber = "A1000KT"
+      private val movedToNomsNumber = "A1234KT"
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetVisitBalanceForPrisoner(prisonNumber = movedFromNomsNumber)
+        nomisApiMock.stubGetVisitBalanceForPrisoner(prisonNumber = movedToNomsNumber)
+        dpsApiMock.stubSyncVisitBalances(status = HttpStatus.INTERNAL_SERVER_ERROR)
+        visitBalanceOffenderEventsQueue.sendMessage(
+          bookingMovedDomainEvent(
+            bookingId = bookingId,
+            movedFromNomsNumber = movedFromNomsNumber,
+            movedToNomsNumber = movedToNomsNumber,
+          ),
+        )
+        awsSqsVisitBalanceOffenderEventDlqClient.waitForMessageCountOnQueue(visitBalanceOffenderEventsDlqUrl, 1)
+      }
+
+      @Test
+      fun `will retrieve balances from Nomis for the bookings that has changed`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/prisoners/$movedFromNomsNumber/visit-orders/balance")))
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/prisoners/$movedToNomsNumber/visit-orders/balance")))
+      }
+
+      @Test
+      fun `will send offender balances to DPS`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync/booking")))
+      }
+
+      @Test
+      fun `will not create telemetry tracking`() {
+        verify(telemetryClient, Times(0)).trackEvent(any(), any(), isNull())
+      }
+
+      @Test
+      fun `will attempt call to dps several times and keep failing`() {
+        dpsApiMock.verify(exactly(2), postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync/booking")))
       }
     }
   }

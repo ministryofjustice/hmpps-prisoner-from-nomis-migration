@@ -136,6 +136,8 @@ hmpps.sqs:
       dlqMaxReceiveCount: 2
     eventpersonalrelationships:
       dlqMaxReceiveCount: 1
+    eventvisitbalance:
+      dlqMaxReceiveCount: 2
     domaineventpersonalrelationships:
       dlqMaxReceiveCount: 1
     migrationpersonalrelationshipsprofiledetails:

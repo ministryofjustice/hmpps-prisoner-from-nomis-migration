@@ -176,7 +176,10 @@ class SqsIntegrationTestBase : TestBase() {
   internal val organisationsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(ORGANISATIONS_SYNC_QUEUE_ID) as HmppsQueue }
   internal val personalRelationshipsDomainEventsQueue by lazy { hmppsQueueService.findByQueueId(PERSONALRELATIONSHIPS_DOMAIN_SYNC_QUEUE_ID) as HmppsQueue }
   internal val personContactsDomainEventsQueue by lazy { hmppsQueueService.findByQueueId(PERSONCONTACTS_DOMAIN_SYNC_QUEUE_ID) as HmppsQueue }
+
   internal val visitBalanceOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(VISIT_BALANCE_SYNC_QUEUE_ID) as HmppsQueue }
+  internal val awsSqsVisitBalanceOffenderEventDlqClient by lazy { visitBalanceOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
+  internal val visitBalanceOffenderEventsDlqUrl by lazy { visitBalanceOffenderEventsQueue.dlqUrl as String }
 
   private val allQueues by lazy {
     listOf(
@@ -249,6 +252,13 @@ class SqsIntegrationTestBase : TestBase() {
 
 internal fun SqsAsyncClient.sendMessage(queueOffenderEventsUrl: String, message: String) = sendMessage(SendMessageRequest.builder().queueUrl(queueOffenderEventsUrl).messageBody(message).build()).get()
 internal fun HmppsQueue.sendMessage(message: String) = this.sqsClient.sendMessage(this.queueUrl, message = message)
+internal fun HmppsQueue.countMessagesOnQueue(message: String) = this.sqsClient.countAllMessagesOnQueue(this.queueUrl)
+
+internal fun SqsAsyncClient.waitForMessageCountOnQueue(queueUrl: String, messageCount: Int) = await untilCallTo {
+  countAllMessagesOnQueue(queueUrl)
+    .get()
+} matches { it == messageCount }
+
 internal fun String.purgeQueueRequest() = PurgeQueueRequest.builder().queueUrl(this).build()
 private fun SqsAsyncClient.purgeQueue(queueUrl: String?) = purgeQueue(queueUrl?.purgeQueueRequest())
 
