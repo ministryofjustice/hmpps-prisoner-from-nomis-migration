@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
@@ -36,7 +37,21 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
     .retrieve()
     .awaitBody()
 
-  suspend fun updateCourtCase(courtCaseId: String, courtCase: LegacyCreateCourtCase) = webClient
+  suspend fun updateCourtCasePostMerge(
+    courtCasesCreated: MigrationCreateCourtCases,
+    courtCasesDeactivated: List<Pair<String, LegacyCreateCourtCase>>,
+    sentencesDeactivated: List<Pair<String, LegacyCreateSentence>>,
+  ): MigrationCreateCourtCasesResponse {
+    // TODO - switch to a DPS API that:
+    //  - merges the cases
+    //  - created new cases
+    //  - updates sentences
+    courtCasesDeactivated.forEach { (courtCaseId, courtCase) -> updateCourtCase(courtCaseId, courtCase) }
+    sentencesDeactivated.forEach { (sentenceId, sentence) -> updateSentence(sentenceId, sentence) }
+    return createCourtCaseMigration(courtCasesCreated)
+  }
+
+  suspend fun updateCourtCase(courtCaseId: String, courtCase: LegacyCreateCourtCase): ResponseEntity<Void> = webClient
     .put()
     .uri("/legacy/court-case/{courtCaseId}", courtCaseId)
     .bodyValue(courtCase)

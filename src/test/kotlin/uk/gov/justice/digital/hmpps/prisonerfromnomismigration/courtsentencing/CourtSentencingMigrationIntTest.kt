@@ -162,7 +162,7 @@ class CourtSentencingMigrationIntTest(
         offenderNo = "AN1",
         bookingId = 3,
         caseId = 1,
-        caseIndentifiers = listOf(
+        caseIdentifiers = listOf(
           buildCaseIdentifierResponse(reference = "YY12345678"),
           buildCaseIdentifierResponse(reference = "XX12345678"),
         ),

@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 import kotlinx.coroutines.reactive.awaitFirstOrDefault
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.ParameterizedTypeReference
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
@@ -66,7 +67,15 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-  suspend fun deleteCourtCaseMappingByDpsId(courtCaseId: String) = webClient.delete()
+  suspend fun getCourtCaseByNomisId(courtCaseId: Long): CourtCaseMappingDto = webClient.get()
+    .uri(
+      "/mapping/court-sentencing/court-cases/nomis-court-case-id/{courtCase}",
+      courtCaseId,
+    )
+    .retrieve()
+    .awaitBody()
+
+  suspend fun deleteCourtCaseMappingByDpsId(courtCaseId: String): ResponseEntity<Void> = webClient.delete()
     .uri(
       "/mapping/court-sentencing/court-cases/dps-court-case-id/{courtCase}",
       courtCaseId,
@@ -166,6 +175,15 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getSentenceByNomisId(bookingId: Long, sentenceSequence: Long): SentenceMappingDto = webClient.get()
+    .uri(
+      "/mapping/court-sentencing/sentences/nomis-booking-id/{bookingId}/nomis-sentence-sequence/{sentenceSequence}",
+      bookingId,
+      sentenceSequence,
+    )
+    .retrieve()
+    .awaitBody()
 
   suspend fun createSentenceMapping(
     mapping: SentenceMappingDto,
