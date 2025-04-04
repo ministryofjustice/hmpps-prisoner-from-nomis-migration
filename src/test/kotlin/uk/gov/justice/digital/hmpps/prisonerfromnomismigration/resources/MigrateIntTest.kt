@@ -27,7 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.Vis
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceNomisApiMockServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.visitBalance
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.visitBalanceDetail
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.Duration
 import java.time.LocalDateTime
@@ -98,15 +98,15 @@ class MigrateIntTest : SqsIntegrationTestBase() {
       nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 2, pageSize = 10, firstVisitBalanceId = 10000)
       mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
       mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 20000, mapping = null)
-      nomisVisitBalanceApiMock.stubGetVisitBalance(
+      nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(
         nomisVisitBalanceId = 10000,
         prisonNumber = "A0001BC",
-        visitBalance(prisonNumber = "A0001BC").copy(remainingPrivilegedVisitOrders = 3),
+        visitBalanceDetail(prisonNumber = "A0001BC").copy(remainingPrivilegedVisitOrders = 3),
       )
-      nomisVisitBalanceApiMock.stubGetVisitBalance(
+      nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(
         nomisVisitBalanceId = 20000,
         prisonNumber = "A0002BC",
-        visitBalance(prisonNumber = "A0002BC").copy(remainingPrivilegedVisitOrders = 4),
+        visitBalanceDetail(prisonNumber = "A0002BC").copy(remainingPrivilegedVisitOrders = 4),
       )
 
       dpsApiMock.stubMigrateVisitBalance()

@@ -26,7 +26,7 @@ class VisitBalanceSynchronisationService(
       )
     } else {
       nomisApiService.getVisitBalanceAdjustment(visitBalanceAdjustmentId = visitBalanceAdjustmentId).also {
-        dpsApiService.syncVisitBalance(it.toSyncDto(nomisPrisonNumber))
+        dpsApiService.syncVisitBalanceAdjustment(it.toSyncDto(nomisPrisonNumber))
         telemetryClient.trackEvent(
           "visitbalance-adjustment-synchronisation-created-success",
           telemetry,
@@ -44,12 +44,30 @@ class VisitBalanceSynchronisationService(
   }
 
   suspend fun synchronisePrisonerBookingMoved(bookingMovedEvent: PrisonerBookingMovedDomainEvent) {
+    val fromMovePrisoner = bookingMovedEvent.additionalInformation.movedFromNomsNumber
+    val toMovePrisoner = bookingMovedEvent.additionalInformation.movedToNomsNumber
+
+    val visitBalance1 = nomisApiService.getVisitBalanceForPrisoner(fromMovePrisoner)
+    val visitBalance2 = nomisApiService.getVisitBalanceForPrisoner(toMovePrisoner)
+    dpsApiService.syncVisitBalances(
+      VisitAllocationPrisonerSyncBookingDto(
+        firstPrisonerId = fromMovePrisoner,
+        firstPrisonerVoBalance = visitBalance1.remainingVisitOrders,
+        firstPrisonerPvoBalance = visitBalance1.remainingPrivilegedVisitOrders,
+
+        secondPrisonerId = toMovePrisoner,
+        secondPrisonerVoBalance = visitBalance2.remainingVisitOrders,
+        secondPrisonerPvoBalance = visitBalance2.remainingPrivilegedVisitOrders,
+      ),
+    )
     val telemetry = telemetryOf(
       "bookingId" to bookingMovedEvent.additionalInformation.bookingId,
-      "movedFromNomsNumber" to bookingMovedEvent.additionalInformation.movedFromNomsNumber,
-      "movedToNomsNumber" to bookingMovedEvent.additionalInformation.movedToNomsNumber,
+      "movedFromNomsNumber" to fromMovePrisoner,
+      "movedToNomsNumber" to toMovePrisoner,
     )
     telemetryClient.trackEvent("visitbalance-adjustment-synchronisation-booking-moved", telemetry)
+
+    // TODO do we need to try/catch and log if error?
   }
 }
 
