@@ -6,6 +6,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerMigrationDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncBookingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncDto
 
 @Service
@@ -18,10 +19,10 @@ class VisitBalanceDpsApiService(@Qualifier("visitBalanceApiWebClient") private v
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
   }
 
-  suspend fun syncVisitBalances(visitAllocationResyncDto: VisitAllocationPrisonerSyncBookingDto) {
+  suspend fun syncVisitBalances(visitBalancesSyncDto: VisitAllocationPrisonerSyncBookingDto) {
     webClient.post()
       .uri("/visits/allocation/prisoner/sync/booking")
-      .bodyValue(visitAllocationResyncDto)
+      .bodyValue(visitBalancesSyncDto)
       .retrieve()
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
   }
@@ -34,13 +35,3 @@ class VisitBalanceDpsApiService(@Qualifier("visitBalanceApiWebClient") private v
       .awaitBodilessEntity()
   }
 }
-
-// TODO remove when endpoint set up
-data class VisitAllocationPrisonerSyncBookingDto(
-  val firstPrisonerId: String,
-  val firstPrisonerVoBalance: Int,
-  val firstPrisonerPvoBalance: Int,
-  val secondPrisonerId: String,
-  val secondPrisonerVoBalance: Int,
-  val secondPrisonerPvoBalance: Int,
-)
