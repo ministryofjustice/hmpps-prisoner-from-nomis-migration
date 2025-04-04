@@ -156,6 +156,7 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will show mismatch counts in report`() {
         incidentsApi.stubGetIncidentCounts()
+        incidentsApi.stubGetASIClosedIncidentCounts()
         webTestClient.put().uri("/incidents/reports/reconciliation")
           .exchange()
           .expectStatus().isAccepted
@@ -167,16 +168,33 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
           check {
             assertThat(it).containsEntry("mismatch-count", "2")
             assertThat(it).containsEntry("success", "true")
-            assertThat(it).containsEntry("ASI", "open-dps=3:open-nomis=2; closed-dps=3:closed-nomis=3")
+            assertThat(it).containsEntry("ASI", "open-dps=3:open-nomis=2; closed-dps=8:closed-nomis=3")
             assertThat(it).containsEntry("BFI", "open-dps=3:open-nomis=1; closed-dps=3:closed-nomis=4")
             assertThat(it).doesNotContainKeys("WWI")
           },
           isNull(),
         )
 
-        verify(telemetryClient, times(2)).trackEvent(
+        verify(telemetryClient, times(1)).trackEvent(
           eq("incidents-reports-reconciliation-mismatch"),
-          any(),
+          check {
+            assertThat(it).containsEntry("agencyId", "ASI")
+            assertThat(it).containsEntry("dpsOpenIncidents", "3")
+            assertThat(it).containsEntry("nomisOpenIncidents", "2")
+            assertThat(it).containsEntry("dpsClosedIncidents", "8")
+            assertThat(it).containsEntry("nomisClosedIncidents", "3")
+          },
+          isNull(),
+        )
+        verify(telemetryClient, times(1)).trackEvent(
+          eq("incidents-reports-reconciliation-mismatch"),
+          check {
+            assertThat(it).containsEntry("agencyId", "BFI")
+            assertThat(it).containsEntry("dpsOpenIncidents", "3")
+            assertThat(it).containsEntry("nomisOpenIncidents", "1")
+            assertThat(it).containsEntry("dpsClosedIncidents", "3")
+            assertThat(it).containsEntry("nomisClosedIncidents", "4")
+          },
           isNull(),
         )
       }

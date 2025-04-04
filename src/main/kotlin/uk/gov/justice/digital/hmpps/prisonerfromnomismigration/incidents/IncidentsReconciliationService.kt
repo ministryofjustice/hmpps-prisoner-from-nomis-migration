@@ -56,7 +56,7 @@ class IncidentsReconciliationService(
         agencyId = agencyId,
         dpsOpenIncidents = dpsOpenIncidentsCount,
         nomisOpenIncidents = nomisOpenIncidentsCount,
-        dpsClosedIncidents = dpsOpenIncidentsCount,
+        dpsClosedIncidents = dpsClosedIncidentsCount,
         nomisClosedIncidents = nomisClosedIncidentsCount,
         mismatchOpenIncidents = openIncidentsMisMatch,
       )
@@ -79,7 +79,7 @@ class IncidentsReconciliationService(
           agencyId = agencyId,
           dpsOpenIncidents = dpsOpenIncidentsCount,
           nomisOpenIncidents = nomisOpenIncidentsCount,
-          dpsClosedIncidents = dpsOpenIncidentsCount,
+          dpsClosedIncidents = dpsClosedIncidentsCount,
           nomisClosedIncidents = nomisClosedIncidentsCount,
           mismatchOpenIncidents = openIncidentsMisMatch,
         )

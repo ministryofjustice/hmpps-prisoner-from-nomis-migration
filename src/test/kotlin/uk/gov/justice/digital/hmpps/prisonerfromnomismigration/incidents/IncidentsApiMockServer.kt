@@ -2,12 +2,14 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.matching
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -23,6 +25,7 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.HttpStatus.NO_CONTENT
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.incidentsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.CorrectionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Event
@@ -298,12 +301,12 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun stubGetIncidentCounts(totalElements: Long = 3, pageSize: Long = 20) {
+  fun stubGetIncidentCounts(totalElements: Long = 3, pageSize: Long = 20, urlMatch: MappingBuilder = get(urlPathMatching("/incident-reports"))) {
     val content: List<ReportBasic> = (1..min(pageSize, totalElements)).map {
       dpsBasicIncidentReport(dpsIncidentId = UUID.randomUUID().toString())
     }
     stubFor(
-      get(urlPathMatching("/incident-reports"))
+      urlMatch
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -322,6 +325,8 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
+
+  fun stubGetASIClosedIncidentCounts() = stubGetIncidentCounts(totalElements = 8, urlMatch = get(urlPathMatching("/incident-reports")).withQueryParam("prisonId", matching("ASI")).withQueryParam("status", matching("CLOSED")))
 
   fun stubGetIncidentsWithError(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     stubFor(
