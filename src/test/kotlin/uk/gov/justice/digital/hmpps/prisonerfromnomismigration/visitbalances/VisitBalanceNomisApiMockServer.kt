@@ -8,11 +8,12 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceDetailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
@@ -43,10 +44,10 @@ class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetVisitBalance(
+  fun stubGetVisitBalanceDetail(
     nomisVisitBalanceId: Long = 12345L,
     prisonNumber: String = "A0001BC",
-    visitBalance: VisitBalanceDetailResponse = visitBalance(prisonNumber = prisonNumber),
+    visitBalance: VisitBalanceDetailResponse = visitBalanceDetail(prisonNumber = prisonNumber),
   ) {
     nomisApi.stubFor(
       get(urlEqualTo("/visit-balances/$nomisVisitBalanceId")).willReturn(
@@ -56,21 +57,6 @@ class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withBody(
             objectMapper.writeValueAsString(visitBalance),
           ),
-      ),
-    )
-  }
-
-  fun stubGetVisitBalance(
-    nomisVisitBalanceId: Long = 12345L,
-    status: HttpStatus,
-    error: ErrorResponse = ErrorResponse(status = status.value()),
-  ) {
-    nomisApi.stubFor(
-      get(urlEqualTo("/visit-balances/$nomisVisitBalanceId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -91,11 +77,42 @@ class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubGetVisitBalanceForPrisoner(
+    prisonNumber: String = "A1234BC",
+    response: VisitBalanceResponse = VisitBalanceResponse(
+      remainingVisitOrders = 24,
+      remainingPrivilegedVisitOrders = 3,
+    ),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/$prisonNumber/visit-orders/balance")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+  fun stubGetVisitBalanceForPrisoner(
+    prisonNumber: String = "A1234BC",
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/$prisonNumber/visit-orders/balance")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
 
-fun visitBalance(prisonNumber: String = "A1234BC"): VisitBalanceDetailResponse = VisitBalanceDetailResponse(
+fun visitBalanceDetail(prisonNumber: String = "A1234BC"): VisitBalanceDetailResponse = VisitBalanceDetailResponse(
   prisonNumber = prisonNumber,
   remainingPrivilegedVisitOrders = 2,
   remainingVisitOrders = 3,
