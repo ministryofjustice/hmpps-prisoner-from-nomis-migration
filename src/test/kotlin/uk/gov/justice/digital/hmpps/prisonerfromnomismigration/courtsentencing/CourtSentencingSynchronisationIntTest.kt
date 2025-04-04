@@ -3031,6 +3031,190 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         )
       }
     }
+
+    @Nested
+    inner class HappyPathWhenCasesCreatedAndDeactivatedByMerge {
+      val dpsCourtCaseIdFor10001 = "3051ba19-d125-4f5f-8feb-3cf26802f488"
+      val dpsCourtCaseIdFor10002 = "ef38466a-1886-477f-8e72-2e059670f5f8"
+      val dpsSentenceIdForSequence1 = "0087ee53-0529-423a-a14d-f340ede43922"
+      val dpsSentenceIdForSequence2 = "7b70c22c-a05b-4c78-8da3-c0d01f99400b"
+      val dpsSentenceIdForSequence3 = "84430291-a381-4c99-acdb-102299324f2a"
+      val dpsSentenceIdForSequence4 = "c0ba2706-6a89-4e64-ae84-a434472ca2ad"
+
+      @BeforeEach
+      fun setUp() {
+        courtSentencingNomisApiMockServer.stubGetCourtCasesChangedByMerge(
+          offenderNo = offenderNumberRetained,
+          courtCasesCreated = listOf(
+            courtCaseResponse().copy(
+              id = 20001,
+              courtEvents = listOf(
+                courtEventResponse(eventId = 402).copy(
+                  courtEventCharges = listOf(
+                    courtEventChargeResponse(eventId = 402, offenderChargeId = 503),
+                    courtEventChargeResponse(eventId = 402, offenderChargeId = 504),
+                  ),
+                ),
+              ),
+              sentences = listOf(
+                sentenceResponse(bookingId = 301, sentenceSequence = 1),
+                sentenceResponse(bookingId = 301, sentenceSequence = 2),
+              ),
+            ),
+            courtCaseResponse().copy(
+              id = 20002,
+              courtEvents = listOf(
+                courtEventResponse(eventId = 401).copy(
+                  courtEventCharges = listOf(
+                    courtEventChargeResponse(eventId = 401, offenderChargeId = 501),
+                    courtEventChargeResponse(eventId = 401, offenderChargeId = 502),
+                  ),
+                ),
+              ),
+              sentences = listOf(
+                sentenceResponse(bookingId = 301, sentenceSequence = 3),
+                sentenceResponse(bookingId = 301, sentenceSequence = 4),
+              ),
+            ),
+          ),
+          courtCasesDeactivated = listOf(
+            courtCaseResponse().copy(
+              id = 10001,
+              courtEvents = listOf(
+                courtEventResponse(eventId = 201).copy(
+                  courtEventCharges = listOf(
+                    courtEventChargeResponse(eventId = 201, offenderChargeId = 301),
+                    courtEventChargeResponse(eventId = 201, offenderChargeId = 302),
+                  ),
+                ),
+              ),
+              sentences = listOf(
+                sentenceResponse(bookingId = 201, sentenceSequence = 1).copy(offenderCharges = listOf(offenderChargeResponse(301))),
+                sentenceResponse(bookingId = 201, sentenceSequence = 2).copy(offenderCharges = listOf(offenderChargeResponse(302))),
+              ),
+            ),
+            courtCaseResponse().copy(
+              id = 10002,
+              courtEvents = listOf(
+                courtEventResponse(eventId = 202).copy(
+                  courtEventCharges = listOf(
+                    courtEventChargeResponse(eventId = 202, offenderChargeId = 303),
+                    courtEventChargeResponse(eventId = 202, offenderChargeId = 304),
+                  ),
+                ),
+              ),
+              sentences = listOf(
+                sentenceResponse(bookingId = 201, sentenceSequence = 3).copy(offenderCharges = listOf(offenderChargeResponse(303))),
+                sentenceResponse(bookingId = 201, sentenceSequence = 4).copy(offenderCharges = listOf(offenderChargeResponse(304))),
+              ),
+            ),
+          ),
+        )
+        courtSentencingMappingApiMockServer.stubGetByNomisId(
+          nomisCourtCaseId = 10001,
+          dpsCourtCaseId = dpsCourtCaseIdFor10001,
+        )
+        courtSentencingMappingApiMockServer.stubGetByNomisId(
+          nomisCourtCaseId = 10002,
+          dpsCourtCaseId = dpsCourtCaseIdFor10002,
+        )
+        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+          nomisBookingId = 201,
+          nomisSentenceSequence = 1,
+          dpsSentenceId = dpsSentenceIdForSequence1,
+        )
+        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+          nomisBookingId = 201,
+          nomisSentenceSequence = 2,
+          dpsSentenceId = dpsSentenceIdForSequence2,
+        )
+        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+          nomisBookingId = 201,
+          nomisSentenceSequence = 3,
+          dpsSentenceId = dpsSentenceIdForSequence3,
+        )
+        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+          nomisBookingId = 201,
+          nomisSentenceSequence = 4,
+          dpsSentenceId = dpsSentenceIdForSequence4,
+        )
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+          nomisCourtChargeId = 301,
+        )
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+          nomisCourtChargeId = 302,
+        )
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+          nomisCourtChargeId = 303,
+        )
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+          nomisCourtChargeId = 304,
+        )
+
+        dpsCourtSentencingServer.stubUpdateCourtCasePostMerge(
+          // TODO: return a sensible response once we get the create mappings part next
+          courtCasesCreated = dpsMigrationCreateResponseWithTwoAppearancesAndTwoCharges(),
+          courtCasesDeactivatedIds = listOf(dpsCourtCaseIdFor10001, dpsCourtCaseIdFor10002),
+          sentencesDeactivatedIds = listOf(dpsSentenceIdForSequence1, dpsSentenceIdForSequence2, dpsSentenceIdForSequence3, dpsSentenceIdForSequence4),
+        )
+
+        courtSentencingOffenderEventsQueue.sendMessage(
+          mergeDomainEvent(
+            bookingId = 1234,
+            offenderNo = offenderNumberRetained,
+            removedOffenderNo = offenderNumberRemoved,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will callback to NOMIS to find the cases changed by the merge`() {
+        courtSentencingNomisApiMockServer.verify(
+          getRequestedFor(urlPathEqualTo("/prisoners/$offenderNumberRetained/sentencing/court-cases/post-merge")),
+        )
+      }
+
+      @Test
+      fun `will call mapping service to get DPS ids for cases and sentences to updated`() {
+        courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/nomis-court-case-id/10001")))
+        courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/nomis-court-case-id/10002")))
+        courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/1")))
+        courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/2")))
+        courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/3")))
+        courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/4")))
+      }
+
+      @Test
+      fun `will call DPS to synchronise any cases`() {
+        // TODO - these verify calls will be collapsed into a single DPS API call
+        dpsCourtSentencingServer.verify(postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")))
+        dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCourtCaseIdFor10001")))
+        dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCourtCaseIdFor10002")))
+        dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence1")))
+        dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence2")))
+        dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence3")))
+        dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence4")))
+      }
+
+      @Test
+      fun `will not call mapping service to synchronise any case mappings`() {
+        courtSentencingMappingApiMockServer.verify(0, postRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will track telemetry for the merge`() {
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-court-case-merge"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNumberRetained)
+            assertThat(it["removedOffenderNo"]).isEqualTo(offenderNumberRemoved)
+            assertThat(it["courtCasesCreatedCount"]).isEqualTo("2")
+            assertThat(it["courtCasesDeactivatedCount"]).isEqualTo("2")
+          },
+          isNull(),
+        )
+      }
+    }
   }
 }
 

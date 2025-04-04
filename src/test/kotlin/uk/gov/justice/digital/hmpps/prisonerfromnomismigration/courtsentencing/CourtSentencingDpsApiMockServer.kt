@@ -97,6 +97,27 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubUpdateCourtCasePostMerge(
+    courtCasesCreated: MigrationCreateCourtCasesResponse = MigrationCreateCourtCasesResponse(
+      courtCases = emptyList(),
+      appearances = emptyList(),
+      charges = emptyList(),
+      sentences = emptyList(),
+      sentenceTerms = emptyList(),
+    ),
+    courtCasesDeactivatedIds: List<String> = emptyList(),
+    sentencesDeactivatedIds: List<String> = emptyList(),
+  ) {
+    // TODO - switch to real merge endpoint when available
+    courtCasesDeactivatedIds.forEach { courtCaseId ->
+      stubPutCourtCaseForUpdate(courtCaseId = courtCaseId)
+    }
+    sentencesDeactivatedIds.forEach { sentenceId ->
+      stubPutSentenceForUpdate(sentenceId = sentenceId)
+    }
+    stubPostCourtCasesForCreateMigration(response = courtCasesCreated)
+  }
+
   fun stubPutCourtCaseForUpdate(
     courtCaseId: String = UUID.randomUUID().toString(),
     response: CreateCourtCaseResponse = CreateCourtCaseResponse(

@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateWholeCharge
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCases
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -779,11 +780,21 @@ class CourtSentencingSynchronisationService(
   private suspend fun getConsecutiveSequenceMappingOrThrow(
     event: OffenderSentenceEvent,
     consecSequence: Int,
-  ): String = mappingApiService.getSentenceOrNullByNomisId(
+  ): String = getConsecutiveSequenceMappingOrThrow(
     bookingId = event.bookingId,
+    sentenceSequence = event.sentenceSeq,
+    consecSequence = consecSequence,
+  )
+
+  private suspend fun getConsecutiveSequenceMappingOrThrow(
+    bookingId: Long,
+    consecSequence: Int,
+    sentenceSequence: Int,
+  ): String = mappingApiService.getSentenceOrNullByNomisId(
+    bookingId = bookingId,
     sentenceSequence = consecSequence,
   )?.dpsSentenceId
-    ?: throw ParentEntityNotFoundRetry("Consecutive Sentence with sequence $consecSequence has not been mapped. For sentence sequence ${event.sentenceSeq} and booking ${event.bookingId}")
+    ?: throw ParentEntityNotFoundRetry("Consecutive Sentence with sequence $consecSequence has not been mapped. For sentence sequence $sentenceSequence and booking $bookingId")
 
   suspend fun nomisSentenceDeleted(event: OffenderSentenceEvent) {
     val telemetry =
@@ -943,6 +954,34 @@ class CourtSentencingSynchronisationService(
     )
 
     val (courtCasesCreated, courtCasesDeactivated) = nomisApiService.getCourtCasesChangedByMerge(offenderNo = retainedOffenderNumber)
+
+    if (courtCasesCreated.isNotEmpty()) {
+      // TODO this will be simplified by a new DPS endpoint
+      dpsApiService.updateCourtCasePostMerge(
+        courtCasesCreated = MigrationCreateCourtCases(
+          prisonerId = retainedOffenderNumber,
+          courtCases = courtCasesCreated.map { it.toMigrationDpsCourtCase() },
+        ),
+        courtCasesDeactivated = courtCasesDeactivated.map { mappingApiService.getCourtCaseByNomisId(it.id).dpsCourtCaseId to it.toLegacyDpsCourtCase() },
+        sentencesDeactivated = courtCasesDeactivated.flatMap {
+          it.sentences.map { nomisSentence ->
+            mappingApiService.getSentenceByNomisId(
+              bookingId = nomisSentence.bookingId,
+              sentenceSequence = nomisSentence.sentenceSeq,
+            ).dpsSentenceId to nomisSentence.toDpsSentence(
+              dpsConsecUuid = nomisSentence.consecSequence?.let {
+                getConsecutiveSequenceMappingOrThrow(
+                  bookingId = nomisSentence.bookingId,
+                  sentenceSequence = nomisSentence.sentenceSeq.toInt(),
+                  consecSequence = it,
+                )
+              },
+              sentenceChargeIds = getDpsChargeMappings(nomisSentence),
+            )
+          }
+        },
+      )
+    }
 
     telemetryClient.trackEvent(
       "from-nomis-synch-court-case-merge",

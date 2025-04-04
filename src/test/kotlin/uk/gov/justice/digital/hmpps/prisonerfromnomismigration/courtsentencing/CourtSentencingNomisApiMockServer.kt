@@ -36,7 +36,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     bookingId: Long = 123456,
     offenderNo: String = "A3864DZ",
     courtCaseId: Long = 3,
-    caseIndentifiers: List<CaseIdentifierResponse> = emptyList(),
+    caseIdentifiers: List<CaseIdentifierResponse> = emptyList(),
     sentences: List<SentenceResponse> = emptyList(),
     response: CourtCaseResponse = CourtCaseResponse(
       bookingId = bookingId,
@@ -52,7 +52,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       createdByUsername = "Q1251T",
       lidsCaseNumber = 1,
       primaryCaseInfoNumber = "caseRef1",
-      caseInfoNumbers = caseIndentifiers,
+      caseInfoNumbers = caseIdentifiers,
       sentences = sentences,
     ),
   ) {
@@ -84,7 +84,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     offenderNo: String = "AN1",
     courtId: String = "BATHMC",
     caseInfoNumber: String? = "caseRef1",
-    caseIndentifiers: List<CaseIdentifierResponse> = emptyList(),
+    caseIdentifiers: List<CaseIdentifierResponse> = emptyList(),
     courtEvents: List<CourtEventResponse> = emptyList(),
     combinedCaseId: Long? = null,
     sentences: List<SentenceResponse> = emptyList(),
@@ -103,7 +103,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         createdByUsername = "Q1251T",
         lidsCaseNumber = 1,
         primaryCaseInfoNumber = "caseRef1",
-        caseInfoNumbers = caseIndentifiers,
+        caseInfoNumbers = caseIdentifiers,
         combinedCaseId = combinedCaseId,
         sentences = sentences,
       ),
@@ -592,3 +592,117 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
+
+fun courtCaseResponse(
+  bookingId: Long = 123456,
+  offenderNo: String = "A3864DZ",
+  courtCaseId: Long = 3,
+  caseIdentifiers: List<CaseIdentifierResponse> = emptyList(),
+  courtEvents: List<CourtEventResponse> = emptyList(),
+  sentences: List<SentenceResponse> = emptyList(),
+) = CourtCaseResponse(
+  bookingId = bookingId,
+  id = courtCaseId,
+  offenderNo = offenderNo,
+  caseSequence = 22,
+  caseStatus = CodeDescription("A", "Active"),
+  legalCaseType = CodeDescription("A", "Adult"),
+  courtId = "MDI",
+  courtEvents = courtEvents,
+  offenderCharges = emptyList(),
+  createdDateTime = LocalDateTime.now(),
+  createdByUsername = "Q1251T",
+  lidsCaseNumber = 1,
+  primaryCaseInfoNumber = "caseRef1",
+  caseInfoNumbers = caseIdentifiers,
+  sentences = sentences,
+)
+
+fun sentenceResponse(bookingId: Long, sentenceSequence: Int) = SentenceResponse(
+  bookingId = bookingId,
+  sentenceSeq = sentenceSequence.toLong(),
+  caseId = 123,
+  courtOrder = null,
+  category = CodeDescription(code = "2003", "2003 Act"),
+  calculationType = CodeDescription(code = "ADIMP_ORA", description = "ADIMP_ORA description"),
+  offenderCharges = emptyList(),
+  startDate = LocalDate.now(),
+  status = "I",
+  sentenceTerms = emptyList(),
+  createdDateTime = LocalDateTime.now(),
+  createdByUsername = "Q1251T",
+  prisonId = "MDI",
+  fineAmount = BigDecimal.valueOf(1.10),
+  consecSequence = null,
+  sentenceLevel = null,
+)
+
+fun courtEventResponse(eventId: Long) = CourtEventResponse(
+  id = eventId,
+  caseId = 123,
+  offenderNo = "A3864DZ",
+  eventDateTime = LocalDateTime.parse("2024-02-01T10:00:00"),
+  courtEventType = CodeDescription("CRT", "Court Appearance"),
+  eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
+  directionCode = CodeDescription("OUT", "Out"),
+  courtId = "SHECC",
+  outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournment", dispositionCode = "I", conviction = false),
+  createdDateTime = LocalDateTime.parse("2024-02-08T14:36:16.485181"),
+  createdByUsername = "PRISONER_MANAGER_API",
+  courtEventCharges = listOf(
+    CourtEventChargeResponse(
+      eventId = eventId,
+      offencesCount = 1,
+      offenceDate = LocalDate.parse("2024-01-02"),
+      resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F", conviction = false),
+      mostSeriousFlag = false,
+      offenderCharge = OffenderChargeResponse(
+        id = 3934645,
+        offence = OffenceResponse(
+          offenceCode = "RR84027",
+          statuteCode = "RR84",
+          description = "Failing to stop at school crossing (horsedrawn vehicle)",
+        ),
+        offencesCount = 1,
+        offenceDate = LocalDate.parse("2024-01-02"),
+        chargeStatus = CodeDescription("A", "Active"),
+        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F", conviction = false),
+        mostSeriousFlag = false,
+      ),
+    ),
+  ),
+  courtOrders = listOf(
+    CourtOrderResponse(
+      id = 1434174,
+      courtDate = LocalDate.parse("2024-02-01"),
+      issuingCourt = "ABDRCT",
+      orderType = "AUTO",
+      orderStatus = "A",
+      sentencePurposes = emptyList(),
+      eventId = eventId,
+    ),
+  ),
+)
+
+fun courtEventChargeResponse(eventId: Long, offenderChargeId: Long) = CourtEventChargeResponse(
+  eventId = eventId,
+  offencesCount = 1,
+  offenceDate = LocalDate.parse("2024-01-02"),
+  resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F", conviction = false),
+  mostSeriousFlag = false,
+  offenderCharge = offenderChargeResponse(offenderChargeId),
+)
+
+fun offenderChargeResponse(offenderChargeId: Long) = OffenderChargeResponse(
+  id = offenderChargeId,
+  offence = OffenceResponse(
+    offenceCode = "RR84027",
+    statuteCode = "RR84",
+    description = "Failing to stop at school crossing (horsedrawn vehicle)",
+  ),
+  offencesCount = 1,
+  offenceDate = LocalDate.parse("2024-01-02"),
+  chargeStatus = CodeDescription("A", "Active"),
+  resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F", conviction = false),
+  mostSeriousFlag = false,
+)
