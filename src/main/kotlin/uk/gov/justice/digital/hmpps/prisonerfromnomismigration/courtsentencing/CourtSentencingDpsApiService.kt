@@ -133,12 +133,12 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
     .retrieve()
     .awaitBodilessEntityIgnoreNotFound()
 
-  suspend fun updateSentence(sentenceId: String, sentence: LegacyCreateSentence): LegacySentenceCreatedResponse = webClient
+  suspend fun updateSentence(sentenceId: String, sentence: LegacyCreateSentence): ResponseEntity<Void> = webClient
     .put()
     .uri("/legacy/sentence/{sentenceId}", sentenceId)
     .bodyValue(sentence)
     .retrieve()
-    .awaitBody()
+    .awaitBodilessEntity()
 
   suspend fun refreshCaseIdentifiers(courtCaseId: String, courtCaseLegacyData: CourtCaseLegacyData) {
     webClient

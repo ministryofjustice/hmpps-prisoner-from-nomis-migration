@@ -326,22 +326,13 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubPutSentenceForUpdate(
     sentenceId: String = UUID.randomUUID().toString(),
-    response: LegacySentenceCreatedResponse = LegacySentenceCreatedResponse(
-      lifetimeUuid = UUID.fromString(sentenceId),
-      courtCaseId = UUID.randomUUID().toString(),
-      chargeLifetimeUuid = UUID.randomUUID(),
-      appearanceUuid = UUID.randomUUID(),
-      prisonerId = "A1234AA",
-      createdPeriodLengths = emptyList(),
-    ),
   ) {
     stubFor(
       put("/legacy/sentence/$sentenceId")
         .willReturn(
           aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
         ),
     )
   }
