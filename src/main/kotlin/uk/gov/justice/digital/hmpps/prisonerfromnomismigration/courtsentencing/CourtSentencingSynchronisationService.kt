@@ -960,7 +960,7 @@ class CourtSentencingSynchronisationService(
 
   suspend fun nomisCaseIdentifiersUpdated(eventName: String, event: CaseIdentifiersEvent) {
     val telemetry =
-      mapOf(
+      mutableMapOf(
         "nomisIdentifiersNo" to event.identifierNo,
         "nomisIdentifiersType" to event.identifierType,
         "nomisCourtCaseId" to event.caseId.toString(),
@@ -1012,7 +1012,10 @@ class CourtSentencingSynchronisationService(
       "removedOffenderNo" to removedOffenderNumber,
     )
 
-    val (courtCasesCreated, courtCasesDeactivated) = nomisApiService.getCourtCasesChangedByMerge(offenderNo = retainedOffenderNumber)
+    val (courtCasesCreated, courtCasesDeactivated) = nomisApiService.getCourtCasesChangedByMerge(offenderNo = retainedOffenderNumber).also {
+      telemetry["courtCasesCreatedCount"] = it.courtCasesCreated.size
+      telemetry["courtCasesDeactivatedCount"] = it.courtCasesDeactivated.size
+    }
 
     if (courtCasesCreated.isNotEmpty()) {
       // TODO this will be simplified by a new DPS endpoint
@@ -1070,7 +1073,7 @@ class CourtSentencingSynchronisationService(
 
     telemetryClient.trackEvent(
       "from-nomis-synch-court-case-merge",
-      telemetry + mapOf("courtCasesCreatedCount" to courtCasesCreated.size, "courtCasesDeactivatedCount" to courtCasesDeactivated.size),
+      telemetry,
     )
   }
 

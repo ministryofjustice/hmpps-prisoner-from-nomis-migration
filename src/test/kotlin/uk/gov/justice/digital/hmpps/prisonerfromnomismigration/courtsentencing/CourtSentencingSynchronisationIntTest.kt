@@ -3185,106 +3185,179 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtCasesDeactivatedIds = listOf(dpsCourtCaseIdFor10001, dpsCourtCaseIdFor10002),
           sentencesDeactivatedIds = listOf(dpsSentenceIdForSequence1, dpsSentenceIdForSequence2, dpsSentenceIdForSequence3, dpsSentenceIdForSequence4),
         )
-
-        courtSentencingMappingApiMockServer.stubPostMigrationMapping()
-
-        courtSentencingOffenderEventsQueue.sendMessage(
-          mergeDomainEvent(
-            bookingId = 1234,
-            offenderNo = offenderNumberRetained,
-            removedOffenderNo = offenderNumberRemoved,
-          ),
-        ).also { waitForAnyProcessingToComplete() }
       }
 
-      @Test
-      fun `will callback to NOMIS to find the cases changed by the merge`() {
-        courtSentencingNomisApiMockServer.verify(
-          getRequestedFor(urlPathEqualTo("/prisoners/$offenderNumberRetained/sentencing/court-cases/post-merge")),
-        )
-      }
+      @Nested
+      inner class Success {
 
-      @Test
-      fun `will call mapping service to get DPS ids for cases and sentences to updated`() {
-        courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/nomis-court-case-id/10001")))
-        courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/nomis-court-case-id/10002")))
-        courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/1")))
-        courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/2")))
-        courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/3")))
-        courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/4")))
-      }
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubPostMigrationMapping()
 
-      @Test
-      fun `will call DPS to synchronise any cases`() {
-        // TODO - these verify calls will be collapsed into a single DPS API call
-        dpsCourtSentencingServer.verify(postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")))
-        dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCourtCaseIdFor10001")))
-        dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCourtCaseIdFor10002")))
-        dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence1")))
-        dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence2")))
-        dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence3")))
-        dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence4")))
-      }
+          courtSentencingOffenderEventsQueue.sendMessage(
+            mergeDomainEvent(
+              bookingId = 1234,
+              offenderNo = offenderNumberRetained,
+              removedOffenderNo = offenderNumberRemoved,
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
 
-      @Test
-      fun `will call mapping service to synchronise any new case mappings`() {
-        courtSentencingMappingApiMockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/prisoner/$offenderNumberRetained/court-cases")))
-      }
+        @Test
+        fun `will callback to NOMIS to find the cases changed by the merge`() {
+          courtSentencingNomisApiMockServer.verify(
+            getRequestedFor(urlPathEqualTo("/prisoners/$offenderNumberRetained/sentencing/court-cases/post-merge")),
+          )
+        }
 
-      @Test
-      fun `will post any new case mappings`() {
-        val request: CourtCaseMigrationMappingDto = CourtSentencingMappingApiMockServer.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/prisoner/$offenderNumberRetained/court-cases")))
-        with(request) {
-          assertThat(courtCases).hasSize(2)
-          assertThat(courtCases[0].nomisCourtCaseId).isEqualTo(10001)
-          assertThat(courtCases[0].dpsCourtCaseId).isEqualTo(dpsCourtCaseIdFor10001)
-          assertThat(courtCases[1].nomisCourtCaseId).isEqualTo(10002)
-          assertThat(courtCases[1].dpsCourtCaseId).isEqualTo(dpsCourtCaseIdFor10002)
+        @Test
+        fun `will call mapping service to get DPS ids for cases and sentences to updated`() {
+          courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/nomis-court-case-id/10001")))
+          courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/nomis-court-case-id/10002")))
+          courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/1")))
+          courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/2")))
+          courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/3")))
+          courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/4")))
+        }
 
-          assertThat(courtAppearances).hasSize(2)
-          assertThat(courtAppearances[0].nomisCourtAppearanceId).isEqualTo(401)
-          assertThat(courtAppearances[0].dpsCourtAppearanceId).isEqualTo(dpsCourtAppearanceFor401)
-          assertThat(courtAppearances[1].nomisCourtAppearanceId).isEqualTo(402)
-          assertThat(courtAppearances[1].dpsCourtAppearanceId).isEqualTo(dpsCourtAppearanceFor402)
+        @Test
+        fun `will call DPS to synchronise any cases`() {
+          // TODO - these verify calls will be collapsed into a single DPS API call
+          dpsCourtSentencingServer.verify(postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")))
+          dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCourtCaseIdFor10001")))
+          dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCourtCaseIdFor10002")))
+          dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence1")))
+          dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence2")))
+          dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence3")))
+          dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence4")))
+        }
 
-          assertThat(courtCharges).hasSize(4)
-          assertThat(courtCharges[0].nomisCourtChargeId).isEqualTo(501)
-          assertThat(courtCharges[0].dpsCourtChargeId).isEqualTo(dpsChargeIdFor501)
-          assertThat(courtCharges[1].nomisCourtChargeId).isEqualTo(502)
-          assertThat(courtCharges[1].dpsCourtChargeId).isEqualTo(dpsChargeIdFor502)
-          assertThat(courtCharges[2].nomisCourtChargeId).isEqualTo(503)
-          assertThat(courtCharges[2].dpsCourtChargeId).isEqualTo(dpsChargeIdFor503)
-          assertThat(courtCharges[3].nomisCourtChargeId).isEqualTo(504)
-          assertThat(courtCharges[3].dpsCourtChargeId).isEqualTo(dpsChargeIdFor504)
+        @Test
+        fun `will call mapping service to synchronise any new case mappings`() {
+          courtSentencingMappingApiMockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/prisoner/$offenderNumberRetained/court-cases")))
+        }
 
-          assertThat(sentences).hasSize(4)
-          assertThat(sentences[0].nomisBookingId).isEqualTo(301)
-          assertThat(sentences[0].nomisSentenceSequence).isEqualTo(1)
-          assertThat(sentences[0].dpsSentenceId).isEqualTo(dpsSentenceIdForSequence1)
-          assertThat(sentences[1].nomisBookingId).isEqualTo(301)
-          assertThat(sentences[1].nomisSentenceSequence).isEqualTo(2)
-          assertThat(sentences[1].dpsSentenceId).isEqualTo(dpsSentenceIdForSequence2)
-          assertThat(sentences[2].nomisBookingId).isEqualTo(301)
-          assertThat(sentences[2].nomisSentenceSequence).isEqualTo(3)
-          assertThat(sentences[2].dpsSentenceId).isEqualTo(dpsSentenceIdForSequence3)
-          assertThat(sentences[3].nomisBookingId).isEqualTo(301)
-          assertThat(sentences[3].nomisSentenceSequence).isEqualTo(4)
-          assertThat(sentences[3].dpsSentenceId).isEqualTo(dpsSentenceIdForSequence4)
+        @Test
+        fun `will post any new case mappings`() {
+          val request: CourtCaseMigrationMappingDto = CourtSentencingMappingApiMockServer.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/prisoner/$offenderNumberRetained/court-cases")))
+          with(request) {
+            assertThat(courtCases).hasSize(2)
+            assertThat(courtCases[0].nomisCourtCaseId).isEqualTo(10001)
+            assertThat(courtCases[0].dpsCourtCaseId).isEqualTo(dpsCourtCaseIdFor10001)
+            assertThat(courtCases[1].nomisCourtCaseId).isEqualTo(10002)
+            assertThat(courtCases[1].dpsCourtCaseId).isEqualTo(dpsCourtCaseIdFor10002)
+
+            assertThat(courtAppearances).hasSize(2)
+            assertThat(courtAppearances[0].nomisCourtAppearanceId).isEqualTo(401)
+            assertThat(courtAppearances[0].dpsCourtAppearanceId).isEqualTo(dpsCourtAppearanceFor401)
+            assertThat(courtAppearances[1].nomisCourtAppearanceId).isEqualTo(402)
+            assertThat(courtAppearances[1].dpsCourtAppearanceId).isEqualTo(dpsCourtAppearanceFor402)
+
+            assertThat(courtCharges).hasSize(4)
+            assertThat(courtCharges[0].nomisCourtChargeId).isEqualTo(501)
+            assertThat(courtCharges[0].dpsCourtChargeId).isEqualTo(dpsChargeIdFor501)
+            assertThat(courtCharges[1].nomisCourtChargeId).isEqualTo(502)
+            assertThat(courtCharges[1].dpsCourtChargeId).isEqualTo(dpsChargeIdFor502)
+            assertThat(courtCharges[2].nomisCourtChargeId).isEqualTo(503)
+            assertThat(courtCharges[2].dpsCourtChargeId).isEqualTo(dpsChargeIdFor503)
+            assertThat(courtCharges[3].nomisCourtChargeId).isEqualTo(504)
+            assertThat(courtCharges[3].dpsCourtChargeId).isEqualTo(dpsChargeIdFor504)
+
+            assertThat(sentences).hasSize(4)
+            assertThat(sentences[0].nomisBookingId).isEqualTo(301)
+            assertThat(sentences[0].nomisSentenceSequence).isEqualTo(1)
+            assertThat(sentences[0].dpsSentenceId).isEqualTo(dpsSentenceIdForSequence1)
+            assertThat(sentences[1].nomisBookingId).isEqualTo(301)
+            assertThat(sentences[1].nomisSentenceSequence).isEqualTo(2)
+            assertThat(sentences[1].dpsSentenceId).isEqualTo(dpsSentenceIdForSequence2)
+            assertThat(sentences[2].nomisBookingId).isEqualTo(301)
+            assertThat(sentences[2].nomisSentenceSequence).isEqualTo(3)
+            assertThat(sentences[2].dpsSentenceId).isEqualTo(dpsSentenceIdForSequence3)
+            assertThat(sentences[3].nomisBookingId).isEqualTo(301)
+            assertThat(sentences[3].nomisSentenceSequence).isEqualTo(4)
+            assertThat(sentences[3].dpsSentenceId).isEqualTo(dpsSentenceIdForSequence4)
+          }
+        }
+
+        @Test
+        fun `will track telemetry for the merge`() {
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-court-case-merge"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(offenderNumberRetained)
+              assertThat(it["removedOffenderNo"]).isEqualTo(offenderNumberRemoved)
+              assertThat(it["courtCasesCreatedCount"]).isEqualTo("2")
+              assertThat(it["courtCasesDeactivatedCount"]).isEqualTo("2")
+            },
+            isNull(),
+          )
         }
       }
 
-      @Test
-      fun `will track telemetry for the merge`() {
-        verify(telemetryClient).trackEvent(
-          eq("from-nomis-synch-court-case-merge"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo(offenderNumberRetained)
-            assertThat(it["removedOffenderNo"]).isEqualTo(offenderNumberRemoved)
-            assertThat(it["courtCasesCreatedCount"]).isEqualTo("2")
-            assertThat(it["courtCasesDeactivatedCount"]).isEqualTo("2")
-          },
-          isNull(),
-        )
+      @Nested
+      inner class EventualSuccess {
+
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubPostMigrationMappingFailureFollowedBySuccess()
+
+          courtSentencingOffenderEventsQueue.sendMessage(
+            mergeDomainEvent(
+              bookingId = 1234,
+              offenderNo = offenderNumberRetained,
+              removedOffenderNo = offenderNumberRemoved,
+            ),
+          ).also { waitForAnyProcessingToComplete("from-nomis-synch-court-case-merge-mapping-retry-success") }
+        }
+
+        @Test
+        fun `will callback to NOMIS to find the cases changed by the merge once`() {
+          courtSentencingNomisApiMockServer.verify(
+            1,
+            getRequestedFor(urlPathEqualTo("/prisoners/$offenderNumberRetained/sentencing/court-cases/post-merge")),
+          )
+        }
+
+        @Test
+        fun `will call DPS to synchronise any cases once`() {
+          // TODO - these verify calls will be collapsed into a single DPS API call
+          dpsCourtSentencingServer.verify(1, postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")))
+          dpsCourtSentencingServer.verify(1, putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCourtCaseIdFor10001")))
+          dpsCourtSentencingServer.verify(1, putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCourtCaseIdFor10002")))
+          dpsCourtSentencingServer.verify(1, putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence1")))
+          dpsCourtSentencingServer.verify(1, putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence2")))
+          dpsCourtSentencingServer.verify(1, putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence3")))
+          dpsCourtSentencingServer.verify(1, putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence4")))
+        }
+
+        @Test
+        fun `will call mapping service to synchronise any new case mappings until it succeeds`() {
+          courtSentencingMappingApiMockServer.verify(2, postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/prisoner/$offenderNumberRetained/court-cases")))
+        }
+
+        @Test
+        fun `will track telemetry for the merge`() {
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-court-case-merge"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(offenderNumberRetained)
+              assertThat(it["removedOffenderNo"]).isEqualTo(offenderNumberRemoved)
+              assertThat(it["courtCasesCreatedCount"]).isEqualTo("2")
+              assertThat(it["courtCasesDeactivatedCount"]).isEqualTo("2")
+            },
+            isNull(),
+          )
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-court-case-merge-mapping-retry-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(offenderNumberRetained)
+              assertThat(it["removedOffenderNo"]).isEqualTo(offenderNumberRemoved)
+              assertThat(it["courtCasesCreatedCount"]).isEqualTo("2")
+              assertThat(it["courtCasesDeactivatedCount"]).isEqualTo("2")
+            },
+            isNull(),
+          )
+        }
       }
     }
   }
