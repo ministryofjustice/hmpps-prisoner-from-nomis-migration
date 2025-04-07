@@ -20,7 +20,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceAllMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseResponse
@@ -31,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_PRISONER_MERGE_COURT_CASE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SENTENCE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -201,6 +205,48 @@ class CourtSentencingSynchronisationService(
     }
   }
 
+  data class PrisonerMergeMapping(
+    val offenderNo: String,
+    val mapping: CourtCaseMigrationMappingDto,
+  )
+
+  private suspend fun tryToCreateMapping(
+    offenderNo: String,
+    mapping: CourtCaseMigrationMappingDto,
+    telemetry: Map<String, Any>,
+  ): MappingResponse {
+    try {
+      mappingApiService.createMapping(
+        offenderNo = offenderNo,
+        mapping,
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseMigrationMappingDto>>() {},
+      ).also {
+        if (it.isError) {
+          val duplicateErrorDetails = (it.errorResponse!!).moreInfo
+          telemetryClient.trackEvent(
+            "from-nomis-sync-court-case-duplicate",
+            mapOf<String, String>(
+              "duplicateDpsCourtCaseId" to (duplicateErrorDetails.duplicate.courtCases.firstOrNull()?.dpsCourtCaseId ?: "unknown"),
+              "duplicateNomisCourtCaseId" to (duplicateErrorDetails.duplicate.courtCases.firstOrNull()?.nomisCourtCaseId?.toString() ?: "unknown"),
+              "existingDpsCourtCaseId" to (duplicateErrorDetails.existing.courtCases.firstOrNull()?.dpsCourtCaseId ?: "unknown"),
+              "existingNomisCourtCaseId" to (duplicateErrorDetails.existing.courtCases.firstOrNull()?.nomisCourtCaseId?.toString() ?: "unknown"),
+            ),
+            null,
+          )
+        }
+      }
+      return MappingResponse.MAPPING_CREATED
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for court case ids $mapping", e)
+      queueService.sendMessage(
+        messageType = RETRY_PRISONER_MERGE_COURT_CASE_SYNCHRONISATION_MAPPING,
+        synchronisationType = SynchronisationType.COURT_SENTENCING,
+        message = PrisonerMergeMapping(offenderNo = offenderNo, mapping = mapping),
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+      return MappingResponse.MAPPING_FAILED
+    }
+  }
   private suspend fun tryToCreateMapping(
     nomisCourtCase: CourtCaseResponse,
     dpsCourtCaseResponse: LegacyCourtCaseCreatedResponse,
@@ -708,6 +754,19 @@ class CourtSentencingSynchronisationService(
     }
   }
 
+  suspend fun retryCreatePrisonerMergeCourtCaseMapping(retryMessage: InternalMessage<PrisonerMergeMapping>) {
+    mappingApiService.createMapping(
+      retryMessage.body.offenderNo,
+      retryMessage.body.mapping,
+      object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseMigrationMappingDto>>() {},
+    ).also {
+      telemetryClient.trackEvent(
+        "from-nomis-synch-court-case-merge-mapping-retry-success",
+        retryMessage.telemetryAttributes,
+      )
+    }
+  }
+
   suspend fun nomisSentenceInserted(event: OffenderSentenceEvent) {
     val telemetry =
       mapOf(
@@ -957,7 +1016,7 @@ class CourtSentencingSynchronisationService(
 
     if (courtCasesCreated.isNotEmpty()) {
       // TODO this will be simplified by a new DPS endpoint
-      dpsApiService.updateCourtCasePostMerge(
+      val newCourtCaseMappings = dpsApiService.updateCourtCasePostMerge(
         courtCasesCreated = MigrationCreateCourtCases(
           prisonerId = retainedOffenderNumber,
           courtCases = courtCasesCreated.map { it.toMigrationDpsCourtCase() },
@@ -981,6 +1040,32 @@ class CourtSentencingSynchronisationService(
           }
         },
       )
+
+      val mapping = CourtCaseMigrationMappingDto(
+        courtCases = newCourtCaseMappings.courtCases.map { it -> CourtCaseMappingDto(nomisCourtCaseId = it.caseId, dpsCourtCaseId = it.courtCaseUuid) },
+        courtCharges = newCourtCaseMappings.charges.map { it ->
+          CourtChargeMappingDto(
+            nomisCourtChargeId = it.chargeNOMISId.toLong(),
+            dpsCourtChargeId = it.chargeUuid.toString(),
+          )
+        },
+        courtAppearances = newCourtCaseMappings.appearances.map { it ->
+          CourtAppearanceMappingDto(
+            nomisCourtAppearanceId = it.eventId.toLong(),
+            dpsCourtAppearanceId = it.appearanceUuid.toString(),
+          )
+        },
+        sentences = newCourtCaseMappings.sentences.map { it ->
+          SentenceMappingDto(
+            nomisSentenceSequence = it.sentenceNOMISId.sequence,
+            nomisBookingId = it.sentenceNOMISId.offenderBookingId,
+            dpsSentenceId = it.sentenceUuid.toString(),
+          )
+        },
+        mappingType = CourtCaseMigrationMappingDto.MappingType.NOMIS_CREATED,
+      )
+
+      tryToCreateMapping(offenderNo = retainedOffenderNumber, mapping = mapping, telemetry = telemetry)
     }
 
     telemetryClient.trackEvent(

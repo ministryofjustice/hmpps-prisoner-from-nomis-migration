@@ -34,11 +34,13 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResponse
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
@@ -3040,6 +3042,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       val dpsSentenceIdForSequence2 = "7b70c22c-a05b-4c78-8da3-c0d01f99400b"
       val dpsSentenceIdForSequence3 = "84430291-a381-4c99-acdb-102299324f2a"
       val dpsSentenceIdForSequence4 = "c0ba2706-6a89-4e64-ae84-a434472ca2ad"
+      val dpsCourtAppearanceFor401 = "b8beca56-f155-4d35-82af-a727d16fb171"
+      val dpsCourtAppearanceFor402 = "5c615d4e-891c-44c5-b3eb-349e8dd13da5"
+      val dpsChargeIdFor501 = "b8a59d39-9cea-4fcd-a55b-9b53f07b089f"
+      val dpsChargeIdFor502 = "50998ebf-bbbe-4bb8-971e-764fab595f80"
+      val dpsChargeIdFor503 = "a580cc27-22c5-4d7d-ac16-e637e781d984"
+      val dpsChargeIdFor504 = "4f21fb87-45b2-4a38-9ad8-bf2b40291adc"
 
       @BeforeEach
       fun setUp() {
@@ -3152,11 +3160,33 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         )
 
         dpsCourtSentencingServer.stubUpdateCourtCasePostMerge(
-          // TODO: return a sensible response once we get the create mappings part next
-          courtCasesCreated = dpsMigrationCreateResponseWithTwoAppearancesAndTwoCharges(),
+          courtCasesCreated = dpsMigrationCreateResponse(
+            courtCases = listOf(
+              dpsCourtCaseIdFor10001 to 10001,
+              dpsCourtCaseIdFor10002 to 10002,
+            ),
+            charges = listOf(
+              dpsChargeIdFor501 to 501,
+              dpsChargeIdFor502 to 502,
+              dpsChargeIdFor503 to 503,
+              dpsChargeIdFor504 to 504,
+            ),
+            courtAppearances = listOf(
+              dpsCourtAppearanceFor401 to 401,
+              dpsCourtAppearanceFor402 to 402,
+            ),
+            sentences = listOf(
+              dpsSentenceIdForSequence1 to MigrationSentenceId(offenderBookingId = 301, sequence = 1),
+              dpsSentenceIdForSequence2 to MigrationSentenceId(offenderBookingId = 301, sequence = 2),
+              dpsSentenceIdForSequence3 to MigrationSentenceId(offenderBookingId = 301, sequence = 3),
+              dpsSentenceIdForSequence4 to MigrationSentenceId(offenderBookingId = 301, sequence = 4),
+            ),
+          ),
           courtCasesDeactivatedIds = listOf(dpsCourtCaseIdFor10001, dpsCourtCaseIdFor10002),
           sentencesDeactivatedIds = listOf(dpsSentenceIdForSequence1, dpsSentenceIdForSequence2, dpsSentenceIdForSequence3, dpsSentenceIdForSequence4),
         )
+
+        courtSentencingMappingApiMockServer.stubPostMigrationMapping()
 
         courtSentencingOffenderEventsQueue.sendMessage(
           mergeDomainEvent(
@@ -3197,8 +3227,50 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `will not call mapping service to synchronise any case mappings`() {
-        courtSentencingMappingApiMockServer.verify(0, postRequestedFor(anyUrl()))
+      fun `will call mapping service to synchronise any new case mappings`() {
+        courtSentencingMappingApiMockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/prisoner/$offenderNumberRetained/court-cases")))
+      }
+
+      @Test
+      fun `will post any new case mappings`() {
+        val request: CourtCaseMigrationMappingDto = CourtSentencingMappingApiMockServer.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/prisoner/$offenderNumberRetained/court-cases")))
+        with(request) {
+          assertThat(courtCases).hasSize(2)
+          assertThat(courtCases[0].nomisCourtCaseId).isEqualTo(10001)
+          assertThat(courtCases[0].dpsCourtCaseId).isEqualTo(dpsCourtCaseIdFor10001)
+          assertThat(courtCases[1].nomisCourtCaseId).isEqualTo(10002)
+          assertThat(courtCases[1].dpsCourtCaseId).isEqualTo(dpsCourtCaseIdFor10002)
+
+          assertThat(courtAppearances).hasSize(2)
+          assertThat(courtAppearances[0].nomisCourtAppearanceId).isEqualTo(401)
+          assertThat(courtAppearances[0].dpsCourtAppearanceId).isEqualTo(dpsCourtAppearanceFor401)
+          assertThat(courtAppearances[1].nomisCourtAppearanceId).isEqualTo(402)
+          assertThat(courtAppearances[1].dpsCourtAppearanceId).isEqualTo(dpsCourtAppearanceFor402)
+
+          assertThat(courtCharges).hasSize(4)
+          assertThat(courtCharges[0].nomisCourtChargeId).isEqualTo(501)
+          assertThat(courtCharges[0].dpsCourtChargeId).isEqualTo(dpsChargeIdFor501)
+          assertThat(courtCharges[1].nomisCourtChargeId).isEqualTo(502)
+          assertThat(courtCharges[1].dpsCourtChargeId).isEqualTo(dpsChargeIdFor502)
+          assertThat(courtCharges[2].nomisCourtChargeId).isEqualTo(503)
+          assertThat(courtCharges[2].dpsCourtChargeId).isEqualTo(dpsChargeIdFor503)
+          assertThat(courtCharges[3].nomisCourtChargeId).isEqualTo(504)
+          assertThat(courtCharges[3].dpsCourtChargeId).isEqualTo(dpsChargeIdFor504)
+
+          assertThat(sentences).hasSize(4)
+          assertThat(sentences[0].nomisBookingId).isEqualTo(301)
+          assertThat(sentences[0].nomisSentenceSequence).isEqualTo(1)
+          assertThat(sentences[0].dpsSentenceId).isEqualTo(dpsSentenceIdForSequence1)
+          assertThat(sentences[1].nomisBookingId).isEqualTo(301)
+          assertThat(sentences[1].nomisSentenceSequence).isEqualTo(2)
+          assertThat(sentences[1].dpsSentenceId).isEqualTo(dpsSentenceIdForSequence2)
+          assertThat(sentences[2].nomisBookingId).isEqualTo(301)
+          assertThat(sentences[2].nomisSentenceSequence).isEqualTo(3)
+          assertThat(sentences[2].dpsSentenceId).isEqualTo(dpsSentenceIdForSequence3)
+          assertThat(sentences[3].nomisBookingId).isEqualTo(301)
+          assertThat(sentences[3].nomisSentenceSequence).isEqualTo(4)
+          assertThat(sentences[3].dpsSentenceId).isEqualTo(dpsSentenceIdForSequence4)
+        }
       }
 
       @Test

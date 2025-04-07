@@ -32,6 +32,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateSentenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
@@ -563,6 +565,18 @@ fun dpsMigrationCreateResponseWithTwoAppearancesAndTwoCharges(): MigrationCreate
     sentenceTerms = emptyList(),
   )
 }
+fun dpsMigrationCreateResponse(
+  courtCases: List<Pair<String, Long>>,
+  charges: List<Pair<String, Long>>,
+  courtAppearances: List<Pair<String, Long>>,
+  sentences: List<Pair<String, MigrationSentenceId>>,
+): MigrationCreateCourtCasesResponse = MigrationCreateCourtCasesResponse(
+  courtCases = courtCases.map { MigrationCreateCourtCaseResponse(courtCaseUuid = it.first, caseId = it.second) },
+  appearances = courtAppearances.map { MigrationCreateCourtAppearanceResponse(appearanceUuid = UUID.fromString(it.first), eventId = it.second) },
+  charges = charges.map { MigrationCreateChargeResponse(chargeUuid = UUID.fromString(it.first), chargeNOMISId = it.second) },
+  sentences = sentences.map { MigrationCreateSentenceResponse(sentenceUuid = UUID.fromString(it.first), sentenceNOMISId = it.second) },
+  sentenceTerms = emptyList(),
+)
 
 fun buildCaseIdentifierResponse(reference: String = "AB12345678"): CaseIdentifierResponse = CaseIdentifierResponse(
   type = "CASE/INFO#",
