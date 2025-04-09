@@ -2,12 +2,10 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances
 
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.doesOriginateInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncBookingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncDto
 
 @Service
@@ -42,33 +40,6 @@ class VisitBalanceSynchronisationService(
       "nomisPrisonNumber" to event.offenderIdDisplay,
     )
     telemetryClient.trackEvent("visitbalance-adjustment-synchronisation-deleted-unexpected", telemetry)
-  }
-
-  suspend fun synchronisePrisonerBookingMoved(bookingMovedEvent: PrisonerBookingMovedDomainEvent) {
-    val fromMovePrisoner = bookingMovedEvent.additionalInformation.movedFromNomsNumber
-    val toMovePrisoner = bookingMovedEvent.additionalInformation.movedToNomsNumber
-
-    val visitBalance1 = nomisApiService.getVisitBalanceForPrisoner(fromMovePrisoner)
-    val visitBalance2 = nomisApiService.getVisitBalanceForPrisoner(toMovePrisoner)
-    dpsApiService.syncVisitBalances(
-      VisitAllocationPrisonerSyncBookingDto(
-        firstPrisonerId = fromMovePrisoner,
-        firstPrisonerVoBalance = visitBalance1.remainingVisitOrders,
-        firstPrisonerPvoBalance = visitBalance1.remainingPrivilegedVisitOrders,
-
-        secondPrisonerId = toMovePrisoner,
-        secondPrisonerVoBalance = visitBalance2.remainingVisitOrders,
-        secondPrisonerPvoBalance = visitBalance2.remainingPrivilegedVisitOrders,
-      ),
-    )
-    val telemetry = telemetryOf(
-      "bookingId" to bookingMovedEvent.additionalInformation.bookingId,
-      "movedFromNomsNumber" to fromMovePrisoner,
-      "movedToNomsNumber" to toMovePrisoner,
-    )
-    telemetryClient.trackEvent("visitbalance-adjustment-synchronisation-booking-moved", telemetry)
-
-    // TODO do we need to try/catch and log if error?
   }
 }
 

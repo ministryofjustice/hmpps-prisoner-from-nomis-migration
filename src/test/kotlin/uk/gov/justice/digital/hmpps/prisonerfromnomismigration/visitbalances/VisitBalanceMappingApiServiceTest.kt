@@ -200,7 +200,7 @@ class VisitBalanceMappingApiServiceTest {
   @Nested
   inner class GetMigrationDetails {
     @Test
-    fun `will call the vist balance mapping endpoint`() = runTest {
+    fun `will call the visit balance mapping endpoint`() = runTest {
       mockServer.stubGetMigrationDetails(migrationId = "2020-01-01T10%3A00")
 
       apiService.getMigrationDetails(migrationId = "2020-01-01T10:00")

@@ -60,41 +60,6 @@ class VisitBalanceNomisApiServiceTest {
   }
 
   @Nested
-  inner class GetVisitBalanceForPrisoner {
-    @Test
-    fun `will pass oath2 token to service`() = runTest {
-      mockServer.stubGetVisitBalanceForPrisoner()
-
-      apiService.getVisitBalanceForPrisoner("A1234BC")
-
-      mockServer.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubGetVisitBalanceForPrisoner()
-
-      apiService.getVisitBalanceForPrisoner("A1234BC")
-
-      mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/prisoners/A1234BC/visit-orders/balance")),
-      )
-    }
-
-    @Test
-    fun `will return the visit balance`() = runTest {
-      mockServer.stubGetVisitBalanceForPrisoner()
-
-      val visitBalance = apiService.getVisitBalanceForPrisoner("A1234BC")
-
-      assertThat(visitBalance.remainingVisitOrders).isEqualTo(24)
-      assertThat(visitBalance.remainingPrivilegedVisitOrders).isEqualTo(3)
-    }
-  }
-
-  @Nested
   inner class GetVisitBalanceAdjustment {
     @Test
     fun `will pass oath2 token to service`() = runTest {
