@@ -9,11 +9,9 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceDetailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
@@ -73,37 +71,6 @@ class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withBody(
             objectMapper.writeValueAsString(visitBalanceAdjustment),
           ),
-      ),
-    )
-  }
-
-  fun stubGetVisitBalanceForPrisoner(
-    prisonNumber: String = "A1234BC",
-    response: VisitBalanceResponse = VisitBalanceResponse(
-      remainingVisitOrders = 24,
-      remainingPrivilegedVisitOrders = 3,
-    ),
-  ) {
-    nomisApi.stubFor(
-      get(urlEqualTo("/prisoners/$prisonNumber/visit-orders/balance")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
-      ),
-    )
-  }
-  fun stubGetVisitBalanceForPrisoner(
-    prisonNumber: String = "A1234BC",
-    status: HttpStatus,
-    error: ErrorResponse = ErrorResponse(status = status.value()),
-  ) {
-    nomisApi.stubFor(
-      get(urlEqualTo("/prisoners/$prisonNumber/visit-orders/balance")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
       ),
     )
   }

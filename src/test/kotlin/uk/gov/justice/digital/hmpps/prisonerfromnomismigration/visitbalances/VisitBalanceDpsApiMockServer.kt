@@ -10,10 +10,8 @@ import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
-import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerMigrationDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncBookingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
@@ -73,15 +71,6 @@ class VisitBalanceDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       changeLogSource = VisitAllocationPrisonerSyncDto.ChangeLogSource.STAFF,
       comment = "Some comment",
     )
-
-    fun visitBalancesSyncDto() = VisitAllocationPrisonerSyncBookingDto(
-      firstPrisonerId = "A1234BC",
-      firstPrisonerVoBalance = 24,
-      firstPrisonerPvoBalance = 3,
-      secondPrisonerId = "A4321BC",
-      secondPrisonerVoBalance = 11,
-      secondPrisonerPvoBalance = 7,
-    )
   }
 
   fun stubMigrateVisitBalance() {
@@ -102,28 +91,6 @@ class VisitBalanceDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json"),
-        ),
-    )
-  }
-
-  fun stubSyncVisitBalances() {
-    stubFor(
-      post("/visits/allocation/prisoner/sync/booking")
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json"),
-        ),
-    )
-  }
-
-  fun stubSyncVisitBalances(status: HttpStatus) {
-    stubFor(
-      post("/visits/allocation/prisoner/sync/booking")
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(status.value()),
         ),
     )
   }

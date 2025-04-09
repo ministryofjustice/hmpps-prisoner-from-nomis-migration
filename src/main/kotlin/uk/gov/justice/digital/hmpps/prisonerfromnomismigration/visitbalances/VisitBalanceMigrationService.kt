@@ -111,8 +111,8 @@ class VisitBalanceMigrationService(
 }
 
 fun VisitBalanceDetailResponse.toMigrationDto() = VisitAllocationPrisonerMigrationDto(
+  prisonerId = prisonNumber,
   voBalance = remainingVisitOrders,
   pvoBalance = remainingPrivilegedVisitOrders,
   lastVoAllocationDate = lastIEPAllocationDate ?: LocalDate.now().minusDays(14),
-  prisonerId = prisonNumber,
 )

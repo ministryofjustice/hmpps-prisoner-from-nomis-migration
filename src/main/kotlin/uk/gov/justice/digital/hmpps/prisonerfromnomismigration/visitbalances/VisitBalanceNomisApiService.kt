@@ -7,18 +7,12 @@ import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceDetailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
 
 @Service
 class VisitBalanceNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
   suspend fun getVisitBalanceDetail(visitBalanceId: Long): VisitBalanceDetailResponse = webClient.get()
     .uri("/visit-balances/{visitBalanceId}", visitBalanceId)
-    .retrieve()
-    .awaitBody()
-
-  suspend fun getVisitBalanceForPrisoner(prisonNumber: String): VisitBalanceResponse = webClient.get()
-    .uri("/prisoners/{prisonNumber}/visit-orders/balance", prisonNumber)
     .retrieve()
     .awaitBody()
 

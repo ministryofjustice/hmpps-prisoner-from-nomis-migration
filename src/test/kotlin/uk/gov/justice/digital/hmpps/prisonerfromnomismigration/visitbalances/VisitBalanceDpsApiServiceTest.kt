@@ -13,7 +13,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiExtension.Companion.dpsVisitBalanceServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiMockServer.Companion.visitBalanceAdjustmentSyncDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiMockServer.Companion.visitBalanceMigrationDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiMockServer.Companion.visitBalancesSyncDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 
 @SpringAPIServiceTest
@@ -105,49 +104,6 @@ class VisitBalanceDpsApiServiceTest {
 
       dpsVisitBalanceServer.verify(
         postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")),
-      )
-    }
-  }
-
-  @Nested
-  inner class SyncVisitBalances {
-    @Test
-    internal fun `will pass oath2 token to sync visit balances endpoint`() = runTest {
-      dpsVisitBalanceServer.stubSyncVisitBalances()
-
-      apiService.syncVisitBalances(visitBalancesSyncDto())
-
-      dpsVisitBalanceServer.verify(
-        postRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `will sync request data  to sync balances endpoint`() = runTest {
-      dpsVisitBalanceServer.stubSyncVisitBalances()
-
-      apiService.syncVisitBalances(visitBalancesSyncDto())
-
-      dpsVisitBalanceServer.verify(
-        postRequestedFor(anyUrl())
-          .withRequestBodyJsonPath("firstPrisonerId", equalTo("A1234BC"))
-          .withRequestBodyJsonPath("firstPrisonerVoBalance", equalTo("24"))
-          .withRequestBodyJsonPath("firstPrisonerPvoBalance", equalTo("3"))
-          .withRequestBodyJsonPath("secondPrisonerId", equalTo("A4321BC"))
-          .withRequestBodyJsonPath("secondPrisonerVoBalance", equalTo("11"))
-          .withRequestBodyJsonPath("secondPrisonerPvoBalance", equalTo("7")),
-      )
-    }
-
-    @Test
-    fun `will call the sync balances endpoint`() = runTest {
-      dpsVisitBalanceServer.stubSyncVisitBalances()
-
-      apiService.syncVisitBalances(visitBalancesSyncDto())
-
-      dpsVisitBalanceServer.verify(
-        postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync/booking")),
       )
     }
   }
