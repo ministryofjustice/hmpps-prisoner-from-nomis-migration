@@ -149,7 +149,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               postRequestedFor(urlPathEqualTo("/legacy/sentence"))
-                .withRequestBody(matchingJsonPath("chargeLifetimeUuid", equalTo(DPS_CHARGE_ID)))
+                .withRequestBody(matchingJsonPath("chargeUuids[0]", equalTo(DPS_CHARGE_ID)))
+                .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
                 .withRequestBody(matchingJsonPath("active", equalTo("false")))
                 .withRequestBody(matchingJsonPath("prisonId", equalTo("MDI")))
                 .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1")))
@@ -224,7 +225,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               postRequestedFor(urlPathEqualTo("/legacy/sentence"))
-                .withRequestBody(matchingJsonPath("chargeLifetimeUuid", equalTo(DPS_CHARGE_ID)))
+                .withRequestBody(matchingJsonPath("chargeUuids[0]", equalTo(DPS_CHARGE_ID)))
+                .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
                 .withRequestBody(matchingJsonPath("active", equalTo("false")))
                 .withRequestBody(matchingJsonPath("prisonId", equalTo("MDI")))
                 .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1")))
@@ -1128,7 +1130,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               putRequestedFor(urlPathEqualTo("/legacy/sentence/$DPS_SENTENCE_ID"))
                 .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1")))
                 .withRequestBody(matchingJsonPath("active", equalTo("false")))
-                .withRequestBody(matchingJsonPath("chargeLifetimeUuid", equalTo(DPS_CHARGE_ID)))
+                .withRequestBody(matchingJsonPath("chargeUuids[0]", equalTo(DPS_CHARGE_ID)))
+                .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
                 .withRequestBody(matchingJsonPath("prisonId", equalTo("MDI")))
                 .withRequestBody(matchingJsonPath("periodLengths[0].periodYears", equalTo("1")))
                 .withRequestBody(matchingJsonPath("periodLengths[0].periodMonths", equalTo("3")))

@@ -173,8 +173,7 @@ fun CourtEventChargeResponse.toDpsMigrationCharge(
 }
 
 fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsConsecUuid: String?) = LegacyCreateSentence(
-  // TODO around 10% of nomis sentences have > 1 charge and 27 have no charges, so we need to handle this.
-  chargeLifetimeUuid = UUID.fromString(sentenceChargeIds.first()),
+  chargeUuids = sentenceChargeIds.map { UUID.fromString(it) },
   active = this.status == "A",
   // can be "OUT"
   prisonId = this.prisonId,
