@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -21,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.util.UUID
 
 class CourtSentencingDpsApiExtension :
@@ -31,6 +33,10 @@ class CourtSentencingDpsApiExtension :
     @JvmField
     val dpsCourtSentencingServer = CourtSentencingDpsApiMockServer()
     lateinit var objectMapper: ObjectMapper
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsCourtSentencingServer.getRequestBody(
+      pattern,
+      objectMapper,
+    )
   }
 
   override fun beforeAll(context: ExtensionContext) {
