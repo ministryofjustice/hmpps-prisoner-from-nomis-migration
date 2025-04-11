@@ -1,6 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
 import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -31,10 +33,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCases
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateSentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
@@ -44,7 +48,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.COURT_SENTENCING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.Duration
@@ -143,7 +146,7 @@ class CourtSentencingMigrationIntTest(
       // verify 2 charges are mapped for each case
       courtSentencingMappingApiMockServer.verify(
         14,
-        WireMock.postRequestedFor(urlPathMatching("/mapping/court-sentencing/prisoner/\\S+/court-cases"))
+        postRequestedFor(urlPathMatching("/mapping/court-sentencing/prisoner/\\S+/court-cases"))
           .withRequestBody(
             WireMock.matchingJsonPath(
               "courtCharges.size()",
@@ -178,114 +181,35 @@ class CourtSentencingMigrationIntTest(
 
       webTestClient.performMigration()
 
-      await untilAsserted {
-        dpsCourtSentencingServer.verify(
-          1,
-          WireMock.postRequestedFor(WireMock.urlPathEqualTo("/legacy/court-case/migration"))
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].courtCaseLegacyData.caseReferences[0].offenderCaseReference",
-                WireMock.equalTo("YY12345678"),
-              ),
-            )
-            .withRequestBody(WireMock.matchingJsonPath("courtCases[0].caseId", WireMock.equalTo("1")))
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].courtCaseLegacyData.caseReferences[1].offenderCaseReference",
-                WireMock.equalTo("XX12345678"),
-              ),
-            )
-            .withRequestBody(WireMock.matchingJsonPath("courtCases[0].appearances.size()", WireMock.equalTo("1")))
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].appearances[0].eventId",
-                WireMock.equalTo(NOMIS_APPEARANCE_1_ID.toString()),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].appearances[0].legacyData.nomisOutcomeCode",
-                WireMock.equalTo("4506"),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].appearances[0].legacyData.outcomeConvictionFlag",
-                WireMock.equalTo("true"),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].appearances[0].legacyData.outcomeDispositionCode",
-                WireMock.equalTo("I"),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].appearances[0].legacyData.outcomeDescription",
-                WireMock.equalTo("Adjournment"),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].appearances[0].legacyData.nextEventDateTime",
-                WireMock.equalTo("2020-02-01T00:00:00"),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].appearances[0].legacyData.appearanceTime",
-                WireMock.equalTo("12:00"),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].appearances[0].legacyData.postedDate",
-                WireMock.not(WireMock.absent()),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].appearances[0].charges[0].offenceCode",
-                WireMock.equalTo("RR84027"),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].appearances[0].charges[0].legacyData.nomisOutcomeCode",
-                WireMock.equalTo("1081"),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].appearances[0].charges[0].legacyData.outcomeDescription",
-                WireMock.equalTo("Detention and Training Order"),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].appearances[0].charges[0].legacyData.outcomeDispositionCode",
-                WireMock.equalTo("F"),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].appearances[0].charges[0].chargeNOMISId",
-                WireMock.equalTo("3934645"),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].appearances[0].charges[0].legacyData.postedDate",
-                WireMock.not(WireMock.absent()),
-              ),
-            ).withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].appearances[0].appearanceTypeUuid",
-                WireMock.equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
-              ),
-            ),
-        )
+      val migrationRequest: MigrationCreateCourtCases = CourtSentencingDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")))
+      assertThat(migrationRequest.prisonerId).isEqualTo("AN1")
+      assertThat(migrationRequest.courtCases).hasSize(1)
+      with(migrationRequest.courtCases.first()) {
+        assertThat(caseId).isEqualTo(1L)
+        assertThat(courtCaseLegacyData.caseReferences).hasSize(2)
+        assertThat(courtCaseLegacyData.caseReferences[0].offenderCaseReference).isEqualTo("YY12345678")
+        assertThat(courtCaseLegacyData.caseReferences[1].offenderCaseReference).isEqualTo("XX12345678")
+        assertThat(appearances).hasSize(1)
+        with(appearances.first()) {
+          assertThat(eventId).isEqualTo(NOMIS_APPEARANCE_1_ID)
+          assertThat(legacyData.nomisOutcomeCode).isEqualTo("4506")
+          assertThat(legacyData.outcomeConvictionFlag).isTrue
+          assertThat(legacyData.outcomeDispositionCode).isEqualTo("I")
+          assertThat(legacyData.outcomeDescription).isEqualTo("Adjournment")
+          assertThat(legacyData.nextEventDateTime).isEqualTo("2020-02-01T00:00:00")
+          assertThat(legacyData.appearanceTime).isEqualTo("12:00")
+          assertThat(legacyData.postedDate).isNotNull
+          assertThat(appearanceTypeUuid.toString()).isEqualTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID)
+          assertThat(charges).hasSize(1)
+          with(charges.first()) {
+            assertThat(offenceCode).isEqualTo("RR84027")
+            assertThat(legacyData.nomisOutcomeCode).isEqualTo("1081")
+            assertThat(legacyData.outcomeDescription).isEqualTo("Detention and Training Order")
+            assertThat(legacyData.outcomeDispositionCode).isEqualTo("F")
+            assertThat(chargeNOMISId).isEqualTo(3934645)
+            assertThat(legacyData.postedDate).isNotNull
+          }
+        }
       }
     }
 
@@ -305,117 +229,149 @@ class CourtSentencingMigrationIntTest(
 
       webTestClient.performMigration()
 
-      await untilAsserted {
-        MappingApiExtension.mappingApi.stubFor(
-          WireMock.post("/mapping/court-sentencing/prisoner/AN1/court-cases").willReturn(
-            WireMock.aResponse()
-              .withHeader("Content-Type", "application/json")
-              .withStatus(201),
-          ),
-        )
-        courtSentencingMappingApiMockServer.verify(
-          1,
-          WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/court-sentencing/prisoner/AN1/court-cases"))
-            .withRequestBody(WireMock.matchingJsonPath("courtAppearances.size()", WireMock.equalTo("2")))
-            .withRequestBody(WireMock.matchingJsonPath("courtCharges.size()", WireMock.equalTo("2")))
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCases[0].nomisCourtCaseId",
-                WireMock.equalTo(NOMIS_CASE_ID.toString()),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtAppearances[0].nomisCourtAppearanceId",
-                WireMock.equalTo(NOMIS_APPEARANCE_2_ID.toString()),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtAppearances[0].dpsCourtAppearanceId",
-                WireMock.equalTo(DPS_APPEARANCE_2_ID),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtAppearances[1].nomisCourtAppearanceId",
-                WireMock.equalTo(NOMIS_APPEARANCE_1_ID.toString()),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtAppearances[1].dpsCourtAppearanceId",
-                WireMock.equalTo(DPS_APPEARANCE_1_ID),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCharges[0].nomisCourtChargeId",
-                WireMock.equalTo(NOMIS_CHARGE_2_ID.toString()),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCharges[0].dpsCourtChargeId",
-                WireMock.equalTo(DPS_CHARGE_2_ID),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCharges[1].nomisCourtChargeId",
-                WireMock.equalTo(NOMIS_CHARGE_1_ID.toString()),
-              ),
-            )
-            .withRequestBody(
-              WireMock.matchingJsonPath(
-                "courtCharges[1].dpsCourtChargeId",
-                WireMock.equalTo(DPS_CHARGE_1_ID),
-              ),
-            ),
-        )
+      val mappingRequest: CourtCaseMigrationMappingDto = CourtSentencingMappingApiMockServer.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/prisoner/AN1/court-cases")))
+      with(mappingRequest) {
+        assertThat(courtCases).hasSize(1)
+        with(courtCases.first()) {
+          assertThat(nomisCourtCaseId).isEqualTo(NOMIS_CASE_ID)
+        }
+        assertThat(courtAppearances).hasSize(2)
+        with(courtAppearances[0]) {
+          assertThat(nomisCourtAppearanceId).isEqualTo(NOMIS_APPEARANCE_2_ID)
+          assertThat(dpsCourtAppearanceId).isEqualTo(DPS_APPEARANCE_2_ID)
+        }
+        with(courtAppearances[1]) {
+          assertThat(nomisCourtAppearanceId).isEqualTo(NOMIS_APPEARANCE_1_ID)
+          assertThat(dpsCourtAppearanceId).isEqualTo(DPS_APPEARANCE_1_ID)
+        }
+        assertThat(courtCharges).hasSize(2)
+        with(courtCharges[0]) {
+          assertThat(nomisCourtChargeId).isEqualTo(NOMIS_CHARGE_2_ID)
+          assertThat(dpsCourtChargeId).isEqualTo(DPS_CHARGE_2_ID)
+        }
+        with(courtCharges[1]) {
+          assertThat(nomisCourtChargeId).isEqualTo(NOMIS_CHARGE_1_ID)
+          assertThat(dpsCourtChargeId).isEqualTo(DPS_CHARGE_1_ID)
+        }
       }
     }
 
     @Test
-    internal fun `will skip locked down linked cases`() {
+    internal fun `will link charges between linked cases`() {
       nomisApi.stubGetInitialCount(
         NomisApiExtension.COURT_SENTENCING_PRISONER_IDS,
         1,
       ) { courtSentencingNomisApiMockServer.prisonerIdsPagedResponse(it) }
       courtSentencingNomisApiMockServer.stubMultipleGetPrisonerIdCounts(totalElements = 1, pageSize = 10)
       courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(
-        bookingId = 3,
-        caseId = NOMIS_CASE_ID,
-        combinedCaseId = 2,
         offenderNo = OFFENDER_NO,
+        response = listOf(
+          // original source case that is now inactive
+          courtCaseResponse().copy(
+            id = 1,
+            combinedCaseId = 2,
+            courtEvents = listOf(
+              courtEventResponse(eventId = 101).copy(
+                courtEventCharges = listOf(
+                  courtEventChargeResponse(eventId = 101, offenderChargeId = 1001),
+                ),
+              ),
+            ),
+            caseStatus = CodeDescription("I", "Inactive"),
+          ),
+          // source case was linked to this case
+          courtCaseResponse().copy(
+            id = 2,
+            combinedCaseId = null,
+            courtEvents = listOf(
+              courtEventResponse(eventId = 201).copy(
+                courtEventCharges = listOf(
+                  courtEventChargeResponse(eventId = 201, offenderChargeId = 1001),
+                  courtEventChargeResponse(eventId = 201, offenderChargeId = 2001),
+                ),
+              ),
+            ),
+            caseStatus = CodeDescription("A", "Active"),
+          ),
+          // some other normal case
+          courtCaseResponse().copy(
+            id = 3,
+            combinedCaseId = null,
+            courtEvents = listOf(
+              courtEventResponse(eventId = 302).copy(
+                courtEventCharges = listOf(
+                  courtEventChargeResponse(eventId = 302, offenderChargeId = 3001),
+                ),
+              ),
+            ),
+            caseStatus = CodeDescription("A", "Active"),
+          ),
+        ),
       )
       courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
-
-      // will be calling dps with no cases but still need to record the migration offender level mapping
       dpsCourtSentencingServer.stubPostCourtCasesForCreateMigration()
       courtSentencingMappingApiMockServer.stubPostMigrationMapping()
 
       courtSentencingMappingApiMockServer.stubCourtSentencingSummaryByMigrationId(count = 1)
 
-      webTestClient.performMigration()
+      val (migrationId) = webTestClient.performMigration()
 
-      verify(telemetryClient).trackEvent(
-        eq("court-sentencing-migration-entity-skipped"),
-        check {
-          assertThat(it["reason"]).isEqualTo("skipped linked(s) cases for this offender")
-          assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NO)
-          assertThat(it["migrationId"]).isNotNull
-          assertThat(it["caseIds"]).isEqualTo("[$NOMIS_CASE_ID]")
-        },
-        isNull(),
-      )
-
-      // must still completes the migration at an offender level
+      val migrationRequest: MigrationCreateCourtCases = CourtSentencingDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")))
+      assertThat(migrationRequest.prisonerId).isEqualTo(OFFENDER_NO)
+      assertThat(migrationRequest.courtCases).hasSize(3)
+      val sourceLinkedCase = migrationRequest.courtCases.find { it.caseId == 1L }!!
+      with(sourceLinkedCase) {
+        assertThat(merged).isTrue
+        assertThat(appearances).hasSize(1)
+        assertThat(appearances.first().charges).hasSize(1)
+        with(appearances.first().charges.first()) {
+          assertThat(merged).isTrue
+          assertThat(chargeNOMISId).isEqualTo(1001)
+          assertThat(mergedFromCaseId).isNull()
+          assertThat(mergedFromEventId).isNull()
+          assertThat(mergedChargeNOMISId).isNull()
+        }
+      }
+      val targetLinkedCase = migrationRequest.courtCases.find { it.caseId == 2L }!!
+      with(targetLinkedCase) {
+        assertThat(merged).isFalse
+        assertThat(appearances).hasSize(1)
+        assertThat(appearances.first().charges).hasSize(2)
+        val chargeFromLinkedSource = appearances.first().charges.find { it.chargeNOMISId == 1001L }!!
+        with(chargeFromLinkedSource) {
+          assertThat(merged).isFalse
+          assertThat(chargeNOMISId).isEqualTo(1001L)
+          assertThat(mergedFromCaseId).isEqualTo(1L)
+          assertThat(mergedFromEventId).isEqualTo(101L)
+          assertThat(mergedChargeNOMISId).isEqualTo(1001L)
+        }
+        val chargeAlreadyOnTarget = appearances.first().charges.find { it.chargeNOMISId == 2001L }!!
+        with(chargeAlreadyOnTarget) {
+          assertThat(merged).isNull()
+          assertThat(chargeNOMISId).isEqualTo(2001)
+          assertThat(mergedFromCaseId).isNull()
+          assertThat(mergedFromEventId).isNull()
+          assertThat(mergedChargeNOMISId).isNull()
+        }
+      }
+      val normalCase = migrationRequest.courtCases.find { it.caseId == 3L }!!
+      with(normalCase) {
+        assertThat(merged).isNull()
+        assertThat(appearances).hasSize(1)
+        assertThat(appearances.first().charges).hasSize(1)
+        with(appearances.first().charges.first()) {
+          assertThat(merged).isNull()
+          assertThat(chargeNOMISId).isEqualTo(3001)
+          assertThat(mergedFromCaseId).isNull()
+          assertThat(mergedFromEventId).isNull()
+          assertThat(mergedChargeNOMISId).isNull()
+        }
+      }
       verify(telemetryClient).trackEvent(
         eq("court-sentencing-migration-entity-migrated"),
         check {
           assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NO)
-          assertThat(it["migrationId"]).isNotNull
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
         },
         isNull(),
       )
@@ -477,7 +433,7 @@ class CourtSentencingMigrationIntTest(
       dpsCourtSentencingServer.stubPostCourtCasesForCreateMigration("05b332ad-58eb-4ec2-963c-c9c927856788")
       courtSentencingMappingApiMockServer.stubPostMigrationMappingFailureFollowedBySuccess()
 
-      val (migrationId) = webTestClient.performMigration()
+      webTestClient.performMigration()
 
       // wait for all mappings to be created before verifying
       await untilCallTo { courtSentencingMappingApiMockServer.createMigrationMappingCount() } matches { it == 2 }

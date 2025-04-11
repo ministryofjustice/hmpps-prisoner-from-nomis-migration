@@ -21,7 +21,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -65,7 +64,7 @@ class CourtSentencingMigrationService(
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     val offenderNo = context.body.offenderNo
     val nomisCourtCases = courtSentencingNomisApiService.getCourtCasesForMigration(offenderNo = offenderNo)
-    val dpsCases = handleLinkedCases(nomisCourtCases, offenderNo, context).map { it.toMigrationDpsCourtCase() }
+    val dpsCases = nomisCourtCases.map { it.toMigrationDpsCourtCase(nomisCourtCases.findLinkedCaseOrNull(it)) }
     // idempotent migration - will migrate without checking for existing migration
     courtSentencingDpsService.createCourtCaseMigration(
       MigrationCreateCourtCases(
@@ -88,31 +87,6 @@ class CourtSentencingMigrationService(
           null,
         )
       }
-  }
-
-  // temp until DPS handles linked cases
-  private fun handleLinkedCases(
-    nomisCourtCases: List<CourtCaseResponse>,
-    offenderNo: String,
-    context: MigrationContext<PrisonerId>,
-  ): List<CourtCaseResponse> {
-    if (nomisCourtCases.any { it.combinedCaseId != null }) {
-      val caseIds = nomisCourtCases.filter { it.combinedCaseId != null }.map { it.id }
-      log.info(
-        "Skipping linked(s) cases for offenderNo $offenderNo cases affected: $caseIds \n",
-      )
-      telemetryClient.trackEvent(
-        "court-sentencing-migration-entity-skipped",
-        mapOf(
-          "reason" to "skipped linked(s) cases for this offender",
-          "offenderNo" to offenderNo,
-          "caseIds" to caseIds.toString(),
-          "migrationId" to context.migrationId,
-        ),
-        null,
-      )
-    }
-    return nomisCourtCases.filter { it.combinedCaseId == null }
   }
 
   override suspend fun retryCreateMapping(context: MigrationContext<CourtCaseMigrationMapping>) {

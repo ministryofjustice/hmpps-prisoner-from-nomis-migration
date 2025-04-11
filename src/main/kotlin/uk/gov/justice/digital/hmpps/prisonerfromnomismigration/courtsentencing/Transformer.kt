@@ -33,10 +33,11 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
-fun CourtCaseResponse.toMigrationDpsCourtCase() = MigrationCreateCourtCase(
+fun List<CourtCaseResponse>.findLinkedCaseOrNull(case: CourtCaseResponse): CourtCaseResponse? = this.firstOrNull { sourceCase -> case.id == sourceCase.combinedCaseId }
+fun CourtCaseResponse.toMigrationDpsCourtCase(linkedSourceCase: CourtCaseResponse?) = MigrationCreateCourtCase(
   caseId = this.id,
   appearances = this.courtEvents.map { ca ->
-    ca.toMigrationDpsCourtAppearance(this.sentences)
+    ca.toMigrationDpsCourtAppearance(this.sentences, linkedSourceCase, isSourceCase = this.combinedCaseId != null)
   },
   courtCaseLegacyData = CourtCaseLegacyData(
     caseReferences = this.caseInfoNumbers.map {
@@ -47,7 +48,13 @@ fun CourtCaseResponse.toMigrationDpsCourtCase() = MigrationCreateCourtCase(
     },
   ),
   active = this.caseStatus.code == "A",
-
+  merged = if (this.combinedCaseId != null) {
+    true
+  } else if (linkedSourceCase != null) {
+    false
+  } else {
+    null
+  },
 )
 
 fun CourtCaseResponse.toLegacyDpsCourtCase() = LegacyCreateCourtCase(
@@ -74,7 +81,11 @@ fun CourtEventResponse.toDpsCourtAppearance(
   ),
 )
 
-fun CourtEventResponse.toMigrationDpsCourtAppearance(sentences: List<SentenceResponse>) = MigrationCreateCourtAppearance(
+fun CourtEventResponse.toMigrationDpsCourtAppearance(
+  sentences: List<SentenceResponse>,
+  linkedSourceCase: CourtCaseResponse?,
+  isSourceCase: Boolean,
+) = MigrationCreateCourtAppearance(
   courtCode = this.courtId,
   appearanceDate = this.eventDateTime.toLocalDate(),
   appearanceTypeUuid = this.courtEventType.toDpsAppearanceTypeId(),
@@ -95,7 +106,7 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance(sentences: List<SentenceRes
     val dpsSentence =
       sentencesForAppearance.find { sentence -> sentence.offenderCharges.any { it.id == charge.offenderCharge.id } }
         ?.toDpsMigrationSentence()
-    charge.toDpsMigrationCharge(chargeId = charge.offenderCharge.id, dpsSentence = dpsSentence)
+    charge.toDpsMigrationCharge(chargeId = charge.offenderCharge.id, dpsSentence = dpsSentence, linkedSourceCase = linkedSourceCase, isSourceCase = isSourceCase)
   },
 )
 
@@ -125,20 +136,41 @@ fun CourtEventChargeResponse.toDpsCharge() = LegacyUpdateCharge(
   offenceEndDate = this.offenceEndDate,
 )
 
-fun CourtEventChargeResponse.toDpsMigrationCharge(chargeId: Long, dpsSentence: MigrationCreateSentence?) = MigrationCreateCharge(
-  offenceCode = this.offenderCharge.offence.offenceCode,
-  offenceStartDate = this.offenceDate,
-  legacyData =
-  ChargeLegacyData(
-    postedDate = LocalDate.now().toString(),
-    outcomeDescription = this.resultCode1?.description,
-    nomisOutcomeCode = this.resultCode1?.code,
-    outcomeDispositionCode = this.resultCode1?.dispositionCode,
-  ),
-  offenceEndDate = this.offenceEndDate,
-  chargeNOMISId = chargeId,
-  sentence = dpsSentence,
-)
+fun CourtEventChargeResponse.toDpsMigrationCharge(
+  chargeId: Long,
+  dpsSentence: MigrationCreateSentence?,
+  linkedSourceCase: CourtCaseResponse?,
+  isSourceCase: Boolean,
+): MigrationCreateCharge {
+  val linkedCourtEvent =
+    linkedSourceCase?.courtEvents?.firstOrNull { it.courtEventCharges.firstOrNull { it.offenderCharge.id == chargeId } != null }
+  return MigrationCreateCharge(
+    offenceCode = this.offenderCharge.offence.offenceCode,
+    offenceStartDate = this.offenceDate,
+    legacyData =
+    ChargeLegacyData(
+      postedDate = LocalDate.now().toString(),
+      outcomeDescription = this.resultCode1?.description,
+      nomisOutcomeCode = this.resultCode1?.code,
+      outcomeDispositionCode = this.resultCode1?.dispositionCode,
+    ),
+    offenceEndDate = this.offenceEndDate,
+    chargeNOMISId = chargeId,
+    sentence = dpsSentence,
+    merged = if (isSourceCase) {
+      true
+    } else if (linkedCourtEvent != null) {
+      false
+    } else {
+      null
+    },
+    mergedFromCaseId = takeIf { linkedCourtEvent != null }?.let { linkedSourceCase?.id },
+    mergedFromEventId = linkedCourtEvent?.id,
+    // TODO - this will always be chargeId when linked so this feels
+    // like a redundant field in DPS
+    mergedChargeNOMISId = linkedCourtEvent?.courtEventCharges?.firstOrNull { it.offenderCharge.id == chargeId }?.offenderCharge?.id,
+  )
+}
 
 fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsConsecUuid: String?) = LegacyCreateSentence(
   // TODO around 10% of nomis sentences have > 1 charge and 27 have no charges, so we need to handle this.
