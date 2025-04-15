@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.profiledetails
 
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
@@ -18,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendM
 
 class ContactPersonProfileDetailsPrisonerMergedIntTest(
   @Autowired private val dpsApi: ContactPersonProfileDetailsDpsApiMockServer,
+  @Autowired private val nomisSyncApi: ContactPersonNomisSyncApiMockServer,
 ) : SqsIntegrationTestBase() {
 
   private val keepingPrisonerNumber = "A1234AA"
@@ -26,8 +28,10 @@ class ContactPersonProfileDetailsPrisonerMergedIntTest(
   @Nested
   inner class HappyPath {
     @Test
-    fun `should call merge endpoint`() {
+    fun `should call merge endpoint and sync back to NOMIS`() {
       dpsApi.stubMergeProfileDetails(keepingPrisonerNumber, removedPrisonerNumber)
+      nomisSyncApi.stubSyncProfileDetails(keepingPrisonerNumber, "MARITAL")
+      nomisSyncApi.stubSyncProfileDetails(keepingPrisonerNumber, "CHILD")
 
       sendPrisonerMergedEvent().also {
         waitForAnyProcessingToComplete("contact-person-profile-details-prisoner-merged")
@@ -37,12 +41,20 @@ class ContactPersonProfileDetailsPrisonerMergedIntTest(
         putRequestedFor(urlPathMatching("/merge/keep/$keepingPrisonerNumber/remove/$removedPrisonerNumber")),
       )
 
+      nomisSyncApi.verify(
+        putRequestedFor(urlPathEqualTo("/contactperson/sync/profile-details/$keepingPrisonerNumber/MARITAL")),
+      )
+      nomisSyncApi.verify(
+        putRequestedFor(urlPathEqualTo("/contactperson/sync/profile-details/$keepingPrisonerNumber/CHILD")),
+      )
+
       verify(telemetryClient).trackEvent(
         "contact-person-profile-details-prisoner-merged",
         mapOf(
           "bookingId" to "1234",
           "offenderNo" to keepingPrisonerNumber,
           "removedOffenderNo" to removedPrisonerNumber,
+          "syncToNomis" to "$keepingPrisonerNumber-MARITAL,$keepingPrisonerNumber-CHILD",
         ),
         null,
       )
