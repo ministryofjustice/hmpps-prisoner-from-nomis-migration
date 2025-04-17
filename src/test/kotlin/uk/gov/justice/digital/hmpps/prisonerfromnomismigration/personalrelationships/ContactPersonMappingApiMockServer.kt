@@ -146,6 +146,15 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
       ),
     )
   }
+  fun stubReplaceMappingsForPerson(personId: Long) {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/replace/person/$personId").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(200),
+      ),
+    )
+  }
 
   fun stubReplaceMappingsForPrisonerFailureFollowedBySuccess(offenderNo: String) = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/contact-person/replace/prisoner/$offenderNo")
 

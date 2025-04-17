@@ -1113,6 +1113,34 @@ class ContactPersonMappingApiServiceTest {
   }
 
   @Nested
+  inner class ReplaceMappingsForPerson {
+    @Test
+    internal fun `will pass oath2 token to replace endpoint`() = runTest {
+      mockServer.stubReplaceMappingsForPerson(99)
+
+      apiService.replaceMappingsForPerson(
+        99,
+        ContactPersonMappingsDto(
+          mappingType = ContactPersonMappingsDto.MappingType.MIGRATED,
+          personContactMapping = emptyList(),
+          personContactRestrictionMapping = emptyList(),
+          personMapping = ContactPersonSimpleMappingIdDto(nomisId = 1, dpsId = "1"),
+          personAddressMapping = emptyList(),
+          personPhoneMapping = emptyList(),
+          personEmailMapping = emptyList(),
+          personEmploymentMapping = emptyList(),
+          personIdentifierMapping = emptyList(),
+          personRestrictionMapping = emptyList(),
+        ),
+      )
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/person/99")).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+  }
+
+  @Nested
   inner class CreatePersonMapping {
     @Test
     internal fun `will pass oath2 token to create person mapping endpoint`() = runTest {
