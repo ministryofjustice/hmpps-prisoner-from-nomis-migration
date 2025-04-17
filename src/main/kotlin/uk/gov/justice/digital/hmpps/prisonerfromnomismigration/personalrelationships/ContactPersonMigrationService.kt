@@ -146,6 +146,21 @@ private fun MigrateContactResponse.toContactPersonMappingsDto(migrationId: Strin
   personContactRestrictionMapping = relationships.flatMap { it.restrictions.map { restriction -> restriction.toContactPersonSimpleMappingIdDto() } },
 )
 
+fun MigrateContactResponse.toContactPersonMappingsDto() = ContactPersonMappingsDto(
+  mappingType = ContactPersonMappingsDto.MappingType.NOMIS_CREATED,
+  personMapping = this.contact!!.toContactPersonSimpleMappingIdDto(),
+  personAddressMapping = this.addresses.map { it.address!!.toContactPersonSimpleMappingIdDto() },
+  personPhoneMapping = phoneNumbers.map { it.toContactPersonPhoneMappingIdDto(PERSON) } +
+    this.addresses.flatMap { address -> address.phones.map { it.toContactPersonPhoneMappingIdDto(ADDRESS) } },
+  personEmailMapping = emailAddresses.map { ContactPersonSimpleMappingIdDto(dpsId = it.dpsId.toString(), nomisId = it.nomisId) },
+  // TODO - getting IntelliJ smart cast error here - so for now use unnecessary  `!!` to avoid rebuilding all the time
+  personEmploymentMapping = employments?.map { it.toContactPersonSequenceMappingIdDto(this.contact!!.nomisId) } ?: emptyList(),
+  personIdentifierMapping = identities.map { it.toContactPersonSequenceMappingIdDto(this.contact!!.nomisId) },
+  personRestrictionMapping = restrictions.map { it.toContactPersonSimpleMappingIdDto() },
+  personContactMapping = relationships.map { it.relationship!!.toContactPersonSimpleMappingIdDto() },
+  personContactRestrictionMapping = relationships.flatMap { it.restrictions.map { restriction -> restriction.toContactPersonSimpleMappingIdDto() } },
+)
+
 fun ContactPerson.toDpsMigrateContactRequest(): MigrateContactRequest = MigrateContactRequest(
   personId = this.personId,
   lastName = this.lastName,

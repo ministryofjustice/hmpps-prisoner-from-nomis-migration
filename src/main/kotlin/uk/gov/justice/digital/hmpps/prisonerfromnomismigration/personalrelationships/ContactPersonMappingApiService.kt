@@ -269,6 +269,14 @@ class ContactPersonMappingApiService(@Qualifier("mappingApiWebClient") webClient
       .awaitBodilessEntity()
   }
 
+  suspend fun replaceMappingsForPerson(personId: Long, mappings: ContactPersonMappingsDto) {
+    webClient.post()
+      .uri("/mapping/contact-person/replace/person/{personId}", personId)
+      .bodyValue(mappings)
+      .retrieve()
+      .awaitBodilessEntity()
+  }
+
   suspend fun createPersonMapping(mappings: PersonMappingDto): CreateMappingResult<PersonMappingDto> = webClient.post()
     .uri("/mapping/contact-person/person")
     .bodyValue(mappings)
