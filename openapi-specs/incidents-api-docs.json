@@ -11,7 +11,7 @@
       "name" : "MIT",
       "identifier" : "MIT"
     },
-    "version" : "2025-04-15.5132.df7ac57"
+    "version" : "2025-04-16.5153.bbff5fa"
   },
   "servers" : [ {
     "url" : "/",
@@ -5658,6 +5658,10 @@
             "format" : "date-time",
             "description" : "When the changes were requested",
             "example" : "2024-04-29T12:34:56.789012"
+          },
+          "location" : {
+            "type" : "string",
+            "description" : "The reporting location of the staff"
           }
         },
         "readOnly" : true,
@@ -6151,6 +6155,11 @@
             "description" : "The changes being requested",
             "maxLength" : 2147483647,
             "minLength" : 1
+          },
+          "location" : {
+            "type" : "string",
+            "description" : "The location where the staff member is raising the correction",
+            "minLength" : 3
           }
         },
         "required" : [ "descriptionOfChange" ],
@@ -6246,6 +6255,12 @@
             "description" : "The changes being requested",
             "maxLength" : 2147483647,
             "minLength" : 1
+          },
+          "location" : {
+            "type" : "string",
+            "default" : "null",
+            "description" : "The location where the staff member is raising the correction",
+            "minLength" : 3
           }
         },
         "writeOnly" : true
