@@ -87,7 +87,7 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
     contacts: PrisonerWithContacts = prisonerWithContacts(),
   ) {
     nomisApi.stubFor(
-      get(urlEqualTo("/prisoners/$offenderNo/contacts")).willReturn(
+      get(urlPathEqualTo("/prisoners/$offenderNo/contacts")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
