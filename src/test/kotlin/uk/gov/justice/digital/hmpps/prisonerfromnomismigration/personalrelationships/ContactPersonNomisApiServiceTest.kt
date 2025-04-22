@@ -148,7 +148,9 @@ class ContactPersonNomisApiServiceTest {
       apiService.getContactsForPrisoner("A1234KT")
 
       mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/prisoners/A1234KT/contacts")),
+        getRequestedFor(urlPathEqualTo("/prisoners/A1234KT/contacts"))
+          .withQueryParam("latest-booking-only", equalTo("false"))
+          .withQueryParam("active-only", equalTo("false")),
       )
     }
   }
