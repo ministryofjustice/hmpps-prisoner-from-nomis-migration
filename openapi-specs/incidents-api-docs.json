@@ -11,7 +11,7 @@
       "name" : "MIT",
       "identifier" : "MIT"
     },
-    "version" : "2025-04-16.5153.bbff5fa"
+    "version" : "2025-04-22.5181.89d4a04"
   },
   "servers" : [ {
     "url" : "/",
@@ -5667,6 +5667,39 @@
         "readOnly" : true,
         "required" : [ "correctionRequestedAt", "correctionRequestedBy", "descriptionOfChange", "sequence" ]
       },
+      "DescriptionAddendum" : {
+        "type" : "object",
+        "description" : "Addendum to the description",
+        "properties" : {
+          "createdBy" : {
+            "type" : "string",
+            "description" : "Username of user who added this addendum",
+            "example" : "USER_1"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When addendum was added",
+            "example" : "2024-04-29T12:34:56.789012"
+          },
+          "firstName" : {
+            "type" : "string",
+            "description" : "First name of person that added this addendum",
+            "example" : "John"
+          },
+          "lastName" : {
+            "type" : "string",
+            "description" : "Last name of person that added this addendum",
+            "example" : "Doe"
+          },
+          "text" : {
+            "type" : "string",
+            "description" : "Addendum text"
+          }
+        },
+        "readOnly" : true,
+        "required" : [ "createdAt", "createdBy", "firstName", "lastName", "text" ]
+      },
       "Event" : {
         "type" : "object",
         "description" : "Event linking multiple incident reports",
@@ -5899,6 +5932,13 @@
           "description" : {
             "type" : "string"
           },
+          "descriptionAddendums" : {
+            "type" : "array",
+            "description" : "Addendums to the description",
+            "items" : {
+              "$ref" : "#/components/schemas/DescriptionAddendum"
+            }
+          },
           "reportedBy" : {
             "type" : "string"
           },
@@ -6003,7 +6043,7 @@
           }
         },
         "readOnly" : true,
-        "required" : [ "correctionRequests", "createdAt", "createdInNomis", "description", "event", "history", "historyOfStatuses", "id", "incidentDateAndTime", "lastModifiedInNomis", "location", "modifiedAt", "modifiedBy", "prisonId", "prisonerInvolvementDone", "prisonersInvolved", "questions", "reportReference", "reportedAt", "reportedBy", "staffInvolved", "staffInvolvementDone", "status", "title", "type" ]
+        "required" : [ "correctionRequests", "createdAt", "createdInNomis", "description", "descriptionAddendums", "event", "history", "historyOfStatuses", "id", "incidentDateAndTime", "lastModifiedInNomis", "location", "modifiedAt", "modifiedBy", "prisonId", "prisonerInvolvementDone", "prisonersInvolved", "questions", "reportReference", "reportedAt", "reportedBy", "staffInvolved", "staffInvolvementDone", "status", "title", "type" ]
       },
       "StaffInvolvement" : {
         "type" : "object",
