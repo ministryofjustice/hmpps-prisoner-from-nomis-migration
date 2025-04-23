@@ -196,6 +196,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       lastModifiedInNomis = true,
       staffInvolvementDone = true,
       prisonerInvolvementDone = true,
+      descriptionAddendums = listOf(),
     )
 
     fun dpsBasicIncidentReport(dpsIncidentId: String = DPS_INCIDENT_ID, prisonId: String = "ASI") = ReportBasic(

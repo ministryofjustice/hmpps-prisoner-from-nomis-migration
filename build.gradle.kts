@@ -117,7 +117,7 @@ val models = listOf(
     name = "incidents",
     packageName = "incidents",
     url = "https://incident-reporting-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
-    models = "CorrectionRequest,Event,HistoricalQuestion,HistoricalResponse,History,NomisCode,NomisHistory,NomisHistoryQuestion,NomisHistoryResponse,NomisOffender,NomisOffenderParty,NomisQuestion,NomisReport,NomisRequirement,NomisResponse,NomisStaff,NomisStaffParty,NomisStatus,NomisSyncReportId,NomisSyncRequest,PrisonerInvolvement,Question,ReportBasic,ReportWithDetails,Response,SimplePageReportBasic,StaffInvolvement,StatusHistory",
+    models = "CorrectionRequest,DescriptionAddendum,Event,HistoricalQuestion,HistoricalResponse,History,NomisCode,NomisHistory,NomisHistoryQuestion,NomisHistoryResponse,NomisOffender,NomisOffenderParty,NomisQuestion,NomisReport,NomisRequirement,NomisResponse,NomisStaff,NomisStaffParty,NomisStatus,NomisSyncReportId,NomisSyncRequest,PrisonerInvolvement,Question,ReportBasic,ReportWithDetails,Response,SimplePageReportBasic,StaffInvolvement,StatusHistory",
   ),
   ModelConfiguration(
     name = "locations",
