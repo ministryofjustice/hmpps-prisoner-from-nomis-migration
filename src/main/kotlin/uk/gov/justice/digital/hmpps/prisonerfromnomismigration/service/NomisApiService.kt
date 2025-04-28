@@ -16,6 +16,7 @@ import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityAsTrueNotFoundAsFalse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.EndActivitiesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.FindActiveActivityIdsResponse
@@ -188,10 +189,10 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .retrieve()
     .awaitBody()
 
-  suspend fun checkServicePrisonForPrisoner(serviceCode: String, prisonNumber: String) = webClient.get()
+  suspend fun isServicePrisonOnForPrisoner(serviceCode: String, prisonNumber: String) = webClient.get()
     .uri("/service-prisons/{serviceCode}/prisoner/{prisonerId}", serviceCode, prisonNumber)
     .retrieve()
-    .awaitBodilessEntity()
+    .awaitBodilessEntityAsTrueNotFoundAsFalse()
 }
 
 data class VisitId(

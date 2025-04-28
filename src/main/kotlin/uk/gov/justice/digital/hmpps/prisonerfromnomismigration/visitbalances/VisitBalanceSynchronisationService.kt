@@ -25,7 +25,7 @@ class VisitBalanceSynchronisationService(
     val nomisPrisonNumber = event.offenderIdDisplay
     val telemetry = telemetryOf("visitBalanceAdjustmentId" to visitBalanceAdjustmentId, "nomisPrisonNumber" to nomisPrisonNumber)
 
-    if (event.doesOriginateInDps() && isDpsInChargeOfAllocation(nomisPrisonNumber)) {
+    if (event.doesOriginateInDps() && nomisApiService.isServicePrisonOnForPrisoner(serviceCode = VISIT_ALLOCATION_SERVICE, prisonNumber = nomisPrisonNumber)) {
       telemetryClient.trackEvent(
         "visitbalance-adjustment-synchronisation-created-skipped",
         telemetry,
@@ -40,10 +40,6 @@ class VisitBalanceSynchronisationService(
       }
     }
   }
-
-  suspend fun isDpsInChargeOfAllocation(nomisPrisonNumber: String): Boolean = runCatching {
-    nomisApiService.checkServicePrisonForPrisoner(serviceCode = VISIT_ALLOCATION_SERVICE, prisonNumber = nomisPrisonNumber)
-  }.map { true }.getOrDefault(false)
 
   suspend fun visitBalanceAdjustmentDeleted(event: VisitBalanceOffenderEvent) {
     val telemetry = telemetryOf(
