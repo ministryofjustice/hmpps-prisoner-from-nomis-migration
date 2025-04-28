@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
@@ -942,7 +943,7 @@ internal class NomisApiServiceTest {
     }
 
     @Test
-    fun `will return a page of alerts`() = runTest {
+    fun `will return a page of prisoners ids`() = runTest {
       nomisApi.stubGetPrisonerIds(totalElements = 10, firstOffenderNo = "A0001KT")
 
       val prisonerIds = nomisService.getPrisonerIds(
@@ -953,6 +954,56 @@ internal class NomisApiServiceTest {
       assertThat(prisonerIds.content).hasSize(10)
       assertThat(prisonerIds.content[0].offenderNo).isEqualTo("A0001KT")
       assertThat(prisonerIds.content[1].offenderNo).isEqualTo("A0002KT")
+    }
+  }
+
+  @Nested
+  inner class CheckServicePrisonForPrisoner {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      nomisApi.stubCheckServicePrisonForPrisoner()
+
+      nomisService.checkServicePrisonForPrisoner(
+        serviceCode = "VISIT_ALLOCATION",
+        prisonNumber = "A1234BC",
+      )
+
+      nomisApi.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will call the  service endpoint`() = runTest {
+      nomisApi.stubCheckServicePrisonForPrisoner()
+
+      nomisService.checkServicePrisonForPrisoner(
+        serviceCode = "VISIT_ALLOCATION",
+        prisonNumber = "A1234BC",
+      )
+
+      nomisApi.verify(getRequestedFor(urlPathEqualTo("/service-prisons/VISIT_ALLOCATION/prisoner/A1234BC")))
+    }
+
+    @Test
+    fun `will make call successfully if service on for prisoner's prison `() = runTest {
+      nomisApi.stubCheckServicePrisonForPrisoner()
+
+      nomisService.checkServicePrisonForPrisoner(
+        serviceCode = "VISIT_ALLOCATION",
+        prisonNumber = "A1234BC",
+      )
+    }
+
+    @Test
+    fun `will throw exception service not on for prisoner's prison`() = runTest {
+      nomisApi.stubCheckServicePrisonForPrisonerNotFound()
+      assertThrows<NotFound> {
+        nomisService.checkServicePrisonForPrisoner(
+          serviceCode = "VISIT_ALLOCATION",
+          prisonNumber = "A1234BC",
+        )
+      }
     }
   }
 }
