@@ -9,9 +9,9 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "8.0.0"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "8.1.0"
   kotlin("plugin.spring") version "2.1.20"
-  id("org.openapi.generator") version "7.12.0"
+  id("org.openapi.generator") version "7.13.0"
 }
 
 configurations {
@@ -21,9 +21,9 @@ configurations {
 }
 
 dependencies {
-  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:1.4.2")
+  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:1.4.3")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
-  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:5.4.2")
+  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:5.4.4")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 
   implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.6")
@@ -37,29 +37,29 @@ dependencies {
   runtimeOnly("org.postgresql:postgresql:42.7.5")
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
   // Leaving at 1.43.0 to match the version used in App Insights https://github.com/microsoft/ApplicationInsights-Java/blob/3.6.2/dependencyManagement/build.gradle.kts#L14
-  implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.47.0")
+  implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.48.0")
   // Leaving at 2.9.0 to match the version used in App Insights https://github.com/microsoft/ApplicationInsights-Java/blob/3.6.2/dependencyManagement/build.gradle.kts#L16
-  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:2.13.1")
+  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:2.14.0")
 
-  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:1.4.2")
+  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:1.4.3")
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.26") {
     exclude(group = "io.swagger.core.v3")
   }
-  testImplementation("io.swagger.core.v3:swagger-core-jakarta:2.2.29")
+  testImplementation("io.swagger.core.v3:swagger-core-jakarta:2.2.30")
 
-  testImplementation("org.wiremock:wiremock-standalone:3.12.1")
-  testImplementation("org.testcontainers:localstack:1.20.6")
+  testImplementation("org.wiremock:wiremock-standalone:3.13.0")
+  testImplementation("org.testcontainers:localstack:1.21.0")
   testImplementation("com.amazonaws:aws-java-sdk-core:1.12.782")
   testImplementation("org.awaitility:awaitility-kotlin:4.3.0")
-  testImplementation("org.testcontainers:postgresql:1.20.6")
-  testImplementation("io.mockk:mockk:1.13.17")
+  testImplementation("org.testcontainers:postgresql:1.21.0")
+  testImplementation("io.mockk:mockk:1.14.0")
   testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
 }
 
 kotlin {
   jvmToolchain(21)
   compilerOptions {
-    freeCompilerArgs.add("-Xwhen-guards")
+    freeCompilerArgs.addAll("-Xjvm-default=all", "-Xwhen-guards")
   }
 }
 
