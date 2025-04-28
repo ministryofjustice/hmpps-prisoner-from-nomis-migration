@@ -33,6 +33,11 @@ suspend inline fun WebClient.ResponseSpec.awaitBodilessEntityIgnoreNotFound() = 
   }
   .awaitSingleOrNull()
 
+suspend inline fun WebClient.ResponseSpec.awaitBodilessEntityAsTrueNotFoundAsFalse(): Boolean = this.toBodilessEntity()
+  .map { true }
+  .onErrorResume(WebClientResponseException.NotFound::class.java) { Mono.just(false) }
+  .awaitSingle()
+
 class DuplicateErrorResponse(
   val moreInfo: DuplicateErrorContent,
 )

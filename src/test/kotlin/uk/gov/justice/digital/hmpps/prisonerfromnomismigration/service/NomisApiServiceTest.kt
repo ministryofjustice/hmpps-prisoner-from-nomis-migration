@@ -16,7 +16,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
@@ -963,7 +962,7 @@ internal class NomisApiServiceTest {
     internal fun `will pass oath2 token to service`() = runTest {
       nomisApi.stubCheckServicePrisonForPrisoner()
 
-      nomisService.checkServicePrisonForPrisoner(
+      nomisService.isServicePrisonOnForPrisoner(
         serviceCode = "VISIT_ALLOCATION",
         prisonNumber = "A1234BC",
       )
@@ -977,7 +976,7 @@ internal class NomisApiServiceTest {
     internal fun `will call the  service endpoint`() = runTest {
       nomisApi.stubCheckServicePrisonForPrisoner()
 
-      nomisService.checkServicePrisonForPrisoner(
+      nomisService.isServicePrisonOnForPrisoner(
         serviceCode = "VISIT_ALLOCATION",
         prisonNumber = "A1234BC",
       )
@@ -986,24 +985,26 @@ internal class NomisApiServiceTest {
     }
 
     @Test
-    fun `will make call successfully if service on for prisoner's prison `() = runTest {
+    fun `will return true when service is on for prisoner's prison`() = runTest {
       nomisApi.stubCheckServicePrisonForPrisoner()
 
-      nomisService.checkServicePrisonForPrisoner(
-        serviceCode = "VISIT_ALLOCATION",
-        prisonNumber = "A1234BC",
-      )
+      assertThat(
+        nomisService.isServicePrisonOnForPrisoner(
+          serviceCode = "VISIT_ALLOCATION",
+          prisonNumber = "A1234BC",
+        ),
+      ).isTrue
     }
 
     @Test
-    fun `will throw exception service not on for prisoner's prison`() = runTest {
+    fun `will return false if exception thrown when service not on for prisoner's prison`() = runTest {
       nomisApi.stubCheckServicePrisonForPrisonerNotFound()
-      assertThrows<NotFound> {
-        nomisService.checkServicePrisonForPrisoner(
+      assertThat(
+        nomisService.isServicePrisonOnForPrisoner(
           serviceCode = "VISIT_ALLOCATION",
           prisonNumber = "A1234BC",
-        )
-      }
+        ),
+      ).isFalse
     }
   }
 }
