@@ -22,7 +22,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GetActivityResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GetAllocationResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.LocationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.LocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
@@ -177,20 +176,6 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .bodyToMono(LocationResponse::class.java)
     .awaitSingle()
 
-  suspend fun getLocationIds(
-    pageNumber: Long,
-    pageSize: Long,
-  ): PageImpl<LocationIdResponse> = webClient.get()
-    .uri {
-      it.path("/locations/ids")
-        .queryParam("page", pageNumber)
-        .queryParam("size", pageSize)
-        .build()
-    }
-    .retrieve()
-    .bodyToMono(typeReference<RestResponsePage<LocationIdResponse>>())
-    .awaitSingle()
-
   // /////////////////////////////////////// General
 
   suspend fun getPrisonerIds(pageNumber: Long, pageSize: Long): RestResponsePage<PrisonerId> = webClient.get()
@@ -202,6 +187,11 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     }
     .retrieve()
     .awaitBody()
+
+  suspend fun checkServicePrisonForPrisoner(serviceCode: String, prisonNumber: String) = webClient.get()
+    .uri("/service-prisons/{serviceCode}/prisoner/{prisonerId}", serviceCode, prisonNumber)
+    .retrieve()
+    .awaitBodilessEntity()
 }
 
 data class VisitId(
