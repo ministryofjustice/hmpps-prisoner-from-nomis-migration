@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-04-14.56.d4b804a"
+    "version" : "2025-04-28.61.355925b"
   },
   "servers" : [ {
     "url" : "/",
@@ -53,8 +53,18 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "Returning the details of the organisation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncOrganisationResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No organisation with the requested ID was found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -73,22 +83,12 @@
               }
             }
           },
-          "404" : {
-            "description" : "No organisation with the requested ID was found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "200" : {
-            "description" : "Returning the details of the organisation",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SyncOrganisationResponse"
                 }
               }
             }
@@ -124,18 +124,18 @@
           "required" : true
         },
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "Successfully updated the organisation",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
+                  "$ref" : "#/components/schemas/SyncOrganisationResponse"
                 }
               }
             }
           },
-          "401" : {
-            "description" : "Unauthorised, requires a valid Oauth2 token",
+          "404" : {
+            "description" : "The organisation was not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -154,18 +154,18 @@
               }
             }
           },
-          "200" : {
-            "description" : "Successfully updated the organisation",
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/SyncOrganisationResponse"
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
           },
-          "404" : {
-            "description" : "The organisation was not found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -195,8 +195,18 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "204" : {
+            "description" : "Successfully deleted the organisation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncOrganisationResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No organisation with the requested ID was found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -215,18 +225,8 @@
               }
             }
           },
-          "204" : {
-            "description" : "Successfully deleted the organisation",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SyncOrganisationResponse"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "No organisation with the requested ID was found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -258,8 +258,18 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "Returning the details of the organisation web address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncWebResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No organisation web address with the requested ID was found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -278,22 +288,12 @@
               }
             }
           },
-          "404" : {
-            "description" : "No organisation web address with the requested ID was found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "200" : {
-            "description" : "Returning the details of the organisation web address",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SyncWebResponse"
                 }
               }
             }
@@ -339,8 +339,18 @@
               }
             }
           },
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "404" : {
+            "description" : "The organisation web address was not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request data",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -359,18 +369,8 @@
               }
             }
           },
-          "404" : {
-            "description" : "The organisation web address was not found",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Invalid request data",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -400,8 +400,18 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "204" : {
+            "description" : "Successfully deleted the organisation web address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncWebResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No organisation web address with the requested ID was found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -420,22 +430,12 @@
               }
             }
           },
-          "404" : {
-            "description" : "No organisation web address with the requested ID was found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "204" : {
-            "description" : "Successfully deleted the organisation web address",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SyncWebResponse"
                 }
               }
             }
@@ -463,8 +463,18 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "Returning the details of the organisation types",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncTypesResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No organisation with the requested ID was found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -483,18 +493,8 @@
               }
             }
           },
-          "200" : {
-            "description" : "Returning the details of the organisation types",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SyncTypesResponse"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "No organisation with the requested ID was found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -534,16 +534,6 @@
           "required" : true
         },
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "200" : {
             "description" : "Successfully updated the organisation's types",
             "content" : {
@@ -554,8 +544,8 @@
               }
             }
           },
-          "401" : {
-            "description" : "Unauthorised, requires a valid Oauth2 token",
+          "404" : {
+            "description" : "The organisation ID was not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -574,8 +564,18 @@
               }
             }
           },
-          "404" : {
-            "description" : "The organisation ID was not found",
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -607,8 +607,18 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "Returning the details of the organisation phone number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncPhoneResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No organisation phone number with the requested ID was found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -627,18 +637,8 @@
               }
             }
           },
-          "200" : {
-            "description" : "Returning the details of the organisation phone number",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SyncPhoneResponse"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "No organisation phone number with the requested ID was found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -678,22 +678,12 @@
           "required" : true
         },
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "Successfully updated the organisation's phone number",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorised, requires a valid Oauth2 token",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
+                  "$ref" : "#/components/schemas/SyncPhoneResponse"
                 }
               }
             }
@@ -718,12 +708,22 @@
               }
             }
           },
-          "200" : {
-            "description" : "Successfully updated the organisation's phone number",
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/SyncPhoneResponse"
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -749,8 +749,18 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "204" : {
+            "description" : "Successfully deleted the organisation phone number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncPhoneResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No organisation phone number with the requested ID was found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -769,22 +779,12 @@
               }
             }
           },
-          "404" : {
-            "description" : "No organisation phone number with the requested ID was found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "204" : {
-            "description" : "Successfully deleted the organisation phone number",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SyncPhoneResponse"
                 }
               }
             }
@@ -812,8 +812,18 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "Returning the details of the organisation email address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncEmailResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No organisation email address with the requested ID was found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -832,18 +842,8 @@
               }
             }
           },
-          "200" : {
-            "description" : "Returning the details of the organisation email address",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SyncEmailResponse"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "No organisation email address with the requested ID was found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -883,18 +883,18 @@
           "required" : true
         },
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "Successfully updated the organisation's email address",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
+                  "$ref" : "#/components/schemas/SyncEmailResponse"
                 }
               }
             }
           },
-          "401" : {
-            "description" : "Unauthorised, requires a valid Oauth2 token",
+          "404" : {
+            "description" : "The organisation email address was not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -913,8 +913,8 @@
               }
             }
           },
-          "404" : {
-            "description" : "The organisation email address was not found",
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -923,12 +923,12 @@
               }
             }
           },
-          "200" : {
-            "description" : "Successfully updated the organisation's email address",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/SyncEmailResponse"
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -954,8 +954,18 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "204" : {
+            "description" : "Successfully deleted the organisation email address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncEmailResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No organisation email address with the requested ID was found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -974,22 +984,12 @@
               }
             }
           },
-          "404" : {
-            "description" : "No organisation email address with the requested ID was found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "204" : {
-            "description" : "Successfully deleted the organisation email address",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SyncEmailResponse"
                 }
               }
             }
@@ -1017,8 +1017,28 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "Returning the details of the organisation address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncAddressResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "The request has invalid or missing fields",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No organisation address with the requested ID was found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1037,28 +1057,8 @@
               }
             }
           },
-          "400" : {
-            "description" : "The request has invalid or missing fields",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "200" : {
-            "description" : "Returning the details of the organisation address",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SyncAddressResponse"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "No organisation address with the requested ID was found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1098,18 +1098,18 @@
           "required" : true
         },
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "Successfully updated the organisation's address",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
+                  "$ref" : "#/components/schemas/SyncAddressResponse"
                 }
               }
             }
           },
-          "401" : {
-            "description" : "Unauthorised, requires a valid Oauth2 token",
+          "404" : {
+            "description" : "The organisation address was not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1128,8 +1128,8 @@
               }
             }
           },
-          "404" : {
-            "description" : "The organisation address was not found",
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1138,12 +1138,12 @@
               }
             }
           },
-          "200" : {
-            "description" : "Successfully updated the organisation's address",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/SyncAddressResponse"
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1169,8 +1169,18 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "204" : {
+            "description" : "Successfully deleted the organisation address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncAddressResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No organisation address with the requested ID was found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1189,18 +1199,8 @@
               }
             }
           },
-          "204" : {
-            "description" : "Successfully deleted the organisation address",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SyncAddressResponse"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "No organisation address with the requested ID was found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1232,18 +1232,18 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "Returning the details of the organisation address-linked phone number",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
+                  "$ref" : "#/components/schemas/SyncAddressPhoneResponse"
                 }
               }
             }
           },
-          "401" : {
-            "description" : "Unauthorised, requires a valid Oauth2 token",
+          "400" : {
+            "description" : "The request has invalid or missing fields",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1262,18 +1262,18 @@
               }
             }
           },
-          "200" : {
-            "description" : "Returning the details of the organisation address-linked phone number",
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/SyncAddressPhoneResponse"
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
           },
-          "400" : {
-            "description" : "The request has invalid or missing fields",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1313,18 +1313,18 @@
           "required" : true
         },
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "Successfully updated the organisation's address-linked phone number",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
+                  "$ref" : "#/components/schemas/SyncAddressPhoneResponse"
                 }
               }
             }
           },
-          "401" : {
-            "description" : "Unauthorised, requires a valid Oauth2 token",
+          "404" : {
+            "description" : "The organisation, address or phone number was not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1343,18 +1343,18 @@
               }
             }
           },
-          "200" : {
-            "description" : "Successfully updated the organisation's address-linked phone number",
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/SyncAddressPhoneResponse"
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
           },
-          "404" : {
-            "description" : "The organisation, address or phone number was not found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1384,8 +1384,18 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "204" : {
+            "description" : "Successfully deleted the organisation address phone number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncAddressPhoneResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No organisation address-linked phone number with the requested ID was found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1404,22 +1414,12 @@
               }
             }
           },
-          "404" : {
-            "description" : "No organisation address-linked phone number with the requested ID was found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "204" : {
-            "description" : "Successfully deleted the organisation address phone number",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SyncAddressPhoneResponse"
                 }
               }
             }
@@ -1447,18 +1447,18 @@
           "required" : true
         },
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "201" : {
+            "description" : "Successfully created the organisation",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
+                  "$ref" : "#/components/schemas/SyncOrganisationResponse"
                 }
               }
             }
           },
-          "401" : {
-            "description" : "Unauthorised, requires a valid Oauth2 token",
+          "400" : {
+            "description" : "The request has invalid or missing fields",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1477,8 +1477,8 @@
               }
             }
           },
-          "400" : {
-            "description" : "The request has invalid or missing fields",
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1487,12 +1487,12 @@
               }
             }
           },
-          "201" : {
-            "description" : "Successfully created the organisation",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/SyncOrganisationResponse"
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1520,8 +1520,18 @@
           "required" : true
         },
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "201" : {
+            "description" : "Successfully created the organisation web address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncWebResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "The request has invalid or missing fields",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1540,22 +1550,12 @@
               }
             }
           },
-          "400" : {
-            "description" : "The request has invalid or missing fields",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "201" : {
-            "description" : "Successfully created the organisation web address",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SyncWebResponse"
                 }
               }
             }
@@ -1583,8 +1583,18 @@
           "required" : true
         },
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "201" : {
+            "description" : "Successfully created the organisation phone number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncPhoneResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "The request has invalid or missing fields",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1603,18 +1613,8 @@
               }
             }
           },
-          "201" : {
-            "description" : "Successfully created the organisation phone number",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SyncPhoneResponse"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "The request has invalid or missing fields",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1646,22 +1646,22 @@
           "required" : true
         },
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "201" : {
             "description" : "Successfully created the organisation email address",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/SyncEmailResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "The request has invalid or missing fields",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1676,8 +1676,8 @@
               }
             }
           },
-          "400" : {
-            "description" : "The request has invalid or missing fields",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1709,8 +1709,18 @@
           "required" : true
         },
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "201" : {
+            "description" : "Successfully created the organisation address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncAddressResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "The request has invalid or missing fields",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1729,22 +1739,12 @@
               }
             }
           },
-          "400" : {
-            "description" : "The request has invalid or missing fields",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "201" : {
-            "description" : "Successfully created the organisation address",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SyncAddressResponse"
                 }
               }
             }
@@ -1782,18 +1782,8 @@
               }
             }
           },
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorised, requires a valid Oauth2 token",
+          "400" : {
+            "description" : "The request has invalid or missing fields",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1812,8 +1802,18 @@
               }
             }
           },
-          "400" : {
-            "description" : "The request has invalid or missing fields",
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1845,8 +1845,18 @@
           "required" : true
         },
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "201" : {
+            "description" : "Created the organisation successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OrganisationDetails"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "The request has invalid or missing fields",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1865,22 +1875,12 @@
               }
             }
           },
-          "400" : {
-            "description" : "The request has invalid or missing fields",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "201" : {
-            "description" : "Created the organisation successfully",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/OrganisationDetails"
                 }
               }
             }
@@ -1909,8 +1909,18 @@
           "required" : true
         },
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "The organisation and associated data was created successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MigrateOrganisationResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "The request failed validation with invalid or missing data supplied",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1929,22 +1939,12 @@
               }
             }
           },
-          "400" : {
-            "description" : "The request failed validation with invalid or missing data supplied",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "200" : {
-            "description" : "The organisation and associated data was created successfully",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/MigrateOrganisationResponse"
                 }
               }
             }
@@ -1995,12 +1995,12 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "Pageable organisation IDs returned",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
+                  "$ref" : "#/components/schemas/PageSyncOrganisationId"
                 }
               }
             }
@@ -2015,12 +2015,12 @@
               }
             }
           },
-          "200" : {
-            "description" : "Pageable organisation IDs returned",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/PageSyncOrganisationId"
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2065,12 +2065,15 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "List of reference data codes/values",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ReferenceCode"
+                  }
                 }
               }
             }
@@ -2085,15 +2088,12 @@
               }
             }
           },
-          "200" : {
-            "description" : "List of reference data codes/values",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/ReferenceCode"
-                  }
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2120,8 +2120,18 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "Found the organisation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OrganisationDetails"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No organisation with that id could be found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2140,18 +2150,8 @@
               }
             }
           },
-          "200" : {
-            "description" : "Found the organisation",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/OrganisationDetails"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "No organisation with that id could be found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2182,8 +2182,18 @@
           }
         } ],
         "responses" : {
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "200" : {
+            "description" : "Found the organisation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OrganisationSummary"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No organisation with that id could be found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2202,18 +2212,8 @@
               }
             }
           },
-          "200" : {
-            "description" : "Found the organisation",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/OrganisationSummary"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "No organisation with that id could be found",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2252,18 +2252,18 @@
           }
         } ],
         "responses" : {
-          "400" : {
-            "description" : "Invalid request",
+          "200" : {
+            "description" : "Organisations searched successfully. There may be no results.",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
+                  "$ref" : "#/components/schemas/OrganisationSummaryResultItemPage"
                 }
               }
             }
           },
-          "403" : {
-            "description" : "Forbidden, requires an appropriate role",
+          "400" : {
+            "description" : "Invalid request",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2282,12 +2282,12 @@
               }
             }
           },
-          "200" : {
-            "description" : "Organisations searched successfully. There may be no results.",
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/OrganisationSummaryResultItemPage"
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2370,28 +2370,6 @@
         },
         "required" : [ "active", "organisationId", "organisationName", "updatedBy", "updatedTime" ]
       },
-      "ErrorResponse" : {
-        "type" : "object",
-        "properties" : {
-          "status" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "errorCode" : {
-            "type" : "string"
-          },
-          "userMessage" : {
-            "type" : "string"
-          },
-          "developerMessage" : {
-            "type" : "string"
-          },
-          "moreInfo" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "status" ]
-      },
       "SyncOrganisationResponse" : {
         "type" : "object",
         "properties" : {
@@ -2461,6 +2439,28 @@
           }
         },
         "required" : [ "active", "createdBy", "createdTime", "organisationId" ]
+      },
+      "ErrorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "errorCode" : {
+            "type" : "string"
+          },
+          "userMessage" : {
+            "type" : "string"
+          },
+          "developerMessage" : {
+            "type" : "string"
+          },
+          "moreInfo" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "status" ]
       },
       "SyncUpdateWebRequest" : {
         "type" : "object",
@@ -4604,6 +4604,9 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -4614,9 +4617,6 @@
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           }
         }
       },
@@ -4797,7 +4797,8 @@
             "type" : "string",
             "description" : "Full or partial name of the organisation",
             "example" : "NHS",
-            "maxLength" : 40
+            "maxLength" : 40,
+            "minLength" : 1
           }
         },
         "required" : [ "name" ]
