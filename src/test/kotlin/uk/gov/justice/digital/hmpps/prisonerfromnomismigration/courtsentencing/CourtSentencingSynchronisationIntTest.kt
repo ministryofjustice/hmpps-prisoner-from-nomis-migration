@@ -1219,7 +1219,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will track a telemetry event for failed`() {
           await untilAsserted {
             verify(telemetryClient, times(2)).trackEvent(
-              eq("sentence-term-synchronisation-created-failed"),
+              eq("court-appearance-synchronisation-created-failed"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
