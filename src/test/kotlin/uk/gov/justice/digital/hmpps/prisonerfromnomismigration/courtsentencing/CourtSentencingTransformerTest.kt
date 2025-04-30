@@ -26,6 +26,7 @@ private const val SENTENCING_HEARING_DATE = "2016-10-13T10:00:00"
 private const val NON_SENTENCING_APPEARANCE = 317323934L
 private const val SENTENCING_APPEARANCE = 318155094L
 private const val SENTENCED_CRIME_OFFENCE_CODE = "SX03007"
+private const val SENTENCED_CRIME_OFFENCE_CODE_2 = "SX03008"
 private const val NON_SENTENCED_CRIME_OFFENCE_CODE = "SX03005"
 private const val BOOKING_ID = 1139832L
 private const val OFFENDER_NO = "G2577UD"
@@ -57,7 +58,6 @@ class CourtSentencingTransformerTest {
         )
       }
     }
-
     val courtCaseResponse = CourtCaseResponse(
       id = NOMIS_COURT_CASE_ID,
       offenderNo = OFFENDER_NO,
@@ -224,6 +224,36 @@ class CourtSentencingTransformerTest {
             CourtEventChargeResponse(
               eventId = SENTENCING_APPEARANCE,
               offenderCharge = OffenderChargeResponse(
+                id = 3688293,
+                offence = OffenceResponse(
+                  offenceCode = SENTENCED_CRIME_OFFENCE_CODE_2,
+                  statuteCode = "SX03",
+                  description = "Assault on a person 2",
+                ),
+                offenceDate = LocalDate.parse("2016-03-17"),
+                chargeStatus = CodeDescription("A", "Active"),
+                resultCode1 = OffenceResultCodeResponse(
+                  chargeStatus = "A",
+                  code = "1002",
+                  description = "Imprisonment",
+                  dispositionCode = "F",
+                  conviction = true,
+                ),
+                mostSeriousFlag = true,
+                lidsOffenceNumber = 1,
+              ),
+              resultCode1 = OffenceResultCodeResponse(
+                chargeStatus = "A",
+                code = "1002",
+                description = "Imprisonment",
+                dispositionCode = "F",
+                conviction = true,
+              ),
+              mostSeriousFlag = true,
+            ),
+            CourtEventChargeResponse(
+              eventId = SENTENCING_APPEARANCE,
+              offenderCharge = OffenderChargeResponse(
                 id = 3688292,
                 offence = OffenceResponse(
                   offenceCode = NON_SENTENCED_CRIME_OFFENCE_CODE,
@@ -273,6 +303,25 @@ class CourtSentencingTransformerTest {
             offenceCode = SENTENCED_CRIME_OFFENCE_CODE,
             statuteCode = "SX03",
             description = "Assault on a person",
+          ),
+          offenceDate = LocalDate.parse("2016-03-17"),
+          chargeStatus = CodeDescription("A", "Active"),
+          resultCode1 = OffenceResultCodeResponse(
+            chargeStatus = "A",
+            code = "1002",
+            description = "Imprisonment",
+            dispositionCode = "F",
+            conviction = true,
+          ),
+          mostSeriousFlag = true,
+          lidsOffenceNumber = 1,
+        ),
+        OffenderChargeResponse(
+          id = 3688293,
+          offence = OffenceResponse(
+            offenceCode = SENTENCED_CRIME_OFFENCE_CODE_2,
+            statuteCode = "SX03",
+            description = "Assault on a person 2",
           ),
           offenceDate = LocalDate.parse("2016-03-17"),
           chargeStatus = CodeDescription("A", "Active"),
@@ -362,6 +411,25 @@ class CourtSentencingTransformerTest {
                 offenceCode = SENTENCED_CRIME_OFFENCE_CODE,
                 statuteCode = "SX03",
                 description = "Assault on a person",
+              ),
+              offenceDate = LocalDate.parse("2016-03-17"),
+              chargeStatus = CodeDescription("A", "Active"),
+              resultCode1 = OffenceResultCodeResponse(
+                chargeStatus = "A",
+                code = "1002",
+                description = "Imprisonment",
+                dispositionCode = "F",
+                conviction = true,
+              ),
+              mostSeriousFlag = true,
+              lidsOffenceNumber = 1,
+            ),
+            OffenderChargeResponse(
+              id = 3688293,
+              offence = OffenceResponse(
+                offenceCode = SENTENCED_CRIME_OFFENCE_CODE_2,
+                statuteCode = "SX03",
+                description = "Assault on a person 2",
               ),
               offenceDate = LocalDate.parse("2016-03-17"),
               chargeStatus = CodeDescription("A", "Active"),

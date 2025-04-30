@@ -442,7 +442,6 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       sentenceLevel = sentenceLevel,
     ),
   ) {
-    println("\n\n/prisoners/$offenderNo/court-cases/$caseId/sentences/$sentenceSequence")
     nomisApi.stubFor(
       get(urlEqualTo("/prisoners/$offenderNo/court-cases/$caseId/sentences/$sentenceSequence")).willReturn(
         aResponse()
@@ -456,6 +455,45 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
   fun stubGetSentence(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
       get(WireMock.urlPathMatching("/prisoners/\\S+/court-cases/\\d+/sentences/\\d+")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubGetSentenceTerm(
+    bookingId: Long = 123456,
+    offenderNo: String = "A3864DZ",
+    sentenceSequence: Int = 3,
+    termSequence: Int = 5,
+    startDate: LocalDate = LocalDate.now(),
+    response: SentenceTermResponse = SentenceTermResponse(
+      startDate = startDate,
+      sentenceTermType = CodeDescription("IMP", "Imprisonment"),
+      termSequence = 1,
+      years = 1,
+      months = 3,
+      weeks = 4,
+      days = 5,
+      lifeSentenceFlag = false,
+    ),
+  ) {
+    println("\n\n/prisoners/$offenderNo/sentence-terms/booking-id/$bookingId/sentence-sequence/$sentenceSequence/term-sequence/$termSequence")
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/$offenderNo/sentence-terms/booking-id/$bookingId/sentence-sequence/$sentenceSequence/term-sequence/$termSequence")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubGetSentenceTerm(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    nomisApi.stubFor(
+      get(WireMock.urlPathMatching("/prisoners/\\S+/sentence-terms/\\S+")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())

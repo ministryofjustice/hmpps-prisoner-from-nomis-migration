@@ -19,9 +19,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyChargeCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtAppearanceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyPeriodLengthCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.util.UUID
 
@@ -335,6 +337,53 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     stubFor(
       put("/legacy/sentence/$sentenceId")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubPostPeriodLengthForCreate(
+    periodLengthId: String = UUID.randomUUID().toString(),
+    nomisBookingId: Long = 5,
+    nomisSentenceSequence: Int = 5,
+    nomisTermSequence: Int = 5,
+    response: LegacyPeriodLengthCreatedResponse = LegacyPeriodLengthCreatedResponse(
+      uuid = UUID.fromString(periodLengthId),
+      sentenceTermNOMISId = NomisPeriodLengthId(offenderBookingId = nomisBookingId, sentenceSequence = nomisSentenceSequence, termSequence = nomisTermSequence),
+    ),
+  ) {
+    stubFor(
+      post("/legacy/period-length")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubDeletePeriodLength(
+    periodLengthId: String = UUID.randomUUID().toString(),
+  ) {
+    stubFor(
+      delete("/legacy/period-length/$periodLengthId")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubPutPeriodLengthForUpdate(
+    periodLengthId: String = UUID.randomUUID().toString(),
+  ) {
+    stubFor(
+      put("/legacy/period-length/$periodLengthId")
         .willReturn(
           aResponse()
             .withStatus(204)

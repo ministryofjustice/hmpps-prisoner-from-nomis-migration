@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PostPrisonerMergeCaseChanges
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceTermResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.typeReference
 import java.time.LocalDate
@@ -123,6 +124,17 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     .retrieve()
     .bodyToMono(typeReference<RestResponsePage<PrisonerId>>())
     .awaitSingle()
+
+  suspend fun getOffenderSentenceTerm(offenderNo: String, bookingId: Long, sentenceSequence: Int, termSequence: Int): SentenceTermResponse = webClient.get()
+    .uri(
+      "/prisoners/{offenderNo}/sentence-terms/booking-id/{bookingId}/sentence-sequence/{sentenceSequence}/term-sequence/{termSequence}",
+      offenderNo,
+      bookingId,
+      sentenceSequence,
+      termSequence,
+    )
+    .retrieve()
+    .awaitBody()
 
   suspend fun getByNomisPrisonNumberOrNull(nomisPrisonNumber: String): CorePersonMappingDto? = webClient.get()
     .uri(

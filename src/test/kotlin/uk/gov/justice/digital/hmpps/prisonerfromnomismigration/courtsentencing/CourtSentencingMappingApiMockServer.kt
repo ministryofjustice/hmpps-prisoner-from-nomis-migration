@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSentencingMigrationSummary
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceTermMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
@@ -524,6 +525,40 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
+  fun stubGetSentenceTermByNomisId(
+    nomisSentenceSequence: Int = 1,
+    nomisTermSequence: Int = 1,
+    nomisBookingId: Long = 12345,
+    dpsTermId: String = UUID.randomUUID().toString(),
+    mapping: SentenceTermMappingDto = SentenceTermMappingDto(
+      nomisSentenceSequence = nomisSentenceSequence,
+      nomisTermSequence = nomisTermSequence,
+      nomisBookingId = nomisBookingId,
+      dpsTermId = dpsTermId,
+      mappingType = SentenceTermMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/court-sentencing/sentence-terms/nomis-booking-id/$nomisBookingId/nomis-sentence-sequence/$nomisSentenceSequence/nomis-term-sequence/$nomisTermSequence")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(mapping)),
+      ),
+    )
+  }
+
+  fun stubGetSentenceTermByNomisId(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/court-sentencing/sentence-terms/nomis-booking-id/\\d+/nomis-sentence-sequence/\\d+/nomis-term-sequence/\\d+")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun stubPostSentenceMapping() {
     mappingApi.stubFor(
       post("/mapping/court-sentencing/sentences").willReturn(
@@ -534,9 +569,30 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
+  fun stubPostSentenceTermMapping() {
+    mappingApi.stubFor(
+      post("/mapping/court-sentencing/sentence-terms").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
   fun stubPostSentenceMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
       post("/mapping/court-sentencing/sentences").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubPostSentenceTermMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      post("/mapping/court-sentencing/sentence-terms").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -588,6 +644,52 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
+  fun stubPostSentenceTermMappingFailureFollowedBySuccess() {
+    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/court-sentencing/sentence-terms")
+  }
+
+  fun stubSentenceTermMappingCreateConflict(
+    existingDpsTermId: String = "10",
+    duplicateDpsTermId: String = "11",
+    nomisTermSequence: Int = 1,
+    nomisSentenceSequence: Int = 1,
+    nomisBookingId: Long = 12345,
+  ) {
+    mappingApi.stubFor(
+      post(WireMock.urlPathEqualTo("/mapping/court-sentencing/sentence-terms"))
+        .willReturn(
+          aResponse()
+            .withStatus(409)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              """{
+              "moreInfo": 
+              {
+                "existing" :  {
+                  "dpsTermId": "$existingDpsTermId",
+                  "nomisSentenceSequence": $nomisSentenceSequence,
+                  "nomisTermSequence": $nomisTermSequence,
+                  "nomisBookingId": $nomisBookingId,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                 },
+                 "duplicate" : {
+                  "dpsTermId": "$duplicateDpsTermId",
+                  "nomisSentenceSequence": $nomisSentenceSequence,
+                  "nomisTermSequence": $nomisTermSequence,
+                  "nomisBookingId": $nomisBookingId,
+                  "label": "2022-02-14T09:58:45",
+                  "whenCreated": "2022-02-14T09:58:45",
+                  "mappingType": "MIGRATED"
+                  }
+              }
+              }""",
+            ),
+        ),
+    )
+  }
+
   fun stubDeleteSentenceMapping(dpsSentenceId: String) {
     mappingApi.stubFor(
       delete("/mapping/court-sentencing/sentences/dps-sentence-id/$dpsSentenceId").willReturn(
@@ -604,6 +706,30 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
   ) {
     mappingApi.stubFor(
       delete(urlPathMatching("/mapping/court-sentencing/sentences/dps-sentence-id/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubDeleteSentenceTermMapping(dpsTermId: String) {
+    mappingApi.stubFor(
+      delete("/mapping/court-sentencing/sentence-terms/dps-term-id/$dpsTermId").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubDeleteSentenceTermMappingByDpsId(
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    mappingApi.stubFor(
+      delete(urlPathMatching("/mapping/court-sentencing/sentence-terms/dps-term-id/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())

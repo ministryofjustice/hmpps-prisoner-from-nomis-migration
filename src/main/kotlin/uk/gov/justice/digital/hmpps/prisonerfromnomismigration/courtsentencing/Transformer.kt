@@ -100,9 +100,13 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance(
     nextEventDateTime = this.nextEventDateTime,
     appearanceTime = this.eventDateTime.toLocalTime().toString(),
   ),
+
+  /* supporting sentences with multiple charges
+   */
   charges = this.courtEventCharges.map { charge ->
     // find sentence where sentence.offenderCharges contains charge
     val sentencesForAppearance = sentences.filter { sentence -> sentence.courtOrder?.eventId == this.id }
+
     val dpsSentence =
       sentencesForAppearance.find { sentence -> sentence.offenderCharges.any { it.id == charge.offenderCharge.id } }
         ?.toDpsMigrationSentence()
@@ -178,7 +182,12 @@ fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsConsecUui
   // can be "OUT"
   prisonId = this.prisonId,
   legacyData = this.toSentenceLegacyData(),
-  periodLengths = this.sentenceTerms.map { it.toPeriodLegacyData(this) },
+  periodLengths = this.sentenceTerms.map {
+    it.toPeriodLegacyData(
+      bookingId = this.bookingId,
+      sentenceSequence = this.sentenceSeq.toInt(),
+    )
+  },
   // TODO confirm what this is used for
   chargeNumber = this.lineSequence?.toString(),
   fine = this.fineAmount?.let { LegacyCreateFine(fineAmount = it) },
@@ -209,14 +218,14 @@ fun SentenceResponse.toSentenceLegacyData() = SentenceLegacyData(
   postedDate = this.createdDateTime.toString(),
 )
 
-fun SentenceTermResponse.toPeriodLegacyData(nomisSentence: SentenceResponse) = LegacyCreatePeriodLength(
+fun SentenceTermResponse.toPeriodLegacyData(bookingId: Long, sentenceSequence: Int) = LegacyCreatePeriodLength(
   periodYears = this.years,
   periodMonths = this.months,
   periodDays = this.days,
   periodWeeks = this.weeks,
   periodLengthId = NomisPeriodLengthId(
-    offenderBookingId = nomisSentence.bookingId,
-    sentenceSequence = nomisSentence.sentenceSeq.toInt(),
+    offenderBookingId = bookingId,
+    sentenceSequence = sentenceSequence,
     termSequence = this.termSequence.toInt(),
   ),
   legacyData = PeriodLengthLegacyData(

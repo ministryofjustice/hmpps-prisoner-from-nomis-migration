@@ -13,6 +13,7 @@ const val RETRY_COURT_CASE_SYNCHRONISATION_MAPPING = "court_case_synchronisation
 const val RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING = "court_appearance_synchronisation_retry"
 const val RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING = "court_charge_synchronisation_retry"
 const val RETRY_SENTENCE_SYNCHRONISATION_MAPPING = "sentence_synchronisation_retry"
+const val RETRY_SENTENCE_TERM_SYNCHRONISATION_MAPPING = "sentence_term_synchronisation_retry"
 const val RETRY_PRISONER_MERGE_COURT_CASE_SYNCHRONISATION_MAPPING = "prisoner_merge_court_case_synchronisation_retry"
 
 @Service
