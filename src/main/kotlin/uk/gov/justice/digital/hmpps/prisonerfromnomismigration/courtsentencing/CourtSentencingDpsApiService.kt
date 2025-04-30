@@ -13,7 +13,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtCase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreatePeriodLength
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateSentence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyPeriodLengthCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateWholeCharge
@@ -137,6 +139,26 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
     .put()
     .uri("/legacy/sentence/{sentenceId}", sentenceId)
     .bodyValue(sentence)
+    .retrieve()
+    .awaitBodilessEntity()
+
+  suspend fun createPeriodLength(sentence: LegacyCreatePeriodLength): LegacyPeriodLengthCreatedResponse = webClient
+    .post()
+    .uri("/legacy/period-length")
+    .bodyValue(sentence)
+    .retrieve()
+    .awaitBody()
+
+  suspend fun deletePeriodLength(periodLengthId: String) = webClient
+    .delete()
+    .uri("/legacy/period-length/{periodLengthId}", periodLengthId)
+    .retrieve()
+    .awaitBodilessEntityIgnoreNotFound()
+
+  suspend fun updatePeriodLength(periodLengthId: String, period: LegacyCreatePeriodLength): ResponseEntity<Void> = webClient
+    .put()
+    .uri("/legacy/period-length/{periodLengthId}", periodLengthId)
+    .bodyValue(period)
     .retrieve()
     .awaitBodilessEntity()
 

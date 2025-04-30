@@ -22,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSentencingMigrationSummary
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceTermMappingDto
 
 @Service
 class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CourtCaseMigrationMapping>(domainUrl = "/mapping/court-sentencing/prisoner", webClient) {
@@ -176,11 +177,31 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
+  suspend fun getSentenceTermOrNullByNomisId(bookingId: Long, sentenceSequence: Int, termSequence: Int): SentenceTermMappingDto? = webClient.get()
+    .uri(
+      "/mapping/court-sentencing/sentence-terms/nomis-booking-id/{bookingId}/nomis-sentence-sequence/{sentenceSequence}/nomis-term-sequence/{termSequence}",
+      bookingId,
+      sentenceSequence,
+      termSequence,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
   suspend fun getSentenceByNomisId(bookingId: Long, sentenceSequence: Long): SentenceMappingDto = webClient.get()
     .uri(
       "/mapping/court-sentencing/sentences/nomis-booking-id/{bookingId}/nomis-sentence-sequence/{sentenceSequence}",
       bookingId,
       sentenceSequence,
+    )
+    .retrieve()
+    .awaitBody()
+
+  suspend fun getSentenceTermByNomisId(bookingId: Long, sentenceSequence: Long, termSequence: Int): SentenceTermMappingDto = webClient.get()
+    .uri(
+      "/mapping/court-sentencing/sentence-terms/nomis-booking-id/{bookingId}/nomis-sentence-sequence/{sentenceSequence}/nomis-term-sequence/{termSequence}",
+      bookingId,
+      sentenceSequence,
+      termSequence,
     )
     .retrieve()
     .awaitBody()
@@ -207,10 +228,40 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     }
     .awaitFirstOrDefault(CreateMappingResult<SentenceMappingDto>())
 
+  suspend fun createSentenceTermMapping(
+    mapping: SentenceTermMappingDto,
+  ): CreateMappingResult<SentenceTermMappingDto> = webClient.post()
+    .uri("/mapping/court-sentencing/sentence-terms")
+    .bodyValue(
+      mapping,
+    )
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<SentenceTermMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(
+        CreateMappingResult(
+          it.getResponseBodyAs(
+            object :
+              ParameterizedTypeReference<DuplicateErrorResponse<SentenceTermMappingDto>>() {},
+          ),
+        ),
+      )
+    }
+    .awaitFirstOrDefault(CreateMappingResult<SentenceTermMappingDto>())
+
   suspend fun deleteSentenceMappingByDpsId(sentenceId: String) = webClient.delete()
     .uri(
       "/mapping/court-sentencing/sentences/dps-sentence-id/{sentenceId}",
       sentenceId,
+    )
+    .retrieve()
+    .awaitBodilessEntity()
+
+  suspend fun deleteSentenceTermMappingByDpsId(termId: String) = webClient.delete()
+    .uri(
+      "/mapping/court-sentencing/sentence-terms/dps-term-id/{termId}",
+      termId,
     )
     .retrieve()
     .awaitBodilessEntity()

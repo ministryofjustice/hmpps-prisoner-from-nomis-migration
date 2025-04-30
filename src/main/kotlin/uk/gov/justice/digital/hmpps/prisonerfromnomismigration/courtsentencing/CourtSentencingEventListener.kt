@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COU
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_PRISONER_MERGE_COURT_CASE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SENTENCE_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SENTENCE_TERM_SYNCHRONISATION_MAPPING
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -50,6 +51,9 @@ class CourtSentencingEventListener(
               "OFFENDER_SENTENCES-INSERTED" -> courtSentencingSynchronisationService.nomisSentenceInserted(sqsMessage.Message.fromJson())
               "OFFENDER_SENTENCES-DELETED" -> courtSentencingSynchronisationService.nomisSentenceDeleted(sqsMessage.Message.fromJson())
               "OFFENDER_SENTENCES-UPDATED" -> courtSentencingSynchronisationService.nomisSentenceUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_SENTENCE_TERMS-INSERTED" -> courtSentencingSynchronisationService.nomisSentenceTermInserted(sqsMessage.Message.fromJson())
+              "OFFENDER_SENTENCE_TERMS-DELETED" -> courtSentencingSynchronisationService.nomisSentenceTermDeleted(sqsMessage.Message.fromJson())
+              "OFFENDER_SENTENCE_TERMS-UPDATED" -> courtSentencingSynchronisationService.nomisSentenceTermUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_CASE_IDENTIFIERS-DELETED",
               "OFFENDER_CASE_IDENTIFIERS-INSERTED",
               "OFFENDER_CASE_IDENTIFIERS-UPDATED",
@@ -80,6 +84,11 @@ class CourtSentencingEventListener(
 
         RETRY_SENTENCE_SYNCHRONISATION_MAPPING ->
           courtSentencingSynchronisationService.retryCreateSentenceMapping(
+            sqsMessage.Message.fromJson(),
+          )
+
+        RETRY_SENTENCE_TERM_SYNCHRONISATION_MAPPING ->
+          courtSentencingSynchronisationService.retryCreateSentenceTermMapping(
             sqsMessage.Message.fromJson(),
           )
 
@@ -130,6 +139,14 @@ data class OffenderSentenceEvent(
   val sentenceLevel: String,
   val sentenceCategory: String,
   val caseId: Long?,
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+  val auditModuleName: String?,
+)
+
+data class OffenderSentenceTermEvent(
+  val termSequence: Int,
+  val sentenceSeq: Int,
   val offenderIdDisplay: String,
   val bookingId: Long,
   val auditModuleName: String?,

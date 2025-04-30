@@ -15,6 +15,7 @@ to the new service.
 Since migration is a typically a process that takes many hours, this service relies heavily on SQS messaging to guarantee that the migration is completed, where any transient errors are
 automatically retried. Any persistent errors can be inspected and are retained in a SQS dead letter queue.
 
+
 # Running the service
 ## Running locally
 
@@ -71,7 +72,6 @@ So, for example, running
 ```shell
 ./gradlew writeNonAssociationsJson compileKotlin compileTestKotlin
 ```
-
 Will download the non associations Open API specification from dev, generate the model and then compile the code.
 The json specification can then be committed to the repository.
 

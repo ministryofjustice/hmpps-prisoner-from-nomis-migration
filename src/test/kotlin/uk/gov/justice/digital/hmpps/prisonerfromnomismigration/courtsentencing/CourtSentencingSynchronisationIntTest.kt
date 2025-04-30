@@ -52,7 +52,6 @@ private const val NOMIS_COURT_CASE_ID = 1234L
 private const val NOMIS_COURT_APPEARANCE_ID = 5555L
 private const val NOMIS_CASE_IDENTIFIER = "GH123"
 private const val NOMIS_CASE_IDENTIFIER_TYPE = "CASE/INFO#"
-private const val NOMIS_SENTENCE_SEQ = 2L
 private const val DPS_COURT_CASE_ID = "cc1"
 private const val DPS_COURT_APPEARANCE_ID = "6f35a357-f458-40b9-b824-de729ffeb459"
 private const val EXISTING_DPS_COURT_CASE_ID = "cc2"
@@ -1220,7 +1219,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will track a telemetry event for failed`() {
           await untilAsserted {
             verify(telemetryClient, times(2)).trackEvent(
-              eq("court-appearance-synchronisation-created-failed"),
+              eq("sentence-term-synchronisation-created-failed"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
