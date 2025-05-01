@@ -1,7 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships
 
 import com.microsoft.applicationinsights.TelemetryClient
+import io.opentelemetry.context.Context
+import io.opentelemetry.extension.kotlin.asContextElement
 import io.swagger.v3.oas.annotations.Operation
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PathVariable
@@ -32,5 +37,26 @@ class ContactPersonDataRepairResource(
       ),
       null,
     )
+  }
+
+  @PostMapping("/persons/{personId}/resynchronise-async")
+  @ResponseStatus(HttpStatus.ACCEPTED)
+  @Operation(
+    summary = "Resynchronises person data from NOMIS back to DPS asynchronously",
+    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only and when operation will take a very long time. Requires ROLE_MIGRATE_CONTACTPERSON or ROLE_MIGRATE_NOMIS_SYSCON",
+  )
+  suspend fun repairPersonAsync(
+    @PathVariable personId: Long,
+  ) {
+    CoroutineScope(Dispatchers.Unconfined + Context.current().asContextElement()).launch {
+      contactPersonSynchronisationService.resetPersonForRepair(personId)
+      telemetryClient.trackEvent(
+        "from-nomis-synch-contactperson-resynchronisation-repair",
+        mapOf(
+          "personId" to personId.toString(),
+        ),
+        null,
+      )
+    }
   }
 }
