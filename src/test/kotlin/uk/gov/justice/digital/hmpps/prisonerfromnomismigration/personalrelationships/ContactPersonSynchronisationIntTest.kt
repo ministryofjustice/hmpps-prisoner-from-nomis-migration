@@ -4378,33 +4378,31 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         mappingApiMock.stubGetByNomisContactIdOrNull(nomisContactId = nomisContactId, mapping = null)
-        nomisApiMock.stubGetPerson(
-          person = contactPerson(nomisPersonId)
-            .withContact(
-              PersonContact(
-                id = nomisContactId,
-                contactType = CodeDescription("S", "Social/Family"),
-                relationshipType = CodeDescription("BRO", "Brother"),
-                active = true,
-                nextOfKin = true,
-                approvedVisitor = true,
-                emergencyContact = true,
-                expiryDate = LocalDate.parse("2025-01-01"),
-                comment = "Big brother",
-                audit = NomisAudit(
-                  createUsername = "J.SPEAK",
-                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
-                ),
-                prisoner = ContactForPrisoner(
-                  bookingId = 76544,
-                  offenderNo = offenderNo,
-                  bookingSequence = 1,
-                  firstName = "JOHN",
-                  lastName = "SMITH",
-                ),
-                restrictions = emptyList(),
-              ),
+        nomisApiMock.stubGetContact(
+          nomisContactId,
+          PersonContact(
+            id = nomisContactId,
+            contactType = CodeDescription("S", "Social/Family"),
+            relationshipType = CodeDescription("BRO", "Brother"),
+            active = true,
+            nextOfKin = true,
+            approvedVisitor = true,
+            emergencyContact = true,
+            expiryDate = LocalDate.parse("2025-01-01"),
+            comment = "Big brother",
+            audit = NomisAudit(
+              createUsername = "J.SPEAK",
+              createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
             ),
+            prisoner = ContactForPrisoner(
+              bookingId = 76544,
+              offenderNo = offenderNo,
+              bookingSequence = 1,
+              firstName = "JOHN",
+              lastName = "SMITH",
+            ),
+            restrictions = emptyList(),
+          ),
         )
         dpsApiMock.stubCreatePrisonerContact(prisonerContact().copy(id = dpsPrisonerContactId))
         mappingApiMock.stubCreateContactMapping()
@@ -4426,8 +4424,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `will retrieve the person details containing the contact from NOMIS`() {
-        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/$nomisPersonId")))
+      fun `will retrieve the contact details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/contact/$nomisContactId")))
       }
 
       @Test
@@ -4519,33 +4517,31 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         mappingApiMock.stubGetByNomisContactIdOrNull(nomisContactId = nomisContactId, mapping = null)
-        nomisApiMock.stubGetPerson(
-          person = contactPerson(nomisPersonId)
-            .withContact(
-              PersonContact(
-                id = nomisContactId,
-                contactType = CodeDescription("S", "Social/Family"),
-                relationshipType = CodeDescription("BRO", "Brother"),
-                active = true,
-                nextOfKin = true,
-                approvedVisitor = true,
-                emergencyContact = true,
-                expiryDate = LocalDate.parse("2025-01-01"),
-                comment = "Big brother",
-                audit = NomisAudit(
-                  createUsername = "J.SPEAK",
-                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
-                ),
-                prisoner = ContactForPrisoner(
-                  bookingId = 76544,
-                  offenderNo = offenderNo,
-                  bookingSequence = 1,
-                  firstName = "JOHN",
-                  lastName = "SMITH",
-                ),
-                restrictions = emptyList(),
-              ),
+        nomisApiMock.stubGetContact(
+          nomisContactId,
+          PersonContact(
+            id = nomisContactId,
+            contactType = CodeDescription("S", "Social/Family"),
+            relationshipType = CodeDescription("BRO", "Brother"),
+            active = true,
+            nextOfKin = true,
+            approvedVisitor = true,
+            emergencyContact = true,
+            expiryDate = LocalDate.parse("2025-01-01"),
+            comment = "Big brother",
+            audit = NomisAudit(
+              createUsername = "J.SPEAK",
+              createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
             ),
+            prisoner = ContactForPrisoner(
+              bookingId = 76544,
+              offenderNo = offenderNo,
+              bookingSequence = 1,
+              firstName = "JOHN",
+              lastName = "SMITH",
+            ),
+            restrictions = emptyList(),
+          ),
         )
         dpsApiMock.stubCreatePrisonerContact(prisonerContact().copy(id = dpsPrisonerContactId))
         mappingApiMock.stubCreateContactMapping(
@@ -4627,33 +4623,31 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         mappingApiMock.stubGetByNomisContactIdOrNull(nomisContactId = nomisContactId, mapping = null)
-        nomisApiMock.stubGetPerson(
-          person = contactPerson(nomisPersonId)
-            .withContact(
-              PersonContact(
-                id = nomisContactId,
-                contactType = CodeDescription("S", "Social/Family"),
-                relationshipType = CodeDescription("BRO", "Brother"),
-                active = true,
-                nextOfKin = true,
-                approvedVisitor = true,
-                emergencyContact = true,
-                expiryDate = LocalDate.parse("2025-01-01"),
-                comment = "Big brother",
-                audit = NomisAudit(
-                  createUsername = "J.SPEAK",
-                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
-                ),
-                prisoner = ContactForPrisoner(
-                  bookingId = 76544,
-                  offenderNo = offenderNo,
-                  bookingSequence = 1,
-                  firstName = "JOHN",
-                  lastName = "SMITH",
-                ),
-                restrictions = emptyList(),
-              ),
+        nomisApiMock.stubGetContact(
+          nomisContactId,
+          PersonContact(
+            id = nomisContactId,
+            contactType = CodeDescription("S", "Social/Family"),
+            relationshipType = CodeDescription("BRO", "Brother"),
+            active = true,
+            nextOfKin = true,
+            approvedVisitor = true,
+            emergencyContact = true,
+            expiryDate = LocalDate.parse("2025-01-01"),
+            comment = "Big brother",
+            audit = NomisAudit(
+              createUsername = "J.SPEAK",
+              createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
             ),
+            prisoner = ContactForPrisoner(
+              bookingId = 76544,
+              offenderNo = offenderNo,
+              bookingSequence = 1,
+              firstName = "JOHN",
+              lastName = "SMITH",
+            ),
+            restrictions = emptyList(),
+          ),
         )
         dpsApiMock.stubCreatePrisonerContact(prisonerContact().copy(id = dpsPrisonerContactId))
         mappingApiMock.stubCreateContactMappingFollowedBySuccess()
@@ -4751,35 +4745,33 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisContactId = nomisContactId,
           mapping = PersonContactMappingDto(dpsId = dpsPrisonerContactId.toString(), nomisId = nomisContactId, mappingType = PersonContactMappingDto.MappingType.MIGRATED),
         )
-        nomisApiMock.stubGetPerson(
-          contactPerson(nomisPersonId)
-            .withContact(
-              PersonContact(
-                id = nomisContactId,
-                contactType = CodeDescription("S", "Social/Family"),
-                relationshipType = CodeDescription("BRO", "Brother"),
-                active = true,
-                nextOfKin = true,
-                approvedVisitor = true,
-                emergencyContact = true,
-                expiryDate = LocalDate.parse("2025-01-01"),
-                comment = "Big brother",
-                audit = NomisAudit(
-                  createUsername = "J.SPEAK",
-                  createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
-                  modifyUserId = "T.SMITH",
-                  modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
-                ),
-                prisoner = ContactForPrisoner(
-                  bookingId = 76544,
-                  offenderNo = offenderNo,
-                  bookingSequence = 1,
-                  firstName = "JOHN",
-                  lastName = "SMITH",
-                ),
-                restrictions = emptyList(),
-              ),
+        nomisApiMock.stubGetContact(
+          nomisContactId,
+          PersonContact(
+            id = nomisContactId,
+            contactType = CodeDescription("S", "Social/Family"),
+            relationshipType = CodeDescription("BRO", "Brother"),
+            active = true,
+            nextOfKin = true,
+            approvedVisitor = true,
+            emergencyContact = true,
+            expiryDate = LocalDate.parse("2025-01-01"),
+            comment = "Big brother",
+            audit = NomisAudit(
+              createUsername = "J.SPEAK",
+              createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
+              modifyUserId = "T.SMITH",
+              modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
             ),
+            prisoner = ContactForPrisoner(
+              bookingId = 76544,
+              offenderNo = offenderNo,
+              bookingSequence = 1,
+              firstName = "JOHN",
+              lastName = "SMITH",
+            ),
+            restrictions = emptyList(),
+          ),
         )
         dpsApiMock.stubUpdatePrisonerContact(prisonerContactId = dpsPrisonerContactId)
 

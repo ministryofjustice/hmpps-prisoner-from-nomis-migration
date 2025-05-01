@@ -71,6 +71,31 @@ class ContactPersonNomisApiServiceTest {
   }
 
   @Nested
+  inner class GetContact {
+    @Test
+    fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetContact(contactId = 1234567)
+
+      apiService.getContact(nomisContactId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetContact(contactId = 1234567)
+
+      apiService.getContact(nomisContactId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/contact/1234567")),
+      )
+    }
+  }
+
+  @Nested
   inner class GetPersonIdsToMigrate {
     @Test
     fun `will pass oath2 token to service`() = runTest {
