@@ -16,8 +16,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPhoneMappingIdDto.DpsPhoneType.ADDRESS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPhoneMappingIdDto.DpsPhoneType.PERSON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonSimpleMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
@@ -970,7 +968,7 @@ class ContactPersonSynchronisationService(
   }
   suspend fun resetPersonForRepair(personId: Long) {
     val person = nomisApiService.getPerson(nomisPersonId = personId)
-    val mapping = dpsApiService.migrateContact(person.toDpsMigrateContactRequest()).toContactPersonMappingsDto()
+    val mapping = dpsApiService.resyncContactForRepair(person.toDpsMigrateContactRequest()).toContactPersonMappingsDto()
     mappingApiService.replaceMappingsForPerson(personId, mapping)
   }
 
