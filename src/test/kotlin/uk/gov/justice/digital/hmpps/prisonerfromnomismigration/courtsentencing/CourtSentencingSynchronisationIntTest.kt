@@ -35,6 +35,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationSentenceId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -3041,6 +3042,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       val dpsSentenceIdForSequence2 = "7b70c22c-a05b-4c78-8da3-c0d01f99400b"
       val dpsSentenceIdForSequence3 = "84430291-a381-4c99-acdb-102299324f2a"
       val dpsSentenceIdForSequence4 = "c0ba2706-6a89-4e64-ae84-a434472ca2ad"
+      val dpsSentenceTermIdForSequence1Term1 = "4487ee53-0529-423a-a14d-f340ede43922"
+      val dpsSentenceTermIdForSequence1Term2 = "2b70c22c-a05b-4c78-8da3-c0d01f99400b"
+      val dpsSentenceTermIdForSequence2Term1 = "23430291-a381-4c99-acdb-102299324f2a"
       val dpsCourtAppearanceFor401 = "b8beca56-f155-4d35-82af-a727d16fb171"
       val dpsCourtAppearanceFor402 = "5c615d4e-891c-44c5-b3eb-349e8dd13da5"
       val dpsChargeIdFor501 = "b8a59d39-9cea-4fcd-a55b-9b53f07b089f"
@@ -3145,6 +3149,21 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisSentenceSequence = 4,
           dpsSentenceId = dpsSentenceIdForSequence4,
         )
+        courtSentencingMappingApiMockServer.stubGetSentenceTermByNomisId(
+          nomisBookingId = 201,
+          nomisSentenceSequence = 1,
+          dpsTermId = dpsSentenceTermIdForSequence1Term1,
+        )
+        courtSentencingMappingApiMockServer.stubGetSentenceTermByNomisId(
+          nomisBookingId = 201,
+          nomisSentenceSequence = 1,
+          dpsTermId = dpsSentenceTermIdForSequence1Term2,
+        )
+        courtSentencingMappingApiMockServer.stubGetSentenceTermByNomisId(
+          nomisBookingId = 201,
+          nomisSentenceSequence = 2,
+          dpsTermId = dpsSentenceTermIdForSequence2Term1,
+        )
         courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
           nomisCourtChargeId = 301,
         )
@@ -3179,6 +3198,11 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               dpsSentenceIdForSequence2 to MigrationSentenceId(offenderBookingId = 301, sequence = 2),
               dpsSentenceIdForSequence3 to MigrationSentenceId(offenderBookingId = 301, sequence = 3),
               dpsSentenceIdForSequence4 to MigrationSentenceId(offenderBookingId = 301, sequence = 4),
+            ),
+            sentenceTerms = listOf(
+              dpsSentenceTermIdForSequence1Term1 to NomisPeriodLengthId(offenderBookingId = 301, sentenceSequence = 1, termSequence = 1),
+              dpsSentenceTermIdForSequence1Term2 to NomisPeriodLengthId(offenderBookingId = 301, sentenceSequence = 1, termSequence = 2),
+              dpsSentenceTermIdForSequence2Term1 to NomisPeriodLengthId(offenderBookingId = 301, sentenceSequence = 2, termSequence = 1),
             ),
           ),
           courtCasesDeactivatedIds = listOf(dpsCourtCaseIdFor10001, dpsCourtCaseIdFor10002),
