@@ -165,9 +165,7 @@ class ContactPersonSynchronisationService(
         )
       } ?: run {
         track("contactperson-contact-synchronisation-created", telemetry) {
-          nomisApiService.getPerson(nomisPersonId = event.personId).also { nomisPerson ->
-            val nomisContact = nomisPerson.contacts.find { it.id == event.contactId }
-              ?: throw IllegalStateException("Contact ${event.contactId} for person ${event.personId} not found in NOMIS")
+          nomisApiService.getContact(nomisContactId = event.contactId).also { nomisContact ->
             val dpsPrisonerContact =
               dpsApiService.createPrisonerContact(nomisContact.toDpsCreatePrisonerContactRequest(nomisPersonId = event.personId))
                 .also {
@@ -206,9 +204,7 @@ class ContactPersonSynchronisationService(
           mappingApiService.getByNomisContactId(nomisContactId = event.contactId).dpsId.toLong().also {
             telemetry["dpsPrisonerContactId"] = it
           }
-        val nomisPerson = nomisApiService.getPerson(nomisPersonId = event.personId)
-        val nomisContact = nomisPerson.contacts.find { it.id == event.contactId }
-          ?: throw IllegalStateException("Contact ${event.contactId} for person ${event.personId} not found in NOMIS")
+        val nomisContact = nomisApiService.getContact(nomisContactId = event.contactId)
 
         dpsApiService.updatePrisonerContact(
           dpsPrisonerContactId,

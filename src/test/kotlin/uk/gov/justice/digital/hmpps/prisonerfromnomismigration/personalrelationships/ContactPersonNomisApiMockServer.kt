@@ -66,6 +66,20 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubGetContact(
+    contactId: Long = 123456,
+    contact: PersonContact = personContact(),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/contact/$contactId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(contact)),
+      ),
+    )
+  }
+
   fun stubGetPersonIdsToMigrate(
     count: Long = 1,
     content: List<PersonIdResponse> = listOf(
@@ -141,21 +155,21 @@ fun contactPerson(personId: Long = 123456): ContactPerson = ContactPerson(
       audit = nomisAudit(),
     ),
   ),
-  contacts = listOf(
-    PersonContact(
-      id = 1,
-      relationshipType = CodeDescription(code = "BOF", description = "Boyfriend"),
-      contactType = CodeDescription(code = "S", description = "Social/ Family"),
-      active = true,
-      emergencyContact = true,
-      nextOfKin = false,
-      approvedVisitor = false,
-      prisoner = ContactForPrisoner(bookingId = 1, offenderNo = "A1234KT", lastName = "SMITH", firstName = "JOHN", bookingSequence = 1),
-      restrictions = listOf(ContactRestriction(id = 1, type = CodeDescription(code = "BAN", description = "Banned"), enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"), effectiveDate = LocalDate.parse("2020-01-01"), audit = nomisAudit())),
-      audit = nomisAudit(),
-    ),
-  ),
+  contacts = listOf(personContact(contactId = 1)),
   restrictions = listOf(ContactRestriction(id = 2, type = CodeDescription(code = "BAN", description = "Banned"), enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"), effectiveDate = LocalDate.parse("2020-01-01"), audit = nomisAudit())),
+)
+
+fun personContact(contactId: Long = 1) = PersonContact(
+  id = contactId,
+  relationshipType = CodeDescription(code = "BOF", description = "Boyfriend"),
+  contactType = CodeDescription(code = "S", description = "Social/ Family"),
+  active = true,
+  emergencyContact = true,
+  nextOfKin = false,
+  approvedVisitor = false,
+  prisoner = ContactForPrisoner(bookingId = 1, offenderNo = "A1234KT", lastName = "SMITH", firstName = "JOHN", bookingSequence = 1),
+  restrictions = listOf(ContactRestriction(id = 1, type = CodeDescription(code = "BAN", description = "Banned"), enteredStaff = ContactRestrictionEnteredStaff(staffId = 1, username = "Q1251T"), effectiveDate = LocalDate.parse("2020-01-01"), audit = nomisAudit())),
+  audit = nomisAudit(),
 )
 
 fun ContactPerson.withAddress(address: PersonAddress): ContactPerson = copy(addresses = listOf(address))

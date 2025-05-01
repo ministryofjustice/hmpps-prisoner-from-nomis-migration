@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactPerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerWithContacts
@@ -20,6 +21,14 @@ class ContactPersonNomisApiService(@Qualifier("nomisApiWebClient") private val w
     .uri(
       "/persons/{personId}",
       nomisPersonId,
+    )
+    .retrieve()
+    .awaitBody()
+
+  suspend fun getContact(nomisContactId: Long): PersonContact = webClient.get()
+    .uri(
+      "/contact/{contactId}",
+      nomisContactId,
     )
     .retrieve()
     .awaitBody()
