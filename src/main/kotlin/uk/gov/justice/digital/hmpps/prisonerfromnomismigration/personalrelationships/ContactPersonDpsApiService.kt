@@ -1,8 +1,11 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships
 
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.netty.http.client.HttpClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityIgnoreNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
@@ -42,10 +45,24 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateEmploymentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRestrictionRequest
+import java.time.Duration
 
 @Service
-class ContactPersonDpsApiService(@Qualifier("personalRelationshipsApiWebClient") private val webClient: WebClient) {
+class ContactPersonDpsApiService(
+  @Qualifier("personalRelationshipsApiWebClient") private val webClient: WebClient,
+  @Value("\${api.repair.timeout:180s}") val repairTimeout: Duration,
+) {
   suspend fun migrateContact(contact: MigrateContactRequest): MigrateContactResponse = webClient.post()
+    .uri("/migrate/contact")
+    .bodyValue(contact)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun resyncContactForRepair(contact: MigrateContactRequest): MigrateContactResponse = webClient.mutate().clientConnector(
+    ReactorClientHttpConnector(
+      HttpClient.create().responseTimeout(repairTimeout),
+    ),
+  ).build().post()
     .uri("/migrate/contact")
     .bodyValue(contact)
     .retrieve()

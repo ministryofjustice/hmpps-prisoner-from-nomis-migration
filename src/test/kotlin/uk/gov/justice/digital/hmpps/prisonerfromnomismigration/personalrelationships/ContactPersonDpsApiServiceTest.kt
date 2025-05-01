@@ -71,6 +71,32 @@ class ContactPersonDpsApiServiceTest {
   }
 
   @Nested
+  inner class ResyncContactForRepair {
+    @Test
+    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+      dpsContactPersonServer.stubMigrateContact()
+
+      apiService.resyncContactForRepair(migrateContactRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the migrate endpoint`() = runTest {
+      dpsContactPersonServer.stubMigrateContact()
+
+      apiService.resyncContactForRepair(migrateContactRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/migrate/contact")),
+      )
+    }
+  }
+
+  @Nested
   inner class CreateContact {
     @Test
     internal fun `will pass oath2 token to contact endpoint`() = runTest {
