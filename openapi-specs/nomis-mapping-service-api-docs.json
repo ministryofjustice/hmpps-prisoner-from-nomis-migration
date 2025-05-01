@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-04-30.6285.177a8f2"
+    "version" : "2025-04-30.6326.2659501"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -8569,7 +8569,7 @@
         }
       }
     },
-    "/mapping/corporate/web/dps-web-address-id/{dpsWebId}" : {
+    "/mapping/corporate/web/dps-internet-address-id/{dpsWebId}" : {
       "get" : {
         "tags" : [ "corporate-mapping-resource" ],
         "summary" : "Get web mapping by dps web address Id",
@@ -8620,6 +8620,50 @@
           },
           "404" : {
             "description" : "Id does not exist in mapping table",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "corporate-mapping-resource" ],
+        "summary" : "Delete web mapping by dps web Id",
+        "description" : "Deletes the web mapping by DPS Web Id. Requires role ROLE_NOMIS_CONTACTPERSONS",
+        "operationId" : "deleteWebMappingByDpsId",
+        "parameters" : [ {
+          "name" : "dpsWebId",
+          "in" : "path",
+          "description" : "DPS web address id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "DPS web address id",
+            "example" : "12345"
+          },
+          "example" : 12345
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Delete Web mapping data or does not exist",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Access this endpoint is forbidden",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -8790,6 +8834,50 @@
           },
           "404" : {
             "description" : "Id does not exist in mapping table",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "corporate-mapping-resource" ],
+        "summary" : "Delete phone mapping by dps phone Id",
+        "description" : "Deletes the phone mapping by DPS Phone Id. Requires role ROLE_NOMIS_CONTACTPERSONS",
+        "operationId" : "deletePhoneMappingByDpsId",
+        "parameters" : [ {
+          "name" : "dpsPhoneId",
+          "in" : "path",
+          "description" : "DPS phone id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "DPS phone id",
+            "example" : "12345"
+          },
+          "example" : 12345
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Delete Phone mapping data or does not exist",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Access this endpoint is forbidden",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -9040,10 +9128,9 @@
           "description" : "DPS organisation id",
           "required" : true,
           "schema" : {
-            "type" : "integer",
-            "format" : "int64",
+            "type" : "string",
             "description" : "DPS organisation id",
-            "example" : 12345
+            "example" : "12345"
           },
           "example" : 12345
         } ],
@@ -9158,13 +9245,7 @@
         "responses" : {
           "204" : {
             "description" : "Deletes Email mapping data or it doesn't exist",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/OrganisationsMappingDto"
-                }
-              }
-            }
+            "content" : { }
           },
           "401" : {
             "description" : "Unauthorized to access this endpoint",
@@ -9410,6 +9491,50 @@
           },
           "404" : {
             "description" : "Id does not exist in mapping table",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "corporate-mapping-resource" ],
+        "summary" : "Deletes address mapping by dps address Id",
+        "description" : "Deletes the address mapping by DPS Address Id. Requires role ROLE_NOMIS_CONTACTPERSONS",
+        "operationId" : "deleteAddressMappingByDpsId",
+        "parameters" : [ {
+          "name" : "dpsAddressId",
+          "in" : "path",
+          "description" : "DPS address id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "DPS address id",
+            "example" : "12345"
+          },
+          "example" : 12345
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Address mapping data deleted or doesn't exist",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Access this endpoint is forbidden",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -14133,6 +14258,98 @@
         }
       }
     },
+    "/mapping/corporate/email/dps-internet-address-id/{dpsEmailId}" : {
+      "delete" : {
+        "tags" : [ "corporate-mapping-resource" ],
+        "summary" : "Delete email mapping by dps email Id",
+        "description" : "Deletes the email mapping by DPS Email Id. Requires role ROLE_NOMIS_CONTACTPERSONS",
+        "operationId" : "deleteEmailMappingByDpsId",
+        "parameters" : [ {
+          "name" : "dpsEmailId",
+          "in" : "path",
+          "description" : "DPS email id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "DPS email id",
+            "example" : "12345"
+          },
+          "example" : 12345
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Deletes Email mapping data or it doesn't exist",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Access this endpoint is forbidden",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/corporate/address-phone/dps-phone-id/{dpsPhoneId}" : {
+      "delete" : {
+        "tags" : [ "corporate-mapping-resource" ],
+        "summary" : "Deletes address phone mapping by dps phone Id",
+        "description" : "Deletes the address phone mapping by DPS phone Id. Requires role ROLE_NOMIS_CONTACTPERSONS",
+        "operationId" : "deleteAddressPhoneMappingByDpsId",
+        "parameters" : [ {
+          "name" : "dpsPhoneId",
+          "in" : "path",
+          "description" : "DPS phone id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "DPS phone id",
+            "example" : "12345"
+          },
+          "example" : 12345
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Deletes AddressPhone mapping data or it doesn't exist",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Access this endpoint is forbidden",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/corporate" : {
       "delete" : {
         "tags" : [ "corporate-mapping-resource" ],
@@ -16959,13 +17176,19 @@
       "PageVisitBalanceMappingDto" : {
         "type" : "object",
         "properties" : {
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -16983,12 +17206,6 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -17071,13 +17288,19 @@
       "PageCourtSentencingMigrationSummary" : {
         "type" : "object",
         "properties" : {
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -17095,12 +17318,6 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -17160,13 +17377,19 @@
       "PageOrganisationsMappingDto" : {
         "type" : "object",
         "properties" : {
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -17184,12 +17407,6 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -17264,13 +17481,19 @@
       "PageCorePersonMappingDto" : {
         "type" : "object",
         "properties" : {
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -17288,12 +17511,6 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -17364,13 +17581,19 @@
       "PageContactPersonProfileDetailsMigrationMappingDto" : {
         "type" : "object",
         "properties" : {
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -17389,12 +17612,6 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
@@ -17410,13 +17627,19 @@
       "PagePersonMappingDto" : {
         "type" : "object",
         "properties" : {
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -17434,12 +17657,6 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -17484,13 +17701,19 @@
       "PagePrisonerAlertMappingsSummaryDto" : {
         "type" : "object",
         "properties" : {
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -17508,12 +17731,6 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -17552,13 +17769,19 @@
       "PageAlertMappingDto" : {
         "type" : "object",
         "properties" : {
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -17576,12 +17799,6 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
