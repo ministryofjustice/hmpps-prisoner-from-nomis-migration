@@ -102,4 +102,74 @@ class ContactPersonDataRepairResourceIntTest : SqsIntegrationTestBase() {
       }
     }
   }
+
+  @DisplayName("POST /person/{personId}/resynchronise-async")
+  @Nested
+  inner class RepairPersonAsync {
+    val personId = 123456L
+
+    @Nested
+    inner class Security {
+      @Test
+      fun `access forbidden when no role`() {
+        webTestClient.post().uri("/persons/$personId/resynchronise-async")
+          .headers(setAuthorisation(roles = listOf()))
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access forbidden with wrong role`() {
+        webTestClient.post().uri("/persons/$personId/resynchronise-async")
+          .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access unauthorised with no auth token`() {
+        webTestClient.post().uri("/persons/$personId/resynchronise-async")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+      val personId = 123456L
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetPerson(personId)
+        dpsApiMock.stubMigrateContact(personId)
+        mappingApiMock.stubReplaceMappingsForPerson(personId)
+
+        webTestClient.post().uri("/persons/$personId/resynchronise-async")
+          .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+          .exchange()
+          .expectStatus().isAccepted
+
+        waitForAnyProcessingToComplete()
+      }
+
+      @Test
+      fun `will retrieve person`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/persons/$personId")))
+      }
+
+      @Test
+      fun `will send person contact to DPS`() {
+        dpsApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/migrate/contact")),
+        )
+      }
+
+      @Test
+      fun `will replaces mapping between the DPS and NOMIS alerts`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/person/$personId")),
+        )
+      }
+    }
+  }
 }
