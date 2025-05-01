@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCases
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreatePeriodLengthResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateSentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -21,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceTermMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -119,6 +121,7 @@ class CourtSentencingMigrationService(
       courtCharges = buildCourtChargeMapping(dpsCourtCasesCreateResponse.charges),
       courtAppearances = buildCourtAppearanceMapping(dpsCourtCasesCreateResponse.appearances),
       sentences = buildSentenceMapping(dpsCourtCasesCreateResponse.sentences),
+      sentenceTerms = buildSentenceTermMapping(dpsCourtCasesCreateResponse.sentenceTerms),
       label = context.migrationId,
       mappingType = CourtCaseMigrationMappingDto.MappingType.MIGRATED,
     )
@@ -176,6 +179,15 @@ class CourtSentencingMigrationService(
       nomisSentenceSequence = it.sentenceNOMISId.sequence,
       nomisBookingId = it.sentenceNOMISId.offenderBookingId,
       dpsSentenceId = it.sentenceUuid.toString(),
+    )
+  }
+
+  private fun buildSentenceTermMapping(responseMappings: List<MigrationCreatePeriodLengthResponse>): List<SentenceTermMappingDto> = responseMappings.map { it ->
+    SentenceTermMappingDto(
+      nomisSentenceSequence = it.sentenceTermNOMISId.sentenceSequence,
+      nomisBookingId = it.sentenceTermNOMISId.offenderBookingId,
+      dpsTermId = it.periodLengthUuid.toString(),
+      nomisTermSequence = it.sentenceTermNOMISId.termSequence,
     )
   }
 

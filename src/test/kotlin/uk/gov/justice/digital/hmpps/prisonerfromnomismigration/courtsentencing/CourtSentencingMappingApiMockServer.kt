@@ -134,6 +134,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
                   "courtAppearances": [],
                   "courtCharges": [],
                   "sentences": [],
+                  "sentenceTerms": [],
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "MIGRATED"
@@ -144,6 +145,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
                   "courtAppearances": [],
                   "courtCharges": [],
                   "sentences": [],
+                  "sentenceTerms": [],
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "MIGRATED"
@@ -198,6 +200,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
                   "courtAppearances": [],
                   "courtCharges": [],
                   "sentences": [],
+                  "sentenceTerms": [],
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "MIGRATED"
@@ -207,6 +210,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
                   "courtAppearances": [],
                   "courtCharges": [],
                   "sentences": [],
+                  "sentenceTerms": [],
                   "label": "2022-02-14T09:58:45",
                   "whenCreated": "2022-02-14T09:58:45",
                   "mappingType": "MIGRATED"

@@ -1294,6 +1294,14 @@ class CourtSentencingSynchronisationService(
             dpsSentenceId = it.sentenceUuid.toString(),
           )
         },
+        sentenceTerms = newCourtCaseMappings.sentenceTerms.map { it ->
+          SentenceTermMappingDto(
+            nomisSentenceSequence = it.sentenceTermNOMISId.sentenceSequence,
+            nomisTermSequence = it.sentenceTermNOMISId.termSequence,
+            nomisBookingId = it.sentenceTermNOMISId.offenderBookingId,
+            dpsTermId = it.periodLengthUuid.toString(),
+          )
+        },
         mappingType = CourtCaseMigrationMappingDto.MappingType.NOMIS_CREATED,
       )
 

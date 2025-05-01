@@ -35,17 +35,22 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCases
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreatePeriodLengthResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateSentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationSentenceId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtOrderResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResultCodeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceTermResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.COURT_SENTENCING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
@@ -57,6 +62,7 @@ import java.util.UUID
 
 private const val OFFENDER_NO = "AN1"
 private const val NOMIS_CASE_ID = 1L
+private const val NOMIS_BOOKING_ID = 2L
 private const val NOMIS_APPEARANCE_1_ID = 11L
 private const val NOMIS_APPEARANCE_2_ID = 22L
 private const val DPS_APPEARANCE_1_ID = "a04f7a8d-61aa-111a-9395-f4dc62f36ab0"
@@ -66,6 +72,12 @@ private const val NOMIS_CHARGE_2_ID = 222L
 private const val DPS_CHARGE_1_ID = "a04f7a8d-61aa-111c-9395-f4dc62f36ab0"
 private const val DPS_CHARGE_2_ID = "a04f7a8d-61aa-222c-9395-f4dc62f36ab0"
 private const val DPS_COURT_CASE_ID = "99C"
+private const val DPS_SENTENCE_ID = "a14f7a8d-61aa-111c-9395-f4dc62f36ab0"
+private const val DPS_TERM_ID = "b14f7a8d-61aa-111c-9395-f4dc62f36ab0"
+private const val DPS_TERM_2_ID = "b24f7a8d-61aa-111c-9395-f4dc62f36ab0"
+private const val NOMIS_SENTENCE_SEQUENCE_ID = 112L
+private const val NOMIS_TERM_SEQUENCE_ID = 111L
+private const val NOMIS_TERM_SEQUENCE_2_ID = 222L
 
 data class MigrationResult(val migrationId: String)
 
@@ -172,6 +184,14 @@ class CourtSentencingMigrationIntTest(
           buildCaseIdentifierResponse(reference = "XX12345678"),
         ),
         courtEvents = listOf(buildCourtEventResponse()),
+        sentences = listOf(
+          buildSentenceResponse(
+            sentenceTerms = listOf(
+              buildSentenceTermResponse(),
+              buildSentenceTermResponse(termSequence = NOMIS_TERM_SEQUENCE_2_ID),
+            ),
+          ),
+        ),
       )
       courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
       courtSentencingMappingApiMockServer.stubPostMigrationMapping()
@@ -181,7 +201,8 @@ class CourtSentencingMigrationIntTest(
 
       webTestClient.performMigration()
 
-      val migrationRequest: MigrationCreateCourtCases = CourtSentencingDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")))
+      val migrationRequest: MigrationCreateCourtCases =
+        CourtSentencingDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")))
       assertThat(migrationRequest.prisonerId).isEqualTo("AN1")
       assertThat(migrationRequest.courtCases).hasSize(1)
       with(migrationRequest.courtCases.first()) {
@@ -208,6 +229,8 @@ class CourtSentencingMigrationIntTest(
             assertThat(legacyData.outcomeDispositionCode).isEqualTo("F")
             assertThat(chargeNOMISId).isEqualTo(3934645)
             assertThat(legacyData.postedDate).isNotNull
+            assertThat(sentence?.sentenceId?.sequence).isEqualTo(NOMIS_SENTENCE_SEQUENCE_ID)
+            assertThat(sentence?.periodLengths).hasSize(2)
           }
         }
       }
@@ -220,7 +243,11 @@ class CourtSentencingMigrationIntTest(
         1,
       ) { courtSentencingNomisApiMockServer.prisonerIdsPagedResponse(it) }
       courtSentencingNomisApiMockServer.stubMultipleGetPrisonerIdCounts(totalElements = 1, pageSize = 10)
-      courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(bookingId = 3, caseId = NOMIS_CASE_ID, offenderNo = "AN1")
+      courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(
+        bookingId = 3,
+        caseId = NOMIS_CASE_ID,
+        offenderNo = "AN1",
+      )
       courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
       courtSentencingMappingApiMockServer.stubPostMigrationMapping()
 
@@ -229,7 +256,8 @@ class CourtSentencingMigrationIntTest(
 
       webTestClient.performMigration()
 
-      val mappingRequest: CourtCaseMigrationMappingDto = CourtSentencingMappingApiMockServer.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/prisoner/AN1/court-cases")))
+      val mappingRequest: CourtCaseMigrationMappingDto =
+        CourtSentencingMappingApiMockServer.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/prisoner/AN1/court-cases")))
       with(mappingRequest) {
         assertThat(courtCases).hasSize(1)
         with(courtCases.first()) {
@@ -252,6 +280,17 @@ class CourtSentencingMigrationIntTest(
         with(courtCharges[1]) {
           assertThat(nomisCourtChargeId).isEqualTo(NOMIS_CHARGE_1_ID)
           assertThat(dpsCourtChargeId).isEqualTo(DPS_CHARGE_1_ID)
+        }
+        with(sentences[0]) {
+          assertThat(nomisSentenceSequence).isEqualTo(NOMIS_SENTENCE_SEQUENCE_ID)
+        }
+        with(sentenceTerms[0]) {
+          assertThat(nomisTermSequence).isEqualTo(NOMIS_TERM_SEQUENCE_ID)
+          assertThat(nomisSentenceSequence).isEqualTo(NOMIS_SENTENCE_SEQUENCE_ID)
+        }
+        with(sentenceTerms[1]) {
+          assertThat(nomisTermSequence).isEqualTo(NOMIS_TERM_SEQUENCE_2_ID)
+          assertThat(nomisSentenceSequence).isEqualTo(NOMIS_SENTENCE_SEQUENCE_ID)
         }
       }
     }
@@ -316,7 +355,8 @@ class CourtSentencingMigrationIntTest(
 
       val (migrationId) = webTestClient.performMigration()
 
-      val migrationRequest: MigrationCreateCourtCases = CourtSentencingDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")))
+      val migrationRequest: MigrationCreateCourtCases =
+        CourtSentencingDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")))
       assertThat(migrationRequest.prisonerId).isEqualTo(OFFENDER_NO)
       assertThat(migrationRequest.courtCases).hasSize(3)
       val sourceLinkedCase = migrationRequest.courtCases.find { it.caseId == 1L }!!
@@ -513,25 +553,129 @@ fun dpsMigrationCreateResponseWithTwoAppearancesAndTwoCharges(): MigrationCreate
       eventId = NOMIS_APPEARANCE_1_ID,
     ),
   )
+  val sentenceIds: List<MigrationCreateSentenceResponse> = listOf(
+    MigrationCreateSentenceResponse(
+      sentenceUuid = UUID.fromString(DPS_SENTENCE_ID),
+      sentenceNOMISId = MigrationSentenceId(
+        offenderBookingId = NOMIS_BOOKING_ID,
+        sequence = NOMIS_SENTENCE_SEQUENCE_ID.toInt(),
+      ),
+    ),
+  )
+  val sentenceTermIds: List<MigrationCreatePeriodLengthResponse> = listOf(
+    MigrationCreatePeriodLengthResponse(
+      periodLengthUuid = UUID.fromString(DPS_TERM_ID),
+      sentenceTermNOMISId = NomisPeriodLengthId(
+        offenderBookingId = NOMIS_BOOKING_ID,
+        sentenceSequence = NOMIS_SENTENCE_SEQUENCE_ID.toInt(),
+        termSequence = NOMIS_TERM_SEQUENCE_ID.toInt(),
+      ),
+    ),
+    MigrationCreatePeriodLengthResponse(
+      periodLengthUuid = UUID.fromString(DPS_TERM_ID),
+      sentenceTermNOMISId = NomisPeriodLengthId(
+        offenderBookingId = NOMIS_BOOKING_ID,
+        sentenceSequence = NOMIS_SENTENCE_SEQUENCE_ID.toInt(),
+        termSequence = NOMIS_TERM_SEQUENCE_2_ID.toInt(),
+      ),
+    ),
+  )
   return MigrationCreateCourtCasesResponse(
     courtCases = courtCaseIds,
     appearances = courtAppearancesIds,
     charges = courtChargesIds,
-    sentences = emptyList(),
-    sentenceTerms = emptyList(),
+    sentences = sentenceIds,
+    sentenceTerms = sentenceTermIds,
   )
 }
+
 fun dpsMigrationCreateResponse(
   courtCases: List<Pair<String, Long>>,
   charges: List<Pair<String, Long>>,
   courtAppearances: List<Pair<String, Long>>,
   sentences: List<Pair<String, MigrationSentenceId>>,
+  sentenceTerms: List<Pair<String, NomisPeriodLengthId>>,
 ): MigrationCreateCourtCasesResponse = MigrationCreateCourtCasesResponse(
   courtCases = courtCases.map { MigrationCreateCourtCaseResponse(courtCaseUuid = it.first, caseId = it.second) },
-  appearances = courtAppearances.map { MigrationCreateCourtAppearanceResponse(appearanceUuid = UUID.fromString(it.first), eventId = it.second) },
-  charges = charges.map { MigrationCreateChargeResponse(chargeUuid = UUID.fromString(it.first), chargeNOMISId = it.second) },
-  sentences = sentences.map { MigrationCreateSentenceResponse(sentenceUuid = UUID.fromString(it.first), sentenceNOMISId = it.second) },
-  sentenceTerms = emptyList(),
+  appearances = courtAppearances.map {
+    MigrationCreateCourtAppearanceResponse(
+      appearanceUuid = UUID.fromString(it.first),
+      eventId = it.second,
+    )
+  },
+  charges = charges.map {
+    MigrationCreateChargeResponse(
+      chargeUuid = UUID.fromString(it.first),
+      chargeNOMISId = it.second,
+    )
+  },
+  sentences = sentences.map {
+    MigrationCreateSentenceResponse(
+      sentenceUuid = UUID.fromString(it.first),
+      sentenceNOMISId = it.second,
+    )
+  },
+  sentenceTerms = sentenceTerms.map {
+    MigrationCreatePeriodLengthResponse(
+      periodLengthUuid = UUID.fromString(it.first),
+      sentenceTermNOMISId = it.second,
+    )
+  },
+)
+
+fun buildSentenceTermResponse(
+  termSequence: Long = NOMIS_TERM_SEQUENCE_ID,
+) = SentenceTermResponse(
+  termSequence = termSequence,
+  startDate = LocalDate.of(2020, 4, 4),
+  lifeSentenceFlag = false,
+  sentenceTermType = CodeDescription("IMP", "Imprisonment"),
+  years = 6,
+  months = 5,
+  weeks = 2,
+  days = 3,
+  hours = 0,
+)
+
+fun buildSentenceResponse(
+  bookingId: Long = NOMIS_BOOKING_ID,
+  sentenceTerms: List<SentenceTermResponse>,
+  sentenceSequence: Long = NOMIS_SENTENCE_SEQUENCE_ID,
+  courtOrder: CourtOrderResponse = buildCourtOrderResponse(),
+) = SentenceResponse(
+  bookingId = bookingId,
+  sentenceSeq = sentenceSequence,
+  status = "Active",
+  calculationType = CodeDescription("IND", "Desc"),
+  startDate = LocalDate.of(2020, 4, 4),
+  endDate = LocalDate.of(2020, 4, 4),
+  category = CodeDescription("cat", "Category"),
+  createdDateTime = LocalDateTime.now(),
+  sentenceTerms = sentenceTerms,
+  offenderCharges = listOf(
+    OffenderChargeResponse(
+      id = 3934645,
+      offence = OffenceResponse(
+        offenceCode = "RR84027",
+        statuteCode = "RR84",
+        description = "Failing to stop at school crossing (horsedrawn vehicle)",
+      ),
+      mostSeriousFlag = true,
+    ),
+  ),
+  prisonId = "MDI",
+  createdByUsername = "BNELL",
+  courtOrder = courtOrder,
+)
+
+fun buildCourtOrderResponse(eventId: Long = NOMIS_APPEARANCE_1_ID) = CourtOrderResponse(
+  eventId = eventId,
+  id = 2,
+  courtDate = LocalDate.of(2020, 4, 4),
+  issuingCourt = "MDI",
+  orderType = "IMP",
+  orderStatus = "Active",
+  sentencePurposes = emptyList(),
 )
 
 fun buildCaseIdentifierResponse(reference: String = "AB12345678"): CaseIdentifierResponse = CaseIdentifierResponse(
