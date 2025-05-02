@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-04-30.6135.ee9dcd5"
+    "version" : "2025-05-01.6222.4515fc3"
   },
   "servers" : [ {
     "url" : "https://remand-and-sentencing-api.hmpps.service.justice.gov.uk",
@@ -58,6 +58,9 @@
   }, {
     "name" : "draft-court-appearance-controller",
     "description" : "Draft Court appearance"
+  }, {
+    "name" : "legacy-period-length-controller",
+    "description" : "CRUD operations for syncing period-length data between NOMIS and RAS (period-lengths are called sentence-terms in NOMIS)"
   }, {
     "name" : "charge-controller",
     "description" : "Charges"
@@ -2131,6 +2134,62 @@
         }
       }
     },
+    "/person/{prisonerId}/has-sentence-to-chain-to" : {
+      "get" : {
+        "tags" : [ "person-controller" ],
+        "summary" : "Determine if there can be a sentence to chain to",
+        "description" : "This endpoint will determine whether there can be a sentence which can be selected for a consecutive to chain",
+        "operationId" : "hasSentenceToChainTo",
+        "parameters" : [ {
+          "name" : "prisonerId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "beforeOrOnAppearanceDate",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Returns whether there is a sentence for a consecutive to chain",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HasSentenceToChainToResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HasSentenceToChainToResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HasSentenceToChainToResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/legacy/sentence-type/summary" : {
       "get" : {
         "tags" : [ "sentence-type-controller" ],
@@ -2379,6 +2438,91 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/legacy/period-length/{periodLengthUuid}" : {
+      "get" : {
+        "tags" : [ "legacy-period-length-controller" ],
+        "summary" : "retrieve a period-length",
+        "description" : "This endpoint will retrieve period-length details.",
+        "operationId" : "get_5",
+        "parameters" : [ {
+          "name" : "periodLengthUuid",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Returns period-length details",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LegacyPeriodLength"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LegacyPeriodLength"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LegacyPeriodLength"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not found: Period length either doesn't exist, has no sentence, or is deleted",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/LegacyPeriodLength"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "legacy-period-length-controller" ],
+        "summary" : "Delete Period Length",
+        "description" : "This endpoint will soft-delete a period-length from RAS.",
+        "operationId" : "delete_4",
+        "parameters" : [ {
+          "name" : "periodLengthUuid",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token"
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role"
           }
         }
       }
@@ -3016,7 +3160,7 @@
         "tags" : [ "legacy-charge-controller" ],
         "summary" : "Delete Charge",
         "description" : "Synchronise a deletion of charge from NOMIS offender charges into remand and sentencing API.",
-        "operationId" : "delete_4",
+        "operationId" : "delete_5",
         "parameters" : [ {
           "name" : "chargeUuid",
           "in" : "path",
@@ -4234,7 +4378,7 @@
             }
           }
         },
-        "required" : [ "createdAt", "createdByPrison", "createdByUsername", "prisonerId", "recallType", "recallUuid" ]
+        "required" : [ "createdAt", "createdByUsername", "prisonerId", "recallType", "recallUuid" ]
       },
       "PersonDetails" : {
         "type" : "object",
@@ -4485,37 +4629,14 @@
         },
         "required" : [ "appearanceDate", "appearanceType", "courtCode" ]
       },
-      "LegacyPeriodLength" : {
+      "HasSentenceToChainToResponse" : {
         "type" : "object",
         "properties" : {
-          "periodYears" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "periodMonths" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "periodWeeks" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "periodDays" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "isLifeSentence" : {
+          "hasSentenceToChainTo" : {
             "type" : "boolean"
-          },
-          "sentenceTermCode" : {
-            "type" : "string"
-          },
-          "periodLengthUuid" : {
-            "type" : "string",
-            "format" : "uuid"
           }
         },
-        "required" : [ "periodLengthUuid", "sentenceTermCode" ]
+        "required" : [ "hasSentenceToChainTo" ]
       },
       "LegacySentence" : {
         "type" : "object",
@@ -4557,18 +4678,12 @@
           "fineAmount" : {
             "type" : "number"
           },
-          "periodLengths" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/LegacyPeriodLength"
-            }
-          },
           "sentenceStartDate" : {
             "type" : "string",
             "format" : "date"
           }
         },
-        "required" : [ "active", "appearanceUuid", "chargeLifetimeUuid", "courtCaseId", "lifetimeUuid", "periodLengths", "prisonerId", "sentenceCalcType", "sentenceCategory", "sentenceStartDate" ]
+        "required" : [ "active", "appearanceUuid", "chargeLifetimeUuid", "courtCaseId", "lifetimeUuid", "prisonerId", "sentenceCalcType", "sentenceCategory", "sentenceStartDate" ]
       },
       "LegacySentenceTypeGroupingSummary" : {
         "type" : "object",
@@ -4779,6 +4894,56 @@
           }
         },
         "required" : [ "periodDefinitions" ]
+      },
+      "LegacyPeriodLength" : {
+        "type" : "object",
+        "properties" : {
+          "periodYears" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "periodMonths" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "periodWeeks" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "periodDays" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "isLifeSentence" : {
+            "type" : "boolean"
+          },
+          "sentenceTermCode" : {
+            "type" : "string"
+          },
+          "periodLengthUuid" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "sentenceUuid" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "prisonerId" : {
+            "type" : "string"
+          },
+          "courtChargeId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "courtCaseId" : {
+            "type" : "string"
+          },
+          "courtAppearanceId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "courtAppearanceId", "courtCaseId", "courtChargeId", "periodLengthUuid", "prisonerId", "sentenceTermCode", "sentenceUuid" ]
       },
       "LegacyCourtCase" : {
         "type" : "object",
@@ -5031,12 +5196,12 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "paged" : {
+            "type" : "boolean"
+          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "paged" : {
-            "type" : "boolean"
           },
           "unpaged" : {
             "type" : "boolean"
