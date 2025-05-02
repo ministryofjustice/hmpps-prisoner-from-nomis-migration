@@ -42,11 +42,14 @@ class CourtSentencingEventListener(
               "OFFENDER_CASES-UPDATED" -> courtSentencingSynchronisationService.nomisCourtCaseUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_CASES-DELETED" -> courtSentencingSynchronisationService.nomisCourtCaseDeleted(sqsMessage.Message.fromJson())
               "COURT_EVENTS-INSERTED" -> courtSentencingSynchronisationService.nomisCourtAppearanceInserted(sqsMessage.Message.fromJson())
+              "OFFENDER_CASES-LINKED" -> courtSentencingSynchronisationService.nomisCourtCaseLinked(sqsMessage.Message.fromJson())
+              "OFFENDER_CASES-UNLINKED" -> courtSentencingSynchronisationService.nomisCourtCaseUnlinked(sqsMessage.Message.fromJson())
               "COURT_EVENTS-UPDATED" -> courtSentencingSynchronisationService.nomisCourtAppearanceUpdated(sqsMessage.Message.fromJson())
               "COURT_EVENTS-DELETED" -> courtSentencingSynchronisationService.nomisCourtAppearanceDeleted(sqsMessage.Message.fromJson())
               "COURT_EVENT_CHARGES-INSERTED" -> courtSentencingSynchronisationService.nomisCourtChargeInserted(sqsMessage.Message.fromJson())
               "COURT_EVENT_CHARGES-DELETED" -> courtSentencingSynchronisationService.nomisCourtChargeDeleted(sqsMessage.Message.fromJson())
               "COURT_EVENT_CHARGES-UPDATED" -> courtSentencingSynchronisationService.nomisCourtChargeUpdated(sqsMessage.Message.fromJson())
+              "COURT_EVENT_CHARGES-LINKED" -> courtSentencingSynchronisationService.nomisCourtChargeLinked(sqsMessage.Message.fromJson())
               "OFFENDER_CHARGES-UPDATED" -> courtSentencingSynchronisationService.nomisOffenderChargeUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_SENTENCES-INSERTED" -> courtSentencingSynchronisationService.nomisSentenceInserted(sqsMessage.Message.fromJson())
               "OFFENDER_SENTENCES-DELETED" -> courtSentencingSynchronisationService.nomisSentenceDeleted(sqsMessage.Message.fromJson())
@@ -110,6 +113,14 @@ data class CourtCaseEvent(
   val auditModuleName: String?,
 )
 
+data class CourtCaseLinkingEvent(
+  val caseId: Long,
+  val combinedCaseId: Long,
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+  val auditModuleName: String?,
+)
+
 data class CourtAppearanceEvent(
   val eventId: Long,
   val caseId: Long?,
@@ -121,6 +132,15 @@ data class CourtAppearanceEvent(
 data class CourtEventChargeEvent(
   val eventId: Long,
   val chargeId: Long,
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+  val auditModuleName: String?,
+)
+
+data class CourtEventChargeLinkingEvent(
+  val eventId: Long,
+  val chargeId: Long,
+  val combinedCaseId: Long,
   val offenderIdDisplay: String,
   val bookingId: Long,
   val auditModuleName: String?,
