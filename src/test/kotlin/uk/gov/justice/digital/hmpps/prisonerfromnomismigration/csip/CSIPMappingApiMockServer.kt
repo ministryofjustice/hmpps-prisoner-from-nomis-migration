@@ -298,7 +298,12 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
   }
 
   // /////// CSIP Factor
-  fun stubGetFactorByNomisId(nomisCSIPFactorId: Long, dpsCSIPFactorId: String, dpsCSIPReportId: String) {
+  fun stubGetFactorByNomisId(
+    nomisCSIPFactorId: Long,
+    dpsCSIPFactorId: String,
+    dpsCSIPReportId: String,
+    mappingType: CSIPChildMappingDto.MappingType = CSIPChildMappingDto.MappingType.NOMIS_CREATED,
+  ) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/csip/factors/nomis-csip-factor-id/$nomisCSIPFactorId"))
         .willReturn(
@@ -310,7 +315,7 @@ class CSIPMappingApiMockServer(private val objectMapper: ObjectMapper) {
                 nomisId = nomisCSIPFactorId,
                 dpsId = dpsCSIPFactorId,
                 dpsCSIPReportId = dpsCSIPReportId,
-                mappingType = CSIPChildMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = mappingType,
                 label = "2022-02-14T09:58:45",
                 whenCreated = "2020-01-01T11:10:00",
               ),

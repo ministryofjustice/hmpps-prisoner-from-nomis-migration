@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPChildMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPFullMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CSIPResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -157,6 +158,17 @@ class CSIPSynchronisationService(
         telemetry,
       )
       return
+    }
+
+    if (event.hasAuditMissing()) {
+      mappingApiService.getCSIPFactorByNomisId(nomisCSIPFactorId = event.csipFactorId)
+        ?.apply {
+          if (mappingType == CSIPChildMappingDto.MappingType.DPS_CREATED) {
+            // Detected where the auditModuleName is null but the mapping exists, signifying that this incident was created in DPS
+            telemetryClient.trackEvent("csip-synchronisation-factor-upserted-skipped-null", telemetry + mapOf("dpsCSIPFactorId" to this.dpsId, "dpsCSIPReportId" to this.dpsCSIPReportId))
+            return
+          }
+        }
     }
 
     val nomisCSIPResponse = nomisApiService.getCSIP(event.csipReportId)
@@ -495,6 +507,8 @@ class CSIPSynchronisationService(
     }
   }
 }
+
+fun CSIPFactorEvent.hasAuditMissing() = auditModuleName.isNullOrEmpty()
 
 enum class MappingResponse {
   MAPPING_CREATED,

@@ -33,6 +33,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csip.CSIPMappingApiMockServer.Companion.CSIP_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CSIPChildMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.util.UUID
@@ -78,6 +79,48 @@ class CSIPFactorSynchronisationIntTest : SqsIntegrationTestBase() {
         }
         csipNomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
         csipMappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        csipDpsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    inner class WhenMissingAudit {
+      private val nomisCSIPFactorId = 43L
+      private val dpsCSIPFactorId = "123"
+      private val dpsCSIPReportId = "456"
+
+      @BeforeEach
+      fun setUp() {
+        csipMappingApi.stubGetFactorByNomisId(
+          nomisCSIPFactorId = nomisCSIPFactorId,
+          dpsCSIPFactorId = dpsCSIPFactorId,
+          dpsCSIPReportId = dpsCSIPReportId,
+          mappingType = CSIPChildMappingDto.MappingType.DPS_CREATED,
+        )
+
+        awsSqsCSIPOffenderEventsClient.sendMessage(
+          csipQueueOffenderEventsUrl,
+          csipFactorEvent(eventType = "CSIP_FACTORS-INSERTED", csipFactorId = nomisCSIPFactorId.toString(), auditModuleName = ""),
+        )
+      }
+
+      @Test
+      fun `the event is ignored`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("csip-synchronisation-factor-upserted-skipped-null"),
+            check {
+              assertThat(it["nomisCSIPFactorId"]).isEqualTo(nomisCSIPFactorId.toString())
+              assertThat(it["dpsCSIPFactorId"]).isEqualTo(dpsCSIPFactorId)
+              assertThat(it["nomisCSIPId"]).isEqualTo(NOMIS_CSIP_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+              assertThat(it["dpsCSIPReportId"]).isEqualTo(dpsCSIPReportId)
+            },
+            isNull(),
+          )
+        }
+        csipNomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/csip/factors/nomis-csip-factor-id/$nomisCSIPFactorId")))
         csipDpsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
       }
     }
