@@ -187,6 +187,67 @@ class CourtSentencingSynchronisationService(
       }
     }
   }
+  suspend fun nomisCourtCaseLinked(event: CourtCaseLinkingEvent) {
+    val telemetry =
+      mapOf(
+        "nomisBookingId" to event.bookingId.toString(),
+        "nomisCourtCaseId" to event.caseId.toString(),
+        "nomisCombinedCourtCaseId" to event.combinedCaseId.toString(),
+        "offenderNo" to event.offenderIdDisplay,
+      )
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("court-case-synchronisation-link-skipped", telemetry)
+    } else {
+      val mapping = mappingApiService.getCourtCaseOrNullByNomisId(event.caseId)
+      if (mapping == null) {
+        telemetryClient.trackEvent(
+          "court-case-synchronisation-link-failed",
+          telemetry,
+        )
+        throw IllegalStateException("Received OFFENDER_CASES-LINKED for court-case that has never been created")
+      } else {
+        @Suppress("UnusedVariable")
+        val nomisCourtCase =
+          nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.caseId)
+        // do DPS linking
+        telemetryClient.trackEvent(
+          "court-case-synchronisation-link-success",
+          telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
+        )
+      }
+    }
+  }
+
+  suspend fun nomisCourtCaseUnlinked(event: CourtCaseLinkingEvent) {
+    val telemetry =
+      mapOf(
+        "nomisBookingId" to event.bookingId.toString(),
+        "nomisCourtCaseId" to event.caseId.toString(),
+        "nomisCombinedCourtCaseId" to event.combinedCaseId.toString(),
+        "offenderNo" to event.offenderIdDisplay,
+      )
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("court-case-synchronisation-unlink-skipped", telemetry)
+    } else {
+      val mapping = mappingApiService.getCourtCaseOrNullByNomisId(event.caseId)
+      if (mapping == null) {
+        telemetryClient.trackEvent(
+          "court-case-synchronisation-unlink-failed",
+          telemetry,
+        )
+        throw IllegalStateException("Received OFFENDER_CASES-UNLINKED for court-case that has never been created")
+      } else {
+        @Suppress("UnusedVariable")
+        val nomisCourtCase =
+          nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.caseId)
+        // do DPS linking
+        telemetryClient.trackEvent(
+          "court-case-synchronisation-unlink-success",
+          telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
+        )
+      }
+    }
+  }
 
   suspend fun nomisCourtCaseDeleted(event: CourtCaseEvent) {
     val telemetry =
@@ -722,6 +783,49 @@ class CourtSentencingSynchronisationService(
           telemetry + ("reason" to "associated court appearance is not mapped"),
         )
         throw ParentEntityNotFoundRetry("Received COURT_EVENT_CHARGES_UPDATED with court appearance ${event.eventId} that has never been created/mapped")
+      }
+    }
+  }
+  suspend fun nomisCourtChargeLinked(event: CourtEventChargeLinkingEvent) {
+    var telemetry =
+      mapOf(
+        "nomisBookingId" to event.bookingId.toString(),
+        "nomisCombinedCourtCaseId" to event.combinedCaseId.toString(),
+        "nomisOffenderChargeId" to event.chargeId.toString(),
+        "nomisCourtAppearanceId" to event.eventId.toString(),
+        "offenderNo" to event.offenderIdDisplay,
+      )
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("court-charge-synchronisation-link-skipped", telemetry)
+    } else {
+      mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)
+        ?.let { courtAppearanceMapping ->
+          mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { chargeMapping ->
+            nomisApiService.getCourtEventCharge(
+              offenderNo = event.offenderIdDisplay,
+              eventId = event.eventId,
+              offenderChargeId = event.chargeId,
+            ).let { nomisCourtAppearanceCharge ->
+              telemetry = telemetry + ("dpsCourtAppearanceId" to courtAppearanceMapping.dpsCourtAppearanceId)
+              // TODO update DPS with linked charge
+              telemetryClient.trackEvent(
+                "court-charge-synchronisation-link-success",
+                telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId),
+              )
+            }
+          } ?: let {
+            telemetryClient.trackEvent(
+              "court-charge-synchronisation-link-failed",
+              telemetry + ("reason" to "charge is not mapped"),
+            )
+            throw ParentEntityNotFoundRetry("Received OFFENDER_CHARGES_LINKED for charge ${event.chargeId} has never been mapped")
+          }
+        } ?: let {
+        telemetryClient.trackEvent(
+          "court-charge-synchronisation-link-failed",
+          telemetry + ("reason" to "associated court appearance is not mapped"),
+        )
+        throw ParentEntityNotFoundRetry("Received COURT_EVENT_CHARGES_LINKED with court appearance ${event.eventId} that has never been created/mapped")
       }
     }
   }
