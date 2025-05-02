@@ -67,54 +67,114 @@ class IncidentDataRepairResourceIntTest : SqsIntegrationTestBase() {
       fun setUp() {
         incidentsNomisApiMockServer.stubGetIncident(nomisIncidentId = nomisIncidentId)
         incidentsApi.stubIncidentUpsert(dpsIncidentId = dpsIncidentId)
-        incidentsMappingApiMockServer.stubGetIncident(nomisIncidentId, dpsIncidentId = dpsIncidentId)
-
-        webTestClient.post().uri("/incidents/$nomisIncidentId/repair")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
-          .exchange()
-          .expectStatus().isOk
       }
 
-      @Test
-      fun `will retrieve the incident details from Nomis`() {
-        incidentsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/incidents/$nomisIncidentId")))
+      @Nested
+      inner class IncidentCreateRepair {
+        @BeforeEach
+        fun setUp() {
+          incidentsMappingApiMockServer.stubGetAnyIncidentNotFound()
+          webTestClient.post().uri("/incidents/$nomisIncidentId/repair?createIncident=true")
+            .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
+            .exchange()
+            .expectStatus().isOk
+        }
+
+        @Test
+        fun `will retrieve the incident details from Nomis`() {
+          incidentsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/incidents/$nomisIncidentId")))
+        }
+
+        @Test
+        fun `will send the incident to DPS`() {
+          incidentsApi.verify(
+            postRequestedFor(urlPathEqualTo("/sync/upsert"))
+              .withRequestBodyJsonPath("incidentReport.incidentId", equalTo("$nomisIncidentId"))
+              .withRequestBodyJsonPath("incidentReport.title", equalTo("This is a test incident")),
+          )
+        }
+
+        @Test
+        fun `will save mapping details`() {
+          incidentsMappingApiMockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/incidents")))
+        }
+
+        @Test
+        fun `will track telemetry for the resynchronise`() {
+          verify(telemetryClient).trackEvent(
+            eq("incidents-synchronisation-created-success"),
+            check {
+              assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
+              assertThat(it["dpsIncidentId"]).isEqualTo(dpsIncidentId)
+            },
+            isNull(),
+          )
+        }
+
+        @Test
+        fun `will track telemetry for the repair`() {
+          verify(telemetryClient).trackEvent(
+            eq("incidents-resynchronisation-repair"),
+            check {
+              assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
+            },
+            isNull(),
+          )
+        }
       }
 
-      @Test
-      fun `will send the incident to DPS`() {
-        incidentsApi.verify(
-          postRequestedFor(urlPathEqualTo("/sync/upsert"))
-            .withRequestBodyJsonPath("incidentReport.incidentId", equalTo("$nomisIncidentId"))
-            .withRequestBodyJsonPath("incidentReport.title", equalTo("This is a test incident")),
-        )
-      }
+      @Nested
+      inner class IncidentUpdateRepair {
+        @BeforeEach
+        fun setUp() {
+          incidentsMappingApiMockServer.stubGetIncident(nomisIncidentId, dpsIncidentId = dpsIncidentId)
+          webTestClient.post().uri("/incidents/$nomisIncidentId/repair")
+            .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
+            .exchange()
+            .expectStatus().isOk
+        }
 
-      @Test
-      fun `will request mapping details`() {
-        incidentsMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/incidents/nomis-incident-id/$nomisIncidentId")))
-      }
+        @Test
+        fun `will retrieve the incident details from Nomis`() {
+          incidentsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/incidents/$nomisIncidentId")))
+        }
 
-      @Test
-      fun `will track telemetry for the resynchronise`() {
-        verify(telemetryClient).trackEvent(
-          eq("incidents-synchronisation-updated-success"),
-          check {
-            assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
-            assertThat(it["dpsIncidentId"]).isEqualTo(dpsIncidentId)
-          },
-          isNull(),
-        )
-      }
+        @Test
+        fun `will send the incident to DPS`() {
+          incidentsApi.verify(
+            postRequestedFor(urlPathEqualTo("/sync/upsert"))
+              .withRequestBodyJsonPath("incidentReport.incidentId", equalTo("$nomisIncidentId"))
+              .withRequestBodyJsonPath("incidentReport.title", equalTo("This is a test incident")),
+          )
+        }
 
-      @Test
-      fun `will track telemetry for the repair`() {
-        verify(telemetryClient).trackEvent(
-          eq("incidents-resynchronisation-repair"),
-          check {
-            assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
-          },
-          isNull(),
-        )
+        @Test
+        fun `will request mapping details`() {
+          incidentsMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/incidents/nomis-incident-id/$nomisIncidentId")))
+        }
+
+        @Test
+        fun `will track telemetry for the resynchronise`() {
+          verify(telemetryClient).trackEvent(
+            eq("incidents-synchronisation-updated-success"),
+            check {
+              assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
+              assertThat(it["dpsIncidentId"]).isEqualTo(dpsIncidentId)
+            },
+            isNull(),
+          )
+        }
+
+        @Test
+        fun `will track telemetry for the repair`() {
+          verify(telemetryClient).trackEvent(
+            eq("incidents-resynchronisation-repair"),
+            check {
+              assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
+            },
+            isNull(),
+          )
+        }
       }
     }
   }
