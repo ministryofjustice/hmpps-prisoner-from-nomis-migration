@@ -41,6 +41,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.N
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisStaff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.PairStringListDescriptionAddendum
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.CANCEL_MIGRATION
@@ -1087,6 +1088,7 @@ fun aMigrationRequest() = NomisSyncRequest(
     followUpDate = LocalDate.parse("2023-05-16"),
     createdBy = "JSMITH",
     createDateTime = LocalDateTime.parse("2024-07-15T18:35:00"),
+    descriptionParts = PairStringListDescriptionAddendum("first", listOf()),
   ),
 )
 

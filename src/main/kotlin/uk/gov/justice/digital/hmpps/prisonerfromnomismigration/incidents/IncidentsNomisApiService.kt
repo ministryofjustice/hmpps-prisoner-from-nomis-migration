@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.N
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisStaffParty
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.PairStringListDescriptionAddendum
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.History
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.HistoryQuestion
@@ -126,6 +127,7 @@ fun IncidentResponse.toNomisIncidentReport() = NomisReport(
   createDateTime = createDateTime,
   lastModifiedBy = lastModifiedBy,
   lastModifiedDateTime = lastModifiedDateTime,
+  descriptionParts = PairStringListDescriptionAddendum("first", listOf()),
 )
 
 fun CodeDescription.toUpsertCodeDescription() = NomisCode(
