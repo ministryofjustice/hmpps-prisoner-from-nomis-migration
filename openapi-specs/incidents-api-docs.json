@@ -11,7 +11,7 @@
       "name" : "MIT",
       "identifier" : "MIT"
     },
-    "version" : "2025-04-22.5181.89d4a04"
+    "version" : "2025-05-01.5310.2749087"
   },
   "servers" : [ {
     "url" : "/",
@@ -1602,6 +1602,109 @@
                   "items" : {
                     "$ref" : "#/components/schemas/CorrectionRequest"
                   }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Data not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incident-reports/{id}/description-addendums" : {
+      "post" : {
+        "tags" : [ "Incident reports" ],
+        "summary" : "Appends to the report description",
+        "description" : "Requires role MAINTAIN_INCIDENT_REPORTS and write scope. Authentication token must provide a username which is recorded as the report’s modifier.",
+        "operationId" : "addDescriptionAddendum",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "The internal ID of the report",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The internal ID of the report",
+            "example" : "11111111-2222-3333-4444-555555555555"
+          },
+          "example" : "11111111-2222-3333-4444-555555555555"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DescriptionAddendum"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429" : {
+            "description" : "Too Many Requests",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "201" : {
+            "description" : "Returns updated incident report",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReportWithDetails"
                 }
               }
             }
@@ -4998,6 +5101,39 @@
         "readOnly" : true,
         "required" : [ "recordedAt", "recordedBy", "response", "sequence" ]
       },
+      "DescriptionAddendum" : {
+        "type" : "object",
+        "description" : "Addendum to the description",
+        "properties" : {
+          "createdBy" : {
+            "type" : "string",
+            "description" : "Username of user who added this addendum",
+            "example" : "USER_1"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When addendum was added",
+            "example" : "2024-04-29T12:34:56.789012"
+          },
+          "firstName" : {
+            "type" : "string",
+            "description" : "First name of person that added this addendum",
+            "example" : "John"
+          },
+          "lastName" : {
+            "type" : "string",
+            "description" : "Last name of person that added this addendum",
+            "example" : "Doe"
+          },
+          "text" : {
+            "type" : "string",
+            "description" : "Addendum text"
+          }
+        },
+        "readOnly" : true,
+        "required" : [ "createdAt", "createdBy", "firstName", "lastName", "text" ]
+      },
       "NomisCode" : {
         "type" : "object",
         "properties" : {
@@ -5330,9 +5466,12 @@
             "items" : {
               "$ref" : "#/components/schemas/NomisHistory"
             }
+          },
+          "descriptionParts" : {
+            "$ref" : "#/components/schemas/PairStringListDescriptionAddendum"
           }
         },
-        "required" : [ "createDateTime", "createdBy", "history", "incidentDateTime", "incidentId", "lockedResponse", "offenderParties", "prison", "questionnaireId", "questions", "reportedDateTime", "reportingStaff", "requirements", "staffParties", "status", "type" ]
+        "required" : [ "createDateTime", "createdBy", "descriptionParts", "history", "incidentDateTime", "incidentId", "lockedResponse", "offenderParties", "prison", "questionnaireId", "questions", "reportedDateTime", "reportingStaff", "requirements", "staffParties", "status", "type" ]
       },
       "NomisRequirement" : {
         "type" : "object",
@@ -5533,6 +5672,21 @@
         "required" : [ "incidentReport" ],
         "writeOnly" : true
       },
+      "PairStringListDescriptionAddendum" : {
+        "type" : "object",
+        "properties" : {
+          "first" : {
+            "type" : "string"
+          },
+          "second" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DescriptionAddendum"
+            }
+          }
+        },
+        "required" : [ "first", "second" ]
+      },
       "NomisSyncCreateRequest" : {
         "type" : "object",
         "description" : "Incident report created in NOMIS",
@@ -5666,39 +5820,6 @@
         },
         "readOnly" : true,
         "required" : [ "correctionRequestedAt", "correctionRequestedBy", "descriptionOfChange", "sequence" ]
-      },
-      "DescriptionAddendum" : {
-        "type" : "object",
-        "description" : "Addendum to the description",
-        "properties" : {
-          "createdBy" : {
-            "type" : "string",
-            "description" : "Username of user who added this addendum",
-            "example" : "USER_1"
-          },
-          "createdAt" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "When addendum was added",
-            "example" : "2024-04-29T12:34:56.789012"
-          },
-          "firstName" : {
-            "type" : "string",
-            "description" : "First name of person that added this addendum",
-            "example" : "John"
-          },
-          "lastName" : {
-            "type" : "string",
-            "description" : "Last name of person that added this addendum",
-            "example" : "Doe"
-          },
-          "text" : {
-            "type" : "string",
-            "description" : "Addendum text"
-          }
-        },
-        "readOnly" : true,
-        "required" : [ "createdAt", "createdBy", "firstName", "lastName", "text" ]
       },
       "Event" : {
         "type" : "object",
@@ -6198,8 +6319,10 @@
           },
           "location" : {
             "type" : "string",
+            "default" : "null",
             "description" : "The location where the staff member is raising the correction",
-            "minLength" : 3
+            "maxLength" : 20,
+            "minLength" : 2
           }
         },
         "required" : [ "descriptionOfChange" ],
@@ -6298,9 +6421,9 @@
           },
           "location" : {
             "type" : "string",
-            "default" : "null",
             "description" : "The location where the staff member is raising the correction",
-            "minLength" : 3
+            "maxLength" : 20,
+            "minLength" : 2
           }
         },
         "writeOnly" : true
