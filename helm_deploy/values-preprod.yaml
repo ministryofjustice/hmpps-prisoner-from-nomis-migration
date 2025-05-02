@@ -27,9 +27,6 @@ generic-service:
     API_BASE_URL_COURT_SENTENCING: https://remand-and-sentencing-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_PERSONAL_RELATIONSHIPS: https://personal-relationships-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_ORGANISATIONS: https://organisations-api-preprod.hmpps.service.justice.gov.uk
-    FEATURE_EVENT_OFFENDER_VISIT_BALANCE_ADJS-INSERTED: false
-    FEATURE_EVENT_OFFENDER_VISIT_BALANCE_ADJS-DELETED: false
-    FEATURE_EVENT_VISITBALANCE_PRISON-OFFENDER-EVENTS_PRISONER_BOOKING_MOVED: false
     CONTACT-SENTENCING_COURT-EVENT-UPDATE_IGNORE-MISSING: true
 
   scheduledDowntime:
