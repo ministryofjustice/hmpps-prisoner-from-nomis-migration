@@ -98,9 +98,23 @@ class IncidentsReconciliationService(
     )
   }.getOrNull()
 
-  suspend fun checkOpenIncidentsMatch(agencyId: String, openIncidentCount: Long): List<MismatchOpenIncident> = openIncidentCount.asPages(pageSize).flatMap { page ->
+  suspend fun checkOpenIncidentsMatch(agencyId: String, openIncidentCount: Long): List<MismatchIncident> = openIncidentCount.asPages(pageSize).flatMap { page ->
     val openIncidentIds = getOpenIncidentsForPage(agencyId, page)
-    openIncidentIds.mapNotNull { checkOpenIncidentMatch(it.incidentId) }
+    openIncidentIds.mapNotNull {
+      val nomisOpenIncidentId = it.incidentId
+      runCatching {
+        checkIncidentMatch(nomisOpenIncidentId)
+      }
+        .onSuccess {
+          log.debug("Checking Incident (onSuccess: $nomisOpenIncidentId)")
+        }.onFailure {
+          log.error("Unable to match agency for incident: $nomisOpenIncidentId", it)
+          telemetryClient.trackEvent(
+            "incidents-reports-reconciliation-detail-mismatch-error",
+            mapOf("nomisId" to nomisOpenIncidentId),
+          )
+        }.getOrNull()
+    }
   }
 
   private suspend fun getOpenIncidentsForPage(agencyId: String, page: Pair<Long, Long>) = runCatching { nomisIncidentsApiService.getOpenIncidentIds(agencyId, page.first, page.second).content }
@@ -116,7 +130,7 @@ class IncidentsReconciliationService(
     .getOrElse { emptyList() }
     .also { log.info("Page requested: $page, with ${it.size} open incidents") }
 
-  private suspend fun checkOpenIncidentMatch(nomisOpenIncidentId: Long): MismatchOpenIncident? = runCatching {
+  suspend fun checkIncidentMatch(nomisOpenIncidentId: Long): MismatchIncident? {
     val (nomisOpenIncident, dpsOpenIncident) =
       withContext(Dispatchers.Unconfined) {
         async { doApiCallWithRetries { nomisIncidentsApiService.getIncident(nomisOpenIncidentId) } } to
@@ -132,7 +146,7 @@ class IncidentsReconciliationService(
     )
 
     return if (verdict != null) {
-      MismatchOpenIncident(
+      MismatchIncident(
         nomisId = nomisOpenIncident.incidentId,
         dpsId = dpsOpenIncident.id,
         nomisIncident = nomisOpenIncident.toReportDetail(),
@@ -154,16 +168,7 @@ class IncidentsReconciliationService(
     } else {
       null
     }
-  }.onSuccess {
-    log.debug("Checking Incident (onSuccess: $nomisOpenIncidentId)")
   }
-    .onFailure {
-      log.error("Unable to match agency for incident: $nomisOpenIncidentId", it)
-      telemetryClient.trackEvent(
-        "incidents-reports-reconciliation-detail-mismatch-error",
-        mapOf("nomisId" to nomisOpenIncidentId),
-      )
-    }.getOrNull()
 
   internal fun doesNotMatch(
     nomis: IncidentResponse,
@@ -207,10 +212,10 @@ data class MismatchIncidents(
   val nomisOpenIncidents: Long,
   val dpsClosedIncidents: Long,
   val nomisClosedIncidents: Long,
-  val mismatchOpenIncidents: List<MismatchOpenIncident> = listOf(),
+  val mismatchOpenIncidents: List<MismatchIncident> = listOf(),
 )
 
-data class MismatchOpenIncident(
+data class MismatchIncident(
   val nomisId: Long,
   val dpsId: UUID,
   val nomisIncident: IncidentReportDetail? = null,
