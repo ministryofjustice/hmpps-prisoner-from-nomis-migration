@@ -23,7 +23,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.util.UUID
 
@@ -305,7 +304,6 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       chargeLifetimeUuid = UUID.randomUUID(),
       appearanceUuid = UUID.randomUUID(),
       prisonerId = "A1234AA",
-      createdPeriodLengths = emptyList(),
     ),
   ) {
     stubFor(
@@ -347,12 +345,17 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubPostPeriodLengthForCreate(
     periodLengthId: String = UUID.randomUUID().toString(),
-    nomisBookingId: Long = 5,
-    nomisSentenceSequence: Int = 5,
-    nomisTermSequence: Int = 5,
+    prisonerId: String,
+    sentenceId: String,
+    appearanceId: String,
+    caseId: String,
     response: LegacyPeriodLengthCreatedResponse = LegacyPeriodLengthCreatedResponse(
-      uuid = UUID.fromString(periodLengthId),
-      sentenceTermNOMISId = NomisPeriodLengthId(offenderBookingId = nomisBookingId, sentenceSequence = nomisSentenceSequence, termSequence = nomisTermSequence),
+      periodLengthUuid = UUID.fromString(periodLengthId),
+      prisonerId = prisonerId,
+      chargeUuid = UUID.randomUUID(),
+      sentenceUuid = UUID.fromString(sentenceId),
+      appearanceUuid = UUID.fromString(appearanceId),
+      courtCaseId = caseId,
     ),
   ) {
     stubFor(
