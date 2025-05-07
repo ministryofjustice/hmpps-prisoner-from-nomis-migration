@@ -182,16 +182,9 @@ fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsConsecUui
   // can be "OUT"
   prisonId = this.prisonId,
   legacyData = this.toSentenceLegacyData(),
-  periodLengths = this.sentenceTerms.map {
-    it.toPeriodLegacyData(
-      bookingId = this.bookingId,
-      sentenceSequence = this.sentenceSeq.toInt(),
-    )
-  },
   // TODO confirm what this is used for
   chargeNumber = this.lineSequence?.toString(),
   fine = this.fineAmount?.let { LegacyCreateFine(fineAmount = it) },
-  // TODO this adds a dependency on the sentence - how will this work?
   consecutiveToLifetimeUuid = dpsConsecUuid?.let { UUID.fromString(it) },
 )
 
@@ -218,16 +211,14 @@ fun SentenceResponse.toSentenceLegacyData() = SentenceLegacyData(
   postedDate = this.createdDateTime.toString(),
 )
 
-fun SentenceTermResponse.toPeriodLegacyData(bookingId: Long, sentenceSequence: Int) = LegacyCreatePeriodLength(
+fun SentenceTermResponse.toPeriodLegacyData(dpsSentenceId: String) = LegacyCreatePeriodLength(
   periodYears = this.years,
   periodMonths = this.months,
   periodDays = this.days,
   periodWeeks = this.weeks,
-  periodLengthId = NomisPeriodLengthId(
-    offenderBookingId = bookingId,
-    sentenceSequence = sentenceSequence,
-    termSequence = this.termSequence.toInt(),
-  ),
+  sentenceUuid = UUID.fromString(dpsSentenceId),
+  //
+  prisonId = "OUT",
   legacyData = PeriodLengthLegacyData(
     lifeSentence = this.lifeSentenceFlag,
     sentenceTermCode = this.sentenceTermType?.code,

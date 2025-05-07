@@ -42,6 +42,7 @@ private const val NOMIS_SENTENCE_SEQUENCE = 1
 private const val NOMIS_TERM_SEQUENCE = 6
 private const val DPS_SENTENCE_ID = "c1c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3e"
 private const val DPS_TERM_ID = "d5c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3d"
+private const val DPS_CASE_ID = "c7c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3d"
 private const val DPS_APPEARANCE_ID = "d8c1e3e3-3e3e-3e3e-3e3e-3e3e3e3d7d7d"
 private const val DPS_CHARGE_ID = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"
 private const val DPS_CHARGE_2_ID = "d1c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3e"
@@ -156,9 +157,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
                 .withRequestBody(matchingJsonPath("active", equalTo("false")))
                 .withRequestBody(matchingJsonPath("prisonId", equalTo("MDI")))
-                .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1")))
-                .withRequestBody(matchingJsonPath("periodLengths[0].periodYears", equalTo("1")))
-                .withRequestBody(matchingJsonPath("periodLengths[0].periodMonths", equalTo("3"))),
+                .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1"))),
             )
           }
         }
@@ -232,9 +231,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
                 .withRequestBody(matchingJsonPath("active", equalTo("false")))
                 .withRequestBody(matchingJsonPath("prisonId", equalTo("MDI")))
-                .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1")))
-                .withRequestBody(matchingJsonPath("periodLengths[0].periodYears", equalTo("1")))
-                .withRequestBody(matchingJsonPath("periodLengths[0].periodMonths", equalTo("3"))),
+                .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1"))),
             )
           }
         }
@@ -1043,7 +1040,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           getRequestedFor(urlPathMatching("/mapping/court-sentencing/sentences/nomis-booking-id/\\d+/nomis-sentence-sequence/\\d+")),
         )
         // will not update a sentence in DPS
-        dpsCourtSentencingServer.verify(0, WireMock.putRequestedFor(anyUrl()))
+        dpsCourtSentencingServer.verify(0, putRequestedFor(anyUrl()))
       }
     }
 
@@ -1136,13 +1133,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("chargeUuids[0]", equalTo(DPS_CHARGE_ID)))
                 .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
                 .withRequestBody(matchingJsonPath("prisonId", equalTo("MDI")))
-                .withRequestBody(matchingJsonPath("periodLengths[0].periodYears", equalTo("1")))
-                .withRequestBody(matchingJsonPath("periodLengths[0].periodMonths", equalTo("3")))
-                .withRequestBody(matchingJsonPath("periodLengths[0].periodWeeks", equalTo("4")))
-                .withRequestBody(matchingJsonPath("periodLengths[0].periodDays", equalTo("5")))
-                .withRequestBody(matchingJsonPath("periodLengths[0].legacyData.lifeSentence", equalTo("false")))
-                .withRequestBody(matchingJsonPath("periodLengths[0].legacyData.sentenceTermCode", equalTo("IMP")))
-                .withRequestBody(matchingJsonPath("periodLengths[0].legacyData.sentenceTermDescription", equalTo("Imprisonment")))
                 .withRequestBody(matchingJsonPath("legacyData.postedDate", isNotNull()))
                 .withRequestBody(matchingJsonPath("legacyData.sentenceCalcType", equalTo("ADIMP_ORA")))
                 .withRequestBody(matchingJsonPath("legacyData.sentenceTypeDesc", equalTo("ADIMP_ORA description")))
@@ -1279,7 +1269,13 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             termSequence = NOMIS_TERM_SEQUENCE,
           )
           courtSentencingMappingApiMockServer.stubGetSentenceTermByNomisId(status = NOT_FOUND)
-          dpsCourtSentencingServer.stubPostPeriodLengthForCreate(periodLengthId = DPS_TERM_ID, nomisBookingId = NOMIS_BOOKING_ID, nomisTermSequence = NOMIS_TERM_SEQUENCE, nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE)
+          dpsCourtSentencingServer.stubPostPeriodLengthForCreate(
+            periodLengthId = DPS_TERM_ID,
+            sentenceId = DPS_SENTENCE_ID,
+            appearanceId = DPS_APPEARANCE_ID,
+            caseId = DPS_CASE_ID,
+            prisonerId = OFFENDER_ID_DISPLAY,
+          )
           courtSentencingMappingApiMockServer.stubPostSentenceTermMapping()
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
             courtSentencingQueueOffenderEventsUrl,
@@ -1395,7 +1391,13 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             offenderNo = OFFENDER_ID_DISPLAY,
             termSequence = NOMIS_TERM_SEQUENCE,
           )
-          dpsCourtSentencingServer.stubPostPeriodLengthForCreate(periodLengthId = DPS_TERM_ID, nomisBookingId = NOMIS_BOOKING_ID, nomisTermSequence = NOMIS_TERM_SEQUENCE, nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE)
+          dpsCourtSentencingServer.stubPostPeriodLengthForCreate(
+            periodLengthId = DPS_TERM_ID,
+            sentenceId = DPS_SENTENCE_ID,
+            appearanceId = DPS_APPEARANCE_ID,
+            caseId = DPS_CASE_ID,
+            prisonerId = OFFENDER_ID_DISPLAY,
+          )
         }
 
         @Nested
@@ -1588,7 +1590,13 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         // in the case of multiple events received at the same time - mapping doesn't exist
         courtSentencingMappingApiMockServer.stubGetSentenceTermByNomisId(status = NOT_FOUND)
-        dpsCourtSentencingServer.stubPostPeriodLengthForCreate(periodLengthId = DPS_TERM_ID, nomisBookingId = NOMIS_BOOKING_ID, nomisTermSequence = NOMIS_TERM_SEQUENCE, nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE)
+        dpsCourtSentencingServer.stubPostPeriodLengthForCreate(
+          periodLengthId = DPS_TERM_ID,
+          sentenceId = DPS_SENTENCE_ID,
+          appearanceId = DPS_APPEARANCE_ID,
+          caseId = DPS_CASE_ID,
+          prisonerId = OFFENDER_ID_DISPLAY,
+        )
 
         courtSentencingMappingApiMockServer.stubSentenceTermMappingCreateConflict(
           existingDpsTermId = EXISTING_DPS_TERM_ID,
@@ -1859,10 +1867,10 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         // will not bother getting the sentence term or the mapping
-        courtSentencingNomisApiMockServer.verify(0, WireMock.getRequestedFor(anyUrl()))
-        courtSentencingMappingApiMockServer.verify(0, WireMock.getRequestedFor(anyUrl()))
+        courtSentencingNomisApiMockServer.verify(0, getRequestedFor(anyUrl()))
+        courtSentencingMappingApiMockServer.verify(0, getRequestedFor(anyUrl()))
         // will not update a sentence in DPS
-        dpsCourtSentencingServer.verify(0, WireMock.putRequestedFor(anyUrl()))
+        dpsCourtSentencingServer.verify(0, putRequestedFor(anyUrl()))
       }
     }
 
@@ -1927,6 +1935,11 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class MappingExists {
         @BeforeEach
         fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+            nomisBookingId = NOMIS_BOOKING_ID,
+            nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+            dpsSentenceId = DPS_CONSECUTIVE_SENTENCE_ID,
+          )
           courtSentencingMappingApiMockServer.stubGetSentenceTermByNomisId(
             nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
             nomisBookingId = NOMIS_BOOKING_ID,
