@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResultCodeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PostPrisonerMergeCaseChanges
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RecallCustodyDate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceTermResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
@@ -385,6 +386,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     courtOrder: CourtOrderResponse? = null,
     consecSequence: Int? = null,
     sentenceLevel: String = "IND",
+    recallCustodyDate: RecallCustodyDate? = null,
     sentenceTerms: List<SentenceTermResponse> = listOf(
       SentenceTermResponse(
         startDate = LocalDate.now(),
@@ -440,6 +442,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       fineAmount = BigDecimal.valueOf(1.10),
       consecSequence = consecSequence,
       sentenceLevel = sentenceLevel,
+      recallCustodyDate = recallCustodyDate,
     ),
   ) {
     nomisApi.stubFor(

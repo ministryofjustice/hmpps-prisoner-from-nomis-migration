@@ -186,6 +186,7 @@ fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsConsecUui
   chargeNumber = this.lineSequence?.toString(),
   fine = this.fineAmount?.let { LegacyCreateFine(fineAmount = it) },
   consecutiveToLifetimeUuid = dpsConsecUuid?.let { UUID.fromString(it) },
+  returnToCustodyDate = this.recallCustodyDate?.returnToCustodyDate,
 )
 
 fun SentenceResponse.toDpsMigrationSentence() = MigrationCreateSentence(
@@ -202,6 +203,7 @@ fun SentenceResponse.toDpsMigrationSentence() = MigrationCreateSentence(
     )
   },
   sentenceId = MigrationSentenceId(offenderBookingId = this.bookingId, sequence = this.sentenceSeq.toInt()),
+  returnToCustodyDate = this.recallCustodyDate?.returnToCustodyDate,
 )
 
 fun SentenceResponse.toSentenceLegacyData() = SentenceLegacyData(

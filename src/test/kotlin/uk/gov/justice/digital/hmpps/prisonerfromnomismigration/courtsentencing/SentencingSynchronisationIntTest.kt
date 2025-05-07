@@ -35,7 +35,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RecallCustodyDate
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.time.LocalDate
 import java.util.AbstractMap.SimpleEntry
 
 private const val NOMIS_SENTENCE_SEQUENCE = 1
@@ -129,6 +131,10 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
             offenderNo = OFFENDER_ID_DISPLAY,
             caseId = NOMIS_COURT_CASE_ID,
+            recallCustodyDate = RecallCustodyDate(
+              returnToCustodyDate = LocalDate.parse("2023-01-01"),
+              recallLength = 14,
+            ),
           )
           courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
           mockTwoChargeMappingGets()
@@ -157,7 +163,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
                 .withRequestBody(matchingJsonPath("active", equalTo("false")))
                 .withRequestBody(matchingJsonPath("prisonId", equalTo("MDI")))
-                .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1"))),
+                .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1")))
+                .withRequestBody(matchingJsonPath("returnToCustodyDate", equalTo("2023-01-01"))),
             )
           }
         }
@@ -1055,6 +1062,10 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           bookingId = NOMIS_BOOKING_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
           caseId = NOMIS_COURT_CASE_ID,
+          recallCustodyDate = RecallCustodyDate(
+            returnToCustodyDate = LocalDate.parse("2024-01-01"),
+            recallLength = 28,
+          ),
         )
       }
 
@@ -1136,7 +1147,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("legacyData.postedDate", isNotNull()))
                 .withRequestBody(matchingJsonPath("legacyData.sentenceCalcType", equalTo("ADIMP_ORA")))
                 .withRequestBody(matchingJsonPath("legacyData.sentenceTypeDesc", equalTo("ADIMP_ORA description")))
-                .withRequestBody(matchingJsonPath("legacyData.sentenceCategory", equalTo("2003"))),
+                .withRequestBody(matchingJsonPath("legacyData.sentenceCategory", equalTo("2003")))
+                .withRequestBody(matchingJsonPath("returnToCustodyDate", equalTo("2024-01-01"))),
             )
           }
         }
