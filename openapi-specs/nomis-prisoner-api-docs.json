@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-05-06.12039.2882b22"
+    "version" : "2025-05-06.12057.eb7477f"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -17787,12 +17787,6 @@
           "fine" : {
             "type" : "number"
           },
-          "sentenceTerms" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/SentenceTermRequest"
-            }
-          },
           "offenderChargeIds" : {
             "type" : "array",
             "items" : {
@@ -17809,40 +17803,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "eventId", "offenderChargeIds", "sentenceCalcType", "sentenceCategory", "sentenceLevel", "sentenceTerms", "startDate", "status" ]
-      },
-      "SentenceTermRequest" : {
-        "type" : "object",
-        "description" : "Sentence term request",
-        "properties" : {
-          "years" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "months" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "weeks" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "days" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "hours" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "sentenceTermType" : {
-            "type" : "string"
-          },
-          "lifeSentenceFlag" : {
-            "type" : "boolean"
-          }
-        },
-        "required" : [ "lifeSentenceFlag", "sentenceTermType" ]
+        "required" : [ "eventId", "offenderChargeIds", "sentenceCalcType", "sentenceCategory", "sentenceLevel", "startDate", "status" ]
       },
       "AlertResponse" : {
         "type" : "object",
@@ -20425,16 +20386,45 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "termSeq" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "bookingId" : {
             "type" : "integer",
             "format" : "int64"
           }
         },
-        "required" : [ "bookingId", "sentenceSeq", "termSeq" ]
+        "required" : [ "bookingId", "sentenceSeq" ]
+      },
+      "SentenceTermRequest" : {
+        "type" : "object",
+        "description" : "Sentence term request",
+        "properties" : {
+          "years" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "months" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "weeks" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "days" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "hours" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sentenceTermType" : {
+            "type" : "string"
+          },
+          "lifeSentenceFlag" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "lifeSentenceFlag", "sentenceTermType" ]
       },
       "CreateSentenceTermResponse" : {
         "type" : "object",
@@ -23732,6 +23722,24 @@
         },
         "required" : [ "courtDate", "eventId", "id", "issuingCourt", "orderStatus", "orderType", "sentencePurposes" ]
       },
+      "RecallCustodyDate" : {
+        "type" : "object",
+        "description" : "Recall custody return date data",
+        "properties" : {
+          "returnToCustodyDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "recallLength" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "comments" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "recallLength", "returnToCustodyDate" ]
+      },
       "SentencePurposeResponse" : {
         "type" : "object",
         "description" : "Sentence Purpose",
@@ -23946,6 +23954,9 @@
           },
           "prisonId" : {
             "type" : "string"
+          },
+          "recallCustodyDate" : {
+            "$ref" : "#/components/schemas/RecallCustodyDate"
           }
         },
         "required" : [ "bookingId", "calculationType", "category", "createdByUsername", "createdDateTime", "offenderCharges", "prisonId", "sentenceSeq", "sentenceTerms", "startDate", "status" ]
