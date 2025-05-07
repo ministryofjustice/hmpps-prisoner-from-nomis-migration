@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
+import com.github.tomakehurst.wiremock.client.WireMock.absent
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -90,6 +91,7 @@ class IncidentDataRepairResourceIntTest : SqsIntegrationTestBase() {
           incidentsApi.verify(
             postRequestedFor(urlPathEqualTo("/sync/upsert"))
               .withRequestBodyJsonPath("incidentReport.incidentId", equalTo("$nomisIncidentId"))
+              .withRequestBodyJsonPath("id", absent())
               .withRequestBodyJsonPath("incidentReport.title", equalTo("This is a test incident")),
           )
         }
@@ -144,6 +146,7 @@ class IncidentDataRepairResourceIntTest : SqsIntegrationTestBase() {
           incidentsApi.verify(
             postRequestedFor(urlPathEqualTo("/sync/upsert"))
               .withRequestBodyJsonPath("incidentReport.incidentId", equalTo("$nomisIncidentId"))
+              .withRequestBodyJsonPath("id", equalTo(dpsIncidentId))
               .withRequestBodyJsonPath("incidentReport.title", equalTo("This is a test incident")),
           )
         }

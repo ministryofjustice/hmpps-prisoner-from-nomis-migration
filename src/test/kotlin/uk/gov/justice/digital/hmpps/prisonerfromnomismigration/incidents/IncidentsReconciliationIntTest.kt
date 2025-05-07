@@ -13,6 +13,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.incidentsApi
@@ -496,6 +497,99 @@ class IncidentsReconciliationIntTest : SqsIntegrationTestBase() {
         any(),
         isNull(),
       )
+    }
+  }
+
+  @DisplayName("GET /incidents/reconciliation/{nomisIncidentId}")
+  @Nested
+  inner class GenerateReconciliationReportForIncident {
+    private val nomisIncidentId = 1234L
+    private val mismatchNomisIncidentId = 33
+
+    @Nested
+    inner class Security {
+      @Test
+      fun `access forbidden when no role`() {
+        webTestClient.get().uri("/incidents/reconciliation/$nomisIncidentId")
+          .headers(setAuthorisation(roles = listOf()))
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access forbidden with wrong role`() {
+        webTestClient.get().uri("/incidents/reconciliation/$nomisIncidentId")
+          .headers(setAuthorisation(roles = listOf("BANANAS")))
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access unauthorised with no auth token`() {
+        webTestClient.get().uri("/incidents/reconciliation/$nomisIncidentId")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+    }
+
+    @Nested
+    inner class Validation {
+      @Test
+      fun `return 404 when incident not found`() {
+        incidentsNomisApi.stubGetIncident(HttpStatus.NOT_FOUND)
+        webTestClient.get().uri("/incidents/reconciliation/99999")
+          .headers(setAuthorisation(roles = listOf("NOMIS_INCIDENTS")))
+          .exchange()
+          .expectStatus().isNotFound
+          .expectBody()
+          .jsonPath("userMessage").isEqualTo("Not Found: Incident not found 99999")
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+
+      @BeforeEach
+      fun setup() {
+        incidentsNomisApi.stubGetIncident()
+        incidentsApi.stubGetIncident()
+      }
+
+      @Test
+      fun `will return no differences`() {
+        webTestClient.get().uri("/incidents/reconciliation/$nomisIncidentId")
+          .headers(setAuthorisation(roles = listOf("NOMIS_INCIDENTS")))
+          .exchange()
+          .expectStatus()
+          .isOk
+          .expectBody().isEmpty
+
+        verifyNoInteractions(telemetryClient)
+      }
+
+      @Test
+      fun `will return Dps mismatch with Nomis`() {
+        incidentsNomisApi.stubGetMismatchResponsesForIncident()
+        incidentsApi.stubGetIncident(33)
+
+        val mismatch = webTestClient.get().uri("/incidents/reconciliation/$mismatchNomisIncidentId")
+          .headers(setAuthorisation(roles = listOf("NOMIS_INCIDENTS")))
+          .exchange()
+          .expectStatus()
+          .isOk
+          .expectBody(MismatchIncident::class.java)
+          .returnResult()
+          .responseBody!!
+
+        assertThat(mismatch.nomisIncident!!.totalResponses).isEqualTo(0)
+        assertThat(mismatch.dpsIncident!!.totalResponses).isEqualTo(1)
+
+        verify(telemetryClient).trackEvent(
+          eq("incidents-reports-reconciliation-detail-mismatch"),
+          any(),
+          isNull(),
+        )
+      }
     }
   }
 }
