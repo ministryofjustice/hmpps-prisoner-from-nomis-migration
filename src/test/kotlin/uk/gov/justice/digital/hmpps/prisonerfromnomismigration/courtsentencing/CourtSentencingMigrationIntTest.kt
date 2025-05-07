@@ -49,6 +49,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResultCodeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RecallCustodyDate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceTermResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
@@ -190,6 +191,10 @@ class CourtSentencingMigrationIntTest(
               buildSentenceTermResponse(),
               buildSentenceTermResponse(termSequence = NOMIS_TERM_SEQUENCE_2_ID),
             ),
+            recallCustodyDate = RecallCustodyDate(
+              returnToCustodyDate = LocalDate.parse("2024-01-01"),
+              recallLength = 14,
+            ),
           ),
         ),
       )
@@ -230,6 +235,7 @@ class CourtSentencingMigrationIntTest(
             assertThat(chargeNOMISId).isEqualTo(3934645)
             assertThat(legacyData.postedDate).isNotNull
             assertThat(sentence?.sentenceId?.sequence).isEqualTo(NOMIS_SENTENCE_SEQUENCE_ID)
+            assertThat(sentence?.returnToCustodyDate).isEqualTo("2024-01-01")
             assertThat(sentence?.periodLengths).hasSize(2)
           }
         }
@@ -642,6 +648,7 @@ fun buildSentenceResponse(
   sentenceTerms: List<SentenceTermResponse>,
   sentenceSequence: Long = NOMIS_SENTENCE_SEQUENCE_ID,
   courtOrder: CourtOrderResponse = buildCourtOrderResponse(),
+  recallCustodyDate: RecallCustodyDate? = null,
 ) = SentenceResponse(
   bookingId = bookingId,
   sentenceSeq = sentenceSequence,
@@ -666,6 +673,7 @@ fun buildSentenceResponse(
   prisonId = "MDI",
   createdByUsername = "BNELL",
   courtOrder = courtOrder,
+  recallCustodyDate = recallCustodyDate,
 )
 
 fun buildCourtOrderResponse(eventId: Long = NOMIS_APPEARANCE_1_ID) = CourtOrderResponse(
