@@ -59,4 +59,23 @@ class ContactPersonDataRepairResource(
       )
     }
   }
+
+  @PostMapping("/prisoners/{offenderNo}/resynchronise")
+  @ResponseStatus(HttpStatus.OK)
+  @Operation(
+    summary = "Resynchronises prisoner contacts from NOMIS back to DPS",
+    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_MIGRATE_CONTACTPERSON or ROLE_MIGRATE_NOMIS_SYSCON",
+  )
+  suspend fun repairPrisonerContacts(
+    @PathVariable offenderNo: String,
+  ) {
+    contactPersonSynchronisationService.resynchronizePrisonerContacts(offenderNo)
+    telemetryClient.trackEvent(
+      "from-nomis-synch-contactperson-prisoner-resynchronisation-repair",
+      mapOf(
+        "offenderNo" to offenderNo,
+      ),
+      null,
+    )
+  }
 }

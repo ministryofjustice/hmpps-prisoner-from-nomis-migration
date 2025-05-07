@@ -968,6 +968,33 @@ class ContactPersonSynchronisationService(
     mappingApiService.replaceMappingsForPerson(personId, mapping)
   }
 
+  suspend fun resynchronizePrisonerContacts(offenderNo: String) {
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to offenderNo,
+    )
+
+    val nomisContacts = nomisApiService.getContactsForPrisoner(offenderNo).contacts.also {
+      telemetry["contactsCount"] = it.size
+    }
+    val dpsChangedResponse = dpsApiService.resetPrisonerContacts(
+      ResetPrisonerContactRequest(
+        prisonerContacts = nomisContacts.map { it.toDpsSyncPrisonerRelationship(offenderNo) },
+        prisonerNumber = offenderNo,
+      ),
+    )
+    tryToReplaceBookingChangedMappings(
+      offenderNo = offenderNo,
+      mapping = ContactPersonPrisonerMappingsDto(
+        mappingType = ContactPersonPrisonerMappingsDto.MappingType.NOMIS_CREATED,
+        personContactMapping = dpsChangedResponse.relationshipsCreated.map { ContactPersonSimpleMappingIdDto(nomisId = it.relationship.nomisId, dpsId = "${it.relationship.dpsId}") },
+        personContactRestrictionMapping = dpsChangedResponse.relationshipsCreated.flatMap { it.restrictions.map { restriction -> ContactPersonSimpleMappingIdDto(nomisId = restriction.nomisId, dpsId = "${restriction.dpsId}") } },
+        personContactMappingsToRemoveByDpsId = dpsChangedResponse.relationshipsRemoved.map { "${it.prisonerContactId}" },
+        personContactRestrictionMappingsToRemoveByDpsId = dpsChangedResponse.relationshipsRemoved.flatMap { contact -> contact.prisonerContactRestrictionIds.map { "$it" } },
+      ),
+      telemetry = telemetry,
+    )
+  }
+
   suspend fun resetPrisonerContactsForAdmission(prisonerReceivedEvent: PrisonerReceiveDomainEvent) {
     when (prisonerReceivedEvent.additionalInformation.reason) {
       "READMISSION_SWITCH_BOOKING", "NEW_ADMISSION" -> {
