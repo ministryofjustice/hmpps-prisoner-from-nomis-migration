@@ -461,6 +461,8 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$").isEqualTo(LocalDate.now())
 
       mappingApi.verifyActivitiesMappingByMigrationId(migrationIdNoStarDate, count)
       nomisApi.verifyEndActivities("[1,2,3]", "${LocalDate.now()}")
@@ -473,6 +475,8 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$").isEqualTo(activityStartDate.minusDays(1))
 
       mappingApi.verifyActivitiesMappingByMigrationId(migrationId, count)
       nomisApi.verifyEndActivities("[1,2,3]", "${activityStartDate.minusDays(1)}")

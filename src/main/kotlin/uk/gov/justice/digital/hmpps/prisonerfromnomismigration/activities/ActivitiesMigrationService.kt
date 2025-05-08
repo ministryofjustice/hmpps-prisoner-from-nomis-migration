@@ -93,7 +93,7 @@ class ActivitiesMigrationService(
         }
   }
 
-  suspend fun endMigratedActivities(migrationId: String) {
+  suspend fun endMigratedActivities(migrationId: String): LocalDate {
     val activityCount = activitiesMappingService.getMigrationCount(migrationId)
     if (activityCount == 0L) throw NotFoundException("No migrations found for $migrationId")
 
@@ -101,8 +101,9 @@ class ActivitiesMigrationService(
       .map { it.nomisCourseActivityId }
 
     val migration = migrationHistoryService.get(migrationId)
-    val activityStartDate = objectMapper.readValue(migration.filter, ActivitiesMigrationFilter::class.java).activityStartDate?.minusDays(1) ?: LocalDate.now()
-    nomisApiService.endActivities(allActivityIds, activityStartDate)
+    val nomisActivityEndDate = objectMapper.readValue(migration.filter, ActivitiesMigrationFilter::class.java).activityStartDate?.minusDays(1) ?: LocalDate.now()
+    nomisApiService.endActivities(allActivityIds, nomisActivityEndDate)
+    return nomisActivityEndDate
   }
 
   private suspend fun ActivityMigrationMappingDto.createActivityMapping(context: MigrationContext<*>) = try {

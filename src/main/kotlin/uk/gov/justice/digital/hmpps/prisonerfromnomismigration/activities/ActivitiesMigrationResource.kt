@@ -111,7 +111,7 @@ class ActivitiesMigrationResource(
   @PutMapping("/{migrationId}/filter")
   @Operation(
     summary = "Update the filter for a migration history record",
-    description = "Requires role <b>ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
+    description = "Requires role <b>ROLE_MIGRATE_ACTIVITIES</b>",
     responses = [
       ApiResponse(
         responseCode = "200",
