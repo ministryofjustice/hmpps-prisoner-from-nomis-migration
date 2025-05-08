@@ -64,6 +64,7 @@ class ActivitiesMigrationServiceTest {
   private val migrationHistoryService: MigrationHistoryService = mock()
   private val telemetryClient: TelemetryClient = mock()
   private val auditService: AuditService = mock()
+  private val tomorrow = LocalDate.now().plusDays(1)
   val service = object : ActivitiesMigrationService(
     nomisApiService = nomisApiService,
     activitiesMappingService = mappingService,
@@ -128,7 +129,7 @@ class ActivitiesMigrationServiceTest {
     @Test
     internal fun `will pass filter through to get total count along with a tiny page count`() {
       runBlocking {
-        service.startMigration(ActivitiesMigrationFilter(prisonId = "BXI"))
+        service.startMigration(ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = tomorrow))
       }
 
       coVerify {
@@ -145,13 +146,14 @@ class ActivitiesMigrationServiceTest {
       coEvery { nomisApiService.getActivityIds(any(), any(), any(), any()) } returns
         pages(totalEntities = 7)
 
-      service.startMigration(ActivitiesMigrationFilter(prisonId = "BXI"))
+      service.startMigration(ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = tomorrow))
 
       verify(queueService).sendMessage(
         message = eq(MigrationMessageType.MIGRATE_ENTITIES),
         context = check<MigrationContext<ActivitiesMigrationFilter>> {
           assertThat(it.estimatedCount).isEqualTo(7)
           assertThat(it.body.prisonId).isEqualTo("BXI")
+          assertThat(it.body.activityStartDate).isEqualTo(tomorrow)
         },
         delaySeconds = eq(0),
       )
@@ -159,7 +161,7 @@ class ActivitiesMigrationServiceTest {
 
     @Test
     internal fun `will write migration history record`() {
-      val activitiesMigrationFilter = ActivitiesMigrationFilter(prisonId = "BXI")
+      val activitiesMigrationFilter = ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = tomorrow)
 
       coEvery { nomisApiService.getActivityIds(any(), any(), any(), any()) } returns
         pages(totalEntities = 7)
@@ -175,6 +177,7 @@ class ActivitiesMigrationServiceTest {
           estimatedRecordCount = 7,
           filter = coWithArg<ActivitiesMigrationFilter> {
             assertThat(it.prisonId).isEqualTo("BXI")
+            assertThat(it.activityStartDate).isEqualTo(tomorrow)
           },
         )
       }
@@ -191,7 +194,7 @@ class ActivitiesMigrationServiceTest {
       coEvery { nomisApiService.getActivityIds(any(), any(), any(), any()) } returns pages(totalEntities = 7)
 
       runBlocking {
-        service.startMigration(ActivitiesMigrationFilter(prisonId = "BXI"))
+        service.startMigration(ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = tomorrow))
       }
 
       verify(telemetryClient).trackEvent(
@@ -200,6 +203,7 @@ class ActivitiesMigrationServiceTest {
           assertThat(it["migrationId"]).isNotNull
           assertThat(it["estimatedCount"]).isEqualTo("7")
           assertThat(it["prisonId"]).isEqualTo("BXI")
+          assertThat(it["activityStartDate"]).isEqualTo("$tomorrow")
         },
         eq(null),
       )
@@ -223,7 +227,7 @@ class ActivitiesMigrationServiceTest {
           type = MigrationType.ACTIVITIES,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 7,
-          body = ActivitiesMigrationFilter(prisonId = "BXI"),
+          body = ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = tomorrow),
         ),
       )
 
@@ -241,7 +245,7 @@ class ActivitiesMigrationServiceTest {
           type = MigrationType.ACTIVITIES,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 7,
-          body = ActivitiesMigrationFilter(prisonId = "BXI"),
+          body = ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = tomorrow),
         ),
       )
 
@@ -259,7 +263,7 @@ class ActivitiesMigrationServiceTest {
           type = MigrationType.ACTIVITIES,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 7,
-          body = ActivitiesMigrationFilter(prisonId = "BXI"),
+          body = ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = tomorrow),
         ),
       )
 
@@ -269,6 +273,7 @@ class ActivitiesMigrationServiceTest {
           assertThat(it.estimatedCount).isEqualTo(7)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
           assertThat(it.body.filter.prisonId).isEqualTo("BXI")
+          assertThat(it.body.filter.activityStartDate).isEqualTo("$tomorrow")
         },
         delaySeconds = eq(0),
       )
@@ -283,7 +288,7 @@ class ActivitiesMigrationServiceTest {
           type = MigrationType.ACTIVITIES,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 7,
-          body = ActivitiesMigrationFilter(prisonId = "BXI"),
+          body = ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = tomorrow),
         ),
       )
 
