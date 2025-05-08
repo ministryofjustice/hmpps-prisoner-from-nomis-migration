@@ -167,6 +167,8 @@ class ActivitiesMigrationService(
   )
 
   private suspend fun Long?.toDpsLocationId(): UUID? = this?.let { activitiesMappingService.getDpsLocation(it).dpsLocationId }?.let { UUID.fromString(it) }
+
+  suspend fun updateFilter(migrationId: String, filter: ActivitiesMigrationFilter) = migrationHistoryService.updateFilter(migrationId, filter)
 }
 
 private fun List<ScheduleRulesResponse>.toNomisScheduleRules(): List<NomisScheduleRule> = map {

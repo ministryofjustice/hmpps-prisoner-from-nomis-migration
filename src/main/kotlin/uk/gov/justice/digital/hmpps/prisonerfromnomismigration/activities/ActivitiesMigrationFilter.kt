@@ -24,4 +24,10 @@ data class ActivitiesMigrationFilter(
     example = "2025-01-31",
   )
   val activityStartDate: LocalDate? = null,
+
+  @Schema(
+    description = "The date the NOMIS activity will end",
+    example = "2025-01-30",
+  )
+  val nomisActivityEndDate: LocalDate? = null,
 )

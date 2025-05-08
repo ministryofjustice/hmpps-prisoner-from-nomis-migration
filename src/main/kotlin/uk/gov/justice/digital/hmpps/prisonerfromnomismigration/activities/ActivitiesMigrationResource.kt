@@ -106,4 +106,36 @@ class ActivitiesMigrationResource(
   suspend fun endMigratedActivities(
     @Schema(description = "Migration ID", type = "string") @PathVariable migrationId: String,
   ) = activitiesMigrationService.endMigratedActivities(migrationId)
+
+  @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
+  @PutMapping("/{migrationId}/filter")
+  @Operation(
+    summary = "Update the filter for a migration history record",
+    description = "Requires role <b>ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
+    responses = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Filter updated",
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Incorrect permissions to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Migration not found",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
+  )
+  suspend fun updateFilter(
+    @PathVariable @Schema(description = "Migration Id", example = "2020-03-24T12:00:00") migrationId: String,
+    @RequestBody @Valid migrationFilter: ActivitiesMigrationFilter,
+  ) = activitiesMigrationService.updateFilter(migrationId, migrationFilter)
 }
