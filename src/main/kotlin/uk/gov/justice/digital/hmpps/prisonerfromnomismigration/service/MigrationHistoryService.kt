@@ -135,6 +135,10 @@ class MigrationHistoryService(
       else -> false
     }
   }
+
+  suspend fun updateFilter(migrationId: String, filter: Any) = migrationHistoryRepository.findById(migrationId)
+    ?.let { migrationHistoryRepository.save(it.copy(filter = objectMapper.writeValueAsString(filter))) }
+    ?: run { throw NotFoundException(migrationId) }
 }
 
 enum class MigrationStatus {

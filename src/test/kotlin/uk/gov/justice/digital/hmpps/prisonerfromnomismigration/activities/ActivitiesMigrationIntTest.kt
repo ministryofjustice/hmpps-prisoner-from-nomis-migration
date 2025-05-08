@@ -2,6 +2,8 @@
 
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -24,12 +26,14 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.test.web.reactive.server.expectBody
 import org.springframework.web.reactive.function.BodyInserters
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.ACTIVITIES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension.Companion.activitiesApi
@@ -48,6 +52,9 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
+
+  @Autowired
+  private lateinit var objectMapper: ObjectMapper
 
   private fun stubMigrationDependencies(
     entities: Int = 1,
@@ -454,6 +461,8 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$").isEqualTo(LocalDate.now())
 
       mappingApi.verifyActivitiesMappingByMigrationId(migrationIdNoStarDate, count)
       nomisApi.verifyEndActivities("[1,2,3]", "${LocalDate.now()}")
@@ -466,9 +475,103 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
+        .expectBody()
+        .jsonPath("$").isEqualTo(activityStartDate.minusDays(1))
 
       mappingApi.verifyActivitiesMappingByMigrationId(migrationId, count)
       nomisApi.verifyEndActivities("[1,2,3]", "${activityStartDate.minusDays(1)}")
+    }
+  }
+
+  @Nested
+  @DisplayName("PUT /migrate/activities/{migrationId}/filter")
+  inner class PutMigrationFilter {
+    private val migrationId = "2020-01-01T00:00:00"
+
+    @BeforeEach
+    fun createHistoryRecords() = runTest {
+      migrationHistoryRepository.deleteAll()
+      migrationHistoryRepository.save(
+        MigrationHistory(
+          migrationId = migrationId,
+          whenStarted = LocalDateTime.parse("2025-04-23T00:00:00"),
+          whenEnded = LocalDateTime.parse("2025-04-23T01:00:00"),
+          status = COMPLETED,
+          estimatedRecordCount = 123_567,
+          filter = """{"prisonId":"BXI","activityStartDate":"2025-04-23"}""",
+          recordsMigrated = 123_560,
+          recordsFailed = 7,
+          migrationType = ACTIVITIES,
+        ),
+      )
+    }
+
+    @Test
+    fun `access unauthorised with no auth token`() {
+      webTestClient.put().uri("/migrate/activities/{migrationId}/filter", migrationId)
+        .header("Content-Type", "application/json")
+        .bodyValue("""{"prisonId":"BXI"}""")
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    fun `access forbidden when no role`() {
+      webTestClient.put().uri("/migrate/activities/{migrationId}/filter", migrationId)
+        .header("Content-Type", "application/json")
+        .headers(setAuthorisation(roles = listOf()))
+        .bodyValue("""{"prisonId":"BXI"}""")
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `access forbidden with wrong role`() {
+      webTestClient.put().uri("/migrate/activities/{migrationId}/filter", migrationId)
+        .header("Content-Type", "application/json")
+        .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+        .bodyValue("""{"prisonId":"BXI"}""")
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `not found`() {
+      webTestClient.put().uri("/migrate/activities/123456/filter", migrationId)
+        .header("Content-Type", "application/json")
+        .headers(setAuthorisation(roles = listOf("MIGRATE_ACTIVITIES")))
+        .bodyValue("""{"prisonId":"BXI"}""")
+        .exchange()
+        .expectStatus().isNotFound
+    }
+
+    @Test
+    fun `can update migration filter`() = runTest {
+      webTestClient.put().uri("/migrate/activities/{migrationId}/filter", migrationId)
+        .header("Content-Type", "application/json")
+        .headers(setAuthorisation(roles = listOf("MIGRATE_ACTIVITIES")))
+        .bodyValue(ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = LocalDate.parse("2025-04-24"), nomisActivityEndDate = LocalDate.parse("2025-04-23")))
+        .exchange()
+        .expectStatus().isOk
+
+      with(migrationHistoryRepository.findById(migrationId)!!) {
+        assertThat(filter).isEqualTo(
+          """{"prisonId":"BXI","activityStartDate":"2025-04-24","nomisActivityEndDate":"2025-04-23"}""",
+        )
+      }
+
+      webTestClient.get().uri("/migrate/history/{migrationId}", migrationId)
+        .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
+        .exchange()
+        .expectStatus().isOk
+        .expectBody<MigrationHistory>()
+        .consumeWith { it ->
+          with(objectMapper.readValue<ActivitiesMigrationFilter>(it.responseBody!!.filter!!)) {
+            assertThat(prisonId).isEqualTo("BXI")
+            assertThat(activityStartDate).isEqualTo("2025-04-24")
+            assertThat(nomisActivityEndDate).isEqualTo("2025-04-23")
+          }
+        }
     }
   }
 }
