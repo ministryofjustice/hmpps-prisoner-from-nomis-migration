@@ -29,5 +29,5 @@ data class ActivitiesMigrationFilter(
     description = "The date the NOMIS activity will end",
     example = "2025-01-30",
   )
-  val nomisActivityEndDate: LocalDate? = null,
+  var nomisActivityEndDate: LocalDate? = null,
 )

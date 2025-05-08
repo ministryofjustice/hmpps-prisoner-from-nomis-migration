@@ -26,14 +26,12 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.test.web.reactive.server.WebTestClient
-import org.springframework.test.web.reactive.server.expectBody
 import org.springframework.web.reactive.function.BodyInserters
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.ACTIVITIES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension.Companion.activitiesApi
@@ -55,6 +53,9 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var objectMapper: ObjectMapper
+
+  private val today = LocalDate.now()
+  private val tomorrow = today.plusDays(1)
 
   private fun stubMigrationDependencies(
     entities: Int = 1,
@@ -79,7 +80,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
       migrationHistoryRepository.deleteAll()
     }
 
-    private fun WebTestClient.performMigration(body: String = """{ "prisonId": "BXI" }""") = post().uri("/migrate/activities")
+    private fun WebTestClient.performMigration(body: String = """{ "prisonId": "BXI", "activityStartDate": "$tomorrow" }""") = post().uri("/migrate/activities")
       .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
       .header("Content-Type", "application/json")
       .body(BodyInserters.fromValue(body))
@@ -111,7 +112,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
       webTestClient.post().uri("/migrate/activities")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
         .header("Content-Type", "application/json")
-        .body(BodyInserters.fromValue("""{ "prisonId": "BXI" }"""))
+        .body(BodyInserters.fromValue("""{ "prisonId": "BXI", "activityStartDate": "$tomorrow" }"""))
         .exchange()
         .expectStatus().isForbidden
     }
@@ -138,7 +139,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
       stubMigrationDependencies()
 
       // Pass a course activity id into the migrate request
-      webTestClient.performMigration("""{ "prisonId": "BXI", "courseActivityId": 1 }""")
+      webTestClient.performMigration("""{ "prisonId": "BXI", "courseActivityId": 1, "activityStartDate": "$tomorrow" }""")
 
       // check course activity is included when retrieving ids
       nomisApi.verifyActivitiesGetIds("/activities/ids", "BXI", courseActivityId = 1)
@@ -269,7 +270,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         webTestClient.post().uri("/migrate/activities")
           .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
           .header("Content-Type", "application/json")
-          .body(BodyInserters.fromValue("""{ "prisonId": "BXI" }"""))
+          .body(BodyInserters.fromValue("""{ "prisonId": "BXI", "activityStartDate": "$tomorrow" }"""))
           .exchange()
           .expectStatus().isEqualTo(HttpStatus.CONFLICT)
       }
@@ -294,7 +295,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         webTestClient.post().uri("/migrate/activities")
           .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
           .header("Content-Type", "application/json")
-          .body(BodyInserters.fromValue("""{ "prisonId": "BXI" }"""))
+          .body(BodyInserters.fromValue("""{ "prisonId": "BXI", "activityStartDate": "$tomorrow" }"""))
           .exchange()
           .expectStatus().isEqualTo(HttpStatus.CONFLICT)
       }
@@ -365,11 +366,10 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("GET /migrate/activities/end")
+  @DisplayName("PUT /migrate/activities/end")
   inner class EndMigratedActivities {
 
     private val migrationId = "2023-10-05T09:58:45"
-    private val migrationIdNoStarDate = "2024-11-05T09:58:45"
     private val count = 3
     private val activityStartDate = LocalDate.parse("2023-10-08")
 
@@ -390,19 +390,6 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
           status = MigrationStatus.COMPLETED,
           estimatedRecordCount = 8,
           filter = """{"prisonId":"BLI","activityStartDate":"$activityStartDate"}""",
-          recordsMigrated = 8,
-          recordsFailed = 0,
-          migrationType = ACTIVITIES,
-        ),
-      )
-      migrationHistoryRepository.save(
-        MigrationHistory(
-          migrationId = migrationIdNoStarDate,
-          whenStarted = LocalDateTime.parse("2024-12-05T09:58:45"),
-          whenEnded = LocalDateTime.parse("2024-11-05T10:04:45"),
-          status = MigrationStatus.COMPLETED,
-          estimatedRecordCount = 8,
-          filter = """{"prisonId":"BLI"}""",
           recordsMigrated = 8,
           recordsFailed = 0,
           migrationType = ACTIVITIES,
@@ -455,123 +442,21 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    internal fun `will end activities`() {
-      webTestClient.put().uri("/migrate/activities/$migrationIdNoStarDate/end")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .exchange()
-        .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$").isEqualTo(LocalDate.now())
-
-      mappingApi.verifyActivitiesMappingByMigrationId(migrationIdNoStarDate, count)
-      nomisApi.verifyEndActivities("[1,2,3]", "${LocalDate.now()}")
-    }
-
-    @Test
-    internal fun `will end activities with an activity start date filter`() {
+    internal fun `will end activities`() = runTest {
       webTestClient.put().uri("/migrate/activities/$migrationId/end")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
-        .expectBody()
-        .jsonPath("$").isEqualTo(activityStartDate.minusDays(1))
+
+      with(migrationHistoryRepository.findById(migrationId)!!) {
+        val filter = objectMapper.readValue<ActivitiesMigrationFilter>(filter!!)
+        assertThat(filter.activityStartDate).isEqualTo(activityStartDate)
+        assertThat(filter.nomisActivityEndDate).isEqualTo(activityStartDate.minusDays(1))
+      }
 
       mappingApi.verifyActivitiesMappingByMigrationId(migrationId, count)
       nomisApi.verifyEndActivities("[1,2,3]", "${activityStartDate.minusDays(1)}")
-    }
-  }
-
-  @Nested
-  @DisplayName("PUT /migrate/activities/{migrationId}/filter")
-  inner class PutMigrationFilter {
-    private val migrationId = "2020-01-01T00:00:00"
-
-    @BeforeEach
-    fun createHistoryRecords() = runTest {
-      migrationHistoryRepository.deleteAll()
-      migrationHistoryRepository.save(
-        MigrationHistory(
-          migrationId = migrationId,
-          whenStarted = LocalDateTime.parse("2025-04-23T00:00:00"),
-          whenEnded = LocalDateTime.parse("2025-04-23T01:00:00"),
-          status = COMPLETED,
-          estimatedRecordCount = 123_567,
-          filter = """{"prisonId":"BXI","activityStartDate":"2025-04-23"}""",
-          recordsMigrated = 123_560,
-          recordsFailed = 7,
-          migrationType = ACTIVITIES,
-        ),
-      )
-    }
-
-    @Test
-    fun `access unauthorised with no auth token`() {
-      webTestClient.put().uri("/migrate/activities/{migrationId}/filter", migrationId)
-        .header("Content-Type", "application/json")
-        .bodyValue("""{"prisonId":"BXI"}""")
-        .exchange()
-        .expectStatus().isUnauthorized
-    }
-
-    @Test
-    fun `access forbidden when no role`() {
-      webTestClient.put().uri("/migrate/activities/{migrationId}/filter", migrationId)
-        .header("Content-Type", "application/json")
-        .headers(setAuthorisation(roles = listOf()))
-        .bodyValue("""{"prisonId":"BXI"}""")
-        .exchange()
-        .expectStatus().isForbidden
-    }
-
-    @Test
-    fun `access forbidden with wrong role`() {
-      webTestClient.put().uri("/migrate/activities/{migrationId}/filter", migrationId)
-        .header("Content-Type", "application/json")
-        .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
-        .bodyValue("""{"prisonId":"BXI"}""")
-        .exchange()
-        .expectStatus().isForbidden
-    }
-
-    @Test
-    fun `not found`() {
-      webTestClient.put().uri("/migrate/activities/123456/filter", migrationId)
-        .header("Content-Type", "application/json")
-        .headers(setAuthorisation(roles = listOf("MIGRATE_ACTIVITIES")))
-        .bodyValue("""{"prisonId":"BXI"}""")
-        .exchange()
-        .expectStatus().isNotFound
-    }
-
-    @Test
-    fun `can update migration filter`() = runTest {
-      webTestClient.put().uri("/migrate/activities/{migrationId}/filter", migrationId)
-        .header("Content-Type", "application/json")
-        .headers(setAuthorisation(roles = listOf("MIGRATE_ACTIVITIES")))
-        .bodyValue(ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = LocalDate.parse("2025-04-24"), nomisActivityEndDate = LocalDate.parse("2025-04-23")))
-        .exchange()
-        .expectStatus().isOk
-
-      with(migrationHistoryRepository.findById(migrationId)!!) {
-        assertThat(filter).isEqualTo(
-          """{"prisonId":"BXI","activityStartDate":"2025-04-24","nomisActivityEndDate":"2025-04-23"}""",
-        )
-      }
-
-      webTestClient.get().uri("/migrate/history/{migrationId}", migrationId)
-        .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
-        .exchange()
-        .expectStatus().isOk
-        .expectBody<MigrationHistory>()
-        .consumeWith { it ->
-          with(objectMapper.readValue<ActivitiesMigrationFilter>(it.responseBody!!.filter!!)) {
-            assertThat(prisonId).isEqualTo("BXI")
-            assertThat(activityStartDate).isEqualTo("2025-04-24")
-            assertThat(nomisActivityEndDate).isEqualTo("2025-04-23")
-          }
-        }
     }
   }
 }

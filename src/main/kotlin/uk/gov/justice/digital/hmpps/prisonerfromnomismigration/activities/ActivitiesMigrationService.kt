@@ -93,7 +93,7 @@ class ActivitiesMigrationService(
         }
   }
 
-  suspend fun endMigratedActivities(migrationId: String): LocalDate {
+  suspend fun endMigratedActivities(migrationId: String) {
     val activityCount = activitiesMappingService.getMigrationCount(migrationId)
     if (activityCount == 0L) throw NotFoundException("No migrations found for $migrationId")
 
@@ -101,9 +101,11 @@ class ActivitiesMigrationService(
       .map { it.nomisCourseActivityId }
 
     val migration = migrationHistoryService.get(migrationId)
-    val nomisActivityEndDate = objectMapper.readValue(migration.filter, ActivitiesMigrationFilter::class.java).activityStartDate?.minusDays(1) ?: LocalDate.now()
-    nomisApiService.endActivities(allActivityIds, nomisActivityEndDate)
-    return nomisActivityEndDate
+    val filter = objectMapper.readValue(migration.filter, ActivitiesMigrationFilter::class.java)
+    // There will always be a start date because it's now mandatory in the UI, but is still nullable due to old data that can be displayed
+    filter.nomisActivityEndDate = filter.activityStartDate!!.minusDays(1)
+    nomisApiService.endActivities(allActivityIds, filter.nomisActivityEndDate!!)
+    migrationHistoryService.updateFilter(migrationId, filter)
   }
 
   private suspend fun ActivityMigrationMappingDto.createActivityMapping(context: MigrationContext<*>) = try {
