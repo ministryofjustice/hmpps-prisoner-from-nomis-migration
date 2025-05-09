@@ -25,6 +25,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.reactive.function.BodyInserters
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -366,7 +367,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
-  @DisplayName("PUT /migrate/activities/end")
+  @DisplayName("PUT /migrate/activities/{migrationId}/end")
   inner class EndMigratedActivities {
 
     private val migrationId = "2023-10-05T09:58:45"
@@ -457,6 +458,178 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
       mappingApi.verifyActivitiesMappingByMigrationId(migrationId, count)
       nomisApi.verifyEndActivities("[1,2,3]", "${activityStartDate.minusDays(1)}")
+    }
+  }
+
+  @Nested
+  @DisplayName("PUT /migrate/activities/{migrationId}/move-start-dates")
+  inner class MoveActivityStartDates {
+
+    private val migrationId = "2023-10-05T09:58:45"
+    private val migrationIdNoMigrations = "2023-11-06T09:58:45"
+    private val count = 3
+    private val oldActivityStartDate = tomorrow
+    private val oldNomisEndDate = oldActivityStartDate.minusDays(1)
+    private val newActivityStartDate = tomorrow.plusDays(1)
+    private val newNomisEndDate = newActivityStartDate.minusDays(1)
+    private val request = MoveActivityStartDateRequest(newActivityStartDate)
+
+    @BeforeEach
+    fun stubApis() = runTest {
+      mappingApi.stubActivitiesMappingByMigrationId(count = count, migrationId = migrationId)
+      nomisApi.stubEndActivities()
+      activitiesApi.stubMoveActivityStartDates("BXI", newActivityStartDate)
+    }
+
+    @BeforeEach
+    fun createHistoryRecords() = runTest {
+      migrationHistoryRepository.deleteAll()
+      migrationHistoryRepository.save(
+        MigrationHistory(
+          migrationId = migrationId,
+          whenStarted = LocalDateTime.parse("2023-10-05T09:58:45"),
+          whenEnded = LocalDateTime.parse("2023-10-05T10:04:45"),
+          status = MigrationStatus.COMPLETED,
+          estimatedRecordCount = 8,
+          filter = """{"prisonId":"BXI","activityStartDate":"$oldActivityStartDate","nomisActivityEndDate":"$oldNomisEndDate"}""",
+          recordsMigrated = 8,
+          recordsFailed = 0,
+          migrationType = ACTIVITIES,
+        ),
+      )
+      migrationHistoryRepository.save(
+        MigrationHistory(
+          migrationId = migrationIdNoMigrations,
+          whenStarted = LocalDateTime.parse("2023-10-05T09:58:45"),
+          whenEnded = LocalDateTime.parse("2023-10-05T10:04:45"),
+          status = MigrationStatus.COMPLETED,
+          estimatedRecordCount = 8,
+          filter = """{"prisonId":"BXI","activityStartDate":"$oldActivityStartDate","nomisActivityEndDate":"$oldNomisEndDate"}""",
+          recordsMigrated = 8,
+          recordsFailed = 0,
+          migrationType = ACTIVITIES,
+        ),
+      )
+    }
+
+    @AfterEach
+    fun deleteHistoryRecords() = runTest {
+      migrationHistoryRepository.deleteAll()
+    }
+
+    @Test
+    fun `must have valid token`() {
+      webTestClient.put().uri("/migrate/activities/$migrationId/move-start-dates")
+        .header("Content-Type", "application/json")
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    fun `must have correct role`() {
+      webTestClient.put().uri("/migrate/activities/$migrationId/move-start-dates")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+        .header("Content-Type", "application/json")
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `will return not found for unknown migration`() {
+      mappingApi.stubActivitiesMappingByMigrationIdFails(404)
+
+      webTestClient.moveStartDates(migrationId)
+        .expectStatus().isNotFound
+    }
+
+    @Test
+    fun `will return not found if no activities were migrated`() {
+      mappingApi.stubActivitiesMappingByMigrationId(count = 0, migrationId = migrationIdNoMigrations)
+
+      webTestClient.moveStartDates(migrationIdNoMigrations)
+        .expectStatus().isNotFound
+    }
+
+    @Test
+    fun `will return bad request if date missing`() {
+      webTestClient.moveStartDates(migrationId, "{}")
+        .expectStatus().isBadRequest
+    }
+
+    @Test
+    fun `will return bad request for malformed date`() {
+      webTestClient.moveStartDates(migrationId, """{"newActivityStartDate":"2023-13-01"}""")
+        .expectStatus().isBadRequest
+    }
+
+    @Test
+    fun `will return bad request if date not in the future`() {
+      webTestClient.moveStartDates(migrationId, """{"newActivityStartDate":"$today"}""")
+        .expectStatus().isBadRequest
+    }
+
+    @Test
+    fun `will do nothing if get mappings fails`() = runTest {
+      mappingApi.stubActivitiesMappingByMigrationIdFails(500)
+
+      webTestClient.moveStartDates(migrationId)
+        .expectStatus().is5xxServerError
+
+      checkFilter(oldNomisEndDate, oldActivityStartDate)
+      nomisApi.verifyEndActivities("[1,2,3]", "$newNomisEndDate}", times = 0)
+      activitiesApi.verifyMoveActivityStartDates(activityStartDate = newActivityStartDate, times = 0)
+    }
+
+    @Test
+    fun `will do nothing if NOMIS update fails`() = runTest {
+      nomisApi.stubEndActivitiesError(BAD_REQUEST)
+
+      webTestClient.moveStartDates(migrationId)
+        .expectStatus().is5xxServerError
+
+      checkFilter(oldNomisEndDate, oldActivityStartDate)
+      nomisApi.verifyEndActivities("[1,2,3]", "$newNomisEndDate}", times = 0)
+      activitiesApi.verifyMoveActivityStartDates(activityStartDate = newActivityStartDate, times = 0)
+    }
+
+    @Test
+    fun `will update filter if DPS update fails`() = runTest {
+      activitiesApi.stubMoveActivityStartDatesError("BXI", newActivityStartDate, status = BAD_REQUEST)
+
+      webTestClient.moveStartDates(migrationId)
+        .expectStatus().is5xxServerError
+
+      checkFilter(newNomisEndDate, oldActivityStartDate)
+      nomisApi.verifyEndActivities("[1,2,3]", "$newNomisEndDate", times = 1)
+      activitiesApi.verifyMoveActivityStartDates(activityStartDate = newActivityStartDate, times = 1)
+    }
+
+    @Test
+    fun `will move NOMIS end dates and DPS start dates`() = runTest {
+      webTestClient.moveStartDates(migrationId)
+        .expectStatus().isOk
+        .expectBody().jsonPath("*").isEqualTo(listOf("Error1", "Error2"))
+
+      checkFilter(newNomisEndDate, newActivityStartDate)
+      mappingApi.verifyActivitiesMappingByMigrationId(migrationId, count)
+      nomisApi.verifyEndActivities("[1,2,3]", "$newNomisEndDate", times = 1)
+      activitiesApi.verifyMoveActivityStartDates(activityStartDate = newActivityStartDate, times = 1)
+    }
+
+    private fun WebTestClient.moveStartDates(migrationId: String, requestBody: String? = null) = put().uri("/migrate/activities/$migrationId/move-start-dates")
+      .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+      .header("Content-Type", "application/json")
+      .bodyValue(requestBody ?: request)
+      .exchange()
+
+    private fun checkFilter(expectedNomisActivityEndDate: LocalDate, expectedActivityStartDate: LocalDate) = runTest {
+      with(migrationHistoryRepository.findById(migrationId)!!) {
+        val filter = objectMapper.readValue<ActivitiesMigrationFilter>(filter!!)
+        assertThat(filter.nomisActivityEndDate).isEqualTo(expectedNomisActivityEndDate)
+        assertThat(filter.activityStartDate).isEqualTo(expectedActivityStartDate)
+      }
     }
   }
 }

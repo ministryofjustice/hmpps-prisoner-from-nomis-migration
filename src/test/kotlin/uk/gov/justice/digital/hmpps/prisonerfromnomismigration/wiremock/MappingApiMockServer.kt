@@ -474,7 +474,8 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse()
             .withStatus(statusCode)
-            .withHeader("Content-Type", "application/json"),
+            .withHeader("Content-Type", "application/json")
+            .withBody("""{"userMessage":"Mappings error"}"""),
         ),
     )
   }

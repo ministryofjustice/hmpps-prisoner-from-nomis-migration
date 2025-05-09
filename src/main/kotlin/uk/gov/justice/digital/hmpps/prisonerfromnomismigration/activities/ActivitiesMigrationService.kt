@@ -25,7 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import java.math.BigDecimal
 import java.time.LocalDate
-import java.util.UUID
+import java.util.*
 import kotlin.math.max
 
 @Service
@@ -108,6 +108,28 @@ class ActivitiesMigrationService(
     migrationHistoryService.updateFilter(migrationId, filter)
   }
 
+  suspend fun moveActivityStartDates(migrationId: String, newActivityStartDate: LocalDate): List<String> {
+    val activityCount = activitiesMappingService.getMigrationCount(migrationId)
+    if (activityCount == 0L) throw NotFoundException("No migrations found for $migrationId")
+
+    val allActivityIds = activitiesMappingService.getActivityMigrationDetails(migrationId, activityCount).content
+      .map { it.nomisCourseActivityId }
+
+    val filter = migrationHistoryService.get(migrationId)
+      .let { objectMapper.readValue(it.filter, ActivitiesMigrationFilter::class.java) }
+
+    return try {
+      nomisApiService.endActivities(allActivityIds, newActivityStartDate.minusDays(1))
+        .also { filter.nomisActivityEndDate = newActivityStartDate.minusDays(1) }
+      activitiesApiService.moveActivityStartDates(filter.prisonId, newActivityStartDate)
+        .also { filter.activityStartDate = newActivityStartDate }
+    } catch (e: Exception) {
+      throw MoveActivityStartDatesException(e)
+    } finally {
+      migrationHistoryService.updateFilter(migrationId, filter)
+    }
+  }
+
   private suspend fun ActivityMigrationMappingDto.createActivityMapping(context: MigrationContext<*>) = try {
     activitiesMappingService.createMapping(this, object : ParameterizedTypeReference<DuplicateErrorResponse<ActivityMigrationMappingDto>>() {})
       .also { it.handleError(context) }
@@ -170,8 +192,6 @@ class ActivitiesMigrationService(
   )
 
   private suspend fun Long?.toDpsLocationId(): UUID? = this?.let { activitiesMappingService.getDpsLocation(it).dpsLocationId }?.let { UUID.fromString(it) }
-
-  suspend fun updateFilter(migrationId: String, filter: ActivitiesMigrationFilter) = migrationHistoryService.updateFilter(migrationId, filter)
 }
 
 private fun List<ScheduleRulesResponse>.toNomisScheduleRules(): List<NomisScheduleRule> = map {
@@ -201,3 +221,5 @@ private fun ActivityMigrateResponse.toActivityMigrateMappingDto(courseActivityId
   activityId2 = splitRegimeActivityId,
   label = migrationId,
 )
+
+class MoveActivityStartDatesException(cause: Throwable? = null) : RuntimeException("Failed to move activity start dates", cause)

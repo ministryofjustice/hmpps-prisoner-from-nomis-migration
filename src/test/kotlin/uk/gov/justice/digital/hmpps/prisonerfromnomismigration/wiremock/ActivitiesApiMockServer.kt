@@ -19,6 +19,8 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.sampleAppointmentInstance
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension.Companion.activitiesApi
+import java.time.LocalDate
 
 class ActivitiesApiExtension :
   BeforeAllCallback,
@@ -170,6 +172,51 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
             """.trimIndent(),
           ),
       ),
+    )
+  }
+
+  fun stubMoveActivityStartDates(
+    prisonCode: String = "BXI",
+    activityStartDate: LocalDate = LocalDate.now().plusDays(2),
+  ) {
+    activitiesApi.stubFor(
+      post(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
+        .withQueryParam("newActivityStartDate", equalTo("$activityStartDate"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.CREATED.value())
+            .withBody("""["Error1", "Error2"]"""),
+        ),
+    )
+  }
+
+  fun stubMoveActivityStartDatesError(
+    prisonCode: String = "BXI",
+    activityStartDate: LocalDate = LocalDate.now().plusDays(2),
+    status: HttpStatus,
+  ) {
+    activitiesApi.stubFor(
+      post(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
+        .withQueryParam("newActivityStartDate", equalTo("$activityStartDate"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody("""{"userMessage":"DPS error"}"""),
+        ),
+    )
+  }
+
+  fun verifyMoveActivityStartDates(
+    prisonCode: String = "BXI",
+    activityStartDate: LocalDate = LocalDate.now().plusDays(2),
+    times: Int = 1,
+  ) {
+    verify(
+      times,
+      postRequestedFor(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
+        .withQueryParam("newActivityStartDate", equalTo("$activityStartDate")),
     )
   }
 
