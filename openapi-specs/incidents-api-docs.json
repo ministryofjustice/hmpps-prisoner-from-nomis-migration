@@ -11,7 +11,7 @@
       "name" : "MIT",
       "identifier" : "MIT"
     },
-    "version" : "2025-05-02.5349.84fa689"
+    "version" : "2025-05-08.5431.a4887cc"
   },
   "servers" : [ {
     "url" : "/",
@@ -1429,12 +1429,212 @@
         }
       }
     },
+    "/incident-reports/{reportId}/description-addendums" : {
+      "get" : {
+        "tags" : [ "Objects related to incident reports" ],
+        "summary" : "Returns description addendums for this incident report",
+        "description" : "Requires role VIEW_INCIDENT_REPORTS",
+        "operationId" : "listObjects_2",
+        "parameters" : [ {
+          "name" : "reportId",
+          "in" : "path",
+          "description" : "The incident report id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The incident report id",
+            "example" : "11111111-2222-3333-4444-555555555555"
+          },
+          "example" : "11111111-2222-3333-4444-555555555555"
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Missing required role. Requires the VIEW_INCIDENT_REPORTS role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429" : {
+            "description" : "Too Many Requests",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "Returns description addendums",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DescriptionAddendum"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Data not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "Objects related to incident reports" ],
+        "summary" : "Adds a description addendum to this incident report",
+        "description" : "Requires role MAINTAIN_INCIDENT_REPORTS and write scope. Authentication token must provide a username which is recorded as the report modifier and possibly as addendum author.",
+        "operationId" : "addObject_2",
+        "parameters" : [ {
+          "name" : "reportId",
+          "in" : "path",
+          "description" : "The incident report id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The incident report id",
+            "example" : "11111111-2222-3333-4444-555555555555"
+          },
+          "example" : "11111111-2222-3333-4444-555555555555"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AddDescriptionAddendum"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429" : {
+            "description" : "Too Many Requests",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "201" : {
+            "description" : "Returns description addendums",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DescriptionAddendum"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Data not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/incident-reports/{reportId}/correction-requests" : {
       "get" : {
         "tags" : [ "Objects related to incident reports" ],
         "summary" : "Returns correction requests for this incident report",
         "description" : "Requires role VIEW_INCIDENT_REPORTS",
-        "operationId" : "listObjects_2",
+        "operationId" : "listObjects_3",
         "parameters" : [ {
           "name" : "reportId",
           "in" : "path",
@@ -1528,7 +1728,7 @@
         "tags" : [ "Objects related to incident reports" ],
         "summary" : "Adds a correction request to this incident report",
         "description" : "Requires role MAINTAIN_INCIDENT_REPORTS and write scope. Authentication token must provide a username which is recorded as the correction requester and report modifier.",
-        "operationId" : "addObject_2",
+        "operationId" : "addObject_3",
         "parameters" : [ {
           "name" : "reportId",
           "in" : "path",
@@ -1602,109 +1802,6 @@
                   "items" : {
                     "$ref" : "#/components/schemas/CorrectionRequest"
                   }
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Data not found",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/incident-reports/{id}/description-addendums" : {
-      "post" : {
-        "tags" : [ "Incident reports" ],
-        "summary" : "Appends to the report description",
-        "description" : "Requires role MAINTAIN_INCIDENT_REPORTS and write scope. Authentication token must provide a username which is recorded as the report’s modifier.",
-        "operationId" : "addDescriptionAddendum",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "description" : "The internal ID of the report",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid",
-            "description" : "The internal ID of the report",
-            "example" : "11111111-2222-3333-4444-555555555555"
-          },
-          "example" : "11111111-2222-3333-4444-555555555555"
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/DescriptionAddendumRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "403" : {
-            "description" : "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Invalid request",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429" : {
-            "description" : "Too Many Requests",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500" : {
-            "description" : "Internal Server Error",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "201" : {
-            "description" : "Returns updated incident report",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ReportWithDetails"
                 }
               }
             }
@@ -2180,12 +2277,236 @@
         }
       }
     },
+    "/incident-reports/{reportId}/description-addendums/{index}" : {
+      "delete" : {
+        "tags" : [ "Objects related to incident reports" ],
+        "summary" : "Remove a description addendum from this incident report",
+        "description" : "Requires role MAINTAIN_INCIDENT_REPORTS and write scope. Authentication token must provide a username which is recorded as the report’s modifier.",
+        "operationId" : "removeObject_2",
+        "parameters" : [ {
+          "name" : "reportId",
+          "in" : "path",
+          "description" : "The incident report id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The incident report id",
+            "example" : "11111111-2222-3333-4444-555555555555"
+          },
+          "example" : "11111111-2222-3333-4444-555555555555"
+        }, {
+          "name" : "index",
+          "in" : "path",
+          "description" : "The index of the object to delete (starts from 1)",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The index of the object to delete (starts from 1)",
+            "example" : 1
+          },
+          "example" : 1
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429" : {
+            "description" : "Too Many Requests",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "Returns description addendums",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DescriptionAddendum"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Data not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch" : {
+        "tags" : [ "Objects related to incident reports" ],
+        "summary" : "Update a description addendum in this incident report",
+        "description" : "Requires role MAINTAIN_INCIDENT_REPORTS and write scope. Authentication token must provide a username which overrides current report modifier.",
+        "operationId" : "updateObject_2",
+        "parameters" : [ {
+          "name" : "reportId",
+          "in" : "path",
+          "description" : "The incident report id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The incident report id",
+            "example" : "11111111-2222-3333-4444-555555555555"
+          },
+          "example" : "11111111-2222-3333-4444-555555555555"
+        }, {
+          "name" : "index",
+          "in" : "path",
+          "description" : "The index of the object to update (starts from 1)",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The index of the object to update (starts from 1)",
+            "example" : 1
+          },
+          "example" : 1
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateDescriptionAddendum"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Missing required role. Requires the MAINTAIN_INCIDENT_REPORTS role with write scope.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429" : {
+            "description" : "Too Many Requests",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "Returns description addendums",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DescriptionAddendum"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Data not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/incident-reports/{reportId}/correction-requests/{index}" : {
       "delete" : {
         "tags" : [ "Objects related to incident reports" ],
         "summary" : "Remove a correction request from this incident report",
         "description" : "Requires role MAINTAIN_INCIDENT_REPORTS and write scope. Authentication token must provide a username which is recorded as the report’s modifier.",
-        "operationId" : "removeObject_2",
+        "operationId" : "removeObject_3",
         "parameters" : [ {
           "name" : "reportId",
           "in" : "path",
@@ -2291,7 +2612,7 @@
         "tags" : [ "Objects related to incident reports" ],
         "summary" : "Update a correction request in this incident report",
         "description" : "Requires role MAINTAIN_INCIDENT_REPORTS and write scope. Authentication token must provide a username which overrides current correction requester and report modifier.",
-        "operationId" : "updateObject_2",
+        "operationId" : "updateObject_3",
         "parameters" : [ {
           "name" : "reportId",
           "in" : "path",
@@ -5103,13 +5424,13 @@
       },
       "DescriptionAddendum" : {
         "type" : "object",
-        "description" : "Addendum to the description",
+        "description" : "Addendum to the description of an incident",
         "properties" : {
           "sequence" : {
             "type" : "integer",
             "format" : "int32",
-            "description" : "Sequence of the addendums for this report",
-            "example" : 0
+            "deprecated" : true,
+            "description" : "Sequence of the addendums for this report"
           },
           "createdBy" : {
             "type" : "string",
@@ -6313,6 +6634,48 @@
         "required" : [ "firstName", "lastName", "prisonerNumber", "prisonerRole" ],
         "writeOnly" : true
       },
+      "AddDescriptionAddendum" : {
+        "type" : "object",
+        "description" : "Add to the description of an incident report by appending an addendum",
+        "properties" : {
+          "createdBy" : {
+            "type" : "string",
+            "description" : "Username of user who added this addendum, defaulting to request token user",
+            "example" : "USER_1",
+            "maxLength" : 120,
+            "minLength" : 3
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When addendum was added, defaulting to “now”",
+            "example" : "2024-04-29T12:34:56.789012"
+          },
+          "firstName" : {
+            "type" : "string",
+            "description" : "First name of person that added this addendum",
+            "example" : "John",
+            "maxLength" : 255,
+            "minLength" : 1
+          },
+          "lastName" : {
+            "type" : "string",
+            "description" : "Last name of person that added this addendum",
+            "example" : "Doe",
+            "maxLength" : 255,
+            "minLength" : 1
+          },
+          "text" : {
+            "type" : "string",
+            "description" : "Addendum text",
+            "example" : "Internal investigation has concluded",
+            "maxLength" : 2147483647,
+            "minLength" : 1
+          }
+        },
+        "required" : [ "firstName", "lastName", "text" ],
+        "writeOnly" : true
+      },
       "AddCorrectionRequest" : {
         "type" : "object",
         "description" : "Add a correction request to an incident report",
@@ -6333,40 +6696,6 @@
         },
         "required" : [ "descriptionOfChange" ],
         "writeOnly" : true
-      },
-      "DescriptionAddendumRequest" : {
-        "type" : "object",
-        "description" : "Request to add an addendum to the description of the incident report",
-        "properties" : {
-          "createdBy" : {
-            "type" : "string",
-            "description" : "Username of user who added this addendum",
-            "example" : "USER_1"
-          },
-          "createdAt" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "When addendum was added",
-            "example" : "2024-04-29T12:34:56.789012"
-          },
-          "firstName" : {
-            "type" : "string",
-            "description" : "First name of person that added this addendum",
-            "example" : "John"
-          },
-          "lastName" : {
-            "type" : "string",
-            "description" : "Last name of person that added this addendum",
-            "example" : "Doe"
-          },
-          "text" : {
-            "type" : "string",
-            "description" : "Addendum text",
-            "example" : "Correction made to the report"
-          }
-        },
-        "readOnly" : true,
-        "required" : [ "createdAt", "createdBy", "firstName", "lastName", "text" ]
       },
       "UpdateStaffInvolvement" : {
         "type" : "object",
@@ -6444,6 +6773,47 @@
           "comment" : {
             "type" : "string",
             "description" : "Optional comment on prisoner’s involvement – omit to preserve existing comment, provide null to clear it"
+          }
+        },
+        "writeOnly" : true
+      },
+      "UpdateDescriptionAddendum" : {
+        "type" : "object",
+        "description" : "Update a description addendum in an incident report",
+        "properties" : {
+          "createdBy" : {
+            "type" : "string",
+            "description" : "Username of user who added this addendum",
+            "example" : "USER_1",
+            "maxLength" : 120,
+            "minLength" : 3
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When addendum was added – omit to preserve existing date, provide null to set it to “now”",
+            "example" : "2024-04-29T12:34:56.789012"
+          },
+          "firstName" : {
+            "type" : "string",
+            "description" : "First name of person that added this addendum",
+            "example" : "John",
+            "maxLength" : 255,
+            "minLength" : 1
+          },
+          "lastName" : {
+            "type" : "string",
+            "description" : "Last name of person that added this addendum",
+            "example" : "Doe",
+            "maxLength" : 255,
+            "minLength" : 1
+          },
+          "text" : {
+            "type" : "string",
+            "description" : "Addendum text",
+            "example" : "Correction made to the report",
+            "maxLength" : 2147483647,
+            "minLength" : 1
           }
         },
         "writeOnly" : true
@@ -6734,17 +7104,17 @@
               "type" : "string"
             }
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "Number of elements in this page",
-            "example" : 20
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32",
             "description" : "Total number of pages",
             "example" : 3
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Number of elements in this page",
+            "example" : 20
           }
         },
         "readOnly" : true,
@@ -6840,17 +7210,17 @@
               "type" : "string"
             }
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "Number of elements in this page",
-            "example" : 20
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32",
             "description" : "Total number of pages",
             "example" : 3
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Number of elements in this page",
+            "example" : 20
           }
         },
         "readOnly" : true,
