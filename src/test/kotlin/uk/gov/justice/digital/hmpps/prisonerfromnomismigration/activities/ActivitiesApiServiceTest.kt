@@ -6,17 +6,18 @@ import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
-import org.springframework.web.reactive.function.client.WebClientResponseException.InternalServerError
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.ActivityMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.ActivityMigrateRequest.PayPerSession
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AllocationMigrateRequest
@@ -27,7 +28,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension.Companion.activitiesApi
 import java.time.LocalDate
-import java.util.UUID
+import java.util.*
 
 @SpringAPIServiceTest
 @Import(ActivitiesApiService::class, ActivitiesConfiguration::class)
@@ -113,7 +114,7 @@ internal class ActivitiesApiServiceTest {
     )
 
     @Test
-    internal fun `should supply authentication token`(): Unit = runBlocking {
+    internal fun `should supply authentication token`() = runTest {
       activitiesApiService.migrateActivity(migrateActivityRequest())
 
       activitiesApi.verify(
@@ -123,7 +124,7 @@ internal class ActivitiesApiServiceTest {
     }
 
     @Test
-    internal fun `should pass data as JSON to endpoint`(): Unit = runBlocking {
+    internal fun `should pass data as JSON to endpoint`() = runTest {
       activitiesApiService.migrateActivity(migrateActivityRequest())
 
       activitiesApi.verify(
@@ -188,7 +189,7 @@ internal class ActivitiesApiServiceTest {
     }
 
     @Test
-    internal fun `should return newly created Activities IDs`(): Unit = runBlocking {
+    internal fun `should return newly created Activities IDs`() = runTest {
       val response = activitiesApiService.migrateActivity(migrateActivityRequest())
 
       with(response) {
@@ -199,7 +200,7 @@ internal class ActivitiesApiServiceTest {
     }
 
     @Test
-    internal fun `should handle null second activity id`(): Unit = runBlocking {
+    internal fun `should handle null second activity id`() = runTest {
       stubMigrateActivity(secondActivityId = null)
 
       val response = activitiesApiService.migrateActivity(migrateActivityRequest())
@@ -212,7 +213,7 @@ internal class ActivitiesApiServiceTest {
     }
 
     @Test
-    internal fun `should throw exception for any error`() {
+    internal fun `should throw exception for any error`() = runTest {
       activitiesApi.stubFor(
         post(urlPathMatching("/migrate/activity")).willReturn(
           aResponse()
@@ -222,11 +223,9 @@ internal class ActivitiesApiServiceTest {
         ),
       )
 
-      assertThatThrownBy {
-        runBlocking {
-          activitiesApiService.migrateActivity(migrateActivityRequest())
-        }
-      }.isInstanceOf(InternalServerError::class.java)
+      assertThrows<WebClientResponseException.InternalServerError> {
+        activitiesApiService.migrateActivity(migrateActivityRequest())
+      }
     }
   }
 
@@ -284,7 +283,7 @@ internal class ActivitiesApiServiceTest {
     )
 
     @Test
-    internal fun `should supply authentication token`(): Unit = runBlocking {
+    internal fun `should supply authentication token`() = runTest {
       activitiesApiService.migrateAllocation(migrateAllocationRequest())
 
       activitiesApi.verify(
@@ -294,7 +293,7 @@ internal class ActivitiesApiServiceTest {
     }
 
     @Test
-    internal fun `will pass data as JSON to endpoint`(): Unit = runBlocking {
+    internal fun `will pass data as JSON to endpoint`() = runTest {
       activitiesApiService.migrateAllocation(migrateAllocationRequest())
 
       activitiesApi.verify(
@@ -338,7 +337,7 @@ internal class ActivitiesApiServiceTest {
     }
 
     @Test
-    internal fun `should return Activity and Allocation IDs`(): Unit = runBlocking {
+    internal fun `should return Activity and Allocation IDs`() = runTest {
       val response = activitiesApiService.migrateAllocation(migrateAllocationRequest())
 
       with(response) {
@@ -348,7 +347,7 @@ internal class ActivitiesApiServiceTest {
     }
 
     @Test
-    internal fun `should throw exception for any error`() {
+    internal fun `should throw exception for any error`() = runTest {
       activitiesApi.stubFor(
         post(urlPathMatching("/migrate/allocation")).willReturn(
           aResponse()
@@ -358,11 +357,69 @@ internal class ActivitiesApiServiceTest {
         ),
       )
 
-      assertThatThrownBy {
-        runBlocking {
-          activitiesApiService.migrateAllocation(migrateAllocationRequest())
-        }
-      }.isInstanceOf(InternalServerError::class.java)
+      assertThrows<WebClientResponseException.InternalServerError> {
+        activitiesApiService.migrateAllocation(migrateAllocationRequest())
+      }
+    }
+  }
+
+  @Nested
+  inner class MoveActivityStartDates {
+    private val prisonCode = "BXI"
+    private val newStartDate = LocalDate.now().plusDays(2)
+
+    @BeforeEach
+    internal fun setUp() {
+      stubMoveActivityStartDates()
+    }
+
+    private fun stubMoveActivityStartDates() {
+      activitiesApi.stubFor(
+        post(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
+          .withQueryParam("activityStartDate", equalTo("$newStartDate"))
+          .willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpStatus.CREATED.value())
+              .withBody("""["Error1", "Error2"]"""),
+          ),
+      )
+    }
+
+    @Test
+    internal fun `should supply authentication token`() = runTest {
+      activitiesApiService.moveActivityStartDates(prisonCode, newStartDate)
+
+      activitiesApi.verify(
+        postRequestedFor(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
+          .withQueryParam("activityStartDate", equalTo("$newStartDate"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should return any errors`() = runTest {
+      val response = activitiesApiService.moveActivityStartDates(prisonCode, newStartDate)
+
+      assertThat(response).containsExactly("Error1", "Error2")
+    }
+
+    @Test
+    internal fun `should throw exception for any error`() = runTest {
+      activitiesApi.stubFor(
+        post(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
+          .withQueryParam("activityStartDate", equalTo("$newStartDate"))
+          .willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
+              .withBody("""{"userMessage":"Some error"}"""),
+          ),
+      )
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        activitiesApiService.moveActivityStartDates(prisonCode, newStartDate)
+      }
     }
   }
 }
