@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
+import java.time.LocalDate
 
 @RestController
 @RequestMapping("/migrate/activities", produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -66,8 +67,8 @@ class ActivitiesMigrationResource(
   @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
   @PutMapping("/{migrationId}/end")
   @Operation(
-    summary = "End all activities and allocations for a migration",
-    description = "Get all NOMIS activities migrated on a migrationId and ends them all. Requires role MIGRATE_ACTIVITIES",
+    summary = "End all NOMIS activities and allocations for a migration on the day before the DPS activity start date",
+    description = "Get all NOMIS activities migrated on a migrationId and ends them all on the day before the DPS activity start date. Requires role MIGRATE_ACTIVITIES",
     responses = [
       ApiResponse(
         responseCode = "200",
@@ -106,4 +107,51 @@ class ActivitiesMigrationResource(
   suspend fun endMigratedActivities(
     @Schema(description = "Migration ID", type = "string") @PathVariable migrationId: String,
   ) = activitiesMigrationService.endMigratedActivities(migrationId)
+
+  @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
+  @PutMapping("/{migrationId}/move-start-dates")
+  @Operation(
+    summary = "Moves the start date for future activities in DPS.",
+    description = "Update all DPS activities for this prison to the new start date. Get all NOMIS activities migrated move the end dates to the day before the new start date. Requires role MIGRATE_ACTIVITIES",
+    responses = [
+      ApiResponse(
+        responseCode = "200",
+        description = "OK",
+      ),
+      ApiResponse(
+        responseCode = "400",
+        description = "Invalid request",
+        content = [
+          Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class)),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [
+          Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class)),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Forbidden, requires role NOMIS_ACTIVITIES",
+        content = [
+          Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class)),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Not found",
+        content = [
+          Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class)),
+        ],
+      ),
+    ],
+  )
+  suspend fun endMigratedActivities(
+    @Schema(description = "Migration ID", type = "string") @PathVariable migrationId: String,
+    @Schema(description = "The new start date for all activities", example = "2023-01-01") @RequestBody request: MoveActivityStartDateRequest,
+  ) = activitiesMigrationService.moveActivityStartDates(migrationId, request.newActivityStartDate)
 }
+
+data class MoveActivityStartDateRequest(val newActivityStartDate: LocalDate)

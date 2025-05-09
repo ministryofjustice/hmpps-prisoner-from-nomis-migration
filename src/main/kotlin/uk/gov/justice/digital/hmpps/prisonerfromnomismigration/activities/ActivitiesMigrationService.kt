@@ -25,7 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import java.math.BigDecimal
 import java.time.LocalDate
-import java.util.UUID
+import java.util.*
 import kotlin.math.max
 
 @Service
@@ -105,6 +105,23 @@ class ActivitiesMigrationService(
     // There will always be a start date because it's now mandatory in the UI, but is still nullable due to old data that can be displayed
     filter.nomisActivityEndDate = filter.activityStartDate!!.minusDays(1)
     nomisApiService.endActivities(allActivityIds, filter.nomisActivityEndDate!!)
+    migrationHistoryService.updateFilter(migrationId, filter)
+  }
+
+  suspend fun moveActivityStartDates(migrationId: String, newActivityStartDate: LocalDate) {
+    val activityCount = activitiesMappingService.getMigrationCount(migrationId)
+    if (activityCount == 0L) throw NotFoundException("No migrations found for $migrationId")
+
+    val allActivityIds = activitiesMappingService.getActivityMigrationDetails(migrationId, activityCount).content
+      .map { it.nomisCourseActivityId }
+
+    val migration = migrationHistoryService.get(migrationId)
+    val filter = objectMapper.readValue(migration.filter, ActivitiesMigrationFilter::class.java)
+    filter.activityStartDate = newActivityStartDate
+    filter.nomisActivityEndDate = newActivityStartDate.minusDays(1)
+
+    nomisApiService.endActivities(allActivityIds, filter.nomisActivityEndDate!!)
+    activitiesApiService.moveActivityStartDates(filter.prisonId, newActivityStartDate)
     migrationHistoryService.updateFilter(migrationId, filter)
   }
 

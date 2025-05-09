@@ -18,7 +18,7 @@ import java.time.LocalDateTime
 
 @Service
 class MigrationHistoryService(
-  private val migrationHistoryRepository: MigrationHistoryRepository,
+  val migrationHistoryRepository: MigrationHistoryRepository,
   private val objectMapper: ObjectMapper,
   private val hmppsQueueService: HmppsQueueService,
   private val generalMappingService: GeneralMappingService,

@@ -20,13 +20,13 @@ data class ActivitiesMigrationFilter(
   val courseActivityId: Long? = null,
 
   @Schema(
-    description = "The date the new activity will start",
+    description = "The date the new activity will start. Cannot be null except for old data prior to start date being mandatory.",
     example = "2025-01-31",
   )
-  val activityStartDate: LocalDate? = null,
+  var activityStartDate: LocalDate? = null,
 
   @Schema(
-    description = "The date the NOMIS activity will end",
+    description = "The date the NOMIS activities will end. If null then they have not been ended yet.",
     example = "2025-01-30",
   )
   var nomisActivityEndDate: LocalDate? = null,

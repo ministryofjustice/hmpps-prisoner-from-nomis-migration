@@ -370,20 +370,7 @@ internal class ActivitiesApiServiceTest {
 
     @BeforeEach
     internal fun setUp() {
-      stubMoveActivityStartDates()
-    }
-
-    private fun stubMoveActivityStartDates() {
-      activitiesApi.stubFor(
-        post(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
-          .withQueryParam("activityStartDate", equalTo("$newStartDate"))
-          .willReturn(
-            aResponse()
-              .withHeader("Content-Type", "application/json")
-              .withStatus(HttpStatus.CREATED.value())
-              .withBody("""["Error1", "Error2"]"""),
-          ),
-      )
+      activitiesApi.stubMoveActivityStartDates()
     }
 
     @Test
@@ -392,7 +379,7 @@ internal class ActivitiesApiServiceTest {
 
       activitiesApi.verify(
         postRequestedFor(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
-          .withQueryParam("activityStartDate", equalTo("$newStartDate"))
+          .withQueryParam("newActivityStartDate", equalTo("$newStartDate"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
@@ -408,7 +395,7 @@ internal class ActivitiesApiServiceTest {
     internal fun `should throw exception for any error`() = runTest {
       activitiesApi.stubFor(
         post(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
-          .withQueryParam("activityStartDate", equalTo("$newStartDate"))
+          .withQueryParam("newActivityStartDate", equalTo("$newStartDate"))
           .willReturn(
             aResponse()
               .withHeader("Content-Type", "application/json")
