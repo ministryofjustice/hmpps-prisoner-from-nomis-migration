@@ -368,8 +368,21 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyEndActivities(expectedCourseActivityIds: String, endDate: String) {
+  fun stubEndActivitiesError(status: HttpStatus) {
+    nomisApi.stubFor(
+      put(urlPathEqualTo("/activities/end"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody("""{"status":"${status.value()}",userMessage = "NOMIS error"}"""),
+        ),
+    )
+  }
+
+  fun verifyEndActivities(expectedCourseActivityIds: String, endDate: String, times: Int = 1) {
     nomisApi.verify(
+      times,
       putRequestedFor(urlPathEqualTo("/activities/end"))
         .withRequestBody(containing(""""courseActivityIds":$expectedCourseActivityIds,"endDate":"$endDate"""")),
     )

@@ -175,7 +175,10 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubMoveActivityStartDates(prisonCode: String = "BXI", activityStartDate: LocalDate = LocalDate.now().plusDays(2)) {
+  fun stubMoveActivityStartDates(
+    prisonCode: String = "BXI",
+    activityStartDate: LocalDate = LocalDate.now().plusDays(2),
+  ) {
     activitiesApi.stubFor(
       post(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
         .withQueryParam("newActivityStartDate", equalTo("$activityStartDate"))
@@ -188,8 +191,30 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun verifyMoveActivityStartDates(prisonCode: String = "BXI", activityStartDate: LocalDate = LocalDate.now().plusDays(2)) {
+  fun stubMoveActivityStartDatesError(
+    prisonCode: String = "BXI",
+    activityStartDate: LocalDate = LocalDate.now().plusDays(2),
+    status: HttpStatus,
+  ) {
+    activitiesApi.stubFor(
+      post(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
+        .withQueryParam("newActivityStartDate", equalTo("$activityStartDate"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody("""{"userMessage":"DPS error"}"""),
+        ),
+    )
+  }
+
+  fun verifyMoveActivityStartDates(
+    prisonCode: String = "BXI",
+    activityStartDate: LocalDate = LocalDate.now().plusDays(2),
+    times: Int = 1,
+  ) {
     verify(
+      times,
       postRequestedFor(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
         .withQueryParam("newActivityStartDate", equalTo("$activityStartDate")),
     )

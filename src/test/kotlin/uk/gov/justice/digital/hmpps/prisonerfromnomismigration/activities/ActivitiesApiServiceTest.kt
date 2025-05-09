@@ -399,12 +399,12 @@ internal class ActivitiesApiServiceTest {
           .willReturn(
             aResponse()
               .withHeader("Content-Type", "application/json")
-              .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
+              .withStatus(HttpStatus.BAD_REQUEST.value())
               .withBody("""{"userMessage":"Some error"}"""),
           ),
       )
 
-      assertThrows<WebClientResponseException.InternalServerError> {
+      assertThrows<WebClientResponseException.BadRequest> {
         activitiesApiService.moveActivityStartDates(prisonCode, newStartDate)
       }
     }

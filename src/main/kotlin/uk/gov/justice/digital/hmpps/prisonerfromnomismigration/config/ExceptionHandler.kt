@@ -4,12 +4,14 @@ import jakarta.validation.ValidationException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import reactor.core.publisher.Mono
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.MoveActivityStartDatesException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationAlreadyInProgressException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 
@@ -17,7 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundE
 class HmppsPrisonerFromNomisMigrationExceptionHandler {
 
   @ExceptionHandler(ValidationException::class)
-  fun handleValidationException(e: Exception): Mono<ResponseEntity<ErrorResponse>> = Mono.just(
+  fun handleValidationException(e: ValidationException): Mono<ResponseEntity<ErrorResponse>> = Mono.just(
     ResponseEntity
       .status(BAD_REQUEST)
       .body(
@@ -88,6 +90,19 @@ class HmppsPrisonerFromNomisMigrationExceptionHandler {
       ),
   ).also { log.info("Bad request returned from downstream service: {}", e.message) }
 
+  @ExceptionHandler(MoveActivityStartDatesException::class)
+  fun handleBadRequest(e: MoveActivityStartDatesException): Mono<ResponseEntity<ErrorResponse>> = Mono.just(
+    ResponseEntity
+      .status(INTERNAL_SERVER_ERROR.value())
+      .body(
+        ErrorResponse(
+          status = BAD_REQUEST,
+          userMessage = "Internal error: ${e.message}",
+          developerMessage = e.message,
+        ),
+      ),
+  ).also { log.error("Failed to move start dates cleanly", e) }
+
   private companion object {
     private val log = LoggerFactory.getLogger(this::class.java)
   }
@@ -110,4 +125,4 @@ data class ErrorResponse(
     this(status.value(), errorCode, userMessage, developerMessage, moreInfo)
 }
 
-class BadRequestException(message: String) : RuntimeException(message)
+class BadRequestException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
