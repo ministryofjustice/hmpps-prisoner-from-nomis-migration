@@ -7,11 +7,15 @@ import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpStatus
+import org.springframework.web.reactive.function.client.WebClientException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension.Companion.dpsContactPersonServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createContactAddressPhoneRequest
@@ -37,6 +41,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updatePrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiService.CreatePrisonerContactSuccess
 
 @SpringAPIServiceTest
 @Import(ContactPersonDpsApiService::class, ContactPersonConfiguration::class)
@@ -208,6 +213,32 @@ class ContactPersonDpsApiServiceTest {
       dpsContactPersonServer.verify(
         postRequestedFor(urlPathEqualTo("/sync/prisoner-contact")),
       )
+    }
+
+    @Test
+    fun `will return success when all OK`() = runTest {
+      dpsContactPersonServer.stubCreatePrisonerContact()
+
+      val response = apiService.createPrisonerContact(createPrisonerContactRequest())
+
+      assertThat(response).isInstanceOf(CreatePrisonerContactSuccess::class.java)
+      assertThat((response as CreatePrisonerContactSuccess).contact).isNotNull
+    }
+
+    @Test
+    fun `will return duplicate when 409`() = runTest {
+      dpsContactPersonServer.stubCreatePrisonerContact(httpStatus = HttpStatus.CONFLICT)
+
+      val response = apiService.createPrisonerContact(createPrisonerContactRequest())
+
+      assertThat(response).isInstanceOf(ContactPersonDpsApiService.CreatePrisonerContactDuplicate::class.java)
+    }
+
+    @Test
+    fun `will return throw exception for other errors`() = runTest {
+      dpsContactPersonServer.stubCreatePrisonerContact(httpStatus = HttpStatus.INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientException> { apiService.createPrisonerContact(createPrisonerContactRequest()) }
     }
   }
 
