@@ -151,7 +151,7 @@ class ActivitiesMigrationResource(
       ),
     ],
   )
-  suspend fun endMigratedActivities(
+  suspend fun moveActivityStartDates(
     @Schema(description = "Migration ID", type = "string") @PathVariable migrationId: String,
     @Schema(description = "The new start date for all activities", example = "2023-01-01") @RequestBody @Valid request: MoveActivityStartDateRequest,
   ) = activitiesMigrationService.moveActivityStartDates(migrationId, request.newActivityStartDate)
