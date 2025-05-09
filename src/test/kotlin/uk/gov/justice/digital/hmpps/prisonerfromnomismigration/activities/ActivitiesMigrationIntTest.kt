@@ -540,11 +540,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     fun `will return not found for unknown migration`() {
       mappingApi.stubActivitiesMappingByMigrationIdFails(404)
 
-      webTestClient.put().uri("/migrate/activities/$migrationId/move-start-dates")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .bodyValue(request)
-        .exchange()
+      webTestClient.moveStartDates(migrationId)
         .expectStatus().isNotFound
     }
 
@@ -552,41 +548,25 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     fun `will return not found if no activities were migrated`() {
       mappingApi.stubActivitiesMappingByMigrationId(count = 0, migrationId = migrationIdNoMigrations)
 
-      webTestClient.put().uri("/migrate/activities/$migrationIdNoMigrations/move-start-dates")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .bodyValue(request)
-        .exchange()
+      webTestClient.moveStartDates(migrationIdNoMigrations)
         .expectStatus().isNotFound
     }
 
     @Test
     fun `will return bad request if date missing`() {
-      webTestClient.put().uri("/migrate/activities/$migrationId/move-start-dates")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .bodyValue("{}")
-        .exchange()
+      webTestClient.moveStartDates(migrationId, "{}")
         .expectStatus().isBadRequest
     }
 
     @Test
     fun `will return bad request for malformed date`() {
-      webTestClient.put().uri("/migrate/activities/$migrationId/move-start-dates")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .bodyValue("""{"newActivityStartDate":"2023-13-01"}""")
-        .exchange()
+      webTestClient.moveStartDates(migrationId, """{"newActivityStartDate":"2023-13-01"}""")
         .expectStatus().isBadRequest
     }
 
     @Test
     fun `will return bad request if date not in the future`() {
-      webTestClient.put().uri("/migrate/activities/$migrationId/move-start-dates")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .bodyValue("""{"newActivityStartDate":"$today"}""")
-        .exchange()
+      webTestClient.moveStartDates(migrationId, """{"newActivityStartDate":"$today"}""")
         .expectStatus().isBadRequest
     }
 
@@ -594,11 +574,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     fun `will do nothing if get mappings fails`() = runTest {
       mappingApi.stubActivitiesMappingByMigrationIdFails(500)
 
-      webTestClient.put().uri("/migrate/activities/$migrationId/move-start-dates")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .bodyValue(request)
-        .exchange()
+      webTestClient.moveStartDates(migrationId)
         .expectStatus().is5xxServerError
 
       checkFilter(oldNomisEndDate, oldActivityStartDate)
@@ -610,11 +586,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     fun `will do nothing if NOMIS update fails`() = runTest {
       nomisApi.stubEndActivitiesError(BAD_REQUEST)
 
-      webTestClient.put().uri("/migrate/activities/$migrationId/move-start-dates")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .bodyValue(request)
-        .exchange()
+      webTestClient.moveStartDates(migrationId)
         .expectStatus().is5xxServerError
 
       checkFilter(oldNomisEndDate, oldActivityStartDate)
@@ -626,11 +598,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     fun `will update filter if DPS update fails`() = runTest {
       activitiesApi.stubMoveActivityStartDatesError("BXI", newActivityStartDate, status = BAD_REQUEST)
 
-      webTestClient.put().uri("/migrate/activities/$migrationId/move-start-dates")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .bodyValue(request)
-        .exchange()
+      webTestClient.moveStartDates(migrationId)
         .expectStatus().is5xxServerError
 
       checkFilter(newNomisEndDate, oldActivityStartDate)
@@ -640,11 +608,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will move NOMIS end dates and DPS start dates`() = runTest {
-      webTestClient.put().uri("/migrate/activities/$migrationId/move-start-dates")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
-        .header("Content-Type", "application/json")
-        .bodyValue(request)
-        .exchange()
+      webTestClient.moveStartDates(migrationId)
         .expectStatus().isOk
         .expectBody().jsonPath("*").isEqualTo(listOf("Error1", "Error2"))
 
@@ -653,6 +617,12 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
       nomisApi.verifyEndActivities("[1,2,3]", "$newNomisEndDate", times = 1)
       activitiesApi.verifyMoveActivityStartDates(activityStartDate = newActivityStartDate, times = 1)
     }
+
+    private fun WebTestClient.moveStartDates(migrationId: String, requestBody: String? = null) = put().uri("/migrate/activities/$migrationId/move-start-dates")
+      .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+      .header("Content-Type", "application/json")
+      .bodyValue(requestBody ?: request)
+      .exchange()
 
     private fun checkFilter(expectedNomisActivityEndDate: LocalDate, expectedActivityStartDate: LocalDate) = runTest {
       with(migrationHistoryRepository.findById(migrationId)!!) {
