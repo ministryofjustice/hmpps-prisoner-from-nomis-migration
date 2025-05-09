@@ -38,6 +38,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiService.CreatePrisonerContactDuplicate
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiService.CreatePrisonerContactSuccess
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RESYNCHRONISE_MOVE_BOOKING_TARGET
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_BOOKING_CHANGED_MAPPINGS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_BOOKING_MOVED_MAPPINGS
@@ -166,18 +168,29 @@ class ContactPersonSynchronisationService(
       } ?: run {
         track("contactperson-contact-synchronisation-created", telemetry) {
           nomisApiService.getContact(nomisContactId = event.contactId).also { nomisContact ->
-            val dpsPrisonerContact =
+            val dpsPrisonerContactResponse =
               dpsApiService.createPrisonerContact(nomisContact.toDpsCreatePrisonerContactRequest(nomisPersonId = event.personId))
-                .also {
-                  telemetry["dpsPrisonerContactId"] = it.id
-                }
-            val mapping = PersonContactMappingDto(
-              nomisId = event.contactId,
-              dpsId = dpsPrisonerContact.id.toString(),
-              mappingType = PersonContactMappingDto.MappingType.NOMIS_CREATED,
-            )
+            when (dpsPrisonerContactResponse) {
+              is CreatePrisonerContactDuplicate -> {
+                telemetryClient.trackEvent(
+                  "from-nomis-sync-contactperson-duplicate",
+                  mapOf(
+                    "existingNomisContactId" to event.contactId,
+                    "type" to "DPS_CONTACT",
+                  ),
+                )
+              }
+              is CreatePrisonerContactSuccess -> {
+                telemetry["dpsPrisonerContactId"] = dpsPrisonerContactResponse.contact.id
+                val mapping = PersonContactMappingDto(
+                  nomisId = event.contactId,
+                  dpsId = dpsPrisonerContactResponse.contact.id.toString(),
+                  mappingType = PersonContactMappingDto.MappingType.NOMIS_CREATED,
+                )
 
-            tryToCreateMapping(mapping, telemetry)
+                tryToCreateMapping(mapping, telemetry)
+              }
+            }
           }
         }
       }

@@ -1,10 +1,13 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships
 
+import kotlinx.coroutines.reactive.awaitFirst
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.WebClientResponseException
+import reactor.core.publisher.Mono
 import reactor.netty.http.client.HttpClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityIgnoreNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityOrLogAndRethrowBadRequest
@@ -87,11 +90,24 @@ class ContactPersonDpsApiService(
       .awaitBodilessEntityIgnoreNotFound()
   }
 
-  suspend fun createPrisonerContact(prisonerContact: SyncCreatePrisonerContactRequest): SyncPrisonerContact = webClient.post()
+  sealed class CreatePrisonerContactResponse {
+    companion object {
+      fun success(contact: SyncPrisonerContact): CreatePrisonerContactResponse = CreatePrisonerContactSuccess(contact)
+    }
+  }
+  data class CreatePrisonerContactSuccess(val contact: SyncPrisonerContact) : CreatePrisonerContactResponse()
+  class CreatePrisonerContactDuplicate : CreatePrisonerContactResponse()
+
+  suspend fun createPrisonerContact(prisonerContact: SyncCreatePrisonerContactRequest): CreatePrisonerContactResponse = webClient.post()
     .uri("/sync/prisoner-contact")
     .bodyValue(prisonerContact)
     .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
+    .bodyToMono(SyncPrisonerContact::class.java)
+    .map { CreatePrisonerContactResponse.success(it) }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreatePrisonerContactDuplicate())
+    }
+    .awaitFirst()
 
   suspend fun updatePrisonerContact(prisonerContactId: Long, prisonerContact: SyncUpdatePrisonerContactRequest) {
     webClient.put()

@@ -14,10 +14,12 @@ import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
+import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.AddressAndPhones
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.CodedValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ContactsAndRestrictions
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerContactResponse
@@ -545,6 +547,17 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
             .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+  fun stubCreatePrisonerContact(httpStatus: HttpStatus) {
+    stubFor(
+      post("/sync/prisoner-contact")
+        .willReturn(
+          aResponse()
+            .withStatus(httpStatus.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(ErrorResponse(status = httpStatus.value()))),
         ),
     )
   }
