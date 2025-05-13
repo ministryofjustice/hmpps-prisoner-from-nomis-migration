@@ -181,7 +181,7 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     activitiesApi.stubFor(
       post(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
-        .withQueryParam("newActivityStartDate", equalTo("$activityStartDate"))
+        .withQueryParam("activityStartDate", equalTo("$activityStartDate"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -198,7 +198,7 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     activitiesApi.stubFor(
       post(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
-        .withQueryParam("newActivityStartDate", equalTo("$activityStartDate"))
+        .withQueryParam("activityStartDate", equalTo("$activityStartDate"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -216,7 +216,7 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
     verify(
       times,
       postRequestedFor(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
-        .withQueryParam("newActivityStartDate", equalTo("$activityStartDate")),
+        .withQueryParam("activityStartDate", equalTo("$activityStartDate")),
     )
   }
 

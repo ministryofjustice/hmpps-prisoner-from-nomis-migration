@@ -379,7 +379,7 @@ internal class ActivitiesApiServiceTest {
 
       activitiesApi.verify(
         postRequestedFor(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
-          .withQueryParam("newActivityStartDate", equalTo("$newStartDate"))
+          .withQueryParam("activityStartDate", equalTo("$newStartDate"))
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
@@ -395,7 +395,7 @@ internal class ActivitiesApiServiceTest {
     internal fun `should throw exception for any error`() = runTest {
       activitiesApi.stubFor(
         post(urlPathEqualTo("/migrate/$prisonCode/move-activity-start-dates"))
-          .withQueryParam("newActivityStartDate", equalTo("$newStartDate"))
+          .withQueryParam("activityStartDate", equalTo("$newStartDate"))
           .willReturn(
             aResponse()
               .withHeader("Content-Type", "application/json")

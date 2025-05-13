@@ -31,7 +31,7 @@ class ActivitiesApiService(@Qualifier("activitiesApiWebClient") private val webC
   suspend fun moveActivityStartDates(prisonCode: String, newStartDate: LocalDate): List<String> = webClient.post()
     .uri {
       it.path("/migrate/{prisonCode}/move-activity-start-dates")
-        .queryParam("newActivityStartDate", newStartDate)
+        .queryParam("activityStartDate", newStartDate)
         .build(prisonCode)
     }
     .retrieve()
