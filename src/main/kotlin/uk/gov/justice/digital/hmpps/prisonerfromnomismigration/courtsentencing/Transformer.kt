@@ -179,7 +179,6 @@ fun CourtEventChargeResponse.toDpsMigrationCharge(
 fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsConsecUuid: String?) = LegacyCreateSentence(
   chargeUuids = sentenceChargeIds.map { UUID.fromString(it) },
   active = this.status == "A",
-  // can be "OUT"
   legacyData = this.toSentenceLegacyData(),
   // TODO confirm what this is used for
   chargeNumber = this.lineSequence?.toString(),
