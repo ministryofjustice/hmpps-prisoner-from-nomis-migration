@@ -85,34 +85,53 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance(
   sentences: List<SentenceResponse>,
   linkedSourceCase: CourtCaseResponse?,
   isSourceCase: Boolean,
-) = MigrationCreateCourtAppearance(
-  courtCode = this.courtId,
-  appearanceDate = this.eventDateTime.toLocalDate(),
-  appearanceTypeUuid = this.courtEventType.toDpsAppearanceTypeId(),
-  eventId = this.id,
-  legacyData =
-  CourtAppearanceLegacyData(
-    postedDate = LocalDate.now().toString(),
-    outcomeDescription = this.outcomeReasonCode?.description,
-    nomisOutcomeCode = this.outcomeReasonCode?.code,
-    outcomeConvictionFlag = this.outcomeReasonCode?.conviction,
-    outcomeDispositionCode = this.outcomeReasonCode?.dispositionCode,
-    nextEventDateTime = this.nextEventDateTime,
-    appearanceTime = this.eventDateTime.toLocalTime().toString(),
-  ),
+): MigrationCreateCourtAppearance {
+  // find sentence where sentence.offenderCharges contains charge
+  val sentencesForAppearance = sentences.filter { sentence -> sentence.courtOrder?.eventId == this.id }
+  val courtEventCharges = this.courtEventCharges.map { cec -> cec.offenderCharge.id }
+  val offenderChargesWithoutCourtEventCharges = sentencesForAppearance.flatMap { it.offenderCharges }.filter { sentenceCharge -> courtEventCharges.all { it != sentenceCharge.id } }
+  println("\n\n*************Sentences for appearance ${this.id} ${sentencesForAppearance.map { Pair(it.sentenceSeq, it.offenderCharges.map { it.id }) }}\n missing court charges = $offenderChargesWithoutCourtEventCharges")
+  return MigrationCreateCourtAppearance(
+    courtCode = this.courtId,
+    appearanceDate = this.eventDateTime.toLocalDate(),
+    appearanceTypeUuid = this.courtEventType.toDpsAppearanceTypeId(),
+    eventId = this.id,
+    legacyData =
+    CourtAppearanceLegacyData(
+      postedDate = LocalDate.now().toString(),
+      outcomeDescription = this.outcomeReasonCode?.description,
+      nomisOutcomeCode = this.outcomeReasonCode?.code,
+      outcomeConvictionFlag = this.outcomeReasonCode?.conviction,
+      outcomeDispositionCode = this.outcomeReasonCode?.dispositionCode,
+      nextEventDateTime = this.nextEventDateTime,
+      appearanceTime = this.eventDateTime.toLocalTime().toString(),
+    ),
 
-  /* supporting sentences with multiple charges
-   */
-  charges = this.courtEventCharges.map { charge ->
-    // find sentence where sentence.offenderCharges contains charge
-    val sentencesForAppearance = sentences.filter { sentence -> sentence.courtOrder?.eventId == this.id }
+    charges = this.courtEventCharges.map { charge ->
+      println("Court event charge: ${charge.eventId} -> ${charge.offenderCharge.id}")
+      println("Sentence related to charge ${charge.offenderCharge.id}:   ${sentencesForAppearance.find { sentence -> sentence.offenderCharges.any { it.id == charge.offenderCharge.id } }?.sentenceSeq}")
+      val dpsSentence =
+        sentencesForAppearance.find { sentence -> sentence.offenderCharges.any { it.id == charge.offenderCharge.id } }
+          ?.toDpsMigrationSentence()
+      charge.toDpsMigrationCharge(
+        chargeId = charge.offenderCharge.id,
+        dpsSentence = dpsSentence,
+        linkedSourceCase = linkedSourceCase,
+        isSourceCase = isSourceCase,
+      )
+    } + offenderChargesWithoutCourtEventCharges.map { missingCharge ->
+      val dpsSentence =
+        sentencesForAppearance.find { sentence -> sentence.offenderCharges.any { it.id == missingCharge.id } }
+          ?.toDpsMigrationSentence()
+      missingCharge.toDpsMigrationChargeForMissingCourtEventCharges(
+        dpsSentence = dpsSentence,
+        linkedSourceCase = linkedSourceCase,
+        isSourceCase = isSourceCase,
+      )
+    },
 
-    val dpsSentence =
-      sentencesForAppearance.find { sentence -> sentence.offenderCharges.any { it.id == charge.offenderCharge.id } }
-        ?.toDpsMigrationSentence()
-    charge.toDpsMigrationCharge(chargeId = charge.offenderCharge.id, dpsSentence = dpsSentence, linkedSourceCase = linkedSourceCase, isSourceCase = isSourceCase)
-  },
-)
+  )
+}
 
 fun OffenderChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharge(
   offenceCode = this.offence.offenceCode,
@@ -176,11 +195,43 @@ fun CourtEventChargeResponse.toDpsMigrationCharge(
   )
 }
 
+fun OffenderChargeResponse.toDpsMigrationChargeForMissingCourtEventCharges(
+  dpsSentence: MigrationCreateSentence?,
+  linkedSourceCase: CourtCaseResponse?,
+  isSourceCase: Boolean,
+): MigrationCreateCharge {
+  val linkedCourtEvent =
+    linkedSourceCase?.courtEvents?.firstOrNull { it.courtEventCharges.firstOrNull { it.offenderCharge.id == this.id } != null }
+  return MigrationCreateCharge(
+    offenceCode = this.offence.offenceCode,
+    offenceStartDate = this.offenceDate,
+    legacyData =
+    ChargeLegacyData(
+      postedDate = LocalDate.now().toString(),
+      outcomeDescription = this.resultCode1?.description,
+      nomisOutcomeCode = this.resultCode1?.code,
+      outcomeDispositionCode = this.resultCode1?.dispositionCode,
+    ),
+    offenceEndDate = this.offenceEndDate,
+    chargeNOMISId = this.id,
+    sentence = dpsSentence,
+    merged = if (isSourceCase) {
+      true
+    } else if (linkedCourtEvent != null) {
+      false
+    } else {
+      null
+    },
+    mergedFromCaseId = takeIf { linkedCourtEvent != null }?.let { linkedSourceCase?.id },
+    mergedFromEventId = linkedCourtEvent?.id,
+    mergedChargeNOMISId = linkedCourtEvent?.courtEventCharges?.firstOrNull { it.offenderCharge.id == this.id }?.offenderCharge?.id,
+  )
+}
+
 fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsConsecUuid: String?) = LegacyCreateSentence(
   chargeUuids = sentenceChargeIds.map { UUID.fromString(it) },
   active = this.status == "A",
   // can be "OUT"
-  prisonId = this.prisonId,
   legacyData = this.toSentenceLegacyData(),
   // TODO confirm what this is used for
   chargeNumber = this.lineSequence?.toString(),
@@ -219,8 +270,6 @@ fun SentenceTermResponse.toPeriodLegacyData(dpsSentenceId: String) = LegacyCreat
   periodDays = this.days,
   periodWeeks = this.weeks,
   sentenceUuid = UUID.fromString(dpsSentenceId),
-  //
-  prisonId = "OUT",
   legacyData = PeriodLengthLegacyData(
     lifeSentence = this.lifeSentenceFlag,
     sentenceTermCode = this.sentenceTermType?.code,
