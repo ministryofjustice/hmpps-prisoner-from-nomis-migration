@@ -162,7 +162,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("chargeUuids[0]", equalTo(DPS_CHARGE_ID)))
                 .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
                 .withRequestBody(matchingJsonPath("active", equalTo("false")))
-                .withRequestBody(matchingJsonPath("prisonId", equalTo("MDI")))
                 .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1")))
                 .withRequestBody(matchingJsonPath("returnToCustodyDate", equalTo("2023-01-01"))),
             )
@@ -237,7 +236,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("chargeUuids[0]", equalTo(DPS_CHARGE_ID)))
                 .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
                 .withRequestBody(matchingJsonPath("active", equalTo("false")))
-                .withRequestBody(matchingJsonPath("prisonId", equalTo("MDI")))
                 .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1"))),
             )
           }
@@ -1143,7 +1141,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBody(matchingJsonPath("active", equalTo("false")))
                 .withRequestBody(matchingJsonPath("chargeUuids[0]", equalTo(DPS_CHARGE_ID)))
                 .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
-                .withRequestBody(matchingJsonPath("prisonId", equalTo("MDI")))
                 .withRequestBody(matchingJsonPath("legacyData.postedDate", isNotNull()))
                 .withRequestBody(matchingJsonPath("legacyData.sentenceCalcType", equalTo("ADIMP_ORA")))
                 .withRequestBody(matchingJsonPath("legacyData.sentenceTypeDesc", equalTo("ADIMP_ORA description")))
