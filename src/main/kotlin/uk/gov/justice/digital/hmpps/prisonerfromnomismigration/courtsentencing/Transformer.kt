@@ -179,8 +179,6 @@ fun CourtEventChargeResponse.toDpsMigrationCharge(
 fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsConsecUuid: String?) = LegacyCreateSentence(
   chargeUuids = sentenceChargeIds.map { UUID.fromString(it) },
   active = this.status == "A",
-  // can be "OUT"
-  prisonId = this.prisonId,
   legacyData = this.toSentenceLegacyData(),
   // TODO confirm what this is used for
   chargeNumber = this.lineSequence?.toString(),
@@ -219,8 +217,6 @@ fun SentenceTermResponse.toPeriodLegacyData(dpsSentenceId: String) = LegacyCreat
   periodDays = this.days,
   periodWeeks = this.weeks,
   sentenceUuid = UUID.fromString(dpsSentenceId),
-  //
-  prisonId = "OUT",
   legacyData = PeriodLengthLegacyData(
     lifeSentence = this.lifeSentenceFlag,
     sentenceTermCode = this.sentenceTermType?.code,
