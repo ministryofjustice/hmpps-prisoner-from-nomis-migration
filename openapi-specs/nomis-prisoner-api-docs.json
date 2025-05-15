@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-05-13.3.694ef9a"
+    "version" : "2025-05-14.22.9146164"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -22818,15 +22818,15 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "paged" : {
             "type" : "boolean"
           },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           }
         }
       },
@@ -24099,6 +24099,13 @@
               "$ref" : "#/components/schemas/OffenderChargeResponse"
             }
           },
+          "missingCourtOffenderChargeIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          },
           "prisonId" : {
             "type" : "string"
           },
@@ -24106,7 +24113,7 @@
             "$ref" : "#/components/schemas/RecallCustodyDate"
           }
         },
-        "required" : [ "bookingId", "calculationType", "category", "createdByUsername", "createdDateTime", "offenderCharges", "prisonId", "sentenceSeq", "sentenceTerms", "startDate", "status" ]
+        "required" : [ "bookingId", "calculationType", "category", "createdByUsername", "createdDateTime", "missingCourtOffenderChargeIds", "offenderCharges", "prisonId", "sentenceSeq", "sentenceTerms", "startDate", "status" ]
       },
       "SentenceTermResponse" : {
         "type" : "object",
@@ -24149,9 +24156,12 @@
           },
           "lifeSentenceFlag" : {
             "type" : "boolean"
+          },
+          "prisonId" : {
+            "type" : "string"
           }
         },
-        "required" : [ "lifeSentenceFlag", "startDate", "termSequence" ]
+        "required" : [ "lifeSentenceFlag", "prisonId", "startDate", "termSequence" ]
       },
       "PostPrisonerMergeCaseChanges" : {
         "type" : "object",
