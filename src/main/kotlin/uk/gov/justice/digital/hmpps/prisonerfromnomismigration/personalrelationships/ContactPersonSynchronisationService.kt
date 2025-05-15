@@ -151,44 +151,51 @@ class ContactPersonSynchronisationService(
     }
   }
   suspend fun contactAdded(event: ContactEvent) {
-    val telemetry =
-      telemetryOf("offenderNo" to event.offenderIdDisplay, "bookingId" to event.bookingId, "nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisContactId" to event.contactId)
-
-    if (event.doesOriginateInDps()) {
+    if (event.personId == null) {
       telemetryClient.trackEvent(
-        "contactperson-contact-synchronisation-created-skipped",
-        telemetry,
+        "contactperson-contact-synchronisation-created-ignored",
+        telemetryOf("reason" to "PRISONER_TO_PRISONER", "offenderNo" to event.offenderIdDisplay, "bookingId" to event.bookingId, "nomisContactId" to event.contactId),
       )
     } else {
-      mappingApiService.getByNomisContactIdOrNull(nomisContactId = event.contactId)?.also {
-        telemetryClient.trackEvent(
-          "contactperson-contact-synchronisation-created-ignored",
-          telemetry + ("dpsPrisonerContactId" to it.dpsId),
-        )
-      } ?: run {
-        track("contactperson-contact-synchronisation-created", telemetry) {
-          nomisApiService.getContact(nomisContactId = event.contactId).also { nomisContact ->
-            val dpsPrisonerContactResponse =
-              dpsApiService.createPrisonerContact(nomisContact.toDpsCreatePrisonerContactRequest(nomisPersonId = event.personId))
-            when (dpsPrisonerContactResponse) {
-              is CreatePrisonerContactDuplicate -> {
-                telemetryClient.trackEvent(
-                  "from-nomis-sync-contactperson-duplicate",
-                  mapOf(
-                    "existingNomisContactId" to event.contactId,
-                    "type" to "DPS_CONTACT",
-                  ),
-                )
-              }
-              is CreatePrisonerContactSuccess -> {
-                telemetry["dpsPrisonerContactId"] = dpsPrisonerContactResponse.contact.id
-                val mapping = PersonContactMappingDto(
-                  nomisId = event.contactId,
-                  dpsId = dpsPrisonerContactResponse.contact.id.toString(),
-                  mappingType = PersonContactMappingDto.MappingType.NOMIS_CREATED,
-                )
+      val telemetry =
+        telemetryOf("offenderNo" to event.offenderIdDisplay, "bookingId" to event.bookingId, "nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisContactId" to event.contactId)
 
-                tryToCreateMapping(mapping, telemetry)
+      if (event.doesOriginateInDps()) {
+        telemetryClient.trackEvent(
+          "contactperson-contact-synchronisation-created-skipped",
+          telemetry,
+        )
+      } else {
+        mappingApiService.getByNomisContactIdOrNull(nomisContactId = event.contactId)?.also {
+          telemetryClient.trackEvent(
+            "contactperson-contact-synchronisation-created-ignored",
+            telemetry + ("dpsPrisonerContactId" to it.dpsId),
+          )
+        } ?: run {
+          track("contactperson-contact-synchronisation-created", telemetry) {
+            nomisApiService.getContact(nomisContactId = event.contactId).also { nomisContact ->
+              val dpsPrisonerContactResponse =
+                dpsApiService.createPrisonerContact(nomisContact.toDpsCreatePrisonerContactRequest(nomisPersonId = event.personId))
+              when (dpsPrisonerContactResponse) {
+                is CreatePrisonerContactDuplicate -> {
+                  telemetryClient.trackEvent(
+                    "from-nomis-sync-contactperson-duplicate",
+                    mapOf(
+                      "existingNomisContactId" to event.contactId,
+                      "type" to "DPS_CONTACT",
+                    ),
+                  )
+                }
+                is CreatePrisonerContactSuccess -> {
+                  telemetry["dpsPrisonerContactId"] = dpsPrisonerContactResponse.contact.id
+                  val mapping = PersonContactMappingDto(
+                    nomisId = event.contactId,
+                    dpsId = dpsPrisonerContactResponse.contact.id.toString(),
+                    mappingType = PersonContactMappingDto.MappingType.NOMIS_CREATED,
+                  )
+
+                  tryToCreateMapping(mapping, telemetry)
+                }
               }
             }
           }
@@ -197,55 +204,69 @@ class ContactPersonSynchronisationService(
     }
   }
   suspend fun contactUpdated(event: ContactEvent) {
-    val telemetry =
-      telemetryOf(
-        "offenderNo" to event.offenderIdDisplay,
-        "bookingId" to event.bookingId,
-        "nomisPersonId" to event.personId,
-        "dpsContactId" to event.personId,
-        "nomisContactId" to event.contactId,
-      )
-
-    if (event.doesOriginateInDps()) {
+    if (event.personId == null) {
       telemetryClient.trackEvent(
-        "contactperson-contact-synchronisation-updated-skipped",
-        telemetry,
+        "contactperson-contact-synchronisation-updated-ignored",
+        telemetryOf("reason" to "PRISONER_TO_PRISONER", "offenderNo" to event.offenderIdDisplay, "bookingId" to event.bookingId, "nomisContactId" to event.contactId),
       )
     } else {
-      track("contactperson-contact-synchronisation-updated", telemetry) {
-        val dpsPrisonerContactId =
-          mappingApiService.getByNomisContactId(nomisContactId = event.contactId).dpsId.toLong().also {
-            telemetry["dpsPrisonerContactId"] = it
-          }
-        val nomisContact = nomisApiService.getContact(nomisContactId = event.contactId)
-
-        dpsApiService.updatePrisonerContact(
-          dpsPrisonerContactId,
-          nomisContact.toDpsUpdatePrisonerContactRequest(nomisPersonId = event.personId),
+      val telemetry =
+        telemetryOf(
+          "offenderNo" to event.offenderIdDisplay,
+          "bookingId" to event.bookingId,
+          "nomisPersonId" to event.personId,
+          "dpsContactId" to event.personId,
+          "nomisContactId" to event.contactId,
         )
+
+      if (event.doesOriginateInDps()) {
+        telemetryClient.trackEvent(
+          "contactperson-contact-synchronisation-updated-skipped",
+          telemetry,
+        )
+      } else {
+        track("contactperson-contact-synchronisation-updated", telemetry) {
+          val dpsPrisonerContactId =
+            mappingApiService.getByNomisContactId(nomisContactId = event.contactId).dpsId.toLong().also {
+              telemetry["dpsPrisonerContactId"] = it
+            }
+          val nomisContact = nomisApiService.getContact(nomisContactId = event.contactId)
+
+          dpsApiService.updatePrisonerContact(
+            dpsPrisonerContactId,
+            nomisContact.toDpsUpdatePrisonerContactRequest(nomisPersonId = event.personId),
+          )
+        }
       }
     }
   }
   suspend fun contactDeleted(event: ContactEvent) {
-    val telemetry =
-      telemetryOf(
-        "offenderNo" to event.offenderIdDisplay,
-        "bookingId" to event.bookingId,
-        "nomisPersonId" to event.personId,
-        "dpsContactId" to event.personId,
-        "nomisContactId" to event.contactId,
-      )
-    mappingApiService.getByNomisContactIdOrNull(nomisContactId = event.contactId)?.also {
-      track("contactperson-contact-synchronisation-deleted", telemetry) {
-        telemetry["dpsPrisonerContactId"] = it.dpsId
-        dpsApiService.deletePrisonerContact(it.dpsId.toLong())
-        mappingApiService.deleteByNomisContactId(event.contactId)
-      }
-    } ?: run {
+    if (event.personId == null) {
       telemetryClient.trackEvent(
         "contactperson-contact-synchronisation-deleted-ignored",
-        telemetry,
+        telemetryOf("reason" to "PRISONER_TO_PRISONER", "offenderNo" to event.offenderIdDisplay, "bookingId" to event.bookingId, "nomisContactId" to event.contactId),
       )
+    } else {
+      val telemetry =
+        telemetryOf(
+          "offenderNo" to event.offenderIdDisplay,
+          "bookingId" to event.bookingId,
+          "nomisPersonId" to event.personId,
+          "dpsContactId" to event.personId,
+          "nomisContactId" to event.contactId,
+        )
+      mappingApiService.getByNomisContactIdOrNull(nomisContactId = event.contactId)?.also {
+        track("contactperson-contact-synchronisation-deleted", telemetry) {
+          telemetry["dpsPrisonerContactId"] = it.dpsId
+          dpsApiService.deletePrisonerContact(it.dpsId.toLong())
+          mappingApiService.deleteByNomisContactId(event.contactId)
+        }
+      } ?: run {
+        telemetryClient.trackEvent(
+          "contactperson-contact-synchronisation-deleted-ignored",
+          telemetry,
+        )
+      }
     }
   }
 
