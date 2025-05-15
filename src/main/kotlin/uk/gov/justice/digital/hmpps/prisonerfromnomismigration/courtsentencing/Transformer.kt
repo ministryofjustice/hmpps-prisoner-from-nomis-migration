@@ -123,6 +123,7 @@ fun OffenderChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharg
     outcomeDescription = this.resultCode1?.description,
     nomisOutcomeCode = this.resultCode1?.code,
     outcomeDispositionCode = this.resultCode1?.dispositionCode,
+    outcomeConvictionFlag = this.resultCode1?.conviction,
   ),
   offenceEndDate = this.offenceEndDate,
   appearanceLifetimeUuid = UUID.fromString(appearanceId),
@@ -136,6 +137,7 @@ fun CourtEventChargeResponse.toDpsCharge() = LegacyUpdateCharge(
     outcomeDescription = this.resultCode1?.description,
     nomisOutcomeCode = this.resultCode1?.code,
     outcomeDispositionCode = this.resultCode1?.dispositionCode,
+    outcomeConvictionFlag = this.resultCode1?.conviction,
   ),
   offenceEndDate = this.offenceEndDate,
 )
@@ -157,6 +159,7 @@ fun CourtEventChargeResponse.toDpsMigrationCharge(
       outcomeDescription = this.resultCode1?.description,
       nomisOutcomeCode = this.resultCode1?.code,
       outcomeDispositionCode = this.resultCode1?.dispositionCode,
+      outcomeConvictionFlag = this.resultCode1?.conviction,
     ),
     offenceEndDate = this.offenceEndDate,
     chargeNOMISId = chargeId,

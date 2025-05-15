@@ -397,6 +397,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         weeks = 4,
         days = 5,
         lifeSentenceFlag = false,
+        prisonId = "OUT",
       ),
     ),
     offenderCharges: List<OffenderChargeResponse> = listOf(
@@ -443,6 +444,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       consecSequence = consecSequence,
       sentenceLevel = sentenceLevel,
       recallCustodyDate = recallCustodyDate,
+      missingCourtOffenderChargeIds = emptyList(),
     ),
   ) {
     nomisApi.stubFor(
@@ -481,6 +483,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       weeks = 4,
       days = 5,
       lifeSentenceFlag = false,
+      prisonId = "OUT",
     ),
   ) {
     println("\n\n/prisoners/$offenderNo/sentence-terms/booking-id/$bookingId/sentence-sequence/$sentenceSequence/term-sequence/$termSequence")
@@ -691,6 +694,8 @@ fun sentenceResponse(bookingId: Long, sentenceSequence: Int) = SentenceResponse(
   fineAmount = BigDecimal.valueOf(1.10),
   consecSequence = null,
   sentenceLevel = null,
+  missingCourtOffenderChargeIds = emptyList(),
+
 )
 
 fun courtEventResponse(eventId: Long) = CourtEventResponse(
