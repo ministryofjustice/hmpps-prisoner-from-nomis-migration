@@ -402,6 +402,7 @@ class CourtSentencingTransformerTest {
               startDate = LocalDate.parse("2016-11-08"),
               endDate = LocalDate.parse("2020-04-28"),
               lifeSentenceFlag = false,
+              prisonId = "OUT",
             ),
           ),
           offenderCharges = listOf(
@@ -445,6 +446,7 @@ class CourtSentencingTransformerTest {
             ),
           ),
           prisonId = "BAI",
+          missingCourtOffenderChargeIds = emptyList(),
         ),
       ),
     )

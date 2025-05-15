@@ -3515,7 +3515,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "13:26:06.047732632"
+            "example" : "16:27:52.590194778"
           },
           "outcomeDispositionCode" : {
             "type" : "string"
@@ -3764,7 +3764,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "13:26:06.047732632"
+            "example" : "16:27:52.590194778"
           },
           "courtCode" : {
             "type" : "string"
@@ -4828,7 +4828,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "13:26:06.047732632"
+            "example" : "16:27:52.590194778"
           },
           "courtCode" : {
             "type" : "string"
@@ -5248,7 +5248,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "13:26:06.047732632"
+            "example" : "16:27:52.590194778"
           },
           "charges" : {
             "type" : "array",
@@ -5271,7 +5271,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "13:26:06.047732632"
+            "example" : "16:27:52.590194778"
           },
           "courtId" : {
             "type" : "string"
@@ -5361,6 +5361,12 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -5377,12 +5383,6 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -5410,12 +5410,12 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "paged" : {
-            "type" : "boolean"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "paged" : {
+            "type" : "boolean"
           },
           "unpaged" : {
             "type" : "boolean"

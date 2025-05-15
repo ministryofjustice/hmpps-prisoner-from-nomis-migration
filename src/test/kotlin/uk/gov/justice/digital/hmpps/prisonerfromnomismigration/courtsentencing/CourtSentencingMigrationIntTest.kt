@@ -232,6 +232,7 @@ class CourtSentencingMigrationIntTest(
             assertThat(legacyData.nomisOutcomeCode).isEqualTo("1081")
             assertThat(legacyData.outcomeDescription).isEqualTo("Detention and Training Order")
             assertThat(legacyData.outcomeDispositionCode).isEqualTo("F")
+            assertThat(legacyData.outcomeConvictionFlag).isEqualTo(true)
             assertThat(chargeNOMISId).isEqualTo(3934645)
             assertThat(legacyData.postedDate).isNotNull
             assertThat(sentence?.sentenceId?.sequence).isEqualTo(NOMIS_SENTENCE_SEQUENCE_ID)
@@ -641,6 +642,7 @@ fun buildSentenceTermResponse(
   weeks = 2,
   days = 3,
   hours = 0,
+  prisonId = "OUT",
 )
 
 fun buildSentenceResponse(
@@ -674,6 +676,7 @@ fun buildSentenceResponse(
   createdByUsername = "BNELL",
   courtOrder = courtOrder,
   recallCustodyDate = recallCustodyDate,
+  missingCourtOffenderChargeIds = emptyList(),
 )
 
 fun buildCourtOrderResponse(eventId: Long = NOMIS_APPEARANCE_1_ID) = CourtOrderResponse(
