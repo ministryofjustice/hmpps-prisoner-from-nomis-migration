@@ -117,7 +117,7 @@ data class ContactEvent(
   val offenderIdDisplay: String,
   val bookingId: Long,
   val contactId: Long,
-  val personId: Long,
+  val personId: Long?,
   override val auditModuleName: String,
 ) : EventAudited
 
