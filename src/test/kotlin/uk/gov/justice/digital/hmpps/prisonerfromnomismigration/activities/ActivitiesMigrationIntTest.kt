@@ -466,7 +466,6 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
   inner class MoveActivityStartDates {
 
     private val migrationId = "2023-10-05T09:58:45"
-    private val migrationIdNoMigrations = "2023-11-06T09:58:45"
     private val count = 3
     private val oldActivityStartDate = tomorrow
     private val oldNomisEndDate = oldActivityStartDate.minusDays(1)
@@ -477,7 +476,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     @BeforeEach
     fun stubApis() = runTest {
       mappingApi.stubActivitiesMappingByMigrationId(count = count, migrationId = migrationId)
-      nomisApi.stubEndActivities()
+      nomisApi.stubMoveActivitiesEndDate()
       activitiesApi.stubMoveActivityStartDates("BXI", newActivityStartDate)
     }
 
@@ -485,32 +484,21 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     fun createHistoryRecords() = runTest {
       migrationHistoryRepository.deleteAll()
       migrationHistoryRepository.save(
-        MigrationHistory(
-          migrationId = migrationId,
-          whenStarted = LocalDateTime.parse("2023-10-05T09:58:45"),
-          whenEnded = LocalDateTime.parse("2023-10-05T10:04:45"),
-          status = MigrationStatus.COMPLETED,
-          estimatedRecordCount = 8,
-          filter = """{"prisonId":"BXI","activityStartDate":"$oldActivityStartDate","nomisActivityEndDate":"$oldNomisEndDate"}""",
-          recordsMigrated = 8,
-          recordsFailed = 0,
-          migrationType = ACTIVITIES,
-        ),
-      )
-      migrationHistoryRepository.save(
-        MigrationHistory(
-          migrationId = migrationIdNoMigrations,
-          whenStarted = LocalDateTime.parse("2023-10-05T09:58:45"),
-          whenEnded = LocalDateTime.parse("2023-10-05T10:04:45"),
-          status = MigrationStatus.COMPLETED,
-          estimatedRecordCount = 8,
-          filter = """{"prisonId":"BXI","activityStartDate":"$oldActivityStartDate","nomisActivityEndDate":"$oldNomisEndDate"}""",
-          recordsMigrated = 8,
-          recordsFailed = 0,
-          migrationType = ACTIVITIES,
-        ),
+        aMigration(migrationId, """{"prisonId":"BXI","activityStartDate":"$oldActivityStartDate","nomisActivityEndDate":"$oldNomisEndDate"}"""),
       )
     }
+
+    private fun aMigration(migrationId: String, filter: String) = MigrationHistory(
+      migrationId = migrationId,
+      whenStarted = LocalDateTime.parse("2023-10-05T09:58:45"),
+      whenEnded = LocalDateTime.parse("2023-10-05T10:04:45"),
+      status = MigrationStatus.COMPLETED,
+      estimatedRecordCount = 8,
+      filter = filter,
+      recordsMigrated = 8,
+      recordsFailed = 0,
+      migrationType = ACTIVITIES,
+    )
 
     @AfterEach
     fun deleteHistoryRecords() = runTest {
@@ -545,8 +533,12 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    fun `will return not found if no activities were migrated`() {
+    fun `will return not found if no activities were migrated`() = runTest {
+      val migrationIdNoMigrations = "2023-11-06T09:58:45"
       mappingApi.stubActivitiesMappingByMigrationId(count = 0, migrationId = migrationIdNoMigrations)
+      migrationHistoryRepository.save(
+        aMigration(migrationIdNoMigrations, """{"prisonId":"BXI","activityStartDate":"$oldActivityStartDate","nomisActivityEndDate":"$oldNomisEndDate"}"""),
+      )
 
       webTestClient.moveStartDates(migrationIdNoMigrations)
         .expectStatus().isNotFound
@@ -571,6 +563,18 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
+    fun `will return bad request if NOMIS activities not already ended`() = runTest {
+      val migrationIdNoEndDate = "2023-12-07T09:58:45"
+      mappingApi.stubActivitiesMappingByMigrationId(count = count, migrationId = migrationIdNoEndDate)
+      migrationHistoryRepository.save(
+        aMigration(migrationIdNoEndDate, """{"prisonId":"BXI","activityStartDate":"$oldActivityStartDate"}"""),
+      )
+
+      webTestClient.moveStartDates(migrationIdNoEndDate)
+        .expectStatus().isBadRequest
+    }
+
+    @Test
     fun `will do nothing if get mappings fails`() = runTest {
       mappingApi.stubActivitiesMappingByMigrationIdFails(500)
 
@@ -578,19 +582,19 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().is5xxServerError
 
       checkFilter(oldNomisEndDate, oldActivityStartDate)
-      nomisApi.verifyEndActivities("[1,2,3]", "$newNomisEndDate}", times = 0)
+      nomisApi.verifyMoveActivitiesEndDate("[1,2,3]", "$oldNomisEndDate", "$newNomisEndDate", times = 0)
       activitiesApi.verifyMoveActivityStartDates(activityStartDate = newActivityStartDate, times = 0)
     }
 
     @Test
     fun `will do nothing if NOMIS update fails`() = runTest {
-      nomisApi.stubEndActivitiesError(BAD_REQUEST)
+      nomisApi.stubMoveActivitiesEndDateError(BAD_REQUEST)
 
       webTestClient.moveStartDates(migrationId)
         .expectStatus().is5xxServerError
 
       checkFilter(oldNomisEndDate, oldActivityStartDate)
-      nomisApi.verifyEndActivities("[1,2,3]", "$newNomisEndDate}", times = 0)
+      nomisApi.verifyMoveActivitiesEndDate("[1,2,3]", "$oldNomisEndDate", "$newNomisEndDate", times = 1)
       activitiesApi.verifyMoveActivityStartDates(activityStartDate = newActivityStartDate, times = 0)
     }
 
@@ -602,7 +606,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().is5xxServerError
 
       checkFilter(newNomisEndDate, oldActivityStartDate)
-      nomisApi.verifyEndActivities("[1,2,3]", "$newNomisEndDate", times = 1)
+      nomisApi.verifyMoveActivitiesEndDate("[1,2,3]", "$oldNomisEndDate", "$newNomisEndDate", times = 1)
       activitiesApi.verifyMoveActivityStartDates(activityStartDate = newActivityStartDate, times = 1)
     }
 
@@ -614,7 +618,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
       checkFilter(newNomisEndDate, newActivityStartDate)
       mappingApi.verifyActivitiesMappingByMigrationId(migrationId, count)
-      nomisApi.verifyEndActivities("[1,2,3]", "$newNomisEndDate", times = 1)
+      nomisApi.verifyMoveActivitiesEndDate("[1,2,3]", "$oldNomisEndDate", "$newNomisEndDate", times = 1)
       activitiesApi.verifyMoveActivityStartDates(activityStartDate = newActivityStartDate, times = 1)
     }
 

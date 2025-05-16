@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GetActivityResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GetAllocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.LocationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MoveActivityEndDateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
@@ -138,6 +139,12 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   suspend fun endActivities(ids: List<Long>, endDate: LocalDate) = webClient.put()
     .uri("/activities/end")
     .body(BodyInserters.fromValue(EndActivitiesRequest(ids, endDate)))
+    .retrieve()
+    .awaitBodilessEntity()
+
+  suspend fun moveActivityEndDates(ids: List<Long>, oldEndDate: LocalDate, newEndDate: LocalDate) = webClient.put()
+    .uri("/activities/move-end-date")
+    .body(BodyInserters.fromValue(MoveActivityEndDateRequest(ids, oldEndDate, newEndDate)))
     .retrieve()
     .awaitBodilessEntity()
 
