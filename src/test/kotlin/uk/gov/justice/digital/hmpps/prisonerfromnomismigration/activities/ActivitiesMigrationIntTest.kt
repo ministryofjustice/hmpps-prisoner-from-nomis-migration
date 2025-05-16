@@ -563,6 +563,12 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
+    fun `will return bad request if date not after the existing date`() {
+      webTestClient.moveStartDates(migrationId, """{"newActivityStartDate":"$tomorrow"}""")
+        .expectStatus().isBadRequest
+    }
+
+    @Test
     fun `will return bad request if NOMIS activities not already ended`() = runTest {
       val migrationIdNoEndDate = "2023-12-07T09:58:45"
       mappingApi.stubActivitiesMappingByMigrationId(count = count, migrationId = migrationIdNoEndDate)
