@@ -119,6 +119,8 @@ class ActivitiesMigrationService(
     val filter = migrationHistoryService.get(migrationId)
       .let { objectMapper.readValue(it.filter, ActivitiesMigrationFilter::class.java) }
 
+    if (newActivityStartDate <= filter.activityStartDate) throw BadRequestException("The new start date must be after the current start date ${filter.activityStartDate}")
+
     val oldNomisEndDate = filter.nomisActivityEndDate ?: throw BadRequestException("Can only move start dates if the NOMIS activities have been ended")
     val newNomisEndDate = newActivityStartDate.minusDays(1)
 
