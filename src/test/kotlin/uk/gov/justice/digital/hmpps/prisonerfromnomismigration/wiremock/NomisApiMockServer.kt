@@ -388,6 +388,36 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubMoveActivitiesEndDate() {
+    nomisApi.stubFor(
+      put(urlPathEqualTo("/activities/move-end-date"))
+        .willReturn(
+          aResponse()
+            .withStatus(HttpStatus.OK.value()),
+        ),
+    )
+  }
+
+  fun stubMoveActivitiesEndDateError(status: HttpStatus) {
+    nomisApi.stubFor(
+      put(urlPathEqualTo("/activities/move-end-date"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody("""{"status":"${status.value()}",userMessage = "NOMIS error"}"""),
+        ),
+    )
+  }
+
+  fun verifyMoveActivitiesEndDate(expectedCourseActivityIds: String, oldEndDate: String, newEndDate: String, times: Int = 1) {
+    nomisApi.verify(
+      times,
+      putRequestedFor(urlPathEqualTo("/activities/move-end-date"))
+        .withRequestBody(containing(""""courseActivityIds":$expectedCourseActivityIds,"oldEndDate":"$oldEndDate","newEndDate":"$newEndDate"""")),
+    )
+  }
+
   fun stubMultipleGetAllocations(count: Int) {
     repeat(count) { offset ->
       nomisApi.stubFor(

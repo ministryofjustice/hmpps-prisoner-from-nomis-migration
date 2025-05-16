@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.ActivityMigrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.NomisPayRate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.NomisScheduleRule
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
@@ -118,9 +119,12 @@ class ActivitiesMigrationService(
     val filter = migrationHistoryService.get(migrationId)
       .let { objectMapper.readValue(it.filter, ActivitiesMigrationFilter::class.java) }
 
+    val oldNomisEndDate = filter.nomisActivityEndDate ?: throw BadRequestException("Can only move start dates if the NOMIS activities have been ended")
+    val newNomisEndDate = newActivityStartDate.minusDays(1)
+
     return try {
-      nomisApiService.endActivities(allActivityIds, newActivityStartDate.minusDays(1))
-        .also { filter.nomisActivityEndDate = newActivityStartDate.minusDays(1) }
+      nomisApiService.moveActivityEndDates(allActivityIds, oldNomisEndDate, newNomisEndDate)
+        .also { filter.nomisActivityEndDate = newNomisEndDate }
       activitiesApiService.moveActivityStartDates(filter.prisonId, newActivityStartDate)
         .also { filter.activityStartDate = newActivityStartDate }
     } catch (e: Exception) {
