@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-05-14.22.9146164"
+    "version" : "2025-05-15.29.fba18fc"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -632,7 +632,7 @@
       "put" : {
         "tags" : [ "sentencing-resource" ],
         "summary" : "Updates Court Appearance",
-        "description" : "Required role NOMIS_SENTENCING Updates a new Court Appearance for the offender,latest booking and given Court Case",
+        "description" : "Required role NOMIS_SENTENCING Updates a new Court Appearance for the offender and given Court Case",
         "operationId" : "updateCourtAppearance",
         "parameters" : [ {
           "name" : "offenderNo",
@@ -7441,6 +7441,69 @@
         }
       }
     },
+    "/activities/move-end-date" : {
+      "put" : {
+        "tags" : [ "activities-resource" ],
+        "summary" : "Move the end date of multiple course activities",
+        "description" : "Move the end date of course activities and allocations if they end on the oldEndDate passed. Requires role NOMIS_ACTIVITIES",
+        "operationId" : "moveActivitiesEndDate",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MoveActivityEndDateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Activities ended"
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires role NOMIS_ACTIVITIES",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/activities/end" : {
       "put" : {
         "tags" : [ "activities-resource" ],
@@ -7968,7 +8031,7 @@
       "post" : {
         "tags" : [ "sentencing-resource" ],
         "summary" : "Creates a new Court Appearance",
-        "description" : "Required role NOMIS_SENTENCING Creates a new Court Appearance for the offender,latest booking and given Court Case",
+        "description" : "Required role NOMIS_SENTENCING Creates a new Court Appearance for the offender and given Court Case",
         "operationId" : "createCourtAppearance",
         "parameters" : [ {
           "name" : "offenderNo",
@@ -20295,6 +20358,34 @@
           }
         },
         "required" : [ "created", "offenderProgramReferenceId", "prisonId" ]
+      },
+      "MoveActivityEndDateRequest" : {
+        "type" : "object",
+        "description" : "Move activity end date request",
+        "properties" : {
+          "courseActivityIds" : {
+            "type" : "array",
+            "description" : "Course activity ids",
+            "example" : [ 1, 2 ],
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          },
+          "oldEndDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Only update activities and allocation with this end date.",
+            "example" : "2025-02-20"
+          },
+          "newEndDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The new end date for activities and allocations",
+            "example" : "2025-02-21"
+          }
+        },
+        "required" : [ "courseActivityIds", "newEndDate", "oldEndDate" ]
       },
       "EndActivitiesRequest" : {
         "type" : "object",
