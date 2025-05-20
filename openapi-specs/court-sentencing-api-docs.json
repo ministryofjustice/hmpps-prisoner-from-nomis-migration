@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-05-19.6614.4f7d09b"
+    "version" : "2025-05-20.6653.ec3f39b"
   },
   "servers" : [ {
     "url" : "https://remand-and-sentencing-api.hmpps.service.justice.gov.uk",
@@ -3725,7 +3725,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "13:59:05.21305232"
+            "example" : "12:06:24.840347185"
           },
           "outcomeDispositionCode" : {
             "type" : "string"
@@ -3974,7 +3974,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "13:59:05.21305232"
+            "example" : "12:06:24.840347185"
           },
           "courtCode" : {
             "type" : "string"
@@ -4735,9 +4735,12 @@
           "consecutiveToSentenceUuid" : {
             "type" : "string",
             "format" : "uuid"
+          },
+          "hasRecall" : {
+            "type" : "boolean"
           }
         },
-        "required" : [ "periodLengths", "sentenceServeType", "sentenceUuid" ]
+        "required" : [ "hasRecall", "periodLengths", "sentenceServeType", "sentenceUuid" ]
       },
       "SentenceType" : {
         "type" : "object",
@@ -5148,7 +5151,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "13:59:05.21305232"
+            "example" : "12:06:24.840347185"
           },
           "courtCode" : {
             "type" : "string"
@@ -5398,9 +5401,16 @@
               "type" : "string",
               "format" : "uuid"
             }
+          },
+          "recallType" : {
+            "type" : "string",
+            "enum" : [ "LR", "FTR_14", "FTR_28", "LR_HDC", "FTR_HDC_14", "FTR_HDC_28", "CUR_HDC", "IN_HDC" ]
+          },
+          "recallBy" : {
+            "type" : "string"
           }
         },
-        "required" : [ "prisonerId", "recallUuid", "sentenceIds" ]
+        "required" : [ "prisonerId", "recallBy", "recallType", "recallUuid", "sentenceIds" ]
       },
       "LegacyPeriodLength" : {
         "type" : "object",
@@ -5541,7 +5551,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "13:59:05.21305232"
+            "example" : "12:06:24.840347185"
           },
           "charges" : {
             "type" : "array",
@@ -5564,7 +5574,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "13:59:05.21305232"
+            "example" : "12:06:24.840347185"
           },
           "courtId" : {
             "type" : "string"
@@ -5654,12 +5664,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -5676,6 +5680,12 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",

@@ -148,8 +148,8 @@ fun CourtEventChargeResponse.toDpsMigrationCharge(
   linkedSourceCase: CourtCaseResponse?,
   isSourceCase: Boolean,
 ): MigrationCreateCharge {
-  val linkedCourtEvent =
-    linkedSourceCase?.courtEvents?.firstOrNull { it.courtEventCharges.firstOrNull { it.offenderCharge.id == chargeId } != null }
+  val lastSourceCourtEventForCharge =
+    linkedSourceCase?.courtEvents?.lastOrNull { appearance -> appearance.courtEventCharges.any { charges -> charges.offenderCharge.id == chargeId } }
   return MigrationCreateCharge(
     offenceCode = this.offenderCharge.offence.offenceCode,
     offenceStartDate = this.offenceDate,
@@ -165,17 +165,21 @@ fun CourtEventChargeResponse.toDpsMigrationCharge(
     chargeNOMISId = chargeId,
     sentence = dpsSentence,
     merged = if (isSourceCase) {
+      // TODO: this is not strickly correct - since this implies all court event charges on source are merged
+      // which may not be the case - however given I don't think DPS needs this revisit when
+      // requirements are established, it would probably require NOMIS API changes to support this correctly
       true
-    } else if (linkedCourtEvent != null) {
+    } else if (linkedCaseDetails != null) {
       false
     } else {
       null
     },
-    mergedFromCaseId = takeIf { linkedCourtEvent != null }?.let { linkedSourceCase?.id },
-    mergedFromEventId = linkedCourtEvent?.id,
-    // TODO - this will always be chargeId when linked so this feels
-    // like a redundant field in DPS
-    mergedChargeNOMISId = linkedCourtEvent?.courtEventCharges?.firstOrNull { it.offenderCharge.id == chargeId }?.offenderCharge?.id,
+    mergedFromCaseId = linkedCaseDetails?.caseId,
+    // TODO - ensure DPS really needs this since I think this is redundant
+    mergedFromEventId = lastSourceCourtEventForCharge?.id,
+    // TODO - this will always be chargeId when linked so this feels like a redundant field in DPS
+    mergedChargeNOMISId = linkedCaseDetails?.let { chargeId },
+    mergedFromDate = linkedCaseDetails?.dateLinked,
   )
 }
 
