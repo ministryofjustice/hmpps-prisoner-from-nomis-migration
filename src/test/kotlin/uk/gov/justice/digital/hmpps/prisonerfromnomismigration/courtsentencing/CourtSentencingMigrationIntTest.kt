@@ -46,6 +46,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtOrderResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.LinkedCaseChargeDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResultCodeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
@@ -332,7 +333,13 @@ class CourtSentencingMigrationIntTest(
             courtEvents = listOf(
               courtEventResponse(eventId = 201).copy(
                 courtEventCharges = listOf(
-                  courtEventChargeResponse(eventId = 201, offenderChargeId = 1001),
+                  courtEventChargeResponse(eventId = 201, offenderChargeId = 1001).copy(
+                    linkedCaseDetails = LinkedCaseChargeDetails(
+                      caseId = 1,
+                      eventId = 201,
+                      dateLinked = LocalDate.parse("2024-02-02"),
+                    ),
+                  ),
                   courtEventChargeResponse(eventId = 201, offenderChargeId = 2001),
                 ),
               ),
