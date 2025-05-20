@@ -6022,15 +6022,15 @@
         "type" : "object",
         "description" : "Incident report created in NOMIS",
         "properties" : {
+          "incidentReport" : {
+            "$ref" : "#/components/schemas/NomisReport",
+            "description" : "Complete incident report payload"
+          },
           "initialMigration" : {
             "type" : "boolean",
             "default" : false,
             "description" : "Set to true for initial migration",
             "example" : true
-          },
-          "incidentReport" : {
-            "$ref" : "#/components/schemas/NomisReport",
-            "description" : "Complete incident report payload"
           }
         },
         "required" : [ "incidentReport" ],
@@ -6040,11 +6040,6 @@
         "type" : "object",
         "description" : "Incident report updated in NOMIS",
         "properties" : {
-          "initialMigration" : {
-            "type" : "boolean",
-            "default" : false,
-            "description" : "Omit or set to false for updates"
-          },
           "id" : {
             "type" : "string",
             "format" : "uuid",
@@ -6054,6 +6049,11 @@
           "incidentReport" : {
             "$ref" : "#/components/schemas/NomisReport",
             "description" : "Complete incident report payload"
+          },
+          "initialMigration" : {
+            "type" : "boolean",
+            "default" : false,
+            "description" : "Omit or set to false for updates"
           }
         },
         "required" : [ "id", "incidentReport" ],

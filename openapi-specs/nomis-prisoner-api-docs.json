@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-05-15.29.fba18fc"
+    "version" : "2025-05-19.33.4ab4118"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -23827,6 +23827,9 @@
           },
           "mostSeriousFlag" : {
             "type" : "boolean"
+          },
+          "linkedCaseDetails" : {
+            "$ref" : "#/components/schemas/LinkedCaseChargeDetails"
           }
         },
         "required" : [ "eventId", "mostSeriousFlag", "offenderCharge" ]
@@ -23959,6 +23962,27 @@
           }
         },
         "required" : [ "courtDate", "eventId", "id", "issuingCourt", "orderStatus", "orderType", "sentencePurposes" ]
+      },
+      "LinkedCaseChargeDetails" : {
+        "type" : "object",
+        "description" : "Linked case details for a court event charge",
+        "properties" : {
+          "caseId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Source caseId"
+          },
+          "eventId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Target court eventId"
+          },
+          "dateLinked" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        },
+        "required" : [ "caseId", "dateLinked", "eventId" ]
       },
       "RecallCustodyDate" : {
         "type" : "object",
