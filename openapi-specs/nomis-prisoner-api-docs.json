@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-05-19.33.4ab4118"
+    "version" : "2025-05-20.39.245eeee"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -985,6 +985,80 @@
           },
           "404" : {
             "description" : "Sentence does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "deprecated" : true
+      },
+      "post" : {
+        "tags" : [ "sentencing-resource" ],
+        "summary" : "Recalls Sentences by convert the specified sentences to the requested recall sentence",
+        "description" : "Required role NOMIS_SENTENCING Recalls sentences for the offender",
+        "operationId" : "convertToRecallSentences",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "description" : "Offender no",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Offender no",
+            "example" : "AA668EC"
+          },
+          "example" : "AA668EC"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ConvertToRecallRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Sentences converted to recall"
+          },
+          "400" : {
+            "description" : "Supplied data is invalid, for instance missing required fields or invalid values. See schema for details",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint when role NOMIS_SENTENCING not present",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "One or more sentence does not exist",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -20615,6 +20689,38 @@
           }
         },
         "required" : [ "caseIdentifiers" ]
+      },
+      "ConvertToRecallRequest" : {
+        "type" : "object",
+        "description" : "Recall convert request",
+        "properties" : {
+          "sentences" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RecallSentenceDetails"
+            }
+          },
+          "returnToCustody" : {
+            "$ref" : "#/components/schemas/ReturnToCustodyRequest"
+          }
+        },
+        "required" : [ "sentences" ]
+      },
+      "RecallSentenceDetails" : {
+        "type" : "object",
+        "description" : "Recall sentences to set",
+        "properties" : {
+          "sentenceId" : {
+            "$ref" : "#/components/schemas/SentenceId"
+          },
+          "sentenceCategory" : {
+            "type" : "string"
+          },
+          "sentenceCalcType" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "sentenceCalcType", "sentenceCategory", "sentenceId" ]
       },
       "CreateSentenceResponse" : {
         "type" : "object",
