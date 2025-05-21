@@ -1,7 +1,6 @@
 [![Runbook](https://img.shields.io/badge/runbook-view-172B4D.svg?logo=confluence)](https://dsdmoj.atlassian.net/wiki/spaces/NOM/pages/1739325587/DPS+Runbook)
 [![repo standards badge](https://img.shields.io/badge/endpoint.svg?&style=flat&logo=github&url=https%3A%2F%2Foperations-engineering-reports.cloud-platform.service.justice.gov.uk%2Fapi%2Fv1%2Fcompliant_public_repositories%2Fhmpps-prisoner-from-nomis-migration)](https://operations-engineering-reports.cloud-platform.service.justice.gov.uk/public-report/hmpps-prisoner-from-nomis-migration "Link to report")
-[![CircleCI](https://circleci.com/gh/ministryofjustice/hmpps-prisoner-from-nomis-migration/tree/main.svg?style=svg)](https://circleci.com/gh/ministryofjustice/hmpps-prisoner-from-nomis-migration)
-[![Docker Repository on Quay](https://img.shields.io/badge/quay.io-repository-2496ED.svg?logo=docker)](https://quay.io/repository/hmpps/hmpps-prisoner-from-nomis-migration)
+[![Docker Repository on Quay](https://img.shields.io/badge/ghcr.io-repository-2496ED.svg?logo=docker)](https://ghcr.io/ministryofjustice/hmpps-prisoner-from-nomis-migration)
 [![API docs](https://img.shields.io/badge/API_docs_-view-85EA2D.svg?logo=swagger)](https://prisoner-nomis-migration-dev.hmpps.service.justice.gov.uk/swagger-ui/index.html)
 
 # hmpps-prisoner-from-nomis-migration
