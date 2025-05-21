@@ -185,6 +185,7 @@ class ContactPersonSynchronisationService(
                       "type" to "DPS_CONTACT",
                     ),
                   )
+                  throw IllegalStateException("Duplicate contact ${event.contactId} already exists in DPS")
                 }
                 is CreatePrisonerContactSuccess -> {
                   telemetry["dpsPrisonerContactId"] = dpsPrisonerContactResponse.contact.id

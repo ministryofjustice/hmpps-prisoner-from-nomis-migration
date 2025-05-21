@@ -7,6 +7,8 @@ import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -4694,8 +4696,8 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `will try create the prisoner contact in DPS once`() {
-        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/prisoner-contact")))
+      fun `will try create the prisoner contact in DPS `() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/prisoner-contact")))
       }
 
       @Test
@@ -4719,8 +4721,10 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `message will not be sent to DLQ`() {
-        assertThat(personalRelationshipsOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(0)
+      fun `message will  be sent to DLQ`() {
+        await untilAsserted {
+          assertThat(personalRelationshipsOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(1)
+        }
       }
     }
 
