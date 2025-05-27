@@ -19,7 +19,8 @@ permissions:
   contents: read
   packages: write
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # only cancel in progress when on a branch - use SHA on main to ensure uniqueness
+  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 jobs:
   helm_lint:
@@ -41,7 +42,23 @@ jobs:
     name: Run the tests
     strategy:
       matrix:
-        tests: ['test', 'testActivities', 'testAlerts']
+        tests: [
+          'test',
+          'testActivities',
+          'testAlerts',
+          'testAppointments',
+          'testCasenotes',
+          'testCoreperson',
+          'testCourtsentencing',
+          'testCsip',
+          'testIncidents',
+          'testLocations',
+          'testOrganisations',
+          'testPersonalrelationships',
+          'testSentencing',
+          'testVisitbalances',
+          'testVisits'
+        ]
     uses: ./.github/workflows/gradle_localstack_postgres_verify.yml # LOCAL_VERSION
     secrets: inherit
     with:
@@ -65,7 +82,7 @@ jobs:
       registry_org: 'ministryofjustice'
       additional_docker_tag: ${{ inputs.additional_docker_tag }}
       push: ${{ inputs.push || true }}
-      docker_multiplatform: true
+      docker_multiplatform: false
   deploy_dev:
     name: Deploy to the dev environment
     if: github.ref == 'refs/heads/main'
