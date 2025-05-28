@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances
 
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.doesOriginateInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
@@ -25,7 +24,7 @@ class VisitBalanceSynchronisationService(
     val nomisPrisonNumber = event.offenderIdDisplay
     val telemetry = telemetryOf("visitBalanceAdjustmentId" to visitBalanceAdjustmentId, "nomisPrisonNumber" to nomisPrisonNumber)
 
-    if (event.doesOriginateInDps() && nomisApiService.isServicePrisonOnForPrisoner(serviceCode = VISIT_ALLOCATION_SERVICE, prisonNumber = nomisPrisonNumber)) {
+    if (event.originatesInDpsOrHasMissingAudit() && nomisApiService.isServicePrisonOnForPrisoner(serviceCode = VISIT_ALLOCATION_SERVICE, prisonNumber = nomisPrisonNumber)) {
       telemetryClient.trackEvent(
         "visitbalance-adjustment-synchronisation-created-skipped",
         telemetry,
@@ -61,3 +60,5 @@ fun VisitBalanceAdjustmentResponse.toSyncDto(nomisPrisonNumber: String) = VisitA
   changeLogSource = if (createUsername == "OMS_OWNER") VisitAllocationPrisonerSyncDto.ChangeLogSource.SYSTEM else VisitAllocationPrisonerSyncDto.ChangeLogSource.STAFF,
   comment = comment,
 )
+
+fun VisitBalanceOffenderEvent.originatesInDpsOrHasMissingAudit() = auditModuleName == "DPS_SYNCHRONISATION" || auditModuleName.isNullOrEmpty()

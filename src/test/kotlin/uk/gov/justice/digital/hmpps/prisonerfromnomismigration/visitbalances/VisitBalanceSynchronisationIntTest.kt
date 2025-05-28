@@ -32,6 +32,58 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
     private val nomisPrisonNumber = "A1234BC"
 
     @Nested
+    inner class WhenMissingAudit {
+      @Test
+      fun `the event is ignored if DPS Allocation`() {
+        nomisApi.stubCheckServicePrisonForPrisoner()
+        visitBalanceOffenderEventsQueue.sendMessage(
+          visitBalanceAdjustmentEvent(
+            eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
+            visitBalanceAdjId = visitBalanceAdjId,
+            auditModuleName = "",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/service-prisons/VISIT_ALLOCATION/prisoner/A1234BC")))
+
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
+        verify(telemetryClient).trackEvent(
+          eq("visitbalance-adjustment-synchronisation-created-skipped"),
+          check {
+            assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `the event is not ignored if Nomis Allocation`() {
+        nomisApi.stubCheckServicePrisonForPrisonerNotFound()
+        nomisVisitBalanceApiMock.stubGetVisitBalanceAdjustment(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
+        dpsApiMock.stubSyncVisitBalanceAdjustment()
+        visitBalanceOffenderEventsQueue.sendMessage(
+          visitBalanceAdjustmentEvent(
+            eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
+            visitBalanceAdjId = visitBalanceAdjId,
+            auditModuleName = "",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/service-prisons/VISIT_ALLOCATION/prisoner/A1234BC")))
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
+        verify(telemetryClient).trackEvent(
+          eq("visitbalance-adjustment-synchronisation-created-success"),
+          check {
+            assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
     inner class WhenCreatedInDps {
       @Nested
       inner class WhenDpsVisitAllocation {
