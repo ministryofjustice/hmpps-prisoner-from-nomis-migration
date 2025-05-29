@@ -48,16 +48,15 @@ jobs:
           'testAlerts',
           'testAppointments',
           'testCasenotes',
-          'testCoreperson',
-          'testCourtsentencing',
+          'testCorePerson',
+          'testCourtSentencing',
           'testCsip',
           'testIncidents',
           'testLocations',
           'testOrganisations',
-          'testPersonalrelationships',
+          'testPersonalRelationships',
           'testSentencing',
-          'testVisitbalances',
-          'testVisits'
+          'testVisitBalance'
         ]
     uses: ./.github/workflows/gradle_localstack_postgres_verify.yml # LOCAL_VERSION
     secrets: inherit
