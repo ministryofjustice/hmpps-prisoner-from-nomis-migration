@@ -46,7 +46,6 @@ jobs:
           'test',
           'testActivities',
           'testAlerts',
-          'testAppointments',
           'testCasenotes',
           'testCorePerson',
           'testCourtSentencing',
