@@ -16,6 +16,11 @@ class VisitBalanceNomisApiService(@Qualifier("nomisApiWebClient") private val we
     .retrieve()
     .awaitBody()
 
+  suspend fun getVisitBalanceDetailForPrisoner(prisonNumber: String): VisitBalanceDetailResponse = webClient.get()
+    .uri("/prisoners/{prisonNumber}/visit-balance/details", prisonNumber)
+    .retrieve()
+    .awaitBody()
+
   suspend fun getVisitBalanceAdjustment(visitBalanceAdjustmentId: Long): VisitBalanceAdjustmentResponse = webClient.get()
     .uri("/visit-balances/visit-balance-adjustment/{visitBalanceAdjustmentId}", visitBalanceAdjustmentId)
     .retrieve()

@@ -59,6 +59,22 @@ class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubGetVisitBalanceDetailForPrisoner(
+    prisonNumber: String = "A0001BC",
+    visitBalance: VisitBalanceDetailResponse = visitBalanceDetail(prisonNumber = prisonNumber),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/$prisonNumber/visit-balance/details")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(
+            objectMapper.writeValueAsString(visitBalance),
+          ),
+      ),
+    )
+  }
+
   fun stubGetVisitBalanceAdjustment(
     nomisVisitBalanceAdjustmentId: Long = 12345L,
     visitBalanceAdjustment: VisitBalanceAdjustmentResponse = visitBalanceAdjustment(),

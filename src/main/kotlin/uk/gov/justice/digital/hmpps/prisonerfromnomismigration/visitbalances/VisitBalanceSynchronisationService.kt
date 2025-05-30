@@ -47,6 +47,11 @@ class VisitBalanceSynchronisationService(
     )
     telemetryClient.trackEvent("visitbalance-adjustment-synchronisation-deleted-unexpected", telemetry)
   }
+
+  suspend fun resynchroniseVisitBalance(prisonNumber: String) {
+    val visitBalance = nomisVisitBalanceApiService.getVisitBalanceDetailForPrisoner(prisonNumber)
+    dpsApiService.migrateVisitBalance(visitBalance.toMigrationDto())
+  }
 }
 
 fun VisitBalanceAdjustmentResponse.toSyncDto(nomisPrisonNumber: String) = VisitAllocationPrisonerSyncDto(
