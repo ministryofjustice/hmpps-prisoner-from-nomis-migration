@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-05-21.41.2acbfb7"
+    "version" : "2025-05-30.66.b17256e"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -345,7 +345,7 @@
         "tags" : [ "visit-balance-resource" ],
         "summary" : "Get visit order balance data for a prisoner",
         "description" : "Retrieves visit order balance details for a prisoner. Requires ROLE_NOMIS_VISIT_BALANCE",
-        "operationId" : "getVisitBalanceForOffender",
+        "operationId" : "getVisitBalanceForPrisoner",
         "parameters" : [ {
           "name" : "prisonNumber",
           "in" : "path",
@@ -924,9 +924,9 @@
     "/prisoners/{offenderNo}/sentences/recall" : {
       "put" : {
         "tags" : [ "sentencing-resource" ],
-        "summary" : "Recalls Sentences",
+        "summary" : "Updates Recalls Sentences",
         "description" : "Required role NOMIS_SENTENCING Recalls sentences for the offender",
-        "operationId" : "recallSentences",
+        "operationId" : "updateRecallSentences",
         "parameters" : [ {
           "name" : "offenderNo",
           "in" : "path",
@@ -943,7 +943,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/CreateRecallRequest"
+                "$ref" : "#/components/schemas/ConvertToRecallRequest"
               }
             }
           },
@@ -951,7 +951,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Sentences recalled"
+            "description" : "Recall Sentences updated"
           },
           "400" : {
             "description" : "Supplied data is invalid, for instance missing required fields or invalid values. See schema for details",
@@ -984,7 +984,7 @@
             }
           },
           "404" : {
-            "description" : "Sentence does not exist",
+            "description" : "One or more sentence does not exist",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -993,8 +993,7 @@
               }
             }
           }
-        },
-        "deprecated" : true
+        }
       },
       "post" : {
         "tags" : [ "sentencing-resource" ],
@@ -1026,6 +1025,81 @@
         "responses" : {
           "200" : {
             "description" : "Sentences converted to recall"
+          },
+          "400" : {
+            "description" : "Supplied data is invalid, for instance missing required fields or invalid values. See schema for details",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint when role NOMIS_SENTENCING not present",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "One or more sentence does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/sentences/recall/restore-original" : {
+      "put" : {
+        "tags" : [ "sentencing-resource" ],
+        "summary" : "Deletes Recalls Sentences and replaces with original sentence",
+        "description" : "Required role NOMIS_SENTENCING replaces recall sentences for the offender",
+        "operationId" : "deleteRecallSentences",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "description" : "Offender no",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Offender no",
+            "example" : "AA668EC"
+          },
+          "example" : "AA668EC"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DeleteRecallRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Recall Sentences deleted and replaced with original sentences"
           },
           "400" : {
             "description" : "Supplied data is invalid, for instance missing required fields or invalid values. See schema for details",
@@ -5540,72 +5614,6 @@
           },
           "404" : {
             "description" : "Corporate or address or phone does not exist",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete" : {
-        "tags" : [ "corporate-resource" ],
-        "summary" : "Delete a corporate address phone",
-        "description" : "Deletes a corporate address phone record. Requires ROLE_NOMIS_CONTACTPERSONS",
-        "operationId" : "deleteCorporateAddressPhone",
-        "parameters" : [ {
-          "name" : "corporateId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        }, {
-          "name" : "addressId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        }, {
-          "name" : "phoneId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Corporate address phone deleted or does not exist"
-          },
-          "400" : {
-            "description" : "The request params contains address or corporate that are not related with the phone",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSONS",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -12504,6 +12512,68 @@
         }
       }
     },
+    "/prisoners/{prisonNumber}/visit-balance/details" : {
+      "get" : {
+        "tags" : [ "visit-balance-resource" ],
+        "summary" : "Get visit balance details for a prisoner",
+        "description" : "Retrieves visit balance details including last IEP allocation date for a prisoner. Requires ROLE_NOMIS_VISIT_BALANCE",
+        "operationId" : "getVisitBalanceDetailsForPrisoner",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "description" : "Prison number aka Offender No.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison number aka Offender No.",
+            "example" : "A1234AK"
+          },
+          "example" : "A1234AK"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Visit balance details returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VisitBalanceDetailResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_VISIT_BALANCE",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Prisoner does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/{offenderNo}" : {
       "get" : {
         "tags" : [ "prisoners-resource" ],
@@ -12593,7 +12663,7 @@
           "schema" : {
             "type" : "string",
             "description" : "Offender No",
-            "example" : "12345"
+            "example" : 12345
           },
           "example" : 12345
         } ],
@@ -12667,7 +12737,7 @@
           "schema" : {
             "type" : "string",
             "description" : "Offender No",
-            "example" : "12345"
+            "example" : 12345
           },
           "example" : 12345
         } ],
@@ -12868,7 +12938,7 @@
           "schema" : {
             "type" : "string",
             "description" : "Offender No",
-            "example" : "12345"
+            "example" : 12345
           },
           "example" : 12345
         } ],
@@ -16344,7 +16414,8 @@
           "schema" : {
             "type" : "string",
             "format" : "date-time",
-            "description" : "Appointment date and start time"
+            "description" : "Appointment date and start time",
+            "example" : "2023-02-27T14:40"
           },
           "example" : "2023-02-27T14:40"
         } ],
@@ -17567,6 +17638,66 @@
         }
       }
     },
+    "/corporates/{corporateId}/address/phone/{phoneId}" : {
+      "delete" : {
+        "tags" : [ "corporate-resource" ],
+        "summary" : "Delete a corporate address phone",
+        "description" : "Deletes a corporate address phone record. Requires ROLE_NOMIS_CONTACTPERSONS",
+        "operationId" : "deleteCorporateAddressPhone",
+        "parameters" : [ {
+          "name" : "corporateId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "phoneId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Corporate address phone deleted or does not exist"
+          },
+          "400" : {
+            "description" : "The request params contains address or corporate that are not related with the phone",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_CONTACTPERSONS",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/attendances/{eventId}" : {
       "delete" : {
         "tags" : [ "activities-resource" ],
@@ -17759,19 +17890,19 @@
           },
           "unexcusedAbsence" : {
             "type" : "boolean",
-            "default" : "false",
+            "default" : false,
             "description" : "Whether the absence is excused",
             "example" : true
           },
           "authorisedAbsence" : {
             "type" : "boolean",
-            "default" : "false",
+            "default" : false,
             "description" : "Whether the absence is authorised",
             "example" : true
           },
           "paid" : {
             "type" : "boolean",
-            "default" : "false",
+            "default" : false,
             "description" : "Whether the attendance is to be paid",
             "example" : true
           },
@@ -17963,27 +18094,40 @@
         },
         "required" : [ "offenceCode" ]
       },
-      "CreateRecallRequest" : {
+      "ConvertToRecallRequest" : {
         "type" : "object",
-        "description" : "Recall add request",
+        "description" : "Recall convert request",
         "properties" : {
-          "sentenceCategory" : {
-            "type" : "string"
-          },
-          "sentenceCalcType" : {
-            "type" : "string"
-          },
-          "sentenceIds" : {
+          "sentences" : {
             "type" : "array",
             "items" : {
-              "$ref" : "#/components/schemas/SentenceId"
+              "$ref" : "#/components/schemas/RecallRelatedSentenceDetails"
             }
           },
           "returnToCustody" : {
             "$ref" : "#/components/schemas/ReturnToCustodyRequest"
           }
         },
-        "required" : [ "sentenceCalcType", "sentenceCategory", "sentenceIds" ]
+        "required" : [ "sentences" ]
+      },
+      "RecallRelatedSentenceDetails" : {
+        "type" : "object",
+        "description" : "Recall sentences to set",
+        "properties" : {
+          "sentenceId" : {
+            "$ref" : "#/components/schemas/SentenceId"
+          },
+          "sentenceCategory" : {
+            "type" : "string"
+          },
+          "sentenceCalcType" : {
+            "type" : "string"
+          },
+          "active" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "active", "sentenceCalcType", "sentenceCategory", "sentenceId" ]
       },
       "ReturnToCustodyRequest" : {
         "type" : "object",
@@ -18016,6 +18160,19 @@
           }
         },
         "required" : [ "offenderBookingId", "sentenceSequence" ]
+      },
+      "DeleteRecallRequest" : {
+        "type" : "object",
+        "description" : "Delete recall sentence request",
+        "properties" : {
+          "sentences" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RecallRelatedSentenceDetails"
+            }
+          }
+        },
+        "required" : [ "sentences" ]
       },
       "UpsertProfileDetailsRequest" : {
         "type" : "object",
@@ -19859,8 +20016,7 @@
           },
           "hearingTime" : {
             "type" : "string",
-            "description" : "Hearing time",
-            "example" : "14:30:00"
+            "description" : "Hearing time"
           },
           "internalLocationId" : {
             "type" : "integer",
@@ -20313,13 +20469,11 @@
           },
           "startTime" : {
             "type" : "string",
-            "description" : "The instance start time",
-            "example" : "14:30:00"
+            "description" : "The instance start time"
           },
           "endTime" : {
             "type" : "string",
-            "description" : "The instance end time",
-            "example" : "14:30:00"
+            "description" : "The instance end time"
           }
         },
         "required" : [ "courseScheduleId", "date", "endTime", "startTime" ]
@@ -20694,38 +20848,6 @@
         },
         "required" : [ "caseIdentifiers" ]
       },
-      "ConvertToRecallRequest" : {
-        "type" : "object",
-        "description" : "Recall convert request",
-        "properties" : {
-          "sentences" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/RecallSentenceDetails"
-            }
-          },
-          "returnToCustody" : {
-            "$ref" : "#/components/schemas/ReturnToCustodyRequest"
-          }
-        },
-        "required" : [ "sentences" ]
-      },
-      "RecallSentenceDetails" : {
-        "type" : "object",
-        "description" : "Recall sentences to set",
-        "properties" : {
-          "sentenceId" : {
-            "$ref" : "#/components/schemas/SentenceId"
-          },
-          "sentenceCategory" : {
-            "type" : "string"
-          },
-          "sentenceCalcType" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "sentenceCalcType", "sentenceCategory", "sentenceId" ]
-      },
       "CreateSentenceResponse" : {
         "type" : "object",
         "description" : "Create sentence response",
@@ -20951,8 +21073,7 @@
           },
           "incidentTime" : {
             "type" : "string",
-            "description" : "Date and time of the associated incident",
-            "example" : "14:30:00"
+            "description" : "Date and time of the associated incident"
           },
           "reportedDate" : {
             "type" : "string",
@@ -20961,8 +21082,7 @@
           },
           "reportedTime" : {
             "type" : "string",
-            "description" : "Date and time when the associated incident was reported",
-            "example" : "14:30:00"
+            "description" : "Date and time when the associated incident was reported"
           },
           "createdByUsername" : {
             "type" : "string",
@@ -21151,8 +21271,7 @@
           },
           "scheduleTime" : {
             "type" : "string",
-            "description" : "Hearing scheduled time as set by DPS but not used by NOMIS or set in NOMIS",
-            "example" : "14:30:00"
+            "description" : "Hearing scheduled time as set by DPS but not used by NOMIS or set in NOMIS"
           },
           "hearingDate" : {
             "type" : "string",
@@ -21161,8 +21280,7 @@
           },
           "hearingTime" : {
             "type" : "string",
-            "description" : "Hearing time",
-            "example" : "14:30:00"
+            "description" : "Hearing time"
           },
           "comment" : {
             "type" : "string"
@@ -21218,8 +21336,7 @@
           },
           "deliveryTime" : {
             "type" : "string",
-            "description" : "Hearing notification time",
-            "example" : "14:30:00"
+            "description" : "Hearing notification time"
           },
           "comment" : {
             "type" : "string",
@@ -21302,7 +21419,7 @@
             "type" : "number"
           },
           "consecutiveAward" : {
-            "$ref" : "#/components/schemas/HearingResultAward"
+            "required" : [ "effectiveDate", "sequence" ]
           },
           "chargeSequence" : {
             "type" : "integer",
@@ -21645,7 +21762,7 @@
           },
           "active" : {
             "type" : "boolean",
-            "default" : "true",
+            "default" : true,
             "description" : "Flag to indicate if the adjustment is being applied"
           }
         },
@@ -21711,7 +21828,7 @@
           },
           "active" : {
             "type" : "boolean",
-            "default" : "true",
+            "default" : true,
             "description" : "Flag to indicate if the adjustment is being applied"
           }
         },
@@ -22154,7 +22271,7 @@
         "properties" : {
           "certified" : {
             "type" : "boolean",
-            "default" : "false",
+            "default" : false,
             "description" : "Whether certified for use",
             "example" : true
           },
@@ -22632,8 +22749,7 @@
           },
           "hearingTime" : {
             "type" : "string",
-            "description" : "Hearing time",
-            "example" : "14:30:00"
+            "description" : "Hearing time"
           },
           "agencyId" : {
             "type" : "string",
@@ -22970,12 +23086,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -22993,12 +23103,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -23015,19 +23131,19 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "unpaged" : {
+            "type" : "boolean"
+          },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "paged" : {
             "type" : "boolean"
           },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           }
         }
       },
@@ -23159,12 +23275,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -23182,12 +23292,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -23576,12 +23692,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -23599,12 +23709,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24680,8 +24796,7 @@
           },
           "incidentTime" : {
             "type" : "string",
-            "description" : "Date/Time incident occurred",
-            "example" : "14:30:00"
+            "description" : "Date/Time incident occurred"
           },
           "type" : {
             "$ref" : "#/components/schemas/CodeDescription",
@@ -25535,12 +25650,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -25558,12 +25667,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -25599,12 +25714,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -25622,12 +25731,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -26246,12 +26361,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -26269,12 +26378,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -26402,12 +26517,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -26425,12 +26534,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -26479,7 +26594,7 @@
           },
           "certified" : {
             "type" : "boolean",
-            "default" : "false",
+            "default" : false,
             "description" : "Whether certified for use",
             "example" : true
           },
@@ -26623,12 +26738,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -26646,12 +26755,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -27139,12 +27254,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -27162,12 +27271,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -27249,12 +27364,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -27272,12 +27381,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -27380,12 +27495,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -27403,12 +27512,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -27686,12 +27801,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -27709,12 +27818,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -28447,12 +28562,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -28470,12 +28579,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -28744,12 +28859,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -28767,12 +28876,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -28806,12 +28921,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -28829,12 +28938,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -28873,12 +28988,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -28896,12 +29005,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -29166,12 +29281,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -29189,12 +29298,18 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
