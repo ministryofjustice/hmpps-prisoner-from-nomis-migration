@@ -42,6 +42,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SEN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SENTENCE_TERM_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import kotlin.collections.plus
 
 @Service
 class CourtSentencingSynchronisationService(
@@ -1428,6 +1429,18 @@ class CourtSentencingSynchronisationService(
     telemetryClient.trackEvent(
       "from-nomis-synch-court-case-merge",
       telemetry,
+    )
+  }
+
+  suspend fun nomisRecallReturnToCustodyDataChanged(event: ReturnToCustodyDateEvent) {
+    val telemetry =
+      mapOf(
+        "bookingId" to event.bookingId.toString(),
+        "offenderNo" to event.offenderIdDisplay,
+      )
+    telemetryClient.trackEvent(
+      "recall-custody-date-synchronisation-success",
+      telemetry + ("changeType" to event.eventType),
     )
   }
 
