@@ -6060,13 +6060,13 @@ class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `will retrieve all contacts for the retained prisoner number once`() {
-        nomisApiMock.verify(1, getRequestedFor(urlPathEqualTo("/prisoners/$offenderNumber/contacts")))
+      fun `will retrieve all contacts for the retained prisoner  until mapping succeeds`() {
+        nomisApiMock.verify(2, getRequestedFor(urlPathEqualTo("/prisoners/$offenderNumber/contacts")))
       }
 
       @Test
-      fun `will replace the contacts in DPS once `() {
-        dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/admin/reset")))
+      fun `will replace the contacts in DPS until mapping succeeds `() {
+        dpsApiMock.verify(2, postRequestedFor(urlPathEqualTo("/sync/admin/reset")))
       }
 
       @Test

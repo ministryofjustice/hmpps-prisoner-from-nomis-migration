@@ -41,7 +41,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiService.CreatePrisonerContactDuplicate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiService.CreatePrisonerContactSuccess
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RESYNCHRONISE_MOVE_BOOKING_TARGET
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_BOOKING_CHANGED_MAPPINGS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_BOOKING_MOVED_MAPPINGS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_PRISONER_MERGED_MAPPINGS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
@@ -1017,7 +1016,7 @@ class ContactPersonSynchronisationService(
         prisonerNumber = offenderNo,
       ),
     )
-    tryToReplaceBookingChangedMappings(
+    replaceBookingChangedMappings(
       offenderNo = offenderNo,
       mapping = ContactPersonPrisonerMappingsDto(
         mappingType = ContactPersonPrisonerMappingsDto.MappingType.NOMIS_CREATED,
@@ -1047,7 +1046,7 @@ class ContactPersonSynchronisationService(
             prisonerNumber = offenderNo,
           ),
         )
-        tryToReplaceBookingChangedMappings(
+        replaceBookingChangedMappings(
           offenderNo = offenderNo,
           mapping = ContactPersonPrisonerMappingsDto(
             mappingType = ContactPersonPrisonerMappingsDto.MappingType.NOMIS_CREATED,
@@ -1228,26 +1227,16 @@ class ContactPersonSynchronisationService(
       )
     }
   }
-  private suspend fun tryToReplaceBookingChangedMappings(
+  private suspend fun replaceBookingChangedMappings(
     offenderNo: String,
     mapping: ContactPersonPrisonerMappingsDto,
     telemetry: Map<String, Any>,
   ) {
-    try {
-      mappingApiService.replaceMappingsForPrisoner(offenderNo, mapping)
-      telemetryClient.trackEvent(
-        "from-nomis-synch-contactperson-booking-changed",
-        telemetry,
-      )
-    } catch (e: Exception) {
-      log.error("Failed to replace prisoner person for $mapping", e)
-      queueService.sendMessage(
-        messageType = RETRY_REPLACE_PRISONER_PERSON_BOOKING_CHANGED_MAPPINGS.name,
-        synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
-        message = ContactPersonPrisonerMappings(offenderNo = offenderNo, mappings = mapping),
-        telemetryAttributes = telemetry.valuesAsStrings(),
-      )
-    }
+    mappingApiService.replaceMappingsForPrisoner(offenderNo, mapping)
+    telemetryClient.trackEvent(
+      "from-nomis-synch-contactperson-booking-changed",
+      telemetry,
+    )
   }
   private suspend fun tryToReplaceBookingMovedMappings(
     offenderNo: String,
