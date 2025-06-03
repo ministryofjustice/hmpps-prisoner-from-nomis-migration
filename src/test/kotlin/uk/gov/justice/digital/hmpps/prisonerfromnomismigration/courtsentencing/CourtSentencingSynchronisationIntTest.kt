@@ -3946,6 +3946,42 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
     }
   }
+
+  @Nested
+  @DisplayName("OFFENDER_FIXED_TERM_RECALLS-UPDATED")
+  inner class FixedTermRecallUpdated {
+    val bookingId = NOMIS_BOOKING_ID
+    val offenderNo = OFFENDER_ID_DISPLAY
+
+    @Nested
+    inner class UpdatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+          courtSentencingQueueOffenderEventsUrl,
+          offenderFixedTermRecalls(
+            eventType = "OFFENDER_FIXED_TERM_RECALLS-UPDATED",
+            auditModule = "OIUFTRDA",
+            bookingId = bookingId,
+            offenderNo = offenderNo,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry for success`() {
+        verify(telemetryClient).trackEvent(
+          eq("recall-custody-date-synchronisation-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["bookingId"]).isEqualTo("$bookingId")
+            assertThat(it["changeType"]).isEqualTo("OFFENDER_FIXED_TERM_RECALLS-UPDATED")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
 }
 
 fun courtCaseEvent(
@@ -4087,3 +4123,22 @@ fun offenderChargeEvent(
     }
 }
 """.trimIndent()
+
+fun offenderFixedTermRecalls(
+  eventType: String,
+  bookingId: Long = NOMIS_BOOKING_ID,
+  offenderNo: String = OFFENDER_ID_DISPLAY,
+  auditModule: String = "DPS",
+) = //language=JSON
+  """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"$eventType\",\"auditModuleName\":\"$auditModule\" }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+  """.trimIndent()
