@@ -5,8 +5,8 @@ metadata:
   labels:
     {{- include "app.labels" . | nindent 4 }}
 spec:
-  schedule: "15 2 * * 1"
-  suspend: true
+  schedule: "15 2 * * 3"
+  suspend: false
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 5
   startingDeadlineSeconds: 600
