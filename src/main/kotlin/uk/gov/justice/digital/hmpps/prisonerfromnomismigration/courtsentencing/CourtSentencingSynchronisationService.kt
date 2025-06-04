@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCases
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -1434,14 +1435,29 @@ class CourtSentencingSynchronisationService(
 
   suspend fun nomisRecallReturnToCustodyDataChanged(event: ReturnToCustodyDateEvent) {
     val telemetry =
-      mapOf(
+      telemetryOf(
         "bookingId" to event.bookingId.toString(),
         "offenderNo" to event.offenderIdDisplay,
+        "changeType" to event.eventType,
       )
-    telemetryClient.trackEvent(
-      "recall-custody-date-synchronisation-success",
-      telemetry + ("changeType" to event.eventType),
-    )
+
+    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      telemetryClient.trackEvent("recall-custody-date-synchronisation-skipped", telemetry)
+    } else {
+      val recallSentences = nomisApiService.getOffenderActiveRecallSentences(event.bookingId)
+
+      if (recallSentences.isEmpty()) {
+        telemetryClient.trackEvent(
+          "recall-custody-date-synchronisation-ignored",
+          telemetry + ("reason" to "No active recall sentences found for booking ${event.bookingId}"),
+        )
+      } else {
+        telemetryClient.trackEvent(
+          "recall-custody-date-synchronisation-success",
+          telemetry,
+        )
+      }
+    }
   }
 
   suspend fun retryCreateCourtChargeMapping(retryMessage: InternalMessage<CourtChargeMappingDto>) {

@@ -549,6 +549,17 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     }
   }
 
+  fun stubGetOffenderActiveRecallSentences(bookingId: Long, response: List<SentenceResponse> = listOf()) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/booking-id/$bookingId/sentences/recall")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
   private fun courtCaseResponse(
     bookingId: Long = 2,
     offenderNo: String = "G4803UT",

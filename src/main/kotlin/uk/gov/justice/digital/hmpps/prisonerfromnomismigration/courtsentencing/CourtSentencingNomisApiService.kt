@@ -143,4 +143,12 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getOffenderActiveRecallSentences(bookingId: Long): List<SentenceResponse> = webClient.get()
+    .uri(
+      "/prisoners/booking-id/{bookingId}/sentences/recall",
+      bookingId,
+    )
+    .retrieve()
+    .awaitBody()
 }
