@@ -3957,6 +3957,19 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class UpdatedInNomis {
       @BeforeEach
       fun setUp() {
+        courtSentencingNomisApiMockServer.stubGetOffenderActiveRecallSentences(
+          bookingId,
+          listOf(
+            sentenceResponse(
+              bookingId = bookingId,
+              sentenceSequence = 1,
+            ),
+            sentenceResponse(
+              bookingId = bookingId,
+              sentenceSequence = 2,
+            ),
+          ),
+        )
         awsSqsCourtSentencingOffenderEventsClient.sendMessage(
           courtSentencingQueueOffenderEventsUrl,
           offenderFixedTermRecalls(
@@ -3969,9 +3982,85 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
+      fun `will retrieve active recall sentences from NOMIS`() {
+        courtSentencingNomisApiMockServer.verify(
+          getRequestedFor(urlPathEqualTo("/prisoners/booking-id/$bookingId/sentences/recall")),
+        )
+      }
+
+      @Test
       fun `will track telemetry for success`() {
         verify(telemetryClient).trackEvent(
           eq("recall-custody-date-synchronisation-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["bookingId"]).isEqualTo("$bookingId")
+            assertThat(it["changeType"]).isEqualTo("OFFENDER_FIXED_TERM_RECALLS-UPDATED")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class UpdatedInNomisNoActievRecallSentences {
+      @BeforeEach
+      fun setUp() {
+        courtSentencingNomisApiMockServer.stubGetOffenderActiveRecallSentences(
+          bookingId,
+          emptyList(),
+        )
+        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+          courtSentencingQueueOffenderEventsUrl,
+          offenderFixedTermRecalls(
+            eventType = "OFFENDER_FIXED_TERM_RECALLS-UPDATED",
+            auditModule = "OIUFTRDA",
+            bookingId = bookingId,
+            offenderNo = offenderNo,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will retrieve active recall sentences from NOMIS`() {
+        courtSentencingNomisApiMockServer.verify(
+          getRequestedFor(urlPathEqualTo("/prisoners/booking-id/$bookingId/sentences/recall")),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for success`() {
+        verify(telemetryClient).trackEvent(
+          eq("recall-custody-date-synchronisation-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["bookingId"]).isEqualTo("$bookingId")
+            assertThat(it["reason"]).isEqualTo("No active recall sentences found for booking $bookingId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class UpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+          courtSentencingQueueOffenderEventsUrl,
+          offenderFixedTermRecalls(
+            eventType = "OFFENDER_FIXED_TERM_RECALLS-UPDATED",
+            auditModule = "DPS_SYNCHRONISATION",
+            bookingId = bookingId,
+            offenderNo = offenderNo,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry for skip`() {
+        verify(telemetryClient).trackEvent(
+          eq("recall-custody-date-synchronisation-skipped"),
           check {
             assertThat(it["offenderNo"]).isEqualTo(offenderNo)
             assertThat(it["bookingId"]).isEqualTo("$bookingId")
