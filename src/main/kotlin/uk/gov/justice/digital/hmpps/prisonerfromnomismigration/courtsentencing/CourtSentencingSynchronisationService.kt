@@ -18,7 +18,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCases
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -28,6 +30,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NomisSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceTermMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseResponse
@@ -51,9 +54,9 @@ class CourtSentencingSynchronisationService(
   private val nomisApiService: CourtSentencingNomisApiService,
   private val dpsApiService: CourtSentencingDpsApiService,
   private val queueService: SynchronisationQueueService,
-  private val telemetryClient: TelemetryClient,
+  override val telemetryClient: TelemetryClient,
   @Value("\${contact-sentencing.court-event-update.ignore-missing:false}") private val ignoreMissingCourtAppearances: Boolean,
-) {
+) : TelemetryEnabled {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
     const val DPS_CASE_REFERENCE = "CASE/INFO#"
@@ -884,7 +887,7 @@ class CourtSentencingSynchronisationService(
     nomisSentence.offenderCharges.map {
       mappingApiService.getOffenderChargeByNomisId(it.id).dpsCourtChargeId
     }
-  } catch (webResponseException: WebClientResponseException) {
+  } catch (_: WebClientResponseException) {
     telemetryClient.trackEvent(
       name = "charge-mapping-missing",
       properties = mutableMapOf(
@@ -1452,10 +1455,36 @@ class CourtSentencingSynchronisationService(
           telemetry + ("reason" to "No active recall sentences found for booking ${event.bookingId}"),
         )
       } else {
-        telemetryClient.trackEvent(
-          "recall-custody-date-synchronisation-success",
-          telemetry,
-        )
+        track("recall-custody-date-synchronisation", telemetry) {
+          val mappings = mappingApiService.getSentencesByNomisIds(
+            recallSentences.map {
+              NomisSentenceId(
+                nomisBookingId = it.bookingId,
+                nomisSentenceSequence = it.sentenceSeq.toInt(),
+              )
+            },
+          )
+          mappings.forEach { mapping ->
+            val nomisSentence = recallSentences.find {
+              it.bookingId == mapping.nomisBookingId &&
+                it.sentenceSeq.toInt() == mapping.nomisSentenceSequence
+            } ?: throw IllegalStateException("Received ${event.eventType} event for booking ${event.bookingId} with missing sentence mapping")
+
+            dpsApiService.updateSentence(
+              sentenceId = mapping.dpsSentenceId,
+              nomisSentence.toDpsSentence(
+                dpsConsecUuid = nomisSentence.consecSequence?.let {
+                  getConsecutiveSequenceMappingOrThrow(
+                    bookingId = mapping.nomisBookingId,
+                    sentenceSequence = mapping.nomisSentenceSequence,
+                    consecSequence = it,
+                  )
+                },
+                sentenceChargeIds = getDpsChargeMappings(nomisSentence),
+              ),
+            )
+          }
+        }
       }
     }
   }

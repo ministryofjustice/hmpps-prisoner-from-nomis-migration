@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
@@ -789,6 +790,16 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
             WireMock.equalTo(nomisCourtCaseId.toString()),
           ),
         ),
+    )
+  }
+
+  fun stubGetSentencesByNomisIds(response: List<SentenceMappingDto>) {
+    mappingApi.stubFor(
+      post(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-sentence-ids/get-list")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(objectMapper.writeValueAsString(response)),
+      ),
     )
   }
 

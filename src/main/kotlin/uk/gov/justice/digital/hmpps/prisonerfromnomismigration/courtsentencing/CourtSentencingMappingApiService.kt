@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSentencingMigrationSummary
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NomisSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceTermMappingDto
 
@@ -176,6 +177,14 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getSentencesByNomisIds(nomisSentenceIds: List<NomisSentenceId>): List<SentenceMappingDto> = webClient.post()
+    .uri(
+      "/mapping/court-sentencing/sentences/nomis-sentence-ids/get-list",
+    )
+    .bodyValue(nomisSentenceIds)
+    .retrieve()
+    .awaitBody()
 
   suspend fun getSentenceTermOrNullByNomisId(bookingId: Long, sentenceSequence: Int, termSequence: Int): SentenceTermMappingDto? = webClient.get()
     .uri(
