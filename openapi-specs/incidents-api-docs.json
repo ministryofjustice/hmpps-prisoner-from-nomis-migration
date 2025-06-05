@@ -11,7 +11,7 @@
       "name" : "MIT",
       "identifier" : "MIT"
     },
-    "version" : "2025-05-20.5549.bd0c234"
+    "version" : "2025-06-02.5632.55ae35b"
   },
   "servers" : [ {
     "url" : "/",
@@ -6022,15 +6022,15 @@
         "type" : "object",
         "description" : "Incident report created in NOMIS",
         "properties" : {
+          "incidentReport" : {
+            "$ref" : "#/components/schemas/NomisReport",
+            "description" : "Complete incident report payload"
+          },
           "initialMigration" : {
             "type" : "boolean",
             "default" : false,
             "description" : "Set to true for initial migration",
             "example" : true
-          },
-          "incidentReport" : {
-            "$ref" : "#/components/schemas/NomisReport",
-            "description" : "Complete incident report payload"
           }
         },
         "required" : [ "incidentReport" ],
@@ -6040,11 +6040,6 @@
         "type" : "object",
         "description" : "Incident report updated in NOMIS",
         "properties" : {
-          "initialMigration" : {
-            "type" : "boolean",
-            "default" : false,
-            "description" : "Omit or set to false for updates"
-          },
           "id" : {
             "type" : "string",
             "format" : "uuid",
@@ -6054,6 +6049,11 @@
           "incidentReport" : {
             "$ref" : "#/components/schemas/NomisReport",
             "description" : "Complete incident report payload"
+          },
+          "initialMigration" : {
+            "type" : "boolean",
+            "default" : false,
+            "description" : "Omit or set to false for updates"
           }
         },
         "required" : [ "id", "incidentReport" ],
@@ -7105,17 +7105,17 @@
               "type" : "string"
             }
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "Number of elements in this page",
-            "example" : 20
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32",
             "description" : "Total number of pages",
             "example" : 3
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Number of elements in this page",
+            "example" : 20
           }
         },
         "readOnly" : true,
@@ -7211,17 +7211,17 @@
               "type" : "string"
             }
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "Number of elements in this page",
-            "example" : 20
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32",
             "description" : "Total number of pages",
             "example" : 3
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Number of elements in this page",
+            "example" : 20
           }
         },
         "readOnly" : true,
