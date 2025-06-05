@@ -15,7 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.S
 @Service
 class IncidentsService(@Qualifier("incidentsApiWebClient") private val webClient: WebClient) {
   companion object {
-    val openStatusValues = listOf("AWAITING_REVIEW", "INCIDENT_UPDATED", "NEEDS_UPDATING", "ON_HOLD", "POST_INCIDENT_UPDATE", "REOPENED", "UPDATED", "WAS_CLOSED")
+    val openStatusValues = listOf("AWAITING_REVIEW", "NEEDS_UPDATING", "ON_HOLD", "POST_INCIDENT_UPDATE", "REOPENED", "UPDATED", "WAS_CLOSED")
     val closedStatusValues = listOf("CLOSED", "DUPLICATE", "NOT_REPORTABLE")
   }
 
