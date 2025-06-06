@@ -62,8 +62,7 @@ class CourtSentencingEventListener(
               "OFFENDER_CASE_IDENTIFIERS-UPDATED",
               -> courtSentencingSynchronisationService.nomisCaseIdentifiersUpdated(eventType, sqsMessage.Message.fromJson())
               "prison-offender-events.prisoner.merged" -> courtSentencingSynchronisationService.prisonerMerged(sqsMessage.Message.fromJson())
-              "OFFENDER_FIXED_TERM_RECALLS-INSERTED", "OFFENDER_FIXED_TERM_RECALLS-UPDATED", "OFFENDER_FIXED_TERM_RECALLS-DELETED" -> courtSentencingSynchronisationService.nomisRecallReturnToCustodyDataChanged(sqsMessage.Message.fromJson())
-
+              "OFFENDER_FIXED_TERM_RECALLS-UPDATED" -> courtSentencingSynchronisationService.nomisRecallReturnToCustodyDataChanged(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {

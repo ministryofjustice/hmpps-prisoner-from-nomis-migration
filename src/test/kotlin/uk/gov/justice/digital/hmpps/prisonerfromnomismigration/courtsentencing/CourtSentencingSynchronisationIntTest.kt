@@ -43,12 +43,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RecallCustodyDate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.AbstractMap.SimpleEntry
@@ -3978,6 +3981,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 returnToCustodyDate = LocalDate.parse("2023-04-01"),
                 recallLength = 14,
               ),
+              status = "A",
+              fineAmount = BigDecimal("10.00"),
+              category = CodeDescription(code = "2020", description = "2020"),
+              calculationType = CodeDescription(code = "FTR", description = "28 day Fix term recall"),
+              lineSequence = 10,
+              consecSequence = null,
             ),
             sentenceResponse(
               bookingId = bookingId,
@@ -3992,6 +4001,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 returnToCustodyDate = LocalDate.parse("2023-04-01"),
                 recallLength = 14,
               ),
+              status = "A",
+              fineAmount = null,
+              category = CodeDescription(code = "2020", description = "2020"),
+              calculationType = CodeDescription(code = "FTR", description = "28 day Fix term recall"),
+              lineSequence = 11,
+              consecSequence = 1,
             ),
           ),
         )
@@ -4009,12 +4024,25 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
+        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+          nomisBookingId = bookingId,
+          nomisSentenceSequence = 1,
+          dpsSentenceId = "612cf742-feea-4562-b01d-ce643146fcf1",
+        )
 
         courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
           nomisCourtChargeId = 101,
+          mapping = CourtChargeMappingDto(
+            nomisCourtChargeId = 101,
+            dpsCourtChargeId = "6cd85595-85c0-459f-9a7d-8d686284875f",
+          ),
         )
         courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
           nomisCourtChargeId = 201,
+          mapping = CourtChargeMappingDto(
+            nomisCourtChargeId = 201,
+            dpsCourtChargeId = "f677dea5-7062-416c-a03b-3523642fe093",
+          ),
         )
         dpsCourtSentencingServer.stubPutSentenceForUpdate(sentenceId = "612cf742-feea-4562-b01d-ce643146fcf1")
         dpsCourtSentencingServer.stubPutSentenceForUpdate(sentenceId = "870f7e03-6bfc-46e6-9782-a91daab5eab4")
@@ -4058,6 +4086,31 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         val request2: LegacyCreateSentence = CourtSentencingDpsApiMockServer.getRequestBody(putRequestedFor(urlPathEqualTo("/legacy/sentence/870f7e03-6bfc-46e6-9782-a91daab5eab4")))
         with(request2) {
           assertThat(this.returnToCustodyDate).isEqualTo(LocalDate.parse("2023-04-01"))
+        }
+      }
+
+      @Test
+      fun `will also update DPS with all other NOMIS sentence details`() {
+        val request1: LegacyCreateSentence = CourtSentencingDpsApiMockServer.getRequestBody(putRequestedFor(urlPathEqualTo("/legacy/sentence/612cf742-feea-4562-b01d-ce643146fcf1")))
+        with(request1) {
+          assertThat(this.chargeUuids).contains(UUID.fromString("6cd85595-85c0-459f-9a7d-8d686284875f"))
+          assertThat(this.active).isTrue
+          assertThat(this.legacyData.sentenceCategory).isEqualTo("2020")
+          assertThat(this.legacyData.sentenceCalcType).isEqualTo("FTR")
+          assertThat(this.chargeNumber).isNull()
+          assertThat(this.fine?.fineAmount).isEqualTo(BigDecimal("10.00"))
+          assertThat(this.consecutiveToLifetimeUuid).isNull()
+        }
+
+        val request2: LegacyCreateSentence = CourtSentencingDpsApiMockServer.getRequestBody(putRequestedFor(urlPathEqualTo("/legacy/sentence/870f7e03-6bfc-46e6-9782-a91daab5eab4")))
+        with(request2) {
+          assertThat(this.chargeUuids).contains(UUID.fromString("f677dea5-7062-416c-a03b-3523642fe093"))
+          assertThat(this.active).isTrue
+          assertThat(this.legacyData.sentenceCategory).isEqualTo("2020")
+          assertThat(this.legacyData.sentenceCalcType).isEqualTo("FTR")
+          assertThat(this.chargeNumber).isNull()
+          assertThat(this.fine).isNull()
+          assertThat(this.consecutiveToLifetimeUuid).isEqualTo(UUID.fromString("612cf742-feea-4562-b01d-ce643146fcf1"))
         }
       }
 
