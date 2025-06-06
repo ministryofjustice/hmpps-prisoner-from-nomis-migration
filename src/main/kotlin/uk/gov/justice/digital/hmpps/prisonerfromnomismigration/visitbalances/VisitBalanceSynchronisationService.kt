@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceDetailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncDto
 
@@ -49,7 +50,7 @@ class VisitBalanceSynchronisationService(
   }
 
   suspend fun resynchroniseVisitBalance(prisonNumber: String) {
-    val visitBalance = nomisVisitBalanceApiService.getVisitBalanceDetailForPrisoner(prisonNumber)
+    val visitBalance = nomisVisitBalanceApiService.getVisitBalanceDetailForPrisoner(prisonNumber) ?: VisitBalanceDetailResponse(prisonNumber, 0, 0)
     dpsApiService.migrateVisitBalance(visitBalance.toMigrationDto())
   }
 }
