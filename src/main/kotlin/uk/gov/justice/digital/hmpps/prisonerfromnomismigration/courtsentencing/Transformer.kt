@@ -187,8 +187,6 @@ fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsConsecUui
   chargeUuids = sentenceChargeIds.map { UUID.fromString(it) },
   active = this.status == "A",
   legacyData = this.toSentenceLegacyData(),
-  // TODO confirm what this is used for
-  chargeNumber = this.lineSequence?.toString(),
   fine = this.fineAmount?.let { LegacyCreateFine(fineAmount = it) },
   consecutiveToLifetimeUuid = dpsConsecUuid?.let { UUID.fromString(it) },
   returnToCustodyDate = this.recallCustodyDate?.returnToCustodyDate,
@@ -199,7 +197,6 @@ fun SentenceResponse.toDpsMigrationSentence() = MigrationCreateSentence(
   active = this.status == "A",
   legacyData = this.toSentenceLegacyData(),
   periodLengths = this.sentenceTerms.map { it.toPeriodMigrationData(this) },
-  chargeNumber = this.lineSequence?.toString(),
   fine = this.fineAmount?.let { MigrationCreateFine(fineAmount = it) },
   consecutiveToSentenceId = this.consecSequence?.let {
     MigrationSentenceId(
@@ -216,6 +213,7 @@ fun SentenceResponse.toSentenceLegacyData() = SentenceLegacyData(
   sentenceCategory = this.category.code,
   sentenceTypeDesc = this.calculationType.description,
   postedDate = this.createdDateTime.toString(),
+  nomisLineReference = this.lineSequence?.toString(),
 )
 
 fun SentenceTermResponse.toPeriodLegacyData(dpsSentenceId: String) = LegacyCreatePeriodLength(
