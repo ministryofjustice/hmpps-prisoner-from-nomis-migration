@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiExtension.Companion.dpsVisitBalanceServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class VisitBalanceDataRepairResourceIntTest : SqsIntegrationTestBase() {
   @Autowired
@@ -76,10 +78,53 @@ class VisitBalanceDataRepairResourceIntTest : SqsIntegrationTestBase() {
       fun `will send visitBalance to DPS`() {
         dpsVisitBalanceServer.verify(
           postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/migrate"))
-            .withRequestBodyJsonPath("prisonerId", "$prisonNumber")
+            .withRequestBodyJsonPath("prisonerId", prisonNumber)
             .withRequestBodyJsonPath("voBalance", "3")
             .withRequestBodyJsonPath("pvoBalance", "2")
             .withRequestBodyJsonPath("lastVoAllocationDate", "2020-01-01"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for the repair`() {
+        verify(telemetryClient).trackEvent(
+          eq("visitbalance-resynchronisation-repair"),
+          check {
+            assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class HappyPathNotFound {
+      val prisonNumber = "A1234KT"
+
+      @BeforeEach
+      fun setUp() {
+        visitBalanceNomisApiMockServer.stubGetVisitBalanceDetailForPrisonerNotFound(prisonNumber)
+        dpsVisitBalanceServer.stubMigrateVisitBalance()
+
+        webTestClient.post().uri("/prisoners/$prisonNumber/visit-balance/repair")
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISIT_BALANCE")))
+          .exchange()
+          .expectStatus().isNoContent
+      }
+
+      @Test
+      fun `will retrieve current visitBalance for the prisoner`() {
+        visitBalanceNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/prisoners/$prisonNumber/visit-balance/details")))
+      }
+
+      @Test
+      fun `will send visitBalance to DPS`() {
+        dpsVisitBalanceServer.verify(
+          postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/migrate"))
+            .withRequestBodyJsonPath("prisonerId", prisonNumber)
+            .withRequestBodyJsonPath("voBalance", "0")
+            .withRequestBodyJsonPath("pvoBalance", "0")
+            .withRequestBodyJsonPath("lastVoAllocationDate", LocalDate.now().minusDays(14).format(DateTimeFormatter.ISO_DATE)),
         )
       }
 

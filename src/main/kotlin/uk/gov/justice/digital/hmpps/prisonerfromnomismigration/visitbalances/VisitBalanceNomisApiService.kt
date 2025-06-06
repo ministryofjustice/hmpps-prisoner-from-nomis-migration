@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceDetailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceIdResponse
@@ -16,10 +17,10 @@ class VisitBalanceNomisApiService(@Qualifier("nomisApiWebClient") private val we
     .retrieve()
     .awaitBody()
 
-  suspend fun getVisitBalanceDetailForPrisoner(prisonNumber: String): VisitBalanceDetailResponse = webClient.get()
+  suspend fun getVisitBalanceDetailForPrisoner(prisonNumber: String): VisitBalanceDetailResponse? = webClient.get()
     .uri("/prisoners/{prisonNumber}/visit-balance/details", prisonNumber)
     .retrieve()
-    .awaitBody()
+    .awaitBodyOrNullWhenNotFound()
 
   suspend fun getVisitBalanceAdjustment(visitBalanceAdjustmentId: Long): VisitBalanceAdjustmentResponse = webClient.get()
     .uri("/visit-balances/visit-balance-adjustment/{visitBalanceAdjustmentId}", visitBalanceAdjustmentId)
