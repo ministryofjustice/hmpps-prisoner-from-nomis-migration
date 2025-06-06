@@ -239,6 +239,7 @@ class CourtSentencingMigrationIntTest(
             assertThat(sentence?.sentenceId?.sequence).isEqualTo(NOMIS_SENTENCE_SEQUENCE_ID)
             assertThat(sentence?.returnToCustodyDate).isEqualTo("2024-01-01")
             assertThat(sentence?.periodLengths).hasSize(2)
+            assertThat(sentence?.legacyData?.nomisLineReference).isEqualTo("5")
           }
         }
       }
@@ -684,6 +685,7 @@ fun buildSentenceResponse(
   courtOrder = courtOrder,
   recallCustodyDate = recallCustodyDate,
   missingCourtOffenderChargeIds = emptyList(),
+  lineSequence = 5,
 )
 
 fun buildCourtOrderResponse(eventId: Long = NOMIS_APPEARANCE_1_ID) = CourtOrderResponse(
