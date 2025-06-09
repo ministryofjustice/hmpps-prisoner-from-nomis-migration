@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.FindActiveActivityIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -281,7 +282,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
   }
 
-  fun stubMultipleGetActivitiesIdCounts(totalElements: Long, pageSize: Long) {
+  fun stubMultipleGetActivitiesIdCounts(totalElements: Long, pageSize: Long, hasScheduleRules: Boolean = true) {
     // for each page create a response for each id starting from 1 up to `totalElements`
 
     val pages = (totalElements / pageSize) + 1
@@ -296,7 +297,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
               .withBody(
                 activitiesIdsPagedResponse(
                   totalElements = totalElements,
-                  ids = (startId..endId).map { it },
+                  ids = (startId..endId).map { FindActiveActivityIdsResponse(it, hasScheduleRules) },
                   pageNumber = page,
                   pageSize = pageSize,
                 ),
@@ -604,11 +605,11 @@ fun appointmentIdsPagedResponse(
 
 fun activitiesIdsPagedResponse(
   totalElements: Long = 10,
-  ids: List<Long> = (0L..10L).toList(),
+  ids: List<FindActiveActivityIdsResponse> = (0L..10L).map { FindActiveActivityIdsResponse(it, true) },
   pageSize: Long = 10,
   pageNumber: Long = 0,
 ): String {
-  val content = ids.map { """{ "courseActivityId": $it }""" }.joinToString { it }
+  val content = ids.map { """{ "courseActivityId": ${it.courseActivityId}, "hasScheduleRules": ${it.hasScheduleRules} }""" }.joinToString { it }
   return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }
 

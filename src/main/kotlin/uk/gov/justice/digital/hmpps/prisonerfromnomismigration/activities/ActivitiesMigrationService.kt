@@ -61,7 +61,7 @@ class ActivitiesMigrationService(
       courseActivityId = migrationFilter.courseActivityId,
       pageNumber = pageNumber,
       pageSize = pageSize,
-    ).map { ActivitiesMigrationRequest(it.courseActivityId, start) } as PageImpl<ActivitiesMigrationRequest>
+    ).map { ActivitiesMigrationRequest(it.courseActivityId, start, it.hasScheduleRules) } as PageImpl<ActivitiesMigrationRequest>
   }
 
   override suspend fun migrateNomisEntity(context: MigrationContext<ActivitiesMigrationRequest>) {
@@ -78,12 +78,17 @@ class ActivitiesMigrationService(
         )
       }
       ?: runCatching {
-        nomisApiService.getActivity(courseActivityId)
-          .let { nomisResponse -> nomisResponse.toActivityMigrateRequest(requestedStartDate) }
-          .let { activitiesRequest -> activitiesApiService.migrateActivity(activitiesRequest) }
-          .let { activitiesResponse -> activitiesResponse.toActivityMigrateMappingDto(courseActivityId, migrationId) }
-          .also { mappingDto -> mappingDto.createActivityMapping(context) }
-          .also { mappingDto -> mappingDto.publishTelemetry() }
+        // Only migrate if there are schedule rules, but create a mapping either way so we remember to end the NOMIS activity regardless
+        val activityMappingDto = if (context.body.hasScheduleRules) {
+          nomisApiService.getActivity(courseActivityId)
+            .toActivityMigrateRequest(requestedStartDate)
+            .let { activitiesRequest -> activitiesApiService.migrateActivity(activitiesRequest) }
+            .toActivityMigrateMappingDto(courseActivityId, migrationId)
+        } else {
+          ActivityMigrationMappingDto(courseActivityId, migrationId, null, null)
+        }
+        activityMappingDto.createActivityMapping(context)
+        activityMappingDto.publishTelemetry()
       }
         .onFailure {
           telemetryClient.trackEvent(
@@ -154,10 +159,10 @@ class ActivitiesMigrationService(
   }
 
   private suspend fun ActivityMigrationMappingDto.publishTelemetry() = telemetryClient.trackEvent(
-    "${ACTIVITIES.telemetryName}-migration-entity-migrated",
+    "${ACTIVITIES.telemetryName}-migration-entity-${activityId?.let { "migrated" } ?: "ignored"}",
     mapOf(
       "nomisCourseActivityId" to nomisCourseActivityId.toString(),
-      "dpsActivityId" to activityId.toString(),
+      "dpsActivityId" to activityId?.toString(),
       "dpsActivityId2" to activityId2?.toString(),
       "migrationId" to this.label,
     ),

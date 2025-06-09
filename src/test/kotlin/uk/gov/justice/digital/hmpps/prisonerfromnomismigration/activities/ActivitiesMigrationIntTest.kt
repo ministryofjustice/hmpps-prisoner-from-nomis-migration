@@ -249,6 +249,21 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.verifyCreateActivityMappings(1, times = 1)
     }
 
+    @Test
+    fun `will not migrate activities without schedule rules`() {
+      stubMigrationDependencies(2)
+      nomisApi.stubMultipleGetActivitiesIdCounts(totalElements = 2, pageSize = 3, hasScheduleRules = false)
+
+      webTestClient.performMigration()
+
+      // mappings should be created
+      assertThat(mappingApi.createMappingCount(ACTIVITIES_CREATE_MAPPING_URL)).isEqualTo(2)
+      mappingApi.verifyCreateActivityMappings(2)
+
+      // no activities should be created in DPS
+      assertThat(activitiesApi.createActivitiesCount()).isEqualTo(0)
+    }
+
     @Nested
     inner class PreventMultipleMigrations {
       @Test
@@ -455,6 +470,20 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         assertThat(filter.activityStartDate).isEqualTo(activityStartDate)
         assertThat(filter.nomisActivityEndDate).isEqualTo(activityStartDate.minusDays(1))
       }
+
+      mappingApi.verifyActivitiesMappingByMigrationId(migrationId, count)
+      nomisApi.verifyEndActivities("[1,2,3]", "${activityStartDate.minusDays(1)}")
+    }
+
+    @Test
+    internal fun `will end activities even if no schedule rules`() = runTest {
+      mappingApi.stubActivitiesMappingByMigrationId(count = 3, migrationId = migrationId, hasScheduleRules = false)
+
+      webTestClient.put().uri("/migrate/activities/$migrationId/end")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isOk
 
       mappingApi.verifyActivitiesMappingByMigrationId(migrationId, count)
       nomisApi.verifyEndActivities("[1,2,3]", "${activityStartDate.minusDays(1)}")
