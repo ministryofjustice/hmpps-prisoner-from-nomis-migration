@@ -524,6 +524,14 @@ class ActivitiesMigrationServiceTest {
     }
 
     @Test
+    internal fun `will ignore an activity if no schedule rules`(): Unit = runBlocking {
+      service.migrateNomisEntity(migrationContext(hasScheduleRules = false))
+
+      verify(nomisApiService, never()).getActivity(anyLong())
+      verify(activitiesApiService, never()).migrateActivity(any())
+    }
+
+    @Test
     internal fun `will default capacity 1 if zero in NOMIS`(): Unit = runBlocking {
       whenever(nomisApiService.getActivity(any())).thenReturn(nomisActivityResponse(capacity = 0))
 
@@ -863,6 +871,26 @@ class ActivitiesMigrationServiceTest {
       )
     }
 
+    @Test
+    fun `will publish ignored telemetry if no schedule rules`() = runBlocking {
+      service.migrateNomisEntity(migrationContext(hasScheduleRules = false))
+
+      verify(telemetryClient).trackEvent(
+        eq("activity-migration-entity-ignored"),
+        check<Map<String, String>> {
+          assertThat(it).containsExactlyInAnyOrderEntriesOf(
+            mapOf(
+              "nomisCourseActivityId" to "123",
+              "dpsActivityId" to null,
+              "dpsActivityId2" to null,
+              "migrationId" to "2020-05-23T11:30:00",
+            ),
+          )
+        },
+        isNull(),
+      )
+    }
+
     private fun nomisActivityResponse(
       scheduleRules: List<ScheduleRulesResponse> = listOf(
         nomisScheduleRulesResponse(
@@ -923,11 +951,11 @@ class ActivitiesMigrationServiceTest {
       slotCategoryCode = slot,
     )
 
-    private fun migrationContext() = MigrationContext(
+    private fun migrationContext(hasScheduleRules: Boolean = true) = MigrationContext(
       type = MigrationType.ACTIVITIES,
       migrationId = "2020-05-23T11:30:00",
       estimatedCount = 7,
-      body = ActivitiesMigrationRequest(FindActiveActivityIdsResponse(123).courseActivityId, startDate),
+      body = ActivitiesMigrationRequest(123, startDate, hasScheduleRules),
     )
   }
 
@@ -1223,7 +1251,7 @@ class ActivitiesMigrationServiceTest {
 }
 
 private fun pages(totalEntities: Int, pageSize: Int = 3, startId: Long = 1): PageImpl<FindActiveActivityIdsResponse> = PageImpl<FindActiveActivityIdsResponse>(
-  (startId..totalEntities - 1 + startId).map { FindActiveActivityIdsResponse(it) },
+  (startId..totalEntities - 1 + startId).map { FindActiveActivityIdsResponse(it, true) },
   Pageable.ofSize(pageSize),
   totalEntities.toLong(),
 )

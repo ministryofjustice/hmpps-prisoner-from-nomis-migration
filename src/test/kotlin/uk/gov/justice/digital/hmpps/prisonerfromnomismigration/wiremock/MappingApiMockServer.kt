@@ -451,11 +451,11 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     whenCreated: String = "2020-01-01T11:10:00",
     count: Int = 7,
     migrationId: String = "2022-02-14T09:58:45",
+    hasScheduleRules: Boolean = true,
   ) {
     fun aMigration(id: Int) = """{
       "nomisCourseActivityId": $id,
-      "activityScheduleId": 456,
-      "activityScheduleId2": 789,
+      "activityScheduleId": ${if (hasScheduleRules) 456 else null},
       "label": "$migrationId",
       "whenCreated": "$whenCreated"
     }"""
