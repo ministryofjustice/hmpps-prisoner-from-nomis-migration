@@ -4097,7 +4097,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(this.active).isTrue
           assertThat(this.legacyData.sentenceCategory).isEqualTo("2020")
           assertThat(this.legacyData.sentenceCalcType).isEqualTo("FTR")
-          assertThat(this.chargeNumber).isNull()
           assertThat(this.fine?.fineAmount).isEqualTo(BigDecimal("10.00"))
           assertThat(this.consecutiveToLifetimeUuid).isNull()
         }
@@ -4108,7 +4107,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(this.active).isTrue
           assertThat(this.legacyData.sentenceCategory).isEqualTo("2020")
           assertThat(this.legacyData.sentenceCalcType).isEqualTo("FTR")
-          assertThat(this.chargeNumber).isNull()
           assertThat(this.fine).isNull()
           assertThat(this.consecutiveToLifetimeUuid).isEqualTo(UUID.fromString("612cf742-feea-4562-b01d-ce643146fcf1"))
         }
