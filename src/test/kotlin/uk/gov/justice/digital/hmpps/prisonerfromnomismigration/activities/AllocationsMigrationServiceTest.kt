@@ -476,7 +476,12 @@ class AllocationsMigrationServiceTest {
       )
 
       whenever(activityMappingService.findNomisMapping(any())).thenReturn(
-        ActivityMigrationMappingDto(123, 789, "activity mapping", 890),
+        ActivityMigrationMappingDto(
+          nomisCourseActivityId = 123,
+          activityId = 789,
+          label = "activity mapping",
+          activityId2 = 890,
+        ),
       )
 
       whenever(activitiesApiService.migrateAllocation(any())).thenReturn(

@@ -97,7 +97,7 @@ class AllocationsMigrationService(
   private suspend fun GetAllocationResponse.toAllocationMigrateRequest(allocationId: Long): AllocationMigrateRequest {
     val activityMapping = activityMappingService.findNomisMapping(courseActivityId)
       ?: throw IllegalStateException("Cannot migrate allocation $allocationId - unable to find mapping for course activity $courseActivityId")
-    return this.toAllocationMigrateRequest(activityMapping.activityId, activityMapping.activityId2)
+    return this.toAllocationMigrateRequest(activityMapping.activityId!!, activityMapping.activityId2)
   }
 
   private suspend fun AllocationMigrationMappingDto.createAllocationMapping(context: MigrationContext<*>) = try {
