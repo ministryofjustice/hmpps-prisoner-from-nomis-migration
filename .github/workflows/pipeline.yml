@@ -57,7 +57,7 @@ jobs:
           'testSentencing',
           'testVisitBalance'
         ]
-    uses: ./.github/workflows/gradle_localstack_postgres_verify.yml # LOCAL_VERSION
+    uses: ministryofjustice/hmpps-github-actions/.github/workflows/gradle_localstack_postgres_verify.yml@v2 # WORKFLOW_VERSION
     secrets: inherit
     with:
       gradle-command: ./gradlew ${{ matrix.tests }}
@@ -66,7 +66,7 @@ jobs:
       postgres-username: "migration"
       postgres-password: "migration"
       postgres-db: 'migration'
-      task-name: ${{ matrix.tests }}
+      artifact-name: ${{ matrix.tests }}
     needs:
       - gradle-build
   build:
