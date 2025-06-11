@@ -100,7 +100,7 @@ class ActivitiesMigrationService(
   }
 
   suspend fun endMigratedActivities(migrationId: String) {
-    val activityCount = activitiesMappingService.getMigrationCount(migrationId)
+    val activityCount = activitiesMappingService.countMigrationMappings(migrationId, includeIgnored = true)
     if (activityCount == 0L) throw NotFoundException("No migrations found for $migrationId")
 
     val allActivityIds = activitiesMappingService.getActivityMigrationDetails(migrationId, activityCount).content
@@ -115,7 +115,7 @@ class ActivitiesMigrationService(
   }
 
   suspend fun moveActivityStartDates(migrationId: String, newActivityStartDate: LocalDate): List<String> {
-    val activityCount = activitiesMappingService.getMigrationCount(migrationId)
+    val activityCount = activitiesMappingService.countMigrationMappings(migrationId, includeIgnored = true)
     if (activityCount == 0L) throw NotFoundException("No migrations found for $migrationId")
 
     val allActivityIds = activitiesMappingService.getActivityMigrationDetails(migrationId, activityCount).content

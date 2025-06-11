@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException.InternalServerError
 import org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
@@ -96,7 +97,7 @@ class ActivitiesMappingServiceTest {
         post(urlPathMatching("/mapping/activities/migration")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
+            .withStatus(INTERNAL_SERVER_ERROR.value())
             .withBody("""{"message":"Tea"}"""),
         ),
       )
@@ -199,7 +200,7 @@ class ActivitiesMappingServiceTest {
         get(urlPathMatching("/mapping/activities/migration/nomis-course-activity-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
+            .withStatus(INTERNAL_SERVER_ERROR.value())
             .withBody("""{"message":"Tea"}"""),
         ),
       )
@@ -276,7 +277,7 @@ class ActivitiesMappingServiceTest {
         get(urlPathMatching("/mapping/activities/migration/migrated/latest")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
+            .withStatus(INTERNAL_SERVER_ERROR.value())
             .withBody("""{"message":"Tea"}"""),
         ),
       )
@@ -345,7 +346,7 @@ class ActivitiesMappingServiceTest {
         get(urlPathMatching("/mapping/activities/migration/migration-id/.*")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
+            .withStatus(INTERNAL_SERVER_ERROR.value())
             .withBody("""{"message":"Tea"}"""),
         ),
       )
@@ -361,57 +362,40 @@ class ActivitiesMappingServiceTest {
   @Nested
   inner class GetMigrationCount {
     @Test
-    internal fun `should supply authentication token`(): Unit = runBlocking {
+    internal fun `should supply authentication token`(): Unit = runTest {
+      mappingApi.stubActivityMappingCountByMigrationId()
+
       activitiesMappingService.getMigrationCount("2020-01-01T10:00:00")
 
       mappingApi.verify(
         getRequestedFor(
-          urlPathMatching("/mapping/activities/migration/migration-id/.*"),
+          urlPathMatching("/mapping/activities/migration-count/migration-id/.*"),
         )
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
     @Test
-    internal fun `should return zero when not found`(): Unit = runBlocking {
-      mappingApi.stubFor(
-        get(urlPathMatching("/mapping/activities/migration/migration-id/.*")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(NOT_FOUND.value())
-            .withBody("""{"message":"Not found"}"""),
-        ),
-      )
+    internal fun `should return zero when not found`(): Unit = runTest {
+      mappingApi.stubActivityMappingCountByMigrationIdFails(NOT_FOUND.value())
 
       assertThat(activitiesMappingService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(0)
     }
 
     @Test
-    internal fun `should return the mapping count when found`(): Unit = runBlocking {
-      mappingApi.stubActivitiesMappingByMigrationId(
-        whenCreated = "2020-01-01T11:10:00",
-        count = 7,
-      )
+    internal fun `should return the mapping count when found`(): Unit = runTest {
+      mappingApi.stubActivityMappingCountByMigrationId(count = 7)
 
       assertThat(activitiesMappingService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(7)
     }
 
     @Test
-    internal fun `should throw exception for any other error`() {
-      mappingApi.stubFor(
-        get(urlPathMatching("/mapping/activities/migration/migration-id/.*")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
-            .withBody("""{"message":"Tea"}"""),
-        ),
-      )
+    internal fun `should throw exception for any other error`() = runTest {
+      mappingApi.stubActivityMappingCountByMigrationIdFails(INTERNAL_SERVER_ERROR.value())
 
-      assertThatThrownBy {
-        runBlocking {
-          activitiesMappingService.getMigrationCount("2020-01-01T10:00:00")
-        }
-      }.isInstanceOf(InternalServerError::class.java)
+      assertThrows<InternalServerError> {
+        activitiesMappingService.getMigrationCount("2020-01-01T10:00:00")
+      }
     }
   }
 
@@ -459,6 +443,52 @@ class ActivitiesMappingServiceTest {
 
       assertThrows<NotFound> {
         activitiesMappingService.getDpsLocation(nomisLocationId)
+      }
+    }
+  }
+
+  @Nested
+  inner class CountMappings {
+    @Test
+    internal fun `will pass oath2 token`() = runTest {
+      mappingApi.stubActivityMappingCountByMigrationId()
+
+      activitiesMappingService.getMigrationCount("some-migration-id")
+
+      mappingApi.verify(
+        getRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will send parameters`() = runTest {
+      mappingApi.stubActivityMappingCountByMigrationId()
+
+      activitiesMappingService.getMigrationCount("some-migration-id")
+
+      mappingApi.verify(
+        getRequestedFor(urlPathMatching("/mapping/activities/migration-count/migration-id/some-migration-id"))
+          .withQueryParam("includeIgnored", equalTo("false")),
+
+      )
+    }
+
+    @Test
+    fun `will parse the response`() = runTest {
+      mappingApi.stubActivityMappingCountByMigrationId(count = 5)
+
+      with(activitiesMappingService.getMigrationCount("some-migration-id")) {
+        assertThat(this).isEqualTo(5)
+      }
+    }
+
+    @Test
+    fun `will throw in error`() = runTest {
+      mappingApi.stubActivityMappingCountByMigrationIdFails(INTERNAL_SERVER_ERROR.value())
+
+      assertThrows<InternalServerError> {
+        activitiesMappingService.getMigrationCount("some-migration-id")
       }
     }
   }

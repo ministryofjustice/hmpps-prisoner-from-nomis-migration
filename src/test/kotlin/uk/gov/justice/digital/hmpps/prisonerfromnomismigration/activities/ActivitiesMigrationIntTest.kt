@@ -170,6 +170,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
       stubMigrationDependencies(3)
 
       // stub 2 migrated records and 1 failure for the history
+      mappingApi.stubActivityMappingCountByMigrationId(count = 2)
       mappingApi.stubActivitiesMappingByMigrationId(count = 2)
       awsSqsActivitiesMigrationDlqClient!!.sendMessage(activitiesMigrationDlqUrl!!, """{ "message": "some error" }""")
 
@@ -391,6 +392,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
     @BeforeEach
     internal fun stubApis() = runTest {
+      mappingApi.stubActivityMappingCountByMigrationId(count = count, includeIgnored = true)
       mappingApi.stubActivitiesMappingByMigrationId(count = count, migrationId = migrationId)
       nomisApi.stubEndActivities()
     }
@@ -437,7 +439,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will return not found for unknown migration`() {
-      mappingApi.stubActivitiesMappingByMigrationIdFails(404)
+      mappingApi.stubActivityMappingCountByMigrationIdFails(404)
 
       webTestClient.put().uri("/migrate/activities/$migrationId/end")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
@@ -448,7 +450,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will pass on upstream errors`() {
-      mappingApi.stubActivitiesMappingByMigrationIdFails(500)
+      mappingApi.stubActivityMappingCountByMigrationIdFails(500)
 
       webTestClient.put().uri("/migrate/activities/$migrationId/end")
         .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
@@ -477,6 +479,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `will end activities even if no schedule rules`() = runTest {
+      mappingApi.stubActivityMappingCountByMigrationId(count = 3, includeIgnored = true)
       mappingApi.stubActivitiesMappingByMigrationId(count = 3, migrationId = migrationId, hasScheduleRules = false)
 
       webTestClient.put().uri("/migrate/activities/$migrationId/end")
@@ -505,6 +508,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     @BeforeEach
     fun stubApis() = runTest {
       mappingApi.stubActivitiesMappingByMigrationId(count = count, migrationId = migrationId)
+      mappingApi.stubActivityMappingCountByMigrationId(count, includeIgnored = true)
       nomisApi.stubMoveActivitiesEndDate()
       activitiesApi.stubMoveActivityStartDates("BXI", newActivityStartDate)
     }
@@ -555,7 +559,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `will return not found for unknown migration`() {
-      mappingApi.stubActivitiesMappingByMigrationIdFails(404)
+      mappingApi.stubActivityMappingCountByMigrationIdFails(404)
 
       webTestClient.moveStartDates(migrationId)
         .expectStatus().isNotFound
@@ -564,7 +568,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     fun `will return not found if no activities were migrated`() = runTest {
       val migrationIdNoMigrations = "2023-11-06T09:58:45"
-      mappingApi.stubActivitiesMappingByMigrationId(count = 0, migrationId = migrationIdNoMigrations)
+      mappingApi.stubActivityMappingCountByMigrationId(count = 0, includeIgnored = true)
       migrationHistoryRepository.save(
         aMigration(migrationIdNoMigrations, """{"prisonId":"BXI","activityStartDate":"$oldActivityStartDate","nomisActivityEndDate":"$oldNomisEndDate"}"""),
       )

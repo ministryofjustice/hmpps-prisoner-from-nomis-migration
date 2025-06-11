@@ -496,6 +496,32 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubActivityMappingCountByMigrationId(count: Int = 7, includeIgnored: Boolean = false) {
+    stubFor(
+      get(urlPathMatching("/mapping/activities/migration-count/migration-id/.*"))
+        .withQueryParam("includeIgnored", equalTo("$includeIgnored"))
+        .willReturn(
+          aResponse()
+            .withStatus(HttpStatus.OK.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody("$count"),
+
+        ),
+    )
+  }
+
+  fun stubActivityMappingCountByMigrationIdFails(statusCode: Int) {
+    stubFor(
+      get(urlPathMatching("/mapping/activities/migration-count/migration-id/.*"))
+        .willReturn(
+          aResponse()
+            .withStatus(statusCode)
+            .withHeader("Content-Type", "application/json")
+            .withBody("""{"userMessage":"Some error"}"""),
+        ),
+    )
+  }
+
   fun stubAllocationsMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 7) {
     val content = """{
       "nomisAllocationId": 123,
