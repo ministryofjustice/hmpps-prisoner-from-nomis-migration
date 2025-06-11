@@ -335,7 +335,6 @@ private fun incidentResponse(
       comment = "Complete the incident report",
       createDateTime = LocalDateTime.parse("2021-07-05T10:35:17"),
       createdBy = "JSMITH",
-      date = LocalDate.parse("2021-07-06"),
       recordedDate = LocalDateTime.parse("2021-08-06T10:01:02"),
     ),
   ),
