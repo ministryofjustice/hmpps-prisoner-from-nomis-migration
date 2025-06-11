@@ -496,7 +496,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubActivityMappingCountByMigrationId(count: Int = 7, includeIgnored: Boolean = true) {
+  fun stubActivityMappingCountByMigrationId(count: Int = 7, includeIgnored: Boolean = false) {
     stubFor(
       get(urlPathMatching("/mapping/activities/migration-count/migration-id/.*"))
         .withQueryParam("includeIgnored", equalTo("$includeIgnored"))

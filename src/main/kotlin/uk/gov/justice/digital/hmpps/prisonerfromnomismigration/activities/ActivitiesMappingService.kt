@@ -40,13 +40,18 @@ class ActivitiesMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
     .bodyToMono(NomisDpsLocationMapping::class.java)
     .awaitSingle()
 
-  override suspend fun getMigrationCount(migrationId: String): Long = webClient.get()
+  override suspend fun getMigrationCount(migrationId: String): Long = countMigrationMappings(migrationId, includeIgnored = false)
+
+  suspend fun countMigrationMappings(migrationId: String, includeIgnored: Boolean = true): Long = webClient.get()
     .uri {
       it.path("$domainUrl-count/migration-id/{migrationId}")
-        .queryParam("includeIgnored", true)
+        .queryParam("includeIgnored", includeIgnored)
         .build(migrationId)
     }
     .retrieve()
     .bodyToMono<Long>()
-    .awaitSingle()
+    .onErrorResume(WebClientResponseException.NotFound::class.java) {
+      Mono.empty()
+    }
+    .awaitSingleOrNull() ?: 0
 }
