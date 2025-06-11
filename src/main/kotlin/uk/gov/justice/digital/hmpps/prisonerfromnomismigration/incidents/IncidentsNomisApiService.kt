@@ -173,6 +173,7 @@ fun Offender.toUpsertOffender() = NomisOffender(
 
 fun Requirement.toUpsertRequirement() = NomisRequirement(
   date = recordedDate.toLocalDate(),
+  recordedDate = recordedDate,
   staff = staff.toUpsertStaff(),
   prisonId = agencyId,
   comment = comment,
