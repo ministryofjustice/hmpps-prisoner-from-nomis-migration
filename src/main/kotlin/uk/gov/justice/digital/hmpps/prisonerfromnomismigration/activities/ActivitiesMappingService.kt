@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ActivityMigrationMappingDto
@@ -37,5 +38,15 @@ class ActivitiesMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
     .uri("/api/locations/nomis/{nomisLocationId}", nomisLocationId)
     .retrieve()
     .bodyToMono(NomisDpsLocationMapping::class.java)
+    .awaitSingle()
+
+  override suspend fun getMigrationCount(migrationId: String): Long = webClient.get()
+    .uri {
+      it.path("$domainUrl-count/migration-id/{migrationId}")
+        .queryParam("includeIgnored", true)
+        .build(migrationId)
+    }
+    .retrieve()
+    .bodyToMono<Long>()
     .awaitSingle()
 }

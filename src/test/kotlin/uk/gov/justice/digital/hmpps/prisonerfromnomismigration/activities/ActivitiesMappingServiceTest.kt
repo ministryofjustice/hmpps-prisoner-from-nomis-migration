@@ -462,4 +462,50 @@ class ActivitiesMappingServiceTest {
       }
     }
   }
+
+  @Nested
+  inner class CountMappings {
+    @Test
+    internal fun `will pass oath2 token`() = runTest {
+      mappingApi.stubActivityMappingCountByMigrationId()
+
+      activitiesMappingService.getMigrationCount("some-migration-id")
+
+      mappingApi.verify(
+        getRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will send parameters`() = runTest {
+      mappingApi.stubActivityMappingCountByMigrationId()
+
+      activitiesMappingService.getMigrationCount("some-migration-id")
+
+      mappingApi.verify(
+        getRequestedFor(urlPathMatching("/mapping/activities/migration-count/migration-id/some-migration-id"))
+          .withQueryParam("includeIgnored", equalTo("true")),
+
+      )
+    }
+
+    @Test
+    fun `will parse the response`() = runTest {
+      mappingApi.stubActivityMappingCountByMigrationId(count = 5)
+
+      with(activitiesMappingService.getMigrationCount("some-migration-id")) {
+        assertThat(this).isEqualTo(5)
+      }
+    }
+
+    @Test
+    fun `will throw in error`() = runTest {
+      mappingApi.stubActivityMappingCountByMigrationIdFails(NOT_FOUND.value())
+
+      assertThrows<NotFound> {
+        activitiesMappingService.getMigrationCount("some-migration-id")
+      }
+    }
+  }
 }
