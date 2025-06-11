@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-06-09.83.49c655b"
+    "version" : "2025-06-11.95.741f178"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -1024,7 +1024,14 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Sentences converted to recall"
+            "description" : "Sentences converted to recall",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ConvertToRecallResponse"
+                }
+              }
+            }
           },
           "400" : {
             "description" : "Supplied data is invalid, for instance missing required fields or invalid values. See schema for details",
@@ -21064,6 +21071,21 @@
         },
         "required" : [ "caseIdentifiers" ]
       },
+      "ConvertToRecallResponse" : {
+        "type" : "object",
+        "description" : "Recall convert response",
+        "properties" : {
+          "courtEventIds" : {
+            "type" : "array",
+            "description" : "the breach court appearance ids created",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          }
+        },
+        "required" : [ "courtEventIds" ]
+      },
       "CreateSentenceResponse" : {
         "type" : "object",
         "description" : "Create sentence response",
@@ -23347,6 +23369,9 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
@@ -23357,9 +23382,6 @@
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           }
         }
       },
@@ -27324,7 +27346,13 @@
           "date" : {
             "type" : "string",
             "format" : "date",
+            "deprecated" : true,
             "description" : "Date the requirement was recorded"
+          },
+          "recordedDate" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Date and time the requirement was recorded"
           },
           "staff" : {
             "$ref" : "#/components/schemas/Staff",
@@ -27353,7 +27381,7 @@
             "description" : "The username of the person who last updated the requirement"
           }
         },
-        "required" : [ "agencyId", "createDateTime", "createdBy", "date", "sequence", "staff" ]
+        "required" : [ "agencyId", "createDateTime", "createdBy", "date", "recordedDate", "sequence", "staff" ]
       },
       "Response" : {
         "type" : "object",
