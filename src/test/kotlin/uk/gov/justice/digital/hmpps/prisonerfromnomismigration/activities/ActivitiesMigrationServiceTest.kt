@@ -884,6 +884,7 @@ class ActivitiesMigrationServiceTest {
               "dpsActivityId" to null,
               "dpsActivityId2" to null,
               "migrationId" to "2020-05-23T11:30:00",
+              "reason" to "No schedule rules exist for activity",
             ),
           )
         },
