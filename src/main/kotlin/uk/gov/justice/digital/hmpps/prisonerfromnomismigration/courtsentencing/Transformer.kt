@@ -177,8 +177,6 @@ fun CourtEventChargeResponse.toDpsMigrationCharge(
     mergedFromCaseId = linkedCaseDetails?.caseId,
     // TODO - ensure DPS really needs this since I think this is redundant
     mergedFromEventId = lastSourceCourtEventForCharge?.id,
-    // TODO - this will always be chargeId when linked so this feels like a redundant field in DPS
-    mergedChargeNOMISId = linkedCaseDetails?.let { chargeId },
     mergedFromDate = linkedCaseDetails?.dateLinked,
   )
 }

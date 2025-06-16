@@ -47,6 +47,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SEN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import kotlin.collections.plus
+import kotlin.collections.set
 
 @Service
 class CourtSentencingSynchronisationService(
@@ -193,7 +194,7 @@ class CourtSentencingSynchronisationService(
   }
   suspend fun nomisCourtCaseLinked(event: CourtCaseLinkingEvent) {
     val telemetry =
-      mapOf(
+      telemetryOf(
         "nomisBookingId" to event.bookingId.toString(),
         "nomisCourtCaseId" to event.caseId.toString(),
         "nomisCombinedCourtCaseId" to event.combinedCaseId.toString(),
@@ -202,29 +203,19 @@ class CourtSentencingSynchronisationService(
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent("court-case-synchronisation-link-skipped", telemetry)
     } else {
-      val mapping = mappingApiService.getCourtCaseOrNullByNomisId(event.caseId)
-      if (mapping == null) {
-        telemetryClient.trackEvent(
-          "court-case-synchronisation-link-failed",
-          telemetry,
-        )
-        throw IllegalStateException("Received OFFENDER_CASES-LINKED for court-case that has never been created")
-      } else {
-        @Suppress("UnusedVariable")
-        val nomisCourtCase =
-          nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.caseId)
-        // do DPS linking
-        telemetryClient.trackEvent(
-          "court-case-synchronisation-link-success",
-          telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
-        )
+      track("court-case-synchronisation-link", telemetry = telemetry) {
+        val sourceCaseMapping = mappingApiService.getCourtCaseByNomisId(event.caseId)
+          .also { telemetry["dpsSourceCourtCaseId"] = it.dpsCourtCaseId }
+        val targetCaseMapping = mappingApiService.getCourtCaseByNomisId(event.combinedCaseId)
+          .also { telemetry["dpsTargetCourtCaseId"] = it.dpsCourtCaseId }
+        dpsApiService.linkCase(sourceCaseMapping.dpsCourtCaseId, targetCaseMapping.dpsCourtCaseId)
       }
     }
   }
 
   suspend fun nomisCourtCaseUnlinked(event: CourtCaseLinkingEvent) {
     val telemetry =
-      mapOf(
+      telemetryOf(
         "nomisBookingId" to event.bookingId.toString(),
         "nomisCourtCaseId" to event.caseId.toString(),
         "nomisCombinedCourtCaseId" to event.combinedCaseId.toString(),
@@ -233,22 +224,10 @@ class CourtSentencingSynchronisationService(
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent("court-case-synchronisation-unlink-skipped", telemetry)
     } else {
-      val mapping = mappingApiService.getCourtCaseOrNullByNomisId(event.caseId)
-      if (mapping == null) {
-        telemetryClient.trackEvent(
-          "court-case-synchronisation-unlink-failed",
-          telemetry,
-        )
-        throw IllegalStateException("Received OFFENDER_CASES-UNLINKED for court-case that has never been created")
-      } else {
-        @Suppress("UnusedVariable")
-        val nomisCourtCase =
-          nomisApiService.getCourtCase(offenderNo = event.offenderIdDisplay, courtCaseId = event.caseId)
-        // do DPS linking
-        telemetryClient.trackEvent(
-          "court-case-synchronisation-unlink-success",
-          telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
-        )
+      track("court-case-synchronisation-unlink", telemetry = telemetry) {
+        val sourceCaseMapping = mappingApiService.getCourtCaseByNomisId(event.caseId).also { telemetry["dpsSourceCourtCaseId"] = it.dpsCourtCaseId }
+        val targetCaseMapping = mappingApiService.getCourtCaseByNomisId(event.combinedCaseId).also { telemetry["dpsTargetCourtCaseId"] = it.dpsCourtCaseId }
+        dpsApiService.unlinkCase(sourceCaseMapping.dpsCourtCaseId, targetCaseMapping.dpsCourtCaseId)
       }
     }
   }

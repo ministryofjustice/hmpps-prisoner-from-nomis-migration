@@ -715,6 +715,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
   @DisplayName("OFFENDER_CASES-LINKED")
   inner class CourtCaseLinked {
     val combinedCaseId = 5432L
+    val dpsTargetId = "1b0a031e-dc57-4273-bb9f-c45ea3f68584"
 
     @Nested
     @DisplayName("When court case was linked in DPS")
@@ -793,7 +794,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `telemetry added to track the failure`() {
           await untilAsserted {
             verify(telemetryClient, times(2)).trackEvent(
-              eq("court-case-synchronisation-link-failed"),
+              eq("court-case-synchronisation-link-error"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
@@ -826,8 +827,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             nomisCourtCaseId = NOMIS_COURT_CASE_ID,
             dpsCourtCaseId = DPS_COURT_CASE_ID,
           )
+          courtSentencingMappingApiMockServer.stubGetByNomisId(
+            nomisCourtCaseId = combinedCaseId,
+            dpsCourtCaseId = dpsTargetId,
+          )
 
-          // TODO - stub DPS link update
+          dpsCourtSentencingServer.stubLinkCase(sourceCourtCaseId = DPS_COURT_CASE_ID, targetCourtCaseId = dpsTargetId)
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
             courtSentencingQueueOffenderEventsUrl,
             courtCaseLinkingEvent(
@@ -841,7 +846,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will update DPS with the changes`() {
-          // TODO assert on DPS update
+          dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID/link/$dpsTargetId")))
         }
 
         @Test
@@ -854,7 +859,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
                 assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
                 assertThat(it["nomisCombinedCourtCaseId"]).isEqualTo(combinedCaseId.toString())
-                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                assertThat(it["dpsSourceCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                assertThat(it["dpsTargetCourtCaseId"]).isEqualTo(dpsTargetId)
               },
               isNull(),
             )
@@ -868,6 +874,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
   @DisplayName("OFFENDER_CASES-UNLINKED")
   inner class CourtCaseUnlinked {
     val combinedCaseId = 5432L
+    val dpsTargetId = "1b0a031e-dc57-4273-bb9f-c45ea3f68584"
 
     @Nested
     @DisplayName("When court case was unlinked in DPS")
@@ -946,7 +953,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `telemetry added to track the failure`() {
           await untilAsserted {
             verify(telemetryClient, times(2)).trackEvent(
-              eq("court-case-synchronisation-unlink-failed"),
+              eq("court-case-synchronisation-unlink-error"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
@@ -980,7 +987,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             dpsCourtCaseId = DPS_COURT_CASE_ID,
           )
 
-          // TODO - stub DPS link update
+          courtSentencingMappingApiMockServer.stubGetByNomisId(
+            nomisCourtCaseId = combinedCaseId,
+            dpsCourtCaseId = dpsTargetId,
+          )
+
+          dpsCourtSentencingServer.stubUnlinkCase(sourceCourtCaseId = DPS_COURT_CASE_ID, targetCourtCaseId = dpsTargetId)
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
             courtSentencingQueueOffenderEventsUrl,
             courtCaseLinkingEvent(
@@ -994,7 +1006,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will update DPS with the changes`() {
-          // TODO assert on DPS update
+          dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID/unlink/$dpsTargetId")))
         }
 
         @Test
@@ -1007,7 +1019,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
                 assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
                 assertThat(it["nomisCombinedCourtCaseId"]).isEqualTo(combinedCaseId.toString())
-                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                assertThat(it["dpsSourceCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                assertThat(it["dpsTargetCourtCaseId"]).isEqualTo(dpsTargetId)
               },
               isNull(),
             )

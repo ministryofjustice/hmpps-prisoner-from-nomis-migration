@@ -398,6 +398,38 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubLinkCase(sourceCourtCaseId: String, targetCourtCaseId: String) {
+    stubFor(
+      put("/legacy/court-case/$sourceCourtCaseId/link/$targetCourtCaseId")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+  fun stubUnlinkCase(sourceCourtCaseId: String, targetCourtCaseId: String) {
+    stubFor(
+      put("/legacy/court-case/$sourceCourtCaseId/unlink/$targetCourtCaseId")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubLinkChargeToCase(courtAppearanceId: String, chargeId: String) {
+    stubFor(
+      put("/legacy/court-appearance/$courtAppearanceId/charge/$chargeId/link")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
   fun stubHealthPing(status: Int) {
     stubFor(
       get("/health/ping").willReturn(
