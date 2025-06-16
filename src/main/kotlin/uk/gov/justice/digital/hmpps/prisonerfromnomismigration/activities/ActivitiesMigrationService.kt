@@ -109,7 +109,7 @@ class ActivitiesMigrationService(
     val migration = migrationHistoryService.get(migrationId)
     val filter = objectMapper.readValue(migration.filter, ActivitiesMigrationFilter::class.java)
     // There will always be a start date because it's now mandatory in the UI, but is still nullable due to old data that can be displayed
-    filter.nomisActivityEndDate = filter.activityStartDate!!.minusDays(1)
+    filter.nomisActivityEndDate = filter.activityStartDate!!
     nomisApiService.endActivities(allActivityIds, filter.nomisActivityEndDate!!)
     migrationHistoryService.updateFilter(migrationId, filter)
   }
@@ -127,7 +127,7 @@ class ActivitiesMigrationService(
     if (newActivityStartDate <= filter.activityStartDate) throw BadRequestException("The new start date must be after the current start date ${filter.activityStartDate}")
 
     val oldNomisEndDate = filter.nomisActivityEndDate ?: throw BadRequestException("Can only move start dates if the NOMIS activities have been ended")
-    val newNomisEndDate = newActivityStartDate.minusDays(1)
+    val newNomisEndDate = newActivityStartDate
 
     return try {
       nomisApiService.moveActivityEndDates(allActivityIds, oldNomisEndDate, newNomisEndDate)
