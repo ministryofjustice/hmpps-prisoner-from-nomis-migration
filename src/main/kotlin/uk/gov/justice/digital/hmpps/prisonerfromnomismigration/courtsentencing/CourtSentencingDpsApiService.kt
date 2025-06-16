@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreatePeriodLength
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateSentence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyLinkChargeToCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyPeriodLengthCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateCharge
@@ -167,6 +168,31 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
       .put()
       .uri("/court-case/{courtCaseId}/case-references/refresh", courtCaseId)
       .bodyValue(courtCaseLegacyData)
+      .retrieve()
+      .awaitBodilessEntity()
+  }
+  suspend fun linkCase(sourceCourtCaseId: String, targetCourtCaseId: String) {
+    webClient
+      .put()
+      .uri("/legacy/court-case/{sourceCourtCaseUuid}/link/{targetCourtCaseUuid}", sourceCourtCaseId, targetCourtCaseId)
+      .retrieve()
+      .awaitBodilessEntity()
+  }
+
+  suspend fun unlinkCase(sourceCourtCaseId: String, targetCourtCaseId: String) {
+    webClient
+      .put()
+      .uri("/legacy/court-case/{sourceCourtCaseUuid}/unlink/{targetCourtCaseUuid}", sourceCourtCaseId, targetCourtCaseId)
+      .retrieve()
+      .awaitBodilessEntity()
+  }
+
+  @Suppress("unused")
+  suspend fun linkChargeToCase(courtAppearanceId: String, chargeId: String, linkData: LegacyLinkChargeToCase) {
+    webClient
+      .put()
+      .uri("/legacy/court-appearance/{courtAppearanceUuid}/charge/{chargeUuid}/link", courtAppearanceId, chargeId)
+      .bodyValue(linkData)
       .retrieve()
       .awaitBodilessEntity()
   }

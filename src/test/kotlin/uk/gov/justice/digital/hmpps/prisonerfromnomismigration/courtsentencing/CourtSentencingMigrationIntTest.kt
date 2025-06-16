@@ -384,7 +384,6 @@ class CourtSentencingMigrationIntTest(
           assertThat(chargeNOMISId).isEqualTo(1001)
           assertThat(mergedFromCaseId).isNull()
           assertThat(mergedFromEventId).isNull()
-          assertThat(mergedChargeNOMISId).isNull()
         }
       }
       val targetLinkedCase = migrationRequest.courtCases.find { it.caseId == 2L }!!
@@ -398,7 +397,6 @@ class CourtSentencingMigrationIntTest(
           assertThat(chargeNOMISId).isEqualTo(1001L)
           assertThat(mergedFromCaseId).isEqualTo(1L)
           assertThat(mergedFromEventId).isEqualTo(101L)
-          assertThat(mergedChargeNOMISId).isEqualTo(1001L)
         }
         val chargeAlreadyOnTarget = appearances.first().charges.find { it.chargeNOMISId == 2001L }!!
         with(chargeAlreadyOnTarget) {
@@ -406,7 +404,6 @@ class CourtSentencingMigrationIntTest(
           assertThat(chargeNOMISId).isEqualTo(2001)
           assertThat(mergedFromCaseId).isNull()
           assertThat(mergedFromEventId).isNull()
-          assertThat(mergedChargeNOMISId).isNull()
         }
       }
       val normalCase = migrationRequest.courtCases.find { it.caseId == 3L }!!
@@ -419,7 +416,6 @@ class CourtSentencingMigrationIntTest(
           assertThat(chargeNOMISId).isEqualTo(3001)
           assertThat(mergedFromCaseId).isNull()
           assertThat(mergedFromEventId).isNull()
-          assertThat(mergedChargeNOMISId).isNull()
         }
       }
       verify(telemetryClient).trackEvent(
