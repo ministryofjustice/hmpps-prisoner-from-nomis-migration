@@ -74,7 +74,7 @@ class ActivitiesMigrationService(
         log.info("Will not migrate the courseActivityId=$courseActivityId since it was already mapped to activityIds ${this.activityId} and ${this.activityId2} during migration ${this.label}")
         telemetryClient.trackEvent(
           "${ACTIVITIES.telemetryName}-migration-entity-ignored",
-          mapOf("nomisCourseActivityId" to courseActivityId.toString(), "migrationId" to migrationId),
+          mapOf("nomisCourseActivityId" to courseActivityId.toString(), "migrationId" to migrationId, "reason" to "Mapping already exists - must have already been migrated"),
         )
       }
       ?: runCatching {
@@ -160,12 +160,14 @@ class ActivitiesMigrationService(
 
   private suspend fun ActivityMigrationMappingDto.publishTelemetry() = telemetryClient.trackEvent(
     "${ACTIVITIES.telemetryName}-migration-entity-${activityId?.let { "migrated" } ?: "ignored"}",
-    mapOf(
+    mutableMapOf(
       "nomisCourseActivityId" to nomisCourseActivityId.toString(),
       "dpsActivityId" to activityId?.toString(),
       "dpsActivityId2" to activityId2?.toString(),
       "migrationId" to this.label,
-    ),
+    ).apply {
+      if (activityId == null) put("reason", "No schedule rules exist for activity")
+    }.toMap(),
     null,
   )
 
