@@ -32,11 +32,21 @@ class VisitBalanceSynchronisationService(
       )
     } else {
       nomisVisitBalanceApiService.getVisitBalanceAdjustment(visitBalanceAdjustmentId = visitBalanceAdjustmentId).also {
-        dpsApiService.syncVisitBalanceAdjustment(it.toSyncDto(nomisPrisonNumber))
-        telemetryClient.trackEvent(
-          "visitbalance-adjustment-synchronisation-created-success",
-          telemetry,
-        )
+        // special case for Initial IEP entitlement
+        if (it.comment == "Initial IEP entitlement") {
+          val visitBalance = nomisVisitBalanceApiService.getVisitBalanceDetail(event.bookingId)
+          dpsApiService.migrateVisitBalance(visitBalance.toMigrationDto())
+          telemetryClient.trackEvent(
+            "visitbalance-adjustment-synchronisation-balance-success",
+            telemetry,
+          )
+        } else {
+          dpsApiService.syncVisitBalanceAdjustment(it.toSyncDto(nomisPrisonNumber))
+          telemetryClient.trackEvent(
+            "visitbalance-adjustment-synchronisation-created-success",
+            telemetry,
+          )
+        }
       }
     }
   }

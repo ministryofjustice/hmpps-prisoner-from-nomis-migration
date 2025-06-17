@@ -53,5 +53,6 @@ class VisitBalanceEventListener(
 data class VisitBalanceOffenderEvent(
   val visitBalanceAdjustmentId: Long,
   val offenderIdDisplay: String,
+  val bookingId: Long,
   val auditModuleName: String?,
 )
