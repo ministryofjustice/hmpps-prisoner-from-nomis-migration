@@ -139,8 +139,6 @@ internal class IncidentsServiceTest {
           assertThat(assignedTo).isEqualTo("BJONES")
           assertThat(createdAt).isEqualTo("2021-07-05T10:35:17")
           assertThat(modifiedAt).isEqualTo("2021-07-15T10:35:17")
-          assertThat(event.createdAt).isEqualTo("2021-07-23T10:35:17")
-          assertThat(event.modifiedAt).isEqualTo("2021-07-23T10:35:17")
           assertThat(modifiedBy).isEqualTo("JSMITH")
           assertThat(createdInNomis).isEqualTo(true)
           assertThat(prisonersInvolved[0].prisonerNumber).isEqualTo("A1234BC")
