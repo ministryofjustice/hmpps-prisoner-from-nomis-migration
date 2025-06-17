@@ -18,6 +18,7 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerMigrationDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiExtension.Companion.dpsVisitBalanceServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -295,6 +296,61 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
               org.mockito.kotlin.check {
                 assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
                 assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Nested
+        inner class HappyPathForIepEntitlement {
+          @BeforeEach
+          fun setUp() {
+            nomisVisitBalanceApiMock.stubGetVisitBalanceAdjustment(
+              nomisVisitBalanceAdjustmentId = visitBalanceAdjId,
+              visitBalanceAdjustment = visitBalanceAdjustment().copy(comment = "Initial IEP entitlement"),
+            )
+            nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(nomisVisitBalanceId = 1215724, prisonNumber = nomisPrisonNumber)
+            dpsApiMock.stubMigrateVisitBalance()
+
+            visitBalanceOffenderEventsQueue.sendMessage(
+              visitBalanceAdjustmentEvent(
+                eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
+                visitBalanceAdjId = visitBalanceAdjId,
+              ),
+            ).also { waitForAnyProcessingToComplete() }
+          }
+
+          @Test
+          fun `will retrieve the adjustment details from NOMIS`() {
+            nomisVisitBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/visit-balances/visit-balance-adjustment/$visitBalanceAdjId")))
+          }
+
+          @Test
+          fun `will retrieve the balance details from NOMIS`() {
+            nomisVisitBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/visit-balances/1215724")))
+          }
+
+          @Test
+          fun `will create the balance in DPS`() {
+            dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/migrate")))
+            val request: VisitAllocationPrisonerMigrationDto = VisitBalanceDpsApiExtension.getRequestBody(
+              postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/migrate")),
+            )
+            with(request) {
+              assertThat(prisonerId).isEqualTo(nomisPrisonNumber)
+              assertThat(voBalance).isEqualTo(3)
+              assertThat(pvoBalance).isEqualTo(2)
+            }
+          }
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("visitbalance-adjustment-synchronisation-balance-success"),
+              check {
+                assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
               },
               isNull(),
             )
