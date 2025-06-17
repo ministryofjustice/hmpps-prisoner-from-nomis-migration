@@ -50,44 +50,38 @@ class VisitBalanceSynchronisationService(
       )
     } else {
       nomisVisitBalanceApiService.getVisitBalanceAdjustment(visitBalanceAdjustmentId = visitBalanceAdjustmentId).also {
-<<<<<<< SDIT-2839-visit-balance-adjustment-mapping
         val mapping = mappingApiService.getByNomisVisitBalanceAdjustmentIdOrNull(visitBalanceAdjustmentId)
         if (mapping != null) {
           telemetryClient.trackEvent(
             "visitbalance-adjustment-synchronisation-created-ignored",
-=======
-        // special case for Initial IEP entitlement
-        if (it.comment == "Initial IEP entitlement") {
-          val visitBalance = nomisVisitBalanceApiService.getVisitBalanceDetail(event.bookingId)
-          dpsApiService.migrateVisitBalance(visitBalance.toMigrationDto())
-          telemetryClient.trackEvent(
-            "visitbalance-adjustment-synchronisation-balance-success",
->>>>>>> main
             telemetry,
           )
         } else {
-          dpsApiService.syncVisitBalanceAdjustment(it.toSyncDto(nomisPrisonNumber))
-<<<<<<< SDIT-2839-visit-balance-adjustment-mapping
-
-          val mapping = VisitBalanceAdjustmentMappingDto(
-            nomisVisitBalanceAdjustmentId = visitBalanceAdjustmentId,
-            dpsId = event.offenderIdDisplay,
-            mappingType = VisitBalanceAdjustmentMappingDto.MappingType.NOMIS_CREATED,
-          )
-          tryToCreateMapping(mapping, telemetry = telemetry)
-          telemetryClient.trackEvent(
-            "visitbalance-adjustment-synchronisation-created-success",
-            telemetry +
-              ("visitOrderChange" to it.visitOrderChange.toString()) +
-              ("previousVisitOrderCount" to it.previousVisitOrderCount.toString()) +
-              ("privilegedVisitOrderChange" to it.privilegedVisitOrderChange.toString()) +
-              ("previousPrivilegedVisitOrderCount" to it.previousPrivilegedVisitOrderCount.toString()),
-=======
-          telemetryClient.trackEvent(
-            "visitbalance-adjustment-synchronisation-created-success",
-            telemetry,
->>>>>>> main
-          )
+          // special case for Initial IEP entitlement
+          if (it.comment == "Initial IEP entitlement") {
+            val visitBalance = nomisVisitBalanceApiService.getVisitBalanceDetail(event.bookingId)
+            dpsApiService.migrateVisitBalance(visitBalance.toMigrationDto())
+            telemetryClient.trackEvent(
+              "visitbalance-adjustment-synchronisation-balance-success",
+              telemetry,
+            )
+          } else {
+            dpsApiService.syncVisitBalanceAdjustment(it.toSyncDto(nomisPrisonNumber))
+            val mapping = VisitBalanceAdjustmentMappingDto(
+              nomisVisitBalanceAdjustmentId = visitBalanceAdjustmentId,
+              dpsId = event.offenderIdDisplay,
+              mappingType = VisitBalanceAdjustmentMappingDto.MappingType.NOMIS_CREATED,
+            )
+            tryToCreateMapping(mapping, telemetry = telemetry)
+            telemetryClient.trackEvent(
+              "visitbalance-adjustment-synchronisation-created-success",
+              telemetry +
+                ("visitOrderChange" to it.visitOrderChange.toString()) +
+                ("previousVisitOrderCount" to it.previousVisitOrderCount.toString()) +
+                ("privilegedVisitOrderChange" to it.privilegedVisitOrderChange.toString()) +
+                ("previousPrivilegedVisitOrderCount" to it.previousPrivilegedVisitOrderCount.toString()),
+            )
+          }
         }
       }
     }

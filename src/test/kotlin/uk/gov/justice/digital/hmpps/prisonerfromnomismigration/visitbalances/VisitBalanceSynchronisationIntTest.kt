@@ -293,7 +293,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           fun `will track telemetry`() {
             verify(telemetryClient).trackEvent(
               eq("visitbalance-adjustment-synchronisation-created-ignored"),
-              org.mockito.kotlin.check {
+              check {
                 assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
                 assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
               },
@@ -349,8 +349,8 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("visitbalance-adjustment-synchronisation-balance-success"),
               check {
-                assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
               },
               isNull(),
             )
