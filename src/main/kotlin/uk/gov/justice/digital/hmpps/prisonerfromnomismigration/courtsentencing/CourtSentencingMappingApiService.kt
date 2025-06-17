@@ -93,6 +93,14 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
+  suspend fun getCourtAppearanceByNomisId(courtAppearanceId: Long): CourtAppearanceMappingDto = webClient.get()
+    .uri(
+      "/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/{courtAppearanceId}",
+      courtAppearanceId,
+    )
+    .retrieve()
+    .awaitBody()
+
   suspend fun createCourtAppearanceMapping(
     mapping: CourtAppearanceAllMappingDto,
   ): CreateMappingResult<CourtAppearanceAllMappingDto> = webClient.post()

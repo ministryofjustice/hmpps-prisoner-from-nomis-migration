@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyChargeCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtAppearanceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyLinkChargeToCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyPeriodLengthCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateWholeCharge
@@ -773,9 +774,10 @@ class CourtSentencingSynchronisationService(
   }
   suspend fun nomisCourtChargeLinked(event: CourtEventChargeLinkingEvent) {
     var telemetry =
-      mapOf(
+      telemetryOf(
         "nomisBookingId" to event.bookingId.toString(),
         "nomisCombinedCourtCaseId" to event.combinedCaseId.toString(),
+        "nomisCourtCaseId" to event.caseId.toString(),
         "nomisOffenderChargeId" to event.chargeId.toString(),
         "nomisCourtAppearanceId" to event.eventId.toString(),
         "offenderNo" to event.offenderIdDisplay,
@@ -783,34 +785,22 @@ class CourtSentencingSynchronisationService(
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent("court-charge-synchronisation-link-skipped", telemetry)
     } else {
-      mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)
-        ?.let { courtAppearanceMapping ->
-          mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { chargeMapping ->
-            nomisApiService.getCourtEventCharge(
-              offenderNo = event.offenderIdDisplay,
-              eventId = event.eventId,
-              offenderChargeId = event.chargeId,
-            ).let { nomisCourtAppearanceCharge ->
-              telemetry = telemetry + ("dpsCourtAppearanceId" to courtAppearanceMapping.dpsCourtAppearanceId)
-              // TODO update DPS with linked charge
-              telemetryClient.trackEvent(
-                "court-charge-synchronisation-link-success",
-                telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId),
-              )
-            }
-          } ?: let {
-            telemetryClient.trackEvent(
-              "court-charge-synchronisation-link-failed",
-              telemetry + ("reason" to "charge is not mapped"),
-            )
-            throw ParentEntityNotFoundRetry("Received OFFENDER_CHARGES_LINKED for charge ${event.chargeId} has never been mapped")
-          }
-        } ?: let {
-        telemetryClient.trackEvent(
-          "court-charge-synchronisation-link-failed",
-          telemetry + ("reason" to "associated court appearance is not mapped"),
+      track("court-charge-synchronisation-link", telemetry) {
+        val sourceCaseMapping = mappingApiService.getCourtCaseByNomisId(event.caseId)
+          .also { telemetry["dpsSourceCourtCaseId"] = it.dpsCourtCaseId }
+        val courtAppearanceMapping = mappingApiService.getCourtAppearanceByNomisId(event.eventId)
+          .also { telemetry["dpsCourtAppearanceId"] = it.dpsCourtAppearanceId }
+        val chargeMapping = mappingApiService.getOffenderChargeByNomisId(event.chargeId)
+          .also { telemetry["dpsCourtChargeId"] = it.dpsCourtChargeId }
+
+        dpsApiService.linkChargeToCase(
+          courtAppearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
+          chargeId = chargeMapping.dpsCourtChargeId,
+          linkData = LegacyLinkChargeToCase(
+            sourceCourtCaseUuid = sourceCaseMapping.dpsCourtCaseId,
+            linkedDate = event.eventDatetime.toLocalDate(),
+          ),
         )
-        throw ParentEntityNotFoundRetry("Received COURT_EVENT_CHARGES_LINKED with court appearance ${event.eventId} that has never been created/mapped")
       }
     }
   }

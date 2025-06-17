@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COU
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_PRISONER_MERGE_COURT_CASE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SENTENCE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SENTENCE_TERM_SYNCHRONISATION_MAPPING
+import java.time.LocalDateTime
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -141,9 +142,11 @@ data class CourtEventChargeLinkingEvent(
   val eventId: Long,
   val chargeId: Long,
   val combinedCaseId: Long,
+  val caseId: Long,
   val offenderIdDisplay: String,
   val bookingId: Long,
   val auditModuleName: String?,
+  val eventDatetime: LocalDateTime,
 )
 
 data class OffenderChargeEvent(
