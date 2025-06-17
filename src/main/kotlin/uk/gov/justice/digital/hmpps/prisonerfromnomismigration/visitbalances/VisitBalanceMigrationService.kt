@@ -80,7 +80,7 @@ class VisitBalanceMigrationService(
     failureHandler: suspend (error: Throwable) -> Unit,
   ) {
     runCatching {
-      visitBalanceMappingService.createMapping(mapping)
+      visitBalanceMappingService.createVisitBalanceMapping(mapping)
     }.onFailure {
       failureHandler(it)
     }.onSuccess {

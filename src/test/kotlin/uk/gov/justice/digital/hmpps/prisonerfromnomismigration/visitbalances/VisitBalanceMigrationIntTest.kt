@@ -106,7 +106,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 2, pageSize = 10, firstVisitBalanceId = 10000)
-        mappingApiMock.stubGetByNomisIdOrNull(
+        mappingApiMock.stubGetVisitBalanceByNomisIdOrNull(
           nomisVisitBalanceId = 10000,
           mapping = VisitBalanceMappingDto(
             dpsId = "A0001BC",
@@ -115,7 +115,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
             label = "2020-01-01T00:00:00",
           ),
         )
-        mappingApiMock.stubGetByNomisIdOrNull(
+        mappingApiMock.stubGetVisitBalanceByNomisIdOrNull(
           nomisVisitBalanceId = 20000,
           mapping = VisitBalanceMappingDto(
             dpsId = "A0002BC",
@@ -154,8 +154,8 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 2, pageSize = 10, firstVisitBalanceId = 10000L)
-        mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
-        mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 20000, mapping = null)
+        mappingApiMock.stubGetVisitBalanceByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
+        mappingApiMock.stubGetVisitBalanceByNomisIdOrNull(nomisVisitBalanceId = 20000, mapping = null)
 
         nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(
           nomisVisitBalanceId = 10000,
@@ -305,7 +305,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 1, pageSize = 10, firstVisitBalanceId = 10000)
-        mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
+        mappingApiMock.stubGetVisitBalanceByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
         nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(
           nomisVisitBalanceId = 10000,
           prisonNumber = "A0001BC",
@@ -367,7 +367,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 1, pageSize = 10, firstVisitBalanceId = 10000)
-        mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
+        mappingApiMock.stubGetVisitBalanceByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
         nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(
           nomisVisitBalanceId = 10000,
           prisonNumber = "A0001BC",
@@ -512,7 +512,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
           )
         }
         nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 1, pageSize = 10, firstVisitBalanceId = 10000)
-        mappingApiMock.stubGetByNomisIdOrNull(
+        mappingApiMock.stubGetVisitBalanceByNomisIdOrNull(
           nomisVisitBalanceId = 10000,
           mapping = VisitBalanceMappingDto(
             dpsId = "A0001BC",
@@ -543,7 +543,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
           )
         }
         nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 1, pageSize = 10, firstVisitBalanceId = 10000)
-        mappingApiMock.stubGetByNomisIdOrNull(
+        mappingApiMock.stubGetVisitBalanceByNomisIdOrNull(
           nomisVisitBalanceId = 10000,
           mapping = VisitBalanceMappingDto(
             dpsId = "A0001BC",
@@ -574,7 +574,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
           )
         }
         nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 1, pageSize = 10, firstVisitBalanceId = 10000)
-        mappingApiMock.stubGetByNomisIdOrNull(
+        mappingApiMock.stubGetVisitBalanceByNomisIdOrNull(
           nomisVisitBalanceId = 10000,
           mapping = VisitBalanceMappingDto(
             dpsId = "A0001BC",
@@ -614,7 +614,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
     nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 2, pageSize = 10, firstVisitBalanceId = 10000)
     visitBalances.forEachIndexed { index, nomisVisitBalance ->
       nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(nomisVisitBalanceId = visitBalanceIds[index], visitBalance = nomisVisitBalance)
-      mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = visitBalanceIds[index], mapping = null)
+      mappingApiMock.stubGetVisitBalanceByNomisIdOrNull(nomisVisitBalanceId = visitBalanceIds[index], mapping = null)
       dpsApiMock.stubMigrateVisitBalance()
     }
     mappingApiMock.stubCreateMappingsForMigration()

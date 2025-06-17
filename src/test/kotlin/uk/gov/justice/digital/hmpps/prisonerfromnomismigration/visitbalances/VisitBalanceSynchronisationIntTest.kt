@@ -1,6 +1,9 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances
 
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
@@ -25,6 +28,9 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
   private lateinit var nomisVisitBalanceApiMock: VisitBalanceNomisApiMockServer
 
   private val dpsApiMock = dpsVisitBalanceServer
+
+  @Autowired
+  private lateinit var mappingApiMock: VisitBalanceMappingApiMockServer
 
   @Nested
   @DisplayName("OFFENDER_VISIT_BALANCE_ADJS-INSERTED")
@@ -51,8 +57,8 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient).trackEvent(
           eq("visitbalance-adjustment-synchronisation-created-skipped"),
           check {
-            assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+            assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+            assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
           },
           isNull(),
         )
@@ -62,7 +68,10 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `the event is not ignored if Nomis Allocation`() {
         nomisApi.stubCheckServicePrisonForPrisonerNotFound()
         nomisVisitBalanceApiMock.stubGetVisitBalanceAdjustment(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
+        mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(mapping = null)
         dpsApiMock.stubSyncVisitBalanceAdjustment()
+        mappingApiMock.stubCreateVisitBalanceAdjustmentMapping()
+
         visitBalanceOffenderEventsQueue.sendMessage(
           visitBalanceAdjustmentEvent(
             eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
@@ -76,8 +85,8 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient).trackEvent(
           eq("visitbalance-adjustment-synchronisation-created-success"),
           check {
-            assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+            assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+            assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
           },
           isNull(),
         )
@@ -114,12 +123,18 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
+        fun `will not call the mapping service`() {
+          mappingApiMock.verify(0, getRequestedFor(anyUrl()))
+          mappingApiMock.verify(0, postRequestedFor(anyUrl()))
+        }
+
+        @Test
         fun `will track telemetry`() {
           verify(telemetryClient).trackEvent(
             eq("visitbalance-adjustment-synchronisation-created-skipped"),
             check {
-              assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-              assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+              assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+              assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
             },
             isNull(),
           )
@@ -138,7 +153,9 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           @BeforeEach
           fun setUp() {
             nomisVisitBalanceApiMock.stubGetVisitBalanceAdjustment(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
+            mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(mapping = null)
             dpsApiMock.stubSyncVisitBalanceAdjustment()
+            mappingApiMock.stubCreateVisitBalanceAdjustmentMapping()
 
             visitBalanceOffenderEventsQueue.sendMessage(
               visitBalanceAdjustmentEvent(
@@ -177,8 +194,12 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("visitbalance-adjustment-synchronisation-created-success"),
               check {
-                assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["visitOrderChange"]).isEqualTo("2")
+                assertThat(it["previousVisitOrderCount"]).isEqualTo("12")
+                assertThat(it["privilegedVisitOrderChange"]).isEqualTo("1")
+                assertThat(it["previousPrivilegedVisitOrderCount"]).isEqualTo("4")
               },
               isNull(),
             )
@@ -199,7 +220,9 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
                 comment = null,
               ),
             )
+            mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(mapping = null)
             dpsApiMock.stubSyncVisitBalanceAdjustment()
+            mappingApiMock.stubCreateVisitBalanceAdjustmentMapping()
 
             visitBalanceOffenderEventsQueue.sendMessage(
               visitBalanceAdjustmentEvent(
@@ -238,8 +261,41 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("visitbalance-adjustment-synchronisation-created-success"),
               check {
-                assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Nested
+        inner class WhenAlreadyCreated {
+          @BeforeEach
+          fun setUp() {
+            nomisVisitBalanceApiMock.stubGetVisitBalanceAdjustment(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
+            mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
+
+            visitBalanceOffenderEventsQueue.sendMessage(
+              visitBalanceAdjustmentEvent(
+                eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
+                visitBalanceAdjId = visitBalanceAdjId,
+              ),
+            ).also { waitForAnyProcessingToComplete() }
+          }
+
+          @Test
+          fun `will not update in DPS`() {
+            dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
+          }
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("visitbalance-adjustment-synchronisation-created-ignored"),
+              check {
+                assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
               },
               isNull(),
             )
@@ -293,14 +349,15 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("visitbalance-adjustment-synchronisation-balance-success"),
               check {
-                assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
               },
               isNull(),
             )
           }
         }
       }
+      // TODO  duplicate mapping tests
     }
 
     @Nested
@@ -318,7 +375,9 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           @BeforeEach
           fun setUp() {
             nomisVisitBalanceApiMock.stubGetVisitBalanceAdjustment(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
+            mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(mapping = null)
             dpsApiMock.stubSyncVisitBalanceAdjustment()
+            mappingApiMock.stubCreateVisitBalanceAdjustmentMapping()
 
             visitBalanceOffenderEventsQueue.sendMessage(
               visitBalanceAdjustmentEvent(
@@ -357,8 +416,8 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("visitbalance-adjustment-synchronisation-created-success"),
               check {
-                assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
               },
               isNull(),
             )
@@ -379,7 +438,9 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
                 comment = null,
               ),
             )
+            mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(mapping = null)
             dpsApiMock.stubSyncVisitBalanceAdjustment()
+            mappingApiMock.stubCreateVisitBalanceAdjustmentMapping()
 
             visitBalanceOffenderEventsQueue.sendMessage(
               visitBalanceAdjustmentEvent(
@@ -418,8 +479,8 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("visitbalance-adjustment-synchronisation-created-success"),
               check {
-                assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
               },
               isNull(),
             )
@@ -432,6 +493,9 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           nomisApi.stubCheckServicePrisonForPrisonerNotFound()
+          mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(mapping = null)
+          dpsApiMock.stubSyncVisitBalanceAdjustment()
+          mappingApiMock.stubCreateVisitBalanceAdjustmentMapping()
         }
 
         @Nested
@@ -439,7 +503,6 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           @BeforeEach
           fun setUp() {
             nomisVisitBalanceApiMock.stubGetVisitBalanceAdjustment(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
-            dpsApiMock.stubSyncVisitBalanceAdjustment()
 
             visitBalanceOffenderEventsQueue.sendMessage(
               visitBalanceAdjustmentEvent(
@@ -452,6 +515,11 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           @Test
           fun `will retrieve the adjustment details from NOMIS`() {
             nomisVisitBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/visit-balances/visit-balance-adjustment/$visitBalanceAdjId")))
+          }
+
+          @Test
+          fun `will call the mapping api to determine if the mapping exists`() {
+            mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/visit-balance-adjustment/nomis-id/$visitBalanceAdjId")))
           }
 
           @Test
@@ -474,12 +542,22 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           }
 
           @Test
+          fun `will save the adjustment in the mapping table`() {
+            mappingApiMock.verify(
+              postRequestedFor(urlPathEqualTo("/mapping/visit-balance-adjustment"))
+                .withRequestBody(matchingJsonPath("nomisVisitBalanceAdjustmentId", equalTo("$visitBalanceAdjId")))
+                .withRequestBody(matchingJsonPath("dpsId", equalTo(nomisPrisonNumber)))
+                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+            )
+          }
+
+          @Test
           fun `will track telemetry`() {
             verify(telemetryClient).trackEvent(
               eq("visitbalance-adjustment-synchronisation-created-success"),
               check {
-                assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
               },
               isNull(),
             )
@@ -500,7 +578,6 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
                 comment = null,
               ),
             )
-            dpsApiMock.stubSyncVisitBalanceAdjustment()
 
             visitBalanceOffenderEventsQueue.sendMessage(
               visitBalanceAdjustmentEvent(
@@ -539,8 +616,8 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
             verify(telemetryClient).trackEvent(
               eq("visitbalance-adjustment-synchronisation-created-success"),
               check {
-                assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
               },
               isNull(),
             )
@@ -574,8 +651,8 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient).trackEvent(
           eq("visitbalance-adjustment-synchronisation-deleted-unexpected"),
           check {
-            assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(nomisVisitBalanceAdjId.toString())
-            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+            assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(nomisVisitBalanceAdjId.toString())
+            assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
           },
           isNull(),
         )
@@ -603,8 +680,8 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
         verify(telemetryClient).trackEvent(
           eq("visitbalance-adjustment-synchronisation-deleted-unexpected"),
           check {
-            assertThat(it["visitBalanceAdjustmentId"]).isEqualTo(nomisVisitBalanceAdjId.toString())
-            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber.toString())
+            assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(nomisVisitBalanceAdjId.toString())
+            assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
           },
           isNull(),
         )
