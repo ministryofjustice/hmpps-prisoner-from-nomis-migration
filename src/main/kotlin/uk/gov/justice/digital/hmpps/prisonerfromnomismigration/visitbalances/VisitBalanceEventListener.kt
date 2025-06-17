@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISIT_BALANCE_SYNC_QUEUE_ID
 import java.util.concurrent.CompletableFuture
@@ -37,6 +38,9 @@ class VisitBalanceEventListener(
               "OFFENDER_VISIT_BALANCE_ADJS-INSERTED" -> service.visitBalanceAdjustmentInserted(sqsMessage.Message.fromJson())
               "OFFENDER_VISIT_BALANCE_ADJS-DELETED" -> service.visitBalanceAdjustmentDeleted(sqsMessage.Message.fromJson())
 
+              RETRY_SYNCHRONISATION_MAPPING.name -> service.retryCreateMapping(
+                sqsMessage.Message.fromJson(),
+              )
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {

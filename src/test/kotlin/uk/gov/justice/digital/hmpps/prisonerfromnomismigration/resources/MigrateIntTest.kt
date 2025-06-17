@@ -96,8 +96,8 @@ class MigrateIntTest : SqsIntegrationTestBase() {
       // slow the API calls so there is time to cancel before it completes
       nomisApi.setGlobalFixedDelay(1000)
       nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 2, pageSize = 10, firstVisitBalanceId = 10000)
-      mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
-      mappingApiMock.stubGetByNomisIdOrNull(nomisVisitBalanceId = 20000, mapping = null)
+      mappingApiMock.stubGetVisitBalanceByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
+      mappingApiMock.stubGetVisitBalanceByNomisIdOrNull(nomisVisitBalanceId = 20000, mapping = null)
       nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(
         nomisVisitBalanceId = 10000,
         prisonNumber = "A0001BC",

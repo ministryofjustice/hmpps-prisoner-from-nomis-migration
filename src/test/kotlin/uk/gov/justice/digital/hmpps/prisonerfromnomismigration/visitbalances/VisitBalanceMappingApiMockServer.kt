@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceAdjustmentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
@@ -70,7 +71,7 @@ class VisitBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetByNomisIdOrNull(
+  fun stubGetVisitBalanceByNomisIdOrNull(
     nomisVisitBalanceId: Long = 12345,
     mapping: VisitBalanceMappingDto? = VisitBalanceMappingDto(
       nomisVisitBalanceId = nomisVisitBalanceId,
@@ -106,7 +107,66 @@ class VisitBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
       dpsId = "A1234BC",
       mappingType = VisitBalanceMappingDto.MappingType.MIGRATED,
     ),
-  ) = stubGetByNomisIdOrNull(nomisVisitBalanceId, mapping)
+  ) = stubGetVisitBalanceByNomisIdOrNull(nomisVisitBalanceId, mapping)
+
+  fun stubCreateVisitBalanceAdjustmentMapping() {
+    mappingApi.stubFor(
+      post("/mapping/visit-balance-adjustment").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateVisitBalanceAdjustmentMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/visit-balance-adjustment").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubGetVisitBalanceAdjustmentByNomisIdOrNull(
+    nomisVisitBalanceAdjustmentId: Long = 12345,
+    mapping: VisitBalanceAdjustmentMappingDto? = VisitBalanceAdjustmentMappingDto(
+      nomisVisitBalanceAdjustmentId = nomisVisitBalanceAdjustmentId,
+      dpsId = "A1234BC",
+      mappingType = VisitBalanceAdjustmentMappingDto.MappingType.NOMIS_CREATED,
+    ),
+  ) {
+    mapping?.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/visit-balance-adjustment/nomis-id/$nomisVisitBalanceAdjustmentId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(mapping)),
+        ),
+      )
+    } ?: run {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/visit-balance-adjustment/nomis-id/$nomisVisitBalanceAdjustmentId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+        ),
+      )
+    }
+  }
+
+  fun stubGetVisitBalanceAdjustmentByNomisId(
+    nomisVisitBalanceAdjustmentId: Long = 12345,
+    mapping: VisitBalanceAdjustmentMappingDto? = VisitBalanceAdjustmentMappingDto(
+      nomisVisitBalanceAdjustmentId = nomisVisitBalanceAdjustmentId,
+      dpsId = "A1234BC",
+      mappingType = VisitBalanceAdjustmentMappingDto.MappingType.NOMIS_CREATED,
+    ),
+  ) = stubGetVisitBalanceAdjustmentByNomisIdOrNull(nomisVisitBalanceAdjustmentId, mapping)
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
