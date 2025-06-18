@@ -108,9 +108,10 @@ class CourtSentencingSynchronisationService(
         "nomisCourtAppearanceId" to event.eventId.toString(),
         "offenderNo" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId.toString(),
+        "isBreachHearing" to event.isBreachHearing,
       )
     if (isAppearancePartOfACourtCase(event)) {
-      if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      if (event.auditModuleName == "DPS_SYNCHRONISATION" && !event.isBreachHearing) {
         telemetryClient.trackEvent("court-appearance-synchronisation-created-skipped", telemetry)
       } else {
         val nomisCourtAppearance =
@@ -538,9 +539,10 @@ class CourtSentencingSynchronisationService(
         "nomisBookingId" to event.bookingId.toString(),
         "nomisCourtAppearanceId" to event.eventId.toString(),
         "offenderNo" to event.offenderIdDisplay,
+        "isBreachHearing" to event.isBreachHearing,
       )
     if (isAppearancePartOfACourtCase(event)) {
-      if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+      if (event.auditModuleName == "DPS_SYNCHRONISATION" && !event.isBreachHearing) {
         telemetryClient.trackEvent("court-appearance-synchronisation-updated-skipped", telemetry)
       } else {
         val mapping = mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)

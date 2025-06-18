@@ -1769,6 +1769,110 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    @DisplayName("When court appearance was created in DPS for a recall")
+    inner class DpsCreatedRecallBreachHearing {
+      @BeforeEach
+      fun setUp() {
+        courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+          courtCaseId = NOMIS_COURT_CASE_ID,
+          offenderNo = OFFENDER_ID_DISPLAY,
+          courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          eventDateTime = LocalDateTime.parse("2020-01-02T09:00:00"),
+          courtId = "MDI",
+        )
+      }
+
+      @Nested
+      @DisplayName("When happy path")
+      inner class HappyPath {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
+          courtSentencingMappingApiMockServer.stubGetByNomisId(
+            nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+            dpsCourtCaseId = DPS_COURT_CASE_ID,
+          )
+          dpsCourtSentencingServer.stubPostCourtAppearanceForCreate(
+            courtAppearanceId = UUID.fromString(
+              DPS_COURT_APPEARANCE_ID,
+            ),
+            courtCaseId = DPS_COURT_CASE_ID,
+          )
+          courtSentencingMappingApiMockServer.stubPostCourtAppearanceMapping()
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            courtAppearanceEvent(
+              eventType = "COURT_EVENTS-INSERTED",
+              auditModule = "DPS_SYNCHRONISATION",
+              isBreachHearing = true,
+            ),
+          )
+        }
+
+        @Test
+        fun `will create a court appearance in DPS`() {
+          await untilAsserted {
+            dpsCourtSentencingServer.verify(
+              postRequestedFor(urlPathEqualTo("/legacy/court-appearance"))
+                .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("4506")))
+                .withRequestBody(matchingJsonPath("legacyData.outcomeConvictionFlag", equalTo("false")))
+                .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("I")))
+                .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Adjournment")))
+                .withRequestBody(matchingJsonPath("legacyData.postedDate", not(WireMock.absent())))
+                .withRequestBody(matchingJsonPath("legacyData.appearanceTime", equalTo("09:00")))
+                .withRequestBody(matchingJsonPath("courtCode", equalTo("MDI")))
+                .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_COURT_CASE_ID)))
+                .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02")))
+                .withRequestBody(
+                  matchingJsonPath(
+                    "appearanceTypeUuid",
+                    equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
+                  ),
+                ),
+            )
+          }
+        }
+
+        @Test
+        fun `will create mapping between DPS and NOMIS ids`() {
+          await untilAsserted {
+            courtSentencingMappingApiMockServer.verify(
+              postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances"))
+                .withRequestBody(matchingJsonPath("dpsCourtAppearanceId", equalTo(DPS_COURT_APPEARANCE_ID)))
+                .withRequestBody(
+                  matchingJsonPath(
+                    "nomisCourtAppearanceId",
+                    equalTo(NOMIS_COURT_APPEARANCE_ID.toString()),
+                  ),
+                )
+                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("court-appearance-synchronisation-created-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["isBreachHearing"]).isEqualTo("true")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+
+    @Nested
     @DisplayName("duplicate mapping - two messages received at the same time")
     inner class WhenDuplicate {
 
@@ -2084,6 +2188,92 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         }
       }
     }
+
+    @Nested
+    @DisplayName("When breach recall court appearance was updated in DPS")
+    inner class DpsUpdatedRecallBreachHearing {
+
+      @BeforeEach
+      fun setUp() {
+        courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+          courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          offenderNo = OFFENDER_ID_DISPLAY,
+          courtCaseId = NOMIS_COURT_CASE_ID,
+          eventDateTime = LocalDateTime.parse("2020-01-02T09:00:00"),
+        )
+      }
+
+      @Nested
+      @DisplayName("When happy path")
+      inner class HappyPath {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+          )
+
+          courtSentencingMappingApiMockServer.stubGetByNomisId(
+            nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+          )
+
+          dpsCourtSentencingServer.stubPutCourtAppearanceForUpdate(
+            courtAppearanceId = UUID.fromString(
+              DPS_COURT_APPEARANCE_ID,
+            ),
+          )
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            courtAppearanceEvent(
+              eventType = "COURT_EVENTS-UPDATED",
+              auditModule = "DPS_SYNCHRONISATION",
+              isBreachHearing = true,
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will update DPS with the changes`() {
+          await untilAsserted {
+            dpsCourtSentencingServer.verify(
+              1,
+              putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID"))
+                .withRequestBody(
+                  matchingJsonPath(
+                    "appearanceTypeUuid",
+                    equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
+                  ),
+                )
+                .withRequestBody(
+                  matchingJsonPath(
+                    "legacyData.appearanceTime",
+                    equalTo("09:00"),
+                  ),
+                ),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("court-appearance-synchronisation-updated-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["isBreachHearing"]).isEqualTo("true")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
   }
 
   @Nested
@@ -2091,8 +2281,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class CourtAppearanceDeleted {
 
     @Nested
-    @DisplayName("When court appearance was deleted in NOMIS")
-    inner class NomisDeleted {
+    @DisplayName("When court appearance was deleted in NOMIS or DPS")
+    inner class NomisOrDPSDeleted {
 
       @Nested
       @DisplayName("When mapping does not exist")
@@ -2148,6 +2338,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               bookingId = NOMIS_BOOKING_ID,
               courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
               offenderNo = OFFENDER_ID_DISPLAY,
+              auditModule = "DPS_SYNCHRONISATION",
             ),
           ).also {
             waitForTelemetry()
@@ -4372,9 +4563,10 @@ fun courtAppearanceEvent(
   courtCaseId: Long? = NOMIS_COURT_CASE_ID,
   offenderNo: String = OFFENDER_ID_DISPLAY,
   auditModule: String = "DPS",
+  isBreachHearing: Boolean = false,
 ) = """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
-    "Message": "{\"eventId\":\"$courtAppearanceId\",${courtCaseId.let {"""\"caseId\":\"$courtCaseId\","""}}\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"COURT_EVENT\",\"auditModuleName\":\"$auditModule\" }",
+    "Message": "{\"eventId\":\"$courtAppearanceId\",${courtCaseId.let {"""\"caseId\":\"$courtCaseId\","""}}\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"COURT_EVENT\",\"auditModuleName\":\"$auditModule\",\"isBreachHearing\": $isBreachHearing }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 

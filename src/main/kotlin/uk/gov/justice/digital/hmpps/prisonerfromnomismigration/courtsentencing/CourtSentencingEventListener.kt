@@ -42,9 +42,9 @@ class CourtSentencingEventListener(
               "OFFENDER_CASES-INSERTED" -> courtSentencingSynchronisationService.nomisCourtCaseInserted(sqsMessage.Message.fromJson())
               "OFFENDER_CASES-UPDATED" -> courtSentencingSynchronisationService.nomisCourtCaseUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_CASES-DELETED" -> courtSentencingSynchronisationService.nomisCourtCaseDeleted(sqsMessage.Message.fromJson())
-              "COURT_EVENTS-INSERTED" -> courtSentencingSynchronisationService.nomisCourtAppearanceInserted(sqsMessage.Message.fromJson())
               "OFFENDER_CASES-LINKED" -> courtSentencingSynchronisationService.nomisCourtCaseLinked(sqsMessage.Message.fromJson())
               "OFFENDER_CASES-UNLINKED" -> courtSentencingSynchronisationService.nomisCourtCaseUnlinked(sqsMessage.Message.fromJson())
+              "COURT_EVENTS-INSERTED" -> courtSentencingSynchronisationService.nomisCourtAppearanceInserted(sqsMessage.Message.fromJson())
               "COURT_EVENTS-UPDATED" -> courtSentencingSynchronisationService.nomisCourtAppearanceUpdated(sqsMessage.Message.fromJson())
               "COURT_EVENTS-DELETED" -> courtSentencingSynchronisationService.nomisCourtAppearanceDeleted(sqsMessage.Message.fromJson())
               "COURT_EVENT_CHARGES-INSERTED" -> courtSentencingSynchronisationService.nomisCourtChargeInserted(sqsMessage.Message.fromJson())
@@ -128,6 +128,7 @@ data class CourtAppearanceEvent(
   val offenderIdDisplay: String,
   val bookingId: Long,
   val auditModuleName: String?,
+  val isBreachHearing: Boolean,
 )
 
 data class CourtEventChargeEvent(
