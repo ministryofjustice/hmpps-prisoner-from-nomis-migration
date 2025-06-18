@@ -727,7 +727,6 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           }
         }
 
-        /*
         @Nested
         inner class MappingCreateFails {
 
@@ -743,8 +742,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
                 eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
                 visitBalanceAdjId = visitBalanceAdjId,
               ),
-            ).also { waitForAnyProcessingToComplete() }
-            // ).also { waitForAnyProcessingToComplete("visitbalance-adjustment-mapping-synchronisation-created-success") }
+            ).also { waitForAnyProcessingToComplete("visitbalance-adjustment-synchronisation-created-success") }
           }
 
           @Test
@@ -775,8 +773,6 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
             )
           }
         }
-
-         */
       }
     }
   }
