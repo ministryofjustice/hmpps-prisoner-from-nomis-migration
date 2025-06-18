@@ -130,6 +130,8 @@ class VisitBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubCreateVisitBalanceAdjustmentMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/visit-balance-adjustment")
+
   fun stubGetVisitBalanceAdjustmentByNomisIdOrNull(
     nomisVisitBalanceAdjustmentId: Long = 12345,
     mapping: VisitBalanceAdjustmentMappingDto? = VisitBalanceAdjustmentMappingDto(

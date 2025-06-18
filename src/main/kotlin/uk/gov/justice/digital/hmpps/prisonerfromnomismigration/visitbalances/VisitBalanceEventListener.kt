@@ -38,14 +38,13 @@ class VisitBalanceEventListener(
               "OFFENDER_VISIT_BALANCE_ADJS-INSERTED" -> service.visitBalanceAdjustmentInserted(sqsMessage.Message.fromJson())
               "OFFENDER_VISIT_BALANCE_ADJS-DELETED" -> service.visitBalanceAdjustmentDeleted(sqsMessage.Message.fromJson())
 
-              RETRY_SYNCHRONISATION_MAPPING.name -> service.retryCreateMapping(sqsMessage.Message.fromJson())
-
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
             log.info("Feature switch is disabled for event {}", eventType)
           }
         }
+        RETRY_SYNCHRONISATION_MAPPING.name -> service.retryCreateMapping(sqsMessage.Message.fromJson())
       }
     }
   }

@@ -5,7 +5,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
@@ -25,8 +27,8 @@ class VisitBalanceSynchronisationService(
   private val dpsApiService: VisitBalanceDpsApiService,
   private val mappingApiService: VisitBalanceMappingApiService,
   private val queueService: SynchronisationQueueService,
-  private val telemetryClient: TelemetryClient,
-) {
+  override val telemetryClient: TelemetryClient,
+) : TelemetryEnabled {
   private companion object {
     const val VISIT_ALLOCATION_SERVICE = "VISIT_ALLOCATION"
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -36,7 +38,7 @@ class VisitBalanceSynchronisationService(
     val visitBalanceAdjustmentId = event.visitBalanceAdjustmentId
     val nomisPrisonNumber = event.offenderIdDisplay
     val telemetry =
-      telemetryOf("nomisVisitBalanceAdjustmentId" to visitBalanceAdjustmentId, "dpsId" to nomisPrisonNumber)
+      telemetryOf("nomisVisitBalanceAdjustmentId" to visitBalanceAdjustmentId, "nomisPrisonNumber" to nomisPrisonNumber)
 
     if (event.originatesInDpsOrHasMissingAudit() &&
       nomisApiService.isServicePrisonOnForPrisoner(
@@ -66,21 +68,22 @@ class VisitBalanceSynchronisationService(
               telemetry,
             )
           } else {
-            dpsApiService.syncVisitBalanceAdjustment(it.toSyncDto(nomisPrisonNumber))
-            val mapping = VisitBalanceAdjustmentMappingDto(
-              nomisVisitBalanceAdjustmentId = visitBalanceAdjustmentId,
-              dpsId = event.offenderIdDisplay,
-              mappingType = VisitBalanceAdjustmentMappingDto.MappingType.NOMIS_CREATED,
+            telemetry += telemetryOf(
+              "visitOrderChange" to it.visitOrderChange.toString(),
+              "previousVisitOrderCount" to it.previousVisitOrderCount.toString(),
+              "privilegedVisitOrderChange" to it.privilegedVisitOrderChange.toString(),
+              "previousPrivilegedVisitOrderCount" to it.previousPrivilegedVisitOrderCount.toString(),
             )
-            tryToCreateMapping(mapping, telemetry = telemetry)
-            telemetryClient.trackEvent(
-              "visitbalance-adjustment-synchronisation-created-success",
-              telemetry +
-                ("visitOrderChange" to it.visitOrderChange.toString()) +
-                ("previousVisitOrderCount" to it.previousVisitOrderCount.toString()) +
-                ("privilegedVisitOrderChange" to it.privilegedVisitOrderChange.toString()) +
-                ("previousPrivilegedVisitOrderCount" to it.previousPrivilegedVisitOrderCount.toString()),
-            )
+
+            track("visitbalance-adjustment-synchronisation-created", telemetry) {
+              dpsApiService.syncVisitBalanceAdjustment(it.toSyncDto(nomisPrisonNumber))
+              val mapping = VisitBalanceAdjustmentMappingDto(
+                nomisVisitBalanceAdjustmentId = visitBalanceAdjustmentId,
+                dpsId = event.offenderIdDisplay,
+                mappingType = VisitBalanceAdjustmentMappingDto.MappingType.NOMIS_CREATED,
+              )
+              tryToCreateMapping(mapping, telemetry)
+            }
           }
         }
       }
@@ -90,7 +93,7 @@ class VisitBalanceSynchronisationService(
   suspend fun visitBalanceAdjustmentDeleted(event: VisitBalanceOffenderEvent) {
     val telemetry = telemetryOf(
       "nomisVisitBalanceAdjustmentId" to event.visitBalanceAdjustmentId,
-      "dpsId" to event.offenderIdDisplay,
+      "nomisPrisonNumber" to event.offenderIdDisplay,
     )
     telemetryClient.trackEvent("visitbalance-adjustment-synchronisation-deleted-unexpected", telemetry)
   }

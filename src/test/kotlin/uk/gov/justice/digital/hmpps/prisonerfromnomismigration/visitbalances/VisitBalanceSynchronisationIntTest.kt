@@ -18,6 +18,9 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceAdjustmentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerMigrationDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiExtension.Companion.dpsVisitBalanceServer
@@ -58,7 +61,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           eq("visitbalance-adjustment-synchronisation-created-skipped"),
           check {
             assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-            assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
           },
           isNull(),
         )
@@ -86,7 +89,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           eq("visitbalance-adjustment-synchronisation-created-success"),
           check {
             assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-            assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
           },
           isNull(),
         )
@@ -134,7 +137,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
             eq("visitbalance-adjustment-synchronisation-created-skipped"),
             check {
               assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-              assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+              assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
             },
             isNull(),
           )
@@ -195,7 +198,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
               eq("visitbalance-adjustment-synchronisation-created-success"),
               check {
                 assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
                 assertThat(it["visitOrderChange"]).isEqualTo("2")
                 assertThat(it["previousVisitOrderCount"]).isEqualTo("12")
                 assertThat(it["privilegedVisitOrderChange"]).isEqualTo("1")
@@ -262,7 +265,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
               eq("visitbalance-adjustment-synchronisation-created-success"),
               check {
                 assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
               },
               isNull(),
             )
@@ -295,7 +298,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
               eq("visitbalance-adjustment-synchronisation-created-ignored"),
               check {
                 assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
               },
               isNull(),
             )
@@ -310,7 +313,10 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
               nomisVisitBalanceAdjustmentId = visitBalanceAdjId,
               visitBalanceAdjustment = visitBalanceAdjustment().copy(comment = "Initial IEP entitlement"),
             )
-            nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(nomisVisitBalanceId = 1215724, prisonNumber = nomisPrisonNumber)
+            nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(
+              nomisVisitBalanceId = 1215724,
+              prisonNumber = nomisPrisonNumber,
+            )
             dpsApiMock.stubMigrateVisitBalance()
 
             visitBalanceOffenderEventsQueue.sendMessage(
@@ -350,14 +356,13 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
               eq("visitbalance-adjustment-synchronisation-balance-success"),
               check {
                 assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
               },
               isNull(),
             )
           }
         }
       }
-      // TODO  duplicate mapping tests
     }
 
     @Nested
@@ -417,7 +422,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
               eq("visitbalance-adjustment-synchronisation-created-success"),
               check {
                 assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
               },
               isNull(),
             )
@@ -480,7 +485,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
               eq("visitbalance-adjustment-synchronisation-created-success"),
               check {
                 assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
               },
               isNull(),
             )
@@ -493,9 +498,6 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           nomisApi.stubCheckServicePrisonForPrisonerNotFound()
-          mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(mapping = null)
-          dpsApiMock.stubSyncVisitBalanceAdjustment()
-          mappingApiMock.stubCreateVisitBalanceAdjustmentMapping()
         }
 
         @Nested
@@ -503,6 +505,9 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           @BeforeEach
           fun setUp() {
             nomisVisitBalanceApiMock.stubGetVisitBalanceAdjustment(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
+            mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(mapping = null)
+            dpsApiMock.stubSyncVisitBalanceAdjustment()
+            mappingApiMock.stubCreateVisitBalanceAdjustmentMapping()
 
             visitBalanceOffenderEventsQueue.sendMessage(
               visitBalanceAdjustmentEvent(
@@ -557,7 +562,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
               eq("visitbalance-adjustment-synchronisation-created-success"),
               check {
                 assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
               },
               isNull(),
             )
@@ -578,6 +583,9 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
                 comment = null,
               ),
             )
+            mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(mapping = null)
+            dpsApiMock.stubSyncVisitBalanceAdjustment()
+            mappingApiMock.stubCreateVisitBalanceAdjustmentMapping()
 
             visitBalanceOffenderEventsQueue.sendMessage(
               visitBalanceAdjustmentEvent(
@@ -590,6 +598,11 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           @Test
           fun `will retrieve the adjustment details from NOMIS`() {
             nomisVisitBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/visit-balances/visit-balance-adjustment/$visitBalanceAdjId")))
+          }
+
+          @Test
+          fun `will call the mapping api to determine if the mapping exists`() {
+            mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/visit-balance-adjustment/nomis-id/$visitBalanceAdjId")))
           }
 
           @Test
@@ -612,17 +625,158 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           }
 
           @Test
+          fun `will save the adjustment in the mapping table`() {
+            mappingApiMock.verify(
+              postRequestedFor(urlPathEqualTo("/mapping/visit-balance-adjustment"))
+                .withRequestBody(matchingJsonPath("nomisVisitBalanceAdjustmentId", equalTo("$visitBalanceAdjId")))
+                .withRequestBody(matchingJsonPath("dpsId", equalTo(nomisPrisonNumber)))
+                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+            )
+          }
+
+          @Test
           fun `will track telemetry`() {
             verify(telemetryClient).trackEvent(
               eq("visitbalance-adjustment-synchronisation-created-success"),
               check {
                 assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-                assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
               },
               isNull(),
             )
           }
         }
+
+        @Nested
+        inner class WhenDuplicateMapping {
+          @BeforeEach
+          fun setUp() {
+            nomisVisitBalanceApiMock.stubGetVisitBalanceAdjustment(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
+            mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(mapping = null)
+            dpsApiMock.stubSyncVisitBalanceAdjustment()
+            mappingApiMock.stubCreateVisitBalanceAdjustmentMapping(
+              error = DuplicateMappingErrorResponse(
+                moreInfo = DuplicateErrorContentObject(
+                  duplicate = VisitBalanceAdjustmentMappingDto(
+                    dpsId = nomisPrisonNumber,
+                    nomisVisitBalanceAdjustmentId = visitBalanceAdjId,
+                    mappingType = VisitBalanceAdjustmentMappingDto.MappingType.NOMIS_CREATED,
+                  ),
+                  existing = VisitBalanceAdjustmentMappingDto(
+                    dpsId = nomisPrisonNumber,
+                    nomisVisitBalanceAdjustmentId = 9999,
+                    mappingType = VisitBalanceAdjustmentMappingDto.MappingType.NOMIS_CREATED,
+                  ),
+                ),
+                errorCode = 1409,
+                status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+                userMessage = "Duplicate mapping",
+              ),
+            )
+
+            visitBalanceOffenderEventsQueue.sendMessage(
+              visitBalanceAdjustmentEvent(
+                eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
+                visitBalanceAdjId = visitBalanceAdjId,
+              ),
+            ).also { waitForAnyProcessingToComplete("visitbalance-adjustment-duplicate") }
+          }
+
+          @Test
+          fun `will create the visit balance adjustment in DPS once`() {
+            dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
+          }
+
+          @Test
+          fun `will call the mapping api to determine if the mapping exists`() {
+            mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/visit-balance-adjustment/nomis-id/$visitBalanceAdjId")))
+          }
+
+          @Test
+          fun `will attempt to create a mapping between the DPS and NOMIS record once`() {
+            mappingApiMock.verify(
+              1,
+              postRequestedFor(urlPathEqualTo("/mapping/visit-balance-adjustment"))
+                .withRequestBody(matchingJsonPath("nomisVisitBalanceAdjustmentId", equalTo("$visitBalanceAdjId")))
+                .withRequestBody(matchingJsonPath("dpsId", equalTo(nomisPrisonNumber)))
+                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+            )
+          }
+
+          @Test
+          fun `will track telemetry for both overall success and duplicate`() {
+            verify(telemetryClient).trackEvent(
+              eq("visitbalance-adjustment-duplicate"),
+              check {
+                assertThat(it["existingNomisVisitBalanceAdjustmentId"]).isEqualTo("9999")
+                assertThat(it["existingDpsId"]).isEqualTo(nomisPrisonNumber)
+                assertThat(it["duplicateNomisVisitBalanceAdjustmentId"]).isEqualTo("$visitBalanceAdjId")
+                assertThat(it["duplicateDpsId"]).isEqualTo(nomisPrisonNumber)
+              },
+              isNull(),
+            )
+
+            verify(telemetryClient).trackEvent(
+              eq("visitbalance-adjustment-synchronisation-created-success"),
+              check {
+                assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo("$visitBalanceAdjId")
+                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+              },
+              isNull(),
+            )
+          }
+        }
+
+        /*
+        @Nested
+        inner class MappingCreateFails {
+
+          @BeforeEach
+          fun setUp() {
+            nomisVisitBalanceApiMock.stubGetVisitBalanceAdjustment(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
+            mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(mapping = null)
+            dpsApiMock.stubSyncVisitBalanceAdjustment()
+
+            mappingApiMock.stubCreateVisitBalanceAdjustmentMappingFailureFollowedBySuccess()
+            visitBalanceOffenderEventsQueue.sendMessage(
+              visitBalanceAdjustmentEvent(
+                eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
+                visitBalanceAdjId = visitBalanceAdjId,
+              ),
+            ).also { waitForAnyProcessingToComplete() }
+            // ).also { waitForAnyProcessingToComplete("visitbalance-adjustment-mapping-synchronisation-created-success") }
+          }
+
+          @Test
+          fun `will create the visit balance adjustment  in DPS once`() {
+            dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
+          }
+
+          @Test
+          fun `will create a mapping between the DPS and NOMIS record`() {
+            mappingApiMock.verify(
+              2,
+              postRequestedFor(urlPathEqualTo("/mapping/visit-balance-adjustment"))
+                .withRequestBody(matchingJsonPath("nomisVisitBalanceAdjustmentId", equalTo("$visitBalanceAdjId")))
+                .withRequestBody(matchingJsonPath("dpsId", equalTo(nomisPrisonNumber)))
+                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+            )
+          }
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("visitbalance-adjustment-synchronisation-created-success"),
+              check {
+                assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo("$visitBalanceAdjId")
+                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+              },
+              isNull(),
+            )
+          }
+        }
+
+         */
       }
     }
   }
@@ -652,7 +806,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           eq("visitbalance-adjustment-synchronisation-deleted-unexpected"),
           check {
             assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(nomisVisitBalanceAdjId.toString())
-            assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
           },
           isNull(),
         )
@@ -681,7 +835,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           eq("visitbalance-adjustment-synchronisation-deleted-unexpected"),
           check {
             assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(nomisVisitBalanceAdjId.toString())
-            assertThat(it["dpsId"]).isEqualTo(nomisPrisonNumber)
+            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
           },
           isNull(),
         )
