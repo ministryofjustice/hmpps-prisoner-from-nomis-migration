@@ -11,6 +11,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
+import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
@@ -249,6 +250,42 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
           .withStatus(HttpStatus.OK.value())
           .withBody(objectMapper.writeValueAsString(mapping)),
       ),
+    )
+  }
+  fun stubGetCourtAppearanceByNomisIdNotFoundFollowedBySuccess(
+    nomisCourtAppearanceId: Long = 123456,
+    dpsCourtAppearanceId: String = UUID.randomUUID().toString(),
+    mapping: CourtAppearanceMappingDto = CourtAppearanceMappingDto(
+      nomisCourtAppearanceId = nomisCourtAppearanceId,
+      dpsCourtAppearanceId = dpsCourtAppearanceId,
+      mappingType = CourtAppearanceMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    val scenarioName = "Cause Court Appearance create Success"
+    val successScenario = "Cause Court Appearance create Success"
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/$nomisCourtAppearanceId"))
+        .inScenario(scenarioName)
+        .whenScenarioStateIs(STARTED)
+        .willReturn(
+          aResponse()
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withHeader("Content-Type", "application/json"),
+        )
+        .willSetStateTo(successScenario),
+    )
+
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/$nomisCourtAppearanceId"))
+        .inScenario(scenarioName)
+        .whenScenarioStateIs(successScenario)
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(mapping)),
+        )
+        .willSetStateTo(successScenario),
     )
   }
 

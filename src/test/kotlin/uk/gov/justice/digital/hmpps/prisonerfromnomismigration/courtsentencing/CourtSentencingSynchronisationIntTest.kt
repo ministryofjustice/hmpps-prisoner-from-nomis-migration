@@ -1771,23 +1771,36 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     @Nested
     @DisplayName("When court appearance was created in DPS for a recall")
     inner class DpsCreatedRecallBreachHearing {
-      @BeforeEach
-      fun setUp() {
-        courtSentencingNomisApiMockServer.stubGetCourtAppearance(
-          courtCaseId = NOMIS_COURT_CASE_ID,
-          offenderNo = OFFENDER_ID_DISPLAY,
-          courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
-          eventDateTime = LocalDateTime.parse("2020-01-02T09:00:00"),
-          courtId = "MDI",
-        )
-      }
-
       @Nested
       @DisplayName("When happy path")
       inner class HappyPath {
+        val chargeIds =
+          listOf((101L to "e94eea10-dfd1-43c2-b43c-56e8650f8ae7"), (102L to "e94eea10-dfd1-43c2-b43c-56e8650f8ae7"))
+
         @BeforeEach
         fun setUp() {
-          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
+          courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+            courtCaseId = NOMIS_COURT_CASE_ID,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            eventDateTime = LocalDateTime.parse("2020-01-02T09:00:00"),
+            courtId = "MDI",
+            courtEventCharges = listOf(
+              courtEventChargeResponse(
+                eventId = NOMIS_COURT_APPEARANCE_ID,
+                offenderChargeId = chargeIds[0].first,
+              ),
+              courtEventChargeResponse(
+                eventId = NOMIS_COURT_APPEARANCE_ID,
+                offenderChargeId = chargeIds[1].first,
+              ),
+            ),
+          )
+
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisIdNotFoundFollowedBySuccess(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+          )
           courtSentencingMappingApiMockServer.stubGetByNomisId(
             nomisCourtCaseId = NOMIS_COURT_CASE_ID,
             dpsCourtCaseId = DPS_COURT_CASE_ID,
@@ -1799,34 +1812,75 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtCaseId = DPS_COURT_CASE_ID,
           )
           courtSentencingMappingApiMockServer.stubPostCourtAppearanceMapping()
+
+          // court event charge mocking
+          chargeIds.forEach {
+            courtSentencingNomisApiMockServer.stubGetOffenderCharge(
+              offenderNo = OFFENDER_ID_DISPLAY,
+              offenderChargeId = it.first,
+            )
+
+            dpsCourtSentencingServer.stubPostCourtChargeForCreate(
+              courtChargeId = it.second,
+              courtCaseId = DPS_COURT_CASE_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            )
+          }
+          courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
+          courtSentencingMappingApiMockServer.stubPostCourtChargeMapping()
+
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
             courtSentencingQueueOffenderEventsUrl,
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-INSERTED",
               auditModule = "DPS_SYNCHRONISATION",
+              courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
               isBreachHearing = true,
             ),
-          )
+          ).also { waitForAnyProcessingToComplete(name = "court-charge-synchronisation-created-success", times = 2) }
         }
 
         @Test
         fun `will create a court appearance in DPS`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              postRequestedFor(urlPathEqualTo("/legacy/court-appearance"))
-                .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("4506")))
-                .withRequestBody(matchingJsonPath("legacyData.outcomeConvictionFlag", equalTo("false")))
-                .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("I")))
-                .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Adjournment")))
-                .withRequestBody(matchingJsonPath("legacyData.postedDate", not(WireMock.absent())))
-                .withRequestBody(matchingJsonPath("legacyData.appearanceTime", equalTo("09:00")))
-                .withRequestBody(matchingJsonPath("courtCode", equalTo("MDI")))
-                .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_COURT_CASE_ID)))
-                .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02")))
+          dpsCourtSentencingServer.verify(
+            postRequestedFor(urlPathEqualTo("/legacy/court-appearance"))
+              .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("4506")))
+              .withRequestBody(matchingJsonPath("legacyData.outcomeConvictionFlag", equalTo("false")))
+              .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("I")))
+              .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Adjournment")))
+              .withRequestBody(matchingJsonPath("legacyData.postedDate", not(WireMock.absent())))
+              .withRequestBody(matchingJsonPath("legacyData.appearanceTime", equalTo("09:00")))
+              .withRequestBody(matchingJsonPath("courtCode", equalTo("MDI")))
+              .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_COURT_CASE_ID)))
+              .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02")))
+              .withRequestBody(
+                matchingJsonPath(
+                  "appearanceTypeUuid",
+                  equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
+                ),
+              ),
+          )
+        }
+
+        @Test
+        fun `will create a court charges and associate with an appearance in DPS`() {
+          dpsCourtSentencingServer.verify(
+            2,
+            postRequestedFor(urlPathEqualTo("/legacy/charge"))
+              .withRequestBody(matchingJsonPath("appearanceLifetimeUuid", equalTo(DPS_COURT_APPEARANCE_ID))),
+          )
+        }
+
+        @Test
+        fun `will create mapping between DPS and NOMIS court charge ids`() {
+          chargeIds.forEach {
+            courtSentencingMappingApiMockServer.verify(
+              postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-charges"))
+                .withRequestBody(matchingJsonPath("dpsCourtChargeId", equalTo(it.second)))
                 .withRequestBody(
                   matchingJsonPath(
-                    "appearanceTypeUuid",
-                    equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
+                    "nomisCourtChargeId",
+                    equalTo(it.first.toString()),
                   ),
                 ),
             )
@@ -1834,35 +1888,51 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will create mapping between DPS and NOMIS ids`() {
-          await untilAsserted {
-            courtSentencingMappingApiMockServer.verify(
-              postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances"))
-                .withRequestBody(matchingJsonPath("dpsCourtAppearanceId", equalTo(DPS_COURT_APPEARANCE_ID)))
-                .withRequestBody(
-                  matchingJsonPath(
-                    "nomisCourtAppearanceId",
-                    equalTo(NOMIS_COURT_APPEARANCE_ID.toString()),
-                  ),
-                )
-                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
-            )
-          }
+        fun `will create mapping between DPS and NOMIS appearance ids`() {
+          courtSentencingMappingApiMockServer.verify(
+            postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances"))
+              .withRequestBody(matchingJsonPath("dpsCourtAppearanceId", equalTo(DPS_COURT_APPEARANCE_ID)))
+              .withRequestBody(
+                matchingJsonPath(
+                  "nomisCourtAppearanceId",
+                  equalTo(NOMIS_COURT_APPEARANCE_ID.toString()),
+                ),
+              )
+              .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+          )
         }
 
         @Test
-        fun `will track a telemetry event for success`() {
-          await untilAsserted {
+        fun `will track a telemetry event for court appearance success`() {
+          verify(telemetryClient).trackEvent(
+            eq("court-appearance-synchronisation-created-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["isBreachHearing"]).isEqualTo("true")
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+              assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+              assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+            },
+            isNull(),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for court charge events success`() {
+          chargeIds.forEach { ids ->
             verify(telemetryClient).trackEvent(
-              eq("court-appearance-synchronisation-created-success"),
+              eq("court-charge-synchronisation-created-success"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["isBreachHearing"]).isEqualTo("true")
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                assertThat(it["nomisOffenderChargeId"]).isEqualTo(ids.first.toString())
                 assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                assertThat(it["dpsChargeId"]).isEqualTo(ids.second)
                 assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+                assertThat(it["existingDpsCharge"]).isEqualTo("false")
                 assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
               },
               isNull(),

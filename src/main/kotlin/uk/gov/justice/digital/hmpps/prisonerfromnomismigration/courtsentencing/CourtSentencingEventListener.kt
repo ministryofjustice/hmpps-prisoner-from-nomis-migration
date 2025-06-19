@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING
@@ -100,6 +101,10 @@ class CourtSentencingEventListener(
           courtSentencingSynchronisationService.retryCreatePrisonerMergeCourtCaseMapping(
             sqsMessage.Message.fromJson(),
           )
+
+        RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED -> courtSentencingSynchronisationService.nomisRecallBeachCourtChargeInserted(
+          sqsMessage.Message.fromJson(),
+        )
       }
     }
   }
@@ -137,6 +142,13 @@ data class CourtEventChargeEvent(
   val offenderIdDisplay: String,
   val bookingId: Long,
   val auditModuleName: String?,
+)
+
+data class RecallBreachCourtEventCharge(
+  val eventId: Long,
+  val chargeId: Long,
+  val offenderIdDisplay: String,
+  val bookingId: Long,
 )
 
 data class CourtEventChargeLinkingEvent(

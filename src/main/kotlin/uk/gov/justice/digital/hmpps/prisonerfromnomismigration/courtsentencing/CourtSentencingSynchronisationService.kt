@@ -39,6 +39,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING
@@ -144,6 +145,23 @@ class CourtSentencingSynchronisationService(
               "court-appearance-synchronisation-created-success",
               telemetry,
             )
+            // this is a breach court event created by DPS so all charges events will be ignored
+            // so add them now via an event
+            if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+              nomisCourtAppearance.courtEventCharges.forEach {
+                queueService.sendMessage(
+                  messageType = RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED,
+                  synchronisationType = SynchronisationType.COURT_SENTENCING,
+                  message = RecallBreachCourtEventCharge(
+                    eventId = event.eventId,
+                    chargeId = it.offenderCharge.id,
+                    offenderIdDisplay = event.offenderIdDisplay,
+                    bookingId = event.bookingId,
+                  ),
+                  telemetryAttributes = emptyMap(),
+                )
+              }
+            }
           } ?: let {
             telemetryClient.trackEvent(
               "court-appearance-synchronisation-created-failed",
@@ -614,6 +632,17 @@ class CourtSentencingSynchronisationService(
       )
     }
   }
+
+  // TODO - extract nomisCourtChargeInserted() method so both this and CourtEventChargeEvent can be processed with shared code without auditModuleName hack
+  suspend fun nomisRecallBeachCourtChargeInserted(message: InternalMessage<RecallBreachCourtEventCharge>) = nomisCourtChargeInserted(
+    CourtEventChargeEvent(
+      eventId = message.body.eventId,
+      chargeId = message.body.chargeId,
+      offenderIdDisplay = message.body.offenderIdDisplay,
+      bookingId = message.body.bookingId,
+      auditModuleName = "DPS_RECALL_BREACH",
+    ),
+  )
 
   // New Court event charge.
   // is it a new underlying offender charge? 2 DPS endpoints - create charge or apply new version to appearance
