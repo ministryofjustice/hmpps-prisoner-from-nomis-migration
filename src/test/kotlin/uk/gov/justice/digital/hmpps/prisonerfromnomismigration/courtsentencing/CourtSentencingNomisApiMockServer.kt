@@ -689,11 +689,11 @@ fun courtCaseResponse(
   sentences = sentences,
 )
 
-fun sentenceResponse(bookingId: Long, sentenceSequence: Int) = SentenceResponse(
+fun sentenceResponse(bookingId: Long, sentenceSequence: Int, eventId: Long) = SentenceResponse(
   bookingId = bookingId,
   sentenceSeq = sentenceSequence.toLong(),
   caseId = 123,
-  courtOrder = null,
+  courtOrder = buildCourtOrderResponse(eventId = eventId),
   category = CodeDescription(code = "2003", "2003 Act"),
   calculationType = CodeDescription(code = "ADIMP_ORA", description = "ADIMP_ORA description"),
   offenderCharges = emptyList(),

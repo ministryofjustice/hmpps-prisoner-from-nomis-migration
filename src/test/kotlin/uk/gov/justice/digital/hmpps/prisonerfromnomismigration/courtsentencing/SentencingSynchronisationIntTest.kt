@@ -59,6 +59,9 @@ private const val DPS_CONSECUTIVE_SENTENCE_ID = "c4c1e2e2-2e3e-3e3e-3e3e-3e3e3e3
 
 class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
   @Autowired
+  private lateinit var courtSentencingMappingApiService: CourtSentencingMappingApiService
+
+  @Autowired
   private lateinit var courtSentencingNomisApiMockServer: CourtSentencingNomisApiMockServer
 
   @Autowired
@@ -78,7 +81,14 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
           bookingId = NOMIS_BOOKING_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
+          courtOrder = buildCourtOrderResponse(),
         )
+
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+        )
+
         awsSqsCourtSentencingOffenderEventsClient.sendMessage(
           courtSentencingQueueOffenderEventsUrl,
           sentenceEvent(
@@ -131,11 +141,18 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
             offenderNo = OFFENDER_ID_DISPLAY,
             caseId = NOMIS_COURT_CASE_ID,
+            courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
             recallCustodyDate = RecallCustodyDate(
               returnToCustodyDate = LocalDate.parse("2023-01-01"),
               recallLength = 14,
             ),
           )
+
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+          )
+
           courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
           mockTwoChargeMappingGets()
           courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
@@ -209,7 +226,13 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
             offenderNo = OFFENDER_ID_DISPLAY,
             caseId = NOMIS_COURT_CASE_ID,
+            courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
           )
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+          )
+
           courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
           mockTwoChargeMappingGets()
           courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
@@ -283,7 +306,14 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             offenderNo = OFFENDER_ID_DISPLAY,
             caseId = NOMIS_COURT_CASE_ID,
             consecSequence = NOMIS_CONSEC_SENTENCE_SEQUENCE.toInt(),
+            courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
           )
+
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+          )
+
           courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
           courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
             nomisBookingId = NOMIS_BOOKING_ID,
@@ -419,7 +449,14 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
             offenderNo = OFFENDER_ID_DISPLAY,
             caseId = NOMIS_COURT_CASE_ID,
+            courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
           )
+
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+          )
+
           dpsCourtSentencingServer.stubPostSentenceForCreate(sentenceId = DPS_SENTENCE_ID)
         }
 
@@ -561,6 +598,66 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      @DisplayName("When court order court appearance not mapped")
+      inner class NoAssociatedCourtAppearanceMappingFail {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+          mockTwoChargeMappingGets()
+          courtSentencingNomisApiMockServer.stubGetSentence(
+            bookingId = NOMIS_BOOKING_ID,
+            sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            caseId = NOMIS_COURT_CASE_ID,
+            courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
+          )
+
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
+
+          dpsCourtSentencingServer.stubPostSentenceForCreate(sentenceId = DPS_SENTENCE_ID)
+
+          courtSentencingMappingApiMockServer.stubPostSentenceMappingFailureFollowedBySuccess()
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-INSERTED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will not create a sentence in DPS`() {
+          // sentence event may come after term event
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(NOT_FOUND)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceTermEvent(
+              eventType = "OFFENDER_SENTENCE_TERMS-INSERTED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+
+          await untilAsserted {
+            verify(telemetryClient, times(2)).trackEvent(
+              eq("sentence-synchronisation-created-failed"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["reason"]).isEqualTo("parent court appearance $NOMIS_COURT_APPEARANCE_ID is not mapped")
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
+          }
+          dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Nested
       @DisplayName("Sentence includes a charge that is not mapped. Possible causes: unmigrated data, events (extremely) out of order")
       inner class ReferencesMissingChargeMapping {
         @BeforeEach
@@ -570,7 +667,14 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
             offenderNo = OFFENDER_ID_DISPLAY,
             caseId = NOMIS_COURT_CASE_ID,
+            courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
           )
+
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+          )
+
           courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
           courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
             nomisCourtChargeId = 101,
@@ -618,19 +722,20 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class ReferencesMissingConsecutiveSentence {
         @BeforeEach
         fun setUp() {
-          courtSentencingNomisApiMockServer.stubGetSentence(
-            bookingId = NOMIS_BOOKING_ID,
-            sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
-            offenderNo = OFFENDER_ID_DISPLAY,
-            caseId = NOMIS_COURT_CASE_ID,
-          )
           courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
           courtSentencingNomisApiMockServer.stubGetSentence(
             bookingId = NOMIS_BOOKING_ID,
             sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
             offenderNo = OFFENDER_ID_DISPLAY,
             caseId = NOMIS_COURT_CASE_ID,
+            courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
           )
+
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+          )
+
           courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
             nomisCourtChargeId = 101,
             dpsCourtChargeId = DPS_CHARGE_ID,
@@ -682,7 +787,13 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
             offenderNo = OFFENDER_ID_DISPLAY,
             caseId = NOMIS_COURT_CASE_ID,
+            courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
           )
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+          )
+
           courtSentencingMappingApiMockServer.stubGetByNomisId(nomisCourtCaseId = NOMIS_COURT_CASE_ID)
           courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
           courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = INTERNAL_SERVER_ERROR)
@@ -717,6 +828,11 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
           offenderNo = OFFENDER_ID_DISPLAY,
           caseId = NOMIS_COURT_CASE_ID,
+          courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
+        )
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          dpsCourtAppearanceId = DPS_APPEARANCE_ID,
         )
 
         courtSentencingMappingApiMockServer.stubGetByNomisId(nomisCourtCaseId = NOMIS_COURT_CASE_ID)
@@ -725,10 +841,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
         mockTwoChargeMappingGets()
 
-        courtSentencingNomisApiMockServer.stubGetSentence(
-          bookingId = NOMIS_BOOKING_ID,
-          sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
-        )
         dpsCourtSentencingServer.stubPostSentenceForCreate(sentenceId = DPS_SENTENCE_ID)
 
         courtSentencingMappingApiMockServer.stubSentenceMappingCreateConflict(
@@ -1060,10 +1172,16 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           bookingId = NOMIS_BOOKING_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
           caseId = NOMIS_COURT_CASE_ID,
+          courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
           recallCustodyDate = RecallCustodyDate(
             returnToCustodyDate = LocalDate.parse("2024-01-01"),
             recallLength = 28,
           ),
+        )
+
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          dpsCourtAppearanceId = DPS_APPEARANCE_ID,
         )
       }
 
@@ -1201,6 +1319,56 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             // will not create a sentence in DPS
             dpsCourtSentencingServer.verify(0, putRequestedFor(anyUrl()))
           }
+        }
+      }
+
+      @Nested
+      @DisplayName("When court order court appearance not mapped")
+      inner class NoAssociatedCourtAppearanceMappingFail {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+            nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+            nomisBookingId = NOMIS_BOOKING_ID,
+            dpsSentenceId = DPS_SENTENCE_ID,
+          )
+          mockTwoChargeMappingGets()
+          courtSentencingNomisApiMockServer.stubGetSentence(
+            bookingId = NOMIS_BOOKING_ID,
+            sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            caseId = NOMIS_COURT_CASE_ID,
+            courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
+          )
+
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
+
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-UPDATED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will not update a sentence in DPS`() {
+          await untilAsserted {
+            verify(telemetryClient, times(2)).trackEvent(
+              eq("sentence-synchronisation-updated-failed"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["reason"]).isEqualTo("parent court appearance $NOMIS_COURT_APPEARANCE_ID is not mapped")
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
+          }
+          dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
         }
       }
     }
