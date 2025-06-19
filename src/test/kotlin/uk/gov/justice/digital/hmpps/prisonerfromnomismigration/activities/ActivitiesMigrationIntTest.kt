@@ -470,11 +470,11 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
       with(migrationHistoryRepository.findById(migrationId)!!) {
         val filter = objectMapper.readValue<ActivitiesMigrationFilter>(filter!!)
         assertThat(filter.activityStartDate).isEqualTo(activityStartDate)
-        assertThat(filter.nomisActivityEndDate).isEqualTo(activityStartDate)
+        assertThat(filter.nomisActivityEndDate).isEqualTo(activityStartDate.minusDays(1))
       }
 
       mappingApi.verifyActivitiesMappingByMigrationId(migrationId, count)
-      nomisApi.verifyEndActivities("[1,2,3]", "$activityStartDate")
+      nomisApi.verifyEndActivities("[1,2,3]", "${activityStartDate.minusDays(1)}")
     }
 
     @Test
@@ -489,7 +489,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isOk
 
       mappingApi.verifyActivitiesMappingByMigrationId(migrationId, count)
-      nomisApi.verifyEndActivities("[1,2,3]", "$activityStartDate")
+      nomisApi.verifyEndActivities("[1,2,3]", "${activityStartDate.minusDays(1)}")
     }
   }
 
@@ -500,9 +500,9 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     private val migrationId = "2023-10-05T09:58:45"
     private val count = 3
     private val oldActivityStartDate = tomorrow
-    private val oldNomisEndDate = oldActivityStartDate
+    private val oldNomisEndDate = oldActivityStartDate.minusDays(1)
     private val newActivityStartDate = tomorrow.plusDays(1)
-    private val newNomisEndDate = newActivityStartDate
+    private val newNomisEndDate = newActivityStartDate.minusDays(1)
     private val request = MoveActivityStartDateRequest(newActivityStartDate)
 
     @BeforeEach
