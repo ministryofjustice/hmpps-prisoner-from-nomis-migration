@@ -200,4 +200,4 @@ generic-prometheus-alerts:
 cron:
   retry_dlqs_schedule: "*/10 * * * *"
   report_incidents:
-    suspend: true
+    suspend: false
