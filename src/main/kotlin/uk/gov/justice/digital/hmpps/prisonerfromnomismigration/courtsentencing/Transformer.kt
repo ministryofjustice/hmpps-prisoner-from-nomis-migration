@@ -181,13 +181,14 @@ fun CourtEventChargeResponse.toDpsMigrationCharge(
   )
 }
 
-fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsConsecUuid: String?) = LegacyCreateSentence(
+fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsAppearanceUuid: String, dpsConsecUuid: String?) = LegacyCreateSentence(
   chargeUuids = sentenceChargeIds.map { UUID.fromString(it) },
   active = this.status == "A",
   legacyData = this.toSentenceLegacyData(),
   fine = this.fineAmount?.let { LegacyCreateFine(fineAmount = it) },
   consecutiveToLifetimeUuid = dpsConsecUuid?.let { UUID.fromString(it) },
   returnToCustodyDate = this.recallCustodyDate?.returnToCustodyDate,
+  appearanceUuid = UUID.fromString(dpsAppearanceUuid),
 )
 
 fun SentenceResponse.toDpsMigrationSentence() = MigrationCreateSentence(

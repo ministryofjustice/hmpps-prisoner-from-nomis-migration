@@ -55,8 +55,8 @@ import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
 import java.util.AbstractMap.SimpleEntry
+import java.util.UUID
 
 private const val NOMIS_COURT_CASE_ID = 1234L
 private const val NOMIS_COURT_APPEARANCE_ID = 5555L
@@ -3938,8 +3938,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
               sentences = listOf(
-                sentenceResponse(bookingId = 301, sentenceSequence = 1),
-                sentenceResponse(bookingId = 301, sentenceSequence = 2),
+                sentenceResponse(bookingId = 301, sentenceSequence = 1, eventId = NOMIS_COURT_APPEARANCE_ID),
+                sentenceResponse(bookingId = 301, sentenceSequence = 2, eventId = NOMIS_COURT_APPEARANCE_ID),
               ),
             ),
             courtCaseResponse().copy(
@@ -3953,8 +3953,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
               sentences = listOf(
-                sentenceResponse(bookingId = 301, sentenceSequence = 3),
-                sentenceResponse(bookingId = 301, sentenceSequence = 4),
+                sentenceResponse(bookingId = 301, sentenceSequence = 3, eventId = NOMIS_COURT_APPEARANCE_ID),
+                sentenceResponse(bookingId = 301, sentenceSequence = 4, eventId = NOMIS_COURT_APPEARANCE_ID),
               ),
             ),
           ),
@@ -3970,8 +3970,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
               sentences = listOf(
-                sentenceResponse(bookingId = 201, sentenceSequence = 1).copy(offenderCharges = listOf(offenderChargeResponse(301))),
-                sentenceResponse(bookingId = 201, sentenceSequence = 2).copy(offenderCharges = listOf(offenderChargeResponse(302))),
+                sentenceResponse(bookingId = 201, sentenceSequence = 1, eventId = NOMIS_COURT_APPEARANCE_ID).copy(offenderCharges = listOf(offenderChargeResponse(301))),
+                sentenceResponse(bookingId = 201, sentenceSequence = 2, eventId = NOMIS_COURT_APPEARANCE_ID).copy(offenderCharges = listOf(offenderChargeResponse(302))),
               ),
             ),
             courtCaseResponse().copy(
@@ -3985,8 +3985,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 ),
               ),
               sentences = listOf(
-                sentenceResponse(bookingId = 201, sentenceSequence = 3).copy(offenderCharges = listOf(offenderChargeResponse(303))),
-                sentenceResponse(bookingId = 201, sentenceSequence = 4).copy(offenderCharges = listOf(offenderChargeResponse(304))),
+                sentenceResponse(bookingId = 201, sentenceSequence = 3, eventId = NOMIS_COURT_APPEARANCE_ID).copy(offenderCharges = listOf(offenderChargeResponse(303))),
+                sentenceResponse(bookingId = 201, sentenceSequence = 4, eventId = NOMIS_COURT_APPEARANCE_ID).copy(offenderCharges = listOf(offenderChargeResponse(304))),
               ),
             ),
           ),
@@ -4271,6 +4271,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             sentenceResponse(
               bookingId = bookingId,
               sentenceSequence = 1,
+              eventId = NOMIS_COURT_APPEARANCE_ID,
             ).copy(
               offenderCharges = listOf(
                 offenderChargeResponse(
@@ -4291,6 +4292,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             sentenceResponse(
               bookingId = bookingId,
               sentenceSequence = 2,
+              eventId = NOMIS_COURT_APPEARANCE_ID,
             ).copy(
               offenderCharges = listOf(
                 offenderChargeResponse(
@@ -4328,6 +4330,11 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisBookingId = bookingId,
           nomisSentenceSequence = 1,
           dpsSentenceId = "612cf742-feea-4562-b01d-ce643146fcf1",
+        )
+
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
         )
 
         courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
@@ -4436,12 +4443,29 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             sentenceResponse(
               bookingId = bookingId,
               sentenceSequence = 1,
+              eventId = NOMIS_COURT_APPEARANCE_ID,
             ),
             sentenceResponse(
               bookingId = bookingId,
               sentenceSequence = 2,
+              eventId = NOMIS_COURT_APPEARANCE_ID,
             ),
           ),
+        )
+
+        courtSentencingMappingApiMockServer.stubGetSentencesByNomisIds(
+          listOf(
+            SentenceMappingDto(
+              nomisBookingId = bookingId,
+              nomisSentenceSequence = 2,
+              dpsSentenceId = "612cf742-feea-4562-b01d-ce643146fcf1",
+            ),
+          ),
+        )
+
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
         )
 
         courtSentencingMappingApiMockServer.stubGetSentencesByNomisIds(
