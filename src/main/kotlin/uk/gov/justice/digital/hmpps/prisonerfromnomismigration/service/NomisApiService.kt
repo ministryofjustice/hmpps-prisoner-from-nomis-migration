@@ -196,8 +196,8 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .retrieve()
     .awaitBody()
 
-  suspend fun isServicePrisonOnForPrisoner(serviceCode: String, prisonNumber: String) = webClient.get()
-    .uri("/service-prisons/{serviceCode}/prisoner/{prisonerId}", serviceCode, prisonNumber)
+  suspend fun isServiceAgencyOnForPrisoner(serviceCode: String, prisonNumber: String) = webClient.get()
+    .uri("/agency-switches/{serviceCode}/prisoner/{prisonerId}", serviceCode, prisonNumber)
     .retrieve()
     .awaitBodilessEntityAsTrueNotFoundAsFalse()
 }

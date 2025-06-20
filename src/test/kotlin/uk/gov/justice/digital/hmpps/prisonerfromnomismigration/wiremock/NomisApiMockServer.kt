@@ -486,9 +486,9 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCheckServicePrisonForPrisoner(serviceCode: String = "VISIT_ALLOCATION", prisonNumber: String = "A1234BC") {
+  fun stubCheckServiceAgencyForPrisoner(serviceCode: String = "VISIT_ALLOCATION", prisonNumber: String = "A1234BC") {
     nomisApi.stubFor(
-      get(urlPathEqualTo("/service-prisons/$serviceCode/prisoner/$prisonNumber")).willReturn(
+      get(urlPathEqualTo("/agency-switches/$serviceCode/prisoner/$prisonNumber")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NO_CONTENT.value()),
@@ -496,9 +496,9 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCheckServicePrisonForPrisonerNotFound(serviceCode: String = "VISIT_ALLOCATION", prisonNumber: String = "A1234BC") {
+  fun stubCheckServiceAgencyForPrisonerNotFound(serviceCode: String = "VISIT_ALLOCATION", prisonNumber: String = "A1234BC") {
     nomisApi.stubFor(
-      get(urlPathEqualTo("/service-prisons/$serviceCode/prisoner/$prisonNumber")).willReturn(
+      get(urlPathEqualTo("/agency-switches/$serviceCode/prisoner/$prisonNumber")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NOT_FOUND.value()),

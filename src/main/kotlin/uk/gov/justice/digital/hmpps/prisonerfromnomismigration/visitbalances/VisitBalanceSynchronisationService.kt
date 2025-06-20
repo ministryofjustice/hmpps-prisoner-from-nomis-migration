@@ -41,7 +41,7 @@ class VisitBalanceSynchronisationService(
       telemetryOf("nomisVisitBalanceAdjustmentId" to visitBalanceAdjustmentId, "nomisPrisonNumber" to nomisPrisonNumber)
 
     if (event.originatesInDpsOrHasMissingAudit() &&
-      nomisApiService.isServicePrisonOnForPrisoner(
+      nomisApiService.isServiceAgencyOnForPrisoner(
         serviceCode = VISIT_ALLOCATION_SERVICE,
         prisonNumber = nomisPrisonNumber,
       )
