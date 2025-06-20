@@ -39,6 +39,7 @@ jobs:
     with:
       gradle-command: './gradlew ktlintCheck testClasses'
       artifact-name: ${{ matrix.tests }}
+      build-dir: ${{ matrix.tests }}/build
   gradle-verify:
     name: Run the tests
     strategy:
