@@ -45,7 +45,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class WhenMissingAudit {
       @Test
       fun `the event is ignored if DPS Allocation`() {
-        nomisApi.stubCheckServicePrisonForPrisoner()
+        nomisApi.stubCheckServiceAgencyForPrisoner()
         visitBalanceOffenderEventsQueue.sendMessage(
           visitBalanceAdjustmentEvent(
             eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
@@ -54,7 +54,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         ).also { waitForAnyProcessingToComplete() }
 
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/service-prisons/VISIT_ALLOCATION/prisoner/A1234BC")))
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/agency-switches/VISIT_ALLOCATION/prisoner/A1234BC")))
 
         dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
         verify(telemetryClient).trackEvent(
@@ -69,7 +69,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `the event is not ignored if Nomis Allocation`() {
-        nomisApi.stubCheckServicePrisonForPrisonerNotFound()
+        nomisApi.stubCheckServiceAgencyForPrisonerNotFound()
         nomisVisitBalanceApiMock.stubGetVisitBalanceAdjustment(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
         mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(mapping = null)
         dpsApiMock.stubSyncVisitBalanceAdjustment()
@@ -83,7 +83,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         ).also { waitForAnyProcessingToComplete() }
 
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/service-prisons/VISIT_ALLOCATION/prisoner/A1234BC")))
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/agency-switches/VISIT_ALLOCATION/prisoner/A1234BC")))
         dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
         verify(telemetryClient).trackEvent(
           eq("visitbalance-adjustment-synchronisation-created-success"),
@@ -102,7 +102,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenDpsVisitAllocation {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubCheckServicePrisonForPrisoner()
+          nomisApi.stubCheckServiceAgencyForPrisoner()
           visitBalanceOffenderEventsQueue.sendMessage(
             visitBalanceAdjustmentEvent(
               eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
@@ -148,7 +148,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenNomisVisitAllocation {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubCheckServicePrisonForPrisonerNotFound()
+          nomisApi.stubCheckServiceAgencyForPrisonerNotFound()
         }
 
         @Nested
@@ -372,7 +372,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenDpsVisitAllocation {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubCheckServicePrisonForPrisoner()
+          nomisApi.stubCheckServiceAgencyForPrisoner()
         }
 
         @Nested
@@ -497,7 +497,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class WhenNomisVisitAllocation {
         @BeforeEach
         fun setUp() {
-          nomisApi.stubCheckServicePrisonForPrisonerNotFound()
+          nomisApi.stubCheckServiceAgencyForPrisonerNotFound()
         }
 
         @Nested
