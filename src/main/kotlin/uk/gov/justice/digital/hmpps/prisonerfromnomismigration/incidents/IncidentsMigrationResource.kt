@@ -17,7 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 
 @RestController
 @RequestMapping("/migrate/incidents", produces = [MediaType.APPLICATION_JSON_VALUE])
-@PreAuthorize("hasRole('ROLE_MIGRATE_INCIDENT_REPORTS')")
+@PreAuthorize("hasAnyRole('ROLE_MIGRATE_INCIDENT_REPORTS', 'ROLE_MIGRATE_NOMIS_SYSCON')")
 class IncidentsMigrationResource(
   private val incidentsMigrationService: IncidentsMigrationService,
 ) {
