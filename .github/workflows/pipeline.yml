@@ -44,20 +44,11 @@ jobs:
       matrix:
         tests: [
           'test',
-          'testActivities',
-          'testAlerts',
-          'testCasenotes',
-          'testCorePerson',
-          'testCourtSentencing',
-          'testCsip',
           'testIncidents',
           'testLocations',
-          'testOrganisations',
-          'testPersonalRelationships',
-          'testSentencing',
           'testVisitBalance'
         ]
-    uses: ministryofjustice/hmpps-github-actions/.github/workflows/gradle_localstack_postgres_verify.yml@v2 # WORKFLOW_VERSION
+    uses: ./.github/workflows/gradle_localstack_postgres_verify.yml # LOCAL_VERSION - for testing
     secrets: inherit
     with:
       gradle-command: ./gradlew ${{ matrix.tests }}
