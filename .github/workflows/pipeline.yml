@@ -34,12 +34,10 @@ jobs:
       environment: ${{ matrix.environments }}
   gradle-build:
     name: Validate the kotlin
-    uses: ministryofjustice/hmpps-github-actions/.github/workflows/gradle_verify.yml@v2 # WORKFLOW_VERSION
+    uses: ./.github/workflows/gradle_verify.yml # LOCAL_VERSION - for testing
     secrets: inherit
     with:
       gradle-command: './gradlew ktlintCheck testClasses'
-      artifact-name: ${{ matrix.tests }}
-      build-dir: ${{ matrix.tests }}/build
   gradle-verify:
     name: Run the tests
     strategy:
