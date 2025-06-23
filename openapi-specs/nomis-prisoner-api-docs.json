@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-06-13.118.9a815c7"
+    "version" : "2025-06-20.140.57f8798"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -7876,7 +7876,7 @@
     },
     "/service-prisons/{serviceCode}/prison/{prisonId}" : {
       "get" : {
-        "tags" : [ "service-agency-switches-resource" ],
+        "tags" : [ "service-prison-switches-resource" ],
         "summary" : "Returns if the service is switched on for the specified service code / prison id.",
         "description" : "Returns 204 if the service is switched on for the service code / prison id combination.\n    If the service is not switched on then 404 is returned.\n    This endpoint also takes into account the special `*ALL*` prison id - if the service code has a prison entry of\n    `*ALL*` then the service is deemed to be switched on for all prisons and will therefore return 204 irrespective of the\n    prison id that is passed in.\n    Requires role NOMIS_ACTIVITIES or ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
         "operationId" : "checkServicePrison",
@@ -7950,7 +7950,7 @@
         }
       },
       "post" : {
-        "tags" : [ "service-agency-switches-resource" ],
+        "tags" : [ "service-prison-switches-resource" ],
         "summary" : "Turn on a service for a prison",
         "description" : "Turn on a service for a prison. Requires role NOMIS_ACTIVITIES",
         "operationId" : "createServicePrison",
@@ -11307,6 +11307,156 @@
         }
       }
     },
+    "/agency-switches/{serviceCode}/agency/{agencyId}" : {
+      "get" : {
+        "tags" : [ "service-agency-switches-resource" ],
+        "summary" : "Returns if the service is switched on for the specified service code / agency id.",
+        "description" : "Returns 204 if the service is switched on for the service code / agency id combination.\n    If the service is not switched on then 404 is returned.\n    This endpoint also takes into account the special `*ALL*` agency id - if the service code has a agency entry of\n    `*ALL*` then the service is deemed to be switched on for all agencies and will therefore return 204 irrespective of the\n    agency id that is passed in.\n    Requires role NOMIS_ACTIVITIES or ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "operationId" : "checkServiceAgency",
+        "parameters" : [ {
+          "name" : "serviceCode",
+          "in" : "path",
+          "description" : "The code of the service from the EXTERNAL_SERVICES table",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The code of the service from the EXTERNAL_SERVICES table",
+            "example" : "ACTIVITY"
+          },
+          "example" : "ACTIVITY"
+        }, {
+          "name" : "agencyId",
+          "in" : "path",
+          "description" : "The id of the agency",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The id of the agency",
+            "example" : "MDI"
+          },
+          "example" : "MDI"
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Service is switched on for the service code and agency id."
+          },
+          "400" : {
+            "description" : "Bad request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The service code does not exist or the service is not switched on for the agency.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "service-agency-switches-resource" ],
+        "summary" : "Turn on a service for a agency",
+        "description" : "Turn on a service for a agency. Requires role NOMIS_ACTIVITIES",
+        "operationId" : "createServiceAgency",
+        "parameters" : [ {
+          "name" : "serviceCode",
+          "in" : "path",
+          "description" : "The code of the service from the EXTERNAL_SERVICES table",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The code of the service from the EXTERNAL_SERVICES table",
+            "example" : "ACTIVITY"
+          },
+          "example" : "ACTIVITY"
+        }, {
+          "name" : "agencyId",
+          "in" : "path",
+          "description" : "The id of the agency",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The id of the agency",
+            "example" : "MDI"
+          },
+          "example" : "MDI"
+        } ],
+        "responses" : {
+          "201" : {
+            "description" : "Created"
+          },
+          "400" : {
+            "description" : "Bad request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires role NOMIS_ACTIVITIES",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found, the service or agency do not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/adjudications/adjudication-number/{adjudicationNumber}/hearings" : {
       "post" : {
         "tags" : [ "adjudication-resource" ],
@@ -12337,7 +12487,7 @@
     },
     "/service-prisons/{serviceCode}" : {
       "get" : {
-        "tags" : [ "service-agency-switches-resource" ],
+        "tags" : [ "service-prison-switches-resource" ],
         "summary" : "Retrieve a list of prisons switched on for the service code",
         "description" : "Returns a list of prisons switched on for the service code.\n      A special prisonId of `*ALL*` is used to designate that the service is switched on for all prisons.\n      Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
         "operationId" : "getServicePrisons",
@@ -12400,7 +12550,7 @@
     },
     "/service-prisons/{serviceCode}/prisoner/{prisonNumber}" : {
       "get" : {
-        "tags" : [ "service-agency-switches-resource" ],
+        "tags" : [ "service-prison-switches-resource" ],
         "summary" : "Check if a service is turned on for the prison relating to this prisoner",
         "description" : "Check if the prisoner's current prison is turned on for a service. Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
         "operationId" : "checkServicePrisonForPrisoner",
@@ -13100,6 +13250,72 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint when role NOMIS_SENTENCING not present",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Offender not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/sentencing/court-cases/ids" : {
+      "get" : {
+        "tags" : [ "sentencing-resource" ],
+        "summary" : "get court case ids for an offender",
+        "description" : "Requires role NOMIS_SENTENCING. Retrieves all court case ids by offender",
+        "operationId" : "getCourtCaseIdsByOffender",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "description" : "Offender No",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Offender No",
+            "example" : "AA12345"
+          },
+          "example" : "AA12345"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "the list of court case ids",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "integer",
+                    "format" : "int64"
+                  }
                 }
               }
             }
@@ -17053,6 +17269,145 @@
         }
       }
     },
+    "/agency-switches/{serviceCode}" : {
+      "get" : {
+        "tags" : [ "service-agency-switches-resource" ],
+        "summary" : "Retrieve a list of agencies switched on for the service code",
+        "description" : "Returns a list of agencies switched on for the service code.\n      A special agencyId of `*ALL*` is used to designate that the service is switched on for all agencies.\n      Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "operationId" : "getAgencySwitches",
+        "parameters" : [ {
+          "name" : "serviceCode",
+          "in" : "path",
+          "description" : "The code of the service from the EXTERNAL_SERVICES table",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The code of the service from the EXTERNAL_SERVICES table"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AgencyDetails"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/agency-switches/{serviceCode}/prisoner/{prisonNumber}" : {
+      "get" : {
+        "tags" : [ "service-agency-switches-resource" ],
+        "summary" : "Check if a service is turned on for the prison relating to this prisoner",
+        "description" : "Check if the prisoner's current prison is turned on for a service. Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "operationId" : "checkServicePrisonForPrisoner_1",
+        "parameters" : [ {
+          "name" : "serviceCode",
+          "in" : "path",
+          "description" : "The code of the service from the EXTERNAL_SERVICES table",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The code of the service from the EXTERNAL_SERVICES table",
+            "example" : "ACTIVITY"
+          },
+          "example" : "ACTIVITY"
+        }, {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "description" : "Offender No AKA prisoner number",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Offender No AKA prisoner number",
+            "example" : "A1234BC"
+          },
+          "example" : "A1234BC"
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "OK"
+          },
+          "400" : {
+            "description" : "Bad request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found, the service is not turned on for the prison",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/adjustments/ids" : {
       "get" : {
         "tags" : [ "sentencing-adjustment-resource" ],
@@ -19240,6 +19595,24 @@
         },
         "required" : [ "createdDateTime", "firstName", "lastName", "text" ]
       },
+      "UpsertIncidentQuestionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "questionId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The questionnaire question id"
+          },
+          "responses" : {
+            "type" : "array",
+            "description" : "List of Responses to this question",
+            "items" : {
+              "$ref" : "#/components/schemas/UpsertIncidentResponseRequest"
+            }
+          }
+        },
+        "required" : [ "questionId", "responses" ]
+      },
       "UpsertIncidentRequest" : {
         "type" : "object",
         "description" : "Incident Request",
@@ -19305,9 +19678,16 @@
             "items" : {
               "$ref" : "#/components/schemas/UpsertStaffPartyRequest"
             }
+          },
+          "questions" : {
+            "type" : "array",
+            "description" : "Questions asked for the incident",
+            "items" : {
+              "$ref" : "#/components/schemas/UpsertIncidentQuestionRequest"
+            }
           }
         },
-        "required" : [ "description", "descriptionAmendments", "incidentDateTime", "location", "offenderParties", "reportedBy", "reportedDateTime", "requirements", "staffParties", "statusCode", "title", "typeCode" ]
+        "required" : [ "description", "descriptionAmendments", "incidentDateTime", "location", "offenderParties", "questions", "reportedBy", "reportedDateTime", "requirements", "staffParties", "statusCode", "title", "typeCode" ]
       },
       "UpsertIncidentRequirementRequest" : {
         "type" : "object",
@@ -19331,6 +19711,35 @@
           }
         },
         "required" : [ "date", "location", "username" ]
+      },
+      "UpsertIncidentResponseRequest" : {
+        "type" : "object",
+        "properties" : {
+          "answerId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The questionnaire answer id"
+          },
+          "comment" : {
+            "type" : "string",
+            "description" : "Comment added to the response by recording staff"
+          },
+          "responseDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Response date added to the response by recording staff"
+          },
+          "recordingUsername" : {
+            "type" : "string",
+            "description" : "Recording staff"
+          },
+          "sequence" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Sequence number across all responses for an incident"
+          }
+        },
+        "required" : [ "answerId", "recordingUsername", "sequence" ]
       },
       "UpsertOffenderPartyRequest" : {
         "type" : "object",
@@ -23570,12 +23979,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -23592,6 +24001,10 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "paged" : {
             "type" : "boolean"
           },
@@ -23601,10 +24014,6 @@
           },
           "unpaged" : {
             "type" : "boolean"
-          },
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
           }
         }
       },
@@ -23614,10 +24023,10 @@
           "empty" : {
             "type" : "boolean"
           },
-          "unsorted" : {
+          "sorted" : {
             "type" : "boolean"
           },
-          "sorted" : {
+          "unsorted" : {
             "type" : "boolean"
           }
         }
@@ -23759,12 +24168,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24176,12 +24585,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -26134,12 +26543,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -26198,12 +26607,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -26845,12 +27254,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -27001,12 +27410,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -27222,12 +27631,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -27738,12 +28147,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -27848,12 +28257,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -27979,12 +28388,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -28285,12 +28694,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -29046,12 +29455,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -29343,17 +29752,34 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
           }
         }
+      },
+      "AgencyDetails" : {
+        "type" : "object",
+        "description" : "A agency",
+        "properties" : {
+          "agencyId" : {
+            "type" : "string",
+            "description" : "The agency code. Normally a prison, but can be any location e.g. a prisoner escort service area.",
+            "example" : "BXI"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "The agency name",
+            "example" : "Brixton"
+          }
+        },
+        "required" : [ "agencyId", "name" ]
       },
       "AdjustmentIdResponse" : {
         "type" : "object",
@@ -29405,12 +29831,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -29472,12 +29898,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -29770,12 +30196,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
