@@ -635,42 +635,45 @@ class CourtSentencingSynchronisationService(
     }
   }
 
-  // TODO - extract nomisCourtChargeInserted() method so both this and CourtEventChargeEvent can be processed with shared code without auditModuleName hack
   suspend fun nomisRecallBeachCourtChargeInserted(message: InternalMessage<RecallBreachCourtEventCharge>) = nomisCourtChargeInserted(
-    CourtEventChargeEvent(
-      eventId = message.body.eventId,
-      chargeId = message.body.chargeId,
-      offenderIdDisplay = message.body.offenderIdDisplay,
-      bookingId = message.body.bookingId,
-      auditModuleName = "DPS_RECALL_BREACH",
-    ),
+    eventId = message.body.eventId,
+    chargeId = message.body.chargeId,
+    offenderNo = message.body.offenderIdDisplay,
+    bookingId = message.body.bookingId,
+  )
+  suspend fun nomisCourtChargeInserted(event: CourtEventChargeEvent) = nomisCourtChargeInserted(
+    eventId = event.eventId,
+    chargeId = event.chargeId,
+    offenderNo = event.offenderIdDisplay,
+    bookingId = event.bookingId,
+    skipSynchronisation = event.auditModuleName == "DPS_SYNCHRONISATION",
   )
 
   // New Court event charge.
   // is it a new underlying offender charge? 2 DPS endpoints - create charge or apply new version to appearance
-  suspend fun nomisCourtChargeInserted(event: CourtEventChargeEvent) {
+  suspend fun nomisCourtChargeInserted(eventId: Long, chargeId: Long, offenderNo: String, bookingId: Long, skipSynchronisation: Boolean = false) {
     val telemetry =
       mutableMapOf(
-        "nomisCourtAppearanceId" to event.eventId.toString(),
-        "nomisOffenderChargeId" to event.chargeId.toString(),
-        "offenderNo" to event.offenderIdDisplay,
-        "nomisBookingId" to event.bookingId.toString(),
+        "nomisCourtAppearanceId" to eventId.toString(),
+        "nomisOffenderChargeId" to chargeId.toString(),
+        "offenderNo" to offenderNo,
+        "nomisBookingId" to bookingId.toString(),
       )
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+    if (skipSynchronisation) {
       telemetryClient.trackEvent("court-charge-synchronisation-created-skipped", telemetry)
     } else {
       // Check court appearance is mapped and throw exception to retry if not
-      mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)?.let { courtAppearanceMapping ->
+      mappingApiService.getCourtAppearanceOrNullByNomisId(eventId)?.let { courtAppearanceMapping ->
         telemetry["dpsCourtAppearanceId"] = courtAppearanceMapping.dpsCourtAppearanceId
-        mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { mapping ->
+        mappingApiService.getOffenderChargeOrNullByNomisId(chargeId)?.let { mapping ->
           // mapping means this is an existing offender charge to be applied to the appearance
           telemetry["dpsChargeId"] = mapping.dpsCourtChargeId
           telemetry["existingDpsCharge"] = "true"
           val nomisCourtEventCharge =
             nomisApiService.getCourtEventCharge(
-              offenderNo = event.offenderIdDisplay,
-              offenderChargeId = event.chargeId,
-              eventId = event.eventId,
+              offenderNo = offenderNo,
+              offenderChargeId = chargeId,
+              eventId = eventId,
             )
           dpsApiService.associateExistingCourtCharge(
             courtAppearanceMapping.dpsCourtAppearanceId,
@@ -680,8 +683,8 @@ class CourtSentencingSynchronisationService(
         } ?: let {
           val nomisOffenderCharge =
             nomisApiService.getOffenderCharge(
-              offenderNo = event.offenderIdDisplay,
-              offenderChargeId = event.chargeId,
+              offenderNo = offenderNo,
+              offenderChargeId = chargeId,
             )
           // no mapping means this is a new offender charge to be created and applied to the appearance
           telemetry["existingDpsCharge"] = "false"
@@ -708,7 +711,7 @@ class CourtSentencingSynchronisationService(
           telemetry + ("reason" to "court appearance is not mapped"),
         )
         // after migration has run this should not happen so make sure this message goes in DLQ
-        throw ParentEntityNotFoundRetry("Received COURT_EVENT_CHARGES-INSERTED for court appearance ${event.eventId} that has never been created")
+        throw ParentEntityNotFoundRetry("Received COURT_EVENT_CHARGES-INSERTED for court appearance $eventId that has never been created")
       }
     }
   }
@@ -807,7 +810,7 @@ class CourtSentencingSynchronisationService(
   }
 
   suspend fun nomisCourtChargeLinked(event: CourtEventChargeLinkingEvent) {
-    var telemetry =
+    val telemetry =
       telemetryOf(
         "nomisBookingId" to event.bookingId.toString(),
         "nomisCombinedCourtCaseId" to event.combinedCaseId.toString(),
@@ -1343,16 +1346,17 @@ class CourtSentencingSynchronisationService(
 
       if (mapping == null) {
         val isDelete = eventName == "OFFENDER_CASE_IDENTIFIERS-DELETED"
+        telemetry["isDelete"] = isDelete.toString()
         if (!isDelete) {
           telemetryClient.trackEvent(
             "case-identifiers-synchronisation-failed",
-            telemetry + ("isDelete" to isDelete.toString()),
+            telemetry,
           )
           throw IllegalStateException("Received OFFENDER_CASE_IDENTIFIERS event to for court-case without a mapping")
         } else {
           telemetryClient.trackEvent(
             "case-identifiers-synchronisation-skipped",
-            telemetry + ("isDelete" to isDelete.toString()),
+            telemetry,
           )
         }
       } else {
@@ -1402,11 +1406,11 @@ class CourtSentencingSynchronisationService(
               bookingId = nomisSentence.bookingId,
               sentenceSequence = nomisSentence.sentenceSeq,
             ).dpsSentenceId to nomisSentence.toDpsSentence(
-              dpsConsecUuid = nomisSentence.consecSequence?.let {
+              dpsConsecUuid = nomisSentence.consecSequence?.let { consecSequence ->
                 getConsecutiveSequenceMappingOrThrow(
                   bookingId = nomisSentence.bookingId,
                   sentenceSequence = nomisSentence.sentenceSeq.toInt(),
-                  consecSequence = it,
+                  consecSequence = consecSequence,
                 )
               },
               sentenceChargeIds = getDpsChargeMappings(nomisSentence),
