@@ -14,7 +14,6 @@ generic-service:
     API_BASE_URL_NOMIS-SYNC: https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk
     # currently set to self for a mock API until real API is ready
     API_BASE_URL_CORE_PERSON: https://prisoner-nomis-migration-dev.hmpps.service.justice.gov.uk
-    API_BASE_URL_CSIP: https://csip-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_VISITS: https://visit-scheduler-dev.prison.service.justice.gov.uk
     API_BASE_URL_VISIT_BALANCE: https://hmpps-visit-allocation-api-dev.prison.service.justice.gov.uk
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping-dev.hmpps.service.justice.gov.uk
@@ -61,9 +60,6 @@ generic-prometheus-alerts:
       - "syscon-devs-dev-prisoner_from_nomis_incidents_dl_queue"
       - "syscon-devs-dev-migration_incidents_queue"
       - "syscon-devs-dev-migration_incidents_dlq"
-    csip:
-      - "syscon-devs-dev-prisoner_from_nomis_csip_queue"
-      - "syscon-devs-dev-prisoner_from_nomis_csip_dl_queue"
     locations:
       - "syscon-devs-dev-prisoner_from_nomis_locations_queue"
       - "syscon-devs-dev-prisoner_from_nomis_locations_dl_queue"

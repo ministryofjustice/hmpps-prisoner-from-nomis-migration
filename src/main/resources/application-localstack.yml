@@ -50,9 +50,6 @@ hmpps.sqs:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
       errorVisibilityTimeout: 0
-    eventcsip:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
     eventlocations:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

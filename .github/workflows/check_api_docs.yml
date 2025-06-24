@@ -20,7 +20,6 @@ jobs:
           - casenotes
           - core-person
           - court-sentencing
-          - csip
           - incidents
           - locations
           - nomis-mapping-service
