@@ -114,13 +114,6 @@ val models = listOf(
     url = "https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
   ),
   ModelConfiguration(
-    name = "csip",
-    packageName = "csip",
-    testPackageName = "csip",
-    url = "https://csip-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
-    models = "DefaultLegacyActioned,MoveCsipRequest,PersonSummaryRequest,ResponseMapping,SyncAttendeeRequest,SyncContributoryFactorRequest,SyncCsipRequest,SyncDecisionAndActionsRequest,SyncInterviewRequest,SyncInvestigationRequest,SyncNeedRequest,SyncPlanRequest,SyncReferralRequest,SyncResponse,SyncReviewRequest,SyncScreeningOutcomeRequest",
-  ),
-  ModelConfiguration(
     name = "incidents",
     packageName = "incidents",
     testPackageName = "incidents",

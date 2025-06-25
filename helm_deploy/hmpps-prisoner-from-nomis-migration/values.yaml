@@ -60,8 +60,6 @@ generic-service:
       INCIDENTS_CLIENT_SECRET: "INCIDENTS_CLIENT_SECRET"
       CORE_PERSON_CLIENT_ID: "CORE_PERSON_CLIENT_ID"
       CORE_PERSON_CLIENT_SECRET: "CORE_PERSON_CLIENT_SECRET"
-      CSIP_CLIENT_ID: "CSIP_CLIENT_ID"
-      CSIP_CLIENT_SECRET: "CSIP_CLIENT_SECRET"
       LOCATIONS_CLIENT_ID: "LOCATIONS_CLIENT_ID"
       LOCATIONS_CLIENT_SECRET: "LOCATIONS_CLIENT_SECRET"
       ALERTS_CLIENT_ID: "ALERTS_CLIENT_ID"
@@ -136,10 +134,6 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTINCIDENTS_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-incidents-dl-queue:
       HMPPS_SQS_QUEUES_EVENTINCIDENTS_DLQ_NAME: "sqs_name"
-    prisoner-from-nomis-csip-queue:
-      HMPPS_SQS_QUEUES_EVENTCSIP_QUEUE_NAME: "sqs_name"
-    prisoner-from-nomis-csip-dl-queue:
-      HMPPS_SQS_QUEUES_EVENTCSIP_DLQ_NAME: "sqs_name"
     prisoner-from-nomis-locations-queue:
       HMPPS_SQS_QUEUES_EVENTLOCATIONS_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-locations-dl-queue:
