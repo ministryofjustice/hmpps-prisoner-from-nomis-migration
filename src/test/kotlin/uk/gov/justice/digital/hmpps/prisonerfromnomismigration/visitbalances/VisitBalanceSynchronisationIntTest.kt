@@ -742,7 +742,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
                 eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
                 visitBalanceAdjId = visitBalanceAdjId,
               ),
-            ).also { waitForAnyProcessingToComplete("visitbalance-adjustment-synchronisation-created-success") }
+            ).also { waitForAnyProcessingToComplete("visitbalance-adjustment-mapping-created-synchronisation-success") }
           }
 
           @Test
