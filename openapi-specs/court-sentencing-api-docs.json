@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-06-18.13.a367943"
+    "version" : "2025-06-24.72.e156836"
   },
   "servers" : [ {
     "url" : "https://remand-and-sentencing-api.hmpps.service.justice.gov.uk",
@@ -1856,6 +1856,15 @@
         "summary" : "Creates a court case",
         "description" : "Migrates a court case, court appearance and charge from NOMIS into remand and sentencing API.",
         "operationId" : "create_4",
+        "parameters" : [ {
+          "name" : "deleteExisting",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        } ],
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -2371,6 +2380,81 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/SentenceType"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sentence-type/{sentenceTypeUuid}/is-still-valid" : {
+      "get" : {
+        "tags" : [ "sentence-type-controller" ],
+        "summary" : "Check the sentence type is still valid",
+        "description" : "This endpoint will determine if the sentence type is still valid with the age, conviction date, statuses, offence date parameters",
+        "operationId" : "sentenceTypeStillValid",
+        "parameters" : [ {
+          "name" : "sentenceTypeUuid",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "name" : "age",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "convictionDate",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "statuses",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "default" : [ "ACTIVE" ],
+            "items" : {
+              "type" : "string",
+              "enum" : [ "ACTIVE", "INACTIVE" ]
+            }
+          }
+        }, {
+          "name" : "offenceDate",
+          "in" : "query",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Returns whether the sentence type is still valid",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SentenceTypeIsValid"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SentenceTypeIsValid"
                 }
               }
             }
@@ -3207,6 +3291,90 @@
         }
       }
     },
+    "/court-case/{prisonerId}/recallable-court-cases" : {
+      "get" : {
+        "tags" : [ "court-case-controller" ],
+        "summary" : "Retrieve recallable court cases for a prisoner",
+        "description" : "This endpoint returns filtered court cases optimised for recall processing workflows. Only includes ACTIVE cases with SENTENCING warrant type that have sentences.",
+        "operationId" : "getRecallableCourtCases",
+        "parameters" : [ {
+          "name" : "prisonerId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "sortBy",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "date"
+          }
+        }, {
+          "name" : "sortOrder",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "desc"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Returns recallable court cases",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RecallableCourtCasesResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - invalid prisoner ID format or query parameters",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RecallableCourtCasesResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RecallableCourtCasesResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RecallableCourtCasesResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Prisoner not found in system",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RecallableCourtCasesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/court-case/{courtCaseUuid}/latest-appearance" : {
       "get" : {
         "tags" : [ "court-case-controller" ],
@@ -3258,6 +3426,54 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/CourtAppearance"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/court-case/{courtCaseUuid}/count-numbers" : {
+      "get" : {
+        "tags" : [ "court-case-controller" ],
+        "summary" : "Retrieve count numbers for case",
+        "description" : "This endpoint will retrieve all unique count numbers for a case",
+        "operationId" : "getAllCountNumbers",
+        "parameters" : [ {
+          "name" : "courtCaseUuid",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Returns all count numbers",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtCaseCountNumbers"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtCaseCountNumbers"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtCaseCountNumbers"
                 }
               }
             }
@@ -4133,7 +4349,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:48:38.56300708"
+            "example" : "16:23:03.137740283"
           },
           "outcomeDispositionCode" : {
             "type" : "string"
@@ -4424,7 +4640,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:48:38.56300708"
+            "example" : "16:23:03.137740283"
           },
           "courtCode" : {
             "type" : "string"
@@ -5268,6 +5484,15 @@
         },
         "required" : [ "sentences" ]
       },
+      "SentenceTypeIsValid" : {
+        "type" : "object",
+        "properties" : {
+          "isStillValid" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "isStillValid" ]
+      },
       "Recall" : {
         "type" : "object",
         "properties" : {
@@ -5607,7 +5832,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:48:38.56300708"
+            "example" : "16:23:03.137740283"
           },
           "courtCode" : {
             "type" : "string"
@@ -6011,7 +6236,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:48:38.56300708"
+            "example" : "16:23:03.137740283"
           },
           "charges" : {
             "type" : "array",
@@ -6034,7 +6259,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:48:38.56300708"
+            "example" : "16:23:03.137740283"
           },
           "courtId" : {
             "type" : "string"
@@ -6125,7 +6350,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:48:38.56300708"
+            "example" : "16:23:03.137740283"
           },
           "nomisOutcomeCode" : {
             "type" : "string"
@@ -6181,7 +6406,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:48:38.56300708"
+            "example" : "16:23:03.137740283"
           },
           "courtId" : {
             "type" : "string"
@@ -6276,6 +6501,109 @@
         },
         "required" : [ "draftUuid", "sessionBlob" ]
       },
+      "RecallableCourtCase" : {
+        "type" : "object",
+        "properties" : {
+          "courtCaseUuid" : {
+            "type" : "string"
+          },
+          "reference" : {
+            "type" : "string"
+          },
+          "courtCode" : {
+            "type" : "string"
+          },
+          "date" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "ACTIVE", "INACTIVE", "EDITED", "DELETED", "DRAFT", "FUTURE", "MERGED", "MANY_CHARGES_DATA_FIX" ]
+          },
+          "isSentenced" : {
+            "type" : "boolean"
+          },
+          "sentences" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RecallableSentence"
+            }
+          }
+        },
+        "required" : [ "courtCaseUuid", "courtCode", "date", "isSentenced", "reference", "sentences", "status" ]
+      },
+      "RecallableCourtCasesResponse" : {
+        "type" : "object",
+        "properties" : {
+          "totalCases" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "cases" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RecallableCourtCase"
+            }
+          }
+        },
+        "required" : [ "cases", "totalCases" ]
+      },
+      "RecallableSentence" : {
+        "type" : "object",
+        "properties" : {
+          "sentenceUuid" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "offenceCode" : {
+            "type" : "string"
+          },
+          "sentenceType" : {
+            "type" : "string"
+          },
+          "classification" : {
+            "type" : "string",
+            "enum" : [ "STANDARD", "EXTENDED", "SOPC", "INDETERMINATE", "BOTUS", "CIVIL", "DTO", "FINE", "LEGACY", "NON_CUSTODIAL", "LEGACY_RECALL", "UNKNOWN" ]
+          },
+          "systemOfRecord" : {
+            "type" : "string"
+          },
+          "periodLengths" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PeriodLength"
+            }
+          },
+          "convictionDate" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        },
+        "required" : [ "periodLengths", "sentenceUuid", "systemOfRecord" ]
+      },
+      "CourtCaseCountNumber" : {
+        "type" : "object",
+        "properties" : {
+          "countNumber" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "countNumber" ]
+      },
+      "CourtCaseCountNumbers" : {
+        "type" : "object",
+        "properties" : {
+          "countNumbers" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CourtCaseCountNumber"
+            },
+            "uniqueItems" : true
+          }
+        },
+        "required" : [ "countNumbers" ]
+      },
       "Pageable" : {
         "type" : "object",
         "properties" : {
@@ -6308,12 +6636,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -6330,6 +6652,12 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -6360,12 +6688,12 @@
           "paged" : {
             "type" : "boolean"
           },
-          "unpaged" : {
-            "type" : "boolean"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "unpaged" : {
+            "type" : "boolean"
           }
         }
       },
@@ -6394,12 +6722,6 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "size" : {
             "type" : "integer",
             "format" : "int32"
@@ -6416,6 +6738,12 @@
           },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -6620,7 +6948,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:48:38.56300708"
+            "example" : "16:23:03.137740283"
           },
           "courtCode" : {
             "type" : "string"
