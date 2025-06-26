@@ -30,6 +30,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createPrisonerContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.mergePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.migrateContactRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.prisonerRestrictionDetailsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.resetPrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactAddressRequest
@@ -71,6 +72,32 @@ class ContactPersonDpsApiServiceTest {
 
       dpsContactPersonServer.verify(
         postRequestedFor(urlPathEqualTo("/migrate/contact")),
+      )
+    }
+  }
+
+  @Nested
+  inner class MigratePrisonerRestriction {
+    @Test
+    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+      dpsContactPersonServer.stubMigratePrisonerRestriction(prisonerNumber = "A1234KT")
+
+      apiService.migratePrisonerRestriction("A1234KT", prisonerRestrictionDetailsRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the migrate endpoint`() = runTest {
+      dpsContactPersonServer.stubMigratePrisonerRestriction(prisonerNumber = "A1234KT")
+
+      apiService.migratePrisonerRestriction("A1234KT", prisonerRestrictionDetailsRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/migrate/prisoner-restriction/A1234KT")),
       )
     }
   }

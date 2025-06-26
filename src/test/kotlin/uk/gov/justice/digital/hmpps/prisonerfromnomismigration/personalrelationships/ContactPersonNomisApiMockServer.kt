@@ -26,6 +26,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestrictionIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerWithContacts
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
@@ -120,12 +122,50 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
+  fun stubGetPrisonerRestrictionIdsToMigrate(
+    count: Long = 1,
+    content: List<PrisonerRestrictionIdResponse> = listOf(
+      PrisonerRestrictionIdResponse(123456),
+    ),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/prisoners/restrictions/ids")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(pageResponse(count = count, content = content)),
+      ),
+    )
+  }
+
+  fun stubGetPrisonerRestrictionById(restrictionId: Long, response: PrisonerRestriction = prisonerRestriction()) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/restrictions/$restrictionId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 
   fun pagePersonIdResponse(
     count: Long,
     content: List<PersonIdResponse>,
+  ) = pageContent(
+    objectMapper = objectMapper,
+    content = content,
+    pageSize = 1L,
+    pageNumber = 0L,
+    totalElements = count,
+    size = 1,
+  )
+  fun pageResponse(
+    count: Long,
+    content: List<PrisonerRestrictionIdResponse>,
   ) = pageContent(
     objectMapper = objectMapper,
     content = content,
@@ -250,3 +290,13 @@ fun prisonerWithContactRestriction() = ContactRestriction(
 )
 
 fun prisonerDetails(): PrisonerDetails = PrisonerDetails(offenderNo = "A1234KT", bookingId = 1234, location = "MDI", active = true)
+
+fun prisonerRestriction() = PrisonerRestriction(
+  id = 1234,
+  bookingId = 456,
+  bookingSequence = 1,
+  type = CodeDescription("BAN", "Banned"),
+  effectiveDate = LocalDate.now(),
+  enteredStaff = ContactRestrictionEnteredStaff(1234, "T.SMITH"),
+  audit = nomisAudit(),
+)

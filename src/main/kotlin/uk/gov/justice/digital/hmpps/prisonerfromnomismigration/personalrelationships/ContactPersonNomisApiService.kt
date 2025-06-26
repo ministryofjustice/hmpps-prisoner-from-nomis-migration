@@ -7,9 +7,11 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactPerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PagePrisonerRestrictionIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerWithContacts
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.typeReference
@@ -63,6 +65,30 @@ class ContactPersonNomisApiService(@Qualifier("nomisApiWebClient") private val w
       "/prisoners/{offenderNo}",
       offenderNo,
     )
+    .retrieve()
+    .awaitBody()
+
+  suspend fun getPrisonerRestrictionIdsToMigrate(
+    fromDate: LocalDate? = null,
+    toDate: LocalDate? = null,
+    pageNumber: Long = 0,
+    pageSize: Long = 1,
+  ): PagePrisonerRestrictionIdResponse = webClient.get()
+    .uri {
+      it.path("/prisoners/restrictions/ids")
+        .queryParam("fromDate", fromDate)
+        .queryParam("toDate", toDate)
+        .queryParam("page", pageNumber)
+        .queryParam("size", pageSize)
+        .build()
+    }
+    .retrieve()
+    .awaitBody()
+
+  suspend fun getPrisonerRestrictionById(
+    prisonerRestrictionId: Long,
+  ): PrisonerRestriction = webClient.get()
+    .uri("/prisoners/restrictions/{restrictionId}", prisonerRestrictionId)
     .retrieve()
     .awaitBody()
 }
