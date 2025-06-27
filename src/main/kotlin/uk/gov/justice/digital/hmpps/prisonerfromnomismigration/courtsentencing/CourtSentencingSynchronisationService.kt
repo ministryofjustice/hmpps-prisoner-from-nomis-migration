@@ -1397,7 +1397,7 @@ class CourtSentencingSynchronisationService(
       val newCourtCaseMappings = dpsApiService.updateCourtCasePostMerge(
         courtCasesCreated = MigrationCreateCourtCases(
           prisonerId = retainedOffenderNumber,
-          courtCases = courtCasesCreated.map { it.toMigrationDpsCourtCase(courtCasesCreated.findLinkedCaseOrNull(it)) },
+          courtCases = courtCasesCreated.map { it.toMigrationDpsCourtCase() },
         ),
         courtCasesDeactivated = courtCasesDeactivated.map { mappingApiService.getCourtCaseByNomisId(it.id).dpsCourtCaseId to it.toLegacyDpsCourtCase() },
         sentencesDeactivated = courtCasesDeactivated.flatMap {
