@@ -55,6 +55,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       primaryCaseInfoNumber = "caseRef1",
       caseInfoNumbers = caseIdentifiers,
       sentences = sentences,
+      sourceCombinedCaseIds = listOf(),
     ),
   ) {
     nomisApi.stubFor(
@@ -107,6 +108,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         caseInfoNumbers = caseIdentifiers,
         combinedCaseId = combinedCaseId,
         sentences = sentences,
+        sourceCombinedCaseIds = listOf(),
       ),
     ),
   ) {
@@ -183,6 +185,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       caseInfoNumbers = caseIndentifiers,
       combinedCaseId = combinedCaseId,
       sentences = sentences,
+      sourceCombinedCaseIds = listOf(),
     ),
   ) {
     nomisApi.stubFor(
@@ -647,6 +650,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     primaryCaseInfoNumber = caseInfoNumber,
     caseInfoNumbers = caseIndentifiers,
     sentences = sentences,
+    sourceCombinedCaseIds = listOf(),
   )
 
   fun prisonerIdsPagedResponse(
@@ -687,6 +691,7 @@ fun courtCaseResponse(
   primaryCaseInfoNumber = "caseRef1",
   caseInfoNumbers = caseIdentifiers,
   sentences = sentences,
+  sourceCombinedCaseIds = listOf(),
 )
 
 fun sentenceResponse(bookingId: Long, sentenceSequence: Int, eventId: Long) = SentenceResponse(
