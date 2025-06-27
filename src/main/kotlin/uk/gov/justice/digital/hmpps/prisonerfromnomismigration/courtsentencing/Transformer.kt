@@ -33,11 +33,10 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
-fun List<CourtCaseResponse>.findLinkedCaseOrNull(case: CourtCaseResponse): CourtCaseResponse? = this.firstOrNull { sourceCase -> case.id == sourceCase.combinedCaseId }
-fun CourtCaseResponse.toMigrationDpsCourtCase(linkedSourceCase: CourtCaseResponse?) = MigrationCreateCourtCase(
+fun CourtCaseResponse.toMigrationDpsCourtCase() = MigrationCreateCourtCase(
   caseId = this.id,
-  appearances = this.courtEvents.map { ca ->
-    ca.toMigrationDpsCourtAppearance(this.sentences, linkedSourceCase, isSourceCase = this.combinedCaseId != null)
+  appearances = this.courtEvents.map {
+    it.toMigrationDpsCourtAppearance(this.sentences)
   },
   courtCaseLegacyData = CourtCaseLegacyData(
     caseReferences = this.caseInfoNumbers.map {
@@ -50,7 +49,7 @@ fun CourtCaseResponse.toMigrationDpsCourtCase(linkedSourceCase: CourtCaseRespons
   active = this.caseStatus.code == "A",
   merged = if (this.combinedCaseId != null) {
     true
-  } else if (linkedSourceCase != null) {
+  } else if (this.sourceCombinedCaseIds.isNotEmpty()) {
     false
   } else {
     null
@@ -83,8 +82,6 @@ fun CourtEventResponse.toDpsCourtAppearance(
 
 fun CourtEventResponse.toMigrationDpsCourtAppearance(
   sentences: List<SentenceResponse>,
-  linkedSourceCase: CourtCaseResponse?,
-  isSourceCase: Boolean,
 ) = MigrationCreateCourtAppearance(
   courtCode = this.courtId,
   appearanceDate = this.eventDateTime.toLocalDate(),
@@ -110,7 +107,7 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance(
     val dpsSentence =
       sentencesForAppearance.find { sentence -> sentence.offenderCharges.any { it.id == charge.offenderCharge.id } }
         ?.toDpsMigrationSentence()
-    charge.toDpsMigrationCharge(chargeId = charge.offenderCharge.id, dpsSentence = dpsSentence, linkedSourceCase = linkedSourceCase, isSourceCase = isSourceCase)
+    charge.toDpsMigrationCharge(chargeId = charge.offenderCharge.id, dpsSentence = dpsSentence)
   },
 )
 
@@ -145,41 +142,23 @@ fun CourtEventChargeResponse.toDpsCharge() = LegacyUpdateCharge(
 fun CourtEventChargeResponse.toDpsMigrationCharge(
   chargeId: Long,
   dpsSentence: MigrationCreateSentence?,
-  linkedSourceCase: CourtCaseResponse?,
-  isSourceCase: Boolean,
-): MigrationCreateCharge {
-  val lastSourceCourtEventForCharge =
-    linkedSourceCase?.courtEvents?.lastOrNull { appearance -> appearance.courtEventCharges.any { charges -> charges.offenderCharge.id == chargeId } }
-  return MigrationCreateCharge(
-    offenceCode = this.offenderCharge.offence.offenceCode,
-    offenceStartDate = this.offenceDate,
-    legacyData =
-    ChargeLegacyData(
-      postedDate = LocalDate.now().toString(),
-      outcomeDescription = this.resultCode1?.description,
-      nomisOutcomeCode = this.resultCode1?.code,
-      outcomeDispositionCode = this.resultCode1?.dispositionCode,
-      outcomeConvictionFlag = this.resultCode1?.conviction,
-    ),
-    offenceEndDate = this.offenceEndDate,
-    chargeNOMISId = chargeId,
-    sentence = dpsSentence,
-    merged = if (isSourceCase) {
-      // TODO: this is not strickly correct - since this implies all court event charges on source are merged
-      // which may not be the case - however given I don't think DPS needs this revisit when
-      // requirements are established, it would probably require NOMIS API changes to support this correctly
-      true
-    } else if (linkedCaseDetails != null) {
-      false
-    } else {
-      null
-    },
-    mergedFromCaseId = linkedCaseDetails?.caseId,
-    // TODO - ensure DPS really needs this since I think this is redundant
-    mergedFromEventId = lastSourceCourtEventForCharge?.id,
-    mergedFromDate = linkedCaseDetails?.dateLinked,
-  )
-}
+): MigrationCreateCharge = MigrationCreateCharge(
+  offenceCode = this.offenderCharge.offence.offenceCode,
+  offenceStartDate = this.offenceDate,
+  legacyData =
+  ChargeLegacyData(
+    postedDate = LocalDate.now().toString(),
+    outcomeDescription = this.resultCode1?.description,
+    nomisOutcomeCode = this.resultCode1?.code,
+    outcomeDispositionCode = this.resultCode1?.dispositionCode,
+    outcomeConvictionFlag = this.resultCode1?.conviction,
+  ),
+  offenceEndDate = this.offenceEndDate,
+  chargeNOMISId = chargeId,
+  sentence = dpsSentence,
+  mergedFromCaseId = linkedCaseDetails?.caseId,
+  mergedFromDate = linkedCaseDetails?.dateLinked,
+)
 
 fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsAppearanceUuid: String, dpsConsecUuid: String?) = LegacyCreateSentence(
   chargeUuids = sentenceChargeIds.map { UUID.fromString(it) },

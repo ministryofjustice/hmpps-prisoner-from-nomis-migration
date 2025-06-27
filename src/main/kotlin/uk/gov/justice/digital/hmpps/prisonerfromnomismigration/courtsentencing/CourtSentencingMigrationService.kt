@@ -66,7 +66,7 @@ class CourtSentencingMigrationService(
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     val offenderNo = context.body.offenderNo
     val nomisCourtCases = courtSentencingNomisApiService.getCourtCasesForMigration(offenderNo = offenderNo)
-    val dpsCases = nomisCourtCases.map { it.toMigrationDpsCourtCase(nomisCourtCases.findLinkedCaseOrNull(it)) }
+    val dpsCases = nomisCourtCases.map { it.toMigrationDpsCourtCase() }
     // idempotent migration - will migrate without checking for existing migration
     courtSentencingDpsService.createCourtCaseMigration(
       MigrationCreateCourtCases(

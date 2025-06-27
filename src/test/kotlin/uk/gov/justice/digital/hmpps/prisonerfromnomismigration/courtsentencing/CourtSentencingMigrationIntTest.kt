@@ -76,7 +76,6 @@ private const val DPS_CHARGE_2_ID = "a04f7a8d-61aa-222c-9395-f4dc62f36ab0"
 private const val DPS_COURT_CASE_ID = "99C"
 private const val DPS_SENTENCE_ID = "a14f7a8d-61aa-111c-9395-f4dc62f36ab0"
 private const val DPS_TERM_ID = "b14f7a8d-61aa-111c-9395-f4dc62f36ab0"
-private const val DPS_TERM_2_ID = "b24f7a8d-61aa-111c-9395-f4dc62f36ab0"
 private const val NOMIS_SENTENCE_SEQUENCE_ID = 112L
 private const val NOMIS_TERM_SEQUENCE_ID = 111L
 private const val NOMIS_TERM_SEQUENCE_2_ID = 222L
@@ -331,6 +330,7 @@ class CourtSentencingMigrationIntTest(
           courtCaseResponse().copy(
             id = 2,
             combinedCaseId = null,
+            sourceCombinedCaseIds = listOf(1),
             courtEvents = listOf(
               courtEventResponse(eventId = 201).copy(
                 courtEventCharges = listOf(
@@ -380,10 +380,9 @@ class CourtSentencingMigrationIntTest(
         assertThat(appearances).hasSize(1)
         assertThat(appearances.first().charges).hasSize(1)
         with(appearances.first().charges.first()) {
-          assertThat(merged).isTrue
           assertThat(chargeNOMISId).isEqualTo(1001)
           assertThat(mergedFromCaseId).isNull()
-          assertThat(mergedFromEventId).isNull()
+          assertThat(mergedFromDate).isNull()
         }
       }
       val targetLinkedCase = migrationRequest.courtCases.find { it.caseId == 2L }!!
@@ -393,17 +392,15 @@ class CourtSentencingMigrationIntTest(
         assertThat(appearances.first().charges).hasSize(2)
         val chargeFromLinkedSource = appearances.first().charges.find { it.chargeNOMISId == 1001L }!!
         with(chargeFromLinkedSource) {
-          assertThat(merged).isFalse
           assertThat(chargeNOMISId).isEqualTo(1001L)
           assertThat(mergedFromCaseId).isEqualTo(1L)
-          assertThat(mergedFromEventId).isEqualTo(101L)
+          assertThat(mergedFromDate).isEqualTo(LocalDate.parse("2024-02-02"))
         }
         val chargeAlreadyOnTarget = appearances.first().charges.find { it.chargeNOMISId == 2001L }!!
         with(chargeAlreadyOnTarget) {
-          assertThat(merged).isNull()
           assertThat(chargeNOMISId).isEqualTo(2001)
           assertThat(mergedFromCaseId).isNull()
-          assertThat(mergedFromEventId).isNull()
+          assertThat(mergedFromDate).isNull()
         }
       }
       val normalCase = migrationRequest.courtCases.find { it.caseId == 3L }!!
@@ -412,10 +409,9 @@ class CourtSentencingMigrationIntTest(
         assertThat(appearances).hasSize(1)
         assertThat(appearances.first().charges).hasSize(1)
         with(appearances.first().charges.first()) {
-          assertThat(merged).isNull()
           assertThat(chargeNOMISId).isEqualTo(3001)
           assertThat(mergedFromCaseId).isNull()
-          assertThat(mergedFromEventId).isNull()
+          assertThat(mergedFromDate).isNull()
         }
       }
       verify(telemetryClient).trackEvent(

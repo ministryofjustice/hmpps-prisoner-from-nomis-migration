@@ -37,7 +37,7 @@ class CourtSentencingTransformerTest {
   inner class SentenceTransformation {
     @Test
     internal fun `will transform sentences correctly`() = runTest {
-      courtCaseResponse.toMigrationDpsCourtCase(null).apply {
+      courtCaseResponse.toMigrationDpsCourtCase().apply {
         assertThat(this.caseId).isEqualTo(NOMIS_COURT_CASE_ID)
         val nonSentencingAppearance = this.appearances[0]
         val firstAppearanceChargeNotYetSentenced =
