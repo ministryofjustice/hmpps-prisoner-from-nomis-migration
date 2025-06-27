@@ -136,4 +136,5 @@ fun visitBalanceAdjustment(): VisitBalanceAdjustmentResponse = VisitBalanceAdjus
   expiryDate = LocalDate.parse("2025-08-01"),
   endorsedStaffId = 1234,
   authorisedStaffId = 5432,
+  latestBooking = true,
 )

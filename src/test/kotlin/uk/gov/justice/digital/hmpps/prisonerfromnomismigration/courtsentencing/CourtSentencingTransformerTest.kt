@@ -449,6 +449,7 @@ class CourtSentencingTransformerTest {
           missingCourtOffenderChargeIds = emptyList(),
         ),
       ),
+      sourceCombinedCaseIds = listOf(),
     )
   }
 }

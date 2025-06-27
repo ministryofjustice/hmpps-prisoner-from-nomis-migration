@@ -306,6 +306,42 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Nested
+        inner class WhenOldBooking {
+          @BeforeEach
+          fun setUp() {
+            nomisVisitBalanceApiMock.stubGetVisitBalanceAdjustment(
+              nomisVisitBalanceAdjustmentId = visitBalanceAdjId,
+              visitBalanceAdjustment = visitBalanceAdjustment().copy(latestBooking = false),
+            )
+            mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
+
+            visitBalanceOffenderEventsQueue.sendMessage(
+              visitBalanceAdjustmentEvent(
+                eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
+                visitBalanceAdjId = visitBalanceAdjId,
+              ),
+            ).also { waitForAnyProcessingToComplete() }
+          }
+
+          @Test
+          fun `will not update in DPS`() {
+            dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
+          }
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("visitbalance-adjustment-synchronisation-old-booking-ignored"),
+              check {
+                assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+                assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Nested
         inner class HappyPathForIepEntitlement {
           @BeforeEach
           fun setUp() {

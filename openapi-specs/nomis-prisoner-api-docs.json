@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-06-26.165.c8bc2b5"
+    "version" : "2025-06-27.174.a8872b5"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -24356,9 +24356,13 @@
           "createUsername" : {
             "type" : "string",
             "description" : "Who created the adjustment"
+          },
+          "latestBooking" : {
+            "type" : "boolean",
+            "description" : "Whether this adjustment is for the latest booking"
           }
         },
-        "required" : [ "adjustmentDate", "adjustmentReason", "createUsername" ]
+        "required" : [ "adjustmentDate", "adjustmentReason", "createUsername", "latestBooking" ]
       },
       "PageVisitBalanceIdResponse" : {
         "type" : "object",
@@ -25040,6 +25044,13 @@
             "type" : "integer",
             "format" : "int64"
           },
+          "sourceCombinedCaseIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          },
           "statusUpdateStaffId" : {
             "type" : "integer",
             "format" : "int64"
@@ -25098,7 +25109,7 @@
             }
           }
         },
-        "required" : [ "bookingId", "caseInfoNumbers", "caseSequence", "caseStatus", "courtEvents", "courtId", "createdByUsername", "createdDateTime", "id", "legalCaseType", "lidsCaseNumber", "offenderCharges", "offenderNo", "sentences" ]
+        "required" : [ "bookingId", "caseInfoNumbers", "caseSequence", "caseStatus", "courtEvents", "courtId", "createdByUsername", "createdDateTime", "id", "legalCaseType", "lidsCaseNumber", "offenderCharges", "offenderNo", "sentences", "sourceCombinedCaseIds" ]
       },
       "CourtEventChargeResponse" : {
         "type" : "object",
