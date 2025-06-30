@@ -2,19 +2,15 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
-import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.matching
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
-import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -26,23 +22,11 @@ import org.springframework.http.HttpStatus.NO_CONTENT
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.objectMapper
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.CorrectionRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.HistoricalQuestion
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.HistoricalResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.History
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncReportId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.PrisonerInvolvement
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Question
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.ReportBasic
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.ReportWithDetails
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.Response
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.SimplePageReportBasic
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.StaffInvolvement
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.StatusHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import java.time.LocalDateTime
 import java.util.UUID
-import kotlin.math.min
 
 class IncidentsApiExtension :
   BeforeAllCallback,
@@ -74,116 +58,6 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     private const val DPS_INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
 
     fun dpsIncidentReportId(dpsIncidentId: String) = NomisSyncReportId(id = UUID.fromString(dpsIncidentId))
-
-    fun dpsIncidentReport(nomisIncidentId: String = "1234") = ReportWithDetails(
-      id = UUID.randomUUID(),
-      reportReference = nomisIncidentId,
-      type = ReportWithDetails.Type.ATTEMPTED_ESCAPE_FROM_ESCORT_1,
-      incidentDateAndTime = LocalDateTime.parse("2021-07-05T10:35:17"),
-      prisonId = "ASI",
-      location = "ASI",
-      title = "There was an incident in the exercise yard",
-      description = "Fred and Jimmy were fighting outside.",
-      nomisType = "ATT_ESC_E",
-      nomisStatus = "AWAN",
-      reportedBy = "FSTAFF_GEN",
-      reportedAt = LocalDateTime.parse("2021-07-07T10:35:17"),
-      status = ReportWithDetails.Status.DRAFT,
-      assignedTo = "BJONES",
-      questions = listOf(
-        Question(
-          code = "1234",
-          question = "Was anybody hurt?",
-          additionalInformation = null,
-          sequence = 1,
-          responses = listOf(
-            Response(
-              response = "Yes",
-              recordedBy = "JSMITH",
-              recordedAt = LocalDateTime.parse("2021-07-05T10:35:17"),
-              additionalInformation = null,
-              sequence = 1,
-            ),
-          ),
-        ),
-      ),
-      history = listOf(
-        History(
-          type = History.Type.ABSCOND_1,
-          changedAt = LocalDateTime.parse("2021-07-05T10:35:17"),
-          changedBy = "JSMITH",
-          questions = listOf(
-            HistoricalQuestion(
-              code = "HQ1",
-              question = "Were tools involved?",
-              responses = listOf(
-                HistoricalResponse(
-                  response = "Yes",
-                  sequence = 1,
-                  recordedBy = "Fred Jones",
-                  recordedAt = LocalDateTime.parse("2021-07-05T10:35:17"),
-                  additionalInformation = "more info",
-                ),
-              ),
-              additionalInformation = "some info",
-              sequence = 1,
-            ),
-          ),
-        ),
-      ),
-      historyOfStatuses = listOf(
-        StatusHistory(
-          status = StatusHistory.Status.DRAFT,
-          changedAt = LocalDateTime.parse("2021-07-05T10:35:17"),
-          changedBy = "JSMITH",
-        ),
-      ),
-      staffInvolved = listOf(
-        StaffInvolvement(
-          sequence = 1,
-          staffUsername = "Dave Jones",
-          staffRole = StaffInvolvement.StaffRole.ACTIVELY_INVOLVED,
-          comment = "Dave was hit",
-          firstName = "Dave",
-          lastName = "Jones",
-        ),
-      ),
-      prisonersInvolved = listOf(
-        PrisonerInvolvement(
-          sequence = 1,
-          prisonerNumber = "A1234BC",
-          prisonerRole = PrisonerInvolvement.PrisonerRole.ABSCONDER,
-          outcome = PrisonerInvolvement.Outcome.PLACED_ON_REPORT,
-          comment = "There were issues",
-          firstName = "Dave",
-          lastName = "Jones",
-        ),
-        PrisonerInvolvement(
-          sequence = 2,
-          prisonerNumber = "A1234BC",
-          prisonerRole = PrisonerInvolvement.PrisonerRole.ABSCONDER,
-          outcome = PrisonerInvolvement.Outcome.PLACED_ON_REPORT,
-          firstName = "Dave",
-          lastName = "Jones",
-        ),
-      ),
-      correctionRequests = listOf(
-        CorrectionRequest(
-          sequence = 1,
-          descriptionOfChange = "There was a change",
-          correctionRequestedBy = "Fred Black",
-          correctionRequestedAt = LocalDateTime.parse("2021-07-05T10:35:17"),
-        ),
-      ),
-      createdAt = LocalDateTime.parse("2021-07-05T10:35:17"),
-      modifiedAt = LocalDateTime.parse("2021-07-15T10:35:17"),
-      modifiedBy = "JSMITH",
-      createdInNomis = true,
-      lastModifiedInNomis = true,
-      staffInvolvementDone = true,
-      prisonerInvolvementDone = true,
-      descriptionAddendums = listOf(),
-    )
 
     fun dpsBasicIncidentReport(dpsIncidentId: String = DPS_INCIDENT_ID, prisonId: String = "ASI") = ReportBasic(
       id = UUID.fromString(dpsIncidentId),
@@ -272,66 +146,7 @@ class IncidentsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubGetIncident(nomisIncidentId: Long = 1234) {
-    stubFor(
-      get(urlMatching("/incident-reports/reference/$nomisIncidentId/with-details")).willReturn(
-        aResponse()
-          .withStatus(HttpStatus.OK.value())
-          .withHeader("Content-Type", APPLICATION_JSON_VALUE)
-          .withBody(dpsIncidentReport(nomisIncidentId.toString())),
-      ),
-    )
-  }
-  fun stubGetIncidents(startIncidentId: Long, endIncidentId: Long) {
-    (startIncidentId..endIncidentId).forEach { nomisIncidentId ->
-      stubGetIncident(nomisIncidentId)
-    }
-  }
-
-  fun stubGetIncidentCounts(totalElements: Long = 3, pageSize: Long = 20, urlMatch: MappingBuilder = get(urlPathMatching("/incident-reports"))) {
-    val content: List<ReportBasic> = (1..min(pageSize, totalElements)).map {
-      dpsBasicIncidentReport(dpsIncidentId = UUID.randomUUID().toString())
-    }
-    stubFor(
-      urlMatch
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.OK.value())
-            .withBody(
-              SimplePageReportBasic(
-                content = content,
-                number = 0,
-                propertySize = pageSize.toInt(),
-                totalElements = totalElements,
-                sort = listOf("incidentDateAndTime,DESC"),
-                numberOfElements = pageSize.toInt(),
-                totalPages = totalElements.toInt(),
-              ),
-            ),
-        ),
-    )
-  }
-
-  fun stubGetASIClosedIncidentCounts() = stubGetIncidentCounts(totalElements = 8, urlMatch = get(urlPathMatching("/incident-reports")).withQueryParam("prisonId", matching("ASI")).withQueryParam("status", matching("CLOSED")))
-
-  fun stubGetIncidentsWithError(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    stubFor(
-      get(urlPathMatching("/incident-reports"))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(status.value())
-            .withBody(error),
-        ),
-    )
-  }
-
   fun verifyMigrationGetBasicIncident() = verify(getRequestedFor(urlMatching("/incident-reports/reference/[0-9]+")))
-
-  fun verifyGetIncidentCounts(times: Int = 1) = verify(exactly(times), getRequestedFor(urlPathMatching("/incident-reports")))
-
-  fun verifyGetIncidentDetail(times: Int = 1) = verify(exactly(times), getRequestedFor(urlMatching("/incident-reports/reference/[0-9]+/with-details")))
 
   fun createIncidentUpsertCount() = findAll(postRequestedFor(urlEqualTo("/sync/upsert"))).count()
 

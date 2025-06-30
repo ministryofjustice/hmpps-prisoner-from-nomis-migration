@@ -16,7 +16,6 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentIdResponse
 
 @SpringAPIServiceTest
 @Import(IncidentsNomisApiService::class, IncidentsConfiguration::class, IncidentsNomisApiMockServer::class)
@@ -166,116 +165,6 @@ class IncidentsNomisApiServiceTest {
       val incidents = nomisApiService.getIncidentIds(fromDate = null, toDate = null, pageNumber = 0, pageSize = 20)
 
       assertThat(incidents).hasSize(3)
-    }
-  }
-
-  @Nested
-  @DisplayName("GET /incidents/reconciliation/agencies")
-  inner class GetReconciliationAgencyIds {
-    @Test
-    internal fun `will pass oath2 token to service`() = runTest {
-      incidentsNomisApiMockServer.stubGetIncidentAgencies()
-
-      nomisApiService.getAllAgencies()
-
-      incidentsNomisApiMockServer.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `will return agencies`() = runTest {
-      incidentsNomisApiMockServer.stubGetIncidentAgencies()
-
-      val agencies = nomisApiService.getAllAgencies()
-
-      assertThat(agencies.size).isEqualTo(3)
-      assertThat(agencies[0].agencyId).isEqualTo("ASI")
-      assertThat(agencies[1].agencyId).isEqualTo("BFI")
-      assertThat(agencies[2].agencyId).isEqualTo("WWI")
-    }
-
-    @Test
-    internal fun `will call the Nomis reconciliation endpoint`() = runTest {
-      incidentsNomisApiMockServer.stubGetIncidentAgencies()
-
-      nomisApiService.getAllAgencies()
-
-      incidentsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/incidents/reconciliation/agencies")))
-    }
-  }
-
-  @Nested
-  @DisplayName("GET /incidents/reconciliation/agency/{agencyId}/counts")
-  inner class GetReconciliationCounts {
-    @Test
-    internal fun `will pass oath2 token to service`() = runTest {
-      incidentsNomisApiMockServer.stubGetReconciliationAgencyIncidentCounts()
-
-      nomisApiService.getIncidentsReconciliation("ASI")
-
-      incidentsNomisApiMockServer.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `will pass NOMIS agency id to service`() = runTest {
-      incidentsNomisApiMockServer.stubGetReconciliationAgencyIncidentCounts()
-
-      nomisApiService.getIncidentsReconciliation("ASI")
-
-      incidentsNomisApiMockServer.verify(
-        getRequestedFor(urlPathEqualTo("/incidents/reconciliation/agency/ASI/counts")),
-      )
-    }
-
-    @Test
-    fun `will return agency incident counts`() = runTest {
-      incidentsNomisApiMockServer.stubGetReconciliationAgencyIncidentCounts(closed = 4)
-
-      val agencyCount = nomisApiService.getIncidentsReconciliation("ASI")
-
-      assertThat(agencyCount.agencyId).isEqualTo("ASI")
-      assertThat(agencyCount.incidentCount.openIncidents).isEqualTo(3)
-      assertThat(agencyCount.incidentCount.closedIncidents).isEqualTo(4)
-    }
-  }
-
-  @Nested
-  @DisplayName("GET /incidents/reconciliation/agency/{agencyId}/ids")
-  inner class GetReconciliationOpenIncidentIds {
-    @Test
-    internal fun `will pass oath2 token to service`() = runTest {
-      incidentsNomisApiMockServer.stubGetReconciliationOpenIncidentIds("ASI", 33, 35)
-
-      nomisApiService.getOpenIncidentIds("ASI", 2, 5)
-
-      incidentsNomisApiMockServer.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `will pass NOMIS agency id to service`() = runTest {
-      incidentsNomisApiMockServer.stubGetReconciliationOpenIncidentIds("ASI", 33, 35)
-
-      nomisApiService.getOpenIncidentIds("ASI", 2, 5)
-
-      incidentsNomisApiMockServer.verify(
-        getRequestedFor(urlPathEqualTo("/incidents/reconciliation/agency/ASI/ids")),
-      )
-    }
-
-    @Test
-    fun `will return open incident Ids`() = runTest {
-      incidentsNomisApiMockServer.stubGetReconciliationOpenIncidentIds("ASI", 33, 35)
-
-      val incidentIds = nomisApiService.getOpenIncidentIds("ASI", 2, 5)
-
-      assertThat(incidentIds.totalElements).isEqualTo(40)
-      assertThat(incidentIds.content.size).isEqualTo(3)
-      assertThat(incidentIds.content).extracting<Long>(IncidentIdResponse::incidentId).containsExactly(33, 34, 35)
     }
   }
 }

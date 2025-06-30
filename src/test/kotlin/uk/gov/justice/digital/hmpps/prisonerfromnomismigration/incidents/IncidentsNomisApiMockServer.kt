@@ -16,11 +16,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.History
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.HistoryQuestion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.HistoryResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentAgencyId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentsCount
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentsReconciliationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Offender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderParty
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Question
@@ -97,63 +94,6 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetMismatchIncident() {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/incidents/33"))
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(
-              incidentResponse(
-                status = "INREQ",
-                offenderParty = "Z4321YX",
-                nomisIncidentId = 33,
-              )
-                .copy(
-                  questions =
-                  listOf(
-                    Question(
-                      questionId = 1234,
-                      sequence = 4,
-                      question = "Was anybody hurt?",
-                      answers = listOf(),
-                      createDateTime = LocalDateTime.parse("2021-07-05T10:35:17"),
-                      createdBy = "JSMITH",
-                    ),
-                  ),
-                  requirements = listOf(),
-                  staffParties = listOf(),
-                ),
-            ),
-        ),
-    )
-  }
-
-  fun stubGetMismatchResponsesForIncident() {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/incidents/33"))
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(
-              incidentResponse()
-                .copy(
-                  incidentId = 33,
-                  questions =
-                  listOf(
-                    Question(
-                      questionId = 1234,
-                      sequence = 1,
-                      question = "Was anybody hurt?",
-                      answers = listOf(),
-                      createDateTime = LocalDateTime.parse("2021-07-05T10:35:17"),
-                      createdBy = "JSMITH",
-                    ),
-                  ),
-                ),
-            ),
-        ),
-    )
-  }
-
   fun stubGetIncident(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
       get(urlPathMatching("/incidents/\\d+")).willReturn(
@@ -163,11 +103,6 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withBody(error),
       ),
     )
-  }
-  fun stubGetIncidents(startIncidentId: Long, endIncidentId: Long) {
-    (startIncidentId..endIncidentId).forEach { nomisIncidentId ->
-      stubGetIncident(nomisIncidentId)
-    }
   }
   fun stubGetIncidentNotFound(nomisIncidentId: Long = 1234) {
     nomisApi.stubFor(
@@ -191,43 +126,6 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     }
   }
 
-  fun stubGetIncidentAgencies() {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/incidents/reconciliation/agencies"))
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(incidentAgencies()),
-        ),
-    )
-  }
-
-  fun stubGetReconciliationAgencyIncidentCounts(agencyId: String = "ASI", open: Long = 3, closed: Long = 3) {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/incidents/reconciliation/agency/$agencyId/counts"))
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(incidentAgencyCount(agencyId, open, closed)),
-        ),
-    )
-  }
-
-  fun stubGetReconciliationOpenIncidentIds(agencyId: String, start: Int = 33, finish: Long = 35) {
-    nomisApi.stubFor(
-      get(urlPathMatching("/incidents/reconciliation/agency/$agencyId/ids"))
-        .willReturn(
-          aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(
-              incidentIdsPagedResponse(
-                totalElements = 40,
-                ids = (start..finish).map { it },
-                pageNumber = 2,
-                pageSize = 3,
-              ),
-            ),
-        ),
-    )
-  }
-
   fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder = this.withBody(objectMapper.writeValueAsString(body))
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
@@ -244,10 +142,6 @@ fun incidentIdsPagedResponse(
   val content = ids.map { """{ "incidentId": $it }""" }.joinToString { it }
   return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }
-
-private fun incidentAgencies() = listOf(IncidentAgencyId("ASI"), IncidentAgencyId("BFI"), IncidentAgencyId("WWI"))
-
-private fun incidentAgencyCount(agencyId: String, open: Long, closed: Long) = IncidentsReconciliationResponse(agencyId = agencyId, IncidentsCount(openIncidents = open, closedIncidents = closed))
 
 private fun incidentResponse(
   nomisIncidentId: Long = 1234,
