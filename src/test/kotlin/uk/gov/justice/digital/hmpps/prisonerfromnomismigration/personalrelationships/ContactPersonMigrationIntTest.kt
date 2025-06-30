@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelation
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
@@ -10,7 +11,6 @@ import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -156,10 +156,10 @@ class ContactPersonMigrationIntTest(
         nomisApiMock.stubGetPrisonerRestrictionIdsToMigrate(content = listOf(PrisonerRestrictionIdResponse(1000), PrisonerRestrictionIdResponse(2000)))
         mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId = 1000, mapping = null)
         mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId = 2000, mapping = null)
-        nomisApiMock.stubGetPrisonerRestrictionById(1000, prisonerRestriction().copy(id = 1000, type = CodeDescription("BAN", "Banned")))
-        nomisApiMock.stubGetPrisonerRestrictionById(2000, prisonerRestriction().copy(id = 2000, type = CodeDescription("CCTV", "CCTV")))
+        nomisApiMock.stubGetPrisonerRestrictionById(1000, prisonerRestriction().copy(id = 1000, offenderNo = "A1234KT", type = CodeDescription("BAN", "Banned")))
+        nomisApiMock.stubGetPrisonerRestrictionById(2000, prisonerRestriction().copy(id = 2000, offenderNo = "A4321KT", type = CodeDescription("CCTV", "CCTV")))
         dpsApiMock.stubMigratePrisonerRestriction(prisonerNumber = "A1234KT", prisonerRestrictionResponse().copy(prisonerRestrictionId = 10_000, prisonerNumber = "A1234KT"))
-        dpsApiMock.stubMigratePrisonerRestriction(prisonerNumber = "A1234KT", prisonerRestrictionResponse().copy(prisonerRestrictionId = 20_000, prisonerNumber = "A1234KT"))
+        dpsApiMock.stubMigratePrisonerRestriction(prisonerNumber = "A4321KT", prisonerRestrictionResponse().copy(prisonerRestrictionId = 20_000, prisonerNumber = "A4321KT"))
         mappingApiMock.stubCreateMappingForMigration()
         mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
         migrationResult = performMigration()
@@ -177,26 +177,26 @@ class ContactPersonMigrationIntTest(
       }
 
       @Test
-      @Disabled("fails until can fix prisoner number in restriction")
       fun `will create mapping for each restriction`() {
         mappingApiMock.verify(
           postRequestedFor(urlPathEqualTo("/mapping/contact-person/prisoner-restriction"))
             .withRequestBodyJsonPath("mappingType", "MIGRATED")
             .withRequestBodyJsonPath("label", migrationResult.migrationId)
-            .withRequestBodyJsonPath("personMapping.dpsId", "10000")
-            .withRequestBodyJsonPath("personMapping.nomisId", "1000"),
+            .withRequestBodyJsonPath("offenderNo", "A1234KT")
+            .withRequestBodyJsonPath("dpsId", "10000")
+            .withRequestBodyJsonPath("nomisId", "1000"),
         )
         mappingApiMock.verify(
           postRequestedFor(urlPathEqualTo("/mapping/contact-person/prisoner-restriction"))
             .withRequestBodyJsonPath("mappingType", "MIGRATED")
             .withRequestBodyJsonPath("label", migrationResult.migrationId)
-            .withRequestBodyJsonPath("personMapping.dpsId", "20000")
-            .withRequestBodyJsonPath("personMapping.nomisId", "2000"),
+            .withRequestBodyJsonPath("offenderNo", "A4321KT")
+            .withRequestBodyJsonPath("dpsId", "20000")
+            .withRequestBodyJsonPath("nomisId", "2000"),
         )
       }
 
       @Test
-      @Disabled("fails until can fix prisoner number in restriction")
       fun `will track telemetry for each restriction migrated`() {
         verify(telemetryClient).trackEvent(
           eq("contactperson-migration-entity-migrated"),
@@ -243,6 +243,7 @@ class ContactPersonMigrationIntTest(
         stubMigratePrisonerRestrictions(
           prisonerRestriction().copy(
             id = 1000,
+            offenderNo = "A1234KT",
             bookingId = 456,
             bookingSequence = 1,
             type = CodeDescription("BAN", "Banned"),
@@ -252,6 +253,7 @@ class ContactPersonMigrationIntTest(
           prisonerRestriction().copy(
             id = 2000,
             bookingId = 457,
+            offenderNo = "A4321KT",
             bookingSequence = 2,
             type = CodeDescription("CCTV", "CCTV"),
             effectiveDate = LocalDate.parse("2024-07-01"),
@@ -268,7 +270,7 @@ class ContactPersonMigrationIntTest(
           ),
         )
         migrationResult = performMigration()
-        dpsRequests = getRequestBodies(postRequestedFor(urlPathEqualTo("/migrate/prisoner-restriction/A1234KT")))
+        dpsRequests = getRequestBodies(postRequestedFor(urlPathMatching("/migrate/prisoner-restriction/.*")))
         mappingRequests = MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/contact-person/prisoner-restriction")))
       }
 
@@ -293,7 +295,6 @@ class ContactPersonMigrationIntTest(
       }
 
       @Test
-      @Disabled("fails until can fix prisoner number in restriction")
       fun `will create mappings for nomis person to dps contact`() {
         // mock will return a dpsId which is nomisId*10
 
@@ -476,7 +477,7 @@ class ContactPersonMigrationIntTest(
     nomisPrisonerRestrictions.forEach {
       mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId = it.id, mapping = null)
       nomisApiMock.stubGetPrisonerRestrictionById(it.id, it)
-      dpsApiMock.stubMigratePrisonerRestriction(prisonerNumber = "A1234KT", prisonerRestrictionResponse().copy(prisonerRestrictionId = it.id * 10))
+      dpsApiMock.stubMigratePrisonerRestriction(prisonerNumber = it.offenderNo, prisonerRestrictionResponse().copy(prisonerRestrictionId = it.id * 10, prisonerNumber = it.offenderNo))
     }
     mappingApiMock.stubCreateMappingForMigration()
     mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = nomisPrisonerRestrictions.size)

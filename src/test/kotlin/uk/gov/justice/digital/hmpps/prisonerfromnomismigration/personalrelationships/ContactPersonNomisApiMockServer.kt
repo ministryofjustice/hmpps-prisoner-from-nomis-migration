@@ -295,6 +295,7 @@ fun prisonerRestriction() = PrisonerRestriction(
   id = 1234,
   bookingId = 456,
   bookingSequence = 1,
+  offenderNo = "A1234KT",
   type = CodeDescription("BAN", "Banned"),
   effectiveDate = LocalDate.now(),
   enteredStaff = ContactRestrictionEnteredStaff(1234, "T.SMITH"),

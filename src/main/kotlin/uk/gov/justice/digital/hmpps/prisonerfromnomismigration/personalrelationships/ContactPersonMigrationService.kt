@@ -62,8 +62,7 @@ class ContactPersonMigrationService(
     } ?: run {
       val restriction = nomisApiService.getPrisonerRestrictionById(prisonerRestrictionId = nomisPrisonerRestrictionId)
       val mapping = dpsApiService.migratePrisonerRestriction(
-        // TODO - return this in API call
-        offenderNo = "A1234KT",
+        offenderNo = restriction.offenderNo,
         restriction.toDpsMigratePrisonerRestrictionRequest(),
       ).toPrisonerRestrictionMappingsDto(
         migrationId = context.migrationId,
@@ -132,8 +131,7 @@ private fun PrisonerRestrictionMigrationResponse.toPrisonerRestrictionMappingsDt
 fun PrisonerRestriction.toDpsMigratePrisonerRestrictionRequest(): MigratePrisonerRestrictionRequest = MigratePrisonerRestrictionRequest(
   restrictionType = this.type.code,
   effectiveDate = this.effectiveDate,
-  // TODO make non-nullable in API
-  authorisedUsername = this.authorisedStaff!!.username,
+  authorisedUsername = this.authorisedStaff.username,
   currentTerm = this.bookingSequence == 1L,
   expiryDate = this.expiryDate,
   commentText = this.comment,
