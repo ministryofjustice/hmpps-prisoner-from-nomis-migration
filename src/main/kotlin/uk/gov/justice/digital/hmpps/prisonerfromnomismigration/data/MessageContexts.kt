@@ -9,12 +9,14 @@ class MigrationContext<T>(
   val migrationId: String,
   val estimatedCount: Long,
   val body: T,
+  val properties: MutableMap<String, Any> = mutableMapOf(),
 ) {
   constructor(context: MigrationContext<*>, body: T) : this(
     context.type,
     context.migrationId,
     context.estimatedCount,
     body,
+    context.properties,
   )
 }
 

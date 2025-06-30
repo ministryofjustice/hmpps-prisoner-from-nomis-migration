@@ -97,7 +97,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     ),
   ) {
     stubFor(
-      post("/legacy/court-case/migration")
+      post(WireMock.urlPathEqualTo("/legacy/court-case/migration"))
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -441,5 +441,5 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun createCourtCaseByOffenderMigrationCount() = findAll(WireMock.postRequestedFor(WireMock.urlMatching("/legacy/court-case/migration"))).count()
+  fun createCourtCaseByOffenderMigrationCount() = findAll(WireMock.postRequestedFor(WireMock.urlPathEqualTo("/legacy/court-case/migration"))).count()
 }

@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
 import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
@@ -40,7 +41,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
@@ -150,7 +150,7 @@ class CourtSentencingMigrationIntTest(
       dpsCourtSentencingServer.stubPostCourtCasesForCreateMigration(response = dpsMigrationCreateResponseWithTwoAppearancesAndTwoCharges())
       courtSentencingMappingApiMockServer.stubCourtSentencingSummaryByMigrationId(count = 14)
 
-      webTestClient.performMigration()
+      webTestClient.performMigration("{\"deleteExisting\": true}")
 
       await untilAsserted {
         assertThat(dpsCourtSentencingServer.createCourtCaseByOffenderMigrationCount()).isEqualTo(14)
@@ -166,6 +166,10 @@ class CourtSentencingMigrationIntTest(
               WireMock.equalTo("2"),
             ),
           ),
+      )
+
+      dpsCourtSentencingServer.verify(
+        postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")).withQueryParam("deleteExisting", equalTo("true")),
       )
     }
 
@@ -242,65 +246,10 @@ class CourtSentencingMigrationIntTest(
           }
         }
       }
-    }
 
-    @Test
-    internal fun `will map result IDs from a migrated record`() {
-      nomisApi.stubGetInitialCount(
-        NomisApiExtension.COURT_SENTENCING_PRISONER_IDS,
-        1,
-      ) { courtSentencingNomisApiMockServer.prisonerIdsPagedResponse(it) }
-      courtSentencingNomisApiMockServer.stubMultipleGetPrisonerIdCounts(totalElements = 1, pageSize = 10)
-      courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(
-        bookingId = 3,
-        caseId = NOMIS_CASE_ID,
-        offenderNo = "AN1",
+      dpsCourtSentencingServer.verify(
+        postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")).withQueryParam("deleteExisting", equalTo("false")),
       )
-      courtSentencingMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
-      courtSentencingMappingApiMockServer.stubPostMigrationMapping()
-
-      dpsCourtSentencingServer.stubPostCourtCasesForCreateMigration(response = dpsMigrationCreateResponseWithTwoAppearancesAndTwoCharges())
-      courtSentencingMappingApiMockServer.stubCourtSentencingSummaryByMigrationId(count = 1)
-
-      webTestClient.performMigration()
-
-      val mappingRequest: CourtCaseMigrationMappingDto =
-        CourtSentencingMappingApiMockServer.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/prisoner/AN1/court-cases")))
-      with(mappingRequest) {
-        assertThat(courtCases).hasSize(1)
-        with(courtCases.first()) {
-          assertThat(nomisCourtCaseId).isEqualTo(NOMIS_CASE_ID)
-        }
-        assertThat(courtAppearances).hasSize(2)
-        with(courtAppearances[0]) {
-          assertThat(nomisCourtAppearanceId).isEqualTo(NOMIS_APPEARANCE_2_ID)
-          assertThat(dpsCourtAppearanceId).isEqualTo(DPS_APPEARANCE_2_ID)
-        }
-        with(courtAppearances[1]) {
-          assertThat(nomisCourtAppearanceId).isEqualTo(NOMIS_APPEARANCE_1_ID)
-          assertThat(dpsCourtAppearanceId).isEqualTo(DPS_APPEARANCE_1_ID)
-        }
-        assertThat(courtCharges).hasSize(2)
-        with(courtCharges[0]) {
-          assertThat(nomisCourtChargeId).isEqualTo(NOMIS_CHARGE_2_ID)
-          assertThat(dpsCourtChargeId).isEqualTo(DPS_CHARGE_2_ID)
-        }
-        with(courtCharges[1]) {
-          assertThat(nomisCourtChargeId).isEqualTo(NOMIS_CHARGE_1_ID)
-          assertThat(dpsCourtChargeId).isEqualTo(DPS_CHARGE_1_ID)
-        }
-        with(sentences[0]) {
-          assertThat(nomisSentenceSequence).isEqualTo(NOMIS_SENTENCE_SEQUENCE_ID)
-        }
-        with(sentenceTerms[0]) {
-          assertThat(nomisTermSequence).isEqualTo(NOMIS_TERM_SEQUENCE_ID)
-          assertThat(nomisSentenceSequence).isEqualTo(NOMIS_SENTENCE_SEQUENCE_ID)
-        }
-        with(sentenceTerms[1]) {
-          assertThat(nomisTermSequence).isEqualTo(NOMIS_TERM_SEQUENCE_2_ID)
-          assertThat(nomisSentenceSequence).isEqualTo(NOMIS_SENTENCE_SEQUENCE_ID)
-        }
-      }
     }
 
     @Test
@@ -421,6 +370,10 @@ class CourtSentencingMigrationIntTest(
           assertThat(it["migrationId"]).isEqualTo(migrationId)
         },
         isNull(),
+      )
+
+      dpsCourtSentencingServer.verify(
+        postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")).withQueryParam("deleteExisting", equalTo("false")),
       )
     }
 

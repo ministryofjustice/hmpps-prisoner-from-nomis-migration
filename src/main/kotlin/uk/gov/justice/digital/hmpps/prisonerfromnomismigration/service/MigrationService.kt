@@ -39,6 +39,8 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
 
   abstract suspend fun migrateNomisEntity(context: MigrationContext<NOMIS_ID>)
 
+  open suspend fun getContextProperties(migrationFilter: FILTER): MutableMap<String, Any> = mutableMapOf()
+
   suspend fun getMigrationCount(migrationId: String): Long = mappingService.getMigrationCount(migrationId)
 
   suspend fun startMigration(migrationFilter: FILTER): MigrationContext<FILTER> {
@@ -58,6 +60,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
       migrationId = generateBatchId(),
       body = migrationFilter,
       estimatedCount = count,
+      properties = getContextProperties(migrationFilter),
     ).apply {
       queueService.sendMessage(MigrationMessageType.MIGRATE_ENTITIES, this)
     }.also {

@@ -33,9 +33,13 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
     .retrieve()
     .awaitBody()
 
-  suspend fun createCourtCaseMigration(courtCase: MigrationCreateCourtCases): MigrationCreateCourtCasesResponse = webClient
+  suspend fun createCourtCaseMigration(courtCase: MigrationCreateCourtCases, deleteExisting: Boolean): MigrationCreateCourtCasesResponse = webClient
     .post()
-    .uri("/legacy/court-case/migration")
+    .uri {
+      it.path("/legacy/court-case/migration")
+        .queryParam("deleteExisting", "{deleteExisting}")
+        .build(deleteExisting)
+    }
     .bodyValue(courtCase)
     .retrieve()
     .awaitBody()
@@ -51,7 +55,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
     //  - updates sentences
     courtCasesDeactivated.forEach { (courtCaseId, courtCase) -> updateCourtCase(courtCaseId, courtCase) }
     sentencesDeactivated.forEach { (sentenceId, sentence) -> updateSentence(sentenceId, sentence) }
-    return createCourtCaseMigration(courtCasesCreated)
+    return createCourtCaseMigration(courtCasesCreated, deleteExisting = false)
   }
 
   suspend fun updateCourtCase(courtCaseId: String, courtCase: LegacyCreateCourtCase): ResponseEntity<Void> = webClient

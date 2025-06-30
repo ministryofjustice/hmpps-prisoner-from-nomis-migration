@@ -22,4 +22,6 @@ data class CourtSentencingMigrationFilter(
     example = "2020-03-24",
   )
   val toDate: LocalDate? = null,
+
+  val deleteExisting: Boolean = false,
 )

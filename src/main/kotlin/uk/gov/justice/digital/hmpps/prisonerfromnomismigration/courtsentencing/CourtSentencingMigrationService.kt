@@ -63,6 +63,8 @@ class CourtSentencingMigrationService(
     PageImpl<PrisonerId>(mutableListOf(PrisonerId(migrationFilter.offenderNo)), Pageable.ofSize(1), 1)
   }
 
+  override suspend fun getContextProperties(migrationFilter: CourtSentencingMigrationFilter): MutableMap<String, Any> = mutableMapOf("deleteExisting" to migrationFilter.deleteExisting)
+
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     val offenderNo = context.body.offenderNo
     val nomisCourtCases = courtSentencingNomisApiService.getCourtCasesForMigration(offenderNo = offenderNo)
@@ -73,6 +75,7 @@ class CourtSentencingMigrationService(
         prisonerId = offenderNo,
         courtCases = dpsCases,
       ),
+      deleteExisting = context.properties["deleteExisting"] == true,
     )
       .also { dpsCourtCaseCreateResponse ->
         createMigrationMapping(
