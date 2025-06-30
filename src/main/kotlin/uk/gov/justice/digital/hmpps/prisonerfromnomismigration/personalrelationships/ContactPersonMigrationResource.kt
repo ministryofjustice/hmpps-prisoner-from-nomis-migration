@@ -51,6 +51,6 @@ class ContactPersonMigrationResource(
     ],
   )
   suspend fun migrateContactPerson(
-    @RequestBody @Valid migrationFilter: ContactPersonMigrationFilter,
+    @RequestBody @Valid migrationFilter: PrisonerRestrictionMigrationFilter,
   ) = migrationService.startMigration(migrationFilter)
 }

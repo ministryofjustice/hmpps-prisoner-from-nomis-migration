@@ -25,8 +25,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerContactAndRestrictionIds
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerRestrictionDetailsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerRestrictionMigrationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerContactResponse
@@ -466,7 +466,7 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       prisonerNumber = "A1234KT",
     )
 
-    fun prisonerRestrictionDetailsRequest() = PrisonerRestrictionDetailsRequest(
+    fun prisonerRestrictionDetailsRequest() = MigratePrisonerRestrictionRequest(
       restrictionType = "BAN",
       effectiveDate = LocalDate.now(),
       authorisedUsername = "T.SMITH",
@@ -477,6 +477,10 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       commentText = null,
       updatedBy = null,
       updatedTime = null,
+    )
+    fun prisonerRestrictionResponse() = PrisonerRestrictionMigrationResponse(
+      prisonerNumber = "A1234KT",
+      prisonerRestrictionId = 1234,
     )
   }
 

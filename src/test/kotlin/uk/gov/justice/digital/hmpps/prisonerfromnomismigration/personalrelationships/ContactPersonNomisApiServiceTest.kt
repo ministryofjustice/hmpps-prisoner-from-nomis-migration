@@ -15,7 +15,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.prisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestrictionIdResponse
 import java.time.LocalDate
 
@@ -93,64 +92,6 @@ class ContactPersonNomisApiServiceTest {
       mockServer.verify(
         getRequestedFor(urlPathEqualTo("/contact/1234567")),
       )
-    }
-  }
-
-  @Nested
-  inner class GetPersonIdsToMigrate {
-    @Test
-    fun `will pass oath2 token to service`() = runTest {
-      mockServer.stubGetPersonIdsToMigrate()
-
-      apiService.getPersonIdsToMigrate()
-
-      mockServer.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `will pass mandatory parameters to service`() = runTest {
-      mockServer.stubGetPersonIdsToMigrate()
-
-      apiService.getPersonIdsToMigrate(pageNumber = 12, pageSize = 20)
-
-      mockServer.verify(
-        getRequestedFor(anyUrl())
-          .withQueryParam("fromDate", equalTo(""))
-          .withQueryParam("toDate", equalTo(""))
-          .withQueryParam("page", equalTo("12"))
-          .withQueryParam("size", equalTo("20")),
-      )
-    }
-
-    @Test
-    fun `can pass optional parameters to service`() = runTest {
-      mockServer.stubGetPersonIdsToMigrate()
-
-      apiService.getPersonIdsToMigrate(
-        fromDate = LocalDate.parse("2020-01-01"),
-        toDate = LocalDate.parse("2020-01-02"),
-        pageNumber = 12,
-        pageSize = 20,
-      )
-
-      mockServer.verify(
-        getRequestedFor(anyUrl())
-          .withQueryParam("fromDate", equalTo("2020-01-01"))
-          .withQueryParam("toDate", equalTo("2020-01-02")),
-      )
-    }
-
-    @Test
-    fun `will return person ids`() = runTest {
-      mockServer.stubGetPersonIdsToMigrate(content = listOf(PersonIdResponse(1234567), PersonIdResponse(1234568)))
-
-      val pages = apiService.getPersonIdsToMigrate(pageNumber = 12, pageSize = 20)
-
-      assertThat(pages.content).hasSize(2)
-      assertThat(pages.content[0].personId).isEqualTo(1234567)
-      assertThat(pages.content[1].personId).isEqualTo(1234568)
     }
   }
 

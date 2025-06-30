@@ -8,9 +8,9 @@ import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonMappingsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactPerson
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerRestrictionMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestrictionIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.PERSONALRELATIONSHIPS_QUEUE_ID
@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture
 class ContactPersonMigrationMessageListener(
   objectMapper: ObjectMapper,
   migrationService: ContactPersonMigrationService,
-) : MigrationMessageListener<ContactPersonMigrationFilter, PersonIdResponse, ContactPerson, ContactPersonMappingsDto>(
+) : MigrationMessageListener<PrisonerRestrictionMigrationFilter, PrisonerRestrictionIdResponse, PrisonerRestriction, PrisonerRestrictionMappingDto>(
   objectMapper,
   migrationService,
 ) {
@@ -34,11 +34,11 @@ class ContactPersonMigrationMessageListener(
   @WithSpan(value = "dps-syscon-migration_personalrelationships_queue", kind = SpanKind.SERVER)
   fun onContactPersonMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
 
-  override fun parseContextFilter(json: String): MigrationMessage<*, ContactPersonMigrationFilter> = objectMapper.readValue(json)
+  override fun parseContextFilter(json: String): MigrationMessage<*, PrisonerRestrictionMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<ContactPersonMigrationFilter>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<PrisonerRestrictionMigrationFilter>> = objectMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, PersonIdResponse> = objectMapper.readValue(json)
+  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerRestrictionIdResponse> = objectMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, ContactPersonMappingsDto> = objectMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, PrisonerRestrictionMappingDto> = objectMapper.readValue(json)
 }
