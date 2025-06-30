@@ -298,5 +298,6 @@ fun prisonerRestriction() = PrisonerRestriction(
   type = CodeDescription("BAN", "Banned"),
   effectiveDate = LocalDate.now(),
   enteredStaff = ContactRestrictionEnteredStaff(1234, "T.SMITH"),
+  authorisedStaff = ContactRestrictionEnteredStaff(1235, "M.SMITH"),
   audit = nomisAudit(),
 )

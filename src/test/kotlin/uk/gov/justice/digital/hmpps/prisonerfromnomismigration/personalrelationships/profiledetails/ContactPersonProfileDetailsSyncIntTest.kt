@@ -34,7 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonMigrationFilter
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.PrisonerRestrictionMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ProfileDetailsChangedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerDomesticStatusResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerNumberOfChildrenResponse
@@ -383,7 +383,7 @@ class ContactPersonProfileDetailsSyncIntTest(
         webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/MARITAL")
           .headers(setAuthorisation(roles = listOf()))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(ContactPersonMigrationFilter())
+          .bodyValue(PrisonerRestrictionMigrationFilter())
           .exchange()
           .expectStatus().isForbidden
       }
@@ -393,7 +393,7 @@ class ContactPersonProfileDetailsSyncIntTest(
         webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/MARITAL")
           .headers(setAuthorisation(roles = listOf("BANANAS")))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(ContactPersonMigrationFilter())
+          .bodyValue(PrisonerRestrictionMigrationFilter())
           .exchange()
           .expectStatus().isForbidden
       }
@@ -402,7 +402,7 @@ class ContactPersonProfileDetailsSyncIntTest(
       fun `access unauthorised with no auth token`() {
         webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/MARITAL")
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(ContactPersonMigrationFilter())
+          .bodyValue(PrisonerRestrictionMigrationFilter())
           .exchange()
           .expectStatus().isUnauthorized
       }
