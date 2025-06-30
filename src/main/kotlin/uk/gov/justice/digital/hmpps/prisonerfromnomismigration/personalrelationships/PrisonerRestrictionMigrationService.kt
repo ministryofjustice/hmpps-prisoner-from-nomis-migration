@@ -20,7 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 
 @Service
-class ContactPersonMigrationService(
+class PrisonerRestrictionMigrationService(
   val prisonerRestrictionMappingService: PrisonerRestrictionMappingApiService,
   val nomisApiService: ContactPersonNomisApiService,
   val dpsApiService: ContactPersonDpsApiService,
