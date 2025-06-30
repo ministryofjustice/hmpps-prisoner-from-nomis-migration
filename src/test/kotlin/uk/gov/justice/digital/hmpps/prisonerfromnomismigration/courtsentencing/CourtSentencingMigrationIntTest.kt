@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
 import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
@@ -150,7 +151,7 @@ class CourtSentencingMigrationIntTest(
       dpsCourtSentencingServer.stubPostCourtCasesForCreateMigration(response = dpsMigrationCreateResponseWithTwoAppearancesAndTwoCharges())
       courtSentencingMappingApiMockServer.stubCourtSentencingSummaryByMigrationId(count = 14)
 
-      webTestClient.performMigration()
+      webTestClient.performMigration("{\"deleteExisting\": true}")
 
       await untilAsserted {
         assertThat(dpsCourtSentencingServer.createCourtCaseByOffenderMigrationCount()).isEqualTo(14)
@@ -166,6 +167,10 @@ class CourtSentencingMigrationIntTest(
               WireMock.equalTo("2"),
             ),
           ),
+      )
+
+      dpsCourtSentencingServer.verify(
+        postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")).withQueryParam("deleteExisting", equalTo("true")),
       )
     }
 
@@ -242,6 +247,10 @@ class CourtSentencingMigrationIntTest(
           }
         }
       }
+
+      dpsCourtSentencingServer.verify(
+        postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")).withQueryParam("deleteExisting", equalTo("false")),
+      )
     }
 
     @Test
@@ -421,6 +430,10 @@ class CourtSentencingMigrationIntTest(
           assertThat(it["migrationId"]).isEqualTo(migrationId)
         },
         isNull(),
+      )
+
+      dpsCourtSentencingServer.verify(
+        postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")).withQueryParam("deleteExisting", equalTo("false")),
       )
     }
 
