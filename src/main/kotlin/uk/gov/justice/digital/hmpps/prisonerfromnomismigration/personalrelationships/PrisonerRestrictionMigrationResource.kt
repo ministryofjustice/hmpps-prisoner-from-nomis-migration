@@ -20,13 +20,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 @RequestMapping("/migrate/contactperson", produces = [MediaType.APPLICATION_JSON_VALUE])
 @Tag(name = "contact-person-migration-resource")
 @PreAuthorize("hasAnyRole('ROLE_MIGRATE_CONTACTPERSON', 'ROLE_MIGRATE_NOMIS_SYSCON')")
-class ContactPersonMigrationResource(
-  private val migrationService: ContactPersonMigrationService,
+class PrisonerRestrictionMigrationResource(
+  private val migrationService: PrisonerRestrictionMigrationService,
 ) {
   @PostMapping
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
-    summary = "Starts a contact person migration. The entity type is determined by the migration filter",
+    summary = "Starts a prisoner restriction migration. The entity type is determined by the migration filter",
     description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_CONTACTPERSON</b>",
     responses = [
       ApiResponse(

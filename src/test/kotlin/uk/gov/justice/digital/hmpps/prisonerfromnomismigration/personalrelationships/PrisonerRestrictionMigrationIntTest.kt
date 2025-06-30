@@ -44,7 +44,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class ContactPersonMigrationIntTest(
+class PrisonerRestrictionMigrationIntTest(
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
 ) : SqsIntegrationTestBase() {
   @Autowired
