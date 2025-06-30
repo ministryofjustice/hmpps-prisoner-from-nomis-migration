@@ -218,8 +218,3 @@ hmpps.sqs:
       propagateTracing: false
     migrationvisitbalance:
       propagateTracing: false
-
-reports:
-  incidents:
-    reconciliation:
-      page-size: 20
