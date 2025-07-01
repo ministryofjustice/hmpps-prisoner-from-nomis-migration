@@ -14,13 +14,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IncidentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType.INCIDENTS
 import java.util.UUID
 
 @Service
 class IncidentsSynchronisationService(
-  private val nomisApiService: IncidentsNomisApiService,
+  private val nomisApiService: NomisApiService,
+  private val incidentsNomisApiService: IncidentsNomisApiService,
   private val incidentsMappingService: IncidentsMappingService,
   private val incidentsService: IncidentsService,
   private val telemetryClient: TelemetryClient,
@@ -31,24 +33,26 @@ class IncidentsSynchronisationService(
   }
 
   suspend fun synchroniseIncidentInsert(event: IncidentsOffenderEvent) {
-    // Should never happen
+    // two way sync so don't want to send an event to DPS that originated there
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent(
-        "incidents-synchronisation-skipped",
-        event.toTelemetryProperties(),
-      )
+      telemetryClient.trackEvent("incidents-synchronisation-skipped", event.toTelemetryProperties())
       return
     }
     val nomisIncidentId = event.incidentCaseId
-    val nomisIncident = nomisApiService.getIncident(nomisIncidentId)
-    incidentsMappingService.findByNomisId(nomisIncidentId = nomisIncidentId)
-      ?.let {
-        // Should never happen - it shouldn't exist in the mapping table
-        telemetryClient.trackEvent(
-          "incidents-synchronisation-created-ignored",
-          event.toTelemetryProperties(),
-        )
-      }
+    val nomisIncident = incidentsNomisApiService.getIncident(nomisIncidentId)
+    // If DPS is in charge of incidents then don't want to sync NOMIS -> DPS
+    if (nomisApiService.isAgencySwitchOnForAgency("INCIDENTS", nomisIncident.agency.code)) {
+      telemetryClient.trackEvent(
+        "incidents-synchronisation-agency-skipped",
+        event.toTelemetryProperties() + ("location" to nomisIncident.agency.code),
+      )
+      return
+    }
+
+    incidentsMappingService.findByNomisId(nomisIncidentId = nomisIncidentId)?.let {
+      // Will happen if we try to process the same event again for some reason
+      telemetryClient.trackEvent("incidents-synchronisation-created-ignored", event.toTelemetryProperties())
+    }
       ?: try {
         incidentsService.upsertIncident(
           NomisSyncRequest(
@@ -68,8 +72,8 @@ class IncidentsSynchronisationService(
           }
         }
       } catch (e: WebClientResponseException.Conflict) {
-        // We have a conflict - this should only ever happen if the incident was stored in DPS, but we didn't receive a response in time
-        // so is never added to the incidents mapping table
+        // We have a conflict - this should only ever happen if the incident was stored in DPS, but we didn't receive a
+        // response in time so is never added to the incidents mapping table
         log.error("Conflict received from DPS for nomisIncidentId: $nomisIncidentId, attempting to recover.", e)
         telemetryClient.trackEvent(
           "incidents-synchronisation-created-conflict",
@@ -108,15 +112,21 @@ class IncidentsSynchronisationService(
   }
 
   suspend fun synchroniseIncidentUpdate(event: IncidentsOffenderEvent) {
-    // Should never happen
+    // two way sync so don't want to send an event to DPS that originated there
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent(
-        "incidents-synchronisation-skipped",
-        event.toTelemetryProperties(),
-      )
+      telemetryClient.trackEvent("incidents-synchronisation-skipped", event.toTelemetryProperties())
       return
     }
-    nomisApiService.getIncidentOrNull(event.incidentCaseId)?.let { nomisIncident ->
+    incidentsNomisApiService.getIncidentOrNull(event.incidentCaseId)?.let { nomisIncident ->
+      // If DPS is in charge of incidents then don't want to sync NOMIS -> DPS
+      if (nomisApiService.isAgencySwitchOnForAgency("INCIDENTS", nomisIncident.agency.code)) {
+        telemetryClient.trackEvent(
+          "incidents-synchronisation-agency-skipped",
+          event.toTelemetryProperties() + ("location" to nomisIncident.agency.code),
+        )
+        return
+      }
+
       incidentsMappingService.findByNomisId(
         nomisIncidentId = event.incidentCaseId,
       )?.let {
@@ -150,15 +160,22 @@ class IncidentsSynchronisationService(
   }
 
   suspend fun synchroniseIncidentUpdateDelete(event: IncidentsOffenderEvent) {
+    // two way sync so don't want to send an event to DPS that originated there
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
-      telemetryClient.trackEvent(
-        "incidents-synchronisation-skipped",
-        event.toTelemetryProperties(),
-      )
+      telemetryClient.trackEvent("incidents-synchronisation-skipped", event.toTelemetryProperties())
       return
     }
 
-    nomisApiService.getIncidentOrNull(event.incidentCaseId)?.let { nomisIncident ->
+    incidentsNomisApiService.getIncidentOrNull(event.incidentCaseId)?.let { nomisIncident ->
+      // If DPS is in charge of incidents then don't want to sync NOMIS -> DPS
+      if (nomisApiService.isAgencySwitchOnForAgency("INCIDENTS", nomisIncident.agency.code)) {
+        telemetryClient.trackEvent(
+          "incidents-synchronisation-agency-skipped",
+          event.toTelemetryProperties() + ("location" to nomisIncident.agency.code),
+        )
+        return
+      }
+
       incidentsMappingService.findByNomisId(
         nomisIncidentId = event.incidentCaseId,
       )?.let {
@@ -192,7 +209,7 @@ class IncidentsSynchronisationService(
   }
 
   suspend fun synchroniseIncidentDelete(event: IncidentsOffenderEvent) {
-    // Should never happen
+    // two way sync so don't want to send an event to DPS that originated there
     if (event.auditModuleName == "DPS_SYNCHRONISATION") {
       telemetryClient.trackEvent(
         "incidents-synchronisation-deleted-skipped",

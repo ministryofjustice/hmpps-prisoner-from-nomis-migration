@@ -82,6 +82,57 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    inner class WhenAgencySwitchTurnedOnForPrison {
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubCheckAgencySwitchForAgency("INCIDENTS", "BXI")
+        incidentsNomisApi.stubGetIncident()
+
+        awsSqsIncidentsOffenderEventsClient.sendMessage(
+          incidentsQueueOffenderEventsUrl,
+          incidentEvent(eventType = "INCIDENT-INSERTED"),
+        )
+        waitForAnyProcessingToComplete("incidents-synchronisation-agency-skipped")
+      }
+
+      @Test
+      fun `will retrieve details about the incident from NOMIS`() {
+        await untilAsserted {
+          nomisApi.verify(getRequestedFor(urlEqualTo(NOMIS_API_URL)))
+        }
+      }
+
+      @Test
+      fun `will not add a new mapping between the two records`() {
+        await untilAsserted {
+          mappingApi.verify(0, getRequestedFor(anyUrl()))
+          mappingApi.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Test
+      fun `will not send the update to the incident in the incidents service`() {
+        await untilAsserted {
+          incidentsApi.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Test
+      fun `will create telemetry tracking the ignore`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("incidents-synchronisation-agency-skipped"),
+            check {
+              assertThat(it["location"]).isEqualTo("BXI")
+              assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
+            },
+            isNull(),
+          )
+        }
+      }
+    }
+
+    @Nested
     @DisplayName("When there is a new Incident Inserted Event")
     inner class WhenNewIncident {
 
@@ -323,6 +374,57 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    inner class WhenAgencySwitchTurnedOnForPrison {
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubCheckAgencySwitchForAgency("INCIDENTS", "BXI")
+        incidentsNomisApi.stubGetIncident()
+
+        awsSqsIncidentsOffenderEventsClient.sendMessage(
+          incidentsQueueOffenderEventsUrl,
+          incidentEvent("INCIDENT-CHANGED-PARTIES"),
+        )
+        waitForAnyProcessingToComplete("incidents-synchronisation-agency-skipped")
+      }
+
+      @Test
+      fun `will retrieve details about the incident from NOMIS`() {
+        await untilAsserted {
+          nomisApi.verify(getRequestedFor(urlEqualTo(NOMIS_API_URL)))
+        }
+      }
+
+      @Test
+      fun `will not add a new mapping between the two records`() {
+        await untilAsserted {
+          mappingApi.verify(0, getRequestedFor(anyUrl()))
+          mappingApi.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Test
+      fun `will not send the update to the incident in the incidents service`() {
+        await untilAsserted {
+          incidentsApi.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Test
+      fun `will create telemetry tracking the ignored agency`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("incidents-synchronisation-agency-skipped"),
+            check {
+              assertThat(it["location"]).isEqualTo("BXI")
+              assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
+            },
+            isNull(),
+          )
+        }
+      }
+    }
+
+    @Nested
     @DisplayName("When there is a new Update Incident event")
     inner class WhenUpdateByNomis {
 
@@ -490,6 +592,57 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
         nomisApi.verify(exactly(0), getRequestedFor(anyUrl()))
         mappingApi.verify(exactly(0), getRequestedFor(anyUrl()))
         incidentsApi.verify(exactly(0), anyRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    inner class WhenAgencySwitchTurnedOnForPrison {
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubCheckAgencySwitchForAgency("INCIDENTS", "BXI")
+        incidentsNomisApi.stubGetIncident()
+
+        awsSqsIncidentsOffenderEventsClient.sendMessage(
+          incidentsQueueOffenderEventsUrl,
+          incidentEvent("INCIDENT-DELETED-PARTIES"),
+        )
+        waitForAnyProcessingToComplete("incidents-synchronisation-agency-skipped")
+      }
+
+      @Test
+      fun `will retrieve details about the incident from NOMIS`() {
+        await untilAsserted {
+          nomisApi.verify(getRequestedFor(urlEqualTo(NOMIS_API_URL)))
+        }
+      }
+
+      @Test
+      fun `will not add a new mapping between the two records`() {
+        await untilAsserted {
+          mappingApi.verify(0, getRequestedFor(anyUrl()))
+          mappingApi.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Test
+      fun `will not send the update to the incident in the incidents service`() {
+        await untilAsserted {
+          incidentsApi.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Test
+      fun `will create telemetry tracking the ignored agency`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("incidents-synchronisation-agency-skipped"),
+            check {
+              assertThat(it["location"]).isEqualTo("BXI")
+              assertThat(it["nomisIncidentId"]).isEqualTo("$NOMIS_INCIDENT_ID")
+            },
+            isNull(),
+          )
+        }
       }
     }
 
