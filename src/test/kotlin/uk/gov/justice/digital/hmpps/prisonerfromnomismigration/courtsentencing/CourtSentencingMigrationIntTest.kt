@@ -170,7 +170,10 @@ class CourtSentencingMigrationIntTest(
       )
 
       dpsCourtSentencingServer.verify(
-        postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")).withQueryParam("deleteExisting", equalTo("true")),
+        postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")).withQueryParam(
+          "deleteExisting",
+          equalTo("true"),
+        ),
       )
     }
 
@@ -249,7 +252,10 @@ class CourtSentencingMigrationIntTest(
       }
 
       dpsCourtSentencingServer.verify(
-        postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")).withQueryParam("deleteExisting", equalTo("false")),
+        postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")).withQueryParam(
+          "deleteExisting",
+          equalTo("false"),
+        ),
       )
     }
 
@@ -433,7 +439,10 @@ class CourtSentencingMigrationIntTest(
       )
 
       dpsCourtSentencingServer.verify(
-        postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")).withQueryParam("deleteExisting", equalTo("false")),
+        postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")).withQueryParam(
+          "deleteExisting",
+          equalTo("false"),
+        ),
       )
     }
 
@@ -536,6 +545,62 @@ class CourtSentencingMigrationIntTest(
         },
         isNull(),
       )
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /migrate/court-sentencing/offender-payload/{offenderNo}")
+  inner class MigrationDebug {
+
+    @Test
+    internal fun `must have valid token to retrieve migration payload`() {
+      webTestClient.get().uri("/migrate/court-sentencing/offender-payload/AN1")
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    internal fun `must have correct role to retrieve migration payload`() {
+      webTestClient.get().uri("/migrate/court-sentencing/offender-payload/AN1")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    internal fun `migration payload can be accessed for debug purposes`() {
+      courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(
+        offenderNo = "AN1",
+        bookingId = 3,
+        caseId = 1,
+        caseIdentifiers = listOf(
+          buildCaseIdentifierResponse(reference = "YY12345678"),
+          buildCaseIdentifierResponse(reference = "XX12345678"),
+        ),
+        courtEvents = listOf(buildCourtEventResponse()),
+        sentences = listOf(
+          buildSentenceResponse(
+            sentenceTerms = listOf(
+              buildSentenceTermResponse(),
+              buildSentenceTermResponse(termSequence = NOMIS_TERM_SEQUENCE_2_ID),
+            ),
+            recallCustodyDate = RecallCustodyDate(
+              returnToCustodyDate = LocalDate.parse("2024-01-01"),
+              recallLength = 14,
+            ),
+          ),
+        ),
+      )
+
+      webTestClient.get().uri("/migrate/court-sentencing/offender-payload/AN1")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("prisonerId").isEqualTo("AN1")
+        .jsonPath("courtCases.size()").isEqualTo(1)
     }
   }
 }
