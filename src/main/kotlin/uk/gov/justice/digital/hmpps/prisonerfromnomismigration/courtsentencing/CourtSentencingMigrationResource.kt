@@ -6,14 +6,18 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus.ACCEPTED
+import org.springframework.http.HttpStatus.OK
 import org.springframework.http.MediaType
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCases
 
 @RestController
 @RequestMapping("/migrate", produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -60,4 +64,39 @@ class CourtSentencingMigrationResource(
     @RequestBody @Valid
     migrationFilter: CourtSentencingMigrationFilter,
   ) = courtSentencingMigrationService.startMigration(migrationFilter)
+
+  @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
+  @GetMapping("/court-sentencing/offender-payload/{offenderNo}")
+  @ResponseStatus(value = OK)
+  @Operation(
+    summary = "provides the migration payload for debug purposes",
+    description = "Provides the migration payload for an offender, no migration is performed. Useful for investigating migration errors. Requires role <b>MIGRATE_SENTENCING</b>",
+    responses = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Migration payload returned",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = MigrationCreateCourtCases::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Incorrect permissions to call endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
+  )
+  suspend fun offenderMigrationPayload(
+    @Schema(description = "Offender No AKA prisoner number", example = "A1234AK")
+    @PathVariable
+    offenderNo: String,
+  ) = courtSentencingMigrationService.offenderMigrationPayload(offenderNo)
 }

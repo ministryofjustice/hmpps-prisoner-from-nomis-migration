@@ -195,4 +195,13 @@ class CourtSentencingMigrationService(
   }
 
   private fun buildCourtCaseMapping(responseMappings: List<MigrationCreateCourtCaseResponse>): List<CourtCaseMappingDto> = responseMappings.map { it -> CourtCaseMappingDto(nomisCourtCaseId = it.caseId, dpsCourtCaseId = it.courtCaseUuid) }
+
+  suspend fun offenderMigrationPayload(offenderNo: String): MigrationCreateCourtCases {
+    val nomisCourtCases = courtSentencingNomisApiService.getCourtCasesForMigration(offenderNo = offenderNo)
+    val dpsCases = nomisCourtCases.map { it.toMigrationDpsCourtCase() }
+    return MigrationCreateCourtCases(
+      prisonerId = offenderNo,
+      courtCases = dpsCases,
+    )
+  }
 }
