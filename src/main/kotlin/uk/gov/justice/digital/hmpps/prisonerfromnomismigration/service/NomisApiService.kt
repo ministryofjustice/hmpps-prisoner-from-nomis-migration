@@ -200,6 +200,11 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .uri("/agency-switches/{serviceCode}/prisoner/{prisonerId}", serviceCode, prisonNumber)
     .retrieve()
     .awaitBodilessEntityAsTrueNotFoundAsFalse()
+
+  suspend fun isAgencySwitchOnForAgency(serviceCode: String, agencyId: String) = webClient.get()
+    .uri("/agency-switches/{serviceCode}/agency/{agencyId}", serviceCode, agencyId)
+    .retrieve()
+    .awaitBodilessEntityAsTrueNotFoundAsFalse()
 }
 
 data class VisitId(
