@@ -8,7 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.PrisonerRestrictionMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.profiledetails.ContactPersonProfileDetailsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMappingService
@@ -21,7 +21,7 @@ class GeneralMappingService(
   private val corePersonMappingApiService: CorePersonMappingApiService,
   private val incidentsMappingService: IncidentsMappingService,
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
-  private val contactPersonMappingApiService: ContactPersonMappingApiService,
+  private val prisonerRestrictionMappingApiService: PrisonerRestrictionMappingApiService,
   private val contactPersonProfileDetailsMappingApiService: ContactPersonProfileDetailsMappingApiService,
   private val organisationsMappingApiService: OrganisationsMappingApiService,
   private val visitBalanceMappingApiService: VisitBalanceMappingApiService,
@@ -34,7 +34,7 @@ class GeneralMappingService(
     MigrationType.CORE_PERSON -> corePersonMappingApiService.getMigrationCount(migrationId)
     MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
-    MigrationType.PERSONALRELATIONSHIPS -> contactPersonMappingApiService.getMigrationCount(migrationId)
+    MigrationType.PERSONALRELATIONSHIPS -> prisonerRestrictionMappingApiService.getMigrationCount(migrationId)
     MigrationType.PERSONALRELATIONSHIPS_PROFILEDETAIL -> contactPersonProfileDetailsMappingApiService.getMigrationCount(migrationId)
     MigrationType.ORGANISATIONS -> organisationsMappingApiService.getMigrationCount(migrationId)
     // since this is a patch we cannot count mappings created since none are created - it will have to be manual Telemetry
