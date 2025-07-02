@@ -203,6 +203,7 @@ class PrisonerRestrictionMigrationIntTest(
           check {
             assertThat(it["nomisId"]).isEqualTo("1000")
             assertThat(it["dpsId"]).isEqualTo("10000")
+            assertThat(it["offenderNo"]).isEqualTo("A1234KT")
           },
           isNull(),
         )
@@ -212,6 +213,7 @@ class PrisonerRestrictionMigrationIntTest(
           check {
             assertThat(it["nomisId"]).isEqualTo("2000")
             assertThat(it["dpsId"]).isEqualTo("20000")
+            assertThat(it["offenderNo"]).isEqualTo("A4321KT")
           },
           isNull(),
         )
@@ -385,14 +387,14 @@ class PrisonerRestrictionMigrationIntTest(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
               duplicate = PrisonerRestrictionMappingDto(
-                dpsId = "1000",
-                nomisId = 100,
+                dpsId = "10000",
+                nomisId = 1000,
                 offenderNo = "A1234KT",
                 mappingType = MIGRATED,
               ),
               existing = PrisonerRestrictionMappingDto(
-                dpsId = "999",
-                nomisId = 100,
+                dpsId = "9999",
+                nomisId = 1000,
                 offenderNo = "A1234KT",
                 mappingType = MIGRATED,
               ),
@@ -428,10 +430,13 @@ class PrisonerRestrictionMigrationIntTest(
         verify(telemetryClient).trackEvent(
           eq("nomis-migration-contactperson-duplicate"),
           check {
-            assertThat(it["duplicateNomisId"]).isEqualTo("100")
-            assertThat(it["duplicateDpsId"]).isEqualTo("1000")
-            assertThat(it["existingNomisId"]).isEqualTo("100")
-            assertThat(it["existingDpsId"]).isEqualTo("999")
+            assertThat(it["nomisId"]).isEqualTo("1000")
+            assertThat(it["dpsId"]).isEqualTo("10000")
+            assertThat(it["offenderNo"]).isEqualTo("A1234KT")
+            assertThat(it["duplicateNomisId"]).isEqualTo("1000")
+            assertThat(it["duplicateDpsId"]).isEqualTo("10000")
+            assertThat(it["existingNomisId"]).isEqualTo("1000")
+            assertThat(it["existingDpsId"]).isEqualTo("9999")
           },
           isNull(),
         )
