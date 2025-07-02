@@ -99,6 +99,9 @@ class PrisonerRestrictionMigrationService(
         telemetryClient.trackEvent(
           "nomis-migration-contactperson-duplicate",
           mapOf(
+            "offenderNo" to mapping.offenderNo,
+            "dpsId" to mapping.dpsId,
+            "nomisId" to mapping.nomisId,
             "duplicateDpsId" to duplicateErrorDetails.duplicate.dpsId,
             "duplicateNomisId" to duplicateErrorDetails.duplicate.nomisId,
             "existingDpsId" to duplicateErrorDetails.existing.dpsId,
@@ -110,6 +113,7 @@ class PrisonerRestrictionMigrationService(
         telemetryClient.trackEvent(
           "contactperson-migration-entity-migrated",
           mapOf(
+            "offenderNo" to mapping.offenderNo,
             "nomisId" to mapping.nomisId,
             "dpsId" to mapping.dpsId,
             "migrationId" to context.migrationId,
