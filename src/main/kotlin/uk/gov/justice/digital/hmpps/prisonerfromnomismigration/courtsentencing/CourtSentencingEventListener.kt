@@ -9,7 +9,10 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RECALL_SENTENCE_ADJUSTMENTS_SYNCHRONISATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING
@@ -24,6 +27,7 @@ class CourtSentencingEventListener(
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
   private val courtSentencingSynchronisationService: CourtSentencingSynchronisationService,
+  private val sentencingAdjustmentsSynchronisationService: SentencingAdjustmentsSynchronisationService,
 ) {
 
   private companion object {
@@ -103,6 +107,10 @@ class CourtSentencingEventListener(
           )
 
         RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED -> courtSentencingSynchronisationService.nomisRecallBeachCourtChargeInserted(
+          sqsMessage.Message.fromJson(),
+        )
+
+        RECALL_SENTENCE_ADJUSTMENTS_SYNCHRONISATION -> sentencingAdjustmentsSynchronisationService.nomisSentenceAdjustmentsUpdate(
           sqsMessage.Message.fromJson(),
         )
       }
@@ -202,3 +210,5 @@ data class ReturnToCustodyDateEvent(
   val auditModuleName: String,
   val eventType: String,
 )
+
+data class SyncSentenceAdjustment(val sentenceIds: List<SentenceId>)

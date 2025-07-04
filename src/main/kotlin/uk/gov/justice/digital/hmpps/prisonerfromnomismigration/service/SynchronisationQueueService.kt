@@ -16,6 +16,7 @@ const val RETRY_SENTENCE_SYNCHRONISATION_MAPPING = "sentence_synchronisation_ret
 const val RETRY_SENTENCE_TERM_SYNCHRONISATION_MAPPING = "sentence_term_synchronisation_retry"
 const val RETRY_PRISONER_MERGE_COURT_CASE_SYNCHRONISATION_MAPPING = "prisoner_merge_court_case_synchronisation_retry"
 const val RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED = "recall_breach_court_event_charge_inserted"
+const val RECALL_SENTENCE_ADJUSTMENTS_SYNCHRONISATION = "courtsentencing.resync.sentence-adjustments"
 
 @Service
 class SynchronisationQueueService(
