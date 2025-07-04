@@ -211,4 +211,12 @@ data class ReturnToCustodyDateEvent(
   val eventType: String,
 )
 
-data class SyncSentenceAdjustment(val sentenceIds: List<SentenceId>)
+data class SentenceIdAndAdjustmentType(
+  val sentenceId: SentenceId,
+  val adjustmentIds: List<Long>,
+)
+
+data class SyncSentenceAdjustment(
+  val offenderNo: String,
+  val sentences: List<SentenceIdAndAdjustmentType>,
+)

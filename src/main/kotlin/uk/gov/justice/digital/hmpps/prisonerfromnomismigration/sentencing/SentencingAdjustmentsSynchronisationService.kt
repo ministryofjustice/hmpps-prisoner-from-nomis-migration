@@ -38,23 +38,33 @@ class SentencingAdjustmentsSynchronisationService(
       )
       return
     }
-    sentencingAdjustmentsNomisApiService.getSentenceAdjustment(event.adjustmentId)?.takeUnless { it.hiddenFromUsers }
+    createOrUpdateSentenceAdjustment(
+      SentenceAdjustmentUpdateOrCreateRequest(
+        offenderNumber = event.offenderIdDisplay,
+        bookingId = event.bookingId,
+        sentenceSeq = event.sentenceSeq,
+        adjustmentId = event.adjustmentId,
+      ),
+    )
+  }
+  suspend fun createOrUpdateSentenceAdjustment(request: SentenceAdjustmentUpdateOrCreateRequest) {
+    sentencingAdjustmentsNomisApiService.getSentenceAdjustment(request.adjustmentId)?.takeUnless { it.hiddenFromUsers }
       ?.also { nomisAdjustment ->
         sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
-          nomisAdjustmentId = event.adjustmentId,
+          nomisAdjustmentId = request.adjustmentId,
           nomisAdjustmentCategory = "SENTENCE",
         )?.let {
           sentencingService.updateSentencingAdjustment(it.adjustmentId, nomisAdjustment.toSentencingAdjustment())
           telemetryClient.trackEvent(
             "sentence-adjustment-updated-synchronisation-success",
-            event.toTelemetryProperties(it.adjustmentId),
+            request.toTelemetryProperties(it.adjustmentId),
           )
         } ?: let {
           sentencingService.createSentencingAdjustment(nomisAdjustment.toSentencingAdjustment()).also { adjustment ->
-            tryToCreateSentenceMapping(event, adjustment.adjustmentId.toString()).also { result ->
+            tryToCreateSentenceMapping(request, adjustment.adjustmentId.toString()).also { result ->
               telemetryClient.trackEvent(
                 "sentence-adjustment-created-synchronisation-success",
-                event.toTelemetryProperties(adjustment.adjustmentId.toString(), result == MAPPING_FAILED),
+                request.toTelemetryProperties(adjustment.adjustmentId.toString(), result == MAPPING_FAILED),
               )
             }
           }
@@ -62,19 +72,24 @@ class SentencingAdjustmentsSynchronisationService(
       } ?: also {
       telemetryClient.trackEvent(
         "sentence-adjustment-hidden-or-deleted-synchronisation-skipped",
-        event.toTelemetryProperties(),
+        request.toTelemetryProperties(),
       )
     }
   }
 
-  fun nomisSentenceAdjustmentsUpdate(sentenceAdjustmentsUpdatedEvent: SyncSentenceAdjustment) {
-    telemetryClient.trackEvent(
-      "sentence-adjustments-updated-synchronisation-success",
-      mapOf(
-        "sentenceIds" to sentenceAdjustmentsUpdatedEvent.sentenceIds.joinToString { it.sentenceSequence.toString() },
-        "bookingIds" to sentenceAdjustmentsUpdatedEvent.sentenceIds.joinToString { it.offenderBookingId.toString() },
-      ),
-    )
+  suspend fun nomisSentenceAdjustmentsUpdate(event: SyncSentenceAdjustment) {
+    event.sentences.forEach { sentence ->
+      sentence.adjustmentIds.forEach { adjustmentId ->
+        createOrUpdateSentenceAdjustment(
+          request = SentenceAdjustmentUpdateOrCreateRequest(
+            offenderNumber = event.offenderNo,
+            bookingId = sentence.sentenceId.offenderBookingId,
+            sentenceSeq = sentence.sentenceId.sentenceSequence,
+            adjustmentId = adjustmentId,
+          ),
+        )
+      }
+    }
   }
 
   suspend fun synchroniseSentenceAdjustmentDelete(event: SentenceAdjustmentOffenderEvent) {
@@ -157,7 +172,7 @@ class SentencingAdjustmentsSynchronisationService(
   }
 
   suspend fun tryToCreateSentenceMapping(
-    event: SentenceAdjustmentOffenderEvent,
+    event: SentenceAdjustmentUpdateOrCreateRequest,
     adjustmentId: String,
   ): MappingResponse {
     val mapping = SentencingAdjustmentNomisMapping(
@@ -350,6 +365,27 @@ private fun KeyDateAdjustmentOffenderEvent.toTelemetryProperties(
   "bookingId" to this.bookingId.toString(),
   "nomisAdjustmentId" to this.adjustmentId.toString(),
   "adjustmentCategory" to "KEY-DATE",
+) + (adjustmentId?.let { mapOf("adjustmentId" to it) } ?: emptyMap()) + (
+  mappingFailed?.takeIf { it }
+    ?.let { mapOf("mapping" to "initial-failure") } ?: emptyMap()
+  )
+
+data class SentenceAdjustmentUpdateOrCreateRequest(
+  val offenderNumber: String,
+  val bookingId: Long,
+  val sentenceSeq: Long,
+  val adjustmentId: Long,
+)
+
+private fun SentenceAdjustmentUpdateOrCreateRequest.toTelemetryProperties(
+  adjustmentId: String? = null,
+  mappingFailed: Boolean? = null,
+) = mapOf(
+  "offenderNo" to this.offenderNumber,
+  "bookingId" to this.bookingId.toString(),
+  "sentenceSequence" to this.sentenceSeq.toString(),
+  "nomisAdjustmentId" to this.adjustmentId.toString(),
+  "adjustmentCategory" to "SENTENCE",
 ) + (adjustmentId?.let { mapOf("adjustmentId" to it) } ?: emptyMap()) + (
   mappingFailed?.takeIf { it }
     ?.let { mapOf("mapping" to "initial-failure") } ?: emptyMap()
