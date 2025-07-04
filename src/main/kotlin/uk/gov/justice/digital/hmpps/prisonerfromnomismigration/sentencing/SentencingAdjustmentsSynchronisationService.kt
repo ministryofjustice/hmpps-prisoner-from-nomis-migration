@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.SyncSentenceAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.NomisPrisonerMergeEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
@@ -64,6 +65,16 @@ class SentencingAdjustmentsSynchronisationService(
         event.toTelemetryProperties(),
       )
     }
+  }
+
+  fun nomisSentenceAdjustmentsUpdate(sentenceAdjustmentsUpdatedEvent: SyncSentenceAdjustment) {
+    telemetryClient.trackEvent(
+      "sentence-adjustments-updated-synchronisation-success",
+      mapOf(
+        "sentenceIds" to sentenceAdjustmentsUpdatedEvent.sentenceIds.joinToString { it.sentenceSequence.toString() },
+        "bookingIds" to sentenceAdjustmentsUpdatedEvent.sentenceIds.joinToString { it.offenderBookingId.toString() },
+      ),
+    )
   }
 
   suspend fun synchroniseSentenceAdjustmentDelete(event: SentenceAdjustmentOffenderEvent) {
