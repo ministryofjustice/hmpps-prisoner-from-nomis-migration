@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
@@ -30,11 +31,15 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.SentenceIdAndAdjustmentType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.SyncSentenceAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeNomisEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.KeyDateAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceAdjustmentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentencingAdjustmentType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.ADJUSTMENTS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.KEYDATE_ADJUSTMENTS_GET_MAPPING_URL
@@ -53,6 +58,11 @@ private const val SENTENCE_SEQUENCE = 1L
 class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var nomisApi: SentencingAdjustmentsNomisApiMockServer
+
+  @Autowired
+  private lateinit var objectMapper: ObjectMapper
+
+  private fun Any.toJson(): String = objectMapper.writeValueAsString(this)
 
   @Nested
   @DisplayName("SENTENCE_ADJUSTMENT_UPSERTED")
@@ -1874,6 +1884,84 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will create the two missing adjustments mappings`() {
         await untilAsserted {
           mappingApi.verify(2, postRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments")))
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("courtsentencing.resync.sentence-adjustments")
+  inner class CourtSentencingSentenceAdjustmentSynchronisation {
+    @Nested
+    inner class WhenSingleAdjustmentInSingleSentence {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetNomisSentencingAdjustment(
+          adjustmentCategory = "SENTENCE",
+          nomisAdjustmentId = NOMIS_ADJUSTMENT_ID,
+          adjustmentId = ADJUSTMENT_ID,
+        )
+        nomisApi.stubGetSentenceAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID, prisonId = "WWI")
+        sentencingApi.stubUpdateSentencingAdjustmentForSynchronisation(ADJUSTMENT_ID)
+
+        courtSentencingOffenderEventsQueue.sendMessage(
+          SQSMessage(
+            Type = "courtsentencing.resync.sentence-adjustments",
+            Message = SyncSentenceAdjustment(
+              offenderNo = OFFENDER_NUMBER,
+              sentences = listOf(
+                SentenceIdAndAdjustmentType(
+                  sentenceId = SentenceId(
+                    offenderBookingId = BOOKING_ID,
+                    sentenceSequence = SENTENCE_SEQUENCE,
+                  ),
+                  adjustmentIds = listOf(NOMIS_ADJUSTMENT_ID),
+                ),
+              ),
+            ).toJson(),
+          ).toJson(),
+        )
+      }
+
+      @Test
+      fun `will retrieve mapping to check if this is an updated adjustment`() {
+        await untilAsserted {
+          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/sentencing/adjustments/nomis-adjustment-category/SENTENCE/nomis-adjustment-id/$NOMIS_ADJUSTMENT_ID")))
+        }
+      }
+
+      @Test
+      fun `will retrieve details about the adjustment from NOMIS`() {
+        await untilAsserted {
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/sentence-adjustments/$NOMIS_ADJUSTMENT_ID")))
+        }
+      }
+
+      @Test
+      fun `will update the adjustment in the sentencing service`() {
+        await untilAsserted {
+          sentencingApi.verify(
+            putRequestedFor(urlPathEqualTo("/legacy/adjustments/$ADJUSTMENT_ID"))
+              .withRequestBody(matchingJsonPath("agencyId", equalTo("WWI"))),
+          )
+        }
+      }
+
+      @Test
+      fun `will create telemetry tracking the update`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            Mockito.eq("sentence-adjustment-updated-synchronisation-success"),
+            check {
+              assertThat(it["adjustmentId"]).isEqualTo(ADJUSTMENT_ID)
+              assertThat(it["adjustmentCategory"]).isEqualTo("SENTENCE")
+              assertThat(it["nomisAdjustmentId"]).isEqualTo(NOMIS_ADJUSTMENT_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NUMBER)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["sentenceSequence"]).isEqualTo(SENTENCE_SEQUENCE.toString())
+            },
+            isNull(),
+          )
         }
       }
     }
