@@ -33,6 +33,7 @@ class ContactPersonEventListener(
   private val eventFeatureSwitch: EventFeatureSwitch,
   private val service: ContactPersonSynchronisationService,
   private val profileDetailService: ContactPersonProfileDetailsSyncService,
+  private val prisonerRestrictionSynchronisationService: PrisonerRestrictionSynchronisationService,
 ) {
 
   private companion object {
@@ -75,6 +76,8 @@ class ContactPersonEventListener(
               "PERSON_IDENTIFIERS-UPDATED" -> service.personIdentifierUpdated(sqsMessage.Message.fromJson())
               "PERSON_IDENTIFIERS-DELETED" -> service.personIdentifierDeleted(sqsMessage.Message.fromJson())
               "OFFENDER_PHYSICAL_DETAILS-CHANGED" -> profileDetailService.profileDetailsChanged(sqsMessage.Message.fromJson())
+              "RESTRICTION-UPSERTED" -> prisonerRestrictionSynchronisationService.prisonerRestrictionUpserted(sqsMessage.Message.fromJson())
+              "RESTRICTION-DELETED" -> prisonerRestrictionSynchronisationService.prisonerRestrictionDeleted(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -171,6 +174,14 @@ data class ProfileDetailsChangedEvent(
   val bookingId: Long,
   val profileType: String,
 )
+
+// TODO - remove defaults after trigger change
+data class PrisonerRestrictionEvent(
+  val offenderIdDisplay: String,
+  val offenderRestrictionId: Long,
+  val isUpdated: Boolean = false,
+  override val auditModuleName: String = "NOMIS",
+) : EventAudited
 
 data class ContactPersonPrisonerMappings(
   val mappings: ContactPersonPrisonerMappingsDto,
