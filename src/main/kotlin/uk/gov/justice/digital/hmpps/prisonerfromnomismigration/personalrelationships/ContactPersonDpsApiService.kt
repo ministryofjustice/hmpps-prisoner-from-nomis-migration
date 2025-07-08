@@ -37,9 +37,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateEmploymentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncEmployment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerContactRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactEmailRequest
@@ -50,6 +52,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateEmploymentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerRestrictionRequest
 import java.time.Duration
 
 @Service
@@ -296,4 +299,23 @@ class ContactPersonDpsApiService(
     .bodyValue(resetPrisonerContactRequest)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun createPrisonerRestriction(restriction: SyncCreatePrisonerRestrictionRequest): SyncPrisonerRestriction = webClient.post()
+    .uri("/sync/prisoner-restriction")
+    .bodyValue(restriction)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun updatePrisonerRestriction(prisonerRestrictionId: Long, restriction: SyncUpdatePrisonerRestrictionRequest): SyncPrisonerRestriction = webClient.post()
+    .uri("/sync/prisoner-restriction/{prisonerRestrictionId}", prisonerRestrictionId)
+    .bodyValue(restriction)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun deletePrisonerRestriction(prisonerRestrictionId: Long) {
+    webClient.delete()
+      .uri("/sync/prisoner-restriction/{prisonerRestrictionId}", prisonerRestrictionId)
+      .retrieve()
+      .awaitBodilessEntityIgnoreNotFound()
+  }
 }

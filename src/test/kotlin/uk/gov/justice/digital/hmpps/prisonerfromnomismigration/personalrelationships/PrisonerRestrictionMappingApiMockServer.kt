@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelation
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -57,7 +58,17 @@ class PrisonerRestrictionMappingApiMockServer(private val objectMapper: ObjectMa
     }
   }
 
-  fun stubCreateMappingForMigration() {
+  fun stubGetByNomisPrisonerRestrictionId(
+    nomisPrisonerRestrictionId: Long = 123456,
+    mapping: PrisonerRestrictionMappingDto? = PrisonerRestrictionMappingDto(
+      offenderNo = "A1234KT",
+      nomisId = nomisPrisonerRestrictionId,
+      dpsId = UUID.randomUUID().toString(),
+      mappingType = PrisonerRestrictionMappingDto.MappingType.MIGRATED,
+    ),
+  ) = stubGetByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId, mapping)
+
+  fun stubCreateMapping() {
     mappingApi.stubFor(
       post("/mapping/contact-person/prisoner-restriction").willReturn(
         aResponse()
@@ -67,10 +78,9 @@ class PrisonerRestrictionMappingApiMockServer(private val objectMapper: ObjectMa
     )
   }
 
-  @Suppress("unused")
-  fun stubCreateMappingForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/contact-person/prisoner-restriction")
+  fun stubCreateMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/contact-person/prisoner-restriction")
 
-  fun stubCreateMappingForMigration(error: DuplicateMappingErrorResponse) {
+  fun stubCreateMapping(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(
       post("/mapping/contact-person/prisoner-restriction").willReturn(
         aResponse()
@@ -105,6 +115,18 @@ class PrisonerRestrictionMappingApiMockServer(private val objectMapper: ObjectMa
               size = 1,
             ),
           ),
+      ),
+    )
+  }
+
+  fun stubDeleteByNomisPrisonerRestrictionId(
+    nomisPrisonerRestrictionId: Long = 123456,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/contact-person/prisoner-restriction/nomis-prisoner-restriction-id/$nomisPrisonerRestrictionId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
       ),
     )
   }

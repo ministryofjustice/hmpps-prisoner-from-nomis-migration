@@ -28,6 +28,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createPrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createPrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.createPrisonerRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.mergePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.migrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.prisonerRestrictionDetailsRequest
@@ -42,6 +43,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updateContactRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updatePrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updatePrisonerRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiService.CreatePrisonerContactSuccess
 
 @SpringAPIServiceTest
@@ -1107,6 +1109,95 @@ class ContactPersonDpsApiServiceTest {
       dpsContactPersonServer.verify(
         postRequestedFor(urlPathEqualTo("/sync/admin/reset")),
       )
+    }
+  }
+
+  @Nested
+  inner class CreatePrisonerRestriction {
+    @Test
+    internal fun `will pass oath2 token to prisoner restriction endpoint`() = runTest {
+      dpsContactPersonServer.stubCreatePrisonerRestriction()
+
+      apiService.createPrisonerRestriction(createPrisonerRestrictionRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the create sync endpoint`() = runTest {
+      dpsContactPersonServer.stubCreatePrisonerRestriction()
+
+      apiService.createPrisonerRestriction(createPrisonerRestrictionRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/sync/prisoner-restriction")),
+      )
+    }
+  }
+
+  @Nested
+  inner class UpdatePrisonerRestriction {
+    private val prisonerRestrictionId = 12345L
+
+    @Test
+    internal fun `will pass oath2 token to prisoner restriction endpoint`() = runTest {
+      dpsContactPersonServer.stubUpdatePrisonerRestriction(prisonerRestrictionId)
+
+      apiService.updatePrisonerRestriction(prisonerRestrictionId, updatePrisonerRestrictionRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the update sync endpoint`() = runTest {
+      dpsContactPersonServer.stubUpdatePrisonerRestriction(prisonerRestrictionId)
+
+      apiService.updatePrisonerRestriction(prisonerRestrictionId, updatePrisonerRestrictionRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/sync/prisoner-restriction/$prisonerRestrictionId")),
+      )
+    }
+  }
+
+  @Nested
+  inner class DeletePrisonerRestriction {
+    private val prisonerRestrictionId = 12345L
+
+    @Test
+    internal fun `will pass oath2 token to prisoner restriction endpoint`() = runTest {
+      dpsContactPersonServer.stubDeletePrisonerRestriction(prisonerRestrictionId)
+
+      apiService.deletePrisonerRestriction(prisonerRestrictionId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the delete sync endpoint`() = runTest {
+      dpsContactPersonServer.stubDeletePrisonerRestriction(prisonerRestrictionId)
+
+      apiService.deletePrisonerRestriction(prisonerRestrictionId)
+
+      dpsContactPersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/prisoner-restriction/$prisonerRestrictionId")),
+      )
+    }
+
+    @Test
+    fun `will not throw exception when there is a 404`() = runTest {
+      dpsContactPersonServer.stubDeletePrisonerRestriction(prisonerRestrictionId, status = 404)
+
+      assertDoesNotThrow { apiService.deletePrisonerRestriction(prisonerRestrictionId) }
     }
   }
 }
