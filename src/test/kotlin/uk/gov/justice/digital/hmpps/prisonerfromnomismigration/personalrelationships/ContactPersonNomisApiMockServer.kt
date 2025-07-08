@@ -138,7 +138,7 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetPrisonerRestrictionById(restrictionId: Long, response: PrisonerRestriction = prisonerRestriction()) {
+  fun stubGetPrisonerRestrictionById(restrictionId: Long, response: PrisonerRestriction = nomisPrisonerRestriction()) {
     nomisApi.stubFor(
       get(urlEqualTo("/prisoners/restrictions/$restrictionId")).willReturn(
         aResponse()
@@ -291,7 +291,7 @@ fun prisonerWithContactRestriction() = ContactRestriction(
 
 fun prisonerDetails(): PrisonerDetails = PrisonerDetails(offenderNo = "A1234KT", bookingId = 1234, location = "MDI", active = true)
 
-fun prisonerRestriction() = PrisonerRestriction(
+fun nomisPrisonerRestriction() = PrisonerRestriction(
   id = 1234,
   bookingId = 456,
   bookingSequence = 1,

@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_RESTRICTION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PHONE_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PRISONER_RESTRICTION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.profiledetails.ContactPersonProfileDetailsSyncService
 import java.util.concurrent.CompletableFuture
 
@@ -106,6 +107,7 @@ class ContactPersonEventListener(
       RETRY_REPLACE_PRISONER_PERSON_BOOKING_CHANGED_MAPPINGS -> service.retryReplacePrisonerPersonBookingChangeMappings(message.fromJson())
       RETRY_REPLACE_PRISONER_PERSON_BOOKING_MOVED_MAPPINGS -> service.retryReplacePrisonerPersonBookingMovedMappings(message.fromJson())
       RESYNCHRONISE_MOVE_BOOKING_TARGET -> service.resetAfterPrisonerBookingMovedIfNecessary(message.fromJson())
+      RETRY_SYNCHRONISATION_PRISONER_RESTRICTION_MAPPING -> prisonerRestrictionSynchronisationService.retryCreatePrisonerRestrictionMapping(message.fromJson())
     }
   }
 }
@@ -202,4 +204,5 @@ enum class ContactPersonSynchronisationMessageType {
   RETRY_REPLACE_PRISONER_PERSON_BOOKING_CHANGED_MAPPINGS,
   RETRY_REPLACE_PRISONER_PERSON_BOOKING_MOVED_MAPPINGS,
   RESYNCHRONISE_MOVE_BOOKING_TARGET,
+  RETRY_SYNCHRONISATION_PRISONER_RESTRICTION_MAPPING,
 }

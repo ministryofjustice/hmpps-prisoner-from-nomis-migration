@@ -105,7 +105,7 @@ class PrisonerRestrictionMigrationIntTest(
       fun setUp() {
         nomisApiMock.stubGetPrisonerRestrictionIdsToMigrate(content = listOf(PrisonerRestrictionIdResponse(1000), PrisonerRestrictionIdResponse(2000)))
         mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(
-          nomisPrisonerRestrictionId = 1000,
+          nomisRestrictionId = 1000,
           mapping = PrisonerRestrictionMappingDto(
             dpsId = "10000",
             nomisId = 1000,
@@ -115,7 +115,7 @@ class PrisonerRestrictionMigrationIntTest(
           ),
         )
         mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(
-          nomisPrisonerRestrictionId = 2000,
+          nomisRestrictionId = 2000,
           mapping = PrisonerRestrictionMappingDto(
             dpsId = "20000",
             nomisId = 2000,
@@ -154,10 +154,10 @@ class PrisonerRestrictionMigrationIntTest(
       @BeforeEach
       fun setUp() {
         nomisApiMock.stubGetPrisonerRestrictionIdsToMigrate(content = listOf(PrisonerRestrictionIdResponse(1000), PrisonerRestrictionIdResponse(2000)))
-        mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId = 1000, mapping = null)
-        mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId = 2000, mapping = null)
-        nomisApiMock.stubGetPrisonerRestrictionById(1000, prisonerRestriction().copy(id = 1000, offenderNo = "A1234KT", type = CodeDescription("BAN", "Banned")))
-        nomisApiMock.stubGetPrisonerRestrictionById(2000, prisonerRestriction().copy(id = 2000, offenderNo = "A4321KT", type = CodeDescription("CCTV", "CCTV")))
+        mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(nomisRestrictionId = 1000, mapping = null)
+        mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(nomisRestrictionId = 2000, mapping = null)
+        nomisApiMock.stubGetPrisonerRestrictionById(1000, nomisPrisonerRestriction().copy(id = 1000, offenderNo = "A1234KT", type = CodeDescription("BAN", "Banned")))
+        nomisApiMock.stubGetPrisonerRestrictionById(2000, nomisPrisonerRestriction().copy(id = 2000, offenderNo = "A4321KT", type = CodeDescription("CCTV", "CCTV")))
         dpsApiMock.stubMigratePrisonerRestriction(prisonerNumber = "A1234KT", prisonerRestrictionResponse().copy(prisonerRestrictionId = 10_000, prisonerNumber = "A1234KT"))
         dpsApiMock.stubMigratePrisonerRestriction(prisonerNumber = "A4321KT", prisonerRestrictionResponse().copy(prisonerRestrictionId = 20_000, prisonerNumber = "A4321KT"))
         mappingApiMock.stubCreateMapping()
@@ -243,7 +243,7 @@ class PrisonerRestrictionMigrationIntTest(
       @BeforeAll
       fun setUp() {
         stubMigratePrisonerRestrictions(
-          prisonerRestriction().copy(
+          nomisPrisonerRestriction().copy(
             id = 1000,
             offenderNo = "A1234KT",
             bookingId = 456,
@@ -252,7 +252,7 @@ class PrisonerRestrictionMigrationIntTest(
             effectiveDate = LocalDate.parse("2024-01-01"),
             enteredStaff = ContactRestrictionEnteredStaff(1234, "T.SMITH"),
           ),
-          prisonerRestriction().copy(
+          nomisPrisonerRestriction().copy(
             id = 2000,
             bookingId = 457,
             offenderNo = "A4321KT",
@@ -322,8 +322,8 @@ class PrisonerRestrictionMigrationIntTest(
       @BeforeEach
       fun setUp() {
         nomisApiMock.stubGetPrisonerRestrictionIdsToMigrate(content = listOf(PrisonerRestrictionIdResponse(1000)))
-        mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId = 1000, mapping = null)
-        nomisApiMock.stubGetPrisonerRestrictionById(1000, prisonerRestriction().copy(id = 1000))
+        mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(nomisRestrictionId = 1000, mapping = null)
+        nomisApiMock.stubGetPrisonerRestrictionById(1000, nomisPrisonerRestriction().copy(id = 1000))
         dpsApiMock.stubMigratePrisonerRestriction("A1234KT", prisonerRestrictionResponse().copy(prisonerRestrictionId = 10_000))
         mappingApiMock.stubCreateMappingFailureFollowedBySuccess()
         mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 1)
@@ -380,8 +380,8 @@ class PrisonerRestrictionMigrationIntTest(
       @BeforeEach
       fun setUp() {
         nomisApiMock.stubGetPrisonerRestrictionIdsToMigrate(content = listOf(PrisonerRestrictionIdResponse(1000)))
-        mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId = 1000, mapping = null)
-        nomisApiMock.stubGetPrisonerRestrictionById(1000, prisonerRestriction().copy(id = 1000))
+        mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(nomisRestrictionId = 1000, mapping = null)
+        nomisApiMock.stubGetPrisonerRestrictionById(1000, nomisPrisonerRestriction().copy(id = 1000))
         dpsApiMock.stubMigratePrisonerRestriction("A1234KT", prisonerRestrictionResponse().copy(prisonerRestrictionId = 10_000))
         mappingApiMock.stubCreateMapping(
           error = DuplicateMappingErrorResponse(
@@ -480,7 +480,7 @@ class PrisonerRestrictionMigrationIntTest(
     mappingApiMock.resetAll()
     nomisApiMock.stubGetPrisonerRestrictionIdsToMigrate(content = nomisPrisonerRestrictions.map { PrisonerRestrictionIdResponse(it.id) })
     nomisPrisonerRestrictions.forEach {
-      mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId = it.id, mapping = null)
+      mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(nomisRestrictionId = it.id, mapping = null)
       nomisApiMock.stubGetPrisonerRestrictionById(it.id, it)
       dpsApiMock.stubMigratePrisonerRestriction(prisonerNumber = it.offenderNo, prisonerRestrictionResponse().copy(prisonerRestrictionId = it.id * 10, prisonerNumber = it.offenderNo))
     }

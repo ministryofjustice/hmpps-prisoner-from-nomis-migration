@@ -29,17 +29,18 @@ class PrisonerRestrictionMappingApiMockServer(private val objectMapper: ObjectMa
   }
 
   fun stubGetByNomisPrisonerRestrictionIdOrNull(
-    nomisPrisonerRestrictionId: Long = 123456,
+    nomisRestrictionId: Long = 123456,
+    dpsRestrictionId: String = UUID.randomUUID().toString(),
     mapping: PrisonerRestrictionMappingDto? = PrisonerRestrictionMappingDto(
       offenderNo = "A1234KT",
-      nomisId = nomisPrisonerRestrictionId,
-      dpsId = UUID.randomUUID().toString(),
+      nomisId = nomisRestrictionId,
+      dpsId = dpsRestrictionId,
       mappingType = PrisonerRestrictionMappingDto.MappingType.MIGRATED,
     ),
   ) {
     mapping?.apply {
       mappingApi.stubFor(
-        get(urlEqualTo("/mapping/contact-person/prisoner-restriction/nomis-prisoner-restriction-id/$nomisPrisonerRestrictionId")).willReturn(
+        get(urlEqualTo("/mapping/contact-person/prisoner-restriction/nomis-prisoner-restriction-id/$nomisRestrictionId")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
@@ -48,7 +49,7 @@ class PrisonerRestrictionMappingApiMockServer(private val objectMapper: ObjectMa
       )
     } ?: run {
       mappingApi.stubFor(
-        get(urlEqualTo("/mapping/contact-person/prisoner-restriction/nomis-prisoner-restriction-id/$nomisPrisonerRestrictionId")).willReturn(
+        get(urlEqualTo("/mapping/contact-person/prisoner-restriction/nomis-prisoner-restriction-id/$nomisRestrictionId")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
@@ -66,7 +67,7 @@ class PrisonerRestrictionMappingApiMockServer(private val objectMapper: ObjectMa
       dpsId = UUID.randomUUID().toString(),
       mappingType = PrisonerRestrictionMappingDto.MappingType.MIGRATED,
     ),
-  ) = stubGetByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId, mapping)
+  ) = stubGetByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId, mapping = mapping)
 
   fun stubCreateMapping() {
     mappingApi.stubFor(
