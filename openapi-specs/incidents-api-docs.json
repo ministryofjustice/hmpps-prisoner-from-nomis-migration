@@ -11,7 +11,7 @@
       "name" : "MIT",
       "identifier" : "MIT"
     },
-    "version" : "2025-07-01.34.46c3167"
+    "version" : "2025-07-07.49.5f62719"
   },
   "servers" : [ {
     "url" : "/",
@@ -3363,8 +3363,7 @@
           "in" : "query",
           "required" : false,
           "schema" : {
-            "type" : "boolean",
-            "default" : false
+            "type" : "boolean"
           }
         }, {
           "name" : "filters",
@@ -3497,8 +3496,7 @@
           "in" : "query",
           "required" : false,
           "schema" : {
-            "type" : "boolean",
-            "default" : false
+            "type" : "boolean"
           }
         }, {
           "name" : "filters",
@@ -4933,6 +4931,12 @@
             "maxLength" : 2147483647,
             "minLength" : 1
           },
+          "label" : {
+            "type" : "string",
+            "description" : "The response text as seen by the user at the point of entry",
+            "maxLength" : 2147483647,
+            "minLength" : 1
+          },
           "responseDate" : {
             "type" : "string",
             "format" : "date",
@@ -4946,7 +4950,7 @@
             "description" : "Optional additional information"
           }
         },
-        "required" : [ "response" ],
+        "required" : [ "label", "response" ],
         "writeOnly" : true
       },
       "AddOrUpdateQuestionWithResponses" : {
@@ -4962,6 +4966,12 @@
           "question" : {
             "type" : "string",
             "description" : "The question text as seen by downstream data consumers",
+            "maxLength" : 2147483647,
+            "minLength" : 1
+          },
+          "label" : {
+            "type" : "string",
+            "description" : "The question text as seen by the user at the point of entry",
             "maxLength" : 2147483647,
             "minLength" : 1
           },
@@ -4981,7 +4991,7 @@
             "description" : "Optional additional information"
           }
         },
-        "required" : [ "code", "question", "responses" ],
+        "required" : [ "code", "label", "question", "responses" ],
         "writeOnly" : true
       },
       "Question" : {
@@ -4995,6 +5005,10 @@
           "question" : {
             "type" : "string",
             "description" : "The question text as seen by downstream data consumers"
+          },
+          "label" : {
+            "type" : "string",
+            "description" : "The question text as seen by the user at the point of entry"
           },
           "sequence" : {
             "type" : "integer",
@@ -5015,7 +5029,7 @@
           }
         },
         "readOnly" : true,
-        "required" : [ "code", "question", "responses", "sequence" ]
+        "required" : [ "code", "label", "question", "responses", "sequence" ]
       },
       "Response" : {
         "type" : "object",
@@ -5028,6 +5042,10 @@
           "response" : {
             "type" : "string",
             "description" : "The response text as seen by downstream data consumers"
+          },
+          "label" : {
+            "type" : "string",
+            "description" : "The response text as seen by the user at the point of entry"
           },
           "sequence" : {
             "type" : "integer",
@@ -5058,7 +5076,7 @@
           }
         },
         "readOnly" : true,
-        "required" : [ "recordedAt", "recordedBy", "response", "sequence" ]
+        "required" : [ "label", "recordedAt", "recordedBy", "response", "sequence" ]
       },
       "DescriptionAddendum" : {
         "type" : "object",
@@ -5782,6 +5800,10 @@
             "type" : "string",
             "description" : "The question text as seen by downstream data consumers"
           },
+          "label" : {
+            "type" : "string",
+            "description" : "The question text as seen by the user at the point of entry"
+          },
           "sequence" : {
             "type" : "integer",
             "format" : "int32",
@@ -5801,7 +5823,7 @@
           }
         },
         "readOnly" : true,
-        "required" : [ "code", "question", "responses", "sequence" ]
+        "required" : [ "code", "label", "question", "responses", "sequence" ]
       },
       "HistoricalResponse" : {
         "type" : "object",
@@ -5814,6 +5836,10 @@
           "response" : {
             "type" : "string",
             "description" : "The response text as seen by downstream data consumers"
+          },
+          "label" : {
+            "type" : "string",
+            "description" : "The response text as seen by the user at the point of entry"
           },
           "sequence" : {
             "type" : "integer",
@@ -5843,7 +5869,7 @@
           }
         },
         "readOnly" : true,
-        "required" : [ "recordedAt", "recordedBy", "response", "sequence" ]
+        "required" : [ "label", "recordedAt", "recordedBy", "response", "sequence" ]
       },
       "History" : {
         "type" : "object",
@@ -6767,6 +6793,10 @@
           },
           "defaultsort" : {
             "type" : "boolean"
+          },
+          "sortDirection" : {
+            "type" : "string",
+            "enum" : [ "asc", "desc" ]
           },
           "type" : {
             "type" : "string",
