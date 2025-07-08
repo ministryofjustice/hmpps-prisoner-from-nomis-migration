@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-06-30.181.50f1dd0"
+    "version" : "2025-07-07.230.69a817c"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -4597,6 +4597,58 @@
             }
           }
         }
+      },
+      "delete" : {
+        "tags" : [ "incident-resource" ],
+        "summary" : "Delete an incident using the specified id",
+        "description" : "Delete an incident. Requires ROLE_NOMIS_INCIDENTS",
+        "operationId" : "deleteIncident",
+        "parameters" : [ {
+          "name" : "incidentId",
+          "in" : "path",
+          "description" : "Incident id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Incident id"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Incident delete"
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_INCIDENTS",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Incident does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/incentives/reference-codes/{code}" : {
@@ -7863,156 +7915,6 @@
           },
           "404" : {
             "description" : "Not found",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/service-prisons/{serviceCode}/prison/{prisonId}" : {
-      "get" : {
-        "tags" : [ "service-prison-switches-resource" ],
-        "summary" : "Returns if the service is switched on for the specified service code / prison id.",
-        "description" : "Returns 204 if the service is switched on for the service code / prison id combination.\n    If the service is not switched on then 404 is returned.\n    This endpoint also takes into account the special `*ALL*` prison id - if the service code has a prison entry of\n    `*ALL*` then the service is deemed to be switched on for all prisons and will therefore return 204 irrespective of the\n    prison id that is passed in.\n    Requires role NOMIS_ACTIVITIES or ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
-        "operationId" : "checkServicePrison",
-        "parameters" : [ {
-          "name" : "serviceCode",
-          "in" : "path",
-          "description" : "The code of the service from the EXTERNAL_SERVICES table",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The code of the service from the EXTERNAL_SERVICES table",
-            "example" : "ACTIVITY"
-          },
-          "example" : "ACTIVITY"
-        }, {
-          "name" : "prisonId",
-          "in" : "path",
-          "description" : "The id of the prison",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The id of the prison",
-            "example" : "MDI"
-          },
-          "example" : "MDI"
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Service is switched on for the service code and prison id."
-          },
-          "400" : {
-            "description" : "Bad request",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden, requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "The service code does not exist or the service is not switched on for the prison.",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post" : {
-        "tags" : [ "service-prison-switches-resource" ],
-        "summary" : "Turn on a service for a prison",
-        "description" : "Turn on a service for a prison. Requires role NOMIS_ACTIVITIES",
-        "operationId" : "createServicePrison",
-        "parameters" : [ {
-          "name" : "serviceCode",
-          "in" : "path",
-          "description" : "The code of the service from the EXTERNAL_SERVICES table",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The code of the service from the EXTERNAL_SERVICES table",
-            "example" : "ACTIVITY"
-          },
-          "example" : "ACTIVITY"
-        }, {
-          "name" : "prisonId",
-          "in" : "path",
-          "description" : "The id of the prison",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The id of the prison",
-            "example" : "MDI"
-          },
-          "example" : "MDI"
-        } ],
-        "responses" : {
-          "201" : {
-            "description" : "Created"
-          },
-          "400" : {
-            "description" : "Bad request",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden, requires role NOMIS_ACTIVITIES",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found, the service or prison do not exist",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -12485,145 +12387,6 @@
         }
       }
     },
-    "/service-prisons/{serviceCode}" : {
-      "get" : {
-        "tags" : [ "service-prison-switches-resource" ],
-        "summary" : "Retrieve a list of prisons switched on for the service code",
-        "description" : "Returns a list of prisons switched on for the service code.\n      A special prisonId of `*ALL*` is used to designate that the service is switched on for all prisons.\n      Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
-        "operationId" : "getServicePrisons",
-        "parameters" : [ {
-          "name" : "serviceCode",
-          "in" : "path",
-          "description" : "The code of the service from the EXTERNAL_SERVICES table",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The code of the service from the EXTERNAL_SERVICES table"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/PrisonDetails"
-                  }
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Bad request",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden, requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/service-prisons/{serviceCode}/prisoner/{prisonNumber}" : {
-      "get" : {
-        "tags" : [ "service-prison-switches-resource" ],
-        "summary" : "Check if a service is turned on for the prison relating to this prisoner",
-        "description" : "Check if the prisoner's current prison is turned on for a service. Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
-        "operationId" : "checkServicePrisonForPrisoner",
-        "parameters" : [ {
-          "name" : "serviceCode",
-          "in" : "path",
-          "description" : "The code of the service from the EXTERNAL_SERVICES table",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "The code of the service from the EXTERNAL_SERVICES table",
-            "example" : "ACTIVITY"
-          },
-          "example" : "ACTIVITY"
-        }, {
-          "name" : "prisonNumber",
-          "in" : "path",
-          "description" : "Offender No AKA prisoner number",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Offender No AKA prisoner number",
-            "example" : "A1234BC"
-          },
-          "example" : "A1234BC"
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "OK"
-          },
-          "400" : {
-            "description" : "Bad request",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden, requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found, the service is not turned on for the prison",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/schedules/max-id" : {
       "get" : {
         "tags" : [ "activities-resource" ],
@@ -15502,8 +15265,8 @@
     "/incidents/reconciliation/agencies" : {
       "get" : {
         "tags" : [ "incident-resource" ],
-        "summary" : "Retrieve a list of all agencies that have raised incidents)",
-        "description" : "Retrieve a list of all agencies that have raised incidents, including prisons and PECS. Requires authorised access",
+        "summary" : "Retrieve a list of all agencies by id that have raised incidents)",
+        "description" : "Retrieve a list of all agencies by id that have raised incidents, including prisons and PECS. Requires authorised access",
         "operationId" : "getIncidentAgencies",
         "responses" : {
           "200" : {
@@ -17530,7 +17293,7 @@
         "tags" : [ "service-agency-switches-resource" ],
         "summary" : "Check if a service is turned on for the prison relating to this prisoner",
         "description" : "Check if the prisoner's current prison is turned on for a service. Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
-        "operationId" : "checkServicePrisonForPrisoner_1",
+        "operationId" : "checkServicePrisonForPrisoner",
         "parameters" : [ {
           "name" : "serviceCode",
           "in" : "path",
@@ -18260,7 +18023,7 @@
         "tags" : [ "adjudication-resource" ],
         "summary" : "**** Used to recover from a duplicate incident creation only ***** Deletes an incident by adjudication number.",
         "description" : "Deletes an incident by adjudication number. Supports the removal of a duplicate incident without a DPS mapping. Requires ROLE_NOMIS_ADJUDICATIONS",
-        "operationId" : "deleteIncident",
+        "operationId" : "deleteIncident_1",
         "parameters" : [ {
           "name" : "adjudicationNumber",
           "in" : "path",
@@ -18310,12 +18073,12 @@
         "parameters" : [ {
           "name" : "csipId",
           "in" : "path",
-          "description" : "CSIP Factor Id",
+          "description" : "CSIP Report Id",
           "required" : true,
           "schema" : {
             "type" : "integer",
             "format" : "int64",
-            "description" : "CSIP Factor Id",
+            "description" : "CSIP Report Id",
             "example" : 12345
           },
           "example" : 12345
@@ -21940,9 +21703,33 @@
               "type" : "integer",
               "format" : "int64"
             }
+          },
+          "sentenceAdjustmentsActivated" : {
+            "type" : "array",
+            "description" : "the sentence adjustments and parent sentence that have been activate by the recall",
+            "items" : {
+              "$ref" : "#/components/schemas/SentenceIdAndAdjustmentIds"
+            }
           }
         },
-        "required" : [ "courtEventIds" ]
+        "required" : [ "courtEventIds", "sentenceAdjustmentsActivated" ]
+      },
+      "SentenceIdAndAdjustmentIds" : {
+        "type" : "object",
+        "description" : "Recall convert response",
+        "properties" : {
+          "sentenceId" : {
+            "$ref" : "#/components/schemas/SentenceId"
+          },
+          "adjustmentIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          }
+        },
+        "required" : [ "adjustmentIds", "sentenceId" ]
       },
       "CreateSentenceResponse" : {
         "type" : "object",
@@ -24487,23 +24274,6 @@
           }
         },
         "required" : [ "prisonId" ]
-      },
-      "PrisonDetails" : {
-        "type" : "object",
-        "description" : "A prison",
-        "properties" : {
-          "prisonId" : {
-            "type" : "string",
-            "description" : "The prison code",
-            "example" : "BXI"
-          },
-          "name" : {
-            "type" : "string",
-            "description" : "The prison name",
-            "example" : "Brixton"
-          }
-        },
-        "required" : [ "name", "prisonId" ]
       },
       "SentenceAdjustmentResponse" : {
         "type" : "object",
