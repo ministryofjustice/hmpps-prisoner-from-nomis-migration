@@ -47,10 +47,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreateEmploymentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncEmployment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerContactRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerRelationship
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncRelationshipRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateContactAddressRequest
@@ -62,6 +64,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdateEmploymentRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerContactRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDate
@@ -478,6 +481,44 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       updatedBy = null,
       updatedTime = null,
     )
+
+    fun createPrisonerRestrictionRequest() = SyncCreatePrisonerRestrictionRequest(
+      prisonerNumber = "A1234KT",
+      restrictionType = "BAN",
+      effectiveDate = LocalDate.parse("2024-01-01"),
+      currentTerm = true,
+      authorisedUsername = "J.SMITH",
+      createdBy = "J.SMITH",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+      expiryDate = LocalDate.parse("2024-12-31"),
+      commentText = "Test restriction",
+    )
+
+    fun prisonerRestriction() = SyncPrisonerRestriction(
+      prisonerRestrictionId = 12345,
+      prisonerNumber = "A1234KT",
+      restrictionType = "BAN",
+      effectiveDate = LocalDate.parse("2024-01-01"),
+      authorisedUsername = "J.SMITH",
+      currentTerm = true,
+      createdBy = "J.SMITH",
+      createdTime = LocalDateTime.parse("2024-01-01T12:13"),
+      expiryDate = LocalDate.parse("2024-12-31"),
+      commentText = "Test restriction",
+    )
+
+    fun updatePrisonerRestrictionRequest() = SyncUpdatePrisonerRestrictionRequest(
+      prisonerNumber = "A1234KT",
+      restrictionType = "BAN",
+      effectiveDate = LocalDate.parse("2024-01-01"),
+      authorisedUsername = "J.SMITH",
+      updatedBy = "J.SMITH",
+      updatedTime = LocalDateTime.parse("2024-01-01T12:13"),
+      expiryDate = LocalDate.parse("2024-12-31"),
+      currentTerm = true,
+      commentText = "Test restriction",
+    )
+
     fun prisonerRestrictionResponse() = PrisonerRestrictionMigrationResponse(
       prisonerNumber = "A1234KT",
       prisonerRestrictionId = 1234,
@@ -890,6 +931,41 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
             .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubCreatePrisonerRestriction(response: SyncPrisonerRestriction = prisonerRestriction()) {
+    stubFor(
+      post("/sync/prisoner-restriction")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubUpdatePrisonerRestriction(prisonerRestrictionId: Long, response: SyncPrisonerRestriction = prisonerRestriction()) {
+    stubFor(
+      post("/sync/prisoner-restriction/$prisonerRestrictionId")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubDeletePrisonerRestriction(prisonerRestrictionId: Long, status: Int = 204) {
+    stubFor(
+      delete("/sync/prisoner-restriction/$prisonerRestrictionId")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json"),
         ),
     )
   }

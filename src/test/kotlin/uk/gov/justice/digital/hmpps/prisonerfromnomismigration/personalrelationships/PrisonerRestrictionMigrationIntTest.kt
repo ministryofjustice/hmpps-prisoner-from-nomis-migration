@@ -160,7 +160,7 @@ class PrisonerRestrictionMigrationIntTest(
         nomisApiMock.stubGetPrisonerRestrictionById(2000, prisonerRestriction().copy(id = 2000, offenderNo = "A4321KT", type = CodeDescription("CCTV", "CCTV")))
         dpsApiMock.stubMigratePrisonerRestriction(prisonerNumber = "A1234KT", prisonerRestrictionResponse().copy(prisonerRestrictionId = 10_000, prisonerNumber = "A1234KT"))
         dpsApiMock.stubMigratePrisonerRestriction(prisonerNumber = "A4321KT", prisonerRestrictionResponse().copy(prisonerRestrictionId = 20_000, prisonerNumber = "A4321KT"))
-        mappingApiMock.stubCreateMappingForMigration()
+        mappingApiMock.stubCreateMapping()
         mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
         migrationResult = performMigration()
       }
@@ -325,7 +325,7 @@ class PrisonerRestrictionMigrationIntTest(
         mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId = 1000, mapping = null)
         nomisApiMock.stubGetPrisonerRestrictionById(1000, prisonerRestriction().copy(id = 1000))
         dpsApiMock.stubMigratePrisonerRestriction("A1234KT", prisonerRestrictionResponse().copy(prisonerRestrictionId = 10_000))
-        mappingApiMock.stubCreateMappingForMigrationFailureFollowedBySuccess()
+        mappingApiMock.stubCreateMappingFailureFollowedBySuccess()
         mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 1)
         migrationResult = performMigration()
       }
@@ -383,7 +383,7 @@ class PrisonerRestrictionMigrationIntTest(
         mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId = 1000, mapping = null)
         nomisApiMock.stubGetPrisonerRestrictionById(1000, prisonerRestriction().copy(id = 1000))
         dpsApiMock.stubMigratePrisonerRestriction("A1234KT", prisonerRestrictionResponse().copy(prisonerRestrictionId = 10_000))
-        mappingApiMock.stubCreateMappingForMigration(
+        mappingApiMock.stubCreateMapping(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
               duplicate = PrisonerRestrictionMappingDto(
@@ -484,7 +484,7 @@ class PrisonerRestrictionMigrationIntTest(
       nomisApiMock.stubGetPrisonerRestrictionById(it.id, it)
       dpsApiMock.stubMigratePrisonerRestriction(prisonerNumber = it.offenderNo, prisonerRestrictionResponse().copy(prisonerRestrictionId = it.id * 10, prisonerNumber = it.offenderNo))
     }
-    mappingApiMock.stubCreateMappingForMigration()
+    mappingApiMock.stubCreateMapping()
     mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = nomisPrisonerRestrictions.size)
   }
 }

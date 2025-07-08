@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -82,10 +83,60 @@ class PrisonerRestrictionMappingApiServiceTest {
   }
 
   @Nested
-  inner class CreateMappingForMigration {
+  inner class GetByNomisPrisonerRestrictionId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetByNomisPrisonerRestrictionId(nomisPrisonerRestrictionId = 1234567)
+
+      apiService.getByNomisPrisonerRestrictionId(nomisPrisonerRestrictionId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetByNomisPrisonerRestrictionId(nomisPrisonerRestrictionId = 1234567)
+
+      apiService.getByNomisPrisonerRestrictionId(nomisPrisonerRestrictionId = 1234567)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/mapping/contact-person/prisoner-restriction/nomis-prisoner-restriction-id/1234567")),
+      )
+    }
+  }
+
+  @Nested
+  inner class DeleteByNomisPrisonerRestrictionId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubDeleteByNomisPrisonerRestrictionId(nomisPrisonerRestrictionId = 1234567)
+
+      apiService.deleteByNomisPrisonerRestrictionId(nomisPrisonerRestrictionId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubDeleteByNomisPrisonerRestrictionId(nomisPrisonerRestrictionId = 1234567)
+
+      apiService.deleteByNomisPrisonerRestrictionId(nomisPrisonerRestrictionId = 1234567)
+
+      mockServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/mapping/contact-person/prisoner-restriction/nomis-prisoner-restriction-id/1234567")),
+      )
+    }
+  }
+
+  @Nested
+  inner class CreateMapping {
     @Test
     internal fun `will pass oath2 token to migrate endpoint`() = runTest {
-      mockServer.stubCreateMappingForMigration()
+      mockServer.stubCreateMapping()
 
       apiService.createMapping(
         PrisonerRestrictionMappingDto(
@@ -105,7 +156,7 @@ class PrisonerRestrictionMappingApiServiceTest {
 
     @Test
     fun `will return success when OK response`() = runTest {
-      mockServer.stubCreateMappingForMigration()
+      mockServer.stubCreateMapping()
 
       val result = apiService.createMapping(
         PrisonerRestrictionMappingDto(
@@ -127,7 +178,7 @@ class PrisonerRestrictionMappingApiServiceTest {
       val dpsId = "956d4326-b0c3-47ac-ab12-f0165109a6c5"
       val existingDpsId = "f612a10f-4827-4022-be96-d882193dfabd"
 
-      mockServer.stubCreateMappingForMigration(
+      mockServer.stubCreateMapping(
         error = DuplicateMappingErrorResponse(
           moreInfo = DuplicateErrorContentObject(
             duplicate = PrisonerRestrictionMappingDto(
