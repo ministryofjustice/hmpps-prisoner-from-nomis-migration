@@ -34,7 +34,7 @@ class PrisonerRestrictionMappingApiServiceTest {
   inner class GetByNomisPrisonerRestrictionIdOrNull {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      mockServer.stubGetByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId = 1234567)
+      mockServer.stubGetByNomisPrisonerRestrictionIdOrNull(nomisRestrictionId = 1234567)
 
       apiService.getByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId = 1234567)
 
@@ -45,7 +45,7 @@ class PrisonerRestrictionMappingApiServiceTest {
 
     @Test
     internal fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubGetByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId = 1234567)
+      mockServer.stubGetByNomisPrisonerRestrictionIdOrNull(nomisRestrictionId = 1234567)
 
       apiService.getByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId = 1234567)
 
@@ -57,7 +57,7 @@ class PrisonerRestrictionMappingApiServiceTest {
     @Test
     fun `will return dpsId when mapping exists`() = runTest {
       mockServer.stubGetByNomisPrisonerRestrictionIdOrNull(
-        nomisPrisonerRestrictionId = 1234567,
+        nomisRestrictionId = 1234567,
         mapping = PrisonerRestrictionMappingDto(
           dpsId = "1234567",
           nomisId = 1234567,
@@ -74,7 +74,7 @@ class PrisonerRestrictionMappingApiServiceTest {
     @Test
     fun `will return null if mapping does not exist`() = runTest {
       mockServer.stubGetByNomisPrisonerRestrictionIdOrNull(
-        nomisPrisonerRestrictionId = 1234567,
+        nomisRestrictionId = 1234567,
         mapping = null,
       )
 

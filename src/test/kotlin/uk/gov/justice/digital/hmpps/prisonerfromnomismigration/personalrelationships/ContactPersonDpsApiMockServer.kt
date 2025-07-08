@@ -494,7 +494,7 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       commentText = "Test restriction",
     )
 
-    fun prisonerRestriction() = SyncPrisonerRestriction(
+    fun dpsPrisonerRestriction() = SyncPrisonerRestriction(
       prisonerRestrictionId = 12345,
       prisonerNumber = "A1234KT",
       restrictionType = "BAN",
@@ -935,7 +935,7 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubCreatePrisonerRestriction(response: SyncPrisonerRestriction = prisonerRestriction()) {
+  fun stubCreatePrisonerRestriction(response: SyncPrisonerRestriction = dpsPrisonerRestriction()) {
     stubFor(
       post("/sync/prisoner-restriction")
         .willReturn(
@@ -947,7 +947,7 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubUpdatePrisonerRestriction(prisonerRestrictionId: Long, response: SyncPrisonerRestriction = prisonerRestriction()) {
+  fun stubUpdatePrisonerRestriction(prisonerRestrictionId: Long, response: SyncPrisonerRestriction = dpsPrisonerRestriction()) {
     stubFor(
       post("/sync/prisoner-restriction/$prisonerRestrictionId")
         .willReturn(
