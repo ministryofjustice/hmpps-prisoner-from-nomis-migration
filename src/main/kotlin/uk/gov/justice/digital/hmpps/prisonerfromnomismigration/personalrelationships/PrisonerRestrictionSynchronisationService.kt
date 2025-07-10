@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerRestrictionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -74,9 +75,11 @@ class PrisonerRestrictionSynchronisationService(
     }
   }
   suspend fun prisonerRestrictionUpdated(event: PrisonerRestrictionEvent) {
+    val nomisRestrictionId = event.offenderRestrictionId
+    val offenderNo = event.offenderIdDisplay
     val telemetry = telemetryOf(
-      "offenderNo" to event.offenderIdDisplay,
-      "nomisRestrictionId" to event.offenderRestrictionId,
+      "offenderNo" to offenderNo,
+      "nomisRestrictionId" to nomisRestrictionId,
     )
     if (event.doesOriginateInDps()) {
       telemetryClient.trackEvent(
@@ -85,7 +88,9 @@ class PrisonerRestrictionSynchronisationService(
       )
     } else {
       track("contactperson-prisoner-restriction-synchronisation-updated", telemetry) {
-        // TODO - sync
+        val mapping = mappingApiService.getByNomisPrisonerRestrictionId(nomisRestrictionId)
+        val nomisRestriction = nomisApiService.getPrisonerRestrictionById(nomisRestrictionId)
+        dpsApiService.updatePrisonerRestriction(prisonerRestrictionId = mapping.dpsId.toLong(), nomisRestriction.toDpsSyncUpdatePrisonerRestrictionRequest())
       }
     }
   }
@@ -95,7 +100,6 @@ class PrisonerRestrictionSynchronisationService(
       "nomisRestrictionId" to event.offenderRestrictionId,
     )
     track("contactperson-prisoner-restriction-synchronisation-deleted", telemetry) {
-      // TODO - sync
     }
   }
 
@@ -145,7 +149,7 @@ class PrisonerRestrictionSynchronisationService(
   }
 }
 
-fun PrisonerRestriction.toDpsSyncCreatePrisonerRestrictionRequest(): SyncCreatePrisonerRestrictionRequest = SyncCreatePrisonerRestrictionRequest(
+fun PrisonerRestriction.toDpsSyncCreatePrisonerRestrictionRequest() = SyncCreatePrisonerRestrictionRequest(
   restrictionType = this.type.code,
   effectiveDate = this.effectiveDate,
   authorisedUsername = this.authorisedStaff.username,
@@ -155,4 +159,15 @@ fun PrisonerRestriction.toDpsSyncCreatePrisonerRestrictionRequest(): SyncCreateP
   createdTime = this.audit.createDatetime,
   createdBy = this.enteredStaff.username,
   prisonerNumber = this.offenderNo,
+)
+fun PrisonerRestriction.toDpsSyncUpdatePrisonerRestrictionRequest() = SyncUpdatePrisonerRestrictionRequest(
+  restrictionType = this.type.code,
+  effectiveDate = this.effectiveDate,
+  authorisedUsername = this.authorisedStaff.username,
+  currentTerm = this.bookingSequence == 1L,
+  expiryDate = this.expiryDate,
+  commentText = this.comment,
+  prisonerNumber = this.offenderNo,
+  updatedTime = this.audit.modifyDatetime,
+  updatedBy = this.enteredStaff.username,
 )

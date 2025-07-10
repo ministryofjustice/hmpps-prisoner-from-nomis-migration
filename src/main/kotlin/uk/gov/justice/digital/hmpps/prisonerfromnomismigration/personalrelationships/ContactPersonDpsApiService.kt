@@ -306,7 +306,7 @@ class ContactPersonDpsApiService(
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun updatePrisonerRestriction(prisonerRestrictionId: Long, restriction: SyncUpdatePrisonerRestrictionRequest): SyncPrisonerRestriction = webClient.post()
+  suspend fun updatePrisonerRestriction(prisonerRestrictionId: Long, restriction: SyncUpdatePrisonerRestrictionRequest): SyncPrisonerRestriction = webClient.put()
     .uri("/sync/prisoner-restriction/{prisonerRestrictionId}", prisonerRestrictionId)
     .bodyValue(restriction)
     .retrieve()

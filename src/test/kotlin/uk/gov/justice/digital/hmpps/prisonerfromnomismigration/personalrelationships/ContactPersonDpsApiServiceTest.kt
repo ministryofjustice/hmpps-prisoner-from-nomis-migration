@@ -1149,7 +1149,7 @@ class ContactPersonDpsApiServiceTest {
       apiService.updatePrisonerRestriction(prisonerRestrictionId, updatePrisonerRestrictionRequest())
 
       dpsContactPersonServer.verify(
-        postRequestedFor(anyUrl())
+        putRequestedFor(anyUrl())
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
@@ -1161,7 +1161,7 @@ class ContactPersonDpsApiServiceTest {
       apiService.updatePrisonerRestriction(prisonerRestrictionId, updatePrisonerRestrictionRequest())
 
       dpsContactPersonServer.verify(
-        postRequestedFor(urlPathEqualTo("/sync/prisoner-restriction/$prisonerRestrictionId")),
+        putRequestedFor(urlPathEqualTo("/sync/prisoner-restriction/$prisonerRestrictionId")),
       )
     }
   }
