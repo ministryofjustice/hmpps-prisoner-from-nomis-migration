@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-07-07.168.6981f90"
+    "version" : "2025-07-09.209.b729063"
   },
   "servers" : [ {
     "url" : "https://remand-and-sentencing-api.hmpps.service.justice.gov.uk",
@@ -2273,11 +2273,60 @@
             }
           },
           "404" : {
-            "description" : "Not found if no charge at uuid",
+            "description" : "Not found if no sentence at uuid",
             "content" : {
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/Sentence"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sentence/{sentenceUuid}/has-sentences-after-on-other-court-appearance" : {
+      "get" : {
+        "tags" : [ "sentence-controller" ],
+        "summary" : "Any sentences after on another appearance",
+        "description" : "This endpoint will return true if any other sentence has a consecutive to link to the sentence at sentenceUuid that is on a different court appearance",
+        "operationId" : "hasSentencesAfterOnOtherCase",
+        "parameters" : [ {
+          "name" : "sentenceUuid",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Returns true or false",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HasSentenceAfterOnOtherCourtAppearanceResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HasSentenceAfterOnOtherCourtAppearanceResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HasSentenceAfterOnOtherCourtAppearanceResponse"
                 }
               }
             }
@@ -4432,7 +4481,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "16:47:21.14074442"
+            "example" : "17:17:01.577966712"
           },
           "outcomeDispositionCode" : {
             "type" : "string"
@@ -4729,7 +4778,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "16:47:21.14074442"
+            "example" : "17:17:01.577966712"
           },
           "courtCode" : {
             "type" : "string"
@@ -5523,6 +5572,15 @@
         },
         "required" : [ "classification", "description", "displayOrder", "sentenceTypeUuid" ]
       },
+      "HasSentenceAfterOnOtherCourtAppearanceResponse" : {
+        "type" : "object",
+        "properties" : {
+          "hasSentenceAfterOnOtherCourtAppearance" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "hasSentenceAfterOnOtherCourtAppearance" ]
+      },
       "SentenceConsecutiveToDetails" : {
         "type" : "object",
         "properties" : {
@@ -5613,6 +5671,10 @@
           "createdByPrison" : {
             "type" : "string"
           },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "NOMIS", "DPS" ]
+          },
           "sentences" : {
             "type" : "array",
             "items" : {
@@ -5626,7 +5688,7 @@
             }
           }
         },
-        "required" : [ "createdAt", "createdByUsername", "prisonerId", "recallType", "recallUuid" ]
+        "required" : [ "createdAt", "createdByUsername", "prisonerId", "recallType", "recallUuid", "source" ]
       },
       "PersonDetails" : {
         "type" : "object",
@@ -5920,7 +5982,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "16:47:21.14074442"
+            "example" : "17:17:01.577966712"
           },
           "courtCode" : {
             "type" : "string"
@@ -6324,7 +6386,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "16:47:21.14074442"
+            "example" : "17:17:01.577966712"
           },
           "charges" : {
             "type" : "array",
@@ -6347,7 +6409,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "16:47:21.14074442"
+            "example" : "17:17:01.577966712"
           },
           "courtId" : {
             "type" : "string"
@@ -6438,7 +6500,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "16:47:21.14074442"
+            "example" : "17:17:01.577966712"
           },
           "nomisOutcomeCode" : {
             "type" : "string"
@@ -6494,7 +6556,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "16:47:21.14074442"
+            "example" : "17:17:01.577966712"
           },
           "courtId" : {
             "type" : "string"
@@ -6615,29 +6677,13 @@
           "sentences" : {
             "type" : "array",
             "items" : {
-              "$ref" : "#/components/schemas/RecallableSentence"
+              "$ref" : "#/components/schemas/RecallableCourtCaseSentence"
             }
           }
         },
         "required" : [ "courtCaseUuid", "courtCode", "date", "isSentenced", "reference", "sentences", "status" ]
       },
-      "RecallableCourtCasesResponse" : {
-        "type" : "object",
-        "properties" : {
-          "totalCases" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "cases" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/RecallableCourtCase"
-            }
-          }
-        },
-        "required" : [ "cases", "totalCases" ]
-      },
-      "RecallableSentence" : {
+      "RecallableCourtCaseSentence" : {
         "type" : "object",
         "properties" : {
           "sentenceUuid" : {
@@ -6695,9 +6741,28 @@
           },
           "outcomeDescription" : {
             "type" : "string"
+          },
+          "isRecallable" : {
+            "type" : "boolean"
           }
         },
-        "required" : [ "periodLengths", "sentenceUuid", "systemOfRecord" ]
+        "required" : [ "isRecallable", "periodLengths", "sentenceUuid", "systemOfRecord" ]
+      },
+      "RecallableCourtCasesResponse" : {
+        "type" : "object",
+        "properties" : {
+          "totalCases" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "cases" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RecallableCourtCase"
+            }
+          }
+        },
+        "required" : [ "cases", "totalCases" ]
       },
       "CourtCaseCountNumber" : {
         "type" : "object",
@@ -6745,13 +6810,13 @@
       "PageCourtCase" : {
         "type" : "object",
         "properties" : {
-          "totalPages" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "totalElements" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "first" : {
             "type" : "boolean"
@@ -6831,13 +6896,13 @@
       "PagePagedCourtCase" : {
         "type" : "object",
         "properties" : {
-          "totalPages" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "totalElements" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "first" : {
             "type" : "boolean"
@@ -7088,7 +7153,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "16:47:21.14074442"
+            "example" : "17:17:01.577966712"
           },
           "courtCode" : {
             "type" : "string"

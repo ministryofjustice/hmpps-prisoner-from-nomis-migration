@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-07-07.230.69a817c"
+    "version" : "2025-07-09.251.a1feff8"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -14962,6 +14962,68 @@
         }
       }
     },
+    "/movements/{offenderNo}/temporary-absences" : {
+      "get" : {
+        "tags" : [ "movements-resource" ],
+        "summary" : "Get temporary absence applications, schedules and external movements for an offender",
+        "description" : "Get temporary absence applications, schedules and external movements for an offender. This is used to migrate temporary absences to DPS. Requires role NOMIS_MOVEMENTS",
+        "operationId" : "getTemporaryAbsencesAndMovements",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "description" : "Offender number (NOMS ID)",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Offender number (NOMS ID)",
+            "example" : "A1234BC"
+          },
+          "example" : "A1234BC"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Offender temporary absences returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OffenderTemporaryAbsencesResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires role NOMIS_MOVEMENTS",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Offender not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/locations/{id}" : {
       "get" : {
         "tags" : [ "location-resource" ],
@@ -24018,15 +24080,15 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "paged" : {
             "type" : "boolean"
           },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           }
         }
       },
@@ -27555,6 +27617,398 @@
             "type" : "boolean"
           }
         }
+      },
+      "BookingTemporaryAbsencesResponse" : {
+        "type" : "object",
+        "description" : "Booking temporary absences",
+        "properties" : {
+          "bookingId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Booking ID"
+          },
+          "temporaryAbsenceApplications" : {
+            "type" : "array",
+            "description" : "Temporary absence applications",
+            "items" : {
+              "$ref" : "#/components/schemas/TemporaryAbsenceApplicationResponse"
+            }
+          },
+          "unscheduledTemporaryAbsences" : {
+            "type" : "array",
+            "description" : "Unscheduled temporary absences OUT - those without an application or a schedule",
+            "items" : {
+              "$ref" : "#/components/schemas/TemporaryAbsenceResponse"
+            }
+          },
+          "unscheduledTemporaryAbsenceReturns" : {
+            "type" : "array",
+            "description" : "Unscheduled temporary absences IN - those without an application or a schedule",
+            "items" : {
+              "$ref" : "#/components/schemas/TemporaryAbsenceReturnResponse"
+            }
+          }
+        },
+        "required" : [ "bookingId", "temporaryAbsenceApplications", "unscheduledTemporaryAbsenceReturns", "unscheduledTemporaryAbsences" ]
+      },
+      "OffenderTemporaryAbsencesResponse" : {
+        "type" : "object",
+        "description" : "Offender temporary absences by booking, including applications and scheduled absences",
+        "properties" : {
+          "bookings" : {
+            "type" : "array",
+            "description" : "List of bookings with their temporary absences and external movements",
+            "items" : {
+              "$ref" : "#/components/schemas/BookingTemporaryAbsencesResponse"
+            }
+          }
+        },
+        "required" : [ "bookings" ]
+      },
+      "ScheduledTemporaryAbsenceResponse" : {
+        "type" : "object",
+        "description" : "Scheduled temporary absence response",
+        "properties" : {
+          "eventId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Event ID"
+          },
+          "eventDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Event date"
+          },
+          "startTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Start time"
+          },
+          "eventSubType" : {
+            "type" : "string",
+            "description" : "Event sub type"
+          },
+          "eventStatus" : {
+            "type" : "string",
+            "description" : "Event status"
+          },
+          "comment" : {
+            "type" : "string",
+            "description" : "Comment"
+          },
+          "escort" : {
+            "type" : "string",
+            "description" : "Escort"
+          },
+          "fromPrison" : {
+            "type" : "string",
+            "description" : "From prison"
+          },
+          "toAgency" : {
+            "type" : "string",
+            "description" : "To agency"
+          },
+          "transportType" : {
+            "type" : "string",
+            "description" : "Transport type"
+          },
+          "returnDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Return date"
+          },
+          "returnTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Return time"
+          },
+          "toAddressId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "To address ID"
+          },
+          "toAddressOwnerClass" : {
+            "type" : "string",
+            "description" : "To address owner class"
+          },
+          "applicationDate" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Application date"
+          },
+          "applicationTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Application time"
+          }
+        },
+        "required" : [ "applicationDate", "escort", "eventId", "eventStatus", "eventSubType", "returnDate", "returnTime", "transportType" ]
+      },
+      "ScheduledTemporaryAbsenceReturnResponse" : {
+        "type" : "object",
+        "description" : "Scheduled temporary absence return response",
+        "properties" : {
+          "eventId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Event ID"
+          },
+          "eventDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Event date"
+          },
+          "startTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Start time"
+          },
+          "eventSubType" : {
+            "type" : "string",
+            "description" : "Event sub type"
+          },
+          "eventStatus" : {
+            "type" : "string",
+            "description" : "Event status"
+          },
+          "comment" : {
+            "type" : "string",
+            "description" : "Comment"
+          },
+          "escort" : {
+            "type" : "string",
+            "description" : "Escort"
+          },
+          "fromAgency" : {
+            "type" : "string",
+            "description" : "From agency"
+          },
+          "toPrison" : {
+            "type" : "string",
+            "description" : "To prison"
+          }
+        },
+        "required" : [ "escort", "eventId", "eventStatus", "eventSubType" ]
+      },
+      "TemporaryAbsenceApplicationResponse" : {
+        "type" : "object",
+        "description" : "Temporary absence application response",
+        "properties" : {
+          "movementApplicationId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Movement application ID"
+          },
+          "eventSubType" : {
+            "type" : "string",
+            "description" : "Event sub type"
+          },
+          "applicationDate" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Application date"
+          },
+          "fromDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "From date"
+          },
+          "releaseTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Release time"
+          },
+          "toDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "To date"
+          },
+          "returnTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Return time"
+          },
+          "applicationStatus" : {
+            "type" : "string",
+            "description" : "Application status"
+          },
+          "escortCode" : {
+            "type" : "string",
+            "description" : "Escort code"
+          },
+          "transportType" : {
+            "type" : "string",
+            "description" : "Transport type"
+          },
+          "comment" : {
+            "type" : "string",
+            "description" : "Comment"
+          },
+          "prisonId" : {
+            "type" : "string",
+            "description" : "Prison ID"
+          },
+          "toAgencyId" : {
+            "type" : "string",
+            "description" : "To agency ID"
+          },
+          "toAddressId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "To address ID"
+          },
+          "toAddressOwnerClass" : {
+            "type" : "string",
+            "description" : "To address owner class"
+          },
+          "contactPersonName" : {
+            "type" : "string",
+            "description" : "Contact person name"
+          },
+          "applicationType" : {
+            "type" : "string",
+            "description" : "Application type"
+          },
+          "temporaryAbsenceType" : {
+            "type" : "string",
+            "description" : "Temporary absence type"
+          },
+          "temporaryAbsenceSubType" : {
+            "type" : "string",
+            "description" : "Temporary absence sub type"
+          },
+          "scheduledTemporaryAbsence" : {
+            "$ref" : "#/components/schemas/ScheduledTemporaryAbsenceResponse",
+            "description" : "Scheduled temporary absence"
+          },
+          "scheduledTemporaryAbsenceReturn" : {
+            "$ref" : "#/components/schemas/ScheduledTemporaryAbsenceReturnResponse",
+            "description" : "Scheduled temporary absence return"
+          },
+          "temporaryAbsence" : {
+            "$ref" : "#/components/schemas/TemporaryAbsenceResponse",
+            "description" : "Temporary absence"
+          },
+          "temporaryAbsenceReturn" : {
+            "$ref" : "#/components/schemas/TemporaryAbsenceReturnResponse",
+            "description" : "Temporary absence return"
+          }
+        },
+        "required" : [ "applicationDate", "applicationStatus", "applicationType", "eventSubType", "fromDate", "movementApplicationId", "releaseTime", "returnTime", "toDate" ]
+      },
+      "TemporaryAbsenceResponse" : {
+        "type" : "object",
+        "description" : "Temporary absence response",
+        "properties" : {
+          "sequence" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Movement sequence"
+          },
+          "movementDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Movement date"
+          },
+          "movementTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Movement time"
+          },
+          "movementReason" : {
+            "type" : "string",
+            "description" : "Movement reason"
+          },
+          "arrestAgency" : {
+            "type" : "string",
+            "description" : "Arresting Agency"
+          },
+          "escort" : {
+            "type" : "string",
+            "description" : "Escort"
+          },
+          "escortText" : {
+            "type" : "string",
+            "description" : "Escort text"
+          },
+          "fromPrison" : {
+            "type" : "string",
+            "description" : "From prison"
+          },
+          "toAgency" : {
+            "type" : "string",
+            "description" : "To agency"
+          },
+          "commentText" : {
+            "type" : "string",
+            "description" : "Comment text"
+          },
+          "toAddressId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "To address ID"
+          },
+          "toAddressOwnerClass" : {
+            "type" : "string",
+            "description" : "To address owner class"
+          }
+        },
+        "required" : [ "movementDate", "movementReason", "movementTime", "sequence" ]
+      },
+      "TemporaryAbsenceReturnResponse" : {
+        "type" : "object",
+        "description" : "Temporary absence return response",
+        "properties" : {
+          "sequence" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Movement sequence"
+          },
+          "movementDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Movement date"
+          },
+          "movementTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Movement time"
+          },
+          "movementReason" : {
+            "type" : "string",
+            "description" : "Movement reason"
+          },
+          "escort" : {
+            "type" : "string",
+            "description" : "Escort"
+          },
+          "escortText" : {
+            "type" : "string",
+            "description" : "Escort text"
+          },
+          "fromAgency" : {
+            "type" : "string",
+            "description" : "From agency"
+          },
+          "toPrison" : {
+            "type" : "string",
+            "description" : "To prison"
+          },
+          "commentText" : {
+            "type" : "string",
+            "description" : "Comment text"
+          },
+          "fromAddressId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "From address ID"
+          },
+          "fromAddressOwnerClass" : {
+            "type" : "string",
+            "description" : "From address owner class"
+          }
+        },
+        "required" : [ "movementDate", "movementReason", "movementTime", "sequence" ]
       },
       "AmendmentResponse" : {
         "type" : "object",
