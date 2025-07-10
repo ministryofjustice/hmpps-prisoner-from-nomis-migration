@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships
 
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -383,19 +384,25 @@ class PrisonerRestrictionSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("RESTRICTION-DELETED")
   inner class PrisonerRestrictionDeleted {
-    private val offenderRestrictionId = 3456L
+    private val nomisRestrictionId = 3456L
+    private val dpsRestrictionId = 65432L
     private val offenderNo = "A1234KT"
 
     @Nested
-    inner class WhenDeletedInDps {
+    inner class WhenDeletedAlreadyInDps {
       @BeforeEach
       fun setUp() {
+        mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(
+          nomisRestrictionId = nomisRestrictionId,
+          mapping = null,
+        )
+
         personalRelationshipsOffenderEventsQueue.sendMessage(
           prisonerRestrictionEvent(
             eventType = "RESTRICTION-DELETED",
             isUpdated = true,
             offenderNo = offenderNo,
-            restrictionId = offenderRestrictionId,
+            restrictionId = nomisRestrictionId,
             auditModuleName = "DPS_SYNCHRONISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
@@ -404,10 +411,10 @@ class PrisonerRestrictionSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("contactperson-prisoner-restriction-synchronisation-deleted-success"),
+          eq("contactperson-prisoner-restriction-synchronisation-deleted-ignored"),
           check {
             assertThat(it["offenderNo"]).isEqualTo(offenderNo)
-            assertThat(it["nomisRestrictionId"]).isEqualTo(offenderRestrictionId.toString())
+            assertThat(it["nomisRestrictionId"]).isEqualTo(nomisRestrictionId.toString())
           },
           isNull(),
         )
@@ -415,18 +422,39 @@ class PrisonerRestrictionSynchronisationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
-    inner class WhenDeletedInNomis {
+    inner class WhenDeletedInNomisBeforeDPS {
       @BeforeEach
       fun setUp() {
+        mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(
+          nomisRestrictionId = nomisRestrictionId,
+          dpsRestrictionId = dpsRestrictionId.toString(),
+          PrisonerRestrictionMappingDto(
+            dpsId = dpsRestrictionId.toString(),
+            nomisId = nomisRestrictionId,
+            offenderNo = offenderNo,
+            mappingType = PrisonerRestrictionMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        dpsApiMock.stubDeletePrisonerRestriction(dpsRestrictionId)
         personalRelationshipsOffenderEventsQueue.sendMessage(
           prisonerRestrictionEvent(
             eventType = "RESTRICTION-DELETED",
             isUpdated = true,
             offenderNo = offenderNo,
-            restrictionId = offenderRestrictionId,
-            auditModuleName = "OCUMINN",
+            restrictionId = nomisRestrictionId,
+            auditModuleName = "DPS_SYNCHRONISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will get the  mapping for the restriction`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/contact-person/prisoner-restriction/nomis-prisoner-restriction-id/$nomisRestrictionId")))
+      }
+
+      @Test
+      fun `will delete restriction from DPS`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/prisoner-restriction/$dpsRestrictionId")))
       }
 
       @Test
@@ -435,7 +463,8 @@ class PrisonerRestrictionSynchronisationIntTest : SqsIntegrationTestBase() {
           eq("contactperson-prisoner-restriction-synchronisation-deleted-success"),
           check {
             assertThat(it["offenderNo"]).isEqualTo(offenderNo)
-            assertThat(it["nomisRestrictionId"]).isEqualTo(offenderRestrictionId.toString())
+            assertThat(it["nomisRestrictionId"]).isEqualTo(nomisRestrictionId.toString())
+            assertThat(it["dpsRestrictionId"]).isEqualTo(dpsRestrictionId.toString())
           },
           isNull(),
         )
