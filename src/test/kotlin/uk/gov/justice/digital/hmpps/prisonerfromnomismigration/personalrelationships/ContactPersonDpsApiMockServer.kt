@@ -949,7 +949,7 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubUpdatePrisonerRestriction(prisonerRestrictionId: Long, response: SyncPrisonerRestriction = dpsPrisonerRestriction()) {
     stubFor(
-      post("/sync/prisoner-restriction/$prisonerRestrictionId")
+      put("/sync/prisoner-restriction/$prisonerRestrictionId")
         .willReturn(
           aResponse()
             .withStatus(200)

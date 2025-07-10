@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelation
 
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -22,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.dpsPrisonerRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerRestrictionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
@@ -294,8 +296,39 @@ class PrisonerRestrictionSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @Nested
     inner class WhenUpdatedInNomis {
+      private val nomisRestrictionId = 3456L
+      private val dpsRestrictionId = 65432L
+      private val offenderNo = "A1234KT"
+
       @BeforeEach
       fun setUp() {
+        mappingApiMock.stubGetByNomisPrisonerRestrictionIdOrNull(
+          nomisRestrictionId = nomisRestrictionId,
+          dpsRestrictionId = dpsRestrictionId.toString(),
+          PrisonerRestrictionMappingDto(
+            dpsId = dpsRestrictionId.toString(),
+            nomisId = nomisRestrictionId,
+            offenderNo = offenderNo,
+            mappingType = PrisonerRestrictionMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        nomisApiMock.stubGetPrisonerRestrictionById(
+          restrictionId = nomisRestrictionId,
+          nomisPrisonerRestriction().copy(
+            id = nomisRestrictionId,
+            offenderNo = offenderNo,
+            bookingSequence = 1,
+            type = CodeDescription("BAN", "Banned"),
+            effectiveDate = LocalDate.parse("2021-10-15"),
+            enteredStaff = ContactRestrictionEnteredStaff(staffId = 123, username = "H.HARRY"),
+            authorisedStaff = ContactRestrictionEnteredStaff(staffId = 456, username = "U.BELLY"),
+            audit = nomisAudit().copy(modifyDatetime = LocalDateTime.parse("2021-10-15T12:00:00")),
+            comment = "Banned for life",
+            expiryDate = LocalDate.parse("2031-10-15"),
+          ),
+        )
+        dpsApiMock.stubUpdatePrisonerRestriction(prisonerRestrictionId = dpsRestrictionId)
+
         personalRelationshipsOffenderEventsQueue.sendMessage(
           prisonerRestrictionEvent(
             eventType = "RESTRICTION-UPSERTED",
@@ -305,6 +338,32 @@ class PrisonerRestrictionSynchronisationIntTest : SqsIntegrationTestBase() {
             auditModuleName = "OCUMINN",
           ),
         ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will get the  mapping for the restriction`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/contact-person/prisoner-restriction/nomis-prisoner-restriction-id/$nomisRestrictionId")))
+      }
+
+      @Test
+      fun `will retrieve the restrictions details from NOMIS`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/prisoners/restrictions/$nomisRestrictionId")))
+      }
+
+      @Test
+      fun `will update restriction in DPS`() {
+        val request: SyncUpdatePrisonerRestrictionRequest = getRequestBody(putRequestedFor(urlPathEqualTo("/sync/prisoner-restriction/$dpsRestrictionId")))
+        with(request) {
+          assertThat(prisonerNumber).isEqualTo(offenderNo)
+          assertThat(updatedBy).isEqualTo("H.HARRY")
+          assertThat(updatedTime).isEqualTo(LocalDateTime.parse("2021-10-15T12:00:00"))
+          assertThat(effectiveDate).isEqualTo(LocalDate.parse("2021-10-15"))
+          assertThat(expiryDate).isEqualTo(LocalDate.parse("2031-10-15"))
+          assertThat(authorisedUsername).isEqualTo("U.BELLY")
+          assertThat(commentText).isEqualTo("Banned for life")
+          assertThat(currentTerm).isTrue
+          assertThat(restrictionType).isEqualTo("BAN")
+        }
       }
 
       @Test
