@@ -88,18 +88,31 @@ class PrisonerRestrictionSynchronisationService(
       )
     } else {
       track("contactperson-prisoner-restriction-synchronisation-updated", telemetry) {
-        val mapping = mappingApiService.getByNomisPrisonerRestrictionId(nomisRestrictionId)
+        val mapping = mappingApiService.getByNomisPrisonerRestrictionId(nomisRestrictionId).also { telemetry["dpsRestrictionId"] = it.dpsId }
         val nomisRestriction = nomisApiService.getPrisonerRestrictionById(nomisRestrictionId)
         dpsApiService.updatePrisonerRestriction(prisonerRestrictionId = mapping.dpsId.toLong(), nomisRestriction.toDpsSyncUpdatePrisonerRestrictionRequest())
       }
     }
   }
   suspend fun prisonerRestrictionDeleted(event: PrisonerRestrictionEvent) {
+    val nomisRestrictionId = event.offenderRestrictionId
+    val offenderNo = event.offenderIdDisplay
     val telemetry = telemetryOf(
-      "offenderNo" to event.offenderIdDisplay,
-      "nomisRestrictionId" to event.offenderRestrictionId,
+      "offenderNo" to offenderNo,
+      "nomisRestrictionId" to nomisRestrictionId,
     )
-    track("contactperson-prisoner-restriction-synchronisation-deleted", telemetry) {
+
+    val mapping = mappingApiService.getByNomisPrisonerRestrictionIdOrNull(nomisRestrictionId)
+    if (mapping == null) {
+      telemetryClient.trackEvent(
+        "contactperson-prisoner-restriction-synchronisation-deleted-ignored",
+        telemetry,
+      )
+    } else {
+      telemetry["dpsRestrictionId"] = mapping.dpsId
+      track("contactperson-prisoner-restriction-synchronisation-deleted", telemetry) {
+        dpsApiService.deletePrisonerRestriction(prisonerRestrictionId = mapping.dpsId.toLong())
+      }
     }
   }
 
