@@ -1002,7 +1002,8 @@ class CourtSentencingSynchronisationService(
                 dpsAppearanceUuid = courtAppearanceMapping.dpsCourtAppearanceId,
                 dpsConsecUuid = nomisSentence.consecSequence?.let {
                   getConsecutiveSequenceMappingOrThrow(
-                    event = event,
+                    bookingId = event.bookingId,
+                    sentenceSequence = event.sentenceSeq,
                     consecSequence = it,
                   )
                 },
@@ -1107,15 +1108,6 @@ class CourtSentencingSynchronisationService(
       }
     }
   }
-
-  private suspend fun getConsecutiveSequenceMappingOrThrow(
-    event: OffenderSentenceEvent,
-    consecSequence: Int,
-  ): String = getConsecutiveSequenceMappingOrThrow(
-    bookingId = event.bookingId,
-    sentenceSequence = event.sentenceSeq,
-    consecSequence = consecSequence,
-  )
 
   private suspend fun getConsecutiveSequenceMappingOrThrow(
     bookingId: Long,
@@ -1248,7 +1240,8 @@ class CourtSentencingSynchronisationService(
                 dpsAppearanceUuid = courtAppearanceMapping.dpsCourtAppearanceId,
                 dpsConsecUuid = nomisSentence.consecSequence?.let {
                   getConsecutiveSequenceMappingOrThrow(
-                    event = event,
+                    sentenceSequence = event.sentenceSeq,
+                    bookingId = event.bookingId,
                     consecSequence = it,
                   )
                 },
@@ -1274,6 +1267,44 @@ class CourtSentencingSynchronisationService(
         )
       }
     }
+  }
+
+  suspend fun nomisSentenceResynchronisation(event: OffenderSentenceResynchronisationEvent) {
+    val telemetry =
+      mapOf(
+        "nomisBookingId" to event.bookingId.toString(),
+        "nomisSentenceSequence" to event.sentenceSeq.toString(),
+        "dpsSentenceId" to event.dpsSentenceUuid,
+        "nomisCaseId" to event.caseId.toString(),
+        "dpsAppearanceId" to event.dpsAppearanceUuid,
+        "offenderNo" to event.offenderNo,
+      )
+
+    val nomisSentence =
+      nomisApiService.getOffenderSentence(
+        offenderNo = event.offenderNo,
+        caseId = event.caseId,
+        sentenceSequence = event.sentenceSeq,
+      )
+
+    dpsApiService.updateSentence(
+      sentenceId = event.dpsSentenceUuid,
+      nomisSentence.toDpsSentence(
+        dpsAppearanceUuid = event.dpsAppearanceUuid,
+        dpsConsecUuid = nomisSentence.consecSequence?.let {
+          getConsecutiveSequenceMappingOrThrow(
+            sentenceSequence = event.sentenceSeq,
+            bookingId = event.bookingId,
+            consecSequence = it,
+          )
+        },
+        sentenceChargeIds = getDpsChargeMappings(nomisSentence),
+      ),
+    )
+    telemetryClient.trackEvent(
+      "sentence-resynchronisation-success",
+      telemetry,
+    )
   }
 
   suspend fun nomisSentenceTermUpdated(event: OffenderSentenceTermEvent) {

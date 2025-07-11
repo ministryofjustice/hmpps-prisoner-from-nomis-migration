@@ -58,6 +58,23 @@ class CourtSentencingTransformerTest {
         )
       }
     }
+
+    // @Test
+    // internal fun `local running test using real case data`() = runTest {
+    //   val json = this::class.java.getResource("/inputRecon.json")!!.readText()
+    //
+    //   val objectMapper = ObjectMapper()
+    //     .registerModule(JavaTimeModule())
+    //     .registerKotlinModule()
+    //     .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+    //     .configure(SerializationFeature.INDENT_OUTPUT, true)
+    //     .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+    //   val courtCaseResponse2: CourtCaseResponse = objectMapper.readValue(json)
+    //   courtCaseResponse2.toMigrationDpsCourtCase().apply {
+    //     assertThat(this.caseId).isEqualTo(NOMIS_COURT_CASE_ID)
+    //   }
+    // }
+
     val courtCaseResponse = CourtCaseResponse(
       id = NOMIS_COURT_CASE_ID,
       offenderNo = OFFENDER_NO,
