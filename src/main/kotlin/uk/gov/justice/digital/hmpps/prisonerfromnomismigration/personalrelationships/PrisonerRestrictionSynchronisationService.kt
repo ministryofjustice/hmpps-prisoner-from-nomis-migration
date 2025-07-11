@@ -6,6 +6,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerReceiveDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.doesOriginateInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
@@ -114,6 +117,47 @@ class PrisonerRestrictionSynchronisationService(
         dpsApiService.deletePrisonerRestriction(prisonerRestrictionId = mapping.dpsId.toLong())
       }
     }
+  }
+
+  suspend fun prisonerMerged(prisonerMergeEvent: PrisonerMergeDomainEvent) {
+    val retainedOffenderNumber = prisonerMergeEvent.additionalInformation.nomsNumber
+    val removedOffenderNumber = prisonerMergeEvent.additionalInformation.removedNomsNumber
+    val telemetry = telemetryOf(
+      "offenderNo" to retainedOffenderNumber,
+      "bookingId" to prisonerMergeEvent.additionalInformation.bookingId,
+      "removedOffenderNo" to removedOffenderNumber,
+    )
+
+    telemetryClient.trackEvent(
+      "from-nomis-synch-prisonerrestriction-merge",
+      telemetry,
+    )
+  }
+  suspend fun prisonerBookingMoved(prisonerBookingMovedEvent: PrisonerBookingMovedDomainEvent) {
+    val bookingId = prisonerBookingMovedEvent.additionalInformation.bookingId
+    val movedToNomsNumber = prisonerBookingMovedEvent.additionalInformation.movedToNomsNumber
+    val movedFromNomsNumber = prisonerBookingMovedEvent.additionalInformation.movedFromNomsNumber
+
+    val telemetry = telemetryOf(
+      "fromOffenderNo" to movedFromNomsNumber,
+      "toOffenderNo" to movedToNomsNumber,
+      "bookingId" to bookingId,
+    )
+    telemetryClient.trackEvent(
+      "from-nomis-synch-prisonerrestriction-booking-moved",
+      telemetry,
+    )
+  }
+  suspend fun resetPrisonerContactsForAdmission(prisonerReceivedEvent: PrisonerReceiveDomainEvent) {
+    val offenderNo = prisonerReceivedEvent.additionalInformation.nomsNumber
+    val telemetry = telemetryOf(
+      "offenderNo" to offenderNo,
+    )
+
+    telemetryClient.trackEvent(
+      "from-nomis-synch-prisonerrestriction-booking-changed",
+      telemetry,
+    )
   }
 
   private suspend fun tryToCreateMapping(

@@ -158,6 +158,10 @@ generic-service:
       HMPPS_SQS_QUEUES_DOMAINEVENTPERSONCONTACTS_QUEUE_NAME: "sqs_name"
     prison-events-personcontacts-domain-dl-queue:
       HMPPS_SQS_QUEUES_DOMAINEVENTPERSONCONTACTS_DLQ_NAME: "sqs_name"
+    prison-events-prisonerrestrictions-domain-queue:
+      HMPPS_SQS_QUEUES_DOMAINEVENTPRISONERRESTRICTIONS_QUEUE_NAME: "sqs_name"
+    prison-events-prisonerrestrictions-domain-dl-queue:
+      HMPPS_SQS_QUEUES_DOMAINEVENTPRISONERRESTRICTIONS_DLQ_NAME: "sqs_name"
     prison-events-organisations-queue:
       HMPPS_SQS_QUEUES_EVENTORGANISATIONS_QUEUE_NAME: "sqs_name"
     prison-events-organisations-dl-queue:

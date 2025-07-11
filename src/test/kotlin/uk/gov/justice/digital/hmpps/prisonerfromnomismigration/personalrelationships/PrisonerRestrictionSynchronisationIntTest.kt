@@ -15,6 +15,9 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.prisonerReceivedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerRestrictionMappingDto
@@ -468,6 +471,140 @@ class PrisonerRestrictionSynchronisationIntTest : SqsIntegrationTestBase() {
           },
           isNull(),
         )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("prison-offender-events.prisoner.merged")
+  inner class PrisonerMerged {
+    val offenderNumberRetained = "A1234KT"
+    val offenderNumberRemoved = "A1000KT"
+
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() {
+        prisonerRestrictionsDomainEventsQueue.sendMessage(
+          mergeDomainEvent(
+            bookingId = 1234,
+            offenderNo = offenderNumberRetained,
+            removedOffenderNo = offenderNumberRemoved,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry for the merge`() {
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-prisonerrestriction-merge"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNumberRetained)
+            assertThat(it["removedOffenderNo"]).isEqualTo(offenderNumberRemoved)
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("prisoner-offender-search.prisoner.received")
+  inner class PrisonerReceived {
+    val offenderNumber = "A1234KT"
+
+    @Nested
+    inner class HappyPath {
+
+      @Nested
+      inner class NewBooking {
+
+        @BeforeEach
+        fun setUp() {
+          prisonerRestrictionsDomainEventsQueue.sendMessage(
+            prisonerReceivedDomainEvent(
+              offenderNo = offenderNumber,
+              reason = "NEW_ADMISSION",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry for the merge`() {
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-prisonerrestriction-booking-changed"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(offenderNumber)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class SwitchBooking {
+
+        @BeforeEach
+        fun setUp() {
+          prisonerRestrictionsDomainEventsQueue.sendMessage(
+            prisonerReceivedDomainEvent(
+              offenderNo = offenderNumber,
+              reason = "READMISSION_SWITCH_BOOKING",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry for the switch`() {
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-prisonerrestriction-booking-changed"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(offenderNumber)
+            },
+            isNull(),
+          )
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("prison-offender-events.prisoner.booking.moved")
+  inner class BookingMoved {
+    val fromOffenderNumber = "A1234KT"
+    val toOffenderNumber = "A1000KT"
+    val bookingId = 98776L
+
+    @Nested
+    inner class HappyPath {
+
+      @Nested
+      inner class ToPrisonerActive {
+
+        @BeforeEach
+        fun setUp() {
+          prisonerRestrictionsDomainEventsQueue.sendMessage(
+            bookingMovedDomainEvent(
+              bookingId = bookingId,
+              movedFromNomsNumber = fromOffenderNumber,
+              movedToNomsNumber = toOffenderNumber,
+            ),
+          ).also {
+            waitForAnyProcessingToComplete()
+          }
+        }
+
+        @Test
+        fun `will track telemetry for the merge`() {
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-prisonerrestriction-booking-moved"),
+            check {
+              assertThat(it["fromOffenderNo"]).isEqualTo(fromOffenderNumber)
+              assertThat(it["toOffenderNo"]).isEqualTo(toOffenderNumber)
+            },
+            isNull(),
+          )
+        }
       }
     }
   }

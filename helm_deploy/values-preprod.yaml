@@ -95,6 +95,8 @@ generic-prometheus-alerts:
       - "syscon-devs-preprod-prisoner_from_nomis_personalrelationships_domain_dl_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_personcontacts_domain_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_personcontacts_domain_dl_queue"
+      - "syscon-devs-preprod-prisoner_from_nomis_prisonerrestrictions_domain_queue"
+      - "syscon-devs-preprod-prisoner_from_nomis_prisonerrestrictions_domain_dl_queue"
     organisations:
       - "syscon-devs-preprod-migration_organisations_queue"
       - "syscon-devs-preprod-migration_organisations_dlq"

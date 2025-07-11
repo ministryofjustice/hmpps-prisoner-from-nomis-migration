@@ -39,6 +39,7 @@ const val ALERTS_SYNC_QUEUE_ID = "eventalerts"
 const val PERSONALRELATIONSHIPS_SYNC_QUEUE_ID = "eventpersonalrelationships"
 const val PERSONALRELATIONSHIPS_DOMAIN_SYNC_QUEUE_ID = "domaineventpersonalrelationships"
 const val PERSONCONTACTS_DOMAIN_SYNC_QUEUE_ID = "domaineventpersoncontacts"
+const val PRISONERRESTRICTIONS_DOMAIN_SYNC_QUEUE_ID = "domaineventprisonerrestrictions"
 const val ORGANISATIONS_SYNC_QUEUE_ID = "eventorganisations"
 const val VISIT_BALANCE_SYNC_QUEUE_ID = "eventvisitbalance"
 

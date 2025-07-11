@@ -54,7 +54,9 @@ generic-service:
     FEATURE_EVENT_COURTSENTENCING_PRISON-OFFENDER-EVENTS_PRISONER_MERGED: false
     FEATURE_EVENT_RESTRICTION-UPSERTED: false
     FEATURE_EVENT_RESTRICTION-DELETED: false
-
+    FEATURE_EVENT_PRISONERRESTRICTIONS_PRISON-OFFENDER-EVENTS_PRISONER_MERGED: false
+    FEATURE_EVENT_PRISONERRESTRICTIONS_PRISON-OFFENDER-EVENTS_PRISONER_BOOKING_MOVED: false
+    FEATURE_EVENT_PRISONERRESTRICTIONS_PRISONER-OFFENDER-SEARCH_PRISONER_RECEIVED: false
 generic-prometheus-alerts:
   rdsAlertsDatabases:
     cloud-platform-a482726013f85564: "prisoner nomis migration"
@@ -111,6 +113,8 @@ generic-prometheus-alerts:
       - "syscon-devs-prod-prisoner_from_nomis_personalrelationships_domain_dl_queue"
       - "syscon-devs-prod-prisoner_from_nomis_personcontacts_domain_queue"
       - "syscon-devs-prod-prisoner_from_nomis_personcontacts_domain_dl_queue"
+      - "syscon-devs-prod-prisoner_from_nomis_prisonerrestrictions_domain_queue"
+      - "syscon-devs-prod-prisoner_from_nomis_prisonerrestrictions_domain_dl_queue"
     organisations:
       - "syscon-devs-prod-migration_organisations_queue"
       - "syscon-devs-prod-migration_organisations_dlq"
