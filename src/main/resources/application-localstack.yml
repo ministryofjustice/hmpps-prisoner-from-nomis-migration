@@ -71,6 +71,9 @@ hmpps.sqs:
     domaineventpersoncontacts:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    domaineventprisonerrestrictions:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     eventorganisations:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
