@@ -103,7 +103,7 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance(
   charges = this.courtEventCharges.map { charge ->
     // find sentence where sentence.offenderCharges contains charge
     val sentencesForAppearance = sentences.filter { sentence -> sentence.courtOrder?.eventId == this.id }
-
+    // println("sentencesForAppearance:\n$sentencesForAppearance")
     val dpsSentence =
       sentencesForAppearance.find { sentence -> sentence.offenderCharges.any { it.id == charge.offenderCharge.id } }
         ?.toDpsMigrationSentence()
