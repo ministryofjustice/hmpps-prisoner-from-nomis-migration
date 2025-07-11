@@ -1,12 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
-import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.readValue
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -64,21 +59,21 @@ class CourtSentencingTransformerTest {
       }
     }
 
-    @Test
-    internal fun `local running test using real case data`() = runTest {
-      val json = this::class.java.getResource("/inputRecon.json")!!.readText()
-
-      val objectMapper = ObjectMapper()
-        .registerModule(JavaTimeModule())
-        .registerKotlinModule()
-        .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-        .configure(SerializationFeature.INDENT_OUTPUT, true)
-        .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-      val courtCaseResponse2: CourtCaseResponse = objectMapper.readValue(json)
-      courtCaseResponse2.toMigrationDpsCourtCase().apply {
-        assertThat(this.caseId).isEqualTo(NOMIS_COURT_CASE_ID)
-      }
-    }
+    // @Test
+    // internal fun `local running test using real case data`() = runTest {
+    //   val json = this::class.java.getResource("/inputRecon.json")!!.readText()
+    //
+    //   val objectMapper = ObjectMapper()
+    //     .registerModule(JavaTimeModule())
+    //     .registerKotlinModule()
+    //     .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+    //     .configure(SerializationFeature.INDENT_OUTPUT, true)
+    //     .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+    //   val courtCaseResponse2: CourtCaseResponse = objectMapper.readValue(json)
+    //   courtCaseResponse2.toMigrationDpsCourtCase().apply {
+    //     assertThat(this.caseId).isEqualTo(NOMIS_COURT_CASE_ID)
+    //   }
+    // }
 
     val courtCaseResponse = CourtCaseResponse(
       id = NOMIS_COURT_CASE_ID,
