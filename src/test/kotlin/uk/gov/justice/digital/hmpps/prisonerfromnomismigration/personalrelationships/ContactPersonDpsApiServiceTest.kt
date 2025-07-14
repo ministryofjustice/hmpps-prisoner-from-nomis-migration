@@ -1200,4 +1200,30 @@ class ContactPersonDpsApiServiceTest {
       assertDoesNotThrow { apiService.deletePrisonerRestriction(prisonerRestrictionId) }
     }
   }
+
+  @Nested
+  inner class ResetPrisonerRestrictions {
+    @Test
+    internal fun `will pass oath2 token to prisoner restrictions endpoint`() = runTest {
+      dpsContactPersonServer.stubResetPrisonerRestrictions()
+
+      apiService.resetPrisonerRestrictions(ContactPersonDpsApiMockServer.resetPrisonerRestrictionsRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the reset endpoint`() = runTest {
+      dpsContactPersonServer.stubResetPrisonerRestrictions()
+
+      apiService.resetPrisonerRestrictions(ContactPersonDpsApiMockServer.resetPrisonerRestrictionsRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/prisoner-restrictions/reset")),
+      )
+    }
+  }
 }

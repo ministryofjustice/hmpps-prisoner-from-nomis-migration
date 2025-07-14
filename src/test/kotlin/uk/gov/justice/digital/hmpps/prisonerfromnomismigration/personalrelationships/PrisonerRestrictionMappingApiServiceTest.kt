@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerRestrictionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerRestrictionMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerRestrictionMappingDto.MappingType.NOMIS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerRestrictionMappingsDto
 
 @SpringAPIServiceTest
 @Import(PrisonerRestrictionMappingApiService::class, PrisonerRestrictionMappingApiMockServer::class)
@@ -229,6 +230,47 @@ class PrisonerRestrictionMappingApiServiceTest {
 
       mockServer.verify(
         getRequestedFor(urlPathEqualTo("/mapping/contact-person/prisoner-restriction/migration-id/2020-01-01T10%3A00")),
+      )
+    }
+  }
+
+  @Nested
+  inner class Replace {
+    @Test
+    internal fun `will pass oath2 token to replace endpoint`() = runTest {
+      mockServer.stubReplacePrisonerRestrictions("A1234KT")
+
+      apiService.replace(
+        "A1234KT",
+        PrisonerRestrictionMappingsDto(
+          mappingType = PrisonerRestrictionMappingsDto.MappingType.MIGRATED,
+          mappings = emptyList(),
+        ),
+      )
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner-restrictions/A1234KT")).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+  }
+
+  @Nested
+  inner class ReplaceAfterMerge {
+    @Test
+    internal fun `will pass oath2 token to replace after merge endpoint`() = runTest {
+      mockServer.stubReplaceAfterMergePrisonerRestrictions("A1234KT", "B2345KT")
+
+      apiService.replaceAfterMerge(
+        "A1234KT",
+        "B2345KT",
+        PrisonerRestrictionMappingsDto(
+          mappingType = PrisonerRestrictionMappingsDto.MappingType.MIGRATED,
+          mappings = emptyList(),
+        ),
+      )
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner-restrictions/A1234KT/replaces/B2345KT")).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
   }

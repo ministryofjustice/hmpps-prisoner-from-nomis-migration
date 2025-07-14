@@ -133,6 +133,26 @@ class PrisonerRestrictionMappingApiMockServer(private val objectMapper: ObjectMa
   }
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
+  fun stubReplacePrisonerRestrictions(offenderNo: String) {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/replace/prisoner-restrictions/$offenderNo").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(200),
+      ),
+    )
+  }
+
+  fun stubReplaceAfterMergePrisonerRestrictions(retainedOffenderNo: String, removedOffenderNo: String) {
+    mappingApi.stubFor(
+      post("/mapping/contact-person/replace/prisoner-restrictions/$retainedOffenderNo/replaces/$removedOffenderNo").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(200),
+      ),
+    )
+  }
+
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun resetAll() = mappingApi.resetAll()

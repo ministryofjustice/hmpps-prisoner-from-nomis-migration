@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerRestrictionMigrationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerContactResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerRestrictionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddressPhone
@@ -299,6 +300,19 @@ class ContactPersonDpsApiService(
     .bodyValue(resetPrisonerContactRequest)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun resetPrisonerRestrictions(resetPrisonerRestrictionsRequest: ResetPrisonerRestrictionsRequest): ChangedRestrictionsResponse = webClient.post()
+    .uri("/prisoner-restrictions/reset")
+    .bodyValue(resetPrisonerRestrictionsRequest)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  // TODO - missing from swagger docs
+  data class ChangedRestrictionsResponse(
+    val hasChanged: Boolean,
+    val createdRestrictions: List<Long>,
+    val deletedRestrictions: List<Long>,
+  )
 
   suspend fun createPrisonerRestriction(restriction: SyncCreatePrisonerRestrictionRequest): SyncPrisonerRestriction = webClient.post()
     .uri("/sync/prisoner-restriction")
