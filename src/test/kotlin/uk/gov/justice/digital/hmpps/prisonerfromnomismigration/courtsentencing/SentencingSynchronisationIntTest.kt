@@ -1405,13 +1405,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         mockTwoChargeMappingGets()
 
-        // consecutive sentence mapping
-        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
-          nomisBookingId = NOMIS_BOOKING_ID,
-          nomisSentenceSequence = NOMIS_CONSEC_SENTENCE_SEQUENCE.toInt(),
-          dpsSentenceId = DPS_CONSECUTIVE_SENTENCE_ID,
-        )
-
         dpsCourtSentencingServer.stubPutSentenceForUpdate(sentenceId = DPS_SENTENCE_ID)
 
         courtSentencingOffenderEventsQueue.sendMessage(
@@ -1424,6 +1417,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               dpsSentenceUuid = DPS_SENTENCE_ID,
               dpsAppearanceUuid = DPS_APPEARANCE_ID,
               caseId = NOMIS_COURT_CASE_ID,
+              dpsConsecutiveSentenceUuid = DPS_CONSECUTIVE_SENTENCE_ID,
             ).toJson(),
           ).toJson(),
         )

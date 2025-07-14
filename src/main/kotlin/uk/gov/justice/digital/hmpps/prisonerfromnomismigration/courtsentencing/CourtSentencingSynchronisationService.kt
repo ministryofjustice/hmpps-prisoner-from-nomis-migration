@@ -1291,13 +1291,7 @@ class CourtSentencingSynchronisationService(
       sentenceId = event.dpsSentenceUuid,
       nomisSentence.toDpsSentence(
         dpsAppearanceUuid = event.dpsAppearanceUuid,
-        dpsConsecUuid = nomisSentence.consecSequence?.let {
-          getConsecutiveSequenceMappingOrThrow(
-            sentenceSequence = event.sentenceSeq,
-            bookingId = event.bookingId,
-            consecSequence = it,
-          )
-        },
+        dpsConsecUuid = event.dpsConsecutiveSentenceUuid,
         sentenceChargeIds = getDpsChargeMappings(nomisSentence),
       ),
     )

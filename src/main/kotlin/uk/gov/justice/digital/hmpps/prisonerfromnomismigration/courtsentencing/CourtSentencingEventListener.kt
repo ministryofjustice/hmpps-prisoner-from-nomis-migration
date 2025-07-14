@@ -200,6 +200,7 @@ data class OffenderSentenceResynchronisationEvent(
   val bookingId: Long,
   val caseId: Long,
   val dpsAppearanceUuid: String,
+  val dpsConsecutiveSentenceUuid: String?,
 )
 
 data class OffenderSentenceTermEvent(
