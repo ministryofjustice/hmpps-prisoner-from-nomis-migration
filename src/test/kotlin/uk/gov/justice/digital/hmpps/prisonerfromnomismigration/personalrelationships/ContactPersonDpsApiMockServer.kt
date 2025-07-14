@@ -27,9 +27,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerContactAndRestrictionIds
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerRestrictionDetailsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerRestrictionMigrationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerContactResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerRestrictionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncContactAddressPhone
@@ -523,6 +525,30 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       prisonerNumber = "A1234KT",
       prisonerRestrictionId = 1234,
     )
+
+    fun resetPrisonerRestrictionsRequest() = ResetPrisonerRestrictionsRequest(
+      prisonerNumber = "A1234KT",
+      restrictions = listOf(
+        PrisonerRestrictionDetailsRequest(
+          restrictionType = "BAN",
+          effectiveDate = LocalDate.now(),
+          authorisedUsername = "T.SMITH",
+          currentTerm = true,
+          createdBy = "T.SMITH",
+          createdTime = LocalDateTime.now(),
+          expiryDate = null,
+          commentText = null,
+          updatedBy = null,
+          updatedTime = null,
+        ),
+      ),
+    )
+
+    fun changedRestrictionsResponse() = ContactPersonDpsApiService.ChangedRestrictionsResponse(
+      hasChanged = true,
+      createdRestrictions = listOf(1234L),
+      deletedRestrictions = listOf(5678L),
+    )
   }
 
   fun stubMigrateContact(response: MigrateContactResponse = migrateContactResponse()) {
@@ -966,6 +992,18 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(status)
             .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubResetPrisonerRestrictions(response: ContactPersonDpsApiService.ChangedRestrictionsResponse = changedRestrictionsResponse()) {
+    stubFor(
+      post("/prisoner-restrictions/reset")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
         ),
     )
   }
