@@ -29,6 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestrictionIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerWithContacts
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerWithRestrictions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDate
@@ -141,6 +142,17 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetPrisonerRestrictionById(restrictionId: Long, response: PrisonerRestriction = nomisPrisonerRestriction()) {
     nomisApi.stubFor(
       get(urlEqualTo("/prisoners/restrictions/$restrictionId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubGetPrisonerRestrictions(offenderNo: String, response: PrisonerWithRestrictions = PrisonerWithRestrictions(restrictions = listOf(nomisPrisonerRestriction()))) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/$offenderNo/restrictions")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())

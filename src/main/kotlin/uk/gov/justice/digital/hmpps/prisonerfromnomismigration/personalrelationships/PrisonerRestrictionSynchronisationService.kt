@@ -16,8 +16,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonSimpleMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerRestrictionMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerRestrictionMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerRestrictionDetailsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerRestrictionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -154,10 +159,43 @@ class PrisonerRestrictionSynchronisationService(
       "offenderNo" to offenderNo,
     )
 
-    telemetryClient.trackEvent(
-      "from-nomis-synch-prisonerrestriction-booking-changed",
-      telemetry,
-    )
+    when (prisonerReceivedEvent.additionalInformation.reason) {
+      "READMISSION_SWITCH_BOOKING", "NEW_ADMISSION" -> {
+        val nomisRestrictions = nomisApiService.getPrisonerRestrictions(offenderNo).restrictions.also {
+          telemetry["restrictionsCount"] = it.size
+        }
+        val dpsChangedResponse = dpsApiService.resetPrisonerRestrictions(
+          ResetPrisonerRestrictionsRequest(
+            restrictions = nomisRestrictions.map { it.toDpsSyncPrisonerRestriction() },
+            prisonerNumber = offenderNo,
+          ),
+        )
+
+        val mappings = dpsChangedResponse.createdRestrictions.zip(nomisRestrictions) { dpsRestriction, nomisRestriction ->
+          ContactPersonSimpleMappingIdDto(
+            dpsId = dpsRestriction.toString(),
+            nomisId = nomisRestriction.id,
+          )
+        }
+        mappingApiService.replace(
+          offenderNo = offenderNo,
+          PrisonerRestrictionMappingsDto(
+            mappingType = PrisonerRestrictionMappingsDto.MappingType.NOMIS_CREATED,
+            mappings = mappings,
+          ),
+        )
+        telemetryClient.trackEvent(
+          "from-nomis-synch-prisonerrestriction-booking-changed-success",
+          telemetry,
+        )
+      }
+      else -> {
+        telemetryClient.trackEvent(
+          "from-nomis-synch-prisonerrestriction-booking-changed-ignored",
+          telemetry,
+        )
+      }
+    }
   }
 
   private suspend fun tryToCreateMapping(
@@ -228,3 +266,26 @@ fun PrisonerRestriction.toDpsSyncUpdatePrisonerRestrictionRequest() = SyncUpdate
   updatedTime = this.audit.modifyDatetime,
   updatedBy = this.enteredStaff.username,
 )
+
+fun PrisonerRestriction.toDpsSyncPrisonerRestriction() = PrisonerRestrictionDetailsRequest(
+  restrictionType = type.code,
+  effectiveDate = effectiveDate,
+  expiryDate = expiryDate,
+  commentText = comment,
+  authorisedUsername = authorisedStaff.username,
+  currentTerm = bookingSequence == 1L,
+  createdTime = audit.createDatetime,
+  createdBy = if (audit.hasBeenModified()) {
+    audit.createUsername
+  } else {
+    enteredStaff.username
+  },
+  updatedTime = audit.modifyDatetime,
+  updatedBy = if (audit.hasBeenModified()) {
+    enteredStaff.username
+  } else {
+    audit.modifyUserId
+  },
+)
+
+private fun NomisAudit.hasBeenModified() = this.modifyUserId != null
