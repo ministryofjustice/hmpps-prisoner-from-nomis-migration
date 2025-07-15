@@ -16,6 +16,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.prisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestrictionIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerWithRestrictions
 import java.time.LocalDate
 
 @SpringAPIServiceTest
@@ -239,6 +240,45 @@ class ContactPersonNomisApiServiceTest {
       mockServer.verify(
         getRequestedFor(urlPathEqualTo("/prisoners/restrictions/1234567")),
       )
+    }
+  }
+
+  @Nested
+  inner class GetPrisonerRestrictions {
+    @Test
+    fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetPrisonerRestrictions(offenderNo = "A1234KT")
+
+      apiService.getPrisonerRestrictions(offenderNo = "A1234KT")
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass offender number to service`() = runTest {
+      mockServer.stubGetPrisonerRestrictions(offenderNo = "A1234KT")
+
+      apiService.getPrisonerRestrictions(offenderNo = "A1234KT")
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/prisoners/A1234KT/restrictions")),
+      )
+    }
+
+    @Test
+    fun `will return prisoner restrictions`() = runTest {
+      val restriction = uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.nomisPrisonerRestriction().copy(id = 12345)
+      mockServer.stubGetPrisonerRestrictions(
+        offenderNo = "A1234KT",
+        response = PrisonerWithRestrictions(restrictions = listOf(restriction)),
+      )
+
+      val result = apiService.getPrisonerRestrictions(offenderNo = "A1234KT")
+
+      assertThat(result.restrictions).hasSize(1)
+      assertThat(result.restrictions[0].id).isEqualTo(12345)
     }
   }
 }
