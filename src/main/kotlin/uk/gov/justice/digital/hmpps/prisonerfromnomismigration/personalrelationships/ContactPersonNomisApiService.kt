@@ -76,7 +76,7 @@ class ContactPersonNomisApiService(@Qualifier("nomisApiWebClient") private val w
     .awaitBody()
 
   suspend fun getPrisonerRestrictions(offenderNo: String): PrisonerWithRestrictions = webClient.get()
-    .uri("/prisoners/{offenderNo}/restrictions", offenderNo)
+    .uri("/prisoners/{offenderNo}/restrictions?latest-booking-only=false", offenderNo)
     .retrieve()
     .awaitBody()
 }
