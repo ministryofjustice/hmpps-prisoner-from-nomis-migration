@@ -23,9 +23,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerRestrictionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactRestrictionEnteredStaff
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerWithRestrictions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension.Companion.dpsContactPersonServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension.Companion.getRequestBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.changedRestrictionsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.dpsPrisonerRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerRestrictionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -511,59 +514,143 @@ class PrisonerRestrictionSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("prisoner-offender-search.prisoner.received")
   inner class PrisonerReceived {
-    val offenderNumber = "A1234KT"
+    val offenderNo = "A1234KT"
+
+    @BeforeEach
+    fun setUp() {
+      nomisApiMock.stubGetPrisonerRestrictions(
+        offenderNo,
+        PrisonerWithRestrictions(
+          restrictions = listOf(
+            nomisPrisonerRestriction().copy(
+              id = 101,
+              bookingSequence = 1,
+              offenderNo = offenderNo,
+              type = CodeDescription("BAN", "Banned"),
+              effectiveDate = LocalDate.parse("2021-10-15"),
+              enteredStaff = ContactRestrictionEnteredStaff(staffId = 123, username = "H.HARRY"),
+              authorisedStaff = ContactRestrictionEnteredStaff(staffId = 456, username = "U.BELLY"),
+              audit = nomisAudit().copy(createDatetime = LocalDateTime.parse("2021-10-15T12:00:00")),
+              comment = "Banned for life",
+              expiryDate = LocalDate.parse("2031-10-15"),
+            ),
+            nomisPrisonerRestriction().copy(id = 102, bookingSequence = 2),
+          ),
+        ),
+      )
+      dpsApiMock.stubResetPrisonerRestrictions(response = changedRestrictionsResponse().copy(createdRestrictions = listOf(1010, 1011)))
+      mappingApiMock.stubReplacePrisonerRestrictions(offenderNo)
+    }
 
     @Nested
-    inner class HappyPath {
+    inner class NewBooking {
 
-      @Nested
-      inner class NewBooking {
+      @BeforeEach
+      fun setUp() {
+        prisonerRestrictionsDomainEventsQueue.sendMessage(
+          prisonerReceivedDomainEvent(
+            offenderNo = offenderNo,
+            reason = "NEW_ADMISSION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
 
-        @BeforeEach
-        fun setUp() {
-          prisonerRestrictionsDomainEventsQueue.sendMessage(
-            prisonerReceivedDomainEvent(
-              offenderNo = offenderNumber,
-              reason = "NEW_ADMISSION",
-            ),
-          ).also { waitForAnyProcessingToComplete() }
-        }
-
-        @Test
-        fun `will track telemetry for the merge`() {
-          verify(telemetryClient).trackEvent(
-            eq("from-nomis-synch-prisonerrestriction-booking-changed"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo(offenderNumber)
-            },
-            isNull(),
-          )
+      @Test
+      fun `will reset the restrictions in DPS`() {
+        val request: ResetPrisonerRestrictionsRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/prisoner-restrictions/reset")))
+        with(request) {
+          assertThat(prisonerNumber).isEqualTo(offenderNo)
+          assertThat(restrictions[0].createdBy).isEqualTo("H.HARRY")
+          assertThat(restrictions[0].createdTime).isEqualTo(LocalDateTime.parse("2021-10-15T12:00:00"))
+          assertThat(restrictions[0].effectiveDate).isEqualTo(LocalDate.parse("2021-10-15"))
+          assertThat(restrictions[0].expiryDate).isEqualTo(LocalDate.parse("2031-10-15"))
+          assertThat(restrictions[0].authorisedUsername).isEqualTo("U.BELLY")
+          assertThat(restrictions[0].commentText).isEqualTo("Banned for life")
+          assertThat(restrictions[0].currentTerm).isTrue
+          assertThat(restrictions[0].restrictionType).isEqualTo("BAN")
+          assertThat(restrictions[1].currentTerm).isFalse
         }
       }
 
-      @Nested
-      inner class SwitchBooking {
+      @Test
+      fun `will replace mappings for prisoner number`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner-restrictions/$offenderNo"))
+            .withRequestBodyJsonPath("mappings[0].dpsId", "1010")
+            .withRequestBodyJsonPath("mappings[0].nomisId", 101)
+            .withRequestBodyJsonPath("mappings[1].dpsId", "1011")
+            .withRequestBodyJsonPath("mappings[1].nomisId", 102)
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
 
-        @BeforeEach
-        fun setUp() {
-          prisonerRestrictionsDomainEventsQueue.sendMessage(
-            prisonerReceivedDomainEvent(
-              offenderNo = offenderNumber,
-              reason = "READMISSION_SWITCH_BOOKING",
-            ),
-          ).also { waitForAnyProcessingToComplete() }
-        }
+      @Test
+      fun `will track telemetry for the merge`() {
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-prisonerrestriction-booking-changed-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["restrictionsCount"]).isEqualTo("2")
+          },
+          isNull(),
+        )
+      }
+    }
 
-        @Test
-        fun `will track telemetry for the switch`() {
-          verify(telemetryClient).trackEvent(
-            eq("from-nomis-synch-prisonerrestriction-booking-changed"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo(offenderNumber)
-            },
-            isNull(),
-          )
-        }
+    @Nested
+    inner class SwitchBooking {
+
+      @BeforeEach
+      fun setUp() {
+        prisonerRestrictionsDomainEventsQueue.sendMessage(
+          prisonerReceivedDomainEvent(
+            offenderNo = offenderNo,
+            reason = "READMISSION_SWITCH_BOOKING",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will reset the restrictions in DPS`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/prisoner-restrictions/reset")))
+      }
+
+      @Test
+      fun `will replace mappings for prisoner number`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner-restrictions/$offenderNo")),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for the switch`() {
+        verify(telemetryClient).trackEvent(
+          eq("from-nomis-synch-prisonerrestriction-booking-changed-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["restrictionsCount"]).isEqualTo("2")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class ReadmissionOnSameBooking {
+
+      @BeforeEach
+      fun setUp() {
+        prisonerRestrictionsDomainEventsQueue.sendMessage(
+          prisonerReceivedDomainEvent(
+            offenderNo = offenderNo,
+            reason = "READMISSION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will not reset the restrictions in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/prisoner-restrictions/reset")))
       }
     }
   }

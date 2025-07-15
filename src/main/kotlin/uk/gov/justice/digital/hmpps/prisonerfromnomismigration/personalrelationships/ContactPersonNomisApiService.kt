@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestrictionIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerWithContacts
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerWithRestrictions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.typeReference
 import java.time.LocalDate
@@ -71,6 +72,11 @@ class ContactPersonNomisApiService(@Qualifier("nomisApiWebClient") private val w
     prisonerRestrictionId: Long,
   ): PrisonerRestriction = webClient.get()
     .uri("/prisoners/restrictions/{restrictionId}", prisonerRestrictionId)
+    .retrieve()
+    .awaitBody()
+
+  suspend fun getPrisonerRestrictions(offenderNo: String): PrisonerWithRestrictions = webClient.get()
+    .uri("/prisoners/{offenderNo}/restrictions", offenderNo)
     .retrieve()
     .awaitBody()
 }

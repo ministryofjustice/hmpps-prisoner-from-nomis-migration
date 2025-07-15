@@ -12,6 +12,7 @@ import reactor.netty.http.client.HttpClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityIgnoreNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ChangedRestrictionsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactRequest
@@ -306,13 +307,6 @@ class ContactPersonDpsApiService(
     .bodyValue(resetPrisonerRestrictionsRequest)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
-
-  // TODO - missing from swagger docs
-  data class ChangedRestrictionsResponse(
-    val hasChanged: Boolean,
-    val createdRestrictions: List<Long>,
-    val deletedRestrictions: List<Long>,
-  )
 
   suspend fun createPrisonerRestriction(restriction: SyncCreatePrisonerRestrictionRequest): SyncPrisonerRestriction = webClient.post()
     .uri("/sync/prisoner-restriction")

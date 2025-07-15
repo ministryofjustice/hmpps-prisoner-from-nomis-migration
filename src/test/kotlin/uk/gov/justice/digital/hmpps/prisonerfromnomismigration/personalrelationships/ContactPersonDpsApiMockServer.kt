@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.AddressAndPhones
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ChangedRestrictionsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.CodedValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ContactsAndRestrictions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ErrorResponse
@@ -544,7 +545,7 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
 
-    fun changedRestrictionsResponse() = ContactPersonDpsApiService.ChangedRestrictionsResponse(
+    fun changedRestrictionsResponse() = ChangedRestrictionsResponse(
       hasChanged = true,
       createdRestrictions = listOf(1234L),
       deletedRestrictions = listOf(5678L),
@@ -996,7 +997,7 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubResetPrisonerRestrictions(response: ContactPersonDpsApiService.ChangedRestrictionsResponse = changedRestrictionsResponse()) {
+  fun stubResetPrisonerRestrictions(response: ChangedRestrictionsResponse = changedRestrictionsResponse()) {
     stubFor(
       post("/prisoner-restrictions/reset")
         .willReturn(
