@@ -268,6 +268,17 @@ class ContactPersonNomisApiServiceTest {
     }
 
     @Test
+    fun `will request all restrictions`() = runTest {
+      mockServer.stubGetPrisonerRestrictions(offenderNo = "A1234KT")
+
+      apiService.getPrisonerRestrictions(offenderNo = "A1234KT")
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withQueryParam("latest-booking-only", equalTo("false")),
+      )
+    }
+
+    @Test
     fun `will return prisoner restrictions`() = runTest {
       val restriction = uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.nomisPrisonerRestriction().copy(id = 12345)
       mockServer.stubGetPrisonerRestrictions(

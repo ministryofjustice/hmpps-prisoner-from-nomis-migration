@@ -152,7 +152,7 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubGetPrisonerRestrictions(offenderNo: String, response: PrisonerWithRestrictions = PrisonerWithRestrictions(restrictions = listOf(nomisPrisonerRestriction()))) {
     nomisApi.stubFor(
-      get(urlEqualTo("/prisoners/$offenderNo/restrictions")).willReturn(
+      get(urlPathEqualTo("/prisoners/$offenderNo/restrictions")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
