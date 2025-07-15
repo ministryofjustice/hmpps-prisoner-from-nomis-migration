@@ -9,8 +9,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerReceiveDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.MoveBookingForPrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.WhichMoveBookingPrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.doesOriginateInDps
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.shouldReceiveEventHaveBeenRaisedAfterBookingMove
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -21,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerRestrictionMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RESYNCHRONISE_MOVE_BOOKING_PRISONER_RESTRICTION_TARGET
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerRestrictionDetailsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerRestrictionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerRestrictionRequest
@@ -143,16 +147,70 @@ class PrisonerRestrictionSynchronisationService(
     val movedToNomsNumber = prisonerBookingMovedEvent.additionalInformation.movedToNomsNumber
     val movedFromNomsNumber = prisonerBookingMovedEvent.additionalInformation.movedFromNomsNumber
 
-    val telemetry = telemetryOf(
-      "fromOffenderNo" to movedFromNomsNumber,
-      "toOffenderNo" to movedToNomsNumber,
-      "bookingId" to bookingId,
+    resetAfterPrisonerBookingMoved(
+      MoveBookingForPrisoner(
+        bookingId = bookingId,
+        offenderNo = movedFromNomsNumber,
+        whichPrisoner = WhichMoveBookingPrisoner.FROM,
+      ),
     )
+    // the target prisoner may need reset as well, depending on if the reset hasn't already been
+    // done by the receive event - in which case it will be skipped.
+    // send message to guarantee this eventually processed
+    queueService.sendMessage(
+      messageType = RESYNCHRONISE_MOVE_BOOKING_PRISONER_RESTRICTION_TARGET.name,
+      synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
+      message = MoveBookingForPrisoner(
+        bookingId = bookingId,
+        offenderNo = movedToNomsNumber,
+        whichPrisoner = WhichMoveBookingPrisoner.TO,
+      ),
+    )
+  }
+
+  private suspend fun resetAfterPrisonerBookingMoved(moveBooking: MoveBookingForPrisoner) {
+    val bookingId = moveBooking.bookingId
+    val offenderNo = moveBooking.offenderNo
+
+    val telemetry = mutableMapOf<String, Any>(
+      "bookingId" to bookingId,
+      "whichPrisoner" to moveBooking.whichPrisoner.name,
+      "offenderNo" to offenderNo,
+    )
+
+    resetRestrictions(offenderNo, telemetry)
+
     telemetryClient.trackEvent(
-      "from-nomis-synch-prisonerrestriction-booking-moved",
+      "from-nomis-synch-prisonerrestriction-booking-moved-success",
       telemetry,
     )
   }
+
+  suspend fun resetAfterPrisonerBookingMovedIfNecessary(movePrisonerMessage: InternalMessage<MoveBookingForPrisoner>) {
+    val movePrisoner = movePrisonerMessage.body
+    val bookingId = movePrisoner.bookingId
+    val offenderNo = movePrisoner.offenderNo
+
+    if (nomisApiService.getPrisonerDetails(movePrisonerMessage.body.offenderNo).shouldReceiveEventHaveBeenRaisedAfterBookingMove()) {
+      telemetryClient.trackEvent(
+        "from-nomis-synch-prisonerrestriction-booking-moved-ignored",
+        mapOf(
+          "bookingId" to bookingId,
+          "whichPrisoner" to movePrisoner.whichPrisoner.name,
+          "offenderNo" to offenderNo,
+        ),
+      )
+    } else {
+      resetAfterPrisonerBookingMoved(
+        MoveBookingForPrisoner(
+          bookingId = bookingId,
+          offenderNo = offenderNo,
+          whichPrisoner = WhichMoveBookingPrisoner.TO,
+        ),
+      )
+    }
+  }
+
   suspend fun resetPrisonerContactsForAdmission(prisonerReceivedEvent: PrisonerReceiveDomainEvent) {
     val offenderNo = prisonerReceivedEvent.additionalInformation.nomsNumber
     val telemetry = telemetryOf(
@@ -161,29 +219,7 @@ class PrisonerRestrictionSynchronisationService(
 
     when (prisonerReceivedEvent.additionalInformation.reason) {
       "READMISSION_SWITCH_BOOKING", "NEW_ADMISSION" -> {
-        val nomisRestrictions = nomisApiService.getPrisonerRestrictions(offenderNo).restrictions.also {
-          telemetry["restrictionsCount"] = it.size
-        }
-        val dpsChangedResponse = dpsApiService.resetPrisonerRestrictions(
-          ResetPrisonerRestrictionsRequest(
-            restrictions = nomisRestrictions.map { it.toDpsSyncPrisonerRestriction() },
-            prisonerNumber = offenderNo,
-          ),
-        )
-
-        val mappings = dpsChangedResponse.createdRestrictions.zip(nomisRestrictions) { dpsRestriction, nomisRestriction ->
-          ContactPersonSimpleMappingIdDto(
-            dpsId = dpsRestriction.toString(),
-            nomisId = nomisRestriction.id,
-          )
-        }
-        mappingApiService.replace(
-          offenderNo = offenderNo,
-          PrisonerRestrictionMappingsDto(
-            mappingType = PrisonerRestrictionMappingsDto.MappingType.NOMIS_CREATED,
-            mappings = mappings,
-          ),
-        )
+        resetRestrictions(offenderNo, telemetry)
         telemetryClient.trackEvent(
           "from-nomis-synch-prisonerrestriction-booking-changed-success",
           telemetry,
@@ -196,6 +232,32 @@ class PrisonerRestrictionSynchronisationService(
         )
       }
     }
+  }
+
+  private suspend fun resetRestrictions(offenderNo: String, telemetry: MutableMap<String, Any>) {
+    val nomisRestrictions = nomisApiService.getPrisonerRestrictions(offenderNo).restrictions.also {
+      telemetry["restrictionsCount"] = it.size
+    }
+    val dpsChangedResponse = dpsApiService.resetPrisonerRestrictions(
+      ResetPrisonerRestrictionsRequest(
+        restrictions = nomisRestrictions.map { it.toDpsSyncPrisonerRestriction() },
+        prisonerNumber = offenderNo,
+      ),
+    )
+
+    val mappings = dpsChangedResponse.createdRestrictions.zip(nomisRestrictions) { dpsRestriction, nomisRestriction ->
+      ContactPersonSimpleMappingIdDto(
+        dpsId = dpsRestriction.toString(),
+        nomisId = nomisRestriction.id,
+      )
+    }
+    mappingApiService.replace(
+      offenderNo = offenderNo,
+      PrisonerRestrictionMappingsDto(
+        mappingType = PrisonerRestrictionMappingsDto.MappingType.NOMIS_CREATED,
+        mappings = mappings,
+      ),
+    )
   }
 
   private suspend fun tryToCreateMapping(
