@@ -15,6 +15,7 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.prisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.prisonerReceivedDomainEvent
@@ -664,12 +665,30 @@ class PrisonerRestrictionSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @Nested
     inner class HappyPath {
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetPrisonerRestrictions(
+          fromOffenderNumber,
+          PrisonerWithRestrictions(
+            restrictions = listOf(
+              nomisPrisonerRestriction().copy(
+                id = 101,
+                offenderNo = fromOffenderNumber,
+              ),
+              nomisPrisonerRestriction().copy(id = 102, bookingSequence = 2),
+            ),
+          ),
+        )
+        dpsApiMock.stubResetPrisonerRestrictions(response = changedRestrictionsResponse().copy(createdRestrictions = listOf(1010, 1011)))
+        mappingApiMock.stubReplacePrisonerRestrictions(fromOffenderNumber)
+      }
 
       @Nested
       inner class ToPrisonerActive {
 
         @BeforeEach
         fun setUp() {
+          nomisApiMock.stubGetPrisonerDetails(offenderNo = toOffenderNumber, prisonerDetails().copy(location = "MDI", active = true))
           prisonerRestrictionsDomainEventsQueue.sendMessage(
             bookingMovedDomainEvent(
               bookingId = bookingId,
@@ -677,17 +696,107 @@ class PrisonerRestrictionSynchronisationIntTest : SqsIntegrationTestBase() {
               movedToNomsNumber = toOffenderNumber,
             ),
           ).also {
-            waitForAnyProcessingToComplete()
+            waitForAnyProcessingToComplete("from-nomis-synch-prisonerrestriction-booking-moved-success", "from-nomis-synch-prisonerrestriction-booking-moved-ignored")
           }
         }
 
         @Test
-        fun `will track telemetry for the merge`() {
+        fun `will reset the restrictions in DPS`() {
+          dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/prisoner-restrictions/reset")))
+        }
+
+        @Test
+        fun `will replace mappings for prisoner number`() {
+          mappingApiMock.verify(
+            postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner-restrictions/$fromOffenderNumber")),
+          )
+        }
+
+        @Test
+        fun `will track telemetry for the move`() {
           verify(telemetryClient).trackEvent(
-            eq("from-nomis-synch-prisonerrestriction-booking-moved"),
+            eq("from-nomis-synch-prisonerrestriction-booking-moved-success"),
             check {
-              assertThat(it["fromOffenderNo"]).isEqualTo(fromOffenderNumber)
-              assertThat(it["toOffenderNo"]).isEqualTo(toOffenderNumber)
+              assertThat(it["offenderNo"]).isEqualTo(fromOffenderNumber)
+              assertThat(it["whichPrisoner"]).isEqualTo("FROM")
+              assertThat(it["bookingId"]).isEqualTo("$bookingId")
+              assertThat(it["restrictionsCount"]).isEqualTo("2")
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class ToPrisonerInActive {
+
+        @BeforeEach
+        fun setUp() {
+          nomisApiMock.stubGetPrisonerDetails(offenderNo = toOffenderNumber, prisonerDetails().copy(location = "MDI", active = false))
+          nomisApiMock.stubGetPrisonerRestrictions(
+            toOffenderNumber,
+            PrisonerWithRestrictions(
+              restrictions = listOf(
+                nomisPrisonerRestriction().copy(
+                  offenderNo = toOffenderNumber,
+                ),
+              ),
+            ),
+          )
+          dpsApiMock.stubResetPrisonerRestrictions(response = changedRestrictionsResponse().copy(createdRestrictions = listOf(1013)))
+          mappingApiMock.stubReplacePrisonerRestrictions(toOffenderNumber)
+          prisonerRestrictionsDomainEventsQueue.sendMessage(
+            bookingMovedDomainEvent(
+              bookingId = bookingId,
+              movedFromNomsNumber = fromOffenderNumber,
+              movedToNomsNumber = toOffenderNumber,
+            ),
+          ).also {
+            waitForAnyProcessingToComplete("from-nomis-synch-prisonerrestriction-booking-moved-success", times = 2)
+          }
+        }
+
+        @Test
+        fun `will reset the restrictions in DPS for both prisoners`() {
+          dpsApiMock.verify(
+            postRequestedFor(urlPathEqualTo("/prisoner-restrictions/reset"))
+              .withRequestBodyJsonPath("prisonerNumber", fromOffenderNumber),
+          )
+          dpsApiMock.verify(
+            postRequestedFor(urlPathEqualTo("/prisoner-restrictions/reset"))
+              .withRequestBodyJsonPath("prisonerNumber", toOffenderNumber),
+          )
+        }
+
+        @Test
+        fun `will replace mappings for both prisoner numbers`() {
+          mappingApiMock.verify(
+            postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner-restrictions/$fromOffenderNumber")),
+          )
+          mappingApiMock.verify(
+            postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner-restrictions/$toOffenderNumber")),
+          )
+        }
+
+        @Test
+        fun `will track telemetry for the move`() {
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-prisonerrestriction-booking-moved-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(fromOffenderNumber)
+              assertThat(it["whichPrisoner"]).isEqualTo("FROM")
+              assertThat(it["bookingId"]).isEqualTo("$bookingId")
+              assertThat(it["restrictionsCount"]).isEqualTo("2")
+            },
+            isNull(),
+          )
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-prisonerrestriction-booking-moved-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(toOffenderNumber)
+              assertThat(it["whichPrisoner"]).isEqualTo("TO")
+              assertThat(it["bookingId"]).isEqualTo("$bookingId")
+              assertThat(it["restrictionsCount"]).isEqualTo("1")
             },
             isNull(),
           )

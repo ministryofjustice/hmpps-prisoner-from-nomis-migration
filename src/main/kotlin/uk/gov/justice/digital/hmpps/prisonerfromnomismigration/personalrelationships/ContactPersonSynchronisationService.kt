@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.MoveBooki
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.WhichMoveBookingPrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.doesOriginateInDps
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.shouldReceiveEventHaveBeenRaisedAfterBookingMove
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -45,7 +46,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiService.CreatePrisonerContactDuplicate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiService.CreatePrisonerContactSuccess
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RESYNCHRONISE_MOVE_BOOKING_TARGET
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RESYNCHRONISE_MOVE_BOOKING_CONTACTPERSON_TARGET
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_BOOKING_MOVED_MAPPINGS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_REPLACE_PRISONER_PERSON_PRISONER_MERGED_MAPPINGS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PERSON_MAPPING
@@ -944,7 +945,7 @@ class ContactPersonSynchronisationService(
     // done by the receive event - in which case it will be skipped.
     // send message to guarantee this eventually processed
     queueService.sendMessage(
-      messageType = RESYNCHRONISE_MOVE_BOOKING_TARGET.name,
+      messageType = RESYNCHRONISE_MOVE_BOOKING_CONTACTPERSON_TARGET.name,
       synchronisationType = SynchronisationType.PERSONALRELATIONSHIPS,
       message = MoveBookingForPrisoner(
         bookingId = bookingId,
@@ -959,8 +960,7 @@ class ContactPersonSynchronisationService(
     val bookingId = movePrisoner.bookingId
     val offenderNo = movePrisoner.offenderNo
 
-    val prisonerDetails = nomisApiService.getPrisonerDetails(movePrisonerMessage.body.offenderNo)
-    if (prisonerDetails.active) {
+    if (nomisApiService.getPrisonerDetails(movePrisonerMessage.body.offenderNo).shouldReceiveEventHaveBeenRaisedAfterBookingMove()) {
       // no need to do anything since the prisoner receive event would have been processed given the
       // prisoner is active
       telemetryClient.trackEvent(
