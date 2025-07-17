@@ -29,6 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.changedRestrictionsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.dpsPrisonerRestriction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerRestrictionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerRestrictionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerRestrictionRequest
@@ -443,6 +444,7 @@ class PrisonerRestrictionSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         )
         dpsApiMock.stubDeletePrisonerRestriction(dpsRestrictionId)
+        mappingApiMock.stubDeleteByNomisPrisonerRestrictionId(nomisRestrictionId)
         personalRelationshipsOffenderEventsQueue.sendMessage(
           prisonerRestrictionEvent(
             eventType = "RESTRICTION-DELETED",
@@ -462,6 +464,11 @@ class PrisonerRestrictionSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will delete restriction from DPS`() {
         dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/prisoner-restriction/$dpsRestrictionId")))
+      }
+
+      @Test
+      fun `will delete mappings`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/contact-person/prisoner-restriction/nomis-prisoner-restriction-id/$nomisRestrictionId")))
       }
 
       @Test
@@ -489,6 +496,29 @@ class PrisonerRestrictionSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class HappyPath {
       @BeforeEach
       fun setUp() {
+        nomisApiMock.stubGetPrisonerRestrictions(
+          offenderNumberRetained,
+          PrisonerWithRestrictions(
+            restrictions = listOf(
+              nomisPrisonerRestriction().copy(
+                offenderNo = offenderNumberRetained,
+                id = 101,
+                bookingSequence = 1,
+              ),
+              nomisPrisonerRestriction().copy(
+                offenderNo = offenderNumberRetained,
+                id = 102,
+                bookingSequence = 2,
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubMergePrisonerRestrictions(response = changedRestrictionsResponse().copy(createdRestrictions = listOf(1010, 1011)))
+        mappingApiMock.stubReplaceAfterMergePrisonerRestrictions(
+          retainedOffenderNo = offenderNumberRetained,
+          removedOffenderNo = offenderNumberRemoved,
+        )
+
         prisonerRestrictionsDomainEventsQueue.sendMessage(
           mergeDomainEvent(
             bookingId = 1234,
@@ -499,12 +529,36 @@ class PrisonerRestrictionSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
+      fun `will reset the restrictions in DPS`() {
+        val request: MergePrisonerRestrictionsRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/prisoner-restrictions/merge")))
+        with(request) {
+          assertThat(keepingPrisonerNumber).isEqualTo(offenderNumberRetained)
+          assertThat(removingPrisonerNumber).isEqualTo(offenderNumberRemoved)
+          assertThat(restrictions[0].currentTerm).isTrue
+          assertThat(restrictions[1].currentTerm).isFalse
+        }
+      }
+
+      @Test
+      fun `will replace mappings for prisoner number`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/contact-person/replace/prisoner-restrictions/$offenderNumberRetained/replaces/$offenderNumberRemoved"))
+            .withRequestBodyJsonPath("mappings[0].dpsId", "1010")
+            .withRequestBodyJsonPath("mappings[0].nomisId", 101)
+            .withRequestBodyJsonPath("mappings[1].dpsId", "1011")
+            .withRequestBodyJsonPath("mappings[1].nomisId", 102)
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
+
+      @Test
       fun `will track telemetry for the merge`() {
         verify(telemetryClient).trackEvent(
-          eq("from-nomis-synch-prisonerrestriction-merge"),
+          eq("from-nomis-synch-prisonerrestriction-merge-success"),
           check {
             assertThat(it["offenderNo"]).isEqualTo(offenderNumberRetained)
             assertThat(it["removedOffenderNo"]).isEqualTo(offenderNumberRemoved)
+            assertThat(it["restrictionsCount"]).isEqualTo("2")
           },
           isNull(),
         )

@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ChangedRestrictionsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerContactResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerRestrictionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerRestrictionRequest
@@ -299,6 +300,12 @@ class ContactPersonDpsApiService(
   suspend fun resetPrisonerContacts(resetPrisonerContactRequest: ResetPrisonerContactRequest): ResetPrisonerContactResponse = webClient.post()
     .uri("/sync/admin/reset")
     .bodyValue(resetPrisonerContactRequest)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun mergePrisonerRestrictions(mergePrisonerRestrictionsRequest: MergePrisonerRestrictionsRequest): ChangedRestrictionsResponse = webClient.post()
+    .uri("/prisoner-restrictions/merge")
+    .bodyValue(mergePrisonerRestrictionsRequest)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
