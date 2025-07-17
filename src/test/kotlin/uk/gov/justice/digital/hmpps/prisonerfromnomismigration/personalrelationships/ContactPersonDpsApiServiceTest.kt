@@ -1226,4 +1226,30 @@ class ContactPersonDpsApiServiceTest {
       )
     }
   }
+
+  @Nested
+  inner class MergePrisonerRestrictions {
+    @Test
+    internal fun `will pass oath2 token to prisoner restrictions endpoint`() = runTest {
+      dpsContactPersonServer.stubMergePrisonerRestrictions()
+
+      apiService.mergePrisonerRestrictions(ContactPersonDpsApiMockServer.mergePrisonerRestrictionsRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the merge endpoint`() = runTest {
+      dpsContactPersonServer.stubMergePrisonerRestrictions()
+
+      apiService.mergePrisonerRestrictions(ContactPersonDpsApiMockServer.mergePrisonerRestrictionsRequest())
+
+      dpsContactPersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/prisoner-restrictions/merge")),
+      )
+    }
+  }
 }

@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerContactResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerRestrictionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerRestrictionRequest
@@ -545,6 +546,25 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
 
+    fun mergePrisonerRestrictionsRequest() = MergePrisonerRestrictionsRequest(
+      keepingPrisonerNumber = "A1234AA",
+      removingPrisonerNumber = "B1234BB",
+      restrictions = listOf(
+        PrisonerRestrictionDetailsRequest(
+          restrictionType = "BAN",
+          effectiveDate = LocalDate.now(),
+          authorisedUsername = "T.SMITH",
+          currentTerm = true,
+          createdBy = "T.SMITH",
+          createdTime = LocalDateTime.now(),
+          expiryDate = null,
+          commentText = null,
+          updatedBy = null,
+          updatedTime = null,
+        ),
+      ),
+    )
+
     fun changedRestrictionsResponse() = ChangedRestrictionsResponse(
       hasChanged = true,
       createdRestrictions = listOf(1234L),
@@ -1000,6 +1020,18 @@ class ContactPersonDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubResetPrisonerRestrictions(response: ChangedRestrictionsResponse = changedRestrictionsResponse()) {
     stubFor(
       post("/prisoner-restrictions/reset")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(ContactPersonDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubMergePrisonerRestrictions(response: ChangedRestrictionsResponse = changedRestrictionsResponse()) {
+    stubFor(
+      post("/prisoner-restrictions/merge")
         .willReturn(
           aResponse()
             .withStatus(200)

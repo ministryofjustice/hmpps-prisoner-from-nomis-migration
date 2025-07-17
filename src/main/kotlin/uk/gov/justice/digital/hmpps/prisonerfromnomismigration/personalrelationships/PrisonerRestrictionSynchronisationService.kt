@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestriction
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonSynchronisationMessageType.RESYNCHRONISE_MOVE_BOOKING_PRISONER_RESTRICTION_TARGET
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerRestrictionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerRestrictionDetailsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerRestrictionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncCreatePrisonerRestrictionRequest
@@ -124,6 +125,7 @@ class PrisonerRestrictionSynchronisationService(
       telemetry["dpsRestrictionId"] = mapping.dpsId
       track("contactperson-prisoner-restriction-synchronisation-deleted", telemetry) {
         dpsApiService.deletePrisonerRestriction(prisonerRestrictionId = mapping.dpsId.toLong())
+        mappingApiService.deleteByNomisPrisonerRestrictionId(nomisRestrictionId)
       }
     }
   }
@@ -137,10 +139,34 @@ class PrisonerRestrictionSynchronisationService(
       "removedOffenderNo" to removedOffenderNumber,
     )
 
-    telemetryClient.trackEvent(
-      "from-nomis-synch-prisonerrestriction-merge",
-      telemetry,
-    )
+    track("from-nomis-synch-prisonerrestriction-merge", telemetry) {
+      val nomisRestrictions = nomisApiService.getPrisonerRestrictions(retainedOffenderNumber).restrictions.also {
+        telemetry["restrictionsCount"] = it.size
+      }
+
+      val dpsChangedResponse = dpsApiService.mergePrisonerRestrictions(
+        MergePrisonerRestrictionsRequest(
+          restrictions = nomisRestrictions.map { it.toDpsSyncPrisonerRestriction() },
+          keepingPrisonerNumber = retainedOffenderNumber,
+          removingPrisonerNumber = removedOffenderNumber,
+        ),
+      )
+
+      val mappings = dpsChangedResponse.createdRestrictions.zip(nomisRestrictions) { dpsRestriction, nomisRestriction ->
+        ContactPersonSimpleMappingIdDto(
+          dpsId = dpsRestriction.toString(),
+          nomisId = nomisRestriction.id,
+        )
+      }
+      mappingApiService.replaceAfterMerge(
+        retainedOffenderNo = retainedOffenderNumber,
+        removedOffenderNo = removedOffenderNumber,
+        PrisonerRestrictionMappingsDto(
+          mappingType = PrisonerRestrictionMappingsDto.MappingType.NOMIS_CREATED,
+          mappings = mappings,
+        ),
+      )
+    }
   }
   suspend fun prisonerBookingMoved(prisonerBookingMovedEvent: PrisonerBookingMovedDomainEvent) {
     val bookingId = prisonerBookingMovedEvent.additionalInformation.bookingId
