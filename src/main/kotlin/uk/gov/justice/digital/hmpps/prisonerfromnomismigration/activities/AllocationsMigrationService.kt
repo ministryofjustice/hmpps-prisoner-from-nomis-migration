@@ -61,6 +61,7 @@ class AllocationsMigrationService(
   ): PageImpl<FindActiveAllocationIdsResponse> = nomisApiService.getAllocationIds(
     prisonId = migrationFilter.prisonId,
     courseActivityId = migrationFilter.courseActivityId,
+    activeOnDate = migrationFilter.activityStartDate,
     pageNumber = pageNumber,
     pageSize = pageSize,
   )
