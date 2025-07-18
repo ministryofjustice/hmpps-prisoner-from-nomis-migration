@@ -122,7 +122,7 @@ class AllocationsMigrationServiceTest {
 
     @BeforeEach
     internal fun setUp() {
-      coEvery { nomisApiService.getAllocationIds(any(), any(), any(), any()) } returns
+      coEvery { nomisApiService.getAllocationIds(any(), any(), any(), any(), any()) } returns
         pages(1)
 
       coEvery {
@@ -138,7 +138,7 @@ class AllocationsMigrationServiceTest {
     @Test
     internal fun `will pass filter through to get total count along with a tiny page count`() {
       runBlocking {
-        service.startMigration(AllocationsMigrationFilter(prisonId = "BXI"))
+        service.startMigration(AllocationsMigrationFilter(prisonId = "BXI", activityStartDate = LocalDate.now().plusDays(2)))
       }
 
       coVerify {
@@ -146,13 +146,14 @@ class AllocationsMigrationServiceTest {
           prisonId = "BXI",
           pageNumber = 0,
           pageSize = 1,
+          activeOnDate = LocalDate.now().plusDays(2),
         )
       }
     }
 
     @Test
     internal fun `will pass allocation count and filter to queue`(): Unit = runBlocking {
-      coEvery { nomisApiService.getAllocationIds(any(), any(), any(), any()) } returns
+      coEvery { nomisApiService.getAllocationIds(any(), any(), any(), any(), any()) } returns
         pages(totalEntities = 7)
 
       service.startMigration(AllocationsMigrationFilter(prisonId = "BXI"))
@@ -171,7 +172,7 @@ class AllocationsMigrationServiceTest {
     internal fun `will write migration history record`() {
       val allocationsMigrationFilter = AllocationsMigrationFilter(prisonId = "BXI")
 
-      coEvery { nomisApiService.getAllocationIds(any(), any(), any(), any()) } returns
+      coEvery { nomisApiService.getAllocationIds(any(), any(), any(), any(), any()) } returns
         pages(totalEntities = 7)
 
       runBlocking {
@@ -198,7 +199,7 @@ class AllocationsMigrationServiceTest {
 
     @Test
     internal fun `will write analytic with estimated count and filter`() {
-      coEvery { nomisApiService.getAllocationIds(any(), any(), any(), any()) } returns pages(totalEntities = 7)
+      coEvery { nomisApiService.getAllocationIds(any(), any(), any(), any(), any()) } returns pages(totalEntities = 7)
 
       runBlocking {
         service.startMigration(AllocationsMigrationFilter(prisonId = "BXI"))
@@ -221,7 +222,7 @@ class AllocationsMigrationServiceTest {
 
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
-      whenever(nomisApiService.getAllocationIds(any(), anyOrNull(), any(), any())).thenReturn(
+      whenever(nomisApiService.getAllocationIds(any(), anyOrNull(), any(), any(), any())).thenReturn(
         pages(totalEntities = 7, pageSize = 3),
       )
     }
@@ -323,20 +324,20 @@ class AllocationsMigrationServiceTest {
     @BeforeEach
     internal fun setUp(): Unit = runBlocking {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(false)
-      whenever(nomisApiService.getAllocationIds(any(), anyOrNull(), any(), any())).thenReturn(
+      whenever(nomisApiService.getAllocationIds(any(), anyOrNull(), any(), any(), any())).thenReturn(
         pages(totalEntities = 7, pageSize = 3),
       )
     }
 
     @Test
-    internal fun `will pass filter through to get total count along with a tiny page count`(): Unit = runBlocking {
+    internal fun `will pass filter through to get allocations`(): Unit = runBlocking {
       service.migrateEntitiesForPage(
         MigrationContext(
           type = MigrationType.ALLOCATIONS,
           migrationId = "2020-05-23T11:30:00",
           estimatedCount = 7,
           body = MigrationPage(
-            filter = AllocationsMigrationFilter(prisonId = "BXI"),
+            filter = AllocationsMigrationFilter(prisonId = "BXI", activityStartDate = LocalDate.now().plusDays(2)),
             pageNumber = 1,
             pageSize = 3,
           ),
@@ -345,6 +346,7 @@ class AllocationsMigrationServiceTest {
 
       verify(nomisApiService).getAllocationIds(
         prisonId = "BXI",
+        activeOnDate = LocalDate.now().plusDays(2),
         pageNumber = 1,
         pageSize = 3,
       )
@@ -379,7 +381,7 @@ class AllocationsMigrationServiceTest {
     internal fun `will send MIGRATE_ALLOCATIONS with allocationId for each allocation`(): Unit = runBlocking {
       val context: KArgumentCaptor<MigrationContext<FindActiveAllocationIdsResponse>> = argumentCaptor()
 
-      whenever(nomisApiService.getAllocationIds(any(), anyOrNull(), any(), any())).thenReturn(
+      whenever(nomisApiService.getAllocationIds(any(), anyOrNull(), any(), any(), any())).thenReturn(
         pages(totalEntities = 7, pageSize = 3, startId = 1000),
       )
 
@@ -417,7 +419,7 @@ class AllocationsMigrationServiceTest {
     internal fun `will not send MIGRATE_ALLOCATIONS when cancelling`(): Unit = runBlocking {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(true)
 
-      whenever(nomisApiService.getAllocationIds(any(), anyOrNull(), any(), any())).thenReturn(
+      whenever(nomisApiService.getAllocationIds(any(), anyOrNull(), any(), any(), any())).thenReturn(
         pages(totalEntities = 7, pageSize = 3, startId = 1000),
       )
 

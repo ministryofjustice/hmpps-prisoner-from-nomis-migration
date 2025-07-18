@@ -157,6 +157,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   suspend fun getAllocationIds(
     prisonId: String,
     courseActivityId: Long? = null,
+    activeOnDate: LocalDate? = null,
     pageNumber: Long,
     pageSize: Long,
   ): PageImpl<FindActiveAllocationIdsResponse> = webClient.get()
@@ -164,6 +165,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       it.path("/allocations/ids")
         .queryParam("prisonId", prisonId)
         .apply { courseActivityId?.run { queryParam("courseActivityId", courseActivityId) } }
+        .apply { activeOnDate?.run { queryParam("activeOnDate", activeOnDate) } }
         .queryParam("page", pageNumber)
         .queryParam("size", pageSize)
         .build()
