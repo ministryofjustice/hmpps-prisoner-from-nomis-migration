@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-07-17.2219.18099fb"
+    "version" : "2025-07-17.2231.61a1d97"
   },
   "servers" : [ {
     "url" : "/",
@@ -7449,6 +7449,64 @@
         }
       }
     },
+    "/prisoner-restrictions/{prisonerNumber}/reconcile" : {
+      "get" : {
+        "tags" : [ "Prisoner restrictions admin" ],
+        "summary" : "Reconciliation endpoint for a single prisoner by prisoner number (restriction IDs only)",
+        "description" : "Get a list of restriction IDs for a given prisoner number",
+        "operationId" : "reconcilePrisonerRestrictionIds",
+        "parameters" : [ {
+          "name" : "prisonerNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "List of restriction IDs for the prisoner",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonerRestrictionIdsResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No restrictions found for that prisoner number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonerRestrictionIdsResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/contact/{contactId}/name" : {
       "get" : {
         "tags" : [ "Contacts" ],
@@ -14826,6 +14884,27 @@
           }
         },
         "required" : [ "authorisedUsername", "createdBy", "createdTime", "currentTerm", "effectiveDate", "prisonerNumber", "prisonerRestrictionId", "restrictionType" ]
+      },
+      "PrisonerRestrictionIdsResponse" : {
+        "type" : "object",
+        "description" : "Response object for a list of prisoner restriction IDs for a given prisoner",
+        "properties" : {
+          "prisonerNumber" : {
+            "type" : "string",
+            "description" : "The prisoner number",
+            "example" : "A1234BC"
+          },
+          "restrictionIds" : {
+            "type" : "array",
+            "description" : "List of restriction IDs",
+            "example" : [ 123, 456, 789 ],
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          }
+        },
+        "required" : [ "prisonerNumber", "restrictionIds" ]
       },
       "PrisonerContactRestrictionsResponse" : {
         "type" : "object",
