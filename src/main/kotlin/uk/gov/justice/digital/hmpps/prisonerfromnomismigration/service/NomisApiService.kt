@@ -14,9 +14,10 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityAsTrueNotFoundAsFalse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AppointmentIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AppointmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.EndActivitiesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.FindActiveActivityIdsResponse
@@ -30,8 +31,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomU
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 
 @Service
 class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
@@ -244,47 +243,6 @@ data class NomisVisit(
   val modifyUserId: String? = null,
   val whenCreated: LocalDateTime,
   val whenUpdated: LocalDateTime? = null,
-)
-
-private val simpleTimeFormat = DateTimeFormatter.ofPattern("HH:mm")
-
-data class AppointmentResponse(
-  val bookingId: Long,
-  val offenderNo: String,
-  // prison or toPrison is never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
-  val prisonId: String,
-  val internalLocation: Long? = null,
-  val startDateTime: LocalDateTime? = null,
-  val endDateTime: LocalDateTime? = null,
-  val comment: String? = null,
-  val subtype: String,
-  val status: String,
-  val createdDate: LocalDateTime,
-  val createdBy: String,
-  val modifiedDate: LocalDateTime? = null,
-  val modifiedBy: String? = null,
-) {
-  fun toAppointment() = AppointmentMigrateRequest(
-    bookingId = bookingId,
-    prisonerNumber = offenderNo,
-    prisonCode = prisonId,
-    internalLocationId = internalLocation!!,
-    // startDate never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
-    startDate = startDateTime!!.toLocalDate(),
-    startTime = startDateTime.toLocalTime().format(simpleTimeFormat),
-    endTime = endDateTime?.toLocalTime()?.format(simpleTimeFormat),
-    comment = comment,
-    categoryCode = subtype,
-    isCancelled = status == "CANC",
-    created = createdDate.truncatedTo(ChronoUnit.SECONDS),
-    createdBy = createdBy,
-    updated = modifiedDate?.truncatedTo(ChronoUnit.SECONDS),
-    updatedBy = modifiedBy,
-  )
-}
-
-data class AppointmentIdResponse(
-  val eventId: Long,
 )
 
 class RestResponsePage<T>(

@@ -31,7 +31,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.APPOINTMENTS_ID_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.appointmentIdsPagedResponse
+import uk.gov.justice.hmpps.sqs.countMessagesOnQueue
 import java.time.Duration
+import java.util.UUID
 
 class AppointmentsMigrationIntTest(
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
@@ -88,6 +90,7 @@ class AppointmentsMigrationIntTest(
       nomisApi.stubMultipleGetAppointments(1..14)
       mappingApi.stubAllMappingsNotFound(APPOINTMENTS_GET_MAPPING_URL)
       mappingApi.stubMappingCreate(APPOINTMENTS_CREATE_MAPPING_URL)
+      mappingApi.stubGetApiLocationNomis(23456, UUID.randomUUID().toString())
 
       activitiesApi.stubCreateAppointmentForMigration(12345)
       mappingApi.stubAppointmentMappingByMigrationId(count = 14)
@@ -125,6 +128,7 @@ class AppointmentsMigrationIntTest(
       activitiesApi.stubCreateAppointmentForMigration(12345)
       mappingApi.stubAllMappingsNotFound(APPOINTMENTS_GET_MAPPING_URL)
       mappingApi.stubMappingCreate(APPOINTMENTS_CREATE_MAPPING_URL)
+      mappingApi.stubGetApiLocationNomis(23456, UUID.randomUUID().toString())
 
       // stub 10 migrated records and 1 fake a failure
       mappingApi.stubAppointmentMappingByMigrationId(count = 2)
@@ -166,6 +170,7 @@ class AppointmentsMigrationIntTest(
       mappingApi.stubAppointmentMappingByMigrationId()
       activitiesApi.stubCreateAppointmentForMigration(654321L)
       mappingApi.stubMappingCreateFailureFollowedBySuccess(APPOINTMENTS_CREATE_MAPPING_URL)
+      mappingApi.stubGetApiLocationNomis(23456, UUID.randomUUID().toString())
 
       webTestClient.performMigration("""{ "prisonIds": ["MDI"] }""")
 
@@ -180,6 +185,28 @@ class AppointmentsMigrationIntTest(
     }
 
     @Test
+    fun `will end up on the DLQ if the location mapping transformation fails`() {
+      nomisApi.stubGetInitialCount(APPOINTMENTS_ID_URL, 1) { appointmentIdsPagedResponse(it) }
+      nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 1, pageSize = 10)
+      nomisApi.stubMultipleGetAppointments(1..1)
+      activitiesApi.stubCreateAppointmentForMigration(12345)
+      mappingApi.stubAllMappingsNotFound(APPOINTMENTS_GET_MAPPING_URL)
+      mappingApi.stubMappingCreate(APPOINTMENTS_CREATE_MAPPING_URL)
+      // Not found from location mapping request
+      mappingApi.stubGetAnyLocationNotFound()
+
+      webTestClient.performMigration("""{ "prisonIds": ["MDI"] }""")
+
+      // should end up on the DLQ
+      await untilCallTo {
+        awsSqsAppointmentsMigrationDlqClient!!.countMessagesOnQueue(appointmentsMigrationDlqUrl!!).get()
+      } matches { it == 1 }
+
+      // check that appointment is not created
+      assertThat(activitiesApi.createAppointmentCount()).isEqualTo(0)
+    }
+
+    @Test
     fun `it will not retry after a 409 (duplicate appointment written to Activities API) or mapping already exists`() {
       nomisApi.stubGetInitialCount(APPOINTMENTS_ID_URL, 1) { appointmentIdsPagedResponse(it) }
       nomisApi.stubMultipleGetAppointmentIdCounts(totalElements = 2, pageSize = 10)
@@ -189,6 +216,7 @@ class AppointmentsMigrationIntTest(
       mappingApi.stubAppointmentMappingCreateConflict(10, 11, 1)
       mappingApi.stubNomisAppointmentsMappingFound(2)
       mappingApi.stubAppointmentMappingByMigrationId()
+      mappingApi.stubGetApiLocationNomis(23456, UUID.randomUUID().toString())
 
       webTestClient.performMigration("""{ "prisonIds": ["MDI"] }""")
 
@@ -222,6 +250,7 @@ class AppointmentsMigrationIntTest(
       activitiesApi.stubCreateAppointmentForMigration(null)
       mappingApi.stubAllMappingsNotFound(APPOINTMENTS_GET_MAPPING_URL)
       mappingApi.stubMappingCreate(APPOINTMENTS_CREATE_MAPPING_URL)
+      mappingApi.stubGetApiLocationNomis(23456, UUID.randomUUID().toString())
 
       // stub 1 migrated records
       mappingApi.stubAppointmentMappingByMigrationId(count = 1)
