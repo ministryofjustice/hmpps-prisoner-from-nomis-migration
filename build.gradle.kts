@@ -163,6 +163,12 @@ val models = listOf(
     url = "https://hmpps-visit-allocation-api-dev.prison.service.justice.gov.uk/v3/api-docs",
     models = "VisitAllocationPrisonerMigrationDto,VisitAllocationPrisonerSyncDto",
   ),
+  ModelConfiguration(
+    name = "finance",
+    packageName = "finance",
+    testPackageName = "finance",
+    url = "https://prisoner-finance-poc-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+  ),
 )
 
 tasks {

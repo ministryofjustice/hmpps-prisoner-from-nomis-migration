@@ -22,6 +22,7 @@ generic-service:
     API_BASE_URL_INCIDENTS: https://incident-reporting-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_LOCATIONS: https://locations-inside-prison-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_CASENOTES: https://dev.offender-case-notes.service.justice.gov.uk
+    API_BASE_URL_FINANCE: https://prisoner-finance-poc-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_ALERTS: https://alerts-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_COURT_SENTENCING: https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_PERSONAL_RELATIONSHIPS: https://personal-relationships-api-dev.hmpps.service.justice.gov.uk
@@ -66,6 +67,9 @@ generic-prometheus-alerts:
     casenotes:
       - "syscon-devs-dev-prisoner_from_nomis_casenotes_queue"
       - "syscon-devs-dev-prisoner_from_nomis_casenotes_dl_queue"
+    finance:
+      - "syscon-devs-dev-prisoner_from_nomis_finance_queue"
+      - "syscon-devs-dev-prisoner_from_nomis_finance_dl_queue"
     alerts:
       - "syscon-devs-dev-prisoner_from_nomis_alerts_queue"
       - "syscon-devs-dev-prisoner_from_nomis_alerts_dl_queue"

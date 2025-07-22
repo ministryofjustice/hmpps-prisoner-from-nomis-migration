@@ -56,6 +56,9 @@ hmpps.sqs:
     eventcasenotes:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventfinance:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     eventalerts:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
