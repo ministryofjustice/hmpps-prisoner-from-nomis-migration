@@ -76,8 +76,8 @@ The json specification can then be committed to the repository.
 
 # Mock services
 
-There a circumstances where you want to run this service end to end but without the consuming service being available, for example the consuming service
-has not be written yet. To emulate the publishing service we may provide a mock, for instance MockVisitsResource which consumes migrated data.
+There are circumstances where you want to run this service end to end but without the consuming service being available, for example the consuming service
+has not been written yet. To emulate the publishing service we may provide a mock, for instance MockVisitsResource which consumes migrated data.
 Details of the configuration follows:
 
 `API_BASE_URL_VISITS=https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk`

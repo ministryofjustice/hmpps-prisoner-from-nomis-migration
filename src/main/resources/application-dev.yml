@@ -11,6 +11,7 @@ api.base.url:
   incidents: http://localhost:8089
   locations: http://localhost:8091
   casenotes: http://localhost:8096
+  finance: http://localhost:8102
   mapping: http://localhost:8083
   court.sentencing: http://localhost:8090
   alerts: http://localhost:8092

@@ -19,6 +19,7 @@ api.base.url:
   court.sentencing: http://localhost:8094
   prison.person: http://localhost:8095
   casenotes: http://localhost:8096
+  finance: http://localhost:8102
   personal.relationships: http://localhost:8097
   nomis-sync: http://localhost:8098
   core.person: http://localhost:8099
@@ -125,6 +126,8 @@ hmpps.sqs:
     eventlocations:
       dlqMaxReceiveCount: 2
     eventcasenotes:
+      dlqMaxReceiveCount: 2
+    eventfinance:
       dlqMaxReceiveCount: 2
     eventcourtsentencing:
       dlqMaxReceiveCount: 2
