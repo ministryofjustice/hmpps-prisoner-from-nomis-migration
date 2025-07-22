@@ -158,10 +158,10 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("caseloadId", equalTo("SWI"))
                 .withRequestBodyJsonPath("transactionTimestamp", equalTo(g1.transactionTimestamp.toString()))
                 .withRequestBodyJsonPath("createdAt", equalTo(t1.createdAt.toString()))
-                .withRequestBodyJsonPath("createdBy", equalTo(t1.createdBy.toString()))
+                .withRequestBodyJsonPath("createdBy", equalTo(t1.createdBy))
                 .withRequestBodyJsonPath("createdByDisplayName", equalTo(t1.createdByDisplayName))
                 .withRequestBodyJsonPath("lastModifiedAt", equalTo(t1.lastModifiedAt.toString()))
-                .withRequestBodyJsonPath("lastModifiedBy", equalTo(t1.lastModifiedBy.toString()))
+                .withRequestBodyJsonPath("lastModifiedBy", equalTo(t1.lastModifiedBy))
                 .withRequestBodyJsonPath("lastModifiedByDisplayName", equalTo(t1.lastModifiedByDisplayName))
                 .withRequestBodyJsonPath(
                   "offenderTransactions[0].entrySequence",
@@ -279,10 +279,10 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("caseloadId", equalTo("SWI"))
                 .withRequestBodyJsonPath("transactionTimestamp", equalTo(g1.transactionTimestamp.toString()))
                 .withRequestBodyJsonPath("createdAt", equalTo(t1.createdAt.toString()))
-                .withRequestBodyJsonPath("createdBy", equalTo(t1.createdBy.toString()))
+                .withRequestBodyJsonPath("createdBy", equalTo(t1.createdBy))
                 .withRequestBodyJsonPath("createdByDisplayName", equalTo(t1.createdByDisplayName))
                 .withRequestBodyJsonPath("lastModifiedAt", equalTo(t1.lastModifiedAt.toString()))
-                .withRequestBodyJsonPath("lastModifiedBy", equalTo(t1.lastModifiedBy.toString()))
+                .withRequestBodyJsonPath("lastModifiedBy", equalTo(t1.lastModifiedBy))
                 .withRequestBodyJsonPath("lastModifiedByDisplayName", equalTo(t1.lastModifiedByDisplayName))
                 .withRequestBodyJsonPath(
                   "offenderTransactions[0].entrySequence",
@@ -591,11 +591,11 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("transactionType", equalTo(g1.type))
                 .withRequestBodyJsonPath("transactionTimestamp", equalTo(g1.transactionTimestamp.toString()))
                 .withRequestBodyJsonPath("createdAt", equalTo(g1.createdAt.toString()))
-                .withRequestBodyJsonPath("createdBy", equalTo(g1.createdBy.toString()))
+                .withRequestBodyJsonPath("createdBy", equalTo(g1.createdBy))
                 .withRequestBodyJsonPath("createdByDisplayName", equalTo(g1.createdByDisplayName))
                 .withRequestBodyJsonPath("reference", equalTo(g1.reference))
                 .withRequestBodyJsonPath("lastModifiedAt", equalTo(g1.lastModifiedAt.toString()))
-                .withRequestBodyJsonPath("lastModifiedBy", equalTo(g1.lastModifiedBy.toString()))
+                .withRequestBodyJsonPath("lastModifiedBy", equalTo(g1.lastModifiedBy))
                 .withRequestBodyJsonPath("lastModifiedByDisplayName", equalTo(g1.lastModifiedByDisplayName))
                 .withRequestBodyJsonPath(
                   "generalLedgerEntries[0].entrySequence",
@@ -698,11 +698,11 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("transactionType", equalTo(g1.type))
                 .withRequestBodyJsonPath("transactionTimestamp", equalTo(g1.transactionTimestamp.toString()))
                 .withRequestBodyJsonPath("createdAt", equalTo(g1.createdAt.toString()))
-                .withRequestBodyJsonPath("createdBy", equalTo(g1.createdBy.toString()))
+                .withRequestBodyJsonPath("createdBy", equalTo(g1.createdBy))
                 .withRequestBodyJsonPath("createdByDisplayName", equalTo(g1.createdByDisplayName))
                 .withRequestBodyJsonPath("reference", equalTo(g1.reference))
                 .withRequestBodyJsonPath("lastModifiedAt", equalTo(g1.lastModifiedAt.toString()))
-                .withRequestBodyJsonPath("lastModifiedBy", equalTo(g1.lastModifiedBy.toString()))
+                .withRequestBodyJsonPath("lastModifiedBy", equalTo(g1.lastModifiedBy))
                 .withRequestBodyJsonPath("lastModifiedByDisplayName", equalTo(g1.lastModifiedByDisplayName))
                 .withRequestBodyJsonPath(
                   "generalLedgerEntries[0].entrySequence",
