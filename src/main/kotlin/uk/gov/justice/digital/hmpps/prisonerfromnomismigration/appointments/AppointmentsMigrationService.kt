@@ -10,15 +10,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AppointmentIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AppointmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.APPOINTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import java.util.*
+import java.util.UUID
 
 @Service
 class AppointmentsMigrationService(
@@ -142,18 +141,16 @@ class AppointmentsMigrationService(
     )
   }
 
-  private val simpleTimeFormat = DateTimeFormatter.ofPattern("HH:mm")
-
-  private suspend fun AppointmentResponse.toAppointment() = AppointmentMigrateRequest(
+  suspend fun AppointmentResponse.toAppointment() = AppointmentMigrateRequest(
     bookingId = bookingId,
     prisonerNumber = offenderNo,
     prisonCode = prisonId,
-    internalLocationId = internalLocation,
+    internalLocationId = internalLocation!!,
     dpsLocationId = UUID.fromString(appointmentsMappingService.getDpsLocation(internalLocation).dpsLocationId),
     // startDate never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
-    startDate = startDateTime.toLocalDate(),
+    startDate = startDateTime!!.toLocalDate(),
     startTime = startDateTime.toLocalTime().format(simpleTimeFormat),
-    endTime = endDateTime.toLocalTime()?.format(simpleTimeFormat),
+    endTime = endDateTime?.toLocalTime()?.format(simpleTimeFormat),
     comment = comment,
     categoryCode = subtype,
     isCancelled = status == "CANC",
@@ -163,3 +160,26 @@ class AppointmentsMigrationService(
     updatedBy = modifiedBy,
   )
 }
+
+private val simpleTimeFormat = DateTimeFormatter.ofPattern("HH:mm")
+
+data class AppointmentResponse(
+  val bookingId: Long,
+  val offenderNo: String,
+  // prison or toPrison is never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
+  val prisonId: String,
+  val internalLocation: Long? = null,
+  val startDateTime: LocalDateTime? = null,
+  val endDateTime: LocalDateTime? = null,
+  val comment: String? = null,
+  val subtype: String,
+  val status: String,
+  val createdDate: LocalDateTime,
+  val createdBy: String,
+  val modifiedDate: LocalDateTime? = null,
+  val modifiedBy: String? = null,
+)
+
+data class AppointmentIdResponse(
+  val eventId: Long,
+)
