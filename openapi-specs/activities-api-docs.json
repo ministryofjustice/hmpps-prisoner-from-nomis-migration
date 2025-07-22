@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-07-01.28758.a3c8bdf"
+    "version" : "2025-07-21.29412.85cc032"
   },
   "servers" : [ {
     "url" : "https://activities-api-dev.prison.service.justice.gov.uk",
@@ -1067,7 +1067,7 @@
     "/waiting-list-applications/{prisonCode}/search" : {
       "post" : {
         "tags" : [ "waiting-list-application-controller" ],
-        "description" : "Search waiting list applications\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN\n* ACTIVITIES_MANAGEMENT__RO\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "description" : "Search waiting list applications\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN\n* ACTIVITIES_MANAGEMENT__RO",
         "operationId" : "searchWaitingLists",
         "parameters" : [ {
           "name" : "prisonCode",
@@ -1192,6 +1192,31 @@
               "text/plain" : {
                 "schema" : {
                   "type" : "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utility/create-pay-history" : {
+      "post" : {
+        "tags" : [ "utility-controller" ],
+        "summary" : "Create pay rate history for all the existing activities",
+        "description" : "Can only be accessed from within the ingress. Requests from elsewhere will result in a 401 response code.",
+        "operationId" : "createActivityPayHistory",
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PayHistoryMigrateResponse"
+                }
+              },
+              "text/plain" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PayHistoryMigrateResponse"
                 }
               }
             }
@@ -1446,7 +1471,7 @@
       "get" : {
         "tags" : [ "scheduled-event-controller" ],
         "summary" : "Get a list of scheduled events for a prison, prisoner, date range (max 3 months) and optional time slot.",
-        "description" : "\n      Returns scheduled events for the prison, prisoner, date range (max 3 months) and optional time slot.\n      Court hearings, adjudication hearings, transfers and visits come from NOMIS (via prison API).\n      Activities and appointments come from either NOMIS or the local database depending on whether the prison is\n      marked as active for appointments and/or activities.\n      (Intended usage: Prisoner calendar / schedule)\n    \n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "description" : "\n      Returns scheduled events for the prison, prisoner, date range (max 3 months) and optional time slot.\n      Court hearings, adjudication hearings, transfers and visits come from NOMIS (via prison API).\n      Activities and appointments come from either NOMIS or the local database depending on whether the prison is\n      marked as active for appointments and/or activities.\n      (Intended usage: Prisoner calendar / schedule)\n    \n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN",
         "operationId" : "getScheduledEventsForSinglePrisoner",
         "parameters" : [ {
           "name" : "prisonCode",
@@ -1548,7 +1573,7 @@
       "post" : {
         "tags" : [ "scheduled-event-controller" ],
         "summary" : "Get a list of scheduled events for a prison and list of prisoner numbers for a date and time slot",
-        "description" : "\n      Returns scheduled events for the prison, prisoner numbers, single date and an optional time slot.\n      Court hearings, adjudication hearings, transfers and visits come from NOMIS (via prison API).\n      Activities and appointments come from either NOMIS or the local database depending on whether the prison is\n      marked as rolled-out for activities and/or appointments.\n      (Intended usage: Unlock list)\n    \n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "description" : "\n      Returns scheduled events for the prison, prisoner numbers, single date and an optional time slot.\n      Court hearings, adjudication hearings, transfers and visits come from NOMIS (via prison API).\n      Activities and appointments come from either NOMIS or the local database depending on whether the prison is\n      marked as rolled-out for activities and/or appointments.\n      (Intended usage: Unlock list)\n    \n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN",
         "operationId" : "getScheduledEventsForMultiplePrisoners",
         "parameters" : [ {
           "name" : "prisonCode",
@@ -2591,6 +2616,386 @@
         }
       }
     },
+    "/integration-api/waiting-list-applications/{prisonCode}/search" : {
+      "post" : {
+        "tags" : [ "integration-api-controller" ],
+        "description" : "Search waiting list applications\n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "searchWaitingLists_1",
+        "parameters" : [ {
+          "name" : "prisonCode",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "description" : "The page number of search results (default: 0)",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "pageSize",
+          "in" : "query",
+          "description" : "The number of search results per page (default: 50)",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "Caseload-Id",
+          "in" : "header",
+          "content" : {
+            "*/*" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WaitingListSearchRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Waiting list application search results",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PagedWaitingListApplication"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Waiting list application not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/integration-api/scheduled-events/prison/{prisonCode}" : {
+      "get" : {
+        "tags" : [ "integration-api-controller" ],
+        "summary" : "Get a list of scheduled events for a prison, prisoner, date range (max 3 months) and optional time slot.",
+        "description" : "\n      Returns scheduled events for the prison, prisoner, date range (max 3 months) and optional time slot.\n      Court hearings, adjudication hearings, transfers and visits come from NOMIS (via prison API).\n      Activities and appointments come from either NOMIS or the local database depending on whether the prison is\n      marked as active for appointments and/or activities.\n      (Intended usage: Prisoner calendar / schedule)\n    \n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "getScheduledEventsForSinglePrisoner_1",
+        "parameters" : [ {
+          "name" : "prisonCode",
+          "in" : "path",
+          "description" : "The 3-digit prison code.",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "prisonerNumber",
+          "in" : "query",
+          "description" : "Prisoner number (required). Format A9999AA.",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "startDate",
+          "in" : "query",
+          "description" : "Start date of query (required). Format YYYY-MM-DD.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "endDate",
+          "in" : "query",
+          "description" : "End date of query (required). Format YYYY-MM-DD. The end date must be within 3 months of the start date)",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "timeSlot",
+          "in" : "query",
+          "description" : "Time slot for the events (optional). If supplied, one of AM, PM or ED.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "AM", "PM", "ED" ]
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Successful call - zero or more scheduled events found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonerScheduledEvents"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Requested resource not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "integration-api-controller" ],
+        "summary" : "Get a list of scheduled events for a prison and list of prisoner numbers for a date and time slot",
+        "description" : "\n      Returns scheduled events for the prison, prisoner numbers, single date and an optional time slot.\n      Court hearings, adjudication hearings, transfers and visits come from NOMIS (via prison API).\n      Activities and appointments come from either NOMIS or the local database depending on whether the prison is\n      marked as rolled-out for activities and/or appointments.\n      (Intended usage: Unlock list)\n    \n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "getScheduledEventsForMultiplePrisoners_1",
+        "parameters" : [ {
+          "name" : "prisonCode",
+          "in" : "path",
+          "description" : "The 3-character prison code.",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "date",
+          "in" : "query",
+          "description" : "The exact date to return events for (required) in format YYYY-MM-DD",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "timeSlot",
+          "in" : "query",
+          "description" : "Time slot of the events (optional). If supplied, one of AM, PM or ED.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "AM", "PM", "ED" ]
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "array",
+                "description" : "Set of prisoner numbers (required). Example ['G11234YI', 'B5234YI'].",
+                "items" : {
+                  "type" : "string"
+                },
+                "uniqueItems" : true
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Successful call - zero or more scheduled events found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonerScheduledEvents"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Requested resource not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/integration-api/appointments/{prisonCode}/search" : {
+      "post" : {
+        "tags" : [ "integration-api-controller" ],
+        "summary" : "Search for appointments within the specified prison",
+        "description" : "\n    Uses the supplied prison code and search parameters to filter and return appointment search results.\n    \n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "searchAppointments",
+        "parameters" : [ {
+          "name" : "prisonCode",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Caseload-Id",
+          "in" : "header",
+          "content" : {
+            "*/*" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AppointmentSearchRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Prison code and search parameters were accepted and results returned.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AppointmentSearchResult"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/event-review/prison/{prison}/acknowledge" : {
       "post" : {
         "tags" : [ "event-review-controller" ],
@@ -2752,8 +3157,8 @@
       "post" : {
         "tags" : [ "appointment-controller" ],
         "summary" : "Search for appointments within the specified prison",
-        "description" : "\n    Uses the supplied prison code and search parameters to filter and return appointment search results.\n    \n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN\n* ACTIVITIES__HMPPS_INTEGRATION_API",
-        "operationId" : "searchAppointments",
+        "description" : "\n    Uses the supplied prison code and search parameters to filter and return appointment search results.\n    \n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN",
+        "operationId" : "searchAppointments_1",
         "parameters" : [ {
           "name" : "prisonCode",
           "in" : "path",
@@ -4247,7 +4652,7 @@
       "get" : {
         "tags" : [ "activity-schedule-controller" ],
         "summary" : "Get an activity schedule by its id",
-        "description" : "Returns a single activity schedule by its unique identifier.\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN\n* NOMIS_ACTIVITIES\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "description" : "Returns a single activity schedule by its unique identifier.\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN\n* NOMIS_ACTIVITIES",
         "operationId" : "getScheduleById",
         "parameters" : [ {
           "name" : "scheduleId",
@@ -4334,6 +4739,14 @@
           "schema" : {
             "type" : "integer",
             "format" : "int64"
+          }
+        }, {
+          "name" : "includeNonAssociationsCheck",
+          "in" : "query",
+          "description" : "If true will try fetch and add non-association details. Defaults to true.",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
           }
         }, {
           "name" : "Caseload-Id",
@@ -5083,7 +5496,7 @@
       "get" : {
         "tags" : [ "prison-controller" ],
         "summary" : "Get a list of pay bands at a given prison",
-        "description" : "Returns the pay bands at a given prison or a default list of values if none present.\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "description" : "Returns the pay bands at a given prison or a default list of values if none present.\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN",
         "operationId" : "getPrisonPayBands",
         "parameters" : [ {
           "name" : "prisonCode",
@@ -5134,7 +5547,7 @@
       "get" : {
         "tags" : [ "prison-controller" ],
         "summary" : "Get list of activities running at a specified prison. Optionally and by default, only currently LIVE activities are returned",
-        "description" : "\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN\n* ACTIVITIES_MANAGEMENT__RO\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "description" : "\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN\n* ACTIVITIES_MANAGEMENT__RO",
         "operationId" : "getActivities",
         "parameters" : [ {
           "name" : "prisonCode",
@@ -5201,7 +5614,7 @@
       "get" : {
         "tags" : [ "prison-controller" ],
         "summary" : "Get a prison regime by its code",
-        "description" : "Returns a single prison regime and its details by its unique prison code.\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "description" : "Returns a single prison regime and its details by its unique prison code.\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN",
         "operationId" : "getPrisonRegimeByPrisonCode",
         "parameters" : [ {
           "name" : "prisonCode",
@@ -5611,6 +6024,790 @@
         }
       }
     },
+    "/integration-api/schedules/{scheduleId}" : {
+      "get" : {
+        "tags" : [ "integration-api-controller" ],
+        "summary" : "Get an activity schedule by its id",
+        "description" : "Returns a single activity schedule by its unique identifier.\n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "getScheduleById_1",
+        "parameters" : [ {
+          "name" : "scheduleId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "earliestSessionDate",
+          "in" : "query",
+          "description" : "If provided will filter earliest sessions >= the given date. Format YYYY-MM-DD, otherwise defaults to 4 weeks prior to the current date.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "Caseload-Id",
+          "in" : "header",
+          "content" : {
+            "*/*" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Activity found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ActivitySchedule"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The activity for this ID was not found.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/integration-api/schedules/{scheduleId}/waiting-list-applications" : {
+      "get" : {
+        "tags" : [ "integration-api-controller" ],
+        "summary" : "Get a schedules waiting list applications",
+        "description" : "Returns zero or more activity schedule waiting list applications.\n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "getWaitingListApplicationsBy_1",
+        "parameters" : [ {
+          "name" : "scheduleId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "Caseload-Id",
+          "in" : "header",
+          "content" : {
+            "*/*" : {
+              "schema" : {
+                "type" : "string"
+              }
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The waiting list applications for an activity schedule",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/WaitingListApplication"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Schedule ID not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/integration-api/prisons/{prisonCode}/{prisonerNumber}/scheduled-instances" : {
+      "get" : {
+        "tags" : [ "integration-api-controller" ],
+        "summary" : "Get a list of scheduled instances for a prisoner, prison, date range (max 3 months) and time slot (AM, PM or ED - optional)",
+        "description" : "Returns zero or more scheduled instances for a prisoner and date range (max 3 months).\n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "getScheduledInstancesForPrisoner",
+        "parameters" : [ {
+          "name" : "prisonCode",
+          "in" : "path",
+          "description" : "The 3-character prison code.",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "prisonerNumber",
+          "in" : "path",
+          "description" : "Prisoner Number",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "startDate",
+          "in" : "query",
+          "description" : "Start date of query (required). Format YYYY-MM-DD.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "endDate",
+          "in" : "query",
+          "description" : "End date of query (required). The end date must be within 3 months of the start date. Format YYYY-MM-DD.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "slot",
+          "in" : "query",
+          "description" : "The time slot (optional). If supplied, one of AM, PM or ED.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "AM", "PM", "ED" ]
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Successful call - zero or more scheduled instance records found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ScheduledActivity"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/integration-api/prison/{prisonCode}/prison-pay-bands" : {
+      "get" : {
+        "tags" : [ "integration-api-controller" ],
+        "summary" : "Get a list of pay bands at a given prison",
+        "description" : "Returns the pay bands at a given prison or a default list of values if none present.\n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "getPrisonPayBands_1",
+        "parameters" : [ {
+          "name" : "prisonCode",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Prison pay bands found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PrisonPayBand"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/integration-api/prison/{prisonCode}/activities" : {
+      "get" : {
+        "tags" : [ "integration-api-controller" ],
+        "summary" : "Get list of activities running at a specified prison. Optionally and by default, only currently LIVE activities are returned",
+        "description" : "\n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "getActivities_1",
+        "parameters" : [ {
+          "name" : "prisonCode",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "excludeArchived",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : true
+          }
+        }, {
+          "name" : "nameSearch",
+          "in" : "query",
+          "description" : "The activity name contains this case insensitive search term",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Activities",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ActivitySummary"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/integration-api/prison/prison-regime/{prisonCode}" : {
+      "get" : {
+        "tags" : [ "integration-api-controller" ],
+        "summary" : "Get a prison regime by its code",
+        "description" : "Returns a single prison regime and its details by its unique prison code.\n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "getPrisonRegimeByPrisonCode_1",
+        "parameters" : [ {
+          "name" : "prisonCode",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Prison regime found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PrisonRegime"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/integration-api/attendances/{attendanceId}" : {
+      "get" : {
+        "tags" : [ "integration-api-controller" ],
+        "summary" : "Get an attendance by ID",
+        "description" : "Returns an attendance.\n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "getAttendanceById_1",
+        "parameters" : [ {
+          "name" : "attendanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Attendance found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Attendance"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The attendance was not found.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/integration-api/attendances/prisoner/{prisonerNumber}" : {
+      "get" : {
+        "tags" : [ "integration-api-controller" ],
+        "summary" : "Gets a list of prisoner attendance activities for a given date range",
+        "description" : "\n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "getAttendanceForPrisoner",
+        "parameters" : [ {
+          "name" : "prisonerNumber",
+          "in" : "path",
+          "description" : "Prisoner Number",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "startDate",
+          "in" : "query",
+          "description" : "Start date of query (required). Format YYYY-MM-DD.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "endDate",
+          "in" : "query",
+          "description" : "End date of query (required). Format YYYY-MM-DD.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "prisonCode",
+          "in" : "query",
+          "description" : "The 3-character prison code.",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Successful call",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/Attendance"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The attendance was not found.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/integration-api/attendance-reasons" : {
+      "get" : {
+        "tags" : [ "integration-api-controller" ],
+        "summary" : "Get the list of attendance reasons",
+        "description" : "\n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "getAttendanceReasons",
+        "responses" : {
+          "200" : {
+            "description" : "Attendance reasons found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AttendanceReason"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/integration-api/allocations/deallocation-reasons" : {
+      "get" : {
+        "tags" : [ "integration-api-controller" ],
+        "summary" : "Get the list of deallocation reasons",
+        "description" : "\n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "getDeallocationReasons",
+        "responses" : {
+          "200" : {
+            "description" : "Deallocation reasons found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DeallocationReason"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/integration-api/activities/{activityId}/schedules" : {
+      "get" : {
+        "tags" : [ "integration-api-controller" ],
+        "summary" : "Get the capacity and number of allocated slots in an activity",
+        "description" : "\n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "getActivitySchedules",
+        "parameters" : [ {
+          "name" : "activityId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Activity schedules",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ActivityScheduleLite"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Activity ID not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/integration-api/activities/schedule/{scheduleId}/suitability-criteria" : {
+      "get" : {
+        "tags" : [ "integration-api-controller" ],
+        "summary" : "Gets the suitability criteria for allocating prisoners to a particular activity ",
+        "description" : "\n\nRequires one of the following roles:\n* ACTIVITIES__HMPPS_INTEGRATION_API",
+        "operationId" : "getActivityScheduleSuitabilityCriteria",
+        "parameters" : [ {
+          "name" : "scheduleId",
+          "in" : "path",
+          "description" : "Schedule ID",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Successful call",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ActivitySuitabilityCriteria"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The suitability criteria was not found.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/event-review/prison/{prisonCode}" : {
       "get" : {
         "tags" : [ "event-review-controller" ],
@@ -5788,7 +6985,7 @@
     "/attendances/{prisonCode}/suspended" : {
       "get" : {
         "tags" : [ "attendance-controller" ],
-        "summary" : "gets a list of suspended prisoner attendance activities for a given date",
+        "summary" : "Gets a list of suspended prisoner attendance activities for a given date",
         "description" : "\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN",
         "operationId" : "getAttendanceForSuspendedPrisoners",
         "parameters" : [ {
@@ -5869,7 +7066,7 @@
         "tags" : [ "attendance-controller" ],
         "summary" : "Get an attendance by ID",
         "description" : "Returns an attendance.\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN",
-        "operationId" : "getAttendanceById_1",
+        "operationId" : "getAttendanceById_2",
         "parameters" : [ {
           "name" : "attendanceId",
           "in" : "path",
@@ -5927,8 +7124,8 @@
       "get" : {
         "tags" : [ "attendance-reason-controller" ],
         "summary" : "Get the list of attendance reasons",
-        "description" : "\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN\n* ACTIVITIES__HMPPS_INTEGRATION_API",
-        "operationId" : "getAttendanceReasons",
+        "description" : "\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN",
+        "operationId" : "getAttendanceReasons_1",
         "responses" : {
           "200" : {
             "description" : "Attendance reasons found",
@@ -6647,8 +7844,8 @@
       "get" : {
         "tags" : [ "allocation-controller" ],
         "summary" : "Get the list of deallocation reasons",
-        "description" : "\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN\n* ACTIVITIES__HMPPS_INTEGRATION_API",
-        "operationId" : "getDeallocationReasons",
+        "description" : "\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN",
+        "operationId" : "getDeallocationReasons_1",
         "responses" : {
           "200" : {
             "description" : "Deallocation reasons found",
@@ -6733,8 +7930,8 @@
       "get" : {
         "tags" : [ "activity-controller" ],
         "summary" : "Get the capacity and number of allocated slots in an activity",
-        "description" : "\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN\n* ACTIVITIES__HMPPS_INTEGRATION_API",
-        "operationId" : "getActivitySchedules",
+        "description" : "\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_ADMIN",
+        "operationId" : "getActivitySchedules_1",
         "parameters" : [ {
           "name" : "activityId",
           "in" : "path",
@@ -6780,6 +7977,65 @@
           },
           "404" : {
             "description" : "Activity ID not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/activities/{activityId}/pay-history" : {
+      "get" : {
+        "tags" : [ "activity-controller" ],
+        "summary" : "Get the complete pay rate history for an activity by its ID",
+        "description" : "Returns full list of pay rate history for a single activity by activity ID\n\nRequires one of the following roles:\n* PRISON\n* ACTIVITY_HUB",
+        "operationId" : "getActivityPayHistory",
+        "parameters" : [ {
+          "name" : "activityId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Activity found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Activity"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The activity for this ID was not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -7330,6 +8586,12 @@
             "format" : "int64",
             "description" : "\n    The NOMIS AGENCY_INTERNAL_LOCATIONS.INTERNAL_LOCATION_ID value for mapping to NOMIS.\n    Will be null if in cell = true\n    ",
             "example" : 123
+          },
+          "dpsLocationId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The optional DPS location UUID for this appointment",
+            "example" : "b7602cc8-e769-4cbb-8194-62d8e655992a"
           },
           "inCell" : {
             "type" : "boolean",
@@ -7918,12 +9180,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -8049,7 +9311,7 @@
           },
           "nonAssociations" : {
             "type" : "boolean",
-            "description" : "Does the prisoner have non-associations? Null implies that non-associations could not be retrieved"
+            "description" : "Does the prisoner have non-associations? Null implies that non-associations were not retrieved"
           }
         },
         "required" : [ "activityId", "bookingId", "createdBy", "creationTime", "earliestReleaseDate", "id", "prisonCode", "prisonerNumber", "requestedBy", "requestedDate", "scheduleId", "status" ]
@@ -8075,6 +9337,23 @@
           }
         },
         "required" : [ "identifiers", "outboundEvent" ]
+      },
+      "PayHistoryMigrateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "payRateDataSize" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "payHistoryDataSize" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "message", "payHistoryDataSize", "payRateDataSize" ]
       },
       "PrisonerAllocationRequest" : {
         "type" : "object",
@@ -9912,8 +11191,14 @@
           "internalLocationId" : {
             "type" : "integer",
             "format" : "int64",
-            "description" : "\n    The NOMIS internal location id within the specified prison.\n    ",
+            "description" : "\n    The optional NOMIS internal location id within the specified prison.\n    ",
             "example" : 123
+          },
+          "dpsLocationId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The optional DPS location UUID.",
+            "example" : "b7602cc8-e769-4cbb-8194-62d8e655992a"
           },
           "startDate" : {
             "type" : "string",
@@ -9965,7 +11250,7 @@
             "minLength" : 0
           }
         },
-        "required" : [ "bookingId", "categoryCode", "created", "createdBy", "internalLocationId", "prisonCode", "prisonerNumber", "startDate", "startTime" ]
+        "required" : [ "bookingId", "categoryCode", "created", "createdBy", "prisonCode", "prisonerNumber", "startDate", "startTime" ]
       },
       "AppointmentInstance" : {
         "type" : "object",
@@ -10086,6 +11371,268 @@
           }
         },
         "required" : [ "appointmentAttendeeId", "appointmentDate", "appointmentId", "appointmentSeriesId", "appointmentType", "bookingId", "categoryCode", "createdBy", "createdTime", "id", "inCell", "prisonCode", "prisonerNumber", "startTime" ]
+      },
+      "AppointmentSearchRequest" : {
+        "type" : "object",
+        "description" : "The search parameters to use to filter appointments",
+        "properties" : {
+          "appointmentType" : {
+            "type" : "string",
+            "description" : "\n    The appointment type (INDIVIDUAL or GROUP) to match with the appointment series. Will restrict the search results to\n    appointments that are part of a series with the matching type when this search parameter is supplied.\n    ",
+            "enum" : [ "INDIVIDUAL", "GROUP" ],
+            "example" : "INDIVIDUAL"
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "\n    The start date to match with the appointments. Will restrict the search results to appointments\n    that have the matching start date when this search parameter is supplied but no end date is supplied.\n    When an end date is also supplied, the search uses a date range and will restrict the search results to\n    appointments that have a start date within the date range.\n    "
+          },
+          "endDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "\n    When an end date is supplied alongside the start date, the search uses a date range and will restrict the search results to\n    appointments that have a start date within the date range.\n    "
+          },
+          "timeSlots" : {
+            "type" : "array",
+            "description" : "\n    The time slot to match with the appointments. Will restrict the search results to appointments that have a start\n    time between the times defined by the prison for that time slot when this search parameter is supplied.\n    ",
+            "example" : [ "AM", "PM", "ED" ],
+            "items" : {
+              "type" : "string",
+              "enum" : [ "AM", "PM", "ED" ]
+            }
+          },
+          "categoryCode" : {
+            "type" : "string",
+            "description" : "\n    The NOMIS reference code to match with the appointments. Will restrict the search results to appointments\n    that have the matching category code when this search parameter is supplied.\n    ",
+            "example" : "GYMW"
+          },
+          "internalLocationId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "\n    The NOMIS internal location id to match with the appointments. Will restrict the search results to\n    appointments that have the matching internal location id when this search parameter is supplied.\n    ",
+            "example" : 123
+          },
+          "inCell" : {
+            "type" : "boolean",
+            "description" : "\n    The in cell flag value to match with the appointments. Will restrict the search results to appointments\n    that have the matching in cell value when this search parameter is supplied.\n    ",
+            "example" : false
+          },
+          "prisonerNumbers" : {
+            "type" : "array",
+            "description" : "\n    The allocated prisoner or prisoners to match with the appointments. Will restrict the search results to\n    appointments that have the at least one of the supplied prisoner numbers attending when this search parameter\n    is supplied.\n    ",
+            "example" : [ "A1234BC" ],
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "createdBy" : {
+            "type" : "string",
+            "description" : "\n    The username of the user authenticated via HMPPS auth to match with the appointments. Will restrict the\n    search results to appointments that were created by this username when this search parameter is supplied.\n    ",
+            "example" : "AAA01U"
+          }
+        },
+        "required" : [ "startDate" ]
+      },
+      "AppointmentAttendeeSearchResult" : {
+        "type" : "object",
+        "description" : "\n  Summary search result details of a specific appointment attendee found via search. Contains properties needed to\n  make additional API calls and to populate a table of search results.\n  ",
+        "properties" : {
+          "appointmentAttendeeId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "\n    The internally generated identifier for this prisoner attending a specific appointment in an appointment series or set.\n    N.B. this is used as the appointment instance id due to there being a one to one relationship between an appointment\n    attendee and appointment instances.\n    ",
+            "example" : 123456
+          },
+          "prisonerNumber" : {
+            "type" : "string",
+            "description" : "The NOMIS OFFENDERS.OFFENDER_ID_DISPLAY value for mapping to a prisoner record in NOMIS",
+            "example" : "A1234BC"
+          },
+          "bookingId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The NOMIS OFFENDER_BOOKINGS.OFFENDER_BOOK_ID value for mapping to a prisoner booking record in NOMIS",
+            "example" : 456
+          }
+        },
+        "required" : [ "appointmentAttendeeId", "bookingId", "prisonerNumber" ]
+      },
+      "AppointmentCategorySummary" : {
+        "type" : "object",
+        "description" : "\n  Summarises an appointment category for display purposes. Contains only properties needed to make additional API calls\n  and to display.\n  ",
+        "properties" : {
+          "code" : {
+            "type" : "string",
+            "description" : "The NOMIS REFERENCE_CODES.CODE (DOMAIN = 'INT_SCH_RSN') value for mapping to NOMIS",
+            "example" : "CHAP"
+          },
+          "description" : {
+            "type" : "string",
+            "description" : "The description of the appointment category",
+            "example" : "Chaplaincy"
+          }
+        },
+        "required" : [ "code", "description" ]
+      },
+      "AppointmentLocationSummary" : {
+        "type" : "object",
+        "description" : "\n  Summarises an appointment location for display purposes. Contains only properties needed to make additional API calls\n  and to display. NOMIS is the current system of record for appointment locations and they are managed there.\n  ",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The NOMIS AGENCY_INTERNAL_LOCATIONS.INTERNAL_LOCATION_ID value for mapping to NOMIS.",
+            "example" : 27
+          },
+          "dpsLocationId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The optional DPS location UUID",
+            "example" : "b7602cc8-e769-4cbb-8194-62d8e655992a"
+          },
+          "prisonCode" : {
+            "type" : "string",
+            "description" : "\n    The NOMIS AGENCY_LOCATIONS.AGY_LOC_ID value for mapping to NOMIS.\n    ",
+            "example" : "SKI"
+          },
+          "description" : {
+            "type" : "string",
+            "description" : "The description of the appointment location. Mapped from AGENCY_INTERNAL_LOCATIONS.USER_DESC",
+            "example" : "Chapel"
+          }
+        },
+        "required" : [ "description", "id", "prisonCode" ]
+      },
+      "AppointmentSearchResult" : {
+        "type" : "object",
+        "description" : "\n  Summary search result details of a specific appointment found via search. Contains properties needed to\n  make additional API calls and to populate a table of search results.\n  ",
+        "properties" : {
+          "appointmentSeriesId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The internally generated identifier for the appointment series",
+            "example" : 12345
+          },
+          "appointmentId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The internally generated identifier for this appointment",
+            "example" : 123456
+          },
+          "appointmentType" : {
+            "type" : "string",
+            "description" : "The type of the appointment series (INDIVIDUAL or GROUP)",
+            "enum" : [ "INDIVIDUAL", "GROUP" ],
+            "example" : "INDIVIDUAL"
+          },
+          "prisonCode" : {
+            "type" : "string",
+            "description" : "\n    The NOMIS AGENCY_LOCATIONS.AGY_LOC_ID value for mapping to NOMIS.\n    ",
+            "example" : "SKI"
+          },
+          "appointmentName" : {
+            "type" : "string",
+            "description" : "\n    The appointment's name combining the optional custom name with the category description. If custom name has been\n    specified, the name format will be \"Custom name (Category description)\" \n    "
+          },
+          "attendees" : {
+            "type" : "array",
+            "description" : "\n    The prisoner or prisoners attending this appointment. Appointments of type INDIVIDUAL will have one\n    prisoner attending to each appointment. Appointments of type GROUP can have more than one prisoner\n    attending each appointment\n    ",
+            "items" : {
+              "$ref" : "#/components/schemas/AppointmentAttendeeSearchResult"
+            }
+          },
+          "category" : {
+            "$ref" : "#/components/schemas/AppointmentCategorySummary",
+            "description" : "\n    The summary of the category of this appointment\n    "
+          },
+          "customName" : {
+            "type" : "string",
+            "description" : "\n    Free text name further describing the appointment. Used as part of the appointment name with the\n    format \"Custom name (Category description) if specified.\n    ",
+            "example" : "Meeting with the governor"
+          },
+          "internalLocation" : {
+            "$ref" : "#/components/schemas/AppointmentLocationSummary",
+            "description" : "\n    The summary of the internal location this appointment will take place.\n    Will be null if in cell = true\n    "
+          },
+          "inCell" : {
+            "type" : "boolean",
+            "description" : "\n    Flag to indicate if the location of the appointment is in cell rather than an internal prison location.\n    Internal location will be null if in cell = true\n    ",
+            "example" : false
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The date this appointment is taking place on"
+          },
+          "startTime" : {
+            "type" : "string",
+            "description" : "The starting time of this appointment",
+            "example" : "13:00"
+          },
+          "endTime" : {
+            "type" : "string",
+            "description" : "The end time of this appointment",
+            "example" : "13:30"
+          },
+          "timeSlot" : {
+            "type" : "string",
+            "description" : "time slot",
+            "enum" : [ "AM", "PM", "ED" ]
+          },
+          "isRepeat" : {
+            "type" : "boolean",
+            "description" : "Indicates whether the appointment series was specified to repeat via its schedule",
+            "example" : false
+          },
+          "sequenceNumber" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The sequence number of this appointment within the appointment series",
+            "example" : 3
+          },
+          "maxSequenceNumber" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The sequence number of the final appointment within the appointment series",
+            "example" : 6
+          },
+          "isEdited" : {
+            "type" : "boolean",
+            "description" : "Indicates whether this appointment has been changed from its original state",
+            "example" : false
+          },
+          "isCancelled" : {
+            "type" : "boolean",
+            "description" : "Indicates whether this appointment has been cancelled",
+            "example" : false
+          },
+          "isExpired" : {
+            "type" : "boolean",
+            "description" : "Indicates whether this appointment has expired",
+            "example" : false
+          },
+          "createdTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date and time this appointment was created. Will not change"
+          },
+          "updatedTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "\n    The date and time this appointment was last changed.\n    Will be null if this appointment has not been altered since it was created\n    "
+          },
+          "cancelledTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "\n    The date and time this appointment was cancelled.\n    Will be null if this appointment has not been cancelled\n    "
+          },
+          "cancelledBy" : {
+            "type" : "string",
+            "description" : "\n    The username of the user authenticated via HMPPS auth that cancelled this appointment.\n    Will be null if this appointment has not been cancelled\n    ",
+            "example" : "AAA01U"
+          }
+        },
+        "required" : [ "appointmentId", "appointmentName", "appointmentSeriesId", "appointmentType", "attendees", "category", "createdTime", "inCell", "isCancelled", "isEdited", "isExpired", "isRepeat", "maxSequenceNumber", "prisonCode", "sequenceNumber", "startDate", "startTime", "timeSlot" ]
       },
       "EventAcknowledgeRequest" : {
         "type" : "object",
@@ -10248,262 +11795,6 @@
           }
         },
         "required" : [ "content", "pageNumber", "totalPages" ]
-      },
-      "AppointmentSearchRequest" : {
-        "type" : "object",
-        "description" : "The search parameters to use to filter appointments",
-        "properties" : {
-          "appointmentType" : {
-            "type" : "string",
-            "description" : "\n    The appointment type (INDIVIDUAL or GROUP) to match with the appointment series. Will restrict the search results to\n    appointments that are part of a series with the matching type when this search parameter is supplied.\n    ",
-            "enum" : [ "INDIVIDUAL", "GROUP" ],
-            "example" : "INDIVIDUAL"
-          },
-          "startDate" : {
-            "type" : "string",
-            "format" : "date",
-            "description" : "\n    The start date to match with the appointments. Will restrict the search results to appointments\n    that have the matching start date when this search parameter is supplied but no end date is supplied.\n    When an end date is also supplied, the search uses a date range and will restrict the search results to\n    appointments that have a start date within the date range.\n    "
-          },
-          "endDate" : {
-            "type" : "string",
-            "format" : "date",
-            "description" : "\n    When an end date is supplied alongside the start date, the search uses a date range and will restrict the search results to\n    appointments that have a start date within the date range.\n    "
-          },
-          "timeSlots" : {
-            "type" : "array",
-            "description" : "\n    The time slot to match with the appointments. Will restrict the search results to appointments that have a start\n    time between the times defined by the prison for that time slot when this search parameter is supplied.\n    ",
-            "example" : [ "AM", "PM", "ED" ],
-            "items" : {
-              "type" : "string",
-              "enum" : [ "AM", "PM", "ED" ]
-            }
-          },
-          "categoryCode" : {
-            "type" : "string",
-            "description" : "\n    The NOMIS reference code to match with the appointments. Will restrict the search results to appointments\n    that have the matching category code when this search parameter is supplied.\n    ",
-            "example" : "GYMW"
-          },
-          "internalLocationId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "\n    The NOMIS internal location id to match with the appointments. Will restrict the search results to\n    appointments that have the matching internal location id when this search parameter is supplied.\n    ",
-            "example" : 123
-          },
-          "inCell" : {
-            "type" : "boolean",
-            "description" : "\n    The in cell flag value to match with the appointments. Will restrict the search results to appointments\n    that have the matching in cell value when this search parameter is supplied.\n    ",
-            "example" : false
-          },
-          "prisonerNumbers" : {
-            "type" : "array",
-            "description" : "\n    The allocated prisoner or prisoners to match with the appointments. Will restrict the search results to\n    appointments that have the at least one of the supplied prisoner numbers attending when this search parameter\n    is supplied.\n    ",
-            "example" : [ "A1234BC" ],
-            "items" : {
-              "type" : "string"
-            }
-          },
-          "createdBy" : {
-            "type" : "string",
-            "description" : "\n    The username of the user authenticated via HMPPS auth to match with the appointments. Will restrict the\n    search results to appointments that were created by this username when this search parameter is supplied.\n    ",
-            "example" : "AAA01U"
-          }
-        },
-        "required" : [ "startDate" ]
-      },
-      "AppointmentAttendeeSearchResult" : {
-        "type" : "object",
-        "description" : "\n  Summary search result details of a specific appointment attendee found via search. Contains properties needed to\n  make additional API calls and to populate a table of search results.\n  ",
-        "properties" : {
-          "appointmentAttendeeId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "\n    The internally generated identifier for this prisoner attending a specific appointment in an appointment series or set.\n    N.B. this is used as the appointment instance id due to there being a one to one relationship between an appointment\n    attendee and appointment instances.\n    ",
-            "example" : 123456
-          },
-          "prisonerNumber" : {
-            "type" : "string",
-            "description" : "The NOMIS OFFENDERS.OFFENDER_ID_DISPLAY value for mapping to a prisoner record in NOMIS",
-            "example" : "A1234BC"
-          },
-          "bookingId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The NOMIS OFFENDER_BOOKINGS.OFFENDER_BOOK_ID value for mapping to a prisoner booking record in NOMIS",
-            "example" : 456
-          }
-        },
-        "required" : [ "appointmentAttendeeId", "bookingId", "prisonerNumber" ]
-      },
-      "AppointmentCategorySummary" : {
-        "type" : "object",
-        "description" : "\n  Summarises an appointment category for display purposes. Contains only properties needed to make additional API calls\n  and to display.\n  ",
-        "properties" : {
-          "code" : {
-            "type" : "string",
-            "description" : "The NOMIS REFERENCE_CODES.CODE (DOMAIN = 'INT_SCH_RSN') value for mapping to NOMIS",
-            "example" : "CHAP"
-          },
-          "description" : {
-            "type" : "string",
-            "description" : "The description of the appointment category",
-            "example" : "Chaplaincy"
-          }
-        },
-        "required" : [ "code", "description" ]
-      },
-      "AppointmentLocationSummary" : {
-        "type" : "object",
-        "description" : "\n  Summarises an appointment location for display purposes. Contains only properties needed to make additional API calls\n  and to display. NOMIS is the current system of record for appointment locations and they are managed there.\n  ",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The NOMIS AGENCY_INTERNAL_LOCATIONS.INTERNAL_LOCATION_ID value for mapping to NOMIS.",
-            "example" : 27
-          },
-          "prisonCode" : {
-            "type" : "string",
-            "description" : "\n    The NOMIS AGENCY_LOCATIONS.AGY_LOC_ID value for mapping to NOMIS.\n    ",
-            "example" : "SKI"
-          },
-          "description" : {
-            "type" : "string",
-            "description" : "The description of the appointment location. Mapped from AGENCY_INTERNAL_LOCATIONS.USER_DESC",
-            "example" : "Chapel"
-          }
-        },
-        "required" : [ "description", "id", "prisonCode" ]
-      },
-      "AppointmentSearchResult" : {
-        "type" : "object",
-        "description" : "\n  Summary search result details of a specific appointment found via search. Contains properties needed to\n  make additional API calls and to populate a table of search results.\n  ",
-        "properties" : {
-          "appointmentSeriesId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The internally generated identifier for the appointment series",
-            "example" : 12345
-          },
-          "appointmentId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The internally generated identifier for this appointment",
-            "example" : 123456
-          },
-          "appointmentType" : {
-            "type" : "string",
-            "description" : "The type of the appointment series (INDIVIDUAL or GROUP)",
-            "enum" : [ "INDIVIDUAL", "GROUP" ],
-            "example" : "INDIVIDUAL"
-          },
-          "prisonCode" : {
-            "type" : "string",
-            "description" : "\n    The NOMIS AGENCY_LOCATIONS.AGY_LOC_ID value for mapping to NOMIS.\n    ",
-            "example" : "SKI"
-          },
-          "appointmentName" : {
-            "type" : "string",
-            "description" : "\n    The appointment's name combining the optional custom name with the category description. If custom name has been\n    specified, the name format will be \"Custom name (Category description)\" \n    "
-          },
-          "attendees" : {
-            "type" : "array",
-            "description" : "\n    The prisoner or prisoners attending this appointment. Appointments of type INDIVIDUAL will have one\n    prisoner attending to each appointment. Appointments of type GROUP can have more than one prisoner\n    attending each appointment\n    ",
-            "items" : {
-              "$ref" : "#/components/schemas/AppointmentAttendeeSearchResult"
-            }
-          },
-          "category" : {
-            "$ref" : "#/components/schemas/AppointmentCategorySummary",
-            "description" : "\n    The summary of the category of this appointment\n    "
-          },
-          "customName" : {
-            "type" : "string",
-            "description" : "\n    Free text name further describing the appointment. Used as part of the appointment name with the\n    format \"Custom name (Category description) if specified.\n    ",
-            "example" : "Meeting with the governor"
-          },
-          "internalLocation" : {
-            "$ref" : "#/components/schemas/AppointmentLocationSummary",
-            "description" : "\n    The summary of the internal location this appointment will take place.\n    Will be null if in cell = true\n    "
-          },
-          "inCell" : {
-            "type" : "boolean",
-            "description" : "\n    Flag to indicate if the location of the appointment is in cell rather than an internal prison location.\n    Internal location will be null if in cell = true\n    ",
-            "example" : false
-          },
-          "startDate" : {
-            "type" : "string",
-            "format" : "date",
-            "description" : "The date this appointment is taking place on"
-          },
-          "startTime" : {
-            "type" : "string",
-            "description" : "The starting time of this appointment",
-            "example" : "13:00"
-          },
-          "endTime" : {
-            "type" : "string",
-            "description" : "The end time of this appointment",
-            "example" : "13:30"
-          },
-          "timeSlot" : {
-            "type" : "string",
-            "description" : "time slot",
-            "enum" : [ "AM", "PM", "ED" ]
-          },
-          "isRepeat" : {
-            "type" : "boolean",
-            "description" : "Indicates whether the appointment series was specified to repeat via its schedule",
-            "example" : false
-          },
-          "sequenceNumber" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "The sequence number of this appointment within the appointment series",
-            "example" : 3
-          },
-          "maxSequenceNumber" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "The sequence number of the final appointment within the appointment series",
-            "example" : 6
-          },
-          "isEdited" : {
-            "type" : "boolean",
-            "description" : "Indicates whether this appointment has been changed from its original state",
-            "example" : false
-          },
-          "isCancelled" : {
-            "type" : "boolean",
-            "description" : "Indicates whether this appointment has been cancelled",
-            "example" : false
-          },
-          "isExpired" : {
-            "type" : "boolean",
-            "description" : "Indicates whether this appointment has expired",
-            "example" : false
-          },
-          "createdTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "The date and time this appointment was created. Will not change"
-          },
-          "updatedTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "\n    The date and time this appointment was last changed.\n    Will be null if this appointment has not been altered since it was created\n    "
-          },
-          "cancelledTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "\n    The date and time this appointment was cancelled.\n    Will be null if this appointment has not been cancelled\n    "
-          },
-          "cancelledBy" : {
-            "type" : "string",
-            "description" : "\n    The username of the user authenticated via HMPPS auth that cancelled this appointment.\n    Will be null if this appointment has not been cancelled\n    ",
-            "example" : "AAA01U"
-          }
-        },
-        "required" : [ "appointmentId", "appointmentName", "appointmentSeriesId", "appointmentType", "attendees", "category", "createdTime", "inCell", "isCancelled", "isEdited", "isExpired", "isRepeat", "maxSequenceNumber", "prisonCode", "sequenceNumber", "startDate", "startTime", "timeSlot" ]
       },
       "AppointmentAttendeeSummary" : {
         "type" : "object",
@@ -10847,6 +12138,12 @@
             "description" : "\n    The NOMIS internal location id within the specified prison. This must be supplied if inCell is false.\n    The internal location id must exist, must be within the prison specified by the prisonCode property and be active. \n    ",
             "example" : 123
           },
+          "dpsLocationId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The optional DPS location UUID for this appointment set",
+            "example" : "b7602cc8-e769-4cbb-8194-62d8e655992a"
+          },
           "inCell" : {
             "type" : "boolean",
             "description" : "\n    Flag to indicate if the location of the appointments is in cell rather than an internal prison location.\n    Internal location id will be ignored if inCell is true\n    ",
@@ -10906,6 +12203,12 @@
             "format" : "int64",
             "description" : "\n    The NOMIS AGENCY_INTERNAL_LOCATIONS.INTERNAL_LOCATION_ID value for mapping to NOMIS.\n    Will be null if in cell = true\n    ",
             "example" : 123
+          },
+          "dpsLocationId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The optional DPS location UUID",
+            "example" : "b7602cc8-e769-4cbb-8194-62d8e655992a"
           },
           "inCell" : {
             "type" : "boolean",
@@ -11281,6 +12584,13 @@
               "$ref" : "#/components/schemas/ActivityPayCreateRequest"
             }
           },
+          "payChange" : {
+            "type" : "array",
+            "description" : "The list of pay rates that can apply to this activity. Must be null or empty if the activity is unpaid",
+            "items" : {
+              "$ref" : "#/components/schemas/ActivityPayHistoryCreateRequest"
+            }
+          },
           "riskLevel" : {
             "type" : "string",
             "description" : "The most recent risk assessment level for this activity",
@@ -11429,6 +12739,59 @@
         },
         "required" : [ "incentiveLevel", "incentiveNomisCode", "payBandId" ]
       },
+      "ActivityPayHistoryCreateRequest" : {
+        "type" : "object",
+        "description" : "Describes the pay rates history to be created for an activity",
+        "properties" : {
+          "incentiveNomisCode" : {
+            "type" : "string",
+            "description" : "The NOMIS code for the incentive/earned privilege level",
+            "example" : "BAS",
+            "maxLength" : 3,
+            "minLength" : 0
+          },
+          "incentiveLevel" : {
+            "type" : "string",
+            "description" : "The incentive/earned privilege level",
+            "example" : "Basic",
+            "maxLength" : 50,
+            "minLength" : 0
+          },
+          "payBandId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The id of the prison pay band used",
+            "example" : 1
+          },
+          "rate" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The earning rate for one half day session for someone of this incentive level and pay band (in pence)",
+            "example" : 150
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The effective start date for this pay rate",
+            "example" : "2022-12-23"
+          },
+          "changedDetails" : {
+            "type" : "string",
+            "description" : "The pay rate change details",
+            "example" : "New pay rate added: £1.00",
+            "maxLength" : 500,
+            "minLength" : 0
+          },
+          "changedBy" : {
+            "type" : "string",
+            "description" : "The person who changed this pay rate",
+            "example" : "joebloggs",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "changedBy", "changedDetails", "incentiveLevel", "incentiveNomisCode", "payBandId" ]
+      },
       "Activity" : {
         "type" : "object",
         "description" : "Describes a top-level activity",
@@ -11524,6 +12887,13 @@
               "$ref" : "#/components/schemas/ActivityPay"
             }
           },
+          "payChange" : {
+            "type" : "array",
+            "description" : "The list of recent pay rate changes that can apply to this activity",
+            "items" : {
+              "$ref" : "#/components/schemas/ActivityPayHistory"
+            }
+          },
           "startDate" : {
             "type" : "string",
             "format" : "date",
@@ -11576,7 +12946,7 @@
             "example" : true
           }
         },
-        "required" : [ "attendanceRequired", "category", "createdBy", "createdTime", "eligibilityRules", "id", "inCell", "minimumEducationLevel", "offWing", "onWing", "outsideWork", "paid", "pay", "payPerSession", "pieceWork", "prisonCode", "riskLevel", "schedules", "startDate", "summary" ]
+        "required" : [ "attendanceRequired", "category", "createdBy", "createdTime", "eligibilityRules", "id", "inCell", "minimumEducationLevel", "offWing", "onWing", "outsideWork", "paid", "pay", "payChange", "payPerSession", "pieceWork", "prisonCode", "riskLevel", "schedules", "startDate", "summary" ]
       },
       "ActivityEligibility" : {
         "type" : "object",
@@ -11645,6 +13015,62 @@
           }
         },
         "required" : [ "id", "incentiveLevel", "incentiveNomisCode", "prisonPayBand" ]
+      },
+      "ActivityPayHistory" : {
+        "type" : "object",
+        "description" : "Describes the pay rates history which apply to an activity",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The internally-generated ID for this activity pay history",
+            "example" : 123456
+          },
+          "incentiveNomisCode" : {
+            "type" : "string",
+            "description" : "The NOMIS code for the incentive/earned privilege level",
+            "example" : "BAS"
+          },
+          "incentiveLevel" : {
+            "type" : "string",
+            "description" : "The incentive/earned privilege level",
+            "example" : "Basic"
+          },
+          "prisonPayBand" : {
+            "$ref" : "#/components/schemas/PrisonPayBand",
+            "description" : "The pay band id for this activity pay history",
+            "example" : 123456
+          },
+          "rate" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The earning rate for one half day session for someone of this incentive level and pay band (in pence)",
+            "example" : 150
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The effective start date for this pay rate",
+            "example" : "2024-06-18"
+          },
+          "changedDetails" : {
+            "type" : "string",
+            "description" : "The actual change to this pay rate",
+            "example" : "New pay rate added: £1.00"
+          },
+          "changedTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date and time when this pay rate was changed",
+            "example" : "2022-09-01'T'09:01:02.964"
+          },
+          "changedBy" : {
+            "type" : "string",
+            "description" : "The person who changed this pay rate",
+            "example" : "joebloggs"
+          }
+        },
+        "required" : [ "id", "prisonPayBand" ]
       },
       "ActivitySchedule" : {
         "type" : "object",
@@ -11927,8 +13353,14 @@
           "internalLocationId" : {
             "type" : "integer",
             "format" : "int64",
-            "description" : "\n    The updated NOMIS internal location id within the specified prison. This must be supplied if inCell is false.\n    The internal location id must exist, must be within the prison specified by the prisonCode property on the\n    appointment and be active. \n    ",
+            "description" : "\n    The updated NOMIS internal location id within the specified prison. This or DPS location id must be supplied if inCell is false.\n    The internal location id must exist, must be within the prison specified by the prisonCode property on the\n    appointment and be active. \n    ",
             "example" : 123
+          },
+          "dpsLocationId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "\n      The updated DPS location id within the specified prison. This or NOMIS internal location id must be supplied if inCell is false.\n      The DPS location UUID must exist, must be within the prison specified by the prisonCode property on the\n      appointment and be active. \n    ",
+            "example" : "b7602cc8-e769-4cbb-8194-62d8e655992a"
           },
           "inCell" : {
             "type" : "boolean",
@@ -12126,6 +13558,13 @@
             "description" : "The list of pay rates that can apply to this activity. Must be null or empty if the activity is unpaid",
             "items" : {
               "$ref" : "#/components/schemas/ActivityPayCreateRequest"
+            }
+          },
+          "payChange" : {
+            "type" : "array",
+            "description" : "The list of pay rates that can apply to this activity. Must be null or empty if the activity is unpaid",
+            "items" : {
+              "$ref" : "#/components/schemas/ActivityPayHistoryCreateRequest"
             }
           },
           "scheduleWeeks" : {
@@ -12859,12 +14298,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -13308,6 +14747,188 @@
           }
         },
         "required" : [ "code", "description", "dpsLocationId", "id", "prisonCode" ]
+      },
+      "ScheduledActivity" : {
+        "type" : "object",
+        "description" : "Describes a scheduled activity for a prisoner",
+        "properties" : {
+          "scheduledInstanceId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The internal ID of the scheduled instance",
+            "example" : 1
+          },
+          "allocationId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The internal ID of the allocation",
+            "example" : 1
+          },
+          "prisonCode" : {
+            "type" : "string",
+            "description" : "The prison code for this scheduled activity",
+            "example" : "MDI"
+          },
+          "sessionDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The specific date for this session",
+            "example" : "2022-09-30"
+          },
+          "startTime" : {
+            "type" : "string",
+            "description" : "The start time for this scheduled instance",
+            "example" : "09:00"
+          },
+          "endTime" : {
+            "type" : "string",
+            "description" : "The end time for this scheduled instance",
+            "example" : "10:00"
+          },
+          "prisonerNumber" : {
+            "type" : "string",
+            "description" : "The prisoners prisoner number",
+            "example" : "GF10101"
+          },
+          "bookingId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The booking id of the prisoner",
+            "example" : 10001
+          },
+          "inCell" : {
+            "type" : "boolean",
+            "description" : "Set to true if this event will take place in the prisoner's cell",
+            "example" : false
+          },
+          "onWing" : {
+            "type" : "boolean",
+            "description" : "Flag to indicate if the location of the activity is on wing",
+            "example" : false
+          },
+          "offWing" : {
+            "type" : "boolean",
+            "description" : "Flag to indicate if the location of the activity is off wing and not in a listed location",
+            "example" : false
+          },
+          "internalLocationId" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The NOMIS internal location id where this event takes place",
+            "example" : 10001
+          },
+          "dpsLocationId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The optional DPS location UUID",
+            "example" : "b7602cc8-e769-4cbb-8194-62d8e655992a"
+          },
+          "internalLocationCode" : {
+            "type" : "string",
+            "description" : "The NOMIS location code for this event",
+            "example" : "5-A-SIDE COM"
+          },
+          "internalLocationDescription" : {
+            "type" : "string",
+            "description" : "The NOMIS location description for this event",
+            "example" : "MDI-GYM-5-A-SIDE COM"
+          },
+          "scheduleDescription" : {
+            "type" : "string"
+          },
+          "activityId" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The id of the activity",
+            "example" : 1
+          },
+          "activityCategory" : {
+            "type" : "string",
+            "description" : "The category for this activity, one of the high-level categories"
+          },
+          "activitySummary" : {
+            "type" : "string",
+            "description" : "The title of the activity for this attendance record",
+            "example" : "Math Level 1"
+          },
+          "cancelled" : {
+            "type" : "boolean",
+            "description" : "Set to true if this event has been cancelled",
+            "example" : false
+          },
+          "suspended" : {
+            "type" : "boolean",
+            "description" : "Set to true if this prisoner is suspended from the scheduled event",
+            "example" : false
+          },
+          "autoSuspended" : {
+            "type" : "boolean",
+            "description" : "Set to true if this prisoner is auto-suspended from the scheduled event",
+            "example" : false
+          },
+          "timeSlot" : {
+            "type" : "string",
+            "description" : "Time slot of scheduled instance",
+            "enum" : [ "AM", "PM", "ED" ],
+            "example" : "AM"
+          },
+          "issuePayment" : {
+            "type" : "boolean",
+            "description" : "Should activity payment be issued for SICK, REST or OTHER",
+            "example" : true
+          },
+          "attendanceStatus" : {
+            "type" : "string",
+            "description" : "The activity attendance status - WAITING or COMPLETED",
+            "enum" : [ "WAITING", "COMPLETED" ],
+            "example" : "WAITING"
+          },
+          "attendanceReasonCode" : {
+            "type" : "string",
+            "description" : "The code for the activity (non) attendance reason",
+            "enum" : [ "SICK", "REFUSED", "NOT_REQUIRED", "REST", "CLASH", "OTHER", "AUTO_SUSPENDED", "SUSPENDED", "CANCELLED", "ATTENDED" ],
+            "example" : "SICK"
+          },
+          "paidActivity" : {
+            "type" : "boolean",
+            "description" : "Set to true if this activity is a paid activity",
+            "example" : false
+          },
+          "possibleAdvanceAttendance" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "activityCategory", "activityId", "allocationId", "autoSuspended", "bookingId", "cancelled", "inCell", "offWing", "onWing", "paidActivity", "possibleAdvanceAttendance", "prisonCode", "prisonerNumber", "scheduledInstanceId", "sessionDate", "suspended", "timeSlot" ]
+      },
+      "ActivitySuitabilityCriteria" : {
+        "type" : "object",
+        "properties" : {
+          "riskLevel" : {
+            "type" : "string",
+            "description" : "The most recent risk assessment level for this activity",
+            "example" : "high"
+          },
+          "isPaid" : {
+            "type" : "boolean",
+            "description" : "Whether the activity is a paid activity",
+            "example" : true
+          },
+          "payRates" : {
+            "type" : "array",
+            "description" : "Describes the pay rates and bands which apply to an activity",
+            "items" : {
+              "$ref" : "#/components/schemas/ActivityPay"
+            }
+          },
+          "minimumEducationLevel" : {
+            "type" : "array",
+            "description" : "Describes the minimum education levels which apply to an activity",
+            "items" : {
+              "$ref" : "#/components/schemas/ActivityMinimumEducationLevel"
+            }
+          }
+        },
+        "required" : [ "isPaid", "minimumEducationLevel", "payRates", "riskLevel" ]
       },
       "EventReview" : {
         "type" : "object",
