@@ -6,14 +6,19 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AppointmentIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AppointmentIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AppointmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.APPOINTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
+import java.util.*
 
 @Service
 class AppointmentsMigrationService(
@@ -136,4 +141,25 @@ class AppointmentsMigrationService(
       ),
     )
   }
+
+  private val simpleTimeFormat = DateTimeFormatter.ofPattern("HH:mm")
+
+  private suspend fun AppointmentResponse.toAppointment() = AppointmentMigrateRequest(
+    bookingId = bookingId,
+    prisonerNumber = offenderNo,
+    prisonCode = prisonId,
+    internalLocationId = internalLocation,
+    dpsLocationId = UUID.fromString(appointmentsMappingService.getDpsLocation(internalLocation).dpsLocationId),
+    // startDate never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
+    startDate = startDateTime.toLocalDate(),
+    startTime = startDateTime.toLocalTime().format(simpleTimeFormat),
+    endTime = endDateTime.toLocalTime()?.format(simpleTimeFormat),
+    comment = comment,
+    categoryCode = subtype,
+    isCancelled = status == "CANC",
+    created = createdDate.truncatedTo(ChronoUnit.SECONDS),
+    createdBy = createdBy,
+    updated = modifiedDate?.truncatedTo(ChronoUnit.SECONDS),
+    updatedBy = modifiedBy,
+  )
 }

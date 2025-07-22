@@ -40,9 +40,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_ENTITY
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NomisDpsLocationMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AppointmentIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AppointmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AppointmentIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AppointmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
@@ -53,6 +54,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.UUID
 
 @ExtendWith(MockitoExtension::class)
 internal class AppointmentsMigrationServiceTest {
@@ -78,6 +80,9 @@ internal class AppointmentsMigrationServiceTest {
       auditService = this@AppointmentsMigrationServiceTest.auditService
     }
   }
+
+  private val nomisLocationId = 12345L
+  private val dpsLocationId = UUID.randomUUID()
 
   @Nested
   inner class MigrateAppointments {
@@ -830,6 +835,12 @@ internal class AppointmentsMigrationServiceTest {
       whenever(nomisApiService.getAppointment(any())).thenReturn(
         aNomisAppointmentResponse(),
       )
+      whenever(appointmentsMappingService.getDpsLocation(any())).thenReturn(
+        NomisDpsLocationMapping(
+          nomisLocationId = nomisLocationId,
+          dpsLocationId = dpsLocationId.toString(),
+        ),
+      )
 
       whenever(appointmentsService.createAppointment(any())).thenReturn(sampleAppointmentInstance(999))
       whenever(appointmentsMappingService.createMapping(any(), any())).thenReturn(CreateMappingResult<AppointmentMapping>())
@@ -847,6 +858,20 @@ internal class AppointmentsMigrationServiceTest {
       )
 
       verify(nomisApiService).getAppointment(123)
+    }
+
+    @Test
+    fun `will transform the NOMIS location`(): Unit = runBlocking {
+      service.migrateNomisEntity(
+        MigrationContext(
+          type = APPOINTMENTS,
+          migrationId = "2020-05-23T11:30:00",
+          estimatedCount = 100_200,
+          body = AppointmentIdResponse(123),
+        ),
+      )
+
+      verify(appointmentsMappingService).getDpsLocation(nomisLocationId)
     }
 
     @Test
@@ -868,7 +893,8 @@ internal class AppointmentsMigrationServiceTest {
             bookingId = 606,
             prisonerNumber = "G4803UT",
             prisonCode = "MDI",
-            internalLocationId = 2,
+            internalLocationId = nomisLocationId,
+            dpsLocationId = dpsLocationId,
             startDate = LocalDate.parse("2020-01-01"),
             startTime = "10:00",
             endTime = "12:00",
@@ -1025,7 +1051,7 @@ fun aNomisAppointmentResponse(
   bookingId: Long = 606,
   offenderNo: String = "G4803UT",
   prisonId: String = "MDI",
-  internalLocation: Long = 2,
+  internalLocation: Long = 12345L,
   startDateTime: LocalDateTime = LocalDateTime.parse("2020-01-01T10:00:00"),
   endDateTime: LocalDateTime = LocalDateTime.parse("2020-01-01T12:00:00"),
   comment: String = "a comment",
