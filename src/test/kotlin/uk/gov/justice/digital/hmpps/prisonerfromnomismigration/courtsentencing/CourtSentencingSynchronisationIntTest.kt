@@ -162,7 +162,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               postRequestedFor(urlPathEqualTo("/legacy/court-case"))
-                .withRequestBody(matchingJsonPath("prisonerId", equalTo(OFFENDER_ID_DISPLAY))),
+                .withRequestBody(matchingJsonPath("prisonerId", equalTo(OFFENDER_ID_DISPLAY)))
+                .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
             )
           }
         }
@@ -688,7 +689,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             dpsCourtSentencingServer.verify(
               1,
-              putRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID")),
+              putRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID"))
+                .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
             )
           }
         }
