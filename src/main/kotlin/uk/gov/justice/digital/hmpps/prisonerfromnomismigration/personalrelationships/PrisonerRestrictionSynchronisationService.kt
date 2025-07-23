@@ -259,6 +259,18 @@ class PrisonerRestrictionSynchronisationService(
       }
     }
   }
+  suspend fun resynchronizePrisonerRestrictions(offenderNo: String) {
+    val telemetry = telemetryOf(
+      "offenderNo" to offenderNo,
+    )
+    resetRestrictions(offenderNo, telemetry)
+
+    telemetryClient.trackEvent(
+      "from-nomis-synch-contactperson-restrictions-resynchronisation-repair",
+      telemetry.valuesAsStrings(),
+      null,
+    )
+  }
 
   private suspend fun resetRestrictions(offenderNo: String, telemetry: MutableMap<String, Any>) {
     val nomisRestrictions = nomisApiService.getPrisonerRestrictions(offenderNo).restrictions.also {

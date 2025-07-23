@@ -60,7 +60,7 @@ class ContactPersonDataRepairResource(
     }
   }
 
-  @PostMapping("/prisoners/{offenderNo}/resynchronise")
+  @PostMapping("/prisoners/{offenderNo}/contacts/resynchronise")
   @ResponseStatus(HttpStatus.OK)
   @Operation(
     summary = "Resynchronises prisoner contacts from NOMIS back to DPS",

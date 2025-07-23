@@ -173,7 +173,7 @@ class ContactPersonDataRepairResourceIntTest : SqsIntegrationTestBase() {
     }
   }
 
-  @DisplayName("POST /prisoners/{offenderNo}/resynchronise")
+  @DisplayName("POST /prisoners/{offenderNo}/contacts/resynchronise")
   @Nested
   inner class RepairPrisonerContacts {
     val offenderNo = "A1234KT"
@@ -182,7 +182,7 @@ class ContactPersonDataRepairResourceIntTest : SqsIntegrationTestBase() {
     inner class Security {
       @Test
       fun `access forbidden when no role`() {
-        webTestClient.post().uri("/prisoners/$offenderNo/resynchronise")
+        webTestClient.post().uri("/prisoners/$offenderNo/contacts/resynchronise")
           .headers(setAuthorisation(roles = listOf()))
           .exchange()
           .expectStatus().isForbidden
@@ -190,7 +190,7 @@ class ContactPersonDataRepairResourceIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `access forbidden with wrong role`() {
-        webTestClient.post().uri("/prisoners/$offenderNo/resynchronise")
+        webTestClient.post().uri("/prisoners/$offenderNo/contacts/resynchronise")
           .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
           .exchange()
           .expectStatus().isForbidden
@@ -198,7 +198,7 @@ class ContactPersonDataRepairResourceIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `access unauthorised with no auth token`() {
-        webTestClient.post().uri("/prisoners/$offenderNo/resynchronise")
+        webTestClient.post().uri("/prisoners/$offenderNo/contacts/resynchronise")
           .exchange()
           .expectStatus().isUnauthorized
       }
@@ -214,7 +214,7 @@ class ContactPersonDataRepairResourceIntTest : SqsIntegrationTestBase() {
         dpsApiMock.stubResetPrisonerContacts()
         mappingApiMock.stubReplaceMappingsForPrisoner(offenderNo)
 
-        webTestClient.post().uri("/prisoners/$offenderNo/resynchronise")
+        webTestClient.post().uri("/prisoners/$offenderNo/contacts/resynchronise")
           .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
           .exchange()
           .expectStatus().isOk
