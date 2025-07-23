@@ -199,9 +199,9 @@ private fun assertMappingExistenceMatchesAction(
   mapping: TransactionMappingDto?,
   receipt: SyncTransactionReceipt,
 ) {
-  if ((mapping == null) != (receipt.action == SyncTransactionReceipt.Action.CREATED)) {
-    throw RuntimeException("Mismatch of mapping existence vs Action, mapping=$mapping, receipt=$receipt")
-  }
+//  if ((mapping == null) != (receipt.action == SyncTransactionReceipt.Action.CREATED)) {
+//    throw RuntimeException("Mismatch of mapping existence vs Action, mapping=$mapping, receipt=$receipt")
+//  }
 }
 
 private fun TransactionEvent.toTelemetryProperties(
