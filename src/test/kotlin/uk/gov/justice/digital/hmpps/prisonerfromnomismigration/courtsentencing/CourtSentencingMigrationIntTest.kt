@@ -223,6 +223,7 @@ class CourtSentencingMigrationIntTest(
         assertThat(courtCaseLegacyData.caseReferences).hasSize(2)
         assertThat(courtCaseLegacyData.caseReferences[0].offenderCaseReference).isEqualTo("YY12345678")
         assertThat(courtCaseLegacyData.caseReferences[1].offenderCaseReference).isEqualTo("XX12345678")
+        assertThat(courtCaseLegacyData.bookingId).isEqualTo(NOMIS_BOOKING_ID)
         assertThat(appearances).hasSize(1)
         with(appearances.first()) {
           assertThat(eventId).isEqualTo(NOMIS_APPEARANCE_1_ID)
@@ -247,6 +248,7 @@ class CourtSentencingMigrationIntTest(
             assertThat(sentence?.returnToCustodyDate).isEqualTo("2024-01-01")
             assertThat(sentence?.periodLengths).hasSize(2)
             assertThat(sentence?.legacyData?.nomisLineReference).isEqualTo("5")
+            assertThat(sentence?.legacyData?.bookingId).isEqualTo(NOMIS_BOOKING_ID)
           }
         }
       }

@@ -45,6 +45,7 @@ fun CourtCaseResponse.toMigrationDpsCourtCase() = MigrationCreateCourtCase(
         updatedDate = LocalDateTime.parse(it.createDateTime.toString()),
       )
     },
+    bookingId = this.bookingId,
   ),
   active = this.caseStatus.code == "A",
   merged = if (this.combinedCaseId != null) {
@@ -59,6 +60,15 @@ fun CourtCaseResponse.toMigrationDpsCourtCase() = MigrationCreateCourtCase(
 fun CourtCaseResponse.toLegacyDpsCourtCase() = LegacyCreateCourtCase(
   prisonerId = this.offenderNo,
   active = this.caseStatus.code == "A",
+  legacyData = CourtCaseLegacyData(
+    caseReferences = this.caseInfoNumbers.map {
+      CaseReferenceLegacyData(
+        offenderCaseReference = it.reference,
+        updatedDate = LocalDateTime.parse(it.createDateTime.toString()),
+      )
+    },
+    bookingId = this.bookingId,
+  ),
 )
 
 fun CourtEventResponse.toDpsCourtAppearance(
@@ -192,6 +202,7 @@ fun SentenceResponse.toSentenceLegacyData() = SentenceLegacyData(
   sentenceTypeDesc = this.calculationType.description,
   postedDate = this.createdDateTime.toString(),
   nomisLineReference = this.lineSequence?.toString(),
+  bookingId = this.bookingId,
 )
 
 fun SentenceTermResponse.toPeriodLegacyData(dpsSentenceId: String) = LegacyCreatePeriodLength(
