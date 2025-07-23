@@ -12,13 +12,8 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.Author
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.SyncCaseNoteRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
-import java.time.LocalDateTime
-import java.util.UUID
 
 class FinanceApiExtension :
   BeforeAllCallback,
@@ -47,27 +42,6 @@ class FinanceApiExtension :
 class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8102
-
-    fun dpsCaseNote() = SyncCaseNoteRequest(
-      id = UUID.randomUUID(),
-      legacyId = 12345L,
-      personIdentifier = "A1234AA",
-      locationId = "SWI",
-      type = "X",
-      subType = "Y",
-      text = "the actual casenote",
-      systemGenerated = false,
-      createdDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
-      createdByUsername = "the-computer",
-      author = Author(
-        username = "me",
-        userId = "123456",
-        firstName = "First",
-        lastName = "Last",
-      ),
-      amendments = emptySet(),
-      occurrenceDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
-    )
   }
 
   fun stubHealthPing(status: Int) {
