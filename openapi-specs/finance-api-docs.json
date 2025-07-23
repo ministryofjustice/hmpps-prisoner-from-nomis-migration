@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-07-15.34.3d2d0df"
+    "version" : "2025-07-23.36.1da4bff"
   },
   "servers" : [ {
     "url" : "http://localhost:8080",
@@ -400,13 +400,13 @@
             "type" : "string",
             "format" : "date-time",
             "description" : "The timestamp when this transaction occurred (ISO 8601 format).",
-            "example" : "2024-06-18T14:30:00.123456Z"
+            "example" : "2024-06-18T14:30:00.123456"
           },
           "createdAt" : {
             "type" : "string",
             "format" : "date-time",
             "description" : "The date and time the transaction was created.",
-            "example" : "2024-06-18T14:30:00.123456Z"
+            "example" : "2024-06-18T14:30:00.123456"
           },
           "createdBy" : {
             "type" : "string",
@@ -426,7 +426,7 @@
             "type" : "string",
             "format" : "date-time",
             "description" : "The date and time the transaction was last modified. Only provided if the transaction has been modified since creation.",
-            "example" : "2022-07-15T23:03:01.123456Z"
+            "example" : "2022-07-15T23:03:01.123456"
           },
           "lastModifiedBy" : {
             "type" : "string",
@@ -545,13 +545,13 @@
             "type" : "string",
             "format" : "date-time",
             "description" : "The full timestamp of the transaction (ISO 8601).",
-            "example" : "2011-09-30T09:08:08.671682Z"
+            "example" : "2011-09-30T09:08:08.671682"
           },
           "createdAt" : {
             "type" : "string",
             "format" : "date-time",
             "description" : "The date and time the transaction was created.",
-            "example" : "2024-06-18T14:30:00.123456Z"
+            "example" : "2024-06-18T14:30:00.123456"
           },
           "createdBy" : {
             "type" : "string",
@@ -571,7 +571,7 @@
             "type" : "string",
             "format" : "date-time",
             "description" : "The date and time the transaction was last modified. Only provided if the transaction has been modified since creation. (ISO 8601 format with offset)",
-            "example" : "2022-07-15T23:03:01.123456Z"
+            "example" : "2022-07-15T23:03:01.123456"
           },
           "lastModifiedBy" : {
             "type" : "string",
@@ -634,7 +634,7 @@
             "type" : "string",
             "format" : "date-time",
             "description" : "The timestamp when these general ledger balances were generated or last updated in the source system (ISO 8601 format).",
-            "example" : "2024-06-18T14:30:00.123456Z"
+            "example" : "2024-06-18T14:30:00.123456"
           },
           "balances" : {
             "type" : "array",
