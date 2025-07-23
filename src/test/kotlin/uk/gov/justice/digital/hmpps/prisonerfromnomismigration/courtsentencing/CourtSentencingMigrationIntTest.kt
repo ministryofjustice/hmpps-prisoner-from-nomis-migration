@@ -186,7 +186,7 @@ class CourtSentencingMigrationIntTest(
       courtSentencingNomisApiMockServer.stubMultipleGetPrisonerIdCounts(totalElements = 1, pageSize = 10)
       courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(
         offenderNo = "AN1",
-        bookingId = 3,
+        bookingId = NOMIS_BOOKING_ID,
         caseId = 1,
         caseIdentifiers = listOf(
           buildCaseIdentifierResponse(reference = "YY12345678"),
