@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.created
 import com.github.tomakehurst.wiremock.client.WireMock.delete
@@ -316,11 +317,61 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     stubFor(
       post(urlPathEqualTo("/mapping/sentencing/adjustments"))
         .willReturn(
+          conflict(
+            existingAdjustmentId = existingAdjustmentId,
+            duplicateAdjustmentId = duplicateAdjustmentId,
+            nomisAdjustmentId = nomisAdjustmentId,
+            nomisAdjustmentCategory = nomisAdjustmentCategory,
+          ),
+        ),
+    )
+  }
+
+  fun stubSentenceAdjustmentMappingCreateConflictAfter500Error(
+    existingAdjustmentId: String = "10",
+    duplicateAdjustmentId: String = "11",
+    nomisAdjustmentId: Long = 123,
+    nomisAdjustmentCategory: String = "SENTENCE",
+  ) {
+    val url = urlPathEqualTo("/mapping/sentencing/adjustments")
+    stubFor(
+      post(url)
+        .inScenario("Retry create conflict scenario")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(
           aResponse()
-            .withStatus(409)
-            .withHeader("Content-Type", "application/json")
-            .withBody(
-              """{
+            .withStatus(500)
+            .withHeader("Content-Type", "application/json"),
+        )
+        .willSetStateTo("Cause create conflict"),
+    )
+
+    stubFor(
+      post(url)
+        .inScenario("Retry create conflict scenario")
+        .whenScenarioStateIs("Cause create conflict")
+        .willReturn(
+          conflict(
+            existingAdjustmentId = existingAdjustmentId,
+            duplicateAdjustmentId = duplicateAdjustmentId,
+            nomisAdjustmentId = nomisAdjustmentId,
+            nomisAdjustmentCategory = nomisAdjustmentCategory,
+          ),
+        )
+        .willSetStateTo(STARTED),
+    )
+  }
+
+  private fun conflict(
+    existingAdjustmentId: String = "10",
+    duplicateAdjustmentId: String = "11",
+    nomisAdjustmentId: Long = 123,
+    nomisAdjustmentCategory: String = "SENTENCE",
+  ): ResponseDefinitionBuilder = aResponse()
+    .withStatus(409)
+    .withHeader("Content-Type", "application/json")
+    .withBody(
+      """{
               "moreInfo": 
               {
                 "existing" :  {
@@ -341,10 +392,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
                   }
               }
               }""",
-            ),
-        ),
     )
-  }
 
   fun stubSentenceAdjustmentMappingCreateFailure() {
     stubFor(
