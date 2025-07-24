@@ -187,19 +187,7 @@ class SentencingAdjustmentsSynchronisationService(
         object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
       ).also {
         if (it.isError) {
-          val duplicateErrorDetails = (it.errorResponse!!).moreInfo
-          telemetryClient.trackEvent(
-            "from-nomis-synch-adjustment-duplicate",
-            mapOf<String, String>(
-              "duplicateAdjustmentId" to duplicateErrorDetails.duplicate.adjustmentId,
-              "duplicateNomisAdjustmentId" to duplicateErrorDetails.duplicate.nomisAdjustmentId.toString(),
-              "duplicateNomisAdjustmentCategory" to duplicateErrorDetails.duplicate.nomisAdjustmentCategory,
-              "existingAdjustmentId" to duplicateErrorDetails.existing.adjustmentId,
-              "existingNomisAdjustmentId" to duplicateErrorDetails.existing.nomisAdjustmentId.toString(),
-              "existingNomisAdjustmentCategory" to duplicateErrorDetails.existing.nomisAdjustmentCategory,
-            ),
-            null,
-          )
+          it.errorResponse!!.trackDuplicate()
         }
       }
       return MAPPING_CREATED
@@ -234,19 +222,7 @@ class SentencingAdjustmentsSynchronisationService(
         object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
       ).also {
         if (it.isError) {
-          val duplicateErrorDetails = (it.errorResponse!!).moreInfo
-          telemetryClient.trackEvent(
-            "from-nomis-synch-adjustment-duplicate",
-            mapOf<String, String>(
-              "duplicateAdjustmentId" to duplicateErrorDetails.duplicate.adjustmentId,
-              "duplicateNomisAdjustmentId" to duplicateErrorDetails.duplicate.nomisAdjustmentId.toString(),
-              "duplicateNomisAdjustmentCategory" to duplicateErrorDetails.duplicate.nomisAdjustmentCategory,
-              "existingAdjustmentId" to duplicateErrorDetails.existing.adjustmentId,
-              "existingNomisAdjustmentId" to duplicateErrorDetails.existing.nomisAdjustmentId.toString(),
-              "existingNomisAdjustmentCategory" to duplicateErrorDetails.existing.nomisAdjustmentCategory,
-            ),
-            null,
-          )
+          it.errorResponse!!.trackDuplicate()
         }
       }
       return MAPPING_CREATED
@@ -270,10 +246,14 @@ class SentencingAdjustmentsSynchronisationService(
       retryMessage.body,
       object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
     ).also {
-      telemetryClient.trackEvent(
-        "adjustment-mapping-created-synchronisation-success",
-        retryMessage.telemetryAttributes,
-      )
+      if (it.isError) {
+        it.errorResponse!!.trackDuplicate()
+      } else {
+        telemetryClient.trackEvent(
+          "adjustment-mapping-created-synchronisation-success",
+          retryMessage.telemetryAttributes,
+        )
+      }
     }
   }
 
@@ -341,6 +321,22 @@ class SentencingAdjustmentsSynchronisationService(
     nomisAdjustmentId = adjustment.id,
     nomisAdjustmentCategory = "KEY-DATE",
   ) == null
+
+  private fun DuplicateErrorResponse<SentencingAdjustmentNomisMapping>.trackDuplicate() {
+    val duplicateErrorDetails = (this).moreInfo
+    telemetryClient.trackEvent(
+      "from-nomis-synch-adjustment-duplicate",
+      mapOf<String, String>(
+        "duplicateAdjustmentId" to duplicateErrorDetails.duplicate.adjustmentId,
+        "duplicateNomisAdjustmentId" to duplicateErrorDetails.duplicate.nomisAdjustmentId.toString(),
+        "duplicateNomisAdjustmentCategory" to duplicateErrorDetails.duplicate.nomisAdjustmentCategory,
+        "existingAdjustmentId" to duplicateErrorDetails.existing.adjustmentId,
+        "existingNomisAdjustmentId" to duplicateErrorDetails.existing.nomisAdjustmentId.toString(),
+        "existingNomisAdjustmentCategory" to duplicateErrorDetails.existing.nomisAdjustmentCategory,
+      ),
+      null,
+    )
+  }
 }
 
 private fun SentenceAdjustmentOffenderEvent.toTelemetryProperties(

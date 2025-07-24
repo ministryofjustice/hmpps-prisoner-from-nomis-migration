@@ -403,6 +403,50 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
         }
       }
+
+      @Test
+      internal fun `it will not retry after a 409 (duplicate adjustment written to Sentencing API) which was after a 500 error`() {
+        nomisApi.stubGetSentenceAdjustment(adjustmentId = NOMIS_ADJUSTMENT_ID)
+        sentencingApi.stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId = ADJUSTMENT_ID)
+        mappingApi.stubSentenceAdjustmentMappingCreateConflictAfter500Error(
+          duplicateAdjustmentId = ADJUSTMENT_ID,
+          nomisAdjustmentId = NOMIS_ADJUSTMENT_ID,
+        )
+
+        awsSqsSentencingOffenderEventsClient.sendMessage(
+          sentencingQueueOffenderEventsUrl,
+          sentencingEvent(
+            eventType = "SENTENCE_ADJUSTMENT_UPSERTED",
+            auditModuleName = "OIDSENAD",
+            adjustmentId = NOMIS_ADJUSTMENT_ID,
+            bookingId = BOOKING_ID,
+            sentenceSeq = SENTENCE_SEQUENCE,
+            offenderIdDisplay = OFFENDER_NUMBER,
+          ),
+        )
+
+        // wait for all mappings to be created before verifying
+        await untilCallTo { mappingApi.createMappingCount(ADJUSTMENTS_CREATE_MAPPING_URL) } matches { it == 2 }
+
+        // check that one sentence-adjustment is still created - despite it being a duplicate
+        assertThat(sentencingApi.createSentenceAdjustmentForSynchronisationCount()).isEqualTo(1)
+
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-adjustment-duplicate"),
+            check {
+              assertThat(it["migrationId"]).isNull()
+              assertThat(it["existingAdjustmentId"]).isEqualTo("10")
+              assertThat(it["duplicateAdjustmentId"]).isEqualTo(ADJUSTMENT_ID)
+              assertThat(it["existingNomisAdjustmentId"]).isEqualTo("$NOMIS_ADJUSTMENT_ID")
+              assertThat(it["duplicateNomisAdjustmentId"]).isEqualTo("$NOMIS_ADJUSTMENT_ID")
+              assertThat(it["existingNomisAdjustmentCategory"]).isEqualTo("SENTENCE")
+              assertThat(it["duplicateNomisAdjustmentCategory"]).isEqualTo("SENTENCE")
+            },
+            isNull(),
+          )
+        }
+      }
     }
 
     @Nested
