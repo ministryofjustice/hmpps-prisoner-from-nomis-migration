@@ -145,8 +145,7 @@ class AppointmentsMigrationService(
     bookingId = bookingId,
     prisonerNumber = offenderNo,
     prisonCode = prisonId,
-    internalLocationId = internalLocation!!,
-    dpsLocationId = UUID.fromString(appointmentsMappingService.getDpsLocation(internalLocation).dpsLocationId),
+    dpsLocationId = UUID.fromString(appointmentsMappingService.getDpsLocation(internalLocation!!).dpsLocationId),
     // startDate never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
     startDate = startDateTime!!.toLocalDate(),
     startTime = startDateTime.toLocalTime().format(simpleTimeFormat),

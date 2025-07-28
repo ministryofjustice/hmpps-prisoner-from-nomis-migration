@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-07-21.29412.85cc032"
+    "version" : "2025-07-25.29673.ef3e842"
   },
   "servers" : [ {
     "url" : "https://activities-api-dev.prison.service.justice.gov.uk",
@@ -1162,6 +1162,31 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/utility/update-case-note-uuid" : {
+      "post" : {
+        "tags" : [ "utility-controller" ],
+        "summary" : "Update case note UUID for all the existing case notes.",
+        "description" : "Can only be accessed from within the ingress. Requests from elsewhere will result in a 401 response code.",
+        "operationId" : "updateCaseNoteUUID",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UpdateCaseNoteUUIDResponse"
+                }
+              },
+              "text/plain" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UpdateCaseNoteUUIDResponse"
                 }
               }
             }
@@ -9316,6 +9341,27 @@
         },
         "required" : [ "activityId", "bookingId", "createdBy", "creationTime", "earliestReleaseDate", "id", "prisonCode", "prisonerNumber", "requestedBy", "requestedDate", "scheduleId", "status" ]
       },
+      "UpdateCaseNoteUUIDResponse" : {
+        "type" : "object",
+        "properties" : {
+          "attendance" : {
+            "type" : "string"
+          },
+          "attendanceHistory" : {
+            "type" : "string"
+          },
+          "allocation" : {
+            "type" : "string"
+          },
+          "plannedDeallocation" : {
+            "type" : "string"
+          },
+          "plannedSuspension" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "allocation", "attendance", "attendanceHistory", "plannedDeallocation", "plannedSuspension" ]
+      },
       "PublishEventUtilityModel" : {
         "type" : "object",
         "description" : "Describes an event to be published to the domain events SNS topic",
@@ -11188,12 +11234,6 @@
             "maxLength" : 12,
             "minLength" : 0
           },
-          "internalLocationId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "\n    The optional NOMIS internal location id within the specified prison.\n    ",
-            "example" : 123
-          },
           "dpsLocationId" : {
             "type" : "string",
             "format" : "uuid",
@@ -11250,7 +11290,7 @@
             "minLength" : 0
           }
         },
-        "required" : [ "bookingId", "categoryCode", "created", "createdBy", "prisonCode", "prisonerNumber", "startDate", "startTime" ]
+        "required" : [ "bookingId", "categoryCode", "created", "createdBy", "dpsLocationId", "prisonCode", "prisonerNumber", "startDate", "startTime" ]
       },
       "AppointmentInstance" : {
         "type" : "object",
@@ -11409,8 +11449,15 @@
           "internalLocationId" : {
             "type" : "integer",
             "format" : "int64",
+            "deprecated" : true,
             "description" : "\n    The NOMIS internal location id to match with the appointments. Will restrict the search results to\n    appointments that have the matching internal location id when this search parameter is supplied.\n    ",
             "example" : 123
+          },
+          "dpsLocationId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "\n    The DPS location UUID to match with the appointments. Will restrict the search results to\n    appointments that have the matching location UUID when this search parameter is supplied.\n    ",
+            "example" : "b7602cc8-e769-4cbb-8194-62d8e655992a"
           },
           "inCell" : {
             "type" : "boolean",
