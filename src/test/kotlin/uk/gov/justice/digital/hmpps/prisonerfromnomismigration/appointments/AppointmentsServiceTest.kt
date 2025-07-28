@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.UUID
 
 private const val APPOINTMENT_INSTANCE_ID = 1234567L
 
@@ -37,7 +38,7 @@ internal class AppointmentsServiceTest {
             prisonCode = "MDI",
             comment = "Remand added",
             prisonerNumber = "G4803UT",
-            internalLocationId = 1234,
+            dpsLocationId = UUID.fromString("1f32b36a-46a7-449f-8c36-fa6e53f0847f"),
             startDate = LocalDate.parse("2021-07-01"),
             startTime = "00:01",
             endTime = "00:02",
@@ -67,7 +68,7 @@ internal class AppointmentsServiceTest {
           .withRequestBody(WireMock.matchingJsonPath("bookingId", WireMock.equalTo("1234")))
           .withRequestBody(WireMock.matchingJsonPath("prisonerNumber", WireMock.equalTo("G4803UT")))
           .withRequestBody(WireMock.matchingJsonPath("prisonCode", WireMock.equalTo("MDI")))
-          .withRequestBody(WireMock.matchingJsonPath("internalLocationId", WireMock.equalTo("1234")))
+          .withRequestBody(WireMock.matchingJsonPath("dpsLocationId", WireMock.equalTo("1f32b36a-46a7-449f-8c36-fa6e53f0847f")))
           .withRequestBody(WireMock.matchingJsonPath("comment", WireMock.equalTo("Remand added")))
           .withRequestBody(WireMock.matchingJsonPath("startDate", WireMock.equalTo("2021-07-01")))
           .withRequestBody(WireMock.matchingJsonPath("startTime", WireMock.equalTo("00:01")))

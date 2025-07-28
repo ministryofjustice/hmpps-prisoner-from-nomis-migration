@@ -891,7 +891,6 @@ internal class AppointmentsMigrationServiceTest {
             bookingId = 606,
             prisonerNumber = "G4803UT",
             prisonCode = "MDI",
-            internalLocationId = nomisLocationId,
             dpsLocationId = dpsLocationId,
             startDate = LocalDate.parse("2020-01-01"),
             startTime = "10:00",
