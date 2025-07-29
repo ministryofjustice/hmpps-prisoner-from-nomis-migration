@@ -1229,35 +1229,31 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             caseIdentifiersEvent(
               eventType = "OFFENDER_CASE_IDENTIFIERS-DELETED",
             ),
-          )
+          ).also { waitForAnyProcessingToComplete() }
         }
 
         @Test
         fun `telemetry added to track the skipping of the event`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("case-identifiers-synchronisation-skipped"),
-              check {
-                assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
-                assertThat(it["isDelete"]).isEqualTo("true")
-                assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-DELETED")
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("case-identifiers-synchronisation-skipped"),
+            check {
+              assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
+              assertThat(it["isDelete"]).isEqualTo("true")
+              assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-DELETED")
+            },
+            isNull(),
+          )
         }
 
         @Test
         fun `the event is NOT placed on dead letter queue`() {
-          await untilAsserted {
-            assertThat(
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-                courtSentencingQueueOffenderEventsDlqUrl,
-              ).get(),
-            ).isEqualTo(0)
-          }
+          assertThat(
+            awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+              courtSentencingQueueOffenderEventsDlqUrl,
+            ).get(),
+          ).isEqualTo(0)
         }
       }
 
