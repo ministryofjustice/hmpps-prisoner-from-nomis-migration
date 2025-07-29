@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
@@ -41,6 +42,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomai
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
@@ -78,6 +80,11 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var courtSentencingMappingApiMockServer: CourtSentencingMappingApiMockServer
+
+  @Autowired
+  private lateinit var objectMapper: ObjectMapper
+
+  private fun Any.toJson(): String = objectMapper.writeValueAsString(this)
 
   @Nested
   @DisplayName("OFFENDER_CASES-INSERTED")
@@ -709,6 +716,66 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               isNull(),
             )
           }
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("courtsentencing.resync.case")
+  inner class CaseResynchronisation {
+
+    @Nested
+    @DisplayName("When resynchronisation of case required")
+    inner class ResyncMessageReceived {
+
+      @BeforeEach
+      fun setUp() {
+        courtSentencingNomisApiMockServer.stubGetCourtCase(
+          courtCaseId = NOMIS_COURT_CASE_ID,
+          bookingId = NOMIS_BOOKING_ID,
+          offenderNo = OFFENDER_ID_DISPLAY,
+        )
+
+        dpsCourtSentencingServer.stubPutCourtCaseForUpdate(courtCaseId = DPS_COURT_CASE_ID)
+
+        courtSentencingOffenderEventsQueue.sendMessage(
+          SQSMessage(
+            Type = "courtsentencing.resync.case",
+            Message = OffenderCaseResynchronisationEvent(
+              offenderNo = OFFENDER_ID_DISPLAY,
+              bookingId = NOMIS_BOOKING_ID,
+              caseId = NOMIS_COURT_CASE_ID,
+              dpsCaseUuid = DPS_COURT_CASE_ID,
+            ).toJson(),
+          ).toJson(),
+        )
+      }
+
+      @Test
+      fun `will update DPS with the changes`() {
+        await untilAsserted {
+          dpsCourtSentencingServer.verify(
+            1,
+            putRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID"))
+              .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
+          )
+        }
+      }
+
+      @Test
+      fun `will track a telemetry event for success`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("court-case-resynchronisation-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["dpsCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+            },
+            isNull(),
+          )
         }
       }
     }

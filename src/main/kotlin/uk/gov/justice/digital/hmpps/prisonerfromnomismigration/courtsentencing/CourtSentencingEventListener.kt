@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMess
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CASE_RESYNCHRONISATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RECALL_SENTENCE_ADJUSTMENTS_SYNCHRONISATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
@@ -118,6 +119,10 @@ class CourtSentencingEventListener(
         SENTENCE_RESYNCHRONISATION -> courtSentencingSynchronisationService.nomisSentenceResynchronisation(
           sqsMessage.Message.fromJson(),
         )
+
+        CASE_RESYNCHRONISATION -> courtSentencingSynchronisationService.nomisCaseResynchronisation(
+          sqsMessage.Message.fromJson(),
+        )
       }
     }
   }
@@ -201,6 +206,13 @@ data class OffenderSentenceResynchronisationEvent(
   val caseId: Long,
   val dpsAppearanceUuid: String,
   val dpsConsecutiveSentenceUuid: String?,
+)
+
+data class OffenderCaseResynchronisationEvent(
+  val dpsCaseUuid: String,
+  val offenderNo: String,
+  val bookingId: Long,
+  val caseId: Long,
 )
 
 data class OffenderSentenceTermEvent(
