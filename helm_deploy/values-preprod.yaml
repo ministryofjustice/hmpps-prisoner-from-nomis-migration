@@ -34,6 +34,16 @@ generic-service:
     FEATURE_EVENT_GL_TRANSACTIONS-UPDATED: false
     FEATURE_EVENT_GL_TRANSACTIONS-DELETED: false
     CONTACT-SENTENCING_COURT-EVENT-UPDATE_IGNORE-MISSING: true
+    FEATURE_EVENT_EXTERNAL_MOVEMENT-CHANGED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION-INSERTED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION-UPDATED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION-DELETED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION_MULTI-INSERTED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION_MULTI-UPDATED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION_MULTI-DELETED: false
+    FEATURE_EVENT_SCHEDULED_EXT_MOVE-INSERTED: false
+    FEATURE_EVENT_SCHEDULED_EXT_MOVE-UPDATED: false
+    FEATURE_EVENT_SCHEDULED_EXT_MOVE-DELETE: false
 
   scheduledDowntime:
     enabled: true
@@ -120,6 +130,9 @@ generic-prometheus-alerts:
       - "syscon-devs-preprod-migration_visitbalance_dlq"
       - "syscon-devs-preprod-prisoner_from_nomis_visitbalance_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_visitbalance_dl_queue"
+    externalmovements:
+      - "syscon-devs-preprod-prisoner_from_nomis_externalmovements_queue"
+      - "syscon-devs-preprod-prisoner_from_nomis_externalmovements_dl_queue"
 
 cron:
   retry_dlqs_schedule: "*/10 7-20 * * 1-5"

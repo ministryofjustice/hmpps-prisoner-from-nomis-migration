@@ -59,6 +59,17 @@ generic-service:
     FEATURE_EVENT_OFFENDER_FIXED_TERM_RECALLS-UPDATED: false
     FEATURE_EVENT_OFFENDER_FIXED_TERM_RECALLS-DELETED: false
     FEATURE_EVENT_COURTSENTENCING_PRISON-OFFENDER-EVENTS_PRISONER_MERGED: false
+    FEATURE_EVENT_EXTERNAL_MOVEMENT-CHANGED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION-INSERTED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION-UPDATED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION-DELETED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION_MULTI-INSERTED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION_MULTI-UPDATED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION_MULTI-DELETED: false
+    FEATURE_EVENT_SCHEDULED_EXT_MOVE-INSERTED: false
+    FEATURE_EVENT_SCHEDULED_EXT_MOVE-UPDATED: false
+    FEATURE_EVENT_SCHEDULED_EXT_MOVE-DELETE: false
+
 generic-prometheus-alerts:
   rdsAlertsDatabases:
     cloud-platform-a482726013f85564: "prisoner nomis migration"
@@ -133,3 +144,6 @@ generic-prometheus-alerts:
       - "syscon-devs-prod-migration_visitbalance_dlq"
       - "syscon-devs-prod-prisoner_from_nomis_visitbalance_queue"
       - "syscon-devs-prod-prisoner_from_nomis_visitbalance_dl_queue"
+    externalmovements:
+      - "syscon-devs-prod-prisoner_from_nomis_externalmovements_queue"
+      - "syscon-devs-prod-prisoner_from_nomis_externalmovements_dl_queue"
