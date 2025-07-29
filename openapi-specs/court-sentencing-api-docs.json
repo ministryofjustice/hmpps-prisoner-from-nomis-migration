@@ -4649,7 +4649,7 @@
             "format" : "int64"
           }
         },
-        "required" : [ "caseReferences" ]
+        "required" : [ "caseReferences", "bookingId" ]
       },
       "LegacyCreateCourtCase" : {
         "type" : "object",
