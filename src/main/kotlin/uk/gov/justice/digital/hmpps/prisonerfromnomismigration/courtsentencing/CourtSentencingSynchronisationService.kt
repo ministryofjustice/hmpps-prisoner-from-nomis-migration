@@ -1273,7 +1273,6 @@ class CourtSentencingSynchronisationService(
   suspend fun nomisCaseResynchronisation(event: OffenderCaseResynchronisationEvent) {
     val telemetry =
       mapOf(
-        "nomisBookingId" to event.bookingId.toString(),
         "dpsCaseId" to event.dpsCaseUuid,
         "nomisCaseId" to event.caseId.toString(),
         "offenderNo" to event.offenderNo,
@@ -1287,7 +1286,7 @@ class CourtSentencingSynchronisationService(
     )
     telemetryClient.trackEvent(
       "court-case-resynchronisation-success",
-      telemetry,
+      telemetry + ("nomisBookingId" to nomisCourtCase.bookingId.toString()),
     )
   }
 
