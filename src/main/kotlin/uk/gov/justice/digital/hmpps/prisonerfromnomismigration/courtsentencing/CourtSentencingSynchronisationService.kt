@@ -641,6 +641,7 @@ class CourtSentencingSynchronisationService(
     offenderNo = message.body.offenderIdDisplay,
     bookingId = message.body.bookingId,
   )
+
   suspend fun nomisCourtChargeInserted(event: CourtEventChargeEvent) = nomisCourtChargeInserted(
     eventId = event.eventId,
     chargeId = event.chargeId,
@@ -1267,6 +1268,27 @@ class CourtSentencingSynchronisationService(
         )
       }
     }
+  }
+
+  suspend fun nomisCaseResynchronisation(event: OffenderCaseResynchronisationEvent) {
+    val telemetry =
+      mapOf(
+        "nomisBookingId" to event.bookingId.toString(),
+        "dpsCaseId" to event.dpsCaseUuid,
+        "nomisCaseId" to event.caseId.toString(),
+        "offenderNo" to event.offenderNo,
+      )
+
+    val nomisCourtCase =
+      nomisApiService.getCourtCase(offenderNo = event.offenderNo, courtCaseId = event.caseId)
+    dpsApiService.updateCourtCase(
+      courtCaseId = event.dpsCaseUuid,
+      nomisCourtCase.toLegacyDpsCourtCase(),
+    )
+    telemetryClient.trackEvent(
+      "court-case-resynchronisation-success",
+      telemetry,
+    )
   }
 
   suspend fun nomisSentenceResynchronisation(event: OffenderSentenceResynchronisationEvent) {
