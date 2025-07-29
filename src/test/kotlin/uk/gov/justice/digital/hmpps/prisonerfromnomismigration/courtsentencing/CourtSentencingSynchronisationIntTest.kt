@@ -41,6 +41,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countMessagesOnDLQ
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
@@ -101,14 +102,13 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           bookingId = NOMIS_BOOKING_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
         )
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
           courtCaseEvent(
             eventType = "OFFENDER_CASES-INSERTED",
             auditModule = "DPS_SYNCHRONISATION",
           ),
         ).also {
-          waitForTelemetry()
+          waitForAnyProcessingToComplete()
         }
       }
 
@@ -154,63 +154,54 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
           dpsCourtSentencingServer.stubPostCourtCaseForCreate(courtCaseId = DPS_COURT_CASE_ID)
           courtSentencingMappingApiMockServer.stubPostMapping()
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             courtCaseEvent(
               eventType = "OFFENDER_CASES-INSERTED",
             ),
           ).also {
-            waitForTelemetry()
+            waitForAnyProcessingToComplete()
           }
         }
 
         @Test
         fun `will create a court case in DPS`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              postRequestedFor(urlPathEqualTo("/legacy/court-case"))
-                .withRequestBody(matchingJsonPath("prisonerId", equalTo(OFFENDER_ID_DISPLAY)))
-                .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
-            )
-          }
+          dpsCourtSentencingServer.verify(
+            postRequestedFor(urlPathEqualTo("/legacy/court-case"))
+              .withRequestBody(matchingJsonPath("prisonerId", equalTo(OFFENDER_ID_DISPLAY)))
+              .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
+          )
         }
 
         @Test
         fun `will create mapping between DPS and NOMIS ids`() {
-          await untilAsserted {
-            courtSentencingMappingApiMockServer.verify(
-              postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases"))
-                .withRequestBody(matchingJsonPath("dpsCourtCaseId", equalTo(DPS_COURT_CASE_ID)))
-                .withRequestBody(matchingJsonPath("nomisCourtCaseId", equalTo(NOMIS_COURT_CASE_ID.toString())))
-                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
-            )
-          }
+          courtSentencingMappingApiMockServer.verify(
+            postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases"))
+              .withRequestBody(matchingJsonPath("dpsCourtCaseId", equalTo(DPS_COURT_CASE_ID)))
+              .withRequestBody(matchingJsonPath("nomisCourtCaseId", equalTo(NOMIS_COURT_CASE_ID.toString())))
+              .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+          )
         }
 
         @Test
         fun `will retrieve the court case from nomis`() {
-          await untilAsserted {
-            courtSentencingNomisApiMockServer.verify(
-              getRequestedFor(urlPathEqualTo("/prisoners/$OFFENDER_ID_DISPLAY/sentencing/court-cases/$NOMIS_COURT_CASE_ID")),
-            )
-          }
+          courtSentencingNomisApiMockServer.verify(
+            getRequestedFor(urlPathEqualTo("/prisoners/$OFFENDER_ID_DISPLAY/sentencing/court-cases/$NOMIS_COURT_CASE_ID")),
+          )
         }
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-case-synchronisation-created-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-case-synchronisation-created-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+              assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+            },
+            isNull(),
+          )
         }
       }
 
@@ -227,8 +218,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               dpsCourtCaseId = DPS_COURT_CASE_ID,
             ),
           )
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             courtCaseEvent(
               eventType = "OFFENDER_CASES-INSERTED",
               bookingId = NOMIS_BOOKING_ID,
@@ -236,24 +226,22 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               offenderNo = OFFENDER_ID_DISPLAY,
             ),
           ).also {
-            waitForTelemetry()
+            waitForAnyProcessingToComplete()
           }
         }
 
         @Test
         fun `the event is ignored`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-case-synchronisation-created-ignored"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-case-synchronisation-created-ignored"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+            },
+            isNull(),
+          )
           // will not create a court case in DPS
           dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
         }
@@ -274,72 +262,61 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           @BeforeEach
           fun setUp() {
             courtSentencingMappingApiMockServer.stubPostMappingFailureFollowedBySuccess()
-            awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-              courtSentencingQueueOffenderEventsUrl,
+            courtSentencingOffenderEventsQueue.sendMessage(
               courtCaseEvent(
                 eventType = "OFFENDER_CASES-INSERTED",
               ),
             ).also {
-              waitForTelemetry()
+              waitForAnyProcessingToComplete("court-case-mapping-created-synchronisation-success")
             }
           }
 
           @Test
           fun `will create a court case in DPS`() {
-            await untilAsserted {
-              dpsCourtSentencingServer.verify(
-                postRequestedFor(urlPathEqualTo("/legacy/court-case")),
-              )
-            }
+            dpsCourtSentencingServer.verify(
+              postRequestedFor(urlPathEqualTo("/legacy/court-case")),
+            )
           }
 
           @Test
           fun `will attempt to create mapping two times and succeed`() {
-            await untilAsserted {
-              courtSentencingMappingApiMockServer.verify(
-                WireMock.exactly(2),
-                postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases"))
-                  .withRequestBody(matchingJsonPath("dpsCourtCaseId", equalTo(DPS_COURT_CASE_ID)))
-                  .withRequestBody(matchingJsonPath("nomisCourtCaseId", equalTo(NOMIS_COURT_CASE_ID.toString())))
-                  .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
-              )
-            }
+            courtSentencingMappingApiMockServer.verify(
+              WireMock.exactly(2),
+              postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases"))
+                .withRequestBody(matchingJsonPath("dpsCourtCaseId", equalTo(DPS_COURT_CASE_ID)))
+                .withRequestBody(matchingJsonPath("nomisCourtCaseId", equalTo(NOMIS_COURT_CASE_ID.toString())))
+                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+            )
 
             assertThat(
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-                courtSentencingQueueOffenderEventsDlqUrl,
-              ).get(),
+              courtSentencingOffenderEventsQueue.countMessagesOnDLQ(),
             ).isEqualTo(0)
           }
 
           @Test
           fun `will track a telemetry event for partial success`() {
-            await untilAsserted {
-              verify(telemetryClient).trackEvent(
-                eq("court-case-synchronisation-created-success"),
-                check {
-                  assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                  assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                  assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                  assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-                  assertThat(it["mapping"]).isEqualTo("initial-failure")
-                },
-                isNull(),
-              )
-            }
+            verify(telemetryClient).trackEvent(
+              eq("court-case-synchronisation-created-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                assertThat(it["mapping"]).isEqualTo("initial-failure")
+              },
+              isNull(),
+            )
 
-            await untilAsserted {
-              verify(telemetryClient).trackEvent(
-                eq("court-case-mapping-created-synchronisation-success"),
-                check {
-                  assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-                  assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                  assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                  assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-                },
-                isNull(),
-              )
-            }
+            verify(telemetryClient).trackEvent(
+              eq("court-case-mapping-created-synchronisation-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+              },
+              isNull(),
+            )
           }
         }
 
@@ -349,27 +326,22 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           @BeforeEach
           fun setUp() {
             courtSentencingMappingApiMockServer.stubPostMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
-            awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-              courtSentencingQueueOffenderEventsUrl,
+            courtSentencingOffenderEventsQueue.sendMessage(
               courtCaseEvent(
                 eventType = "OFFENDER_CASES-INSERTED",
               ),
             )
             await untilCallTo {
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-                courtSentencingQueueOffenderEventsDlqUrl,
-              ).get()
+              courtSentencingOffenderEventsQueue.countMessagesOnDLQ()
             } matches { it == 1 }
           }
 
           @Test
           fun `will create a court case in DPS`() {
-            await untilAsserted {
-              dpsCourtSentencingServer.verify(
-                1,
-                postRequestedFor(urlPathEqualTo("/legacy/court-case")),
-              )
-            }
+            dpsCourtSentencingServer.verify(
+              1,
+              postRequestedFor(urlPathEqualTo("/legacy/court-case")),
+            )
           }
 
           @Test
@@ -382,19 +354,17 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
           @Test
           fun `will track a telemetry event for success`() {
-            await untilAsserted {
-              verify(telemetryClient).trackEvent(
-                eq("court-case-synchronisation-created-success"),
-                check {
-                  assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-                  assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                  assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                  assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-                  assertThat(it["mapping"]).isEqualTo("initial-failure")
-                },
-                isNull(),
-              )
-            }
+            verify(telemetryClient).trackEvent(
+              eq("court-case-synchronisation-created-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                assertThat(it["mapping"]).isEqualTo("initial-failure")
+              },
+              isNull(),
+            )
           }
         }
       }
@@ -421,23 +391,14 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisCourtCaseId = NOMIS_COURT_CASE_ID,
         )
 
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
           courtCaseEvent(
             eventType = "OFFENDER_CASES-INSERTED",
             caseId = NOMIS_COURT_CASE_ID,
             bookingId = NOMIS_BOOKING_ID,
             offenderNo = OFFENDER_ID_DISPLAY,
           ),
-        )
-
-        // wait for mapping calls before verifying
-        await untilAsserted {
-          courtSentencingMappingApiMockServer.verify(
-            1,
-            postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases")),
-          )
-        }
+        ).also { waitForAnyProcessingToComplete("from-nomis-sync-court-case-duplicate") }
 
         // doesn't retry
         dpsCourtSentencingServer.verify(
@@ -445,19 +406,17 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           postRequestedFor(urlPathEqualTo("/legacy/court-case")),
         )
 
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            org.mockito.kotlin.eq("from-nomis-sync-court-case-duplicate"),
-            check {
-              assertThat(it["migrationId"]).isNull()
-              assertThat(it["existingDpsCourtCaseId"]).isEqualTo(EXISTING_DPS_COURT_CASE_ID)
-              assertThat(it["duplicateDpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-              assertThat(it["existingNomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-              assertThat(it["duplicateNomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-            },
-            isNull(),
-          )
-        }
+        verify(telemetryClient).trackEvent(
+          org.mockito.kotlin.eq("from-nomis-sync-court-case-duplicate"),
+          check {
+            assertThat(it["migrationId"]).isNull()
+            assertThat(it["existingDpsCourtCaseId"]).isEqualTo(EXISTING_DPS_COURT_CASE_ID)
+            assertThat(it["duplicateDpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+            assertThat(it["existingNomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+            assertThat(it["duplicateNomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+          },
+          isNull(),
+        )
       }
     }
   }
@@ -476,27 +435,24 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             courtCaseEvent(
               eventType = "OFFENDER_CASES-DELETED",
             ),
-          )
+          ).also { waitForAnyProcessingToComplete() }
         }
 
         @Test
         fun `the event is ignored`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-case-synchronisation-deleted-ignored"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-case-synchronisation-deleted-ignored"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+            },
+            isNull(),
+          )
           // will not delete a court case in DPS
           dpsCourtSentencingServer.verify(0, deleteRequestedFor(anyUrl()))
         }
@@ -517,8 +473,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
           courtSentencingMappingApiMockServer.stubDeleteCourtCaseMapping(dpsCourtCaseId = DPS_COURT_CASE_ID)
           dpsCourtSentencingServer.stubDeleteCourtCase(DPS_COURT_CASE_ID)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             courtCaseEvent(
               eventType = "OFFENDER_CASES-DELETED",
               bookingId = NOMIS_BOOKING_ID,
@@ -526,45 +481,39 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               offenderNo = OFFENDER_ID_DISPLAY,
             ),
           ).also {
-            waitForTelemetry()
+            waitForAnyProcessingToComplete()
           }
         }
 
         @Test
         fun `will delete a court case in DPS`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              1,
-              deleteRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID")),
-              // TODO DPS to implement this endpoint
-            )
-          }
+          dpsCourtSentencingServer.verify(
+            1,
+            deleteRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID")),
+            // TODO DPS to implement this endpoint
+          )
         }
 
         @Test
         fun `will delete mapping between DPS and NOMIS ids`() {
-          await untilAsserted {
-            courtSentencingMappingApiMockServer.verify(
-              1,
-              deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/dps-court-case-id/$DPS_COURT_CASE_ID")),
-            )
-          }
+          courtSentencingMappingApiMockServer.verify(
+            1,
+            deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/dps-court-case-id/$DPS_COURT_CASE_ID")),
+          )
         }
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-case-synchronisation-deleted-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-case-synchronisation-deleted-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+            },
+            isNull(),
+          )
         }
       }
     }
@@ -578,28 +527,25 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class DPSUpdated {
       @BeforeEach
       fun setUp() {
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
           courtCaseEvent(
             eventType = "OFFENDER_CASES-UPDATED",
             auditModule = "DPS_SYNCHRONISATION",
           ),
-        )
+        ).also { waitForAnyProcessingToComplete() }
       }
 
       @Test
       fun `the event is ignored`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("court-case-synchronisation-updated-skipped"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-            },
-            isNull(),
-          )
-        }
+        verify(telemetryClient).trackEvent(
+          eq("court-case-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+            assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+          },
+          isNull(),
+        )
 
         // will not bother getting the court case or the mapping
         courtSentencingNomisApiMockServer.verify(
@@ -635,36 +581,31 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             courtCaseEvent(
               eventType = "OFFENDER_CASES-UPDATED",
             ),
-          )
+          ).also { waitForAnyProcessingToComplete("court-case-synchronisation-updated-failed", 2) }
         }
 
         @Test
         fun `telemetry added to track the failure`() {
-          await untilAsserted {
-            verify(telemetryClient, times(2)).trackEvent(
-              eq("court-case-synchronisation-updated-failed"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient, times(2)).trackEvent(
+            eq("court-case-synchronisation-updated-failed"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+            },
+            isNull(),
+          )
         }
 
         @Test
         fun `the event is placed on dead letter queue`() {
           await untilAsserted {
             assertThat(
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-                courtSentencingQueueOffenderEventsDlqUrl,
-              ).get(),
+              courtSentencingOffenderEventsQueue.countMessagesOnDLQ(),
             ).isEqualTo(1)
           }
         }
@@ -681,41 +622,36 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
 
           dpsCourtSentencingServer.stubPutCourtCaseForUpdate(courtCaseId = DPS_COURT_CASE_ID)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             courtCaseEvent(
               eventType = "OFFENDER_CASES-UPDATED",
             ),
           ).also {
-            waitForTelemetry()
+            waitForAnyProcessingToComplete()
           }
         }
 
         @Test
         fun `will update DPS with the changes`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              1,
-              putRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID"))
-                .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
-            )
-          }
+          dpsCourtSentencingServer.verify(
+            1,
+            putRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID"))
+              .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
+          )
         }
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-case-synchronisation-updated-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-case-synchronisation-updated-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+            },
+            isNull(),
+          )
         }
       }
     }
@@ -748,34 +684,30 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               dpsCaseUuid = DPS_COURT_CASE_ID,
             ).toJson(),
           ).toJson(),
-        )
+        ).also { waitForAnyProcessingToComplete() }
       }
 
       @Test
       fun `will update DPS with the changes`() {
-        await untilAsserted {
-          dpsCourtSentencingServer.verify(
-            1,
-            putRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID"))
-              .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
-          )
-        }
+        dpsCourtSentencingServer.verify(
+          1,
+          putRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID"))
+            .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
+        )
       }
 
       @Test
       fun `will track a telemetry event for success`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("court-case-resynchronisation-success"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-              assertThat(it["nomisCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-              assertThat(it["dpsCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-            },
-            isNull(),
-          )
-        }
+        verify(telemetryClient).trackEvent(
+          eq("court-case-resynchronisation-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+            assertThat(it["nomisCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+            assertThat(it["dpsCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+          },
+          isNull(),
+        )
       }
     }
   }
@@ -791,30 +723,27 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class DPSUpdated {
       @BeforeEach
       fun setUp() {
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
           courtCaseLinkingEvent(
             eventType = "OFFENDER_CASES-LINKED",
             auditModule = "DPS_SYNCHRONISATION",
             combinedCaseId = combinedCaseId,
           ),
-        )
+        ).also { waitForAnyProcessingToComplete() }
       }
 
       @Test
       fun `the event is ignored`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("court-case-synchronisation-link-skipped"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-              assertThat(it["nomisCombinedCourtCaseId"]).isEqualTo(combinedCaseId.toString())
-            },
-            isNull(),
-          )
-        }
+        verify(telemetryClient).trackEvent(
+          eq("court-case-synchronisation-link-skipped"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+            assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+            assertThat(it["nomisCombinedCourtCaseId"]).isEqualTo(combinedCaseId.toString())
+          },
+          isNull(),
+        )
 
         // will not bother getting the court case or the mapping
         courtSentencingNomisApiMockServer.verify(
@@ -850,38 +779,33 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             courtCaseLinkingEvent(
               eventType = "OFFENDER_CASES-LINKED",
               combinedCaseId = combinedCaseId,
             ),
-          )
+          ).also { waitForAnyProcessingToComplete("court-case-synchronisation-link-error", 2) }
         }
 
         @Test
         fun `telemetry added to track the failure`() {
-          await untilAsserted {
-            verify(telemetryClient, times(2)).trackEvent(
-              eq("court-case-synchronisation-link-error"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["nomisCombinedCourtCaseId"]).isEqualTo(combinedCaseId.toString())
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient, times(2)).trackEvent(
+            eq("court-case-synchronisation-link-error"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["nomisCombinedCourtCaseId"]).isEqualTo(combinedCaseId.toString())
+            },
+            isNull(),
+          )
         }
 
         @Test
         fun `the event is placed on dead letter queue`() {
           await untilAsserted {
             assertThat(
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-                courtSentencingQueueOffenderEventsDlqUrl,
-              ).get(),
+              courtSentencingOffenderEventsQueue.countMessagesOnDLQ(),
             ).isEqualTo(1)
           }
         }
@@ -902,14 +826,13 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
 
           dpsCourtSentencingServer.stubLinkCase(sourceCourtCaseId = DPS_COURT_CASE_ID, targetCourtCaseId = dpsTargetId)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             courtCaseLinkingEvent(
               eventType = "OFFENDER_CASES-LINKED",
               combinedCaseId = combinedCaseId,
             ),
           ).also {
-            waitForTelemetry()
+            waitForAnyProcessingToComplete()
           }
         }
 
@@ -950,30 +873,27 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class DPSUpdated {
       @BeforeEach
       fun setUp() {
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
           courtCaseLinkingEvent(
             eventType = "OFFENDER_CASES-UNLINKED",
             auditModule = "DPS_SYNCHRONISATION",
             combinedCaseId = combinedCaseId,
           ),
-        )
+        ).also { waitForAnyProcessingToComplete() }
       }
 
       @Test
       fun `the event is ignored`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("court-case-synchronisation-unlink-skipped"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-              assertThat(it["nomisCombinedCourtCaseId"]).isEqualTo(combinedCaseId.toString())
-            },
-            isNull(),
-          )
-        }
+        verify(telemetryClient).trackEvent(
+          eq("court-case-synchronisation-unlink-skipped"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+            assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+            assertThat(it["nomisCombinedCourtCaseId"]).isEqualTo(combinedCaseId.toString())
+          },
+          isNull(),
+        )
 
         // will not bother getting the court case or the mapping
         courtSentencingNomisApiMockServer.verify(
@@ -1009,38 +929,33 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             courtCaseLinkingEvent(
               eventType = "OFFENDER_CASES-UNLINKED",
               combinedCaseId = combinedCaseId,
             ),
-          )
+          ).also { waitForAnyProcessingToComplete("court-case-synchronisation-unlink-error", 2) }
         }
 
         @Test
         fun `telemetry added to track the failure`() {
-          await untilAsserted {
-            verify(telemetryClient, times(2)).trackEvent(
-              eq("court-case-synchronisation-unlink-error"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["nomisCombinedCourtCaseId"]).isEqualTo(combinedCaseId.toString())
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient, times(2)).trackEvent(
+            eq("court-case-synchronisation-unlink-error"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["nomisCombinedCourtCaseId"]).isEqualTo(combinedCaseId.toString())
+            },
+            isNull(),
+          )
         }
 
         @Test
         fun `the event is placed on dead letter queue`() {
           await untilAsserted {
             assertThat(
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-                courtSentencingQueueOffenderEventsDlqUrl,
-              ).get(),
+              courtSentencingOffenderEventsQueue.countMessagesOnDLQ(),
             ).isEqualTo(1)
           }
         }
@@ -1062,14 +977,13 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
 
           dpsCourtSentencingServer.stubUnlinkCase(sourceCourtCaseId = DPS_COURT_CASE_ID, targetCourtCaseId = dpsTargetId)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             courtCaseLinkingEvent(
               eventType = "OFFENDER_CASES-UNLINKED",
               combinedCaseId = combinedCaseId,
             ),
           ).also {
-            waitForTelemetry()
+            waitForAnyProcessingToComplete()
           }
         }
 
@@ -1080,20 +994,18 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-case-synchronisation-unlink-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["nomisCombinedCourtCaseId"]).isEqualTo(combinedCaseId.toString())
-                assertThat(it["dpsSourceCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-                assertThat(it["dpsTargetCourtCaseId"]).isEqualTo(dpsTargetId)
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-case-synchronisation-unlink-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["nomisCombinedCourtCaseId"]).isEqualTo(combinedCaseId.toString())
+              assertThat(it["dpsSourceCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+              assertThat(it["dpsTargetCourtCaseId"]).isEqualTo(dpsTargetId)
+            },
+            isNull(),
+          )
         }
       }
     }
@@ -1107,29 +1019,26 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class DPSUpdated {
       @BeforeEach
       fun setUp() {
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
           caseIdentifiersEvent(
             eventType = "OFFENDER_CASE_IDENTIFIERS-UPDATED",
             auditModule = "DPS_SYNCHRONISATION",
           ),
-        )
+        ).also { waitForAnyProcessingToComplete() }
       }
 
       @Test
       fun `the event is ignored`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("case-identifiers-synchronisation-skipped"),
-            check {
-              assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
-              assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
-              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-              assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-UPDATED")
-            },
-            isNull(),
-          )
-        }
+        verify(telemetryClient).trackEvent(
+          eq("case-identifiers-synchronisation-skipped"),
+          check {
+            assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
+            assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
+            assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+            assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-UPDATED")
+          },
+          isNull(),
+        )
 
         // will not bother getting the court case or the mapping
         courtSentencingNomisApiMockServer.verify(
@@ -1182,28 +1091,25 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             caseIdentifiersEvent(
               eventType = "OFFENDER_CASE_IDENTIFIERS-UPDATED",
             ),
-          )
+          ).also { waitForAnyProcessingToComplete("case-identifiers-synchronisation-failed", 2) }
         }
 
         @Test
         fun `telemetry added to track the failure`() {
-          await untilAsserted {
-            verify(telemetryClient, times(2)).trackEvent(
-              eq("case-identifiers-synchronisation-failed"),
-              check {
-                assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
-                assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-UPDATED")
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient, times(2)).trackEvent(
+            eq("case-identifiers-synchronisation-failed"),
+            check {
+              assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
+              assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-UPDATED")
+            },
+            isNull(),
+          )
         }
 
         @Test
@@ -1224,8 +1130,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             caseIdentifiersEvent(
               eventType = "OFFENDER_CASE_IDENTIFIERS-DELETED",
             ),
@@ -1250,9 +1155,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `the event is NOT placed on dead letter queue`() {
           assertThat(
-            awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-              courtSentencingQueueOffenderEventsDlqUrl,
-            ).get(),
+            courtSentencingOffenderEventsQueue.countMessagesOnDLQ(),
           ).isEqualTo(0)
         }
       }
@@ -1268,51 +1171,46 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
 
           dpsCourtSentencingServer.stubPutCaseIdentifierRefresh(courtCaseId = DPS_COURT_CASE_ID)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             caseIdentifiersEvent(
               eventType = "OFFENDER_CASE_IDENTIFIERS-UPDATED",
             ),
           ).also {
-            waitForTelemetry()
+            waitForAnyProcessingToComplete()
           }
         }
 
         @Test
         fun `will update DPS with the changes`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              1,
-              putRequestedFor(urlPathEqualTo("/court-case/$DPS_COURT_CASE_ID/case-references/refresh"))
-                .withRequestBody(matchingJsonPath("caseReferences.size()", equalTo("2")))
-                .withRequestBody(
-                  matchingJsonPath(
-                    "caseReferences[0].offenderCaseReference",
-                    equalTo(NOMIS_CASE_IDENTIFIER),
-                  ),
-                )
-                .withRequestBody(matchingJsonPath("caseReferences[1].offenderCaseReference", equalTo("ref2")))
-                .withRequestBody(matchingJsonPath("bookingId", equalTo("$NOMIS_BOOKING_ID"))),
-            )
-          }
+          dpsCourtSentencingServer.verify(
+            1,
+            putRequestedFor(urlPathEqualTo("/court-case/$DPS_COURT_CASE_ID/case-references/refresh"))
+              .withRequestBody(matchingJsonPath("caseReferences.size()", equalTo("2")))
+              .withRequestBody(
+                matchingJsonPath(
+                  "caseReferences[0].offenderCaseReference",
+                  equalTo(NOMIS_CASE_IDENTIFIER),
+                ),
+              )
+              .withRequestBody(matchingJsonPath("caseReferences[1].offenderCaseReference", equalTo("ref2")))
+              .withRequestBody(matchingJsonPath("bookingId", equalTo("$NOMIS_BOOKING_ID"))),
+          )
         }
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("case-identifiers-synchronisation-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
-                assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-UPDATED")
-                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("case-identifiers-synchronisation-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
+              assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-UPDATED")
+              assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+            },
+            isNull(),
+          )
         }
       }
 
@@ -1327,32 +1225,29 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
 
           dpsCourtSentencingServer.stubPutCaseIdentifierRefresh(courtCaseId = DPS_COURT_CASE_ID)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             caseIdentifiersEvent(
               eventType = "OFFENDER_CASE_IDENTIFIERS-DELETED",
             ),
           ).also {
-            waitForTelemetry()
+            waitForAnyProcessingToComplete()
           }
         }
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("case-identifiers-synchronisation-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
-                assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-DELETED")
-                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("case-identifiers-synchronisation-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
+              assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-DELETED")
+              assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+            },
+            isNull(),
+          )
         }
       }
 
@@ -1367,32 +1262,29 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
 
           dpsCourtSentencingServer.stubPutCaseIdentifierRefresh(courtCaseId = DPS_COURT_CASE_ID)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             caseIdentifiersEvent(
               eventType = "OFFENDER_CASE_IDENTIFIERS-INSERTED",
             ),
           ).also {
-            waitForTelemetry()
+            waitForAnyProcessingToComplete()
           }
         }
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("case-identifiers-synchronisation-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
-                assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-INSERTED")
-                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("case-identifiers-synchronisation-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisIdentifiersNo"]).isEqualTo(NOMIS_CASE_IDENTIFIER)
+              assertThat(it["nomisIdentifiersType"]).isEqualTo(NOMIS_CASE_IDENTIFIER_TYPE)
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["eventType"]).isEqualTo("OFFENDER_CASE_IDENTIFIERS-INSERTED")
+              assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+            },
+            isNull(),
+          )
         }
       }
     }
@@ -1413,27 +1305,24 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           offenderNo = OFFENDER_ID_DISPLAY,
           courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
         )
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
           courtAppearanceEvent(
             eventType = "COURT_EVENTS-INSERTED",
             auditModule = "DPS_SYNCHRONISATION",
           ),
-        )
+        ).also { waitForAnyProcessingToComplete() }
       }
 
       @Test
       fun `the event is ignored`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("court-appearance-synchronisation-created-skipped"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-            },
-            isNull(),
-          )
-        }
+        verify(telemetryClient).trackEvent(
+          eq("court-appearance-synchronisation-created-skipped"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+          },
+          isNull(),
+        )
 
         courtSentencingMappingApiMockServer.verify(
           0,
@@ -1475,8 +1364,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtCaseId = DPS_COURT_CASE_ID,
           )
           courtSentencingMappingApiMockServer.stubPostCourtAppearanceMapping()
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-INSERTED",
             ),
@@ -1554,13 +1442,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             offenderNo = OFFENDER_ID_DISPLAY,
             courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
           )
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-INSERTED",
               courtCaseId = null,
             ),
-          )
+          ).also { waitForAnyProcessingToComplete() }
         }
 
         @Test
@@ -1601,8 +1488,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
           )
           courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-INSERTED",
             ),
@@ -1645,8 +1531,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               dpsCourtCaseId = DPS_COURT_CASE_ID,
             ),
           )
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-INSERTED",
               bookingId = NOMIS_BOOKING_ID,
@@ -1698,13 +1583,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           @BeforeEach
           fun setUp() {
             courtSentencingMappingApiMockServer.stubPostCourtAppearanceMappingFailureFollowedBySuccess()
-            awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-              courtSentencingQueueOffenderEventsUrl,
+            courtSentencingOffenderEventsQueue.sendMessage(
               courtAppearanceEvent(
                 eventType = "COURT_EVENTS-INSERTED",
               ),
             ).also {
-              waitForTelemetry()
+              waitForAnyProcessingToComplete("court-appearance-mapping-created-synchronisation-success")
             }
           }
 
@@ -1780,8 +1664,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           @BeforeEach
           fun setUp() {
             courtSentencingMappingApiMockServer.stubPostCourtAppearanceMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
-            awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-              courtSentencingQueueOffenderEventsUrl,
+            courtSentencingOffenderEventsQueue.sendMessage(
               courtAppearanceEvent(
                 eventType = "COURT_EVENTS-INSERTED",
               ),
@@ -1894,8 +1777,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
           courtSentencingMappingApiMockServer.stubPostCourtChargeMapping()
 
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-INSERTED",
               auditModule = "DPS_SYNCHRONISATION",
@@ -2038,8 +1921,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
         )
 
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
           courtAppearanceEvent(
             eventType = "COURT_EVENTS-INSERTED",
             courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
@@ -2087,8 +1969,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class DPSUpdated {
       @BeforeEach
       fun setUp() {
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
+
           courtAppearanceEvent(
             eventType = "COURT_EVENTS-UPDATED",
             auditModule = "DPS_SYNCHRONISATION",
@@ -2145,8 +2027,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-UPDATED",
             ),
@@ -2199,13 +2081,13 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               DPS_COURT_APPEARANCE_ID,
             ),
           )
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-UPDATED",
             ),
           ).also {
-            waitForTelemetry()
+            waitForAnyProcessingToComplete()
           }
         }
 
@@ -2253,8 +2135,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class NoAssociatedCourtCase {
         @BeforeEach
         fun setUp() {
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-UPDATED",
               courtCaseId = null,
@@ -2296,8 +2178,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
           )
           courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-UPDATED",
             ),
@@ -2357,15 +2239,15 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               DPS_COURT_APPEARANCE_ID,
             ),
           )
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-UPDATED",
               auditModule = "DPS_SYNCHRONISATION",
               isBreachHearing = true,
             ),
           ).also {
-            waitForTelemetry()
+            waitForAnyProcessingToComplete()
           }
         }
 
@@ -2425,8 +2307,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-DELETED",
             ),
@@ -2466,8 +2348,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
           courtSentencingMappingApiMockServer.stubDeleteCourtAppearanceMappingByDpsId(dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID)
           dpsCourtSentencingServer.stubDeleteCourtAppearance(DPS_COURT_APPEARANCE_ID)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-DELETED",
               bookingId = NOMIS_BOOKING_ID,
@@ -2476,7 +2358,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               auditModule = "DPS_SYNCHRONISATION",
             ),
           ).also {
-            waitForTelemetry()
+            waitForAnyProcessingToComplete()
           }
         }
 
@@ -2529,8 +2411,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
+
           courtEventChargeEvent(
             eventType = "COURT_EVENT_CHARGES-INSERTED",
             auditModule = "DPS_SYNCHRONISATION",
@@ -2596,8 +2478,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             offenderNo = OFFENDER_ID_DISPLAY,
           )
           courtSentencingMappingApiMockServer.stubPostCourtChargeMapping()
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-INSERTED",
             ),
@@ -2676,8 +2558,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtAppearanceId = DPS_COURT_APPEARANCE_ID,
           )
 
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-INSERTED",
             ),
@@ -2750,8 +2632,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           @BeforeEach
           fun setUp() {
             courtSentencingMappingApiMockServer.stubPostCourtChargeMappingFailureFollowedBySuccess()
-            awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-              courtSentencingQueueOffenderEventsUrl,
+            courtSentencingOffenderEventsQueue.sendMessage(
+
               courtEventChargeEvent(
                 eventType = "COURT_EVENT_CHARGES-INSERTED",
               ),
@@ -2830,8 +2712,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           @BeforeEach
           fun setUp() {
             courtSentencingMappingApiMockServer.stubPostCourtChargeMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
-            awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-              courtSentencingQueueOffenderEventsUrl,
+            courtSentencingOffenderEventsQueue.sendMessage(
+
               courtEventChargeEvent(
                 eventType = "COURT_EVENT_CHARGES-INSERTED",
               ),
@@ -2913,8 +2795,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           nomisCourtChargeId = NOMIS_OFFENDER_CHARGE_ID,
         )
 
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
+
           courtEventChargeEvent(
             eventType = "COURT_EVENT_CHARGES-INSERTED",
           ),
@@ -2973,13 +2855,13 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
             ),
           )
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-DELETED",
             ),
           )
-          waitForTelemetry(times(1))
+          waitForAnyProcessingToComplete(times(1))
         }
 
         @Test
@@ -3008,13 +2890,13 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-DELETED",
             ),
           )
-          waitForTelemetry()
+          waitForAnyProcessingToComplete()
         }
 
         @Test
@@ -3062,54 +2944,46 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
 
           courtSentencingNomisApiMockServer.stubGetOffenderCharge(status = NOT_FOUND)
-
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-DELETED",
             ),
           )
-          waitForTelemetry()
+          waitForAnyProcessingToComplete("court-charge-synchronisation-deleted-success")
         }
 
         @Test
         fun `will delete a court appearance in DPS`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              1,
-              deleteRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID/charge/$DPS_CHARGE_ID")),
-              // TODO DPS to implement this endpoint
-            )
-          }
+          dpsCourtSentencingServer.verify(
+            1,
+            deleteRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID/charge/$DPS_CHARGE_ID")),
+            // TODO DPS to implement this endpoint
+          )
         }
 
         @Test
         fun `will remove the mapping if nomis charge has been deleted`() {
-          await untilAsserted {
-            courtSentencingMappingApiMockServer.stubDeleteCourtChargeMapping(NOMIS_OFFENDER_CHARGE_ID)
-            courtSentencingMappingApiMockServer.verify(
-              1,
-              deleteRequestedFor(urlPathEqualTo("/court-charges/nomis-court-charge-id/$NOMIS_OFFENDER_CHARGE_ID")),
-            )
-          }
+          courtSentencingMappingApiMockServer.stubDeleteCourtChargeMapping(NOMIS_OFFENDER_CHARGE_ID)
+          courtSentencingMappingApiMockServer.verify(
+            1,
+            deleteRequestedFor(urlPathEqualTo("/court-charges/nomis-court-charge-id/$NOMIS_OFFENDER_CHARGE_ID")),
+          )
         }
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-charge-synchronisation-deleted-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-                assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
-                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-charge-synchronisation-deleted-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+              assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
+              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+            },
+            isNull(),
+          )
         }
       }
 
@@ -3142,13 +3016,13 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
           )
 
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-DELETED",
             ),
           )
-          waitForTelemetry()
+          waitForAnyProcessingToComplete()
         }
 
         @Test
@@ -3162,7 +3036,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     }
   }
 
-  private fun waitForTelemetry(times: VerificationMode = atLeastOnce()) {
+  private fun waitForAnyProcessingToComplete(times: VerificationMode = atLeastOnce()) {
     await untilAsserted {
       verify(telemetryClient, times).trackEvent(
         any(),
@@ -3180,8 +3054,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class DPSUpdated {
       @BeforeEach
       fun setUp() {
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
+
           courtEventChargeEvent(
             eventType = "COURT_EVENT_CHARGES-UPDATED",
             auditModule = "DPS_SYNCHRONISATION",
@@ -3241,8 +3115,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
           )
           courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-UPDATED",
             ),
@@ -3287,8 +3161,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             dpsCourtChargeId = DPS_CHARGE_ID,
           )
           courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-UPDATED",
             ),
@@ -3342,8 +3216,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             chargeId = DPS_CHARGE_ID,
             appearanceId = DPS_COURT_APPEARANCE_ID,
           )
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-UPDATED",
             ),
@@ -3386,8 +3260,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
+
           courtEventChargeEvent(
             eventType = "COURT_EVENT_CHARGES-UPDATED",
             auditModule = "DPS_SYNCHRONISATION",
@@ -3488,7 +3362,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               eventId = NOMIS_COURT_APPEARANCE_ID,
               chargeId = NOMIS_OFFENDER_CHARGE_ID,
             ),
-          ).also { waitForAnyProcessingToComplete() }
+          ).also { waitForAnyProcessingToComplete("court-charge-synchronisation-link-error", 2) }
         }
 
         @Test
@@ -3533,7 +3407,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               eventId = NOMIS_COURT_APPEARANCE_ID,
               chargeId = NOMIS_OFFENDER_CHARGE_ID,
             ),
-          ).also { waitForAnyProcessingToComplete() }
+          ).also { waitForAnyProcessingToComplete("court-charge-synchronisation-link-error", 2) }
         }
 
         @Test
@@ -3577,7 +3451,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               eventId = NOMIS_COURT_APPEARANCE_ID,
               chargeId = NOMIS_OFFENDER_CHARGE_ID,
             ),
-          ).also { waitForAnyProcessingToComplete() }
+          ).also { waitForAnyProcessingToComplete("court-charge-synchronisation-link-error", 2) }
         }
 
         @Test
@@ -3622,7 +3496,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               eventId = NOMIS_COURT_APPEARANCE_ID,
               chargeId = NOMIS_OFFENDER_CHARGE_ID,
             ),
-          ).also { waitForAnyProcessingToComplete() }
+          ).also { waitForAnyProcessingToComplete("court-charge-synchronisation-link-error", 2) }
         }
 
         @Test
@@ -3714,8 +3588,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class DPSUpdated {
       @BeforeEach
       fun setUp() {
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
+
           courtEventChargeEvent(
             eventType = "OFFENDER_CHARGES-UPDATED",
             auditModule = "DPS_SYNCHRONISATION",
@@ -3757,8 +3631,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class NomisUpdatedNoOffenceChange {
       @BeforeEach
       fun setUp() {
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
+
           offenderChargeEvent(
             eventType = "OFFENDER_CHARGES-UPDATED",
             auditModule = "DPS_SYNCHRONISATION",
@@ -3824,8 +3698,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
           )
           courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             offenderChargeEvent(
               eventType = "OFFENDER_CHARGES-UPDATED",
               offenceCodeChange = "true",
@@ -3874,8 +3748,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           dpsCourtSentencingServer.stubPutChargeForUpdate(
             chargeId = UUID.fromString(DPS_CHARGE_ID),
           )
-          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-            courtSentencingQueueOffenderEventsUrl,
+          courtSentencingOffenderEventsQueue.sendMessage(
+
             offenderChargeEvent(
               eventType = "OFFENDER_CHARGES-UPDATED",
               offenceCodeChange = "true",
@@ -4419,8 +4293,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         dpsCourtSentencingServer.stubPutSentenceForUpdate(sentenceId = "612cf742-feea-4562-b01d-ce643146fcf1")
         dpsCourtSentencingServer.stubPutSentenceForUpdate(sentenceId = "870f7e03-6bfc-46e6-9782-a91daab5eab4")
 
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
+
           offenderFixedTermRecalls(
             eventType = "OFFENDER_FIXED_TERM_RECALLS-UPDATED",
             auditModule = "OIUFTRDA",
@@ -4542,15 +4416,14 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
           offenderFixedTermRecalls(
             eventType = "OFFENDER_FIXED_TERM_RECALLS-UPDATED",
             auditModule = "OIUFTRDA",
             bookingId = bookingId,
             offenderNo = offenderNo,
           ),
-        ).also { waitForAnyProcessingToComplete() }
+        ).also { waitForAnyProcessingToComplete("recall-custody-date-synchronisation-error", 2) }
       }
 
       @Test
@@ -4573,7 +4446,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will track telemetry for failure`() {
-        verify(telemetryClient).trackEvent(
+        verify(telemetryClient, times(2)).trackEvent(
           eq("recall-custody-date-synchronisation-error"),
           check {
             assertThat(it["offenderNo"]).isEqualTo(offenderNo)
@@ -4593,8 +4466,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           bookingId,
           emptyList(),
         )
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
+
           offenderFixedTermRecalls(
             eventType = "OFFENDER_FIXED_TERM_RECALLS-UPDATED",
             auditModule = "OIUFTRDA",
@@ -4629,8 +4502,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class UpdatedInDps {
       @BeforeEach
       fun setUp() {
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
+        courtSentencingOffenderEventsQueue.sendMessage(
+
           offenderFixedTermRecalls(
             eventType = "OFFENDER_FIXED_TERM_RECALLS-UPDATED",
             auditModule = "DPS_SYNCHRONISATION",
