@@ -27,6 +27,16 @@ generic-service:
     API_BASE_URL_COURT_SENTENCING: https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_PERSONAL_RELATIONSHIPS: https://personal-relationships-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_ORGANISATIONS: https://organisations-api-dev.hmpps.service.justice.gov.uk
+    FEATURE_EVENT_EXTERNAL_MOVEMENT-CHANGED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION-INSERTED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION-UPDATED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION-DELETED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION_MULTI-INSERTED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION_MULTI-UPDATED: false
+    FEATURE_EVENT_MOVEMENT_APPLICATION_MULTI-DELETED: false
+    FEATURE_EVENT_SCHEDULED_EXT_MOVE-INSERTED: false
+    FEATURE_EVENT_SCHEDULED_EXT_MOVE-UPDATED: false
+    FEATURE_EVENT_SCHEDULED_EXT_MOVE-DELETE: false
 
   scheduledDowntime:
     enabled: true
@@ -111,6 +121,9 @@ generic-prometheus-alerts:
       - "syscon-devs-dev-migration_visitbalance_dlq"
       - "syscon-devs-dev-prisoner_from_nomis_visitbalance_queue"
       - "syscon-devs-dev-prisoner_from_nomis_visitbalance_dl_queue"
+    externalmovements:
+      - "syscon-devs-dev-prisoner_from_nomis_externalmovements_queue"
+      - "syscon-devs-dev-prisoner_from_nomis_externalmovements_dl_queue"
 
 cron:
   retry_dlqs_schedule: "*/10 7-20 * * 1-5"

@@ -83,3 +83,6 @@ hmpps.sqs:
     eventvisitbalance:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventexternalmovements:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
