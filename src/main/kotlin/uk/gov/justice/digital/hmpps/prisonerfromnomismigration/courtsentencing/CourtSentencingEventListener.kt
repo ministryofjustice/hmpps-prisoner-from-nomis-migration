@@ -211,7 +211,6 @@ data class OffenderSentenceResynchronisationEvent(
 data class OffenderCaseResynchronisationEvent(
   val dpsCaseUuid: String,
   val offenderNo: String,
-  val bookingId: Long,
   val caseId: Long,
 )
 

@@ -744,7 +744,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             Type = "courtsentencing.resync.case",
             Message = OffenderCaseResynchronisationEvent(
               offenderNo = OFFENDER_ID_DISPLAY,
-              bookingId = NOMIS_BOOKING_ID,
               caseId = NOMIS_COURT_CASE_ID,
               dpsCaseUuid = DPS_COURT_CASE_ID,
             ).toJson(),
