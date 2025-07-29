@@ -131,6 +131,7 @@ hmpps.sqs:
       dlqMaxReceiveCount: 2
     eventcourtsentencing:
       dlqMaxReceiveCount: 2
+      errorVisibilityTimeout: 0
     eventpersonalrelationships:
       dlqMaxReceiveCount: 1
     eventvisitbalance:
