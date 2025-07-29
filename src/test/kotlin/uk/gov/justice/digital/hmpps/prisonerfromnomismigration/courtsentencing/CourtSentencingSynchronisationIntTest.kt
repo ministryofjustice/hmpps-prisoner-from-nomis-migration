@@ -1291,7 +1291,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                     equalTo(NOMIS_CASE_IDENTIFIER),
                   ),
                 )
-                .withRequestBody(matchingJsonPath("caseReferences[1].offenderCaseReference", equalTo("ref2"))),
+                .withRequestBody(matchingJsonPath("caseReferences[1].offenderCaseReference", equalTo("ref2")))
+                .withRequestBody(matchingJsonPath("bookingId", equalTo("$NOMIS_BOOKING_ID"))),
             )
           }
         }

@@ -1413,6 +1413,7 @@ class CourtSentencingSynchronisationService(
           courtCaseLegacyData = CourtCaseLegacyData(
             nomisCourtCase.caseInfoNumbers.filter { it.type == DPS_CASE_REFERENCE }
               .map { it.toDpsCaseReference() },
+            bookingId = nomisCourtCase.bookingId,
           ),
         )
         telemetryClient.trackEvent(
