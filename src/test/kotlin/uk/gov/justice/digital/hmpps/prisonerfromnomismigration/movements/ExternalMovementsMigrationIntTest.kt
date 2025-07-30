@@ -25,6 +25,7 @@ import java.time.Duration
 class ExternalMovementsMigrationIntTest(
   @Autowired private val migrationService: ExternalMovementsMigrationService,
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
+  @Autowired private val externalMovementsNomisApi: ExternalMovementsNomisApiMockServer,
 ) : SqsIntegrationTestBase() {
 
   private lateinit var migrationId: String
@@ -36,6 +37,9 @@ class ExternalMovementsMigrationIntTest(
 
   private fun stubMigrationDependencies(entities: Int = 2) {
     nomisApi.stubGetPrisonerIds(totalElements = entities.toLong(), pageSize = 10, firstOffenderNo = "A0001KT")
+    (1..entities).forEach { index ->
+      externalMovementsNomisApi.stubGetTemporaryAbsences(offenderNo = "A%04dKT".format(index))
+    }
   }
 
   @Nested
@@ -49,6 +53,12 @@ class ExternalMovementsMigrationIntTest(
     @Test
     fun `will request all prisoner ids`() {
       nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/ids/all")))
+    }
+
+    @Test
+    fun `will request temporary absences for each prisoner`() {
+      externalMovementsNomisApi.verifyGetTemporaryAbsences(offenderNo = "A0001KT")
+      externalMovementsNomisApi.verifyGetTemporaryAbsences(offenderNo = "A0002KT")
     }
   }
 
