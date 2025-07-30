@@ -184,6 +184,10 @@ organisations:
     delay-seconds: 180
     count: 9
 
+externalmovements:
+  complete-check:
+    delay-seconds: 180
+    count: 9
 
 azure:
   application-insights:
@@ -222,4 +226,6 @@ hmpps.sqs:
     migrationcoreperson:
       propagateTracing: false
     migrationvisitbalance:
+      propagateTracing: false
+    migrationexternalmovements:
       propagateTracing: false

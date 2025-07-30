@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.Appo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.PrisonerRestrictionMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.profiledetails.ContactPersonProfileDetailsMappingApiService
@@ -25,6 +26,7 @@ class GeneralMappingService(
   private val contactPersonProfileDetailsMappingApiService: ContactPersonProfileDetailsMappingApiService,
   private val organisationsMappingApiService: OrganisationsMappingApiService,
   private val visitBalanceMappingApiService: VisitBalanceMappingApiService,
+  private val externalMovementsMappingApiService: ExternalMovementsMappingApiService,
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long = when (migrationType) {
     MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
@@ -40,5 +42,6 @@ class GeneralMappingService(
     // since this is a patch we cannot count mappings created since none are created - it will have to be manual Telemetry
     MigrationType.SENTENCING_ADJUSTMENTS -> 0
     MigrationType.VISIT_BALANCE -> visitBalanceMappingApiService.getMigrationCount(migrationId)
+    MigrationType.EXTERNAL_MOVEMENTS -> externalMovementsMappingApiService.getMigrationCount(migrationId)
   }
 }
