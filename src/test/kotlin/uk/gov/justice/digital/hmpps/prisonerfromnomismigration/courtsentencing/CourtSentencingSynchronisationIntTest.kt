@@ -24,13 +24,10 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.Mockito.eq
-import org.mockito.kotlin.any
-import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.verification.VerificationMode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.NOT_FOUND
@@ -41,7 +38,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countMessagesOnDLQ
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.hasMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
@@ -58,8 +55,8 @@ import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.*
 import java.util.AbstractMap.SimpleEntry
-import java.util.UUID
 
 private const val NOMIS_COURT_CASE_ID = 1234L
 private const val NOMIS_COURT_APPEARANCE_ID = 5555L
@@ -130,7 +127,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           0,
           getRequestedFor(urlPathMatching("/mapping/court-sentencing/court-cases/nomis-court-case-id/\\d+")),
         )
-        // will not create an court case in DPS
+        // will not create a court case in DPS
         dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
       }
     }
@@ -289,7 +286,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             )
 
             assertThat(
-              courtSentencingOffenderEventsQueue.countMessagesOnDLQ(),
+              courtSentencingOffenderEventsQueue.countAllMessagesOnDLQQueue(),
             ).isEqualTo(0)
           }
 
@@ -332,7 +329,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               ),
             )
             await untilCallTo {
-              courtSentencingOffenderEventsQueue.countMessagesOnDLQ()
+              courtSentencingOffenderEventsQueue.countAllMessagesOnDLQQueue()
             } matches { it == 1 }
           }
 
@@ -605,7 +602,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `the event is placed on dead letter queue`() {
           await untilAsserted {
             assertThat(
-              courtSentencingOffenderEventsQueue.countMessagesOnDLQ(),
+              courtSentencingOffenderEventsQueue.countAllMessagesOnDLQQueue(),
             ).isEqualTo(1)
           }
         }
@@ -805,7 +802,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `the event is placed on dead letter queue`() {
           await untilAsserted {
             assertThat(
-              courtSentencingOffenderEventsQueue.countMessagesOnDLQ(),
+              courtSentencingOffenderEventsQueue.countAllMessagesOnDLQQueue(),
             ).isEqualTo(1)
           }
         }
@@ -955,7 +952,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `the event is placed on dead letter queue`() {
           await untilAsserted {
             assertThat(
-              courtSentencingOffenderEventsQueue.countMessagesOnDLQ(),
+              courtSentencingOffenderEventsQueue.countAllMessagesOnDLQQueue(),
             ).isEqualTo(1)
           }
         }
@@ -1155,7 +1152,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `the event is NOT placed on dead letter queue`() {
           assertThat(
-            courtSentencingOffenderEventsQueue.countMessagesOnDLQ(),
+            courtSentencingOffenderEventsQueue.countAllMessagesOnDLQQueue(),
           ).isEqualTo(0)
         }
       }
@@ -1328,7 +1325,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           0,
           getRequestedFor(urlPathMatching("/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/\\d+")),
         )
-        // will not create an court case in DPS
+        // will not create a court case in DPS
         dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
       }
     }
@@ -1368,67 +1365,61 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-INSERTED",
             ),
-          )
+          ).also { waitForAnyProcessingToComplete() }
         }
 
         @Test
         fun `will create a court appearance in DPS`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              postRequestedFor(urlPathEqualTo("/legacy/court-appearance"))
-                .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("4506")))
-                .withRequestBody(matchingJsonPath("legacyData.outcomeConvictionFlag", equalTo("false")))
-                .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("I")))
-                .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Adjournment")))
-                .withRequestBody(matchingJsonPath("legacyData.postedDate", not(WireMock.absent())))
-                .withRequestBody(matchingJsonPath("legacyData.appearanceTime", equalTo("09:00")))
-                .withRequestBody(matchingJsonPath("courtCode", equalTo("MDI")))
-                .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_COURT_CASE_ID)))
-                .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02")))
-                .withRequestBody(
-                  matchingJsonPath(
-                    "appearanceTypeUuid",
-                    equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
-                  ),
+          dpsCourtSentencingServer.verify(
+            postRequestedFor(urlPathEqualTo("/legacy/court-appearance"))
+              .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("4506")))
+              .withRequestBody(matchingJsonPath("legacyData.outcomeConvictionFlag", equalTo("false")))
+              .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("I")))
+              .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Adjournment")))
+              .withRequestBody(matchingJsonPath("legacyData.postedDate", not(WireMock.absent())))
+              .withRequestBody(matchingJsonPath("legacyData.appearanceTime", equalTo("09:00")))
+              .withRequestBody(matchingJsonPath("courtCode", equalTo("MDI")))
+              .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_COURT_CASE_ID)))
+              .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02")))
+              .withRequestBody(
+                matchingJsonPath(
+                  "appearanceTypeUuid",
+                  equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
                 ),
-            )
-          }
+              ),
+          )
         }
 
         @Test
         fun `will create mapping between DPS and NOMIS ids`() {
-          await untilAsserted {
-            courtSentencingMappingApiMockServer.verify(
-              postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances"))
-                .withRequestBody(matchingJsonPath("dpsCourtAppearanceId", equalTo(DPS_COURT_APPEARANCE_ID)))
-                .withRequestBody(
-                  matchingJsonPath(
-                    "nomisCourtAppearanceId",
-                    equalTo(NOMIS_COURT_APPEARANCE_ID.toString()),
-                  ),
-                )
-                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
-            )
-          }
+          courtSentencingMappingApiMockServer.verify(
+            postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances"))
+              .withRequestBody(matchingJsonPath("dpsCourtAppearanceId", equalTo(DPS_COURT_APPEARANCE_ID)))
+              .withRequestBody(
+                matchingJsonPath(
+                  "nomisCourtAppearanceId",
+                  equalTo(NOMIS_COURT_APPEARANCE_ID.toString()),
+                ),
+              )
+              .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+          )
         }
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-appearance-synchronisation-created-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-appearance-synchronisation-created-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+              assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+              assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+            },
+            isNull(),
+          )
         }
       }
 
@@ -1460,20 +1451,18 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will track a telemetry event for ignored`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-appearance-synchronisation-created-ignored"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isNull()
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["reason"]).contains("appearance not associated with a court case")
-                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-appearance-synchronisation-created-ignored"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isNull()
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["reason"]).contains("appearance not associated with a court case")
+              assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+            },
+            isNull(),
+          )
         }
       }
 
@@ -1492,25 +1481,23 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-INSERTED",
             ),
-          )
+          ).also { waitForAnyProcessingToComplete("court-appearance-synchronisation-created-failed", 2) }
         }
 
         @Test
         fun `will track a telemetry event for failed`() {
-          await untilAsserted {
-            verify(telemetryClient, times(2)).trackEvent(
-              eq("court-appearance-synchronisation-created-failed"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["reason"]).isEqualTo("associated court case is not mapped")
-                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient, times(2)).trackEvent(
+            eq("court-appearance-synchronisation-created-failed"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["reason"]).isEqualTo("associated court case is not mapped")
+              assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+            },
+            isNull(),
+          )
         }
       }
 
@@ -1538,23 +1525,21 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
               offenderNo = OFFENDER_ID_DISPLAY,
             ),
-          )
+          ).also { waitForAnyProcessingToComplete() }
         }
 
         @Test
         fun `the event is ignored`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-appearance-synchronisation-created-ignored"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-appearance-synchronisation-created-ignored"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+            },
+            isNull(),
+          )
           // will not create a court case in DPS
           dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
         }
@@ -1594,67 +1579,57 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
           @Test
           fun `will create a court case in DPS`() {
-            await untilAsserted {
-              dpsCourtSentencingServer.verify(
-                postRequestedFor(urlPathEqualTo("/legacy/court-appearance")),
-              )
-            }
+            dpsCourtSentencingServer.verify(
+              postRequestedFor(urlPathEqualTo("/legacy/court-appearance")),
+            )
           }
 
           @Test
           fun `will attempt to create mapping two times and succeed`() {
-            await untilAsserted {
-              courtSentencingMappingApiMockServer.verify(
-                WireMock.exactly(2),
-                postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances"))
-                  .withRequestBody(matchingJsonPath("dpsCourtAppearanceId", equalTo(DPS_COURT_APPEARANCE_ID)))
-                  .withRequestBody(
-                    matchingJsonPath(
-                      "nomisCourtAppearanceId",
-                      equalTo(NOMIS_COURT_APPEARANCE_ID.toString()),
-                    ),
-                  )
-                  .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
-              )
-            }
+            courtSentencingMappingApiMockServer.verify(
+              WireMock.exactly(2),
+              postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances"))
+                .withRequestBody(matchingJsonPath("dpsCourtAppearanceId", equalTo(DPS_COURT_APPEARANCE_ID)))
+                .withRequestBody(
+                  matchingJsonPath(
+                    "nomisCourtAppearanceId",
+                    equalTo(NOMIS_COURT_APPEARANCE_ID.toString()),
+                  ),
+                )
+                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+            )
 
             assertThat(
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-                courtSentencingQueueOffenderEventsDlqUrl,
-              ).get(),
-            ).isEqualTo(0)
+              courtSentencingOffenderEventsQueue.hasMessagesOnDLQQueue(),
+            ).isFalse
           }
 
           @Test
           fun `will track a telemetry event for partial success`() {
-            await untilAsserted {
-              verify(telemetryClient).trackEvent(
-                eq("court-appearance-synchronisation-created-success"),
-                check {
-                  assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                  assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                  assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                  assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-                  assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                  assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-                  assertThat(it["mapping"]).isEqualTo("initial-failure")
-                },
-                isNull(),
-              )
-            }
+            verify(telemetryClient).trackEvent(
+              eq("court-appearance-synchronisation-created-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+                assertThat(it["mapping"]).isEqualTo("initial-failure")
+              },
+              isNull(),
+            )
 
-            await untilAsserted {
-              verify(telemetryClient).trackEvent(
-                eq("court-appearance-mapping-created-synchronisation-success"),
-                check {
-                  assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-                  assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                  assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                  assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-                },
-                isNull(),
-              )
-            }
+            verify(telemetryClient).trackEvent(
+              eq("court-appearance-mapping-created-synchronisation-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+              },
+              isNull(),
+            )
           }
         }
 
@@ -1670,20 +1645,16 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               ),
             )
             await untilCallTo {
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-                courtSentencingQueueOffenderEventsDlqUrl,
-              ).get()
-            } matches { it == 1 }
+              courtSentencingOffenderEventsQueue.hasMessagesOnDLQQueue()
+            } matches { it == true }
           }
 
           @Test
           fun `will create a court case in DPS`() {
-            await untilAsserted {
-              dpsCourtSentencingServer.verify(
-                1,
-                postRequestedFor(urlPathEqualTo("/legacy/court-appearance")),
-              )
-            }
+            dpsCourtSentencingServer.verify(
+              1,
+              postRequestedFor(urlPathEqualTo("/legacy/court-appearance")),
+            )
           }
 
           @Test
@@ -1696,21 +1667,19 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
           @Test
           fun `will track a telemetry event for success`() {
-            await untilAsserted {
-              verify(telemetryClient).trackEvent(
-                eq("court-appearance-synchronisation-created-success"),
-                check {
-                  assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-                  assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                  assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                  assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
-                  assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                  assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-                  assertThat(it["mapping"]).isEqualTo("initial-failure")
-                },
-                isNull(),
-              )
-            }
+            verify(telemetryClient).trackEvent(
+              eq("court-appearance-synchronisation-created-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+                assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+                assertThat(it["mapping"]).isEqualTo("initial-failure")
+              },
+              isNull(),
+            )
           }
         }
       }
@@ -1928,15 +1897,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             bookingId = NOMIS_BOOKING_ID,
             offenderNo = OFFENDER_ID_DISPLAY,
           ),
-        )
-
-        // wait for mapping calls before verifying
-        await untilAsserted {
-          courtSentencingMappingApiMockServer.verify(
-            1,
-            postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances")),
-          )
-        }
+        ).also { waitForAnyProcessingToComplete("from-nomis-sync-court-appearance-duplicate") }
 
         // doesn't retry
         dpsCourtSentencingServer.verify(
@@ -1944,19 +1905,17 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           postRequestedFor(urlPathEqualTo("/legacy/court-appearance")),
         )
 
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            org.mockito.kotlin.eq("from-nomis-sync-court-appearance-duplicate"),
-            check {
-              assertThat(it["migrationId"]).isNull()
-              assertThat(it["existingDpsCourtAppearanceId"]).isEqualTo(EXISTING_DPS_COURT_APPEARANCE_ID)
-              assertThat(it["duplicateDpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-              assertThat(it["existingNomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-              assertThat(it["duplicateNomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-            },
-            isNull(),
-          )
-        }
+        verify(telemetryClient).trackEvent(
+          org.mockito.kotlin.eq("from-nomis-sync-court-appearance-duplicate"),
+          check {
+            assertThat(it["migrationId"]).isNull()
+            assertThat(it["existingDpsCourtAppearanceId"]).isEqualTo(EXISTING_DPS_COURT_APPEARANCE_ID)
+            assertThat(it["duplicateDpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+            assertThat(it["existingNomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+            assertThat(it["duplicateNomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+          },
+          isNull(),
+        )
       }
     }
   }
@@ -1970,27 +1929,24 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         courtSentencingOffenderEventsQueue.sendMessage(
-
           courtAppearanceEvent(
             eventType = "COURT_EVENTS-UPDATED",
             auditModule = "DPS_SYNCHRONISATION",
           ),
-        )
+        ).also { waitForAnyProcessingToComplete() }
       }
 
       @Test
       fun `the event is ignored`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("court-appearance-synchronisation-updated-skipped"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-            },
-            isNull(),
-          )
-        }
+        verify(telemetryClient).trackEvent(
+          eq("court-appearance-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+          },
+          isNull(),
+        )
 
         // will not bother getting the court appearance or the mapping
         courtSentencingNomisApiMockServer.verify(
@@ -2028,36 +1984,31 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
           courtSentencingOffenderEventsQueue.sendMessage(
-
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-UPDATED",
             ),
-          )
+          ).also { waitForAnyProcessingToComplete("court-appearance-synchronisation-updated-failed", 2) }
         }
 
         @Test
         fun `telemetry added to track the failure`() {
-          await untilAsserted {
-            verify(telemetryClient, times(2)).trackEvent(
-              eq("court-appearance-synchronisation-updated-failed"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient, times(2)).trackEvent(
+            eq("court-appearance-synchronisation-updated-failed"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+            },
+            isNull(),
+          )
         }
 
         @Test
         fun `the event is placed on dead letter queue`() {
           await untilAsserted {
             assertThat(
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-                courtSentencingQueueOffenderEventsDlqUrl,
-              ).get(),
-            ).isEqualTo(1)
+              courtSentencingOffenderEventsQueue.hasMessagesOnDLQQueue(),
+            ).isTrue
           }
         }
       }
@@ -2082,7 +2033,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
           )
           courtSentencingOffenderEventsQueue.sendMessage(
-
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-UPDATED",
             ),
@@ -2093,40 +2043,36 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will update DPS with the changes`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              1,
-              putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID"))
-                .withRequestBody(
-                  matchingJsonPath(
-                    "appearanceTypeUuid",
-                    equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
-                  ),
-                )
-                .withRequestBody(
-                  matchingJsonPath(
-                    "legacyData.appearanceTime",
-                    equalTo("09:00"),
-                  ),
+          dpsCourtSentencingServer.verify(
+            1,
+            putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID"))
+              .withRequestBody(
+                matchingJsonPath(
+                  "appearanceTypeUuid",
+                  equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
                 ),
-            )
-          }
+              )
+              .withRequestBody(
+                matchingJsonPath(
+                  "legacyData.appearanceTime",
+                  equalTo("09:00"),
+                ),
+              ),
+          )
         }
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-appearance-synchronisation-updated-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-appearance-synchronisation-updated-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+            },
+            isNull(),
+          )
         }
       }
 
@@ -2136,30 +2082,27 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           courtSentencingOffenderEventsQueue.sendMessage(
-
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-UPDATED",
               courtCaseId = null,
             ),
-          )
+          ).also { waitForAnyProcessingToComplete() }
         }
 
         @Test
         fun `will track a telemetry event for ignored`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-appearance-synchronisation-updated-ignored"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isNull()
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["reason"]).contains("appearance not associated with a court case")
-                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-appearance-synchronisation-updated-ignored"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isNull()
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["reason"]).contains("appearance not associated with a court case")
+              assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+            },
+            isNull(),
+          )
         }
       }
 
@@ -2179,29 +2122,26 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
           courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
           courtSentencingOffenderEventsQueue.sendMessage(
-
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-UPDATED",
             ),
-          )
+          ).also { waitForAnyProcessingToComplete("court-appearance-synchronisation-updated-failed", 2) }
         }
 
         @Test
         fun `will track a telemetry event for failed`() {
-          await untilAsserted {
-            verify(telemetryClient, times(2)).trackEvent(
-              eq("court-appearance-synchronisation-updated-failed"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["reason"]).isEqualTo("associated court case is not mapped")
-                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient, times(2)).trackEvent(
+            eq("court-appearance-synchronisation-updated-failed"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["reason"]).isEqualTo("associated court case is not mapped")
+              assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+            },
+            isNull(),
+          )
         }
       }
     }
@@ -2240,7 +2180,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
           )
           courtSentencingOffenderEventsQueue.sendMessage(
-
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-UPDATED",
               auditModule = "DPS_SYNCHRONISATION",
@@ -2253,41 +2192,37 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will update DPS with the changes`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              1,
-              putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID"))
-                .withRequestBody(
-                  matchingJsonPath(
-                    "appearanceTypeUuid",
-                    equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
-                  ),
-                )
-                .withRequestBody(
-                  matchingJsonPath(
-                    "legacyData.appearanceTime",
-                    equalTo("09:00"),
-                  ),
+          dpsCourtSentencingServer.verify(
+            1,
+            putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID"))
+              .withRequestBody(
+                matchingJsonPath(
+                  "appearanceTypeUuid",
+                  equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
                 ),
-            )
-          }
+              )
+              .withRequestBody(
+                matchingJsonPath(
+                  "legacyData.appearanceTime",
+                  equalTo("09:00"),
+                ),
+              ),
+          )
         }
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-appearance-synchronisation-updated-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["isBreachHearing"]).isEqualTo("true")
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-appearance-synchronisation-updated-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["isBreachHearing"]).isEqualTo("true")
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+            },
+            isNull(),
+          )
         }
       }
     }
@@ -2308,26 +2243,23 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
           courtSentencingOffenderEventsQueue.sendMessage(
-
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-DELETED",
             ),
-          )
+          ).also { waitForAnyProcessingToComplete() }
         }
 
         @Test
         fun `the event is ignored`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-appearance-synchronisation-deleted-ignored"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-appearance-synchronisation-deleted-ignored"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+            },
+            isNull(),
+          )
           // will not delete a court appearance in DPS
           dpsCourtSentencingServer.verify(0, deleteRequestedFor(anyUrl()))
         }
@@ -2349,7 +2281,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtSentencingMappingApiMockServer.stubDeleteCourtAppearanceMappingByDpsId(dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID)
           dpsCourtSentencingServer.stubDeleteCourtAppearance(DPS_COURT_APPEARANCE_ID)
           courtSentencingOffenderEventsQueue.sendMessage(
-
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-DELETED",
               bookingId = NOMIS_BOOKING_ID,
@@ -2364,38 +2295,32 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will delete a court appearance in DPS`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              1,
-              deleteRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID")),
-            )
-          }
+          dpsCourtSentencingServer.verify(
+            1,
+            deleteRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID")),
+          )
         }
 
         @Test
         fun `will delete mapping between DPS and NOMIS ids`() {
-          await untilAsserted {
-            courtSentencingMappingApiMockServer.verify(
-              1,
-              deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances/dps-court-appearance-id/$DPS_COURT_APPEARANCE_ID")),
-            )
-          }
+          courtSentencingMappingApiMockServer.verify(
+            1,
+            deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances/dps-court-appearance-id/$DPS_COURT_APPEARANCE_ID")),
+          )
         }
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-appearance-synchronisation-deleted-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-appearance-synchronisation-deleted-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+            },
+            isNull(),
+          )
         }
       }
     }
@@ -2412,27 +2337,24 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         courtSentencingOffenderEventsQueue.sendMessage(
-
           courtEventChargeEvent(
             eventType = "COURT_EVENT_CHARGES-INSERTED",
             auditModule = "DPS_SYNCHRONISATION",
           ),
-        )
+        ).also { waitForAnyProcessingToComplete() }
       }
 
       @Test
       fun `the event is ignored`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("court-charge-synchronisation-created-skipped"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-            },
-            isNull(),
-          )
-        }
+        verify(telemetryClient).trackEvent(
+          eq("court-charge-synchronisation-created-skipped"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+            assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+          },
+          isNull(),
+        )
 
         courtSentencingMappingApiMockServer.verify(
           0,
@@ -2479,62 +2401,55 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
           courtSentencingMappingApiMockServer.stubPostCourtChargeMapping()
           courtSentencingOffenderEventsQueue.sendMessage(
-
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-INSERTED",
             ),
-          )
+          ).also { waitForAnyProcessingToComplete() }
         }
 
         @Test
         fun `will create a court charge and associate with an appearance in DPS`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              postRequestedFor(urlPathEqualTo("/legacy/charge"))
-                .withRequestBody(matchingJsonPath("appearanceLifetimeUuid", equalTo(DPS_COURT_APPEARANCE_ID)))
-                .withRequestBody(matchingJsonPath("offenceCode", equalTo("RI64006")))
-                .withRequestBody(matchingJsonPath("offenceStartDate", equalTo("2024-04-04")))
-                .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("1002")))
-                .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("F"))),
-            )
-          }
+          dpsCourtSentencingServer.verify(
+            postRequestedFor(urlPathEqualTo("/legacy/charge"))
+              .withRequestBody(matchingJsonPath("appearanceLifetimeUuid", equalTo(DPS_COURT_APPEARANCE_ID)))
+              .withRequestBody(matchingJsonPath("offenceCode", equalTo("RI64006")))
+              .withRequestBody(matchingJsonPath("offenceStartDate", equalTo("2024-04-04")))
+              .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("1002")))
+              .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("F"))),
+          )
         }
 
         @Test
         fun `will create mapping between DPS and NOMIS ids`() {
-          await untilAsserted {
-            courtSentencingMappingApiMockServer.verify(
-              postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-charges"))
-                .withRequestBody(matchingJsonPath("dpsCourtChargeId", equalTo(DPS_CHARGE_ID)))
-                .withRequestBody(
-                  matchingJsonPath(
-                    "nomisCourtChargeId",
-                    equalTo(NOMIS_OFFENDER_CHARGE_ID.toString()),
-                  ),
-                )
-                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
-            )
-          }
+          courtSentencingMappingApiMockServer.verify(
+            postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-charges"))
+              .withRequestBody(matchingJsonPath("dpsCourtChargeId", equalTo(DPS_CHARGE_ID)))
+              .withRequestBody(
+                matchingJsonPath(
+                  "nomisCourtChargeId",
+                  equalTo(NOMIS_OFFENDER_CHARGE_ID.toString()),
+                ),
+              )
+              .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+          )
         }
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-charge-synchronisation-created-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
-                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-                assertThat(it["existingDpsCharge"]).isEqualTo("false")
-                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-charge-synchronisation-created-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
+              assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+              assertThat(it["existingDpsCharge"]).isEqualTo("false")
+              assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+            },
+            isNull(),
+          )
         }
       }
 
@@ -2559,51 +2474,46 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
 
           courtSentencingOffenderEventsQueue.sendMessage(
-
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-INSERTED",
             ),
-          )
+          ).also { waitForAnyProcessingToComplete() }
         }
 
         @Test
         fun `the existing offender charge is added to the appearance on DPS rather than created`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              putRequestedFor(urlPathEqualTo("/legacy/court-appearance/${DPS_COURT_APPEARANCE_ID}/charge/$DPS_CHARGE_ID"))
-                .withRequestBody(matchingJsonPath("offenceStartDate", equalTo("2024-03-03")))
-                .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("1002")))
-                .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("F"))),
-            )
-          }
+          dpsCourtSentencingServer.verify(
+            putRequestedFor(urlPathEqualTo("/legacy/court-appearance/${DPS_COURT_APPEARANCE_ID}/charge/$DPS_CHARGE_ID"))
+              .withRequestBody(matchingJsonPath("offenceStartDate", equalTo("2024-03-03")))
+              .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("1002")))
+              .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("F"))),
+          )
         }
 
         @Test
         fun `will not try to create a mapping `() {
           courtSentencingMappingApiMockServer.verify(
             0,
-            anyRequestedFor(anyUrl()),
+            postRequestedFor(anyUrl()),
           )
         }
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-charge-synchronisation-created-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
-                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-                assertThat(it["existingDpsCharge"]).isEqualTo("true")
-                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-charge-synchronisation-created-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
+              assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+              assertThat(it["existingDpsCharge"]).isEqualTo("true")
+              assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+            },
+            isNull(),
+          )
         }
       }
 
@@ -2633,76 +2543,65 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           fun setUp() {
             courtSentencingMappingApiMockServer.stubPostCourtChargeMappingFailureFollowedBySuccess()
             courtSentencingOffenderEventsQueue.sendMessage(
-
               courtEventChargeEvent(
                 eventType = "COURT_EVENT_CHARGES-INSERTED",
               ),
-            )
+            ).also { waitForAnyProcessingToComplete("court-charge-mapping-created-synchronisation-success") }
           }
 
           @Test
           fun `will create a court case in DPS`() {
-            await untilAsserted {
-              dpsCourtSentencingServer.verify(
-                postRequestedFor(urlPathEqualTo("/legacy/charge")),
-              )
-            }
+            dpsCourtSentencingServer.verify(
+              postRequestedFor(urlPathEqualTo("/legacy/charge")),
+            )
           }
 
           @Test
           fun `will attempt to create mapping two times and succeed`() {
-            await untilAsserted {
-              courtSentencingMappingApiMockServer.verify(
-                WireMock.exactly(2),
-                postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-charges"))
-                  .withRequestBody(matchingJsonPath("dpsCourtChargeId", equalTo(DPS_CHARGE_ID)))
-                  .withRequestBody(
-                    matchingJsonPath(
-                      "nomisCourtChargeId",
-                      equalTo(NOMIS_OFFENDER_CHARGE_ID.toString()),
-                    ),
-                  )
-                  .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
-              )
-            }
+            courtSentencingMappingApiMockServer.verify(
+              WireMock.exactly(2),
+              postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-charges"))
+                .withRequestBody(matchingJsonPath("dpsCourtChargeId", equalTo(DPS_CHARGE_ID)))
+                .withRequestBody(
+                  matchingJsonPath(
+                    "nomisCourtChargeId",
+                    equalTo(NOMIS_OFFENDER_CHARGE_ID.toString()),
+                  ),
+                )
+                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+            )
 
             assertThat(
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-                courtSentencingQueueOffenderEventsDlqUrl,
-              ).get(),
-            ).isEqualTo(0)
+              courtSentencingOffenderEventsQueue.hasMessagesOnDLQQueue(),
+            ).isFalse
           }
 
           @Test
           fun `will track a telemetry event for partial success`() {
-            await untilAsserted {
-              verify(telemetryClient).trackEvent(
-                eq("court-charge-synchronisation-created-success"),
-                check {
-                  assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                  assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                  assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-                  assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                  assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
-                  assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-                  assertThat(it["mapping"]).isEqualTo("initial-failure")
-                },
-                isNull(),
-              )
-            }
+            verify(telemetryClient).trackEvent(
+              eq("court-charge-synchronisation-created-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
+                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+                assertThat(it["mapping"]).isEqualTo("initial-failure")
+              },
+              isNull(),
+            )
 
-            await untilAsserted {
-              verify(telemetryClient).trackEvent(
-                eq("court-charge-mapping-created-synchronisation-success"),
-                check {
-                  assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-                  assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                  assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-                  assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
-                },
-                isNull(),
-              )
-            }
+            verify(telemetryClient).trackEvent(
+              eq("court-charge-mapping-created-synchronisation-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+                assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
+              },
+              isNull(),
+            )
           }
         }
 
@@ -2713,25 +2612,20 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           fun setUp() {
             courtSentencingMappingApiMockServer.stubPostCourtChargeMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
             courtSentencingOffenderEventsQueue.sendMessage(
-
               courtEventChargeEvent(
                 eventType = "COURT_EVENT_CHARGES-INSERTED",
               ),
             )
             await untilCallTo {
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-                courtSentencingQueueOffenderEventsDlqUrl,
-              ).get()
-            } matches { it == 1 }
+              courtSentencingOffenderEventsQueue.hasMessagesOnDLQQueue()
+            } matches { it == true }
           }
 
           @Test
           fun `will create and associate a charge in DPS`() {
-            await untilAsserted {
-              dpsCourtSentencingServer.verify(
-                postRequestedFor(urlPathEqualTo("/legacy/charge")),
-              )
-            }
+            dpsCourtSentencingServer.verify(
+              postRequestedFor(urlPathEqualTo("/legacy/charge")),
+            )
           }
 
           @Test
@@ -2744,21 +2638,19 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
           @Test
           fun `will track a telemetry event for success`() {
-            await untilAsserted {
-              verify(telemetryClient).trackEvent(
-                eq("court-charge-synchronisation-created-success"),
-                check {
-                  assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-                  assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                  assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-                  assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                  assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
-                  assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-                  assertThat(it["mapping"]).isEqualTo("initial-failure")
-                },
-                isNull(),
-              )
-            }
+            verify(telemetryClient).trackEvent(
+              eq("court-charge-synchronisation-created-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+                assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
+                assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+                assertThat(it["mapping"]).isEqualTo("initial-failure")
+              },
+              isNull(),
+            )
           }
         }
       }
@@ -2796,39 +2688,27 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         )
 
         courtSentencingOffenderEventsQueue.sendMessage(
-
           courtEventChargeEvent(
             eventType = "COURT_EVENT_CHARGES-INSERTED",
           ),
-        )
-
-        // wait for mapping calls before verifying
-        await untilAsserted {
-          courtSentencingMappingApiMockServer.verify(
-            1,
-            postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-charges")),
-          )
-        }
-
+        ).also { waitForAnyProcessingToComplete("from-nomis-sync-charge-duplicate") }
         // doesn't retry
         dpsCourtSentencingServer.verify(
           1,
           postRequestedFor(urlPathEqualTo("/legacy/charge")),
         )
 
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            org.mockito.kotlin.eq("from-nomis-sync-charge-duplicate"),
-            check {
-              assertThat(it["migrationId"]).isNull()
-              assertThat(it["existingDpsCourtChargeId"]).isEqualTo(EXISTING_DPS_CHARGE_ID)
-              assertThat(it["duplicateDpsCourtChargeId"]).isEqualTo(DPS_CHARGE_ID)
-              assertThat(it["existingNomisCourtChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-              assertThat(it["duplicateNomisCourtChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-            },
-            isNull(),
-          )
-        }
+        verify(telemetryClient).trackEvent(
+          org.mockito.kotlin.eq("from-nomis-sync-charge-duplicate"),
+          check {
+            assertThat(it["migrationId"]).isNull()
+            assertThat(it["existingDpsCourtChargeId"]).isEqualTo(EXISTING_DPS_CHARGE_ID)
+            assertThat(it["duplicateDpsCourtChargeId"]).isEqualTo(DPS_CHARGE_ID)
+            assertThat(it["existingNomisCourtChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+            assertThat(it["duplicateNomisCourtChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+          },
+          isNull(),
+        )
       }
     }
   }
@@ -2856,29 +2736,26 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
           )
           courtSentencingOffenderEventsQueue.sendMessage(
-
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-DELETED",
             ),
           )
-          waitForAnyProcessingToComplete(times(1))
+          waitForAnyProcessingToComplete()
         }
 
         @Test
         fun `the event is skipped`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-charge-synchronisation-deleted-skipped"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-                assertThat(it["reason"]).isEqualTo("charge is not mapped")
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-charge-synchronisation-deleted-skipped"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+              assertThat(it["reason"]).isEqualTo("charge is not mapped")
+            },
+            isNull(),
+          )
           // will not delete a court charge in DPS
           dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
         }
@@ -2891,7 +2768,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
           courtSentencingOffenderEventsQueue.sendMessage(
-
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-DELETED",
             ),
@@ -2901,19 +2777,17 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `the skipped event is recorded `() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-charge-synchronisation-deleted-skipped"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-                assertThat(it["reason"]).isEqualTo("court appearance is not mapped")
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-charge-synchronisation-deleted-skipped"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+              assertThat(it["reason"]).isEqualTo("court appearance is not mapped")
+            },
+            isNull(),
+          )
           // will not delete a court charge in DPS
           dpsCourtSentencingServer.verify(0, deleteRequestedFor(anyUrl()))
         }
@@ -2948,8 +2822,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-DELETED",
             ),
-          )
-          waitForAnyProcessingToComplete("court-charge-synchronisation-deleted-success")
+          ).also { waitForAnyProcessingToComplete("court-charge-synchronisation-deleted-success") }
         }
 
         @Test
@@ -3021,8 +2894,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-DELETED",
             ),
-          )
-          waitForAnyProcessingToComplete()
+          ).also { waitForAnyProcessingToComplete() }
         }
 
         @Test
@@ -3036,16 +2908,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     }
   }
 
-  private fun waitForAnyProcessingToComplete(times: VerificationMode = atLeastOnce()) {
-    await untilAsserted {
-      verify(telemetryClient, times).trackEvent(
-        any(),
-        any(),
-        isNull(),
-      )
-    }
-  }
-
   @Nested
   @DisplayName("COURT_EVENT_CHARGES-UPDATED")
   inner class CourtEventChargeUpdated {
@@ -3055,27 +2917,24 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         courtSentencingOffenderEventsQueue.sendMessage(
-
           courtEventChargeEvent(
             eventType = "COURT_EVENT_CHARGES-UPDATED",
             auditModule = "DPS_SYNCHRONISATION",
           ),
-        )
+        ).also { waitForAnyProcessingToComplete() }
       }
 
       @Test
       fun `the event is ignored`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("court-charge-synchronisation-updated-skipped"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-            },
-            isNull(),
-          )
-        }
+        verify(telemetryClient).trackEvent(
+          eq("court-charge-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+            assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+          },
+          isNull(),
+        )
 
         // will not bother getting the court charge or the mapping
         courtSentencingNomisApiMockServer.verify(
@@ -3116,37 +2975,32 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
           courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
           courtSentencingOffenderEventsQueue.sendMessage(
-
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-UPDATED",
             ),
-          )
+          ).also { waitForAnyProcessingToComplete("court-charge-synchronisation-updated-failed", 2) }
         }
 
         @Test
         fun `telemetry added to track the failure`() {
-          await untilAsserted {
-            verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
-              eq("court-charge-synchronisation-updated-failed"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["reason"]).isEqualTo("charge is not mapped")
-                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
+            eq("court-charge-synchronisation-updated-failed"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["reason"]).isEqualTo("charge is not mapped")
+              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+            },
+            isNull(),
+          )
         }
 
         @Test
         fun `the event is placed on dead letter queue`() {
           await untilAsserted {
             assertThat(
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-                courtSentencingQueueOffenderEventsDlqUrl,
-              ).get(),
-            ).isEqualTo(1)
+              courtSentencingOffenderEventsQueue.hasMessagesOnDLQQueue(),
+            ).isTrue
           }
         }
       }
@@ -3162,37 +3016,32 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
           courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
           courtSentencingOffenderEventsQueue.sendMessage(
-
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-UPDATED",
             ),
-          )
+          ).also { waitForAnyProcessingToComplete("court-charge-synchronisation-updated-failed", 2) }
         }
 
         @Test
         fun `telemetry added to track the failure`() {
-          await untilAsserted {
-            verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
-              eq("court-charge-synchronisation-updated-failed"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["reason"]).isEqualTo("associated court appearance is not mapped")
-                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
+            eq("court-charge-synchronisation-updated-failed"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["reason"]).isEqualTo("associated court appearance is not mapped")
+              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+            },
+            isNull(),
+          )
         }
 
         @Test
         fun `the event is placed on dead letter queue`() {
           await untilAsserted {
             assertThat(
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-                courtSentencingQueueOffenderEventsDlqUrl,
-              ).get(),
-            ).isEqualTo(1)
+              courtSentencingOffenderEventsQueue.hasMessagesOnDLQQueue(),
+            ).isTrue
           }
         }
       }
@@ -3217,39 +3066,34 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             appearanceId = DPS_COURT_APPEARANCE_ID,
           )
           courtSentencingOffenderEventsQueue.sendMessage(
-
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-UPDATED",
             ),
-          )
+          ).also { waitForAnyProcessingToComplete() }
         }
 
         @Test
         fun `will update DPS with the changes`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              1,
-              putRequestedFor(urlPathEqualTo("/legacy/charge/$DPS_CHARGE_ID/appearance/$DPS_COURT_APPEARANCE_ID"))
-                .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("F")))
-                .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Imprisonment"))),
-            )
-          }
+          dpsCourtSentencingServer.verify(
+            1,
+            putRequestedFor(urlPathEqualTo("/legacy/charge/$DPS_CHARGE_ID/appearance/$DPS_COURT_APPEARANCE_ID"))
+              .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("F")))
+              .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Imprisonment"))),
+          )
         }
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-charge-synchronisation-updated-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-                assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-charge-synchronisation-updated-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+              assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
+            },
+            isNull(),
+          )
         }
       }
     }
@@ -3261,27 +3105,24 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         courtSentencingOffenderEventsQueue.sendMessage(
-
           courtEventChargeEvent(
             eventType = "COURT_EVENT_CHARGES-UPDATED",
             auditModule = "DPS_SYNCHRONISATION",
           ),
-        )
+        ).also { waitForAnyProcessingToComplete() }
       }
 
       @Test
       fun `the event is ignored`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("court-charge-synchronisation-updated-skipped"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
-              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-            },
-            isNull(),
-          )
-        }
+        verify(telemetryClient).trackEvent(
+          eq("court-charge-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+            assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+          },
+          isNull(),
+        )
 
         courtSentencingMappingApiMockServer.verify(
           0,
@@ -3589,27 +3430,24 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         courtSentencingOffenderEventsQueue.sendMessage(
-
           courtEventChargeEvent(
             eventType = "OFFENDER_CHARGES-UPDATED",
             auditModule = "DPS_SYNCHRONISATION",
           ),
-        )
+        ).also { waitForAnyProcessingToComplete() }
       }
 
       @Test
       fun `the event is ignored`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("court-charge-synchronisation-updated-skipped"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-            },
-            isNull(),
-          )
-        }
+        verify(telemetryClient).trackEvent(
+          eq("court-charge-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+            assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+          },
+          isNull(),
+        )
 
         // will not bother getting the court charge or the mapping
         courtSentencingNomisApiMockServer.verify(
@@ -3632,29 +3470,26 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         courtSentencingOffenderEventsQueue.sendMessage(
-
           offenderChargeEvent(
             eventType = "OFFENDER_CHARGES-UPDATED",
             auditModule = "DPS_SYNCHRONISATION",
             offenceCodeChange = "false",
           ),
-        )
+        ).also { waitForAnyProcessingToComplete() }
       }
 
       @Test
       fun `the event is ignored`() {
-        await untilAsserted {
-          verify(telemetryClient).trackEvent(
-            eq("court-charge-synchronisation-updated-skipped"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-              assertThat(it["reason"]).isEqualTo("OFFENDER_CHARGES-UPDATED change is not an offence code change")
-              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-            },
-            isNull(),
-          )
-        }
+        verify(telemetryClient).trackEvent(
+          eq("court-charge-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            assertThat(it["reason"]).isEqualTo("OFFENDER_CHARGES-UPDATED change is not an offence code change")
+            assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+            assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+          },
+          isNull(),
+        )
 
         // will not bother getting the court charge or the mapping
         courtSentencingNomisApiMockServer.verify(
@@ -3699,38 +3534,33 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           )
           courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
           courtSentencingOffenderEventsQueue.sendMessage(
-
             offenderChargeEvent(
               eventType = "OFFENDER_CHARGES-UPDATED",
               offenceCodeChange = "true",
             ),
-          )
+          ).also { waitForAnyProcessingToComplete("court-charge-synchronisation-updated-failed", 2) }
         }
 
         @Test
         fun `telemetry added to track the failure`() {
-          await untilAsserted {
-            verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
-              eq("court-charge-synchronisation-updated-failed"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["reason"]).isEqualTo("charge is not mapped")
-                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
+            eq("court-charge-synchronisation-updated-failed"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["reason"]).isEqualTo("charge is not mapped")
+              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+            },
+            isNull(),
+          )
         }
 
         @Test
         fun `the event is placed on dead letter queue`() {
           await untilAsserted {
             assertThat(
-              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-                courtSentencingQueueOffenderEventsDlqUrl,
-              ).get(),
-            ).isEqualTo(1)
+              courtSentencingOffenderEventsQueue.hasMessagesOnDLQQueue(),
+            ).isTrue
           }
         }
       }
@@ -3749,43 +3579,38 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             chargeId = UUID.fromString(DPS_CHARGE_ID),
           )
           courtSentencingOffenderEventsQueue.sendMessage(
-
             offenderChargeEvent(
               eventType = "OFFENDER_CHARGES-UPDATED",
               offenceCodeChange = "true",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will update DPS with the changes`() {
+          dpsCourtSentencingServer.verify(
+            1,
+            putRequestedFor(urlPathEqualTo("/legacy/charge/$DPS_CHARGE_ID")).withRequestBody(
+              matchingJsonPath(
+                "offenceCode",
+                equalTo("TTT4006"),
+              ),
             ),
           )
         }
 
         @Test
-        fun `will update DPS with the changes`() {
-          await untilAsserted {
-            dpsCourtSentencingServer.verify(
-              1,
-              putRequestedFor(urlPathEqualTo("/legacy/charge/$DPS_CHARGE_ID")).withRequestBody(
-                matchingJsonPath(
-                  "offenceCode",
-                  equalTo("TTT4006"),
-                ),
-              ),
-            )
-          }
-        }
-
-        @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("court-charge-synchronisation-updated-success"),
-              check {
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
-                assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("court-charge-synchronisation-updated-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+              assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
+            },
+            isNull(),
+          )
         }
       }
     }
@@ -4294,7 +4119,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         dpsCourtSentencingServer.stubPutSentenceForUpdate(sentenceId = "870f7e03-6bfc-46e6-9782-a91daab5eab4")
 
         courtSentencingOffenderEventsQueue.sendMessage(
-
           offenderFixedTermRecalls(
             eventType = "OFFENDER_FIXED_TERM_RECALLS-UPDATED",
             auditModule = "OIUFTRDA",
@@ -4467,7 +4291,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           emptyList(),
         )
         courtSentencingOffenderEventsQueue.sendMessage(
-
           offenderFixedTermRecalls(
             eventType = "OFFENDER_FIXED_TERM_RECALLS-UPDATED",
             auditModule = "OIUFTRDA",
@@ -4503,7 +4326,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         courtSentencingOffenderEventsQueue.sendMessage(
-
           offenderFixedTermRecalls(
             eventType = "OFFENDER_FIXED_TERM_RECALLS-UPDATED",
             auditModule = "DPS_SYNCHRONISATION",
