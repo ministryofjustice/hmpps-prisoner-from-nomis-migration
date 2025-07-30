@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiS
 class ExternalMovementsMigrationService(
   val migrationMappingService: ExternalMovementsMappingApiService,
   val nomisIdsApiService: NomisApiService,
+  val externalMovementsNomisApiService: ExternalMovementsNomisApiService,
   @Value($$"${externalmovements.page.size:1000}") pageSize: Long,
   @Value($$"${externalmovements.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value($$"${externalmovements.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
@@ -46,7 +47,10 @@ class ExternalMovementsMigrationService(
   }
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
-    // TODO SDIT-2874 Get NOMIS details, migrate to DPS, create mappings, publish telemetry
+    val prisonerId = context.body
+    externalMovementsNomisApiService.getTemporaryAbsences(prisonerId.offenderNo)
+
+    // TODO SDIT-2874 Migrate to DPS, create mappings, publish telemetry
   }
 
   override suspend fun retryCreateMapping(context: MigrationContext<ExternalMovementsMigrationMappingDto>) {
