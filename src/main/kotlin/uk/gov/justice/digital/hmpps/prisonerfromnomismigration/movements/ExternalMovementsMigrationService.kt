@@ -5,6 +5,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
@@ -50,15 +51,23 @@ class ExternalMovementsMigrationService(
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     val offenderNo = context.body.offenderNo
     val migrationId = context.migrationId
+    val telemetry = mutableMapOf(
+      "offenderNo" to offenderNo,
+      "migrationId" to migrationId,
+    )
 
-    val temporaryAbsences = externalMovementsNomisApiService.getTemporaryAbsences(offenderNo)
+    migrationMappingService.getPrisonerTemporaryAbsenceMappings(offenderNo)
+      ?.run { publishTelemetry("ignored", telemetry.apply { this["reason"] = "Already migrated" }) }
+      ?: run {
+        val temporaryAbsences = externalMovementsNomisApiService.getTemporaryAbsences(offenderNo)
 
-    // TODO SDIT-2846 ignore if mappings exist, call the DPS endpoint to migrate and use the returned IDs in the mappings
-    val mappings = temporaryAbsences.buildMappings(offenderNo, migrationId)
+        // TODO SDIT-2846 call the DPS endpoint to migrate and use the returned IDs in the mappings
+        val mappings = temporaryAbsences.buildMappings(offenderNo, migrationId)
 
-    createMappingOrOnFailureDo(mappings) {
-      requeueCreateMapping(mappings, context)
-    }
+        createMappingOrOnFailureDo(mappings) {
+          requeueCreateMapping(mappings, context)
+        }
+      }
   }
 
   override suspend fun retryCreateMapping(context: MigrationContext<TemporaryAbsencesPrisonerMappingDto>) {
@@ -74,26 +83,23 @@ class ExternalMovementsMigrationService(
     runCatching {
       createMapping(mapping)
     }.onSuccess {
-      telemetryClient.trackEvent(
-        "external-movements-migration-entity-migrated",
+      publishTelemetry(
+        if (it.isError) "duplicate" else "migrated",
         mapOf(
           "offenderNo" to mapping.prisonerNumber,
           "migrationId" to mapping.migrationId,
         ),
-        null,
       )
     }.onFailure {
       failureHandler(it)
     }
   }
 
-  private suspend fun createMapping(mapping: TemporaryAbsencesPrisonerMappingDto) {
-    migrationMappingService.createMapping(
-      mapping,
-      object :
-        ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsencesPrisonerMappingDto>>() {},
-    )
-  }
+  private suspend fun createMapping(mapping: TemporaryAbsencesPrisonerMappingDto) = migrationMappingService.createMapping(
+    mapping,
+    object :
+      ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsencesPrisonerMappingDto>>() {},
+  )
 
   private suspend fun requeueCreateMapping(
     mapping: TemporaryAbsencesPrisonerMappingDto,
@@ -105,6 +111,13 @@ class ExternalMovementsMigrationService(
         context = context,
         body = mapping,
       ),
+    )
+  }
+
+  private fun publishTelemetry(type: String, telemetry: Map<String, String>) {
+    telemetryClient.trackEvent(
+      "temporary-absences-migration-entity-$type",
+      telemetry,
     )
   }
 

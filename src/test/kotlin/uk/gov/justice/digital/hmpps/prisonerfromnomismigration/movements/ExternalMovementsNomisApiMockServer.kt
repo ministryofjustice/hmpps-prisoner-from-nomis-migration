@@ -42,9 +42,9 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
-  fun verifyGetTemporaryAbsences(offenderNo: String = "A1234BC", times: Int = 1) {
+  fun verifyGetTemporaryAbsences(offenderNo: String = "A1234BC", count: Int = 1) {
     nomisApi.verify(
-      times,
+      count,
       getRequestedFor(urlPathEqualTo("/prisoners/$offenderNo/temporary-absences")),
     )
   }
