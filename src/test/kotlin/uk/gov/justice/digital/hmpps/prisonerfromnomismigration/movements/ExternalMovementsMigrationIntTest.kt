@@ -21,6 +21,9 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse.Status._409_CONFLICT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
@@ -74,6 +77,16 @@ class ExternalMovementsMigrationIntTest(
     }
 
     @Test
+    fun `will check mappings`() {
+      mappingApi.verify(
+        getRequestedFor(urlEqualTo("/mapping/temporary-absences/nomis-prisoner-number/A0001KT")),
+      )
+      mappingApi.verify(
+        getRequestedFor(urlEqualTo("/mapping/temporary-absences/nomis-prisoner-number/A0002KT")),
+      )
+    }
+
+    @Test
     fun `will create mappings`() {
       mappingApi.verify(
         postRequestedFor(urlEqualTo("/mapping/temporary-absences"))
@@ -90,7 +103,7 @@ class ExternalMovementsMigrationIntTest(
     @Test
     fun `will publish telemetry`() {
       verify(telemetryClient).trackEvent(
-        eq("external-movements-migration-entity-migrated"),
+        eq("temporary-absences-migration-entity-migrated"),
         check {
           assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           assertThat(it["migrationId"]).isEqualTo(migrationId)
@@ -98,7 +111,7 @@ class ExternalMovementsMigrationIntTest(
         isNull(),
       )
       verify(telemetryClient).trackEvent(
-        eq("external-movements-migration-entity-migrated"),
+        eq("temporary-absences-migration-entity-migrated"),
         check {
           assertThat(it["offenderNo"]).isEqualTo("A0002KT")
           assertThat(it["migrationId"]).isEqualTo(migrationId)
@@ -135,10 +148,105 @@ class ExternalMovementsMigrationIntTest(
     @Test
     fun `will publish telemetry once`() {
       verify(telemetryClient, times(1)).trackEvent(
-        eq("external-movements-migration-entity-migrated"),
+        eq("temporary-absences-migration-entity-migrated"),
         check {
           assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           assertThat(it["migrationId"]).isEqualTo(migrationId)
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  inner class DuplicateCreateMappingError {
+    @BeforeEach
+    fun setUp() = runTest {
+      stubMigrationDependencies(1)
+      mappingApi.stubCreateTemporaryAbsenceMapping(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            duplicate = temporaryAbsencePrisonerMappings(),
+            existing = temporaryAbsencePrisonerMappings(),
+          ),
+          errorCode = 1409,
+          status = _409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      migrationId = performMigration()
+    }
+
+    @Test
+    fun `will request temporary absences`() {
+      externalMovementsNomisApi.verifyGetTemporaryAbsences(offenderNo = "A0001KT")
+    }
+
+    @Test
+    fun `will check mappings`() {
+      mappingApi.verify(
+        getRequestedFor(urlEqualTo("/mapping/temporary-absences/nomis-prisoner-number/A0001KT")),
+      )
+    }
+
+    @Test
+    fun `will attempt to create mappings`() {
+      mappingApi.verify(
+        postRequestedFor(urlEqualTo("/mapping/temporary-absences")),
+      )
+    }
+
+    @Test
+    fun `will publish telemetry`() {
+      verify(telemetryClient, times(1)).trackEvent(
+        eq("temporary-absences-migration-entity-duplicate"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  inner class AlreadyMigrated {
+    @BeforeEach
+    fun setUp() = runTest {
+      stubMigrationDependencies(1)
+      mappingApi.stubGetTemporaryAbsenceMappings("A0001KT")
+      migrationId = performMigration()
+    }
+
+    @Test
+    fun `will not request temporary absences`() {
+      externalMovementsNomisApi.verifyGetTemporaryAbsences(count = 0, offenderNo = "A0001KT")
+    }
+
+    @Test
+    fun `will check mappings`() {
+      mappingApi.verify(
+        getRequestedFor(urlEqualTo("/mapping/temporary-absences/nomis-prisoner-number/A0001KT")),
+      )
+    }
+
+    @Test
+    fun `will NOT create mappings`() {
+      mappingApi.verify(
+        0,
+        postRequestedFor(urlEqualTo("/mapping/temporary-absences")),
+      )
+    }
+
+    @Test
+    fun `will publish telemetry`() {
+      verify(telemetryClient, times(1)).trackEvent(
+        eq("temporary-absences-migration-entity-ignored"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+          assertThat(it["reason"]).isEqualTo("Already migrated")
         },
         isNull(),
       )
@@ -154,7 +262,7 @@ class ExternalMovementsMigrationIntTest(
 
   private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
     verify(telemetryClient).trackEvent(
-      eq("external-movements-migration-completed"),
+      eq("temporary-absences-migration-completed"),
       any(),
       isNull(),
     )
