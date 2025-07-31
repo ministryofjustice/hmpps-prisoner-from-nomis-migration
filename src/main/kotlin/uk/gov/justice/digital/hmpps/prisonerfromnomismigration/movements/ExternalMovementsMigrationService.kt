@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -23,7 +24,7 @@ class ExternalMovementsMigrationService(
   @Value($$"${externalmovements.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value($$"${externalmovements.complete-check.count}") completeCheckCount: Int,
   @Value($$"${complete-check.scheduled-retry-seconds:10}") completeCheckScheduledRetrySeconds: Int,
-) : MigrationService<ExternalMovementsMigrationFilter, PrisonerId, ExternalMovementsMigrationMappingDto>(
+) : MigrationService<ExternalMovementsMigrationFilter, PrisonerId, TemporaryAbsencesPrisonerMappingDto>(
   mappingService = migrationMappingService,
   migrationType = MigrationType.EXTERNAL_MOVEMENTS,
   pageSize = pageSize,
@@ -47,20 +48,27 @@ class ExternalMovementsMigrationService(
   }
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
-    val prisonerId = context.body
-    externalMovementsNomisApiService.getTemporaryAbsences(prisonerId.offenderNo)
+    val offenderNo = context.body.offenderNo
+    val migrationId = context.migrationId
 
-    // TODO SDIT-2874 Migrate to DPS, create mappings, publish telemetry
+    val temporaryAbsences = externalMovementsNomisApiService.getTemporaryAbsences(offenderNo)
+
+    // TODO SDIT-2846 ignore if mappings exist, call the DPS endpoint to migrate and use the returned IDs in the mappings
+    val mappings = temporaryAbsences.buildMappings(offenderNo, migrationId)
+
+    createMappingOrOnFailureDo(mappings) {
+      requeueCreateMapping(mappings, context)
+    }
   }
 
-  override suspend fun retryCreateMapping(context: MigrationContext<ExternalMovementsMigrationMappingDto>) {
+  override suspend fun retryCreateMapping(context: MigrationContext<TemporaryAbsencesPrisonerMappingDto>) {
     createMappingOrOnFailureDo(context.body) {
       throw it
     }
   }
 
   private suspend fun createMappingOrOnFailureDo(
-    mapping: ExternalMovementsMigrationMappingDto,
+    mapping: TemporaryAbsencesPrisonerMappingDto,
     failureHandler: suspend (error: Throwable) -> Unit,
   ) {
     runCatching {
@@ -79,16 +87,16 @@ class ExternalMovementsMigrationService(
     }
   }
 
-  private suspend fun createMapping(mapping: ExternalMovementsMigrationMappingDto) {
+  private suspend fun createMapping(mapping: TemporaryAbsencesPrisonerMappingDto) {
     migrationMappingService.createMapping(
       mapping,
       object :
-        ParameterizedTypeReference<DuplicateErrorResponse<ExternalMovementsMigrationMappingDto>>() {},
+        ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsencesPrisonerMappingDto>>() {},
     )
   }
 
   private suspend fun requeueCreateMapping(
-    mapping: ExternalMovementsMigrationMappingDto,
+    mapping: TemporaryAbsencesPrisonerMappingDto,
     context: MigrationContext<*>,
   ) {
     queueService.sendMessage(
@@ -99,4 +107,61 @@ class ExternalMovementsMigrationService(
       ),
     )
   }
+
+  private fun OffenderTemporaryAbsencesResponse.buildMappings(prisonerNumber: String, migrationId: String) = TemporaryAbsencesPrisonerMappingDto(
+    prisonerNumber = prisonerNumber,
+    migrationId = migrationId,
+    bookings = bookings.map { booking ->
+      TemporaryAbsenceBookingMappingDto(
+        bookingId = booking.bookingId,
+        applications = booking.temporaryAbsenceApplications.map { application ->
+          TemporaryAbsenceApplicationMappingDto(
+            nomisMovementApplicationId = application.movementApplicationId,
+            dpsMovementApplicationId = application.movementApplicationId + 1000,
+            outsideMovements = application.outsideMovements.map { outside ->
+              TemporaryAbsencesOutsideMovementMappingDto(
+                nomisMovementApplicationMultiId = outside.outsideMovementId,
+                dpsOutsideMovementId = outside.outsideMovementId + 1000,
+              )
+            },
+            scheduledAbsence = application.scheduledTemporaryAbsence?.let { sta ->
+              ScheduledMovementMappingDto(
+                nomisEventId = sta.eventId,
+                dpsScheduledMovementId = sta.eventId + 1000,
+              )
+            },
+            scheduledAbsenceReturn = application.scheduledTemporaryAbsenceReturn?.let { star ->
+              ScheduledMovementMappingDto(
+                nomisEventId = star.eventId,
+                dpsScheduledMovementId = star.eventId + 1000,
+              )
+            },
+            absence = application.temporaryAbsence?.let { ta ->
+              ExternalMovementMappingDto(
+                nomisMovementSeq = ta.sequence,
+                dpsExternalMovementId = ta.sequence + 1000,
+              )
+            },
+            absenceReturn = application.temporaryAbsenceReturn?.let { tar ->
+              ExternalMovementMappingDto(
+                nomisMovementSeq = tar.sequence,
+                dpsExternalMovementId = tar.sequence + 1000,
+              )
+            },
+          )
+        },
+        unscheduledMovements = booking.unscheduledTemporaryAbsences.map { uta ->
+          ExternalMovementMappingDto(
+            nomisMovementSeq = uta.sequence,
+            dpsExternalMovementId = uta.sequence + 1000,
+          )
+        } + booking.unscheduledTemporaryAbsenceReturns.map { utar ->
+          ExternalMovementMappingDto(
+            nomisMovementSeq = utar.sequence,
+            dpsExternalMovementId = utar.sequence + 1000,
+          )
+        },
+      )
+    },
+  )
 }
