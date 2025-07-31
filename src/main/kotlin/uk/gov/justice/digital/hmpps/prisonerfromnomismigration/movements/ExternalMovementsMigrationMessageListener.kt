@@ -19,7 +19,7 @@ import java.util.concurrent.CompletableFuture
 class ExternalMovementsMigrationMessageListener(
   objectMapper: ObjectMapper,
   migrationService: ExternalMovementsMigrationService,
-) : MigrationMessageListener<ExternalMovementsMigrationFilter, PrisonerId, OffenderTemporaryAbsencesResponse, ExternalMovementsMigrationMappingDto>(
+) : MigrationMessageListener<ExternalMovementsMigrationFilter, PrisonerId, OffenderTemporaryAbsencesResponse, TemporaryAbsencesPrisonerMappingDto>(
   objectMapper,
   migrationService,
 ) {
@@ -39,5 +39,5 @@ class ExternalMovementsMigrationMessageListener(
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = objectMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, ExternalMovementsMigrationMappingDto> = objectMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, TemporaryAbsencesPrisonerMappingDto> = objectMapper.readValue(json)
 }
