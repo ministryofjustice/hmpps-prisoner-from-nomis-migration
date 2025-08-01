@@ -20,6 +20,9 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
+import org.springframework.http.MediaType
+import org.springframework.test.web.reactive.server.returnResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
@@ -27,13 +30,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
-import uk.gov.justice.hmpps.test.kotlin.auth.WithMockAuthUser
 import java.time.Duration
 
-// TODO SDIT-2846 remove this when starting migration via the endpoint
-@WithMockAuthUser
 class ExternalMovementsMigrationIntTest(
-  @Autowired private val migrationService: ExternalMovementsMigrationService,
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
   @Autowired private val externalMovementsNomisApi: ExternalMovementsNomisApiMockServer,
   @Autowired private val mappingApi: ExternalMovementsMappingApiMockServer,
@@ -44,6 +43,38 @@ class ExternalMovementsMigrationIntTest(
   @BeforeEach
   fun deleteHistoryRecords() = runTest {
     migrationHistoryRepository.deleteAll()
+  }
+
+  @Nested
+  inner class Security {
+    @Test
+    fun `access forbidden when no role`() {
+      webTestClient.post().uri("/migrate/external-movements")
+        .headers(setAuthorisation(roles = listOf()))
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(ExternalMovementsMigrationFilter())
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `access forbidden with wrong role`() {
+      webTestClient.post().uri("/migrate/external-movements")
+        .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(ExternalMovementsMigrationFilter())
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `access unauthorised with no auth token`() {
+      webTestClient.post().uri("/migrate/external-movements")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(ExternalMovementsMigrationFilter())
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
   }
 
   private fun stubMigrationDependencies(entities: Int = 2) {
@@ -253,12 +284,18 @@ class ExternalMovementsMigrationIntTest(
     }
   }
 
-  // TODO SDIT-2846 call the start migration endpoint
-  private suspend fun performMigration(): String = migrationService.startMigration(
-    ExternalMovementsMigrationFilter(),
-  )
+  private fun performMigration(prisonerNumber: String? = null): String = webTestClient.post()
+    .uri("/migrate/external-movements")
+    .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_EXTERNAL_MOVEMENTS")))
+    .contentType(MediaType.APPLICATION_JSON)
+    .apply { prisonerNumber?.let { bodyValue("""{"prisonerNumber":"$prisonerNumber"}""") } ?: bodyValue("{}") }
+    .exchange()
+    .expectStatus().isAccepted
+    .returnResult<MigrationResult>().responseBody.blockFirst()!!
     .migrationId
-    .also { waitUntilCompleted() }
+    .also {
+      waitUntilCompleted()
+    }
 
   private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
     verify(telemetryClient).trackEvent(
