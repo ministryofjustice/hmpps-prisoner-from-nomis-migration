@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-08-05.357.c963ac2"
+    "version" : "2025-08-08.374.5fe00f4"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -23412,13 +23412,12 @@
             "$ref" : "#/components/schemas/CourtCaseResponse",
             "description" : "Created court case and children"
           },
-          "sourceCaseId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The id of the source court case used for the clone"
+          "sourceCourtCase" : {
+            "$ref" : "#/components/schemas/CourtCaseResponse",
+            "description" : "Source court case and children that the cases were cloned from"
           }
         },
-        "required" : [ "courtCase", "sourceCaseId" ]
+        "required" : [ "courtCase", "sourceCourtCase" ]
       },
       "CourtCaseResponse" : {
         "type" : "object",
