@@ -34,7 +34,7 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
 
   hmpps-nomis-prisoner-api:
-    image: quay.io/hmpps/hmpps-nomis-prisoner-api:latest
+    image: ghcr.io/ministryofjustice/hmpps-nomis-prisoner-api:latest
     networks:
       - hmpps
     container_name: hpfnm-hmpps-nomis-prisoner-api
@@ -49,7 +49,7 @@ services:
 
   hmpps-visits-api:
     # For now use migration as a fake visits API
-    image: quay.io/hmpps/hmpps-prisoner-to-nomis-update:latest
+    image: ghcr.io/ministryofjustice/hmpps-prisoner-to-nomis-update:latest
     networks:
       - hmpps
     container_name: hpfnm-hmpps-visits-api
@@ -68,7 +68,7 @@ services:
 
 
   hmpps-nomis-mapping-api:
-    image: quay.io/hmpps/hmpps-nomis-mapping-service:latest
+    image: ghcr.io/ministryofjustice/hmpps-nomis-mapping-service:latest
     networks:
       - hmpps
     container_name: hpfnm-hmpps-nomis-mapping-api
