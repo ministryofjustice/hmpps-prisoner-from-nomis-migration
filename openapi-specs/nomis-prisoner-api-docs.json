@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-08-08.374.5fe00f4"
+    "version" : "2025-08-11.383.c3df20f"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -28542,6 +28542,28 @@
           }
         }
       },
+      "Absence" : {
+        "type" : "object",
+        "description" : "A single instance of a scheduled temporary absence including return",
+        "properties" : {
+          "scheduledTemporaryAbsence" : {
+            "$ref" : "#/components/schemas/ScheduledTemporaryAbsence",
+            "description" : "Scheduled temporary absence"
+          },
+          "scheduledTemporaryAbsenceReturn" : {
+            "$ref" : "#/components/schemas/ScheduledTemporaryAbsenceReturn",
+            "description" : "Scheduled temporary absence return"
+          },
+          "temporaryAbsence" : {
+            "$ref" : "#/components/schemas/TemporaryAbsence",
+            "description" : "Temporary absence"
+          },
+          "temporaryAbsenceReturn" : {
+            "$ref" : "#/components/schemas/TemporaryAbsenceReturn",
+            "description" : "Temporary absence return"
+          }
+        }
+      },
       "BookingTemporaryAbsences" : {
         "type" : "object",
         "description" : "Booking temporary absences",
@@ -28872,21 +28894,12 @@
             "type" : "string",
             "description" : "Temporary absence sub type"
           },
-          "scheduledTemporaryAbsence" : {
-            "$ref" : "#/components/schemas/ScheduledTemporaryAbsence",
-            "description" : "Scheduled temporary absence"
-          },
-          "scheduledTemporaryAbsenceReturn" : {
-            "$ref" : "#/components/schemas/ScheduledTemporaryAbsenceReturn",
-            "description" : "Scheduled temporary absence return"
-          },
-          "temporaryAbsence" : {
-            "$ref" : "#/components/schemas/TemporaryAbsence",
-            "description" : "Temporary absence"
-          },
-          "temporaryAbsenceReturn" : {
-            "$ref" : "#/components/schemas/TemporaryAbsenceReturn",
-            "description" : "Temporary absence return"
+          "absences" : {
+            "type" : "array",
+            "description" : "All scheduled temporary absences",
+            "items" : {
+              "$ref" : "#/components/schemas/Absence"
+            }
           },
           "outsideMovements" : {
             "type" : "array",
@@ -28900,7 +28913,7 @@
             "description" : "Audit data associated with the records"
           }
         },
-        "required" : [ "applicationDate", "applicationStatus", "applicationType", "audit", "eventSubType", "fromDate", "movementApplicationId", "outsideMovements", "releaseTime", "returnTime", "toDate" ]
+        "required" : [ "absences", "applicationDate", "applicationStatus", "applicationType", "audit", "eventSubType", "fromDate", "movementApplicationId", "outsideMovements", "releaseTime", "returnTime", "toDate" ]
       },
       "TemporaryAbsenceApplicationOutsideMovement" : {
         "type" : "object",

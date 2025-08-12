@@ -11,6 +11,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsenceReturn
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceReturn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
@@ -137,44 +141,35 @@ class ExternalMovementsMigrationService(
                 dpsOutsideMovementId = outside.outsideMovementId + 1000,
               )
             },
-            scheduledAbsence = application.scheduledTemporaryAbsence?.let { sta ->
-              ScheduledMovementMappingDto(
-                nomisEventId = sta.eventId,
-                dpsScheduledMovementId = sta.eventId + 1000,
-              )
-            },
-            scheduledAbsenceReturn = application.scheduledTemporaryAbsenceReturn?.let { star ->
-              ScheduledMovementMappingDto(
-                nomisEventId = star.eventId,
-                dpsScheduledMovementId = star.eventId + 1000,
-              )
-            },
-            absence = application.temporaryAbsence?.let { ta ->
-              ExternalMovementMappingDto(
-                nomisMovementSeq = ta.sequence,
-                dpsExternalMovementId = ta.sequence + 1000,
-              )
-            },
-            absenceReturn = application.temporaryAbsenceReturn?.let { tar ->
-              ExternalMovementMappingDto(
-                nomisMovementSeq = tar.sequence,
-                dpsExternalMovementId = tar.sequence + 1000,
-              )
-            },
+            schedules = application.absences.mapNotNull { it.scheduledTemporaryAbsence }.map { it.toMappingDto() } +
+              application.absences.mapNotNull { it.scheduledTemporaryAbsenceReturn }.map { it.toMappingDto() },
+            movements = application.absences.mapNotNull { it.temporaryAbsence }.map { it.toMappingDto() } +
+              application.absences.mapNotNull { it.temporaryAbsenceReturn }.map { it.toMappingDto() },
           )
         },
-        unscheduledMovements = booking.unscheduledTemporaryAbsences.map { uta ->
-          ExternalMovementMappingDto(
-            nomisMovementSeq = uta.sequence,
-            dpsExternalMovementId = uta.sequence + 1000,
-          )
-        } + booking.unscheduledTemporaryAbsenceReturns.map { utar ->
-          ExternalMovementMappingDto(
-            nomisMovementSeq = utar.sequence,
-            dpsExternalMovementId = utar.sequence + 1000,
-          )
-        },
+        unscheduledMovements = booking.unscheduledTemporaryAbsences.map { it.toMappingDto() } +
+          booking.unscheduledTemporaryAbsenceReturns.map { it.toMappingDto() },
       )
     },
+  )
+
+  private fun ScheduledTemporaryAbsence.toMappingDto(): ScheduledMovementMappingDto = ScheduledMovementMappingDto(
+    nomisEventId = this.eventId,
+    dpsScheduledMovementId = this.eventId + 1000,
+  )
+
+  private fun ScheduledTemporaryAbsenceReturn.toMappingDto(): ScheduledMovementMappingDto = ScheduledMovementMappingDto(
+    nomisEventId = this.eventId,
+    dpsScheduledMovementId = this.eventId + 1000,
+  )
+
+  private fun TemporaryAbsence.toMappingDto(): ExternalMovementMappingDto = ExternalMovementMappingDto(
+    nomisMovementSeq = this.sequence,
+    dpsExternalMovementId = this.sequence + 1000,
+  )
+
+  private fun TemporaryAbsenceReturn.toMappingDto(): ExternalMovementMappingDto = ExternalMovementMappingDto(
+    nomisMovementSeq = this.sequence,
+    dpsExternalMovementId = this.sequence + 1000,
   )
 }
