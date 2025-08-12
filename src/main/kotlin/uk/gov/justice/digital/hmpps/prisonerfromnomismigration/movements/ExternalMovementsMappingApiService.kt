@@ -32,10 +32,8 @@ data class TemporaryAbsenceApplicationMappingDto(
   val nomisMovementApplicationId: Long,
   val dpsMovementApplicationId: Long,
   val outsideMovements: List<TemporaryAbsencesOutsideMovementMappingDto>,
-  val scheduledAbsence: ScheduledMovementMappingDto?,
-  val scheduledAbsenceReturn: ScheduledMovementMappingDto?,
-  val absence: ExternalMovementMappingDto?,
-  val absenceReturn: ExternalMovementMappingDto?,
+  val schedules: List<ScheduledMovementMappingDto>,
+  val movements: List<ExternalMovementMappingDto>,
 )
 
 data class TemporaryAbsencesOutsideMovementMappingDto(

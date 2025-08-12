@@ -94,21 +94,25 @@ fun temporaryAbsencePrisonerMappings(prisonerNumber: String = "A1234BC") = Tempo
               dpsOutsideMovementId = 1001,
             ),
           ),
-          scheduledAbsence = ScheduledMovementMappingDto(
-            nomisEventId = 1,
-            dpsScheduledMovementId = 1001,
+          schedules = listOf(
+            ScheduledMovementMappingDto(
+              nomisEventId = 1,
+              dpsScheduledMovementId = 1001,
+            ),
+            ScheduledMovementMappingDto(
+              nomisEventId = 2,
+              dpsScheduledMovementId = 1002,
+            ),
           ),
-          scheduledAbsenceReturn = ScheduledMovementMappingDto(
-            nomisEventId = 2,
-            dpsScheduledMovementId = 1002,
-          ),
-          absence = ExternalMovementMappingDto(
-            nomisMovementSeq = 3,
-            dpsExternalMovementId = 1003,
-          ),
-          absenceReturn = ExternalMovementMappingDto(
-            nomisMovementSeq = 4,
-            dpsExternalMovementId = 1004,
+          movements = listOf(
+            ExternalMovementMappingDto(
+              nomisMovementSeq = 3,
+              dpsExternalMovementId = 1003,
+            ),
+            ExternalMovementMappingDto(
+              nomisMovementSeq = 4,
+              dpsExternalMovementId = 1004,
+            ),
           ),
         ),
       ),
