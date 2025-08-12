@@ -86,7 +86,6 @@ class CourtSentencingTransformerTest {
       beginDate = LocalDate.parse("2016-10-07"),
       courtId = "CNTRCC",
       statusUpdateReason = "A",
-      lidsCaseNumber = 1,
       createdDateTime = LocalDateTime.parse("2016-10-10T12:17:31.054058"),
       createdByUsername = "GQL99B",
       courtEvents = listOf(
