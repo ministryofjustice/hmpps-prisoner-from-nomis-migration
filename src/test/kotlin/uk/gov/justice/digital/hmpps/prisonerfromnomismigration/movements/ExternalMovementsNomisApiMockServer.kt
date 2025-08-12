@@ -10,6 +10,7 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Absence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTemporaryAbsences
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
@@ -86,13 +87,17 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
             temporaryAbsenceType = "RR",
             temporaryAbsenceSubType = "SPL",
             outsideMovements = listOf(outsideMovement()),
-            scheduledTemporaryAbsence = scheduledAbsence(),
-            scheduledTemporaryAbsenceReturn = scheduledAbsenceReturn(),
-            temporaryAbsence = absence().copy(sequence = 3, movementDate = now.toLocalDate(), movementTime = now),
-            temporaryAbsenceReturn = absenceReturn().copy(
-              sequence = 4,
-              movementDate = now.toLocalDate(),
-              movementTime = now,
+            absences = listOf(
+              Absence(
+                scheduledTemporaryAbsence = scheduledAbsence(),
+                scheduledTemporaryAbsenceReturn = scheduledAbsenceReturn(),
+                temporaryAbsence = absence().copy(sequence = 3, movementDate = now.toLocalDate(), movementTime = now),
+                temporaryAbsenceReturn = absenceReturn().copy(
+                  sequence = 4,
+                  movementDate = now.toLocalDate(),
+                  movementTime = now,
+                ),
+              ),
             ),
             audit = NomisAudit(
               createDatetime = now,
