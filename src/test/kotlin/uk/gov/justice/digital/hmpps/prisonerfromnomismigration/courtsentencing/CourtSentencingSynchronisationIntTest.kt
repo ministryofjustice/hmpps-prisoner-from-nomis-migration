@@ -42,8 +42,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.hasMe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
@@ -702,6 +702,41 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
             assertThat(it["nomisCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
             assertThat(it["dpsCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("courtsentencing.resync.case.booking")
+  inner class CaseBookingResynchronisation {
+
+    @Nested
+    @DisplayName("When resynchronisation of cases for a cloned booking required")
+    inner class ResyncMessageReceived {
+
+      @BeforeEach
+      fun setUp() {
+        courtSentencingOffenderEventsQueue.sendMessage(
+          SQSMessage(
+            Type = "courtsentencing.resync.case.booking",
+            Message = OffenderCaseBookingResynchronisationEvent(
+              offenderNo = OFFENDER_ID_DISPLAY,
+              caseIds = listOf(NOMIS_COURT_CASE_ID),
+            ).toJson(),
+          ).toJson(),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track a telemetry event for success`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-case-booking-resynchronisation-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            assertThat(it["nomisCaseIds"]).isEqualTo("$NOMIS_COURT_CASE_ID")
           },
           isNull(),
         )
@@ -3896,7 +3931,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will post any new case mappings`() {
-          val request: CourtCaseMigrationMappingDto = CourtSentencingMappingApiMockServer.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/prisoner/$offenderNumberRetained/court-cases")))
+          val request: CourtCaseBatchMappingDto = CourtSentencingMappingApiMockServer.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/prisoner/$offenderNumberRetained/court-cases")))
           with(request) {
             assertThat(courtCases).hasSize(2)
             assertThat(courtCases[0].nomisCourtCaseId).isEqualTo(10001)

@@ -28,8 +28,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NomisSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
@@ -279,19 +279,19 @@ class CourtSentencingSynchronisationService(
 
   data class PrisonerMergeMapping(
     val offenderNo: String,
-    val mapping: CourtCaseMigrationMappingDto,
+    val mapping: CourtCaseBatchMappingDto,
   )
 
   private suspend fun tryToCreateMapping(
     offenderNo: String,
-    mapping: CourtCaseMigrationMappingDto,
+    mapping: CourtCaseBatchMappingDto,
     telemetry: Map<String, Any>,
   ): MappingResponse {
     try {
       mappingApiService.createMapping(
         offenderNo = offenderNo,
         mapping,
-        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseMigrationMappingDto>>() {},
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseBatchMappingDto>>() {},
       ).also {
         if (it.isError) {
           val duplicateErrorDetails = (it.errorResponse!!).moreInfo
@@ -950,7 +950,7 @@ class CourtSentencingSynchronisationService(
     mappingApiService.createMapping(
       retryMessage.body.offenderNo,
       retryMessage.body.mapping,
-      object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseMigrationMappingDto>>() {},
+      object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseBatchMappingDto>>() {},
     ).also {
       telemetryClient.trackEvent(
         "from-nomis-synch-court-case-merge-mapping-retry-success",
@@ -1290,6 +1290,20 @@ class CourtSentencingSynchronisationService(
     )
   }
 
+  suspend fun nomisCaseBookingResynchronisation(event: OffenderCaseBookingResynchronisationEvent) {
+    val telemetry =
+      mapOf(
+        "nomisCaseIds" to event.caseIds.joinToString(),
+        "offenderNo" to event.offenderNo,
+      )
+
+    // TODO - synchronise new cases back to DPS and created mappings
+    telemetryClient.trackEvent(
+      "court-case-booking-resynchronisation-success",
+      telemetry,
+    )
+  }
+
   suspend fun nomisSentenceResynchronisation(event: OffenderSentenceResynchronisationEvent) {
     val telemetry =
       mapOf(
@@ -1468,7 +1482,7 @@ class CourtSentencingSynchronisationService(
         },
       )
 
-      val mapping = CourtCaseMigrationMappingDto(
+      val mapping = CourtCaseBatchMappingDto(
         courtCases = newCourtCaseMappings.courtCases.map { it ->
           CourtCaseMappingDto(
             nomisCourtCaseId = it.caseId,
@@ -1502,7 +1516,7 @@ class CourtSentencingSynchronisationService(
             dpsTermId = it.periodLengthUuid.toString(),
           )
         },
-        mappingType = CourtCaseMigrationMappingDto.MappingType.NOMIS_CREATED,
+        mappingType = CourtCaseBatchMappingDto.MappingType.NOMIS_CREATED,
       )
 
       tryToCreateMapping(offenderNo = retainedOffenderNumber, mapping = mapping, telemetry = telemetry)

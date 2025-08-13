@@ -19,6 +19,7 @@ const val RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED = "recall_breach_court_event
 const val RECALL_SENTENCE_ADJUSTMENTS_SYNCHRONISATION = "courtsentencing.resync.sentence-adjustments"
 const val SENTENCE_RESYNCHRONISATION = "courtsentencing.resync.sentence"
 const val CASE_RESYNCHRONISATION = "courtsentencing.resync.case"
+const val CASE_BOOKING_RESYNCHRONISATION = "courtsentencing.resync.case.booking"
 
 @Service
 class SynchronisationQueueService(
