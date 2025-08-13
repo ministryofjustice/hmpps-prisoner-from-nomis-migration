@@ -18,8 +18,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceTermMappingDto
@@ -98,7 +98,7 @@ class CourtSentencingMigrationService(
     courtSentencingMappingService.createMapping(
       offenderNo = context.body.offenderNo,
       context.body.mapping,
-      object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseMigrationMappingDto>>() {},
+      object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseBatchMappingDto>>() {},
     ).also {
       if (it.isError) {
         telemetryClient.trackEvent(
@@ -119,21 +119,21 @@ class CourtSentencingMigrationService(
     dpsCourtCasesCreateResponse: MigrationCreateCourtCasesResponse,
     context: MigrationContext<*>,
   ) {
-    val mapping = CourtCaseMigrationMappingDto(
+    val mapping = CourtCaseBatchMappingDto(
       courtCases = buildCourtCaseMapping(dpsCourtCasesCreateResponse.courtCases),
       courtCharges = buildCourtChargeMapping(dpsCourtCasesCreateResponse.charges),
       courtAppearances = buildCourtAppearanceMapping(dpsCourtCasesCreateResponse.appearances),
       sentences = buildSentenceMapping(dpsCourtCasesCreateResponse.sentences),
       sentenceTerms = buildSentenceTermMapping(dpsCourtCasesCreateResponse.sentenceTerms),
       label = context.migrationId,
-      mappingType = CourtCaseMigrationMappingDto.MappingType.MIGRATED,
+      mappingType = CourtCaseBatchMappingDto.MappingType.MIGRATED,
     )
 
     try {
       courtSentencingMappingService.createMapping(
         offenderNo = offenderNo,
         mapping,
-        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseMigrationMappingDto>>() {},
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseBatchMappingDto>>() {},
       ).also {
         if (it.isError) {
           telemetryClient.trackEvent(
