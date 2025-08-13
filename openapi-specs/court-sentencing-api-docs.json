@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-08-08.348.56d5d9a"
+    "version" : "2025-08-12.365.1977c69"
   },
   "servers" : [ {
     "url" : "https://remand-and-sentencing-api.hmpps.service.justice.gov.uk",
@@ -2966,6 +2966,13 @@
             "type" : "string",
             "format" : "date"
           }
+        }, {
+          "name" : "bookingId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -3069,6 +3076,13 @@
           "schema" : {
             "type" : "string",
             "format" : "date"
+          }
+        }, {
+          "name" : "bookingId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
           }
         } ],
         "responses" : {
@@ -4713,7 +4727,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:08:22.271826107"
+            "example" : "16:29:32.831555275"
           },
           "outcomeDispositionCode" : {
             "type" : "string"
@@ -4985,7 +4999,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:08:22.271826107"
+            "example" : "16:29:32.831555275"
           },
           "courtCode" : {
             "type" : "string"
@@ -6245,6 +6259,9 @@
           },
           "legacyData" : {
             "$ref" : "#/components/schemas/CourtCaseLegacyData"
+          },
+          "mergedToCaseDetails" : {
+            "$ref" : "#/components/schemas/MergedToCaseDetails"
           }
         },
         "required" : [ "appearances", "courtCaseUuid", "prisonerId", "status" ]
@@ -6281,6 +6298,25 @@
         },
         "required" : [ "courtCode", "warrantDate" ]
       },
+      "MergedToCaseDetails" : {
+        "type" : "object",
+        "properties" : {
+          "mergedToDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "caseReference" : {
+            "type" : "string"
+          },
+          "courtCode" : {
+            "type" : "string"
+          },
+          "warrantDate" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }
+      },
       "NextCourtAppearance" : {
         "type" : "object",
         "properties" : {
@@ -6290,7 +6326,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:08:22.271826107"
+            "example" : "16:29:32.831555275"
           },
           "courtCode" : {
             "type" : "string"
@@ -6694,7 +6730,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:08:22.271826107"
+            "example" : "16:29:32.831555275"
           },
           "charges" : {
             "type" : "array",
@@ -6717,7 +6753,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:08:22.271826107"
+            "example" : "16:29:32.831555275"
           },
           "courtId" : {
             "type" : "string"
@@ -6808,7 +6844,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:08:22.271826107"
+            "example" : "16:29:32.831555275"
           },
           "nomisOutcomeCode" : {
             "type" : "string"
@@ -6864,7 +6900,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:08:22.271826107"
+            "example" : "16:29:32.831555275"
           },
           "courtId" : {
             "type" : "string"
@@ -7464,7 +7500,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "14:08:22.271826107"
+            "example" : "16:29:32.831555275"
           },
           "courtCode" : {
             "type" : "string"
