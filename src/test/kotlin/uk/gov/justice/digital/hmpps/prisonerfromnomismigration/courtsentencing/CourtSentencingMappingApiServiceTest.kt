@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -20,6 +21,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 
 private const val NOMIS_COURT_CASE_ID = 1234L
@@ -138,6 +140,50 @@ class CourtSentencingMappingApiServiceTest {
         postRequestedFor(anyUrl())
           .withRequestBody(matchingJsonPath("nomisCourtCaseId", equalTo(NOMIS_COURT_CASE_ID.toString())))
           .withRequestBody(matchingJsonPath("dpsCourtCaseId", equalTo(DPS_COURT_CASE_ID)))
+          .withRequestBody(matchingJsonPath("mappingType", equalTo("DPS_CREATED"))),
+      )
+    }
+  }
+
+  @Nested
+  inner class ReplaceOrCreateMappings {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      courtSentencingMappingApiMockServer.stubReplaceOrCreateMappings()
+
+      apiService.replaceOrCreateMappings(
+        CourtCaseBatchMappingDto(
+          mappingType = CourtCaseBatchMappingDto.MappingType.DPS_CREATED,
+          courtCharges = emptyList(),
+          courtAppearances = emptyList(),
+          sentences = emptyList(),
+          courtCases = emptyList(),
+          sentenceTerms = emptyList(),
+        ),
+      )
+
+      courtSentencingMappingApiMockServer.verify(
+        putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass dto to service`() = runTest {
+      courtSentencingMappingApiMockServer.stubReplaceOrCreateMappings()
+
+      apiService.replaceOrCreateMappings(
+        CourtCaseBatchMappingDto(
+          mappingType = CourtCaseBatchMappingDto.MappingType.DPS_CREATED,
+          courtCharges = emptyList(),
+          courtAppearances = emptyList(),
+          sentences = emptyList(),
+          courtCases = emptyList(),
+          sentenceTerms = emptyList(),
+        ),
+      )
+
+      courtSentencingMappingApiMockServer.verify(
+        putRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/replace"))
           .withRequestBody(matchingJsonPath("mappingType", equalTo("DPS_CREATED"))),
       )
     }
