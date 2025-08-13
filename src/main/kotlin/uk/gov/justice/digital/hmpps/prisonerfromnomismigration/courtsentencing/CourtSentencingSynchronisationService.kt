@@ -16,7 +16,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyPeriodLengthCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateWholeCharge
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCases
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreatePeriodLengthResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateSentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
@@ -41,6 +47,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_BOOKING_CLONE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_PRISONER_MERGE_COURT_CASE_SYNCHRONISATION_MAPPING
@@ -1297,7 +1304,24 @@ class CourtSentencingSynchronisationService(
         "offenderNo" to event.offenderNo,
       )
 
-    // TODO - synchronise new cases back to DPS and created mappings
+    // TODO add specific endpoint that takes a list of case ids rather than getting all and filtering
+    val nomisCourtCases = nomisApiService.getCourtCasesForMigration(offenderNo = event.offenderNo).filter { it.id in event.caseIds }
+    val dpsCases = nomisCourtCases.map { it.toMigrationDpsCourtCase() }
+    // TODO call new DPS clone endpoint when available
+    dpsApiService.createCourtCaseMigration(
+      MigrationCreateCourtCases(
+        prisonerId = event.offenderNo,
+        courtCases = dpsCases,
+      ),
+      deleteExisting = false,
+    )
+      .also { dpsCourtCaseCreateResponse ->
+        createCaseBookingCloneMapping(
+          offenderNo = event.offenderNo,
+          dpsCourtCasesCreateResponse = dpsCourtCaseCreateResponse,
+        )
+      }
+
     telemetryClient.trackEvent(
       "court-case-booking-resynchronisation-success",
       telemetry,
@@ -1617,7 +1641,90 @@ class CourtSentencingSynchronisationService(
       )
     }
   }
+
+  private suspend fun createCaseBookingCloneMapping(
+    offenderNo: String,
+    dpsCourtCasesCreateResponse: MigrationCreateCourtCasesResponse,
+  ) {
+    val mapping = CourtCaseBatchMappingDto(
+      courtCases = buildCourtCaseMapping(dpsCourtCasesCreateResponse.courtCases),
+      courtCharges = buildCourtChargeMapping(dpsCourtCasesCreateResponse.charges),
+      courtAppearances = buildCourtAppearanceMapping(dpsCourtCasesCreateResponse.appearances),
+      sentences = buildSentenceMapping(dpsCourtCasesCreateResponse.sentences),
+      sentenceTerms = buildSentenceTermMapping(dpsCourtCasesCreateResponse.sentenceTerms),
+      mappingType = CourtCaseBatchMappingDto.MappingType.NOMIS_CREATED,
+    )
+
+    try {
+      mappingApiService.replaceOrCreateMappings(
+        mapping,
+      )
+    } catch (e: Exception) {
+      log.error(
+        "Failed to create booking clone mapping for Offender No: $offenderNo",
+        e,
+      )
+
+      queueService.sendMessage(
+        messageType = RETRY_COURT_CASE_BOOKING_CLONE_SYNCHRONISATION_MAPPING,
+        synchronisationType = SynchronisationType.COURT_SENTENCING,
+        message = mapping,
+        telemetryAttributes = mapOf<String, String>(
+          "offenderNo" to offenderNo,
+        ),
+      )
+    }
+  }
+
+  suspend fun retryCreateCaseBookingCloneMapping(retryMessage: InternalMessage<CourtCaseBatchMappingDto>) {
+    mappingApiService.replaceOrCreateMappings(
+      retryMessage.body,
+    ).also {
+      telemetryClient.trackEvent(
+        "from-nomis-synch-court-case-booking-clone-mapping-retry-success",
+        retryMessage.telemetryAttributes,
+      )
+    }
+  }
 }
+
+// dependent on court appearance order back from dps to match nomis
+private fun buildCourtAppearanceMapping(responseMappings: List<MigrationCreateCourtAppearanceResponse>): List<CourtAppearanceMappingDto> = responseMappings.map { it ->
+  CourtAppearanceMappingDto(
+    nomisCourtAppearanceId = it.eventId,
+    dpsCourtAppearanceId = it.appearanceUuid.toString(),
+    mappingType = CourtAppearanceMappingDto.MappingType.NOMIS_CREATED,
+  )
+}
+
+private fun buildCourtChargeMapping(responseMappings: List<MigrationCreateChargeResponse>): List<CourtChargeMappingDto> = responseMappings.map { it ->
+  CourtChargeMappingDto(
+    nomisCourtChargeId = it.chargeNOMISId,
+    dpsCourtChargeId = it.chargeUuid.toString(),
+    mappingType = CourtChargeMappingDto.MappingType.NOMIS_CREATED,
+  )
+}
+
+private fun buildSentenceMapping(responseMappings: List<MigrationCreateSentenceResponse>): List<SentenceMappingDto> = responseMappings.map { it ->
+  SentenceMappingDto(
+    nomisSentenceSequence = it.sentenceNOMISId.sequence,
+    nomisBookingId = it.sentenceNOMISId.offenderBookingId,
+    dpsSentenceId = it.sentenceUuid.toString(),
+    mappingType = SentenceMappingDto.MappingType.NOMIS_CREATED,
+  )
+}
+
+private fun buildSentenceTermMapping(responseMappings: List<MigrationCreatePeriodLengthResponse>): List<SentenceTermMappingDto> = responseMappings.map { it ->
+  SentenceTermMappingDto(
+    nomisSentenceSequence = it.sentenceTermNOMISId.sentenceSequence,
+    nomisBookingId = it.sentenceTermNOMISId.offenderBookingId,
+    dpsTermId = it.periodLengthUuid.toString(),
+    nomisTermSequence = it.sentenceTermNOMISId.termSequence,
+    mappingType = SentenceTermMappingDto.MappingType.NOMIS_CREATED,
+  )
+}
+
+private fun buildCourtCaseMapping(responseMappings: List<MigrationCreateCourtCaseResponse>): List<CourtCaseMappingDto> = responseMappings.map { it -> CourtCaseMappingDto(nomisCourtCaseId = it.caseId, dpsCourtCaseId = it.courtCaseUuid) }
 
 private enum class MappingResponse {
   MAPPING_CREATED,

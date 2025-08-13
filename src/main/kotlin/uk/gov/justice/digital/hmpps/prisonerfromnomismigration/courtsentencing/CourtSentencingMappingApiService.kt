@@ -290,4 +290,12 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     )
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun replaceOrCreateMappings(request: CourtCaseBatchMappingDto) {
+    webClient.put()
+      .uri("/mapping/court-sentencing/court-cases/replace")
+      .bodyValue(request)
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 }

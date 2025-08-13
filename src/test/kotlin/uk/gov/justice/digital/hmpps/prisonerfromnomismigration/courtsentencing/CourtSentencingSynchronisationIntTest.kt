@@ -716,30 +716,81 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     @Nested
     @DisplayName("When resynchronisation of cases for a cloned booking required")
     inner class ResyncMessageReceived {
+      @Nested
+      inner class HappyPath {
 
-      @BeforeEach
-      fun setUp() {
-        courtSentencingOffenderEventsQueue.sendMessage(
-          SQSMessage(
-            Type = "courtsentencing.resync.case.booking",
-            Message = OffenderCaseBookingResynchronisationEvent(
-              offenderNo = OFFENDER_ID_DISPLAY,
-              caseIds = listOf(NOMIS_COURT_CASE_ID),
+        @BeforeEach
+        fun setUp() {
+          courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(offenderNo = OFFENDER_ID_DISPLAY)
+          dpsCourtSentencingServer.stubPostCourtCasesForCreateMigration(response = dpsMigrationCreateResponseWithTwoAppearancesAndTwoCharges())
+          courtSentencingMappingApiMockServer.stubReplaceOrCreateMappings()
+
+          courtSentencingOffenderEventsQueue.sendMessage(
+            SQSMessage(
+              Type = "courtsentencing.resync.case.booking",
+              Message = OffenderCaseBookingResynchronisationEvent(
+                offenderNo = OFFENDER_ID_DISPLAY,
+                caseIds = listOf(NOMIS_COURT_CASE_ID),
+              ).toJson(),
             ).toJson(),
-          ).toJson(),
-        ).also { waitForAnyProcessingToComplete() }
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          verify(telemetryClient).trackEvent(
+            eq("court-case-booking-resynchronisation-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisCaseIds"]).isEqualTo("$NOMIS_COURT_CASE_ID")
+            },
+            isNull(),
+          )
+        }
       }
 
-      @Test
-      fun `will track a telemetry event for success`() {
-        verify(telemetryClient).trackEvent(
-          eq("court-case-booking-resynchronisation-success"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-            assertThat(it["nomisCaseIds"]).isEqualTo("$NOMIS_COURT_CASE_ID")
-          },
-          isNull(),
-        )
+      @Nested
+      inner class MappingFailsOnce {
+
+        @BeforeEach
+        fun setUp() {
+          courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(offenderNo = OFFENDER_ID_DISPLAY)
+          dpsCourtSentencingServer.stubPostCourtCasesForCreateMigration(response = dpsMigrationCreateResponseWithTwoAppearancesAndTwoCharges())
+          courtSentencingMappingApiMockServer.stubReplaceOrCreateMappingsFailureFollowedBySuccess()
+
+          courtSentencingOffenderEventsQueue.sendMessage(
+            SQSMessage(
+              Type = "courtsentencing.resync.case.booking",
+              Message = OffenderCaseBookingResynchronisationEvent(
+                offenderNo = OFFENDER_ID_DISPLAY,
+                caseIds = listOf(NOMIS_COURT_CASE_ID),
+              ).toJson(),
+            ).toJson(),
+          ).also { waitForAnyProcessingToComplete("from-nomis-synch-court-case-booking-clone-mapping-retry-success") }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          verify(telemetryClient).trackEvent(
+            eq("court-case-booking-resynchronisation-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisCaseIds"]).isEqualTo("$NOMIS_COURT_CASE_ID")
+            },
+            isNull(),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for mapping retry success`() {
+          verify(telemetryClient).trackEvent(
+            eq("from-nomis-synch-court-case-booking-clone-mapping-retry-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            },
+            isNull(),
+          )
+        }
       }
     }
   }

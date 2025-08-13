@@ -15,6 +15,7 @@ const val RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING = "court_charge_synchronisa
 const val RETRY_SENTENCE_SYNCHRONISATION_MAPPING = "sentence_synchronisation_retry"
 const val RETRY_SENTENCE_TERM_SYNCHRONISATION_MAPPING = "sentence_term_synchronisation_retry"
 const val RETRY_PRISONER_MERGE_COURT_CASE_SYNCHRONISATION_MAPPING = "prisoner_merge_court_case_synchronisation_retry"
+const val RETRY_COURT_CASE_BOOKING_CLONE_SYNCHRONISATION_MAPPING = "court_case_booking_clone_synchronisation_retry"
 const val RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED = "recall_breach_court_event_charge_inserted"
 const val RECALL_SENTENCE_ADJUSTMENTS_SYNCHRONISATION = "courtsentencing.resync.sentence-adjustments"
 const val SENTENCE_RESYNCHRONISATION = "courtsentencing.resync.sentence"

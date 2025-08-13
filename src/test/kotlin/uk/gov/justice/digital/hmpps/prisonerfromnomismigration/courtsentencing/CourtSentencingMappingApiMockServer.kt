@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
@@ -838,6 +839,20 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
           .withBody(objectMapper.writeValueAsString(response)),
       ),
     )
+  }
+
+  fun stubReplaceOrCreateMappings() {
+    mappingApi.stubFor(
+      put("/mapping/court-sentencing/court-cases/replace").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(200),
+      ),
+    )
+  }
+
+  fun stubReplaceOrCreateMappingsFailureFollowedBySuccess() {
+    mappingApi.stubMappingUpdateFailureFollowedBySuccess(url = "/mapping/court-sentencing/court-cases/replace")
   }
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)

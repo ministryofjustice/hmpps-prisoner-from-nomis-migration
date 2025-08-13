@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CASE_RESY
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RECALL_SENTENCE_ADJUSTMENTS_SYNCHRONISATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_BOOKING_CLONE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_PRISONER_MERGE_COURT_CASE_SYNCHRONISATION_MAPPING
@@ -127,6 +128,10 @@ class CourtSentencingEventListener(
         CASE_BOOKING_RESYNCHRONISATION -> courtSentencingSynchronisationService.nomisCaseBookingResynchronisation(
           sqsMessage.Message.fromJson(),
         )
+        RETRY_COURT_CASE_BOOKING_CLONE_SYNCHRONISATION_MAPPING ->
+          courtSentencingSynchronisationService.retryCreateCaseBookingCloneMapping(
+            sqsMessage.Message.fromJson(),
+          )
       }
     }
   }
