@@ -8,6 +8,7 @@ import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.EXTERNAL_MOVEMENTS_QUEUE_ID

@@ -1,10 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
 
+import com.github.tomakehurst.wiremock.client.WireMock.absent
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
-import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.not
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -18,6 +20,7 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 
 @SpringAPIServiceTest
 @Import(ExternalMovementsMappingApiService::class, ExternalMovementsMappingApiMockServer::class)
@@ -40,7 +43,7 @@ class ExternalMovementsMappingApiServiceTest {
       )
 
       mappingApi.verify(
-        postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+        putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
@@ -54,11 +57,11 @@ class ExternalMovementsMappingApiServiceTest {
       )
 
       mappingApi.verify(
-        postRequestedFor(anyUrl())
+        putRequestedFor(anyUrl())
           .withRequestBody(matchingJsonPath("prisonerNumber", equalTo("A1234BC")))
           .withRequestBody(matchingJsonPath("bookings[0].bookingId", equalTo("12345")))
           .withRequestBody(matchingJsonPath("bookings[0].applications[0].nomisMovementApplicationId", equalTo("1")))
-          .withRequestBody(matchingJsonPath("bookings[0].applications[0].dpsMovementApplicationId", equalTo("1001")))
+          .withRequestBody(matchingJsonPath("bookings[0].applications[0].dpsMovementApplicationId", not(absent())))
           .withRequestBody(matchingJsonPath("migrationId", equalTo("2020-01-01T11:10:00"))),
       )
     }

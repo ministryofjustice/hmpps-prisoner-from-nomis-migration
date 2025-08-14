@@ -2,22 +2,29 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
-import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceBookingMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesOutsideMovementMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
+import java.util.UUID
 
 @Component
 class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubCreateTemporaryAbsenceMapping() {
     mappingApi.stubFor(
-      post("/mapping/temporary-absences")
+      put("/mapping/temporary-absences/migrate")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -28,7 +35,7 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
 
   fun stubCreateTemporaryAbsenceMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      post("/mapping/temporary-absences").willReturn(
+      put("/mapping/temporary-absences/migrate").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -37,19 +44,8 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
     )
   }
 
-  fun stubCreateTemporaryAbsenceMapping(error: DuplicateMappingErrorResponse) {
-    mappingApi.stubFor(
-      post("/mapping/temporary-absences").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
   fun stubCreateTemporaryAbsenceMappingFailureFollowedBySuccess() {
-    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/temporary-absences")
+    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/temporary-absences/migrate", WireMock::put)
   }
 
   fun stubGetTemporaryAbsenceMappings(prisonerNumber: String = "A1234BC") {
@@ -87,31 +83,31 @@ fun temporaryAbsencePrisonerMappings(prisonerNumber: String = "A1234BC") = Tempo
       applications = listOf(
         TemporaryAbsenceApplicationMappingDto(
           nomisMovementApplicationId = 1,
-          dpsMovementApplicationId = 1001,
+          dpsMovementApplicationId = UUID.randomUUID(),
           outsideMovements = listOf(
             TemporaryAbsencesOutsideMovementMappingDto(
               nomisMovementApplicationMultiId = 1,
-              dpsOutsideMovementId = 1001,
+              dpsOutsideMovementId = UUID.randomUUID(),
             ),
           ),
           schedules = listOf(
             ScheduledMovementMappingDto(
               nomisEventId = 1,
-              dpsScheduledMovementId = 1001,
+              dpsScheduledMovementId = UUID.randomUUID(),
             ),
             ScheduledMovementMappingDto(
               nomisEventId = 2,
-              dpsScheduledMovementId = 1002,
+              dpsScheduledMovementId = UUID.randomUUID(),
             ),
           ),
           movements = listOf(
             ExternalMovementMappingDto(
               nomisMovementSeq = 3,
-              dpsExternalMovementId = 1003,
+              dpsExternalMovementId = UUID.randomUUID(),
             ),
             ExternalMovementMappingDto(
               nomisMovementSeq = 4,
-              dpsExternalMovementId = 1004,
+              dpsExternalMovementId = UUID.randomUUID(),
             ),
           ),
         ),
@@ -119,11 +115,11 @@ fun temporaryAbsencePrisonerMappings(prisonerNumber: String = "A1234BC") = Tempo
       unscheduledMovements = listOf(
         ExternalMovementMappingDto(
           nomisMovementSeq = 1,
-          dpsExternalMovementId = 1001,
+          dpsExternalMovementId = UUID.randomUUID(),
         ),
         ExternalMovementMappingDto(
           nomisMovementSeq = 2,
-          dpsExternalMovementId = 1002,
+          dpsExternalMovementId = UUID.randomUUID(),
         ),
       ),
     ),
