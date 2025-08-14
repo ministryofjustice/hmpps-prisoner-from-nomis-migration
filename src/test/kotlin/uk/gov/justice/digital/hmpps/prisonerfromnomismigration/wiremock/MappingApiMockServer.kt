@@ -2,7 +2,9 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.created
 import com.github.tomakehurst.wiremock.client.WireMock.delete
@@ -18,6 +20,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
+import com.github.tomakehurst.wiremock.matching.UrlPattern
 import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -658,9 +661,9 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubMappingCreateFailureFollowedBySuccess(url: String) {
+  fun stubMappingCreateFailureFollowedBySuccess(url: String, method: (UrlPattern) -> MappingBuilder = WireMock::post) {
     stubFor(
-      post(urlPathMatching(url))
+      method(urlPathMatching(url))
         .inScenario("Retry create Scenario")
         .whenScenarioStateIs(STARTED)
         .willReturn(
@@ -672,7 +675,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
 
     stubFor(
-      post(urlPathMatching(url))
+      method(urlPathMatching(url))
         .inScenario("Retry create Scenario")
         .whenScenarioStateIs("Cause create Success")
         .willReturn(created())
