@@ -24,7 +24,7 @@ import java.util.UUID
 class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubCreateTemporaryAbsenceMapping() {
     mappingApi.stubFor(
-      put("/mapping/temporary-absences/migrate")
+      put("/mapping/temporary-absence/migrate")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -35,7 +35,7 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
 
   fun stubCreateTemporaryAbsenceMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      put("/mapping/temporary-absences/migrate").willReturn(
+      put("/mapping/temporary-absence/migrate").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -45,12 +45,12 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
   }
 
   fun stubCreateTemporaryAbsenceMappingFailureFollowedBySuccess() {
-    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/temporary-absences/migrate", WireMock::put)
+    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/temporary-absence/migrate", WireMock::put)
   }
 
   fun stubGetTemporaryAbsenceMappings(prisonerNumber: String = "A1234BC") {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/temporary-absences/nomis-prisoner-number/$prisonerNumber")).willReturn(
+      get(urlPathMatching("/mapping/temporary-absence/nomis-prisoner-number/$prisonerNumber")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(objectMapper.writeValueAsString(temporaryAbsencePrisonerMappings(prisonerNumber))),
@@ -60,7 +60,7 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
 
   fun stubGetTemporaryAbsenceMappings(prisonerNumber: String = "A1234BC", status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/temporary-absences/nomis-prisoner-number/$prisonerNumber")).willReturn(
+      get(urlPathMatching("/mapping/temporary-absence/nomis-prisoner-number/$prisonerNumber")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
