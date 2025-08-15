@@ -14,7 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 
 @Service
-class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<TemporaryAbsencesPrisonerMappingDto>(domainUrl = "/mapping/temporary-absences", webClient) {
+class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<TemporaryAbsencesPrisonerMappingDto>(domainUrl = "/mapping/temporary-absence", webClient) {
   suspend fun getPrisonerTemporaryAbsenceMappings(prisonerNumber: String): TemporaryAbsencesPrisonerMappingDto? = webClient.get()
     .uri("$domainUrl/nomis-prisoner-number/{prisonerNumber}", prisonerNumber)
     .retrieve()

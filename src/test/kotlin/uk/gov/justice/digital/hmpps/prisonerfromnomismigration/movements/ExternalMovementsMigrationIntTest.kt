@@ -107,22 +107,22 @@ class ExternalMovementsMigrationIntTest(
     @Test
     fun `will check mappings`() {
       mappingApi.verify(
-        getRequestedFor(urlEqualTo("/mapping/temporary-absences/nomis-prisoner-number/A0001KT")),
+        getRequestedFor(urlEqualTo("/mapping/temporary-absence/nomis-prisoner-number/A0001KT")),
       )
       mappingApi.verify(
-        getRequestedFor(urlEqualTo("/mapping/temporary-absences/nomis-prisoner-number/A0002KT")),
+        getRequestedFor(urlEqualTo("/mapping/temporary-absence/nomis-prisoner-number/A0002KT")),
       )
     }
 
     @Test
     fun `will create mappings`() {
       mappingApi.verify(
-        putRequestedFor(urlEqualTo("/mapping/temporary-absences/migrate"))
+        putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
           .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
           .withRequestBodyJsonPath("migrationId", migrationId),
       )
       mappingApi.verify(
-        putRequestedFor(urlEqualTo("/mapping/temporary-absences/migrate"))
+        putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
           .withRequestBodyJsonPath("prisonerNumber", "A0002KT")
           .withRequestBodyJsonPath("migrationId", migrationId),
       )
@@ -167,7 +167,7 @@ class ExternalMovementsMigrationIntTest(
     fun `will create mappings twice before succeeding`() {
       mappingApi.verify(
         2,
-        putRequestedFor(urlEqualTo("/mapping/temporary-absences/migrate"))
+        putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
           .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
           .withRequestBodyJsonPath("migrationId", migrationId),
       )
