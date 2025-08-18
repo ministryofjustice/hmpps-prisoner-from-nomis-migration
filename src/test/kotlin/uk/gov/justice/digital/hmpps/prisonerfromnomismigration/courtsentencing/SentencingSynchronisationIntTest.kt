@@ -1439,6 +1439,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBody(matchingJsonPath("legacyData.sentenceCalcType", equalTo("ADIMP_ORA")))
               .withRequestBody(matchingJsonPath("legacyData.sentenceTypeDesc", equalTo("ADIMP_ORA description")))
               .withRequestBody(matchingJsonPath("legacyData.sentenceCategory", equalTo("2003")))
+              .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString())))
               .withRequestBody(matchingJsonPath("returnToCustodyDate", equalTo("2024-01-01"))),
           )
         }
