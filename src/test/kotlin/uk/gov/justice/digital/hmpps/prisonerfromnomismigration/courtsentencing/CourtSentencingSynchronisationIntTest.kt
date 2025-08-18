@@ -55,8 +55,8 @@ import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
 import java.util.AbstractMap.SimpleEntry
+import java.util.UUID
 
 private const val NOMIS_COURT_CASE_ID = 1234L
 private const val NOMIS_COURT_APPEARANCE_ID = 5555L
@@ -2501,7 +2501,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBody(matchingJsonPath("offenceCode", equalTo("RI64006")))
               .withRequestBody(matchingJsonPath("offenceStartDate", equalTo("2024-04-04")))
               .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("1002")))
-              .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("F"))),
+              .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("F")))
+              .withRequestBody(matchingJsonPath("legacyData.offenceDescription", equalTo("Offence description"))),
           )
         }
 
@@ -4253,6 +4254,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(this.active).isTrue
           assertThat(this.legacyData.sentenceCategory).isEqualTo("2020")
           assertThat(this.legacyData.sentenceCalcType).isEqualTo("FTR")
+          assertThat(this.legacyData.bookingId).isEqualTo(NOMIS_BOOKING_ID)
           assertThat(this.fine?.fineAmount).isEqualTo(BigDecimal("10.00"))
           assertThat(this.consecutiveToLifetimeUuid).isNull()
         }

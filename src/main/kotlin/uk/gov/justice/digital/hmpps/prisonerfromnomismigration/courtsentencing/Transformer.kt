@@ -113,7 +113,6 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance(
   charges = this.courtEventCharges.map { charge ->
     // find sentence where sentence.offenderCharges contains charge
     val sentencesForAppearance = sentences.filter { sentence -> sentence.courtOrder?.eventId == this.id }
-    // println("sentencesForAppearance:\n$sentencesForAppearance")
     val dpsSentence =
       sentencesForAppearance.find { sentence -> sentence.offenderCharges.any { it.id == charge.offenderCharge.id } }
         ?.toDpsMigrationSentence()
@@ -131,6 +130,7 @@ fun OffenderChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharg
     nomisOutcomeCode = this.resultCode1?.code,
     outcomeDispositionCode = this.resultCode1?.dispositionCode,
     outcomeConvictionFlag = this.resultCode1?.conviction,
+    offenceDescription = this.offence.description,
   ),
   offenceEndDate = this.offenceEndDate,
   appearanceLifetimeUuid = UUID.fromString(appearanceId),
@@ -145,6 +145,7 @@ fun CourtEventChargeResponse.toDpsCharge() = LegacyUpdateCharge(
     nomisOutcomeCode = this.resultCode1?.code,
     outcomeDispositionCode = this.resultCode1?.dispositionCode,
     outcomeConvictionFlag = this.resultCode1?.conviction,
+    offenceDescription = this.offenderCharge.offence.description,
   ),
   offenceEndDate = this.offenceEndDate,
 )
@@ -162,6 +163,7 @@ fun CourtEventChargeResponse.toDpsMigrationCharge(
     nomisOutcomeCode = this.resultCode1?.code,
     outcomeDispositionCode = this.resultCode1?.dispositionCode,
     outcomeConvictionFlag = this.resultCode1?.conviction,
+    offenceDescription = this.offenderCharge.offence.description,
   ),
   offenceEndDate = this.offenceEndDate,
   chargeNOMISId = chargeId,
