@@ -42,11 +42,12 @@ class TransactionEventListener(
               )
               // NOTE: Several inserts per second!
 
-              "OFFENDER_TRANSACTIONS-UPDATED" -> null
-              "OFFENDER_TRANSACTIONS-DELETED" -> null
+              "OFFENDER_TRANSACTIONS-UPDATED" -> null // can happen, there are some rows with modify datetime after create
+              "OFFENDER_TRANSACTIONS-DELETED" -> null // extremely rare (only happened 61 times ever according to oms_deleted_rows, mostly by scripts)
+
               "GL_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.glTransactionInserted(sqsMessage.Message.fromJson(), messageId)
               "GL_TRANSACTIONS-UPDATED" -> null
-              "GL_TRANSACTIONS-DELETED" -> null
+              "GL_TRANSACTIONS-DELETED" -> null // extremely rare (only happened once at 11-AUG-2021 10:39:26.470007000 according to oms_deleted_rows, 8 deleted)
 
               "prison-offender-events.prisoner.merged" -> null // transactionMergeService.synchronisePrisonerMerged(sqsMessage.Message.fromJson())
               "prison-offender-events.prisoner.booking.moved" -> null // transactionMergeService.synchronisePrisonerBookingMoved(sqsMessage.Message.fromJson())

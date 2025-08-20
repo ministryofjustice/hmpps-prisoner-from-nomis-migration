@@ -68,8 +68,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        awsSqsFinanceOffenderEventsClient.sendMessage(
-          financeQueueOffenderEventsUrl,
+        financeOffenderEventsQueue.sendMessage(
           offenderTransactionEvent(
             "OFFENDER_TRANSACTIONS-INSERTED", // and GL_TRANSACTIONS-INSERTED
             messageUuid,
@@ -115,7 +114,6 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
       @DisplayName("Happy path where transaction does not already exist in DPS")
       inner class HappyPathOffenderTransactionFirst {
         val receipt = SyncTransactionReceipt(
-          transactionId = NOMIS_TRANSACTION_ID,
           synchronizedTransactionId = dpsTransactionUuid,
           requestId = UUID.randomUUID(),
           action = SyncTransactionReceipt.Action.CREATED,
@@ -229,7 +227,6 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
       @DisplayName("Happy path where the transaction id already exists in DPS")
       inner class HappyPathOffenderTransactionNotFirst {
         val receipt = SyncTransactionReceipt(
-          transactionId = NOMIS_TRANSACTION_ID,
           synchronizedTransactionId = dpsTransactionUuid,
           requestId = UUID.randomUUID(),
           action = SyncTransactionReceipt.Action.UPDATED,
@@ -353,7 +350,6 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           financeMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
           financeApi.stubPostOffenderTransaction(
             SyncTransactionReceipt(
-              transactionId = NOMIS_TRANSACTION_ID,
               synchronizedTransactionId = dpsTransactionUuid,
               requestId = UUID.randomUUID(),
               action = SyncTransactionReceipt.Action.CREATED,
@@ -547,7 +543,6 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
       @DisplayName("Happy path where transaction does not already exist in DPS")
       inner class HappyPathGLTransactionFirst {
         val receipt = SyncTransactionReceipt(
-          transactionId = NOMIS_TRANSACTION_ID,
           synchronizedTransactionId = dpsTransactionUuid,
           requestId = UUID.randomUUID(),
           action = SyncTransactionReceipt.Action.CREATED,
@@ -644,7 +639,6 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
       @DisplayName("Happy path where the transaction id already exists in DPS")
       inner class HappyPathGLTransactionNotFirst {
         val receipt = SyncTransactionReceipt(
-          transactionId = NOMIS_TRANSACTION_ID,
           synchronizedTransactionId = dpsTransactionUuid,
           requestId = UUID.randomUUID(),
           action = SyncTransactionReceipt.Action.UPDATED,
