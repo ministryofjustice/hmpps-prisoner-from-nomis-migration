@@ -1221,53 +1221,7 @@ class CourtSentencingSynchronisationService(
       telemetryClient.trackEvent("sentence-synchronisation-updated-skipped", telemetry)
     } else {
       if (isSentenceInScope(event)) {
-        val caseId = event.caseId!!
-        val mapping = mappingApiService.getSentenceOrNullByNomisId(
-          bookingId = event.bookingId,
-          sentenceSequence = event.sentenceSeq,
-        )
-        if (mapping == null) {
-          telemetryClient.trackEvent(
-            "sentence-synchronisation-updated-failed",
-            telemetry,
-          )
-          throw IllegalStateException("Received OFFENDER_SENTENCES-UPDATED for sentence (sequence ${event.sentenceSeq} booking ${event.bookingId}) that has never been created")
-        } else {
-          val nomisSentence =
-            nomisApiService.getOffenderSentence(
-              offenderNo = event.offenderIdDisplay,
-              caseId = caseId,
-              sentenceSequence = event.sentenceSeq,
-            )
-
-          val eventId = nomisSentence.courtOrder!!.eventId
-          mappingApiService.getCourtAppearanceOrNullByNomisId(eventId)?.let { courtAppearanceMapping ->
-            dpsApiService.updateSentence(
-              sentenceId = mapping.dpsSentenceId,
-              nomisSentence.toDpsSentence(
-                dpsAppearanceUuid = courtAppearanceMapping.dpsCourtAppearanceId,
-                dpsConsecUuid = nomisSentence.consecSequence?.let {
-                  getConsecutiveSequenceMappingOrThrow(
-                    sentenceSequence = event.sentenceSeq,
-                    bookingId = event.bookingId,
-                    consecSequence = it,
-                  )
-                },
-                sentenceChargeIds = getDpsChargeMappings(nomisSentence),
-              ),
-            )
-            telemetryClient.trackEvent(
-              "sentence-synchronisation-updated-success",
-              telemetry + ("dpsSentenceId" to mapping.dpsSentenceId),
-            )
-          } ?: let {
-            telemetryClient.trackEvent(
-              "sentence-synchronisation-updated-failed",
-              telemetry + ("reason" to "parent court appearance $eventId is not mapped"),
-            )
-            throw ParentEntityNotFoundRetry("Received OFFENDER_SENTENCES-UPDATED for sentence seq ${event.sentenceSeq} and booking ${event.bookingId} on an appearance $eventId that has never been created/mapped")
-          }
-        }
+        nomisSentenceUpdated(nomisCaseId = event.caseId!!, nomisBookingId = event.bookingId, nomisSentenceSequence = event.sentenceSeq, offenderNo = event.offenderIdDisplay, telemetry = telemetry)
       } else {
         telemetryClient.trackEvent(
           "sentence-synchronisation-updated-ignored",
@@ -1276,19 +1230,74 @@ class CourtSentencingSynchronisationService(
       }
     }
   }
+  suspend fun nomisSentenceUpdated(nomisCaseId: Long, nomisBookingId: Long, nomisSentenceSequence: Int, offenderNo: String, telemetry: Map<String, String>) {
+    val mapping = mappingApiService.getSentenceOrNullByNomisId(
+      bookingId = nomisBookingId,
+      sentenceSequence = nomisSentenceSequence,
+    )
+    if (mapping == null) {
+      telemetryClient.trackEvent(
+        "sentence-synchronisation-updated-failed",
+        telemetry,
+      )
+      throw IllegalStateException("Received OFFENDER_SENTENCES-UPDATED or sync request for sentence (sequence $nomisSentenceSequence booking $nomisBookingId) that has never been created")
+    } else {
+      val nomisSentence =
+        nomisApiService.getOffenderSentence(
+          offenderNo = offenderNo,
+          caseId = nomisCaseId,
+          sentenceSequence = nomisSentenceSequence,
+        )
+
+      val eventId = nomisSentence.courtOrder!!.eventId
+      mappingApiService.getCourtAppearanceOrNullByNomisId(eventId)?.let { courtAppearanceMapping ->
+        dpsApiService.updateSentence(
+          sentenceId = mapping.dpsSentenceId,
+          nomisSentence.toDpsSentence(
+            dpsAppearanceUuid = courtAppearanceMapping.dpsCourtAppearanceId,
+            dpsConsecUuid = nomisSentence.consecSequence?.let {
+              getConsecutiveSequenceMappingOrThrow(
+                sentenceSequence = nomisSentenceSequence,
+                bookingId = nomisBookingId,
+                consecSequence = it,
+              )
+            },
+            sentenceChargeIds = getDpsChargeMappings(nomisSentence),
+          ),
+        )
+        telemetryClient.trackEvent(
+          "sentence-synchronisation-updated-success",
+          telemetry + ("dpsSentenceId" to mapping.dpsSentenceId),
+        )
+      } ?: let {
+        telemetryClient.trackEvent(
+          "sentence-synchronisation-updated-failed",
+          telemetry + ("reason" to "parent court appearance $eventId is not mapped"),
+        )
+        throw ParentEntityNotFoundRetry("Received OFFENDER_SENTENCES-UPDATED for sentence seq $nomisSentenceSequence and booking $nomisBookingId on an appearance $eventId that has never been created/mapped")
+      }
+    }
+  }
 
   suspend fun nomisCaseResynchronisation(event: OffenderCaseResynchronisationEvent) {
+    nomisCaseResynchronisation(nomisCaseId = event.caseId, dpsCaseId = event.dpsCaseUuid, offenderNo = event.offenderNo)
+  }
+  private suspend fun nomisCaseResynchronisation(nomisCaseId: Long, offenderNo: String) {
+    nomisCaseResynchronisation(nomisCaseId = nomisCaseId, dpsCaseId = mappingApiService.getCourtCaseByNomisId(nomisCaseId).dpsCourtCaseId, offenderNo = offenderNo)
+  }
+
+  private suspend fun nomisCaseResynchronisation(nomisCaseId: Long, dpsCaseId: String, offenderNo: String) {
     val telemetry =
       mapOf(
-        "dpsCaseId" to event.dpsCaseUuid,
-        "nomisCaseId" to event.caseId.toString(),
-        "offenderNo" to event.offenderNo,
+        "dpsCaseId" to dpsCaseId,
+        "nomisCaseId" to nomisCaseId.toString(),
+        "offenderNo" to offenderNo,
       )
 
     val nomisCourtCase =
-      nomisApiService.getCourtCase(offenderNo = event.offenderNo, courtCaseId = event.caseId)
+      nomisApiService.getCourtCase(offenderNo = offenderNo, courtCaseId = nomisCaseId)
     dpsApiService.updateCourtCase(
-      courtCaseId = event.dpsCaseUuid,
+      courtCaseId = dpsCaseId,
       nomisCourtCase.toLegacyDpsCourtCase(),
     )
     telemetryClient.trackEvent(
@@ -1297,12 +1306,23 @@ class CourtSentencingSynchronisationService(
     )
   }
 
-  suspend fun nomisCaseBookingResynchronisation(event: OffenderCaseBookingResynchronisationEvent) {
+  suspend fun nomisCaseBookingMoveResynchronisation(event: OffenderCaseBookingResynchronisationEvent) {
     val telemetry =
       mapOf(
         "nomisCaseIds" to event.caseIds.joinToString(),
         "offenderNo" to event.offenderNo,
+        "fromBookingId" to event.fromBookingId.toString(),
+        "toBookingId" to event.toBookingId.toString(),
       )
+
+    // since bookingId has changed - resync both case and sentence back to DPS so it can update the bookingId
+    // since this is idempotent, it doesn't matter if we fail and retry at this point
+    event.casesMoved.forEach { case ->
+      nomisCaseResynchronisation(nomisCaseId = case.caseId, offenderNo = event.offenderNo)
+      case.sentence.forEach { sentence ->
+        nomisSentenceUpdated(nomisCaseId = case.caseId, nomisBookingId = event.toBookingId, nomisSentenceSequence = sentence.sentenceSequence, offenderNo = event.offenderNo, telemetry = telemetry)
+      }
+    }
 
     // TODO add specific endpoint that takes a list of case ids rather than getting all and filtering
     val nomisCourtCases = nomisApiService.getCourtCasesForMigration(offenderNo = event.offenderNo).filter { it.id in event.caseIds }

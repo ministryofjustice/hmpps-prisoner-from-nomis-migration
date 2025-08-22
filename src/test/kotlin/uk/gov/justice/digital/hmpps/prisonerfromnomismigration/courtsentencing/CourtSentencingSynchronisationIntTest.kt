@@ -731,6 +731,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               Message = OffenderCaseBookingResynchronisationEvent(
                 offenderNo = OFFENDER_ID_DISPLAY,
                 caseIds = listOf(NOMIS_COURT_CASE_ID),
+                fromBookingId = 54321,
+                toBookingId = NOMIS_BOOKING_ID,
               ).toJson(),
             ).toJson(),
           ).also { waitForAnyProcessingToComplete() }
@@ -743,6 +745,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             check {
               assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
               assertThat(it["nomisCaseIds"]).isEqualTo("$NOMIS_COURT_CASE_ID")
+              assertThat(it["toBookingId"]).isEqualTo("$NOMIS_BOOKING_ID")
+              assertThat(it["fromBookingId"]).isEqualTo("54321")
             },
             isNull(),
           )
@@ -764,6 +768,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               Message = OffenderCaseBookingResynchronisationEvent(
                 offenderNo = OFFENDER_ID_DISPLAY,
                 caseIds = listOf(NOMIS_COURT_CASE_ID),
+                toBookingId = NOMIS_BOOKING_ID,
               ).toJson(),
             ).toJson(),
           ).also { waitForAnyProcessingToComplete("from-nomis-synch-court-case-booking-clone-mapping-retry-success") }
