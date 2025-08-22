@@ -1324,24 +1324,27 @@ class CourtSentencingSynchronisationService(
       }
     }
 
-    // TODO add specific endpoint that takes a list of case ids rather than getting all and filtering
-    val nomisCourtCases = nomisApiService.getCourtCasesForMigration(offenderNo = event.offenderNo).filter { it.id in event.caseIds }
-    val dpsCases = nomisCourtCases.map { it.toMigrationDpsCourtCase() }
-    // TODO call new DPS clone endpoint when available
-    dpsApiService.createCourtCaseMigration(
-      MigrationCreateCourtCases(
-        prisonerId = event.offenderNo,
-        courtCases = dpsCases,
-      ),
-      deleteExisting = false,
-    )
-      .also { dpsCourtCaseCreateResponse ->
-        createCaseBookingCloneMapping(
-          offenderNo = event.offenderNo,
-          dpsCourtCasesCreateResponse = dpsCourtCaseCreateResponse,
-        )
-      }
-
+    // no scenario this can reasonably be empty except when testing
+    if (event.caseIds.isNotEmpty()) {
+      // TODO add specific endpoint that takes a list of case ids rather than getting all and filtering
+      val nomisCourtCases =
+        nomisApiService.getCourtCasesForMigration(offenderNo = event.offenderNo).filter { it.id in event.caseIds }
+      val dpsCases = nomisCourtCases.map { it.toMigrationDpsCourtCase() }
+      // TODO call new DPS clone endpoint when available
+      dpsApiService.createCourtCaseMigration(
+        MigrationCreateCourtCases(
+          prisonerId = event.offenderNo,
+          courtCases = dpsCases,
+        ),
+        deleteExisting = false,
+      )
+        .also { dpsCourtCaseCreateResponse ->
+          createCaseBookingCloneMapping(
+            offenderNo = event.offenderNo,
+            dpsCourtCasesCreateResponse = dpsCourtCaseCreateResponse,
+          )
+        }
+    }
     telemetryClient.trackEvent(
       "court-case-booking-resynchronisation-success",
       telemetry,
