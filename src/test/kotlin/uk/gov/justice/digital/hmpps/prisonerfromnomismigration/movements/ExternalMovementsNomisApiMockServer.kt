@@ -69,7 +69,7 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
           TemporaryAbsenceApplication(
             movementApplicationId = 1,
             eventSubType = "C5",
-            applicationDate = now,
+            applicationDate = now.toLocalDate(),
             fromDate = now.toLocalDate(),
             releaseTime = now,
             toDate = tomorrow.toLocalDate(),
