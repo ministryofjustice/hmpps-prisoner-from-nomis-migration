@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.OffenderCaseBookingResynchronisationEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.SyncSentenceAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.NomisPrisonerMergeEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -92,21 +91,6 @@ class SentencingAdjustmentsSynchronisationService(
       }
     }
   }
-  suspend fun nomisSentenceAdjustmentsBookingMoveResynchronisation(event: OffenderCaseBookingResynchronisationEvent) {
-    event.sentenceAdjustments.forEach { sentence ->
-      sentence.adjustmentIds.forEach { adjustmentId ->
-        createOrUpdateSentenceAdjustment(
-          request = SentenceAdjustmentUpdateOrCreateRequest(
-            offenderNumber = event.offenderNo,
-            bookingId = sentence.sentenceId.offenderBookingId,
-            sentenceSeq = sentence.sentenceId.sentenceSequence,
-            adjustmentId = adjustmentId,
-          ),
-        )
-      }
-    }
-  }
-
   suspend fun synchroniseSentenceAdjustmentDelete(event: SentenceAdjustmentOffenderEvent) {
     sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
       nomisAdjustmentId = event.adjustmentId,

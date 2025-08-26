@@ -1319,7 +1319,7 @@ class CourtSentencingSynchronisationService(
     // since this is idempotent, it doesn't matter if we fail and retry at this point
     event.casesMoved.forEach { case ->
       nomisCaseResynchronisation(nomisCaseId = case.caseId, offenderNo = event.offenderNo)
-      case.sentence.forEach { sentence ->
+      case.sentences.forEach { sentence ->
         nomisSentenceUpdated(nomisCaseId = case.caseId, nomisBookingId = event.toBookingId, nomisSentenceSequence = sentence.sentenceSequence, offenderNo = event.offenderNo, telemetry = telemetry)
       }
     }
