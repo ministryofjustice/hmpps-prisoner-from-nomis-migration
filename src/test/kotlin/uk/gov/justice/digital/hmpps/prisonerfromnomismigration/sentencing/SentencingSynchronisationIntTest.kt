@@ -31,7 +31,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.OffenderCaseBookingResynchronisationEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.SentenceIdAndAdjustmentType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.SyncSentenceAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeNomisEvent
