@@ -72,6 +72,7 @@ data class ModelConfiguration(val name: String, val packageName: String, val tes
   private fun nameToCamel(): String = snakeRegex.replace(name) {
     it.value.replace("-", "").uppercase()
   }.replaceFirstChar { it.uppercase() }
+
   val input: String
     get() = "openapi-specs/$name-api-docs.json"
   val output: String
@@ -112,6 +113,12 @@ val models = listOf(
     packageName = "courtsentencing",
     testPackageName = "courtsentencing",
     url = "https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+  ),
+  ModelConfiguration(
+    name = "finance",
+    packageName = "finance",
+    testPackageName = "finance",
+    url = "https://prisoner-finance-poc-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
   ),
   ModelConfiguration(
     name = "incidents",
@@ -163,12 +170,6 @@ val models = listOf(
     url = "https://hmpps-visit-allocation-api-dev.prison.service.justice.gov.uk/v3/api-docs",
     models = "VisitAllocationPrisonerMigrationDto,VisitAllocationPrisonerSyncDto",
   ),
-  ModelConfiguration(
-    name = "finance",
-    packageName = "finance",
-    testPackageName = "finance",
-    url = "https://prisoner-finance-poc-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
-  ),
 )
 
 tasks {
@@ -212,16 +213,26 @@ models.forEach {
       Files.write(Paths.get(it.input), formattedJson.toByteArray())
     }
   }
-  tasks.register(it.toReadProductionVersionTaskName()) {
-    group = "Read current production version"
-    description = "Read current production version for ${it.name}"
-    doLast {
-      val productionUrl = it.url.replace("-dev".toRegex(), "")
-        .replace("dev.".toRegex(), "")
-        .replace("/v3/api-docs".toRegex(), "/info")
-      val json = URI.create(productionUrl).toURL().readText()
-      val version = ObjectMapper().readTree(json).at("/build/version").asText()
-      println(version)
+  if (it.name != "finance") {
+    tasks.register(it.toReadProductionVersionTaskName()) {
+      group = "Read current production version"
+      description = "Read current production version for ${it.name}"
+      doLast {
+        val productionUrl = it.url.replace("-dev".toRegex(), "")
+          .replace("dev.".toRegex(), "")
+          .replace("/v3/api-docs".toRegex(), "/info")
+        val json = URI.create(productionUrl).toURL().readText()
+        val version = ObjectMapper().readTree(json).at("/build/version").asText()
+        println(version)
+      }
+    }
+  } else {
+    tasks.register(it.toReadProductionVersionTaskName()) {
+      group = "Read current production version"
+      description = "Read current production version for ${it.name}"
+      doLast {
+        println("no production version")
+      }
     }
   }
   if (it.testPackageName != null) {
