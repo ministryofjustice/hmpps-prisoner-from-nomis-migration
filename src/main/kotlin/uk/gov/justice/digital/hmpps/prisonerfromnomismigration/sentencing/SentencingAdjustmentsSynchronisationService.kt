@@ -92,21 +92,6 @@ class SentencingAdjustmentsSynchronisationService(
       }
     }
   }
-  suspend fun nomisSentenceAdjustmentsBookingMoveResynchronisation(event: OffenderCaseBookingResynchronisationEvent) {
-    event.sentenceAdjustments.forEach { sentence ->
-      sentence.adjustmentIds.forEach { adjustmentId ->
-        createOrUpdateSentenceAdjustment(
-          request = SentenceAdjustmentUpdateOrCreateRequest(
-            offenderNumber = event.offenderNo,
-            bookingId = sentence.sentenceId.offenderBookingId,
-            sentenceSeq = sentence.sentenceId.sentenceSequence,
-            adjustmentId = adjustmentId,
-          ),
-        )
-      }
-    }
-  }
-
   suspend fun synchroniseSentenceAdjustmentDelete(event: SentenceAdjustmentOffenderEvent) {
     sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
       nomisAdjustmentId = event.adjustmentId,

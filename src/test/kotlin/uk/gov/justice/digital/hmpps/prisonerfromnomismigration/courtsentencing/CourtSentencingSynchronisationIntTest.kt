@@ -754,7 +754,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 casesMoved = listOf(
                   CaseBookingChanged(
                     caseId = nomisCourtCaseUpdatedId,
-                    sentence = listOf(
+                    sentences = listOf(
                       SentenceBookingChanged(
                         sentenceSequence = nomisSentenceSequence,
                       ),
