@@ -11,7 +11,7 @@
       "name" : "MIT",
       "identifier" : "MIT"
     },
-    "version" : "2025-08-13.133.13f9f71"
+    "version" : "2025-08-26.177.cec4a71"
   },
   "servers" : [ {
     "url" : "/",
@@ -6201,15 +6201,15 @@
             "type" : "boolean",
             "description" : "Internal flag which, if false, is used to indicate that addition of prisoner involvements is unfinished"
           },
-          "nomisStatus" : {
-            "type" : "string",
-            "deprecated" : true,
-            "description" : "Previous NOMIS incident report status code, which may be null for statuses that cannot be mapped"
-          },
           "nomisType" : {
             "type" : "string",
             "deprecated" : true,
             "description" : "NOMIS incident report type code, which may be null for newer incident types"
+          },
+          "nomisStatus" : {
+            "type" : "string",
+            "deprecated" : true,
+            "description" : "Previous NOMIS incident report status code, which may be null for statuses that cannot be mapped"
           }
         },
         "readOnly" : true,
@@ -7437,6 +7437,11 @@
             "description" : "Human-readable description of this value",
             "example" : "On hold"
           },
+          "ignoreDownstream" : {
+            "type" : "boolean",
+            "description" : "Whether reports with this status should be ignored downstream for most statistical purposes",
+            "example" : false
+          },
           "nomisCode" : {
             "type" : "string",
             "deprecated" : true,
@@ -7445,7 +7450,7 @@
           }
         },
         "readOnly" : true,
-        "required" : [ "code", "description" ]
+        "required" : [ "code", "description", "ignoreDownstream" ]
       },
       "StaffRoleConstantDescription" : {
         "type" : "object",
