@@ -50,6 +50,15 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     .retrieve()
     .awaitBody()
 
+  suspend fun getCourtCases(offenderNo: String, courtCaseIds: List<Long>): List<CourtCaseResponse> = webClient.post()
+    .uri(
+      "/prisoners/{offenderNo}/sentencing/court-cases/get-list",
+      offenderNo,
+    )
+    .bodyValue(courtCaseIds)
+    .retrieve()
+    .awaitBody()
+
   suspend fun getCourtCasesChangedByMerge(offenderNo: String): PostPrisonerMergeCaseChanges = webClient.get()
     .uri(
       "/prisoners/{offenderNo}/sentencing/court-cases/post-merge",

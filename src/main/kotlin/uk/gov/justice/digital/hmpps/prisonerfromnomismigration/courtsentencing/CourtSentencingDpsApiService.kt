@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCases
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCasesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CourtCaseLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyChargeCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtAppearanceCreatedResponse
@@ -40,6 +42,13 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
         .queryParam("deleteExisting", "{deleteExisting}")
         .build(deleteExisting)
     }
+    .bodyValue(courtCase)
+    .retrieve()
+    .awaitBody()
+
+  suspend fun createCourtCaseCloneBooking(courtCase: BookingCreateCourtCases): BookingCreateCourtCasesResponse = webClient
+    .post()
+    .uri("/legacy/court-case/booking")
     .bodyValue(courtCase)
     .retrieve()
     .awaitBody()
