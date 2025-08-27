@@ -1,5 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCharge
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtAppearance
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateFine
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreatePeriodLength
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateSentence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CaseReferenceLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.ChargeLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CourtAppearanceLegacyData
@@ -37,6 +44,29 @@ fun CourtCaseResponse.toMigrationDpsCourtCase() = MigrationCreateCourtCase(
   caseId = this.id,
   appearances = this.courtEvents.map {
     it.toMigrationDpsCourtAppearance(this.sentences)
+  },
+  courtCaseLegacyData = CourtCaseLegacyData(
+    caseReferences = this.caseInfoNumbers.map {
+      CaseReferenceLegacyData(
+        offenderCaseReference = it.reference,
+        updatedDate = LocalDateTime.parse(it.createDateTime.toString()),
+      )
+    },
+    bookingId = this.bookingId,
+  ),
+  active = this.caseStatus.code == "A",
+  merged = if (this.combinedCaseId != null) {
+    true
+  } else if (this.sourceCombinedCaseIds.isNotEmpty()) {
+    false
+  } else {
+    null
+  },
+)
+fun CourtCaseResponse.toBookingCloneDpsCourtCase() = BookingCreateCourtCase(
+  caseId = this.id,
+  appearances = this.courtEvents.map {
+    it.toBookingCloneDpsCourtAppearance(this.sentences)
   },
   courtCaseLegacyData = CourtCaseLegacyData(
     caseReferences = this.caseInfoNumbers.map {
@@ -119,6 +149,35 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance(
     charge.toDpsMigrationCharge(chargeId = charge.offenderCharge.id, dpsSentence = dpsSentence)
   },
 )
+fun CourtEventResponse.toBookingCloneDpsCourtAppearance(
+  sentences: List<SentenceResponse>,
+) = BookingCreateCourtAppearance(
+  courtCode = this.courtId,
+  appearanceDate = this.eventDateTime.toLocalDate(),
+  appearanceTypeUuid = this.courtEventType.toDpsAppearanceTypeId(),
+  eventId = this.id,
+  legacyData =
+  CourtAppearanceLegacyData(
+    postedDate = LocalDate.now().toString(),
+    outcomeDescription = this.outcomeReasonCode?.description,
+    nomisOutcomeCode = this.outcomeReasonCode?.code,
+    outcomeConvictionFlag = this.outcomeReasonCode?.conviction,
+    outcomeDispositionCode = this.outcomeReasonCode?.dispositionCode,
+    nextEventDateTime = this.nextEventDateTime,
+    appearanceTime = this.eventDateTime.toLocalTime().toString(),
+  ),
+
+  /* supporting sentences with multiple charges
+   */
+  charges = this.courtEventCharges.map { charge ->
+    // find sentence where sentence.offenderCharges contains charge
+    val sentencesForAppearance = sentences.filter { sentence -> sentence.courtOrder?.eventId == this.id }
+    val dpsSentence =
+      sentencesForAppearance.find { sentence -> sentence.offenderCharges.any { it.id == charge.offenderCharge.id } }
+        ?.toDpsBookingCloneSentence()
+    charge.toDpsBookingCloneCharge(chargeId = charge.offenderCharge.id, dpsSentence = dpsSentence)
+  },
+)
 
 fun OffenderChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharge(
   offenceCode = this.offence.offenceCode,
@@ -171,6 +230,27 @@ fun CourtEventChargeResponse.toDpsMigrationCharge(
   mergedFromCaseId = linkedCaseDetails?.caseId,
   mergedFromDate = linkedCaseDetails?.dateLinked,
 )
+fun CourtEventChargeResponse.toDpsBookingCloneCharge(
+  chargeId: Long,
+  dpsSentence: BookingCreateSentence?,
+): BookingCreateCharge = BookingCreateCharge(
+  offenceCode = this.offenderCharge.offence.offenceCode,
+  offenceStartDate = this.offenceDate,
+  legacyData =
+  ChargeLegacyData(
+    postedDate = LocalDate.now().toString(),
+    outcomeDescription = this.resultCode1?.description,
+    nomisOutcomeCode = this.resultCode1?.code,
+    outcomeDispositionCode = this.resultCode1?.dispositionCode,
+    outcomeConvictionFlag = this.resultCode1?.conviction,
+    offenceDescription = this.offenderCharge.offence.description,
+  ),
+  offenceEndDate = this.offenceEndDate,
+  chargeNOMISId = chargeId,
+  sentence = dpsSentence,
+  mergedFromCaseId = linkedCaseDetails?.caseId,
+  mergedFromDate = linkedCaseDetails?.dateLinked,
+)
 
 fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsAppearanceUuid: String, dpsConsecUuid: String?) = LegacyCreateSentence(
   chargeUuids = sentenceChargeIds.map { UUID.fromString(it) },
@@ -197,6 +277,20 @@ fun SentenceResponse.toDpsMigrationSentence() = MigrationCreateSentence(
   sentenceId = MigrationSentenceId(offenderBookingId = this.bookingId, sequence = this.sentenceSeq.toInt()),
   returnToCustodyDate = this.recallCustodyDate?.returnToCustodyDate,
 )
+fun SentenceResponse.toDpsBookingCloneSentence() = BookingCreateSentence(
+  active = this.status == "A",
+  legacyData = this.toSentenceLegacyData(),
+  periodLengths = this.sentenceTerms.map { it.toPeriodBookingCloneData(this) },
+  fine = this.fineAmount?.let { BookingCreateFine(fineAmount = it) },
+  consecutiveToSentenceId = this.consecSequence?.let {
+    BookingSentenceId(
+      offenderBookingId = this.bookingId,
+      sequence = it,
+    )
+  },
+  sentenceId = BookingSentenceId(offenderBookingId = this.bookingId, sequence = this.sentenceSeq.toInt()),
+  returnToCustodyDate = this.recallCustodyDate?.returnToCustodyDate,
+)
 
 fun SentenceResponse.toSentenceLegacyData() = SentenceLegacyData(
   sentenceCalcType = this.calculationType.code,
@@ -221,6 +315,22 @@ fun SentenceTermResponse.toPeriodLegacyData(dpsSentenceId: String) = LegacyCreat
 )
 
 fun SentenceTermResponse.toPeriodMigrationData(nomisSentence: SentenceResponse) = MigrationCreatePeriodLength(
+  periodYears = this.years,
+  periodMonths = this.months,
+  periodDays = this.days,
+  periodWeeks = this.weeks,
+  periodLengthId = NomisPeriodLengthId(
+    offenderBookingId = nomisSentence.bookingId,
+    sentenceSequence = nomisSentence.sentenceSeq.toInt(),
+    termSequence = this.termSequence.toInt(),
+  ),
+  legacyData = PeriodLengthLegacyData(
+    lifeSentence = this.lifeSentenceFlag,
+    sentenceTermCode = this.sentenceTermType?.code,
+    sentenceTermDescription = this.sentenceTermType?.description,
+  ),
+)
+fun SentenceTermResponse.toPeriodBookingCloneData(nomisSentence: SentenceResponse) = BookingCreatePeriodLength(
   periodYears = this.years,
   periodMonths = this.months,
   periodDays = this.days,

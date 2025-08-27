@@ -728,8 +728,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         @BeforeEach
         fun setUp() {
           // create in DPS of court case from previous booking
-          courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(offenderNo = OFFENDER_ID_DISPLAY)
-          dpsCourtSentencingServer.stubPostCourtCasesForCreateMigration(response = dpsMigrationCreateResponseWithTwoAppearancesAndTwoCharges())
+          courtSentencingNomisApiMockServer.stubGetCourtCases(offenderNo = OFFENDER_ID_DISPLAY)
+          dpsCourtSentencingServer.stubCreateCourtCaseCloneBooking(response = dpsBookingCloneCreateResponseWithTwoAppearancesAndTwoCharges())
           courtSentencingMappingApiMockServer.stubReplaceOrCreateMappings()
 
           // update to DPS due to booking id change on case changing
@@ -777,10 +777,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will recreate court case on previous booking in DPS`() {
-          // TODO - switch to new DPS endpoint when available
           dpsCourtSentencingServer.verify(
             1,
-            postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")),
+            postRequestedFor(urlPathEqualTo("/legacy/court-case/booking")),
           )
         }
 
@@ -812,8 +811,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @BeforeEach
         fun setUp() {
-          courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(offenderNo = OFFENDER_ID_DISPLAY)
-          dpsCourtSentencingServer.stubPostCourtCasesForCreateMigration(response = dpsMigrationCreateResponseWithTwoAppearancesAndTwoCharges())
+          courtSentencingNomisApiMockServer.stubGetCourtCases(offenderNo = OFFENDER_ID_DISPLAY)
+          dpsCourtSentencingServer.stubCreateCourtCaseCloneBooking(response = dpsBookingCloneCreateResponseWithTwoAppearancesAndTwoCharges())
           courtSentencingMappingApiMockServer.stubReplaceOrCreateMappingsFailureFollowedBySuccess()
 
           courtSentencingOffenderEventsQueue.sendMessage(
