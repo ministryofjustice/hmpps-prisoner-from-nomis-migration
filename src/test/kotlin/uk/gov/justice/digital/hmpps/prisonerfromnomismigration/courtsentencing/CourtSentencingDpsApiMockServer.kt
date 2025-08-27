@@ -15,6 +15,8 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCasesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyChargeCreatedResponse
@@ -98,6 +100,32 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     stubFor(
       post(WireMock.urlPathEqualTo("/legacy/court-case/migration"))
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubCreateCourtCaseCloneBooking(
+    courtCaseId: String = UUID.randomUUID().toString(),
+    response: BookingCreateCourtCasesResponse = BookingCreateCourtCasesResponse(
+      courtCases = listOf(
+        BookingCreateCourtCaseResponse(
+          courtCaseUuid = courtCaseId,
+          caseId = NOMIS_CASE_ID,
+        ),
+      ),
+      charges = emptyList(),
+      appearances = emptyList(),
+      sentences = emptyList(),
+      sentenceTerms = emptyList(),
+    ),
+  ) {
+    stubFor(
+      post(WireMock.urlPathEqualTo("/legacy/court-case/booking"))
         .willReturn(
           aResponse()
             .withStatus(201)

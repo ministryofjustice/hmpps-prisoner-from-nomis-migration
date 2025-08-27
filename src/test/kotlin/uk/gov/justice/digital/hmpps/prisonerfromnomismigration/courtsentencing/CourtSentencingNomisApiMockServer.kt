@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -128,6 +129,22 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     nomisApi.stubFor(
       get(
         urlPathEqualTo("/prisoners/$offenderNo/sentencing/court-cases"),
+      )
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubGetCourtCases(
+    offenderNo: String = "AN1",
+    response: List<CourtCaseResponse> = listOf(courtCaseResponse()),
+  ) {
+    nomisApi.stubFor(
+      post(
+        urlPathEqualTo("/prisoners/$offenderNo/sentencing/court-cases/get-list"),
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
