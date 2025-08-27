@@ -31,6 +31,13 @@ import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtAppearanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCasesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreatePeriodLengthResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateSentenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
@@ -164,7 +171,7 @@ class CourtSentencingMigrationIntTest(
           .withRequestBody(
             WireMock.matchingJsonPath(
               "courtCharges.size()",
-              WireMock.equalTo("2"),
+              equalTo("2"),
             ),
           ),
       )
@@ -669,6 +676,66 @@ fun dpsMigrationCreateResponseWithTwoAppearancesAndTwoCharges(): MigrationCreate
     ),
   )
   return MigrationCreateCourtCasesResponse(
+    courtCases = courtCaseIds,
+    appearances = courtAppearancesIds,
+    charges = courtChargesIds,
+    sentences = sentenceIds,
+    sentenceTerms = sentenceTermIds,
+  )
+}
+fun dpsBookingCloneCreateResponseWithTwoAppearancesAndTwoCharges(): BookingCreateCourtCasesResponse {
+  val courtCaseIds: List<BookingCreateCourtCaseResponse> = listOf(
+    BookingCreateCourtCaseResponse(courtCaseUuid = DPS_COURT_CASE_ID, caseId = NOMIS_CASE_ID),
+  )
+  val courtChargesIds: List<BookingCreateChargeResponse> =
+    listOf(
+      BookingCreateChargeResponse(
+        chargeUuid = UUID.fromString(DPS_CHARGE_2_ID),
+        chargeNOMISId = NOMIS_CHARGE_2_ID,
+      ),
+      BookingCreateChargeResponse(
+        chargeUuid = UUID.fromString(DPS_CHARGE_1_ID),
+        chargeNOMISId = NOMIS_CHARGE_1_ID,
+      ),
+    )
+  val courtAppearancesIds: List<BookingCreateCourtAppearanceResponse> = listOf(
+    BookingCreateCourtAppearanceResponse(
+      appearanceUuid = UUID.fromString(DPS_APPEARANCE_2_ID),
+      eventId = NOMIS_APPEARANCE_2_ID,
+    ),
+    BookingCreateCourtAppearanceResponse(
+      appearanceUuid = UUID.fromString(DPS_APPEARANCE_1_ID),
+      eventId = NOMIS_APPEARANCE_1_ID,
+    ),
+  )
+  val sentenceIds: List<BookingCreateSentenceResponse> = listOf(
+    BookingCreateSentenceResponse(
+      sentenceUuid = UUID.fromString(DPS_SENTENCE_ID),
+      sentenceNOMISId = BookingSentenceId(
+        offenderBookingId = NOMIS_BOOKING_ID,
+        sequence = NOMIS_SENTENCE_SEQUENCE_ID.toInt(),
+      ),
+    ),
+  )
+  val sentenceTermIds: List<BookingCreatePeriodLengthResponse> = listOf(
+    BookingCreatePeriodLengthResponse(
+      periodLengthUuid = UUID.fromString(DPS_TERM_ID),
+      sentenceTermNOMISId = NomisPeriodLengthId(
+        offenderBookingId = NOMIS_BOOKING_ID,
+        sentenceSequence = NOMIS_SENTENCE_SEQUENCE_ID.toInt(),
+        termSequence = NOMIS_TERM_SEQUENCE_ID.toInt(),
+      ),
+    ),
+    BookingCreatePeriodLengthResponse(
+      periodLengthUuid = UUID.fromString(DPS_TERM_ID),
+      sentenceTermNOMISId = NomisPeriodLengthId(
+        offenderBookingId = NOMIS_BOOKING_ID,
+        sentenceSequence = NOMIS_SENTENCE_SEQUENCE_ID.toInt(),
+        termSequence = NOMIS_TERM_SEQUENCE_2_ID.toInt(),
+      ),
+    ),
+  )
+  return BookingCreateCourtCasesResponse(
     courtCases = courtCaseIds,
     appearances = courtAppearancesIds,
     charges = courtChargesIds,
