@@ -9,6 +9,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsenceReturnResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceApplicationOutsideMovementResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceApplicationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceReturnResponse
 
 @Service
 class ExternalMovementsNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
@@ -51,4 +53,20 @@ class ExternalMovementsNomisApiService(@Qualifier("nomisApiWebClient") private v
     }
     .retrieve()
     .awaitBody<ScheduledTemporaryAbsenceReturnResponse>()
+
+  suspend fun getTemporaryAbsenceMovement(offenderNo: String, bookingId: Long, movementSeq: Int) = webClient.get()
+    .uri {
+      it.path("/movements/{offenderNo}/temporary-absences/temporary-absence/{bookingId}/{movementSeq}")
+        .build(offenderNo, bookingId, movementSeq)
+    }
+    .retrieve()
+    .awaitBody<TemporaryAbsenceResponse>()
+
+  suspend fun getTemporaryAbsenceReturnMovement(offenderNo: String, bookingId: Long, movementSeq: Int) = webClient.get()
+    .uri {
+      it.path("/movements/{offenderNo}/temporary-absences/temporary-absence-return/{bookingId}/{movementSeq}")
+        .build(offenderNo, bookingId, movementSeq)
+    }
+    .retrieve()
+    .awaitBody<TemporaryAbsenceReturnResponse>()
 }

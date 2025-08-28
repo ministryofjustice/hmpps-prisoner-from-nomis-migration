@@ -23,7 +23,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceApplicationOutsideMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceApplicationOutsideMovementResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceApplicationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceReturn
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceReturnResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDateTime
 
@@ -412,6 +414,113 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
       createDatetime = now,
       createUsername = "USER",
     ),
+  )
+
+  fun stubGetTemporaryAbsenceMovement(
+    offenderNo: String = "A1234BC",
+    bookingId: Long = 12345L,
+    movementSeq: Int = 1,
+    movementApplicationId: Long? = 111,
+    scheduledTemporaryAbsenceId: Long? = 1,
+    response: TemporaryAbsenceResponse = temporaryAbsenceResponse(movementApplicationId, scheduledTemporaryAbsenceId),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/movements/$offenderNo/temporary-absences/temporary-absence/$bookingId/$movementSeq")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubGetTemporaryAbsenceMovement(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    nomisApi.stubFor(
+      get(urlPathMatching("/movements/.*/temporary-absences/temporary-absence/.*/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun temporaryAbsenceResponse(
+    movementApplicationId: Long? = 111,
+    scheduledTemporaryAbsenceId: Long? = 1,
+  ) = TemporaryAbsenceResponse(
+    bookingId = 12345,
+    sequence = 1,
+    movementDate = now.toLocalDate(),
+    movementTime = now,
+    movementReason = "C6",
+    audit = NomisAudit(
+      createDatetime = now,
+      createUsername = "USER",
+    ),
+    movementApplicationId = movementApplicationId,
+    scheduledTemporaryAbsenceId = scheduledTemporaryAbsenceId,
+    arrestAgency = "POL",
+    escort = "U",
+    escortText = "Absence escort text",
+    fromPrison = "LEI",
+    toAgency = "COURT1",
+    commentText = "Absence comment text",
+    toAddressId = 321L,
+    toAddressOwnerClass = "OFF",
+  )
+
+  fun stubGetTemporaryAbsenceReturnMovement(
+    offenderNo: String = "A1234BC",
+    bookingId: Long = 12345L,
+    movementSeq: Int = 1,
+    movementApplicationId: Long? = 111,
+    scheduledTemporaryAbsenceReturnId: Long? = 2,
+    response: TemporaryAbsenceReturnResponse = temporaryAbsenceReturnResponse(movementApplicationId, scheduledTemporaryAbsenceReturnId),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/movements/$offenderNo/temporary-absences/temporary-absence-return/$bookingId/$movementSeq")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubGetTemporaryAbsenceReturnMovement(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    nomisApi.stubFor(
+      get(urlPathMatching("/movements/.*/temporary-absences/temporary-absence-return/.*/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun temporaryAbsenceReturnResponse(
+    movementApplicationId: Long? = 111,
+    scheduledTemporaryAbsenceReturnId: Long? = 2,
+  ) = TemporaryAbsenceReturnResponse(
+    bookingId = 12345,
+    sequence = 1,
+    movementDate = now.toLocalDate(),
+    movementTime = now,
+    movementReason = "C5",
+    audit = NomisAudit(
+      createDatetime = now,
+      createUsername = "USER",
+    ),
+    movementApplicationId = movementApplicationId,
+    scheduledTemporaryAbsenceReturnId = scheduledTemporaryAbsenceReturnId,
+    escort = "PECS",
+    escortText = "Return escort text",
+    fromAgency = "COURT1",
+    toPrison = "LEI",
+    commentText = "Return comment text",
+    fromAddressId = 321L,
+    fromAddressOwnerClass = "OFF",
   )
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
