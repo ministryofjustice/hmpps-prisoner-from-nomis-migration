@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 
 @Service
@@ -58,6 +59,30 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
 
   suspend fun deleteApplicationMapping(nomisApplicationId: Long) = webClient.delete()
     .uri("$domainUrl/application/nomis-application-id/{nomisApplicationId}", nomisApplicationId)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound<Unit>()
+
+  suspend fun createOutsideMovementMapping(
+    mapping: TemporaryAbsenceOutsideMovementSyncMappingDto,
+    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsenceOutsideMovementSyncMappingDto>>,
+  ): CreateMappingResult<TemporaryAbsenceOutsideMovementSyncMappingDto> = webClient.post()
+    .uri("$domainUrl/outside-movement")
+    .bodyValue(mapping)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<TemporaryAbsenceOutsideMovementSyncMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun getOutsideMovementMapping(nomisApplicationMultiId: Long): TemporaryAbsenceOutsideMovementSyncMappingDto? = webClient.get()
+    .uri("$domainUrl/outside-movement/nomis-application-multi-id/{nomisApplicationMultiId}", nomisApplicationMultiId)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun deleteOutsideMovementMapping(nomisApplicationMultiId: Long) = webClient.delete()
+    .uri("$domainUrl/outside-movement/nomis-application-multi-id/{nomisApplicationMultiId}", nomisApplicationMultiId)
     .retrieve()
     .awaitBodyOrNullWhenNotFound<Unit>()
 }

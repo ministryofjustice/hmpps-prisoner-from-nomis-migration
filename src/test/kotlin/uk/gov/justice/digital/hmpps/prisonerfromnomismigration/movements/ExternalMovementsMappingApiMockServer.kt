@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceBookingMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesOutsideMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -79,7 +80,7 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(200),
+            .withStatus(201),
         ),
     )
   }
@@ -132,7 +133,7 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
       delete(urlPathMatching("/mapping/temporary-absence/application/nomis-application-id/$nomisApplicationId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(200),
+          .withStatus(204),
       ),
     )
   }
@@ -140,6 +141,81 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
   fun stubDeleteTemporaryAbsenceApplicationMapping(nomisApplicationId: Long = 1L, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
       delete(urlPathMatching("/mapping/temporary-absence/application/nomis-application-id/$nomisApplicationId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubCreateOutsideMovementMapping() {
+    mappingApi.stubFor(
+      post("/mapping/temporary-absence/outside-movement")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(201),
+        ),
+    )
+  }
+
+  fun stubCreateOutsideMovementMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      post("/mapping/temporary-absence/outside-movement").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubCreateOutsideMovementMappingConflict(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/temporary-absence/outside-movement").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubGetOutsideMovementMapping(nomisApplicationMultiId: Long = 1L) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/temporary-absence/outside-movement/nomis-application-multi-id/$nomisApplicationMultiId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(objectMapper.writeValueAsString(temporaryAbsenceOutsideMovementMapping(nomisApplicationMultiId))),
+      ),
+    )
+  }
+
+  fun stubGetOutsideMovementMapping(nomisApplicationMultiId: Long = 1L, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/temporary-absence/outside-movement/nomis-application-multi-id/$nomisApplicationMultiId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubDeleteOutsideMovementMapping(nomisApplicationMultiId: Long = 1L) {
+    mappingApi.stubFor(
+      delete(urlPathMatching("/mapping/temporary-absence/outside-movement/nomis-application-multi-id/$nomisApplicationMultiId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(204),
+      ),
+    )
+  }
+
+  fun stubDeleteOutsideMovementMapping(nomisApplicationMultiId: Long = 1L, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      delete(urlPathMatching("/mapping/temporary-absence/outside-movement/nomis-application-multi-id/$nomisApplicationMultiId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -211,4 +287,12 @@ fun temporaryAbsenceApplicationMapping(nomisApplicationId: Long = 1L, prisonerNu
   nomisMovementApplicationId = nomisApplicationId,
   dpsMovementApplicationId = UUID.randomUUID(),
   mappingType = TemporaryAbsenceApplicationSyncMappingDto.MappingType.MIGRATED,
+)
+
+fun temporaryAbsenceOutsideMovementMapping(nomisApplicationMultiId: Long = 1L, prisonerNumber: String = "A1234BC") = TemporaryAbsenceOutsideMovementSyncMappingDto(
+  prisonerNumber = prisonerNumber,
+  bookingId = 12345,
+  nomisMovementApplicationMultiId = nomisApplicationMultiId,
+  dpsOutsideMovementId = UUID.randomUUID(),
+  mappingType = TemporaryAbsenceOutsideMovementSyncMappingDto.MappingType.MIGRATED,
 )
