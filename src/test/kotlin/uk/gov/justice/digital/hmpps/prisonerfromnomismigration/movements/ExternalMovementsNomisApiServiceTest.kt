@@ -133,7 +133,6 @@ class ExternalMovementsNomisApiServiceTest {
     fun `will throw error when offender does not exist`() = runTest {
       externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceApplication(status = NOT_FOUND)
 
-
       assertThrows<WebClientResponseException.NotFound> {
         apiService.getTemporaryAbsenceApplication(offenderNo = "A1234BC", applicationId = 111)
       }

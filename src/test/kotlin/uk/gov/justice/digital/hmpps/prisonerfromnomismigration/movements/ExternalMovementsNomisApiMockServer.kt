@@ -213,7 +213,6 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     ),
   )
 
-
   fun stubGetTemporaryAbsenceApplication(
     offenderNo: String = "A1234BC",
     applicationId: Long = 12345L,
@@ -231,7 +230,7 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
 
   fun stubGetTemporaryAbsenceApplication(
     status: HttpStatus,
-    error: ErrorResponse = ErrorResponse(status = status.value())
+    error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     nomisApi.stubFor(
       get(urlPathMatching("/prisoners/.*/temporary-absences/application/.*")).willReturn(
@@ -317,7 +316,6 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
       createUsername = "USER",
     ),
   )
-
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
