@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-08-26.478.7cad6ca"
+    "version" : "2025-08-27.483.b49951c"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -12795,6 +12795,97 @@
                 "schema" : {
                   "type" : "integer",
                   "format" : "int64"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires NOMIS_TRANSACTIONS",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Transaction does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/transactions/from/{transactionId}/{transactionEntrySequence}" : {
+      "get" : {
+        "tags" : [ "transactions-resource" ],
+        "summary" : "get a page of orphan GL transactions starting from an id,seq,glseq onwards",
+        "description" : "Retrieves transactions to be iterated over. Requires NOMIS_TRANSACTIONS",
+        "operationId" : "findOffenderTransactionsFromId",
+        "parameters" : [ {
+          "name" : "transactionId",
+          "in" : "path",
+          "description" : "Id of last transaction before intended start",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Id of last transaction before intended start",
+            "example" : 123456789
+          },
+          "example" : 123456789
+        }, {
+          "name" : "transactionEntrySequence",
+          "in" : "path",
+          "description" : "Sequence of last transaction before intended start",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Sequence of last transaction before intended start",
+            "example" : 3
+          },
+          "example" : 3
+        }, {
+          "name" : "pageSize",
+          "in" : "query",
+          "description" : "Number of Offender transaction records to get. The first record returned will be the first one *after*\n        the given id/seq combination.",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 100,
+            "description" : "Number of Offender transaction records to get. The first record returned will be the first one *after*\n        the given id/seq combination.",
+            "example" : 500
+          },
+          "example" : 500
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Transaction Information Returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/OffenderTransactionDto"
+                  }
                 }
               }
             }
