@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 
 @Service
@@ -35,4 +36,28 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
     .awaitFirstOrDefault(CreateMappingResult())
 
   override fun createMappingUrl() = "$domainUrl/migrate"
+
+  suspend fun createApplicationMapping(
+    mapping: TemporaryAbsenceApplicationSyncMappingDto,
+    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsenceApplicationSyncMappingDto>>,
+  ): CreateMappingResult<TemporaryAbsenceApplicationSyncMappingDto> = webClient.post()
+    .uri("$domainUrl/application")
+    .bodyValue(mapping)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<TemporaryAbsenceApplicationSyncMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun getApplicationMapping(nomisApplicationId: Long): TemporaryAbsenceApplicationSyncMappingDto? = webClient.get()
+    .uri("$domainUrl/application/nomis-application-id/{nomisApplicationId}", nomisApplicationId)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun deleteApplicationMapping(nomisApplicationId: Long) = webClient.delete()
+    .uri("$domainUrl/application/nomis-application-id/{nomisApplicationId}", nomisApplicationId)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound<Unit>()
 }
