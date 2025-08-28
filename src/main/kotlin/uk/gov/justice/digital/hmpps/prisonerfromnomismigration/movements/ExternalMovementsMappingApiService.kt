@@ -11,6 +11,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
@@ -83,6 +85,54 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
 
   suspend fun deleteOutsideMovementMapping(nomisApplicationMultiId: Long) = webClient.delete()
     .uri("$domainUrl/outside-movement/nomis-application-multi-id/{nomisApplicationMultiId}", nomisApplicationMultiId)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound<Unit>()
+
+  suspend fun createScheduledMovementMapping(
+    mapping: ScheduledMovementSyncMappingDto,
+    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<ScheduledMovementSyncMappingDto>>,
+  ): CreateMappingResult<ScheduledMovementSyncMappingDto> = webClient.post()
+    .uri("$domainUrl/scheduled-movement")
+    .bodyValue(mapping)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<ScheduledMovementSyncMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun getScheduledMovementMapping(nomisEventId: Long): ScheduledMovementSyncMappingDto? = webClient.get()
+    .uri("$domainUrl/scheduled-movement/nomis-event-id/{nomisEventId}", nomisEventId)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun deleteScheduledMovementMapping(nomisEventId: Long) = webClient.delete()
+    .uri("$domainUrl/scheduled-movement/nomis-event-id/{nomisEventId}", nomisEventId)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound<Unit>()
+
+  suspend fun createExternalMovementMapping(
+    mapping: ExternalMovementSyncMappingDto,
+    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<ExternalMovementSyncMappingDto>>,
+  ): CreateMappingResult<ExternalMovementSyncMappingDto> = webClient.post()
+    .uri("$domainUrl/external-movement")
+    .bodyValue(mapping)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<ExternalMovementSyncMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun getExternalMovementMapping(bookingId: Long, movementSeq: Int): ExternalMovementSyncMappingDto? = webClient.get()
+    .uri("$domainUrl/external-movement/nomis-movement-id/{bookingId}/{movementSeq}", bookingId, movementSeq)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun deleteExternalMovementMapping(bookingId: Long, movementSeq: Int) = webClient.delete()
+    .uri("$domainUrl/external-movement/nomis-movement-id/{bookingId}/{movementSeq}", bookingId, movementSeq)
     .retrieve()
     .awaitBodyOrNullWhenNotFound<Unit>()
 }
