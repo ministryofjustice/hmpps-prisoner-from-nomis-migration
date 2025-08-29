@@ -141,6 +141,7 @@ hmpps.sqs:
       errorVisibilityTimeout: 0
     eventpersonalrelationships:
       dlqMaxReceiveCount: 1
+      errorVisibilityTimeout: 0
     eventvisitbalance:
       dlqMaxReceiveCount: 1
     eventexternalmovements:
