@@ -41,6 +41,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.APPOINTME
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CASENOTES_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.COURT_SENTENCING_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.COURT_SENTENCING_SYNC_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.EXTERNALMOVEMENTS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.FINANCE_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCIDENTS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCIDENTS_SYNC_QUEUE_ID
@@ -183,6 +184,10 @@ class SqsIntegrationTestBase : TestBase() {
   internal val awsSqsVisitBalanceOffenderEventDlqClient by lazy { visitBalanceOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
   internal val visitBalanceOffenderEventsDlqUrl by lazy { visitBalanceOffenderEventsQueue.dlqUrl as String }
 
+  internal val externalMovementsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(EXTERNALMOVEMENTS_SYNC_QUEUE_ID) as HmppsQueue }
+  internal val awsSqsExternalMovementsOffenderEventsClient by lazy { externalMovementsOffenderEventsQueue.sqsClient }
+  internal val externalMovementsQueueOffenderEventsUrl by lazy { externalMovementsOffenderEventsQueue.queueUrl }
+
   private val allQueues by lazy {
     listOf(
       incidentsOffenderEventsQueue,
@@ -203,6 +208,7 @@ class SqsIntegrationTestBase : TestBase() {
       personContactsDomainEventsQueue,
       organisationsOffenderEventsQueue,
       visitBalanceOffenderEventsQueue,
+      externalMovementsOffenderEventsQueue,
     )
   }
 

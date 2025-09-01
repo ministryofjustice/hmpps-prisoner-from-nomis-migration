@@ -6,6 +6,7 @@ import io.awspring.cloud.sqs.annotation.SqsListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
@@ -15,6 +16,7 @@ import java.util.concurrent.CompletableFuture
 class ExternalMovementsEventListener(
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
+  private val syncService: ExternalMovementsSyncService,
 ) {
 
   private companion object {
@@ -32,6 +34,7 @@ class ExternalMovementsEventListener(
           if (eventFeatureSwitch.isEnabled(eventType, "externalmovements")) {
             @Suppress("UNUSED_EXPRESSION")
             when (eventType) {
+              "MOVEMENT_APPLICATION-INSERTED" -> syncService.movementApplicationInserted(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -41,4 +44,13 @@ class ExternalMovementsEventListener(
       }
     }
   }
+
+  private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this)
 }
+
+data class MovementApplicationEvent(
+  val movementApplicationId: Long,
+  val bookingId: Long,
+  val offenderIdDisplay: String,
+  override val auditModuleName: String,
+) : EventAudited
