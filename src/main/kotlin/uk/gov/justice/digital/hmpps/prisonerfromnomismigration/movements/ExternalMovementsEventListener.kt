@@ -37,6 +37,7 @@ class ExternalMovementsEventListener(
             when (eventType) {
               "MOVEMENT_APPLICATION-INSERTED" -> syncService.movementApplicationInserted(sqsMessage.Message.fromJson())
               "MOVEMENT_APPLICATION-UPDATED" -> syncService.movementApplicationUpdated(sqsMessage.Message.fromJson())
+              "MOVEMENT_APPLICATION-DELETED" -> syncService.movementApplicationDeleted(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
