@@ -167,6 +167,52 @@ class ExternalMovementsSyncIntTest(
     }
 
     @Nested
+    @Disabled("Waiting for DPS API to become available")
+    inner class WhenCreateFailsInDps {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
+        mappingApi.stubCreateTemporaryAbsenceApplicationMapping()
+        nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
+        // TODO stub DPS API to reject create
+
+        sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-INSERTED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should create DPS application`() {
+        // TODO verify DPS endpoint called
+      }
+
+      @Test
+      fun `should NOT create mapping`() {
+        mappingApi.verify(
+          count = 0,
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application"))
+            .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
+            .withRequestBodyJsonPath("bookingId", 12345)
+            .withRequestBodyJsonPath("nomisMovementApplicationId", 111)
+            // TODO verify DPS id
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
+
+      @Test
+      fun `should create error telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-application-inserted-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
     inner class WhenDuplicateMapping {
       @BeforeEach
       fun setUp() {
@@ -295,14 +341,134 @@ class ExternalMovementsSyncIntTest(
         )
       }
     }
+  }
 
-    private fun sendMessage(event: String) = awsSqsExternalMovementsOffenderEventsClient.sendMessage(
-      externalMovementsQueueOffenderEventsUrl,
-      event,
-    )
+  @Nested
+  @DisplayName("MOVEMENT_APPLICATION-UPDATED")
+  inner class TemporaryAbsenceApplicationUpdated {
 
-    private fun externalMovementApplicationEvent(eventType: String, auditModuleName: String = "OIUSCINQ") = // language=JSON
-      """{
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
+        // TODO stub DPS API
+
+        sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-UPDATED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should get mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")))
+      }
+
+      @Test
+      fun `should get NOMIS application`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234BC/temporary-absences/application/111")))
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should update DPS application`() {
+        // TODO verify DPS endpoint called
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-application-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-UPDATED", "DPS_SYNCHRONISATION"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should NOT create DPS application`() {
+        // TODO verify DPS endpoint not called
+      }
+
+      @Test
+      fun `should NOT get mapping`() {
+        mappingApi.verify(
+          count = 0,
+          getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")),
+        )
+      }
+
+      @Test
+      fun `should create telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-application-updated-skipped"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @Disabled("Waiting for DPS API to become available")
+    inner class WhenDpsUpdateFails {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
+        // TODO stub DPS API to reject update
+
+        sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-UPDATED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should try to update DPS application`() {
+        // TODO verify DPS endpoint called
+      }
+
+      @Test
+      fun `should create error telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-application-updated-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  private fun sendMessage(event: String) = awsSqsExternalMovementsOffenderEventsClient.sendMessage(
+    externalMovementsQueueOffenderEventsUrl,
+    event,
+  )
+
+  private fun externalMovementApplicationEvent(eventType: String, auditModuleName: String = "OIUSCINQ") = // language=JSON
+    """{
          "Type" : "Notification",
          "MessageId" : "57126174-e2d7-518f-914e-0056a63363b0",
          "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
@@ -318,6 +484,5 @@ class ExternalMovementsSyncIntTest(
            "eventType" : {"Type":"String","Value":"$eventType"}
          }
        }
-      """.trimMargin()
-  }
+    """.trimMargin()
 }

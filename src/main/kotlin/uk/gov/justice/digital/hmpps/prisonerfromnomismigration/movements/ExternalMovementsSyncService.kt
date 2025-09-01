@@ -55,6 +55,27 @@ class ExternalMovementsSyncService(
       }
   }
 
+  suspend fun movementApplicationUpdated(event: MovementApplicationEvent) {
+    val (nomisApplicationId, bookingId, prisonerNumber) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber,
+      "bookingId" to bookingId,
+      "nomisApplicationId" to nomisApplicationId,
+    )
+
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-application-updated-skipped", telemetry)
+      return
+    }
+
+    track("$TELEMETRY_PREFIX-application-updated", telemetry) {
+      val dpsApplicationId = mappingApiService.getApplicationMapping(nomisApplicationId)!!.dpsMovementApplicationId
+        .also { telemetry["dpsApplicationId"] = it }
+      val nomisApplication = nomisApiService.getTemporaryAbsenceApplication(prisonerNumber, nomisApplicationId)
+      // TODO update DPS
+    }
+  }
+
   private suspend fun tryToCreateMapping(maoping: TemporaryAbsenceApplicationSyncMappingDto, telemetry: MutableMap<String, Any>) {
     try {
       mappingApiService.createApplicationMapping(maoping).takeIf { it.isError }?.also {
