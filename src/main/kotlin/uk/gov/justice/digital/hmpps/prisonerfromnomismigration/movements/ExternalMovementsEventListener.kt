@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import java.util.concurrent.CompletableFuture
 
@@ -41,6 +42,7 @@ class ExternalMovementsEventListener(
             log.info("Feature switch is disabled for event {}", eventType)
           }
         }
+        RETRY_SYNCHRONISATION_MAPPING.name -> syncService.retryCreateMapping(sqsMessage.Message.fromJson())
       }
     }
   }

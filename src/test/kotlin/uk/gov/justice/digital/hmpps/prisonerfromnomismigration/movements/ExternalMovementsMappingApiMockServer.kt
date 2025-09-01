@@ -109,6 +109,8 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
     )
   }
 
+  fun stubCreateTemporaryAbsenceApplicationMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/temporary-absence/application")
+
   fun stubGetTemporaryAbsenceApplicationMapping(nomisApplicationId: Long = 1L) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/temporary-absence/application/nomis-application-id/$nomisApplicationId")).willReturn(
