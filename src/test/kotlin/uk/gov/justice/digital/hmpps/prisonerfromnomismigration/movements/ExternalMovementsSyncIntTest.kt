@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
 
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -450,6 +451,126 @@ class ExternalMovementsSyncIntTest(
       fun `should create error telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("temporary-absence-sync-application-updated-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("MOVEMENT_APPLICATION-DELETED")
+  inner class TemporaryAbsenceApplicationDeleted {
+
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
+        mappingApi.stubDeleteTemporaryAbsenceApplicationMapping(nomisApplicationId = 111)
+        // TODO stub DPS API
+
+        sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-DELETED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should get mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")))
+      }
+
+      @Test
+      fun `should delete mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")))
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should delete DPS application`() {
+        // TODO verify DPS endpoint called
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-application-deleted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenMappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
+
+        sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-DELETED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should NOT delete DPS application`() {
+        // TODO verify DPS endpoint not called
+      }
+
+      @Test
+      fun `should get mapping`() {
+        mappingApi.verify(
+          getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")),
+        )
+      }
+
+      @Test
+      fun `should create telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-application-deleted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @Disabled("Waiting for DPS API to become available")
+    inner class WhenDpsDeleteFails {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        // TODO stub DPS API to reject delete
+
+        sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-DELETED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should try to delete DPS application`() {
+        // TODO verify DPS endpoint called
+      }
+
+      @Test
+      fun `should create error telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-application-deleted-error"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
