@@ -40,19 +40,7 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
 
   override fun createMappingUrl() = "$domainUrl/migrate"
 
-  suspend fun createApplicationMapping(
-    mapping: TemporaryAbsenceApplicationSyncMappingDto,
-    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsenceApplicationSyncMappingDto>>,
-  ): CreateMappingResult<TemporaryAbsenceApplicationSyncMappingDto> = webClient.post()
-    .uri("$domainUrl/application")
-    .bodyValue(mapping)
-    .retrieve()
-    .bodyToMono(Unit::class.java)
-    .map { CreateMappingResult<TemporaryAbsenceApplicationSyncMappingDto>() }
-    .onErrorResume(WebClientResponseException.Conflict::class.java) {
-      Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
-    }
-    .awaitFirstOrDefault(CreateMappingResult())
+  suspend fun createApplicationMapping(mapping: TemporaryAbsenceApplicationSyncMappingDto) = webClient.createMapping("$domainUrl/application", mapping)
 
   suspend fun getApplicationMapping(nomisApplicationId: Long): TemporaryAbsenceApplicationSyncMappingDto? = webClient.get()
     .uri("$domainUrl/application/nomis-application-id/{nomisApplicationId}", nomisApplicationId)
@@ -64,19 +52,7 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
     .retrieve()
     .awaitBodyOrNullWhenNotFound<Unit>()
 
-  suspend fun createOutsideMovementMapping(
-    mapping: TemporaryAbsenceOutsideMovementSyncMappingDto,
-    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsenceOutsideMovementSyncMappingDto>>,
-  ): CreateMappingResult<TemporaryAbsenceOutsideMovementSyncMappingDto> = webClient.post()
-    .uri("$domainUrl/outside-movement")
-    .bodyValue(mapping)
-    .retrieve()
-    .bodyToMono(Unit::class.java)
-    .map { CreateMappingResult<TemporaryAbsenceOutsideMovementSyncMappingDto>() }
-    .onErrorResume(WebClientResponseException.Conflict::class.java) {
-      Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
-    }
-    .awaitFirstOrDefault(CreateMappingResult())
+  suspend fun createOutsideMovementMapping(mapping: TemporaryAbsenceOutsideMovementSyncMappingDto) = webClient.createMapping("$domainUrl/outside-movement", mapping)
 
   suspend fun getOutsideMovementMapping(nomisApplicationMultiId: Long): TemporaryAbsenceOutsideMovementSyncMappingDto? = webClient.get()
     .uri("$domainUrl/outside-movement/nomis-application-multi-id/{nomisApplicationMultiId}", nomisApplicationMultiId)
@@ -88,19 +64,7 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
     .retrieve()
     .awaitBodyOrNullWhenNotFound<Unit>()
 
-  suspend fun createScheduledMovementMapping(
-    mapping: ScheduledMovementSyncMappingDto,
-    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<ScheduledMovementSyncMappingDto>>,
-  ): CreateMappingResult<ScheduledMovementSyncMappingDto> = webClient.post()
-    .uri("$domainUrl/scheduled-movement")
-    .bodyValue(mapping)
-    .retrieve()
-    .bodyToMono(Unit::class.java)
-    .map { CreateMappingResult<ScheduledMovementSyncMappingDto>() }
-    .onErrorResume(WebClientResponseException.Conflict::class.java) {
-      Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
-    }
-    .awaitFirstOrDefault(CreateMappingResult())
+  suspend fun createScheduledMovementMapping(mapping: ScheduledMovementSyncMappingDto) = webClient.createMapping("$domainUrl/scheduled-movement", mapping)
 
   suspend fun getScheduledMovementMapping(nomisEventId: Long): ScheduledMovementSyncMappingDto? = webClient.get()
     .uri("$domainUrl/scheduled-movement/nomis-event-id/{nomisEventId}", nomisEventId)
@@ -112,19 +76,7 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
     .retrieve()
     .awaitBodyOrNullWhenNotFound<Unit>()
 
-  suspend fun createExternalMovementMapping(
-    mapping: ExternalMovementSyncMappingDto,
-    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<ExternalMovementSyncMappingDto>>,
-  ): CreateMappingResult<ExternalMovementSyncMappingDto> = webClient.post()
-    .uri("$domainUrl/external-movement")
-    .bodyValue(mapping)
-    .retrieve()
-    .bodyToMono(Unit::class.java)
-    .map { CreateMappingResult<ExternalMovementSyncMappingDto>() }
-    .onErrorResume(WebClientResponseException.Conflict::class.java) {
-      Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
-    }
-    .awaitFirstOrDefault(CreateMappingResult())
+  suspend fun createExternalMovementMapping(mapping: ExternalMovementSyncMappingDto) = webClient.createMapping("$domainUrl/external-movement", mapping)
 
   suspend fun getExternalMovementMapping(bookingId: Long, movementSeq: Int): ExternalMovementSyncMappingDto? = webClient.get()
     .uri("$domainUrl/external-movement/nomis-movement-id/{bookingId}/{movementSeq}", bookingId, movementSeq)
@@ -135,4 +87,15 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
     .uri("$domainUrl/external-movement/nomis-movement-id/{bookingId}/{movementSeq}", bookingId, movementSeq)
     .retrieve()
     .awaitBodyOrNullWhenNotFound<Unit>()
+
+  private suspend inline fun <reified T : Any> WebClient.createMapping(url: String, mapping: T): CreateMappingResult<T> = post()
+    .uri(url)
+    .bodyValue(mapping)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<T>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<T>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
 }

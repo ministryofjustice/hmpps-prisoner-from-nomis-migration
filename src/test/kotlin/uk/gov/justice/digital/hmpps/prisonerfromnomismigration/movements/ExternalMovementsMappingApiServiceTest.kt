@@ -127,7 +127,6 @@ class ExternalMovementsMappingApiServiceTest {
 
       apiService.createApplicationMapping(
         temporaryAbsenceApplicationMapping(),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsenceApplicationSyncMappingDto>>() {},
       )
 
       mappingApi.verify(
@@ -141,7 +140,6 @@ class ExternalMovementsMappingApiServiceTest {
 
       apiService.createApplicationMapping(
         temporaryAbsenceApplicationMapping(),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsenceApplicationSyncMappingDto>>() {},
       )
 
       mappingApi.verify(
@@ -183,7 +181,6 @@ class ExternalMovementsMappingApiServiceTest {
 
       apiService.createApplicationMapping(
         temporaryAbsenceApplicationMapping(),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsenceApplicationSyncMappingDto>>() {},
       )
         .apply {
           assertThat(isError).isTrue
@@ -199,7 +196,6 @@ class ExternalMovementsMappingApiServiceTest {
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.createApplicationMapping(
           temporaryAbsenceApplicationMapping(),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsenceApplicationSyncMappingDto>>() {},
         )
       }
     }
@@ -267,7 +263,6 @@ class ExternalMovementsMappingApiServiceTest {
 
       apiService.createOutsideMovementMapping(
         temporaryAbsenceOutsideMovementMapping(),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsenceOutsideMovementSyncMappingDto>>() {},
       )
 
       mappingApi.verify(
@@ -281,7 +276,6 @@ class ExternalMovementsMappingApiServiceTest {
 
       apiService.createOutsideMovementMapping(
         temporaryAbsenceOutsideMovementMapping(),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsenceOutsideMovementSyncMappingDto>>() {},
       )
 
       mappingApi.verify(
@@ -323,7 +317,6 @@ class ExternalMovementsMappingApiServiceTest {
 
       apiService.createOutsideMovementMapping(
         temporaryAbsenceOutsideMovementMapping(),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsenceOutsideMovementSyncMappingDto>>() {},
       )
         .apply {
           assertThat(isError).isTrue
@@ -339,7 +332,6 @@ class ExternalMovementsMappingApiServiceTest {
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.createOutsideMovementMapping(
           temporaryAbsenceOutsideMovementMapping(),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsenceOutsideMovementSyncMappingDto>>() {},
         )
       }
     }
@@ -407,7 +399,6 @@ class ExternalMovementsMappingApiServiceTest {
 
       apiService.createScheduledMovementMapping(
         temporaryAbsenceScheduledMovementMapping(),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<ScheduledMovementSyncMappingDto>>() {},
       )
 
       mappingApi.verify(
@@ -421,7 +412,6 @@ class ExternalMovementsMappingApiServiceTest {
 
       apiService.createScheduledMovementMapping(
         temporaryAbsenceScheduledMovementMapping(),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<ScheduledMovementSyncMappingDto>>() {},
       )
 
       mappingApi.verify(
@@ -463,7 +453,6 @@ class ExternalMovementsMappingApiServiceTest {
 
       apiService.createScheduledMovementMapping(
         temporaryAbsenceScheduledMovementMapping(),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<ScheduledMovementSyncMappingDto>>() {},
       )
         .apply {
           assertThat(isError).isTrue
@@ -479,7 +468,6 @@ class ExternalMovementsMappingApiServiceTest {
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.createScheduledMovementMapping(
           temporaryAbsenceScheduledMovementMapping(),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<ScheduledMovementSyncMappingDto>>() {},
         )
       }
     }
@@ -545,10 +533,7 @@ class ExternalMovementsMappingApiServiceTest {
     internal fun `should pass oath2 token to service`() = runTest {
       mappingApi.stubCreateExternalMovementMapping()
 
-      apiService.createExternalMovementMapping(
-        temporaryAbsenceExternalMovementMapping(),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<ExternalMovementSyncMappingDto>>() {},
-      )
+      apiService.createExternalMovementMapping(temporaryAbsenceExternalMovementMapping())
 
       mappingApi.verify(
         postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -559,10 +544,7 @@ class ExternalMovementsMappingApiServiceTest {
     internal fun `should pass data to service`() = runTest {
       mappingApi.stubCreateExternalMovementMapping()
 
-      apiService.createExternalMovementMapping(
-        temporaryAbsenceExternalMovementMapping(),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<ExternalMovementSyncMappingDto>>() {},
-      )
+      apiService.createExternalMovementMapping(temporaryAbsenceExternalMovementMapping())
 
       mappingApi.verify(
         postRequestedFor(anyUrl())
@@ -601,10 +583,7 @@ class ExternalMovementsMappingApiServiceTest {
         ),
       )
 
-      apiService.createExternalMovementMapping(
-        temporaryAbsenceExternalMovementMapping(),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<ExternalMovementSyncMappingDto>>() {},
-      )
+      apiService.createExternalMovementMapping(temporaryAbsenceExternalMovementMapping())
         .apply {
           assertThat(isError).isTrue
           assertThat(errorResponse!!.moreInfo.existing.nomisMovementSeq).isEqualTo(1)
@@ -617,10 +596,7 @@ class ExternalMovementsMappingApiServiceTest {
       mappingApi.stubCreateExternalMovementMapping(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.createExternalMovementMapping(
-          temporaryAbsenceExternalMovementMapping(),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<ExternalMovementSyncMappingDto>>() {},
-        )
+        apiService.createExternalMovementMapping(temporaryAbsenceExternalMovementMapping())
       }
     }
   }
