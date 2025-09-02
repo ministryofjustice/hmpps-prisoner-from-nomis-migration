@@ -933,6 +933,250 @@ class ExternalMovementsSyncIntTest(
     }
   }
 
+  @Nested
+  @DisplayName("MOVEMENT_APPLICATION_MULTI-UPDATED")
+  inner class TemporaryAbsenceOutsideMovementUpdated {
+
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetOutsideMovementMapping(41)
+        nomisApi.stubGetTemporaryAbsenceApplicationOutsideMovement(appMultiId = 41)
+        // TODO stub DPS API
+
+        sendMessage(externalMovementApplicationMultiEvent("MOVEMENT_APPLICATION_MULTI-UPDATED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should get mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/outside-movement/nomis-application-multi-id/41")))
+      }
+
+      @Test
+      fun `should get NOMIS outside movement`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/outside-movement/41")))
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should update DPS outside movement`() {
+        // TODO verify DPS endpoint called
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-outside-movement-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationMultiId"]).isEqualTo("41")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        sendMessage(externalMovementApplicationMultiEvent("MOVEMENT_APPLICATION_MULTI-UPDATED", "DPS_SYNCHRONISATION"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should NOT create DPS outside movement`() {
+        // TODO verify DPS endpoint not called
+      }
+
+      @Test
+      fun `should NOT get mapping`() {
+        mappingApi.verify(
+          count = 0,
+          getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/outside-movement/nomis-application-multi-id/41")),
+        )
+      }
+
+      @Test
+      fun `should create telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-outside-movement-updated-skipped"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationMultiId"]).isEqualTo("41")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @Disabled("Waiting for DPS API to become available")
+    inner class WhenDpsUpdateFails {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetOutsideMovementMapping(41)
+        nomisApi.stubGetTemporaryAbsenceApplicationOutsideMovement(appMultiId = 41)
+        // TODO stub DPS API to reject update
+
+        sendMessage(externalMovementApplicationMultiEvent("MOVEMENT_APPLICATION_MULTI-UPDATED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should try to update DPS outside movement`() {
+        // TODO verify DPS endpoint called
+      }
+
+      @Test
+      fun `should create error telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-outside-movement-updated-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationMultiId"]).isEqualTo("41")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("MOVEMENT_APPLICATION_MULTI-DELETED")
+  inner class TemporaryAbsenceOutsideMovementDeleted {
+
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetOutsideMovementMapping(41)
+        mappingApi.stubDeleteOutsideMovementMapping(nomisApplicationMultiId = 41)
+        // TODO stub DPS API
+
+        sendMessage(externalMovementApplicationMultiEvent("MOVEMENT_APPLICATION_MULTI-DELETED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should get mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/outside-movement/nomis-application-multi-id/41")))
+      }
+
+      @Test
+      fun `should delete mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/temporary-absence/outside-movement/nomis-application-multi-id/41")))
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should delete DPS outside movement`() {
+        // TODO verify DPS endpoint called
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-outside-movement-deleted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationMultiId"]).isEqualTo("41")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenMappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetOutsideMovementMapping(41, NOT_FOUND)
+
+        sendMessage(externalMovementApplicationMultiEvent("MOVEMENT_APPLICATION_MULTI-DELETED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should NOT delete DPS outside movement`() {
+        // TODO verify DPS endpoint not called
+      }
+
+      @Test
+      fun `should get mapping`() {
+        mappingApi.verify(
+          getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/outside-movement/nomis-application-multi-id/41")),
+        )
+      }
+
+      @Test
+      fun `should create telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-outside-movement-deleted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationMultiId"]).isEqualTo("41")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @Disabled("Waiting for DPS API to become available")
+    inner class WhenDpsDeleteFails {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetOutsideMovementMapping(41)
+        // TODO stub DPS API to reject delete
+
+        sendMessage(externalMovementApplicationMultiEvent("MOVEMENT_APPLICATION_MULTI-DELETED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should try to delete DPS outside movement`() {
+        // TODO verify DPS endpoint called
+      }
+
+      @Test
+      fun `should create error telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-outside-movement-deleted-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationMultiId"]).isEqualTo("41")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
   private fun sendMessage(event: String) = awsSqsExternalMovementsOffenderEventsClient.sendMessage(
     externalMovementsQueueOffenderEventsUrl,
     event,

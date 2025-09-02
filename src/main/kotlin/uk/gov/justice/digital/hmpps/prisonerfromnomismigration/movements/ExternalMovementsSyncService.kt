@@ -124,6 +124,45 @@ class ExternalMovementsSyncService(
       }
   }
 
+  suspend fun outsideMovementUpdated(event: MovementApplicationMultiEvent) {
+    val (nomisApplicationMultiId, nomisApplicationId, bookingId, prisonerNumber) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber,
+      "bookingId" to bookingId,
+      "nomisApplicationMultiId" to nomisApplicationMultiId,
+      "nomisApplicationId" to nomisApplicationId,
+    )
+
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-outside-movement-updated-skipped", telemetry)
+      return
+    }
+
+    track("$TELEMETRY_PREFIX-outside-movement-updated", telemetry) {
+      val dpsOutsideMovementId = mappingApiService.getOutsideMovementMapping(nomisApplicationMultiId)!!.dpsOutsideMovementId
+        .also { telemetry["dpsOutsideMovementId"] = it }
+      val nomisOutsideMovement = nomisApiService.getTemporaryAbsenceApplicationOutsideMovement(prisonerNumber, nomisApplicationMultiId)
+      // TODO update DPS
+    }
+  }
+
+  suspend fun outsideMovementDeleted(event: MovementApplicationMultiEvent) {
+    val (nomisApplicationMultiId, nomisApplicationId, bookingId, prisonerNumber) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber,
+      "bookingId" to bookingId,
+      "nomisApplicationMultiId" to nomisApplicationMultiId,
+      "nomisApplicationId" to nomisApplicationId,
+    )
+    mappingApiService.getOutsideMovementMapping(nomisApplicationMultiId)?.also {
+      track("$TELEMETRY_PREFIX-outside-movement-deleted", telemetry) {
+        telemetry["dpsOutsideMovementId"] = it.dpsOutsideMovementId
+        mappingApiService.deleteOutsideMovementMapping(nomisApplicationMultiId)
+        // TODO delete in DPS
+      }
+    } ?: run { telemetryClient.trackEvent("$TELEMETRY_PREFIX-outside-movement-deleted-ignored", telemetry) }
+  }
+
   private suspend fun tryToCreateApplicationMapping(mapping: TemporaryAbsenceApplicationSyncMappingDto, telemetry: MutableMap<String, Any>) {
     try {
       mappingApiService.createApplicationMapping(mapping).takeIf { it.isError }?.also {

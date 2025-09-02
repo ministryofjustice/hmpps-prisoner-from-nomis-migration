@@ -40,6 +40,8 @@ class ExternalMovementsEventListener(
               "MOVEMENT_APPLICATION-UPDATED" -> syncService.movementApplicationUpdated(sqsMessage.Message.fromJson())
               "MOVEMENT_APPLICATION-DELETED" -> syncService.movementApplicationDeleted(sqsMessage.Message.fromJson())
               "MOVEMENT_APPLICATION_MULTI-INSERTED" -> syncService.outsideMovementInserted(sqsMessage.Message.fromJson())
+              "MOVEMENT_APPLICATION_MULTI-UPDATED" -> syncService.outsideMovementUpdated(sqsMessage.Message.fromJson())
+              "MOVEMENT_APPLICATION_MULTI-DELETED" -> syncService.outsideMovementDeleted(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
