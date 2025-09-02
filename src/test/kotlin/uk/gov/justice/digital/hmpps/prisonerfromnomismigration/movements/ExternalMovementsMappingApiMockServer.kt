@@ -263,6 +263,8 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
     )
   }
 
+  fun stubCreateScheduledMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/temporary-absence/scheduled-movement")
+
   fun stubGetScheduledMovementMapping(nomisEventId: Long = 1L) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/temporary-absence/scheduled-movement/nomis-event-id/$nomisEventId")).willReturn(
