@@ -44,6 +44,8 @@ class ExternalMovementsEventListener(
               "MOVEMENT_APPLICATION_MULTI-UPDATED" -> syncService.outsideMovementUpdated(sqsMessage.Message.fromJson())
               "MOVEMENT_APPLICATION_MULTI-DELETED" -> syncService.outsideMovementDeleted(sqsMessage.Message.fromJson())
               "SCHEDULED_EXT_MOVE-INSERTED" -> syncService.scheduledMovementInserted(sqsMessage.Message.fromJson())
+              "SCHEDULED_EXT_MOVE-UPDATED" -> syncService.scheduledMovementUpdated(sqsMessage.Message.fromJson())
+              "SCHEDULED_EXT_MOVE-DELETED" -> syncService.scheduledMovementDeleted(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
