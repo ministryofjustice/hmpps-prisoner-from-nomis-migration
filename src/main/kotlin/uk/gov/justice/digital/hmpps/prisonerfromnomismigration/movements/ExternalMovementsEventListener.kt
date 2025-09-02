@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMess
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_OUTSIDE_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -42,6 +43,7 @@ class ExternalMovementsEventListener(
               "MOVEMENT_APPLICATION_MULTI-INSERTED" -> syncService.outsideMovementInserted(sqsMessage.Message.fromJson())
               "MOVEMENT_APPLICATION_MULTI-UPDATED" -> syncService.outsideMovementUpdated(sqsMessage.Message.fromJson())
               "MOVEMENT_APPLICATION_MULTI-DELETED" -> syncService.outsideMovementDeleted(sqsMessage.Message.fromJson())
+              "SCHEDULED_EXT_MOVE-INSERTED" -> syncService.scheduledMovementInserted(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -56,6 +58,7 @@ class ExternalMovementsEventListener(
   private suspend fun retryMapping(type: String, message: String) = when (ExternalMovementRetryMappingMessageTypes.valueOf(type)) {
     RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION -> syncService.retryCreateApplicationMapping(message.fromJson())
     RETRY_MAPPING_TEMPORARY_ABSENCE_OUTSIDE_MOVEMENT -> syncService.retryCreateOutsideMovementMapping(message.fromJson())
+    RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT -> syncService.retryCreateScheduledMovementMapping(message.fromJson())
   }
 
   private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this)
@@ -76,7 +79,16 @@ data class MovementApplicationMultiEvent(
   override val auditModuleName: String,
 ) : EventAudited
 
+data class ScheduledMovementEvent(
+  val eventId: Long,
+  val bookingId: Long,
+  val offenderIdDisplay: String,
+  val eventMovementType: String,
+  override val auditModuleName: String,
+) : EventAudited
+
 enum class ExternalMovementRetryMappingMessageTypes {
   RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION,
   RETRY_MAPPING_TEMPORARY_ABSENCE_OUTSIDE_MOVEMENT,
+  RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT,
 }

@@ -12,6 +12,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_OUTSIDE_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto
@@ -19,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.util.*
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED as SCHEDULED_MOVEMENT_NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto.MappingType.NOMIS_CREATED as OUTSIDE_MOVEMENT_NOMIS_CREATED
 
 private const val TELEMETRY_PREFIX: String = "temporary-absence-sync"
@@ -163,6 +166,42 @@ class ExternalMovementsSyncService(
     } ?: run { telemetryClient.trackEvent("$TELEMETRY_PREFIX-outside-movement-deleted-ignored", telemetry) }
   }
 
+  suspend fun scheduledMovementInserted(event: ScheduledMovementEvent) = when (event.eventMovementType) {
+    "TAP" -> scheduledMovementInsertedTAP(event)
+    else -> log.info(("Ignoring scheduled movement event with type ${event.eventMovementType}"))
+  }
+
+  suspend fun scheduledMovementInsertedTAP(event: ScheduledMovementEvent) {
+    val (eventId, bookingId, prisonerNumber, eventMovementType) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber,
+      "bookingId" to bookingId,
+      "nomisEventId" to eventId,
+      "eventMovementType" to eventMovementType,
+    )
+
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-scheduled-movement-inserted-skipped", telemetry)
+      return
+    }
+
+    mappingApiService.getScheduledMovementMapping(eventId)
+      ?.also { telemetryClient.trackEvent("$TELEMETRY_PREFIX-scheduled-movement-inserted-ignored", telemetry) }
+      ?: run {
+        track("$TELEMETRY_PREFIX-scheduled-movement-inserted", telemetry) {
+          // TODO SDIT-3021 This should call getTemporaryAbsenceScheduledReturnMovement if the direction code is IN
+          nomisApiService.getTemporaryAbsenceScheduledMovement(prisonerNumber, eventId)
+            .also {
+              telemetry["nomisApplicationId"] = it.movementApplicationId
+              // TODO call DPS to synchronise scheduled movement
+              val dpsScheduledMovementId = UUID.randomUUID().also { telemetry["dpsScheduledMovementId"] = it }
+              val mapping = ScheduledMovementSyncMappingDto(prisonerNumber, bookingId, eventId, dpsScheduledMovementId, SCHEDULED_MOVEMENT_NOMIS_CREATED)
+              tryToCreateScheduledMovementMapping(mapping, telemetry)
+            }
+        }
+      }
+  }
+
   private suspend fun tryToCreateApplicationMapping(mapping: TemporaryAbsenceApplicationSyncMappingDto, telemetry: MutableMap<String, Any>) {
     try {
       mappingApiService.createApplicationMapping(mapping).takeIf { it.isError }?.also {
@@ -223,6 +262,36 @@ class ExternalMovementsSyncService(
     }
   }
 
+  private suspend fun tryToCreateScheduledMovementMapping(mapping: ScheduledMovementSyncMappingDto, telemetry: MutableMap<String, Any>) {
+    try {
+      mappingApiService.createScheduledMovementMapping(mapping).takeIf { it.isError }?.also {
+        with(it.errorResponse!!.moreInfo) {
+          telemetryClient.trackEvent(
+            "$TELEMETRY_PREFIX-scheduled-movement-inserted-duplicate",
+            mapOf(
+              "existingOffenderNo" to existing.prisonerNumber,
+              "existingBookingId" to existing.bookingId,
+              "existingNomisEventId" to existing.nomisEventId,
+              "existingDpsScheduledMovementId" to existing.dpsScheduledMovementId,
+              "duplicateOffenderNo" to duplicate.prisonerNumber,
+              "duplicateBookingId" to duplicate.bookingId,
+              "duplicateNomisEventId" to duplicate.nomisEventId,
+              "duplicateDpsScheduledMovementId" to duplicate.dpsScheduledMovementId,
+            ),
+          )
+        }
+      }
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for temporary absence scheduled movement NOMIS id ${mapping.nomisEventId}", e)
+      queueService.sendMessage(
+        messageType = RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT.name,
+        synchronisationType = SynchronisationType.EXTERNAL_MOVEMENTS,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+
   suspend fun retryCreateApplicationMapping(retryMessage: InternalMessage<TemporaryAbsenceApplicationSyncMappingDto>) {
     mappingApiService.createApplicationMapping(
       retryMessage.body,
@@ -240,6 +309,17 @@ class ExternalMovementsSyncService(
     ).also {
       telemetryClient.trackEvent(
         "$TELEMETRY_PREFIX-outside-movement-mapping-created",
+        retryMessage.telemetryAttributes,
+      )
+    }
+  }
+
+  suspend fun retryCreateScheduledMovementMapping(retryMessage: InternalMessage<ScheduledMovementSyncMappingDto>) {
+    mappingApiService.createScheduledMovementMapping(
+      retryMessage.body,
+    ).also {
+      telemetryClient.trackEvent(
+        "$TELEMETRY_PREFIX-scheduled-movement-mapping-created",
         retryMessage.telemetryAttributes,
       )
     }

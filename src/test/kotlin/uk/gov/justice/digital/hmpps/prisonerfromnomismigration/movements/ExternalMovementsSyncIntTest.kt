@@ -5,26 +5,34 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.matches
+import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.system.CapturedOutput
+import org.springframework.boot.test.system.OutputCaptureExtension
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.util.*
 
+@ExtendWith(OutputCaptureExtension::class)
 class ExternalMovementsSyncIntTest(
   @Autowired private val nomisApi: ExternalMovementsNomisApiMockServer,
   @Autowired private val mappingApi: ExternalMovementsMappingApiMockServer,
@@ -1177,6 +1185,318 @@ class ExternalMovementsSyncIntTest(
     }
   }
 
+  @Nested
+  @DisplayName("SCHEDULED_EXT_MOVE-INSERTED")
+  inner class TemporaryAbsenceScheduledMovementCreated {
+
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubCreateScheduledMovementMapping()
+        nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678)
+        // TODO stub DPS API
+
+        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should check mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
+      }
+
+      @Test
+      fun `should get NOMIS scheduled movement`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence/45678")))
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should create DPS scheduled movement`() {
+        // TODO verify DPS endpoint called
+      }
+
+      @Test
+      fun `should create mapping`() {
+        mappingApi.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+            .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
+            .withRequestBodyJsonPath("bookingId", 12345)
+            .withRequestBodyJsonPath("nomisEventId", 45678)
+            // TODO verify DPS id
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-inserted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("45678")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            assertThat(it["eventMovementType"]).isEqualTo("TAP")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenNotTapMovement {
+      @BeforeEach
+      fun setUp(output: CapturedOutput) {
+        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED", nomisEventType = "TRN"))
+          .also { await untilCallTo { output.out } matches { it!!.contains("Ignoring scheduled movement event with type TRN") } }
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should NOT create DPS scheduled movement`() {
+        // TODO verify DPS endpoint not called
+      }
+
+      @Test
+      fun `should NOT create mapping`() {
+        mappingApi.verify(
+          count = 0,
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenCreatedInDps {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetScheduledMovementMapping(45678)
+
+        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED", "DPS_SYNCHRONISATION"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should NOT create DPS scheduled movement`() {
+        // TODO verify DPS endpoint not called
+      }
+
+      @Test
+      fun `should NOT create mapping`() {
+        mappingApi.verify(
+          count = 0,
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")),
+        )
+      }
+
+      @Test
+      fun `should create telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-inserted-skipped"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("45678")
+            assertThat(it["eventMovementType"]).isEqualTo("TAP")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetScheduledMovementMapping(45678)
+
+        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should NOT create DPS scheduled movement`() {
+        // TODO verify DPS endpoint not called
+      }
+
+      @Test
+      fun `should NOT create mapping`() {
+        mappingApi.verify(
+          count = 0,
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")),
+        )
+      }
+
+      @Test
+      fun `should create telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-inserted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("45678")
+            assertThat(it["eventMovementType"]).isEqualTo("TAP")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenDuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678)
+        // TODO stub DPS API
+        mappingApi.stubCreateScheduledMovementMappingConflict(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              existing = ScheduledMovementSyncMappingDto(
+                prisonerNumber = "A1234BC",
+                bookingId = 12345L,
+                nomisEventId = 222L,
+                dpsScheduledMovementId = UUID.randomUUID(),
+                mappingType = ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+              ),
+              duplicate = ScheduledMovementSyncMappingDto(
+                prisonerNumber = "A1234BC",
+                bookingId = 12345L,
+                nomisEventId = 45678L,
+                dpsScheduledMovementId = UUID.randomUUID(),
+                mappingType = ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+
+        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED"))
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-inserted-duplicate") }
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should create DPS scheduled movement only once`() {
+        // TODO verify DPS endpoint called
+      }
+
+      @Test
+      fun `should create mapping only once`() {
+        mappingApi.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+            .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
+            .withRequestBodyJsonPath("bookingId", 12345)
+            .withRequestBodyJsonPath("nomisEventId", 45678)
+            // TODO verify DPS id
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
+
+      @Test
+      fun `should create success telemetry and duplicate telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-inserted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("45678")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            assertThat(it["eventMovementType"]).isEqualTo("TAP")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-inserted-duplicate"),
+          check {
+            assertThat(it["duplicateOffenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["existingOffenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["duplicateBookingId"]).isEqualTo("12345")
+            assertThat(it["existingBookingId"]).isEqualTo("12345")
+            assertThat(it["duplicateNomisEventId"]).isEqualTo("45678")
+            assertThat(it["existingNomisEventId"]).isEqualTo("222")
+            // TODO verify DPS ids
+            assertThat(it["duplicateDpsScheduledMovementId"]).isNotNull
+            assertThat(it["existingDpsScheduledMovementId"]).isNotNull
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenMappingCreateFailsOnce {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678)
+        // TODO stub DPS API
+        mappingApi.stubCreateScheduledMovementMappingFailureFollowedBySuccess()
+
+        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED"))
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-mapping-created") }
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should create DPS application`() {
+        // TODO verify DPS endpoint called
+      }
+
+      @Test
+      fun `should create mapping on 2nd call`() {
+        mappingApi.verify(
+          count = 2,
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+            .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
+            .withRequestBodyJsonPath("bookingId", 12345)
+            .withRequestBodyJsonPath("nomisEventId", 45678)
+            // TODO verify DPS id
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-inserted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            assertThat(it["nomisEventId"]).isEqualTo("45678")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should publish mapping created telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-mapping-created"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("45678")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
   private fun sendMessage(event: String) = awsSqsExternalMovementsOffenderEventsClient.sendMessage(
     externalMovementsQueueOffenderEventsUrl,
     event,
@@ -1214,6 +1534,25 @@ class ExternalMovementsSyncIntTest(
          "UnsubscribeURL" : "https://sns.eu-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7:3b68e1dd-c229-490f-bff9-05bd53595ddc",
          "MessageAttributes" : {
            "publishedAt" : {"Type":"String","Value":"2025-08-19T14:08:12.976312166+01:00"},
+           "traceparent" : {"Type":"String","Value":"00-a0103c496069d331bd417cac78f4085c-0158c9f6485e8841-01"},
+           "eventType" : {"Type":"String","Value":"$eventType"}
+         }
+       }
+    """.trimMargin()
+
+  private fun scheduledMovementEvent(eventType: String, auditModuleName: String = "OCUCANTR", nomisEventType: String = "TAP") = // language=JSON
+    """{
+         "Type" : "Notification",
+         "MessageId" : "57126174-e2d7-518f-914e-0056a63363b0",
+         "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
+         "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2025-09-02T09:19:03\",\"nomisEventType\":\"$eventType\",\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\",\"eventId\":45678,\"eventMovementType\":\"$nomisEventType\",\"auditModuleName\":\"$auditModuleName\"}",
+         "Timestamp" : "2025-09-02T09:19:03.998Z",
+         "SignatureVersion" : "1",
+         "Signature" : "eePe/HtUdMyeFriH6GJe4FAJjYhQFjohJOu0+t8qULvpaw+qsGBfolKYa83fARpGDZJf9ceKd6kYGwF+OVeNViXluqPeUyoWbJ/lOjCs1tvlUuceCLy/7+eGGxkNASKJ1sWdwhO5J5I8WKUq5vfyYgL/Mygae6U71Bc0H9I2uVkw7tUYg0ZQBMSkA8HpuLLAN06qR5ahJnNDDxxoV07KY6E2dy8TheEo2Dhxq8hicl272LxWKMifM9VfR+D1i1eZNXDGsvvHmMCjumpxxYAJmrU+aqUzAU2KnhoZJTfeZT+RV+ZazjPLqX52zwA47ZFcqzCBnmrU6XwuHT4gKJcj1Q==",
+         "SigningCertURL" : "https://sns.eu-west-2.amazonaws.com/SimpleNotificationService-6209c161c6221fdf56ec1eb5c821d112.pem",
+         "UnsubscribeURL" : "https://sns.eu-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7:3b68e1dd-c229-490f-bff9-05bd53595ddc",
+         "MessageAttributes" : {
+           "publishedAt" : {"Type":"String","Value":"2025-09-02T09:19:03.976312166+01:00"},
            "traceparent" : {"Type":"String","Value":"00-a0103c496069d331bd417cac78f4085c-0158c9f6485e8841-01"},
            "eventType" : {"Type":"String","Value":"$eventType"}
          }
