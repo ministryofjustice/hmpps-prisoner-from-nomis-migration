@@ -172,12 +172,11 @@ class ExternalMovementsSyncService(
   }
 
   suspend fun scheduledMovementInsertedTAP(event: ScheduledMovementEvent) {
-    val (eventId, bookingId, prisonerNumber, eventMovementType) = event
+    val (eventId, bookingId, prisonerNumber) = event
     val telemetry = mutableMapOf<String, Any>(
       "offenderNo" to prisonerNumber,
       "bookingId" to bookingId,
       "nomisEventId" to eventId,
-      "eventMovementType" to eventMovementType,
     )
 
     if (event.doesOriginateInDps()) {
@@ -200,6 +199,55 @@ class ExternalMovementsSyncService(
             }
         }
       }
+  }
+
+  suspend fun scheduledMovementUpdated(event: ScheduledMovementEvent) = when (event.eventMovementType) {
+    "TAP" -> scheduledMovementUpdatedTAP(event)
+    else -> log.info(("Ignoring scheduled movement updated event with type ${event.eventMovementType}"))
+  }
+
+  suspend fun scheduledMovementUpdatedTAP(event: ScheduledMovementEvent) {
+    val (eventId, bookingId, prisonerNumber) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber,
+      "bookingId" to bookingId,
+      "nomisEventId" to eventId,
+    )
+
+    if (event.doesOriginateInDps()) {
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-scheduled-movement-updated-skipped", telemetry)
+      return
+    }
+
+    track("$TELEMETRY_PREFIX-scheduled-movement-updated", telemetry) {
+      val dpsScheduledMovementId = mappingApiService.getScheduledMovementMapping(eventId)!!.dpsScheduledMovementId
+        .also { telemetry["dpsScheduledMovementId"] = it }
+      // TODO SDIT-3021 This should call getTemporaryAbsenceScheduledReturnMovement if the direction code is IN
+      val nomisScheduledMovement = nomisApiService.getTemporaryAbsenceScheduledMovement(prisonerNumber, eventId)
+        .also { telemetry["nomisApplicationId"] = it.movementApplicationId }
+      // TODO call DPS to update scheduled movement
+    }
+  }
+
+  suspend fun scheduledMovementDeleted(event: ScheduledMovementEvent) = when (event.eventMovementType) {
+    "TAP" -> scheduledMovementDeletedTAP(event)
+    else -> log.info(("Ignoring scheduled movement deleted event with type ${event.eventMovementType}"))
+  }
+
+  suspend fun scheduledMovementDeletedTAP(event: ScheduledMovementEvent) {
+    val (eventId, bookingId, prisonerNumber) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber,
+      "bookingId" to bookingId,
+      "nomisEventId" to eventId,
+    )
+    mappingApiService.getScheduledMovementMapping(eventId)?.also {
+      track("$TELEMETRY_PREFIX-scheduled-movement-deleted", telemetry) {
+        telemetry["dpsScheduledMovementId"] = it.dpsScheduledMovementId
+        mappingApiService.deleteScheduledMovementMapping(eventId)
+        // TODO delete in DPS
+      }
+    } ?: run { telemetryClient.trackEvent("$TELEMETRY_PREFIX-scheduled-movement-deleted-ignored", telemetry) }
   }
 
   private suspend fun tryToCreateApplicationMapping(mapping: TemporaryAbsenceApplicationSyncMappingDto, telemetry: MutableMap<String, Any>) {
