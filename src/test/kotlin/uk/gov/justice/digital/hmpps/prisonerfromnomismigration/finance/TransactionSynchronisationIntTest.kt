@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.exactly
@@ -29,6 +30,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceAp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageAttributes
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransactionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GeneralLedgerTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
@@ -54,6 +58,9 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
 
   @Autowired
   private lateinit var financeNomisApiMockServer: FinanceNomisApiMockServer
+
+  @Autowired
+  private lateinit var objectMapper: ObjectMapper
 
   @Autowired
   private lateinit var financeMappingApiMockServer: FinanceMappingApiMockServer
@@ -733,27 +740,47 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
       }
     }
   }
+
+  private fun Any.toJson(): String = objectMapper.writeValueAsString(this)
+
+  fun offenderTransactionEvent(
+    eventType: String,
+    messageId: UUID,
+    bookingId: Long = BOOKING_ID,
+    transactionId: Long = NOMIS_TRANSACTION_ID,
+    offenderNo: String = OFFENDER_ID_DISPLAY,
+    auditModuleName: String = "OIDNOMIS",
+  ) = SQSMessage(
+    MessageId = "$messageId",
+    Type = "Notification",
+    Message = TransactionEvent(
+      // eventType = eventType,
+      transactionId = transactionId,
+      entrySequence = 1,
+      caseload = "SWI",
+      // transactionType = "xxxxx",
+      offenderIdDisplay = offenderNo,
+      bookingId = bookingId,
+      auditModuleName = auditModuleName,
+    ).toJson(),
+    MessageAttributes = MessageAttributes(EventType(eventType, "String")),
+  ).toJson()
 }
 
-fun offenderTransactionEvent(
-  eventType: String,
-  messageId: UUID,
-  bookingId: Long = BOOKING_ID,
-  transactionId: Long = NOMIS_TRANSACTION_ID,
-  offenderNo: String = OFFENDER_ID_DISPLAY,
-  auditModuleName: String = "OIDNOMIS",
-) = """{
-    "MessageId": "$messageId", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
-    "Message": "{\"eventType\":\"$eventType\",\"nomisEventType\":\"$eventType\",\"eventDatetime\":\"2024-07-10T15:00:25.0000000Z\",\"bookingId\": \"$bookingId\",\"transactionId\": \"$transactionId\",\"offenderIdDisplay\": \"$offenderNo\",\"auditModuleName\":\"$auditModuleName\",\"caseload\":\"SWI\",\"entrySequence\":\"1\" }",
-    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
-    "MessageAttributes": {
-      "eventType": {"Type": "String", "Value": "$eventType"}, 
-      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
-      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
-      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
-    }
-}
-""".trimIndent()
+//  """{
+//    "MessageId": "$messageId", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z",
+//    "Message": "{\"eventType\":\"$eventType\",\"nomisEventType\":\"$eventType\",\"eventDatetime\":\"2024-07-10T15:00:25.0000000Z\",
+//    \"bookingId\": \"$bookingId\",\"transactionId\": \"$transactionId\",
+//    \"offenderIdDisplay\": \"$offenderNo\",\"auditModuleName\":\"$auditModuleName\",\"caseload\":\"SWI\",\"entrySequence\":\"1\" }",
+//    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events",
+//    "MessageAttributes": {
+//      "eventType": {"Type": "String", "Value": "$eventType"},
+//      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"},
+//      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"},
+//      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+//    }
+// }
+// """.trimIndent()
 
 fun glTransactionEvent(
   eventType: String,

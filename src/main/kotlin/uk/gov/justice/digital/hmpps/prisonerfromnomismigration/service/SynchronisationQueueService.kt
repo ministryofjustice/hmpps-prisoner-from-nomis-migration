@@ -29,7 +29,13 @@ class SynchronisationQueueService(
   private val objectMapper: ObjectMapper,
 ) {
 
-  suspend fun sendMessage(messageType: String, synchronisationType: SynchronisationType, message: Any, telemetryAttributes: Map<String, String> = mapOf()) {
+  suspend fun sendMessage(
+    messageType: String,
+    synchronisationType: SynchronisationType,
+    message: Any,
+    telemetryAttributes: Map<String, String> = mapOf(),
+    delaySeconds: Int = 0,
+  ) {
     val queue = hmppsQueueService.findByQueueId(synchronisationType.queueId)
       ?: throw IllegalStateException("Queue not found for ${synchronisationType.queueId}")
     val sqsMessage = SQSMessage(
@@ -37,19 +43,24 @@ class SynchronisationQueueService(
       Message = InternalMessage(message, telemetryAttributes).toJson(),
     )
 
-    queue.sqsClient.sendMessage(
-      SendMessageRequest.builder()
-        .queueUrl(queue.queueUrl)
-        .messageBody(sqsMessage.toJson())
-        .eventTypeMessageAttributes("prisoner-from-nomis-synchronisation-$messageType")
-        .build(),
-    ).await().also {
-      telemetryClient.trackEvent(
-        messageType,
-        mapOf("messageId" to it.messageId()),
-        null,
-      )
+    val builder = SendMessageRequest.builder()
+      .queueUrl(queue.queueUrl)
+      .messageBody(sqsMessage.toJson())
+      .eventTypeMessageAttributes("prisoner-from-nomis-synchronisation-$messageType")
+
+    if (delaySeconds > 0) {
+      builder.delaySeconds(delaySeconds)
     }
+
+    queue.sqsClient.sendMessage(builder.build())
+      .await()
+      .also {
+        telemetryClient.trackEvent(
+          messageType,
+          mapOf("messageId" to it.messageId()),
+          null,
+        )
+      }
   }
 
   private fun Any.toJson() = objectMapper.writeValueAsString(this)

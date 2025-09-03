@@ -5,35 +5,64 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransactionMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.TransactionIdBufferRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
-import java.util.*
+import java.util.UUID
 
 @Service
+@Transactional
 class TransactionSynchronisationService(
   private val nomisApiService: TransactionNomisApiService,
   private val transactionMappingService: TransactionMappingApiService,
   private val financeService: FinanceApiService,
   private val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
+  private val transactionIdBufferRepository: TransactionIdBufferRepository,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  suspend fun transactionInserted(event: TransactionEvent, requestId: UUID) {
+  suspend fun transactionInsertCheck(event: TransactionEvent, requestId: UUID) {
+    if (event.isSourcedFromDPS()) {
+      telemetryClient.trackEvent("transactions-synchronisation-created-skipped", event.toTelemetryProperties())
+      return
+    }
+
+    if (transactionIdBufferRepository.existsById(event.transactionId)) {
+      log.debug("Skipping synchronisation of transaction ${event.transactionId} as id already recorded")
+      return
+    }
+
+    if (transactionIdBufferRepository.addId(event.transactionId) == 0) {
+      log.debug("Skipping synchronisation of transaction ${event.transactionId} as failed to record id")
+      return
+    }
+
+    queueService.sendMessage(
+      messageType = SynchronisationMessageType.PERFORM_TRANSACTION_SYNC.name,
+      synchronisationType = SynchronisationType.FINANCE,
+      message = EncapsulatedTransaction(event, requestId),
+      telemetryAttributes = mapOf("transactionId" to event.transactionId.toString()),
+      delaySeconds = 5,
+    )
+  }
+
+  suspend fun transactionInserted(encapsulatedTransaction: EncapsulatedTransaction) {
+    val (event, requestId) = encapsulatedTransaction
     try {
-      if (event.isSourcedFromDPS()) {
-        telemetryClient.trackEvent("transactions-synchronisation-created-skipped", event.toTelemetryProperties())
-        return
-      }
+      transactionIdBufferRepository.deleteById(event.transactionId)
+
       val mapping = transactionMappingService.getMappingGivenNomisIdOrNull(event.transactionId)
 //      if (event.auditMissing()) {
       // TODO mapping may or may not exist anyway! Need another way to detect null audit name - if it ever happens
@@ -117,8 +146,8 @@ class TransactionSynchronisationService(
     }
   }
 
-  suspend fun glTransactionInserted(event: GLTransactionEvent, requestId: UUID) {
-    transactionInserted(event.toTransactionEvent(), requestId)
+  suspend fun glTransactionInsertCheck(event: GLTransactionEvent, requestId: UUID) {
+    transactionInsertCheck(event.toTransactionEvent(), requestId)
   }
 
   enum class MappingResponse {
@@ -217,3 +246,5 @@ private fun TransactionEvent.toTelemetryProperties(
 
 private fun TransactionEvent.isSourcedFromDPS() = auditModuleName == "DPS_SYNCHRONISATION"
 private fun TransactionEvent.auditMissing() = auditModuleName == null
+
+data class EncapsulatedTransaction(val transactionEvent: TransactionEvent, val requestId: UUID)
