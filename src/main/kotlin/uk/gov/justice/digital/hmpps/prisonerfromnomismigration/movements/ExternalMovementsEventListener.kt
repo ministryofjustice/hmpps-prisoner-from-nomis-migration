@@ -88,7 +88,7 @@ data class ScheduledMovementEvent(
   val eventId: Long,
   val bookingId: Long,
   val offenderIdDisplay: String,
-  val eventMovementType: String,
+  val eventMovementType: MovementType,
   override val auditModuleName: String,
 ) : EventAudited
 
@@ -96,12 +96,15 @@ data class ExternalMovementEvent(
   val bookingId: Long,
   val offenderIdDisplay: String,
   val movementSeq: Int,
-  val movementType: String,
-  val directionCode: String,
+  val movementType: MovementType,
+  val directionCode: DirectionCode,
   val recordInserted: Boolean,
   val recordDeleted: Boolean,
   override val auditModuleName: String,
 ) : EventAudited
+
+enum class DirectionCode { IN, OUT }
+enum class MovementType { ADM, CRT, REL, TAP, TRN, }
 
 enum class ExternalMovementRetryMappingMessageTypes {
   RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION,
