@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_OUTSIDE_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
 import java.util.concurrent.CompletableFuture
@@ -46,6 +47,7 @@ class ExternalMovementsEventListener(
               "SCHEDULED_EXT_MOVE-INSERTED" -> syncService.scheduledMovementInserted(sqsMessage.Message.fromJson())
               "SCHEDULED_EXT_MOVE-UPDATED" -> syncService.scheduledMovementUpdated(sqsMessage.Message.fromJson())
               "SCHEDULED_EXT_MOVE-DELETED" -> syncService.scheduledMovementDeleted(sqsMessage.Message.fromJson())
+              "EXTERNAL_MOVEMENT-CHANGED" -> syncService.externalMovementChanged(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -61,6 +63,7 @@ class ExternalMovementsEventListener(
     RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION -> syncService.retryCreateApplicationMapping(message.fromJson())
     RETRY_MAPPING_TEMPORARY_ABSENCE_OUTSIDE_MOVEMENT -> syncService.retryCreateOutsideMovementMapping(message.fromJson())
     RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT -> syncService.retryCreateScheduledMovementMapping(message.fromJson())
+    RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT -> syncService.retryCreateExternalMovementMapping(message.fromJson())
   }
 
   private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this)
@@ -89,8 +92,20 @@ data class ScheduledMovementEvent(
   override val auditModuleName: String,
 ) : EventAudited
 
+data class ExternalMovementEvent(
+  val bookingId: Long,
+  val offenderIdDisplay: String,
+  val movementSeq: Int,
+  val movementType: String,
+  val directionCode: String,
+  val recordInserted: Boolean,
+  val recordDeleted: Boolean,
+  override val auditModuleName: String,
+) : EventAudited
+
 enum class ExternalMovementRetryMappingMessageTypes {
   RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION,
   RETRY_MAPPING_TEMPORARY_ABSENCE_OUTSIDE_MOVEMENT,
   RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT,
+  RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT,
 }

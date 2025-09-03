@@ -340,6 +340,8 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
     )
   }
 
+  fun stubCreateExternalMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/temporary-absence/external-movement")
+
   fun stubGetExternalMovementMapping(bookingId: Long = 12345L, movementSeq: Int = 1) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/temporary-absence/external-movement/nomis-movement-id/$bookingId/$movementSeq")).willReturn(
