@@ -60,7 +60,8 @@ class CourtSentencingMigrationService(
     )
   } else {
     // If a single prisoner migration is requested then we'll trust the input as we're probably testing. Pretend that we called nomis-prisoner-api which found a single prisoner.
-    PageImpl<PrisonerId>(mutableListOf(PrisonerId(migrationFilter.offenderNo)), Pageable.ofSize(1), 1)
+    val offenderNoList = migrationFilter.offenderNo.split(",").map { PrisonerId(it) }
+    PageImpl<PrisonerId>(offenderNoList, Pageable.ofSize(1), 1)
   }
 
   override suspend fun getContextProperties(migrationFilter: CourtSentencingMigrationFilter): MutableMap<String, Any> = mutableMapOf("deleteExisting" to migrationFilter.deleteExisting)
