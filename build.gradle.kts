@@ -9,7 +9,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "8.3.6"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "9.0.0"
   kotlin("plugin.spring") version "2.2.10"
   id("org.openapi.generator") version "7.14.0"
 }
@@ -21,12 +21,12 @@ configurations {
 }
 
 dependencies {
-  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:1.5.0")
+  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:1.5.1-beta")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:5.4.10")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 
-  implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.9")
+  implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.11")
 
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
@@ -42,10 +42,10 @@ dependencies {
   implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:2.18.1")
 
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:1.5.0")
-  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.31") {
+  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.32") {
     exclude(group = "io.swagger.core.v3")
   }
-  testImplementation("io.swagger.core.v3:swagger-core-jakarta:2.2.35")
+  testImplementation("io.swagger.core.v3:swagger-core-jakarta:2.2.36")
 
   testImplementation("org.wiremock:wiremock-standalone:3.13.1")
   testImplementation("org.testcontainers:localstack:1.21.3")
@@ -72,6 +72,7 @@ data class ModelConfiguration(val name: String, val packageName: String, val tes
   private fun nameToCamel(): String = snakeRegex.replace(name) {
     it.value.replace("-", "").uppercase()
   }.replaceFirstChar { it.uppercase() }
+
   val input: String
     get() = "openapi-specs/$name-api-docs.json"
   val output: String
@@ -112,6 +113,12 @@ val models = listOf(
     packageName = "courtsentencing",
     testPackageName = "courtsentencing",
     url = "https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+  ),
+  ModelConfiguration(
+    name = "finance",
+    packageName = "finance",
+    testPackageName = "finance",
+    url = "https://prisoner-finance-poc-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
   ),
   ModelConfiguration(
     name = "incidents",
@@ -163,12 +170,6 @@ val models = listOf(
     url = "https://hmpps-visit-allocation-api-dev.prison.service.justice.gov.uk/v3/api-docs",
     models = "VisitAllocationPrisonerMigrationDto,VisitAllocationPrisonerSyncDto",
   ),
-  ModelConfiguration(
-    name = "finance",
-    packageName = "finance",
-    testPackageName = "finance",
-    url = "https://prisoner-finance-poc-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
-  ),
 )
 
 tasks {
@@ -212,21 +213,34 @@ models.forEach {
       Files.write(Paths.get(it.input), formattedJson.toByteArray())
     }
   }
-  tasks.register(it.toReadProductionVersionTaskName()) {
-    group = "Read current production version"
-    description = "Read current production version for ${it.name}"
-    doLast {
-      val productionUrl = it.url.replace("-dev".toRegex(), "")
-        .replace("dev.".toRegex(), "")
-        .replace("/v3/api-docs".toRegex(), "/info")
-      val json = URI.create(productionUrl).toURL().readText()
-      val version = ObjectMapper().readTree(json).at("/build/version").asText()
-      println(version)
+  if (it.name != "finance") {
+    tasks.register(it.toReadProductionVersionTaskName()) {
+      group = "Read current production version"
+      description = "Read current production version for ${it.name}"
+      doLast {
+        val productionUrl = it.url.replace("-dev".toRegex(), "")
+          .replace("dev.".toRegex(), "")
+          .replace("/v3/api-docs".toRegex(), "/info")
+        val json = URI.create(productionUrl).toURL().readText()
+        val version = ObjectMapper().readTree(json).at("/build/version").asText()
+        println(version)
+      }
+    }
+  } else {
+    tasks.register(it.toReadProductionVersionTaskName()) {
+      group = "Read current production version"
+      description = "Read current production version for ${it.name}"
+      doLast {
+        println("no production version")
+      }
     }
   }
   if (it.testPackageName != null) {
+    val test by testing.suites.existing(JvmTestSuite::class)
     separateTestPackages.add(it.testPackageName)
-    val task = tasks.register(it.toTestTaskName(), Test::class) {
+    val task = tasks.register<Test>(it.toTestTaskName()) {
+      testClassesDirs = files(test.map { it.sources.output.classesDirs })
+      classpath = files(test.map { it.sources.runtimeClasspath })
       group = "Run tests"
       description = "Run tests for ${it.name}"
       shouldRunAfter("test")

@@ -718,12 +718,30 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     inner class ResyncMessageReceived {
       @Nested
       inner class HappyPath {
+        val nomisCourtCaseUpdatedId = 727272L
+        val dpsCourtCaseUpdatedId = "e1f86fba-6584-46c3-9533-8f636347e141"
+
+        val nomisSentenceSequence = 7
+        val dpsSentenceUpdateId = "fe31eba3-3bc2-4092-badd-4eddc0faa1eb"
+        val dpsCourtAppearanceId = "9164b690-a3c3-486a-b413-07084d869cbf"
 
         @BeforeEach
         fun setUp() {
-          courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(offenderNo = OFFENDER_ID_DISPLAY)
-          dpsCourtSentencingServer.stubPostCourtCasesForCreateMigration(response = dpsMigrationCreateResponseWithTwoAppearancesAndTwoCharges())
+          // create in DPS of court case from previous booking
+          courtSentencingNomisApiMockServer.stubGetCourtCases(offenderNo = OFFENDER_ID_DISPLAY)
+          dpsCourtSentencingServer.stubCreateCourtCaseCloneBooking(response = dpsBookingCloneCreateResponseWithTwoAppearancesAndTwoCharges())
           courtSentencingMappingApiMockServer.stubReplaceOrCreateMappings()
+
+          // update to DPS due to booking id change on case changing
+          courtSentencingMappingApiMockServer.stubGetByNomisId(nomisCourtCaseId = nomisCourtCaseUpdatedId, dpsCourtCaseId = dpsCourtCaseUpdatedId)
+          courtSentencingNomisApiMockServer.stubGetCourtCase(courtCaseId = nomisCourtCaseUpdatedId, offenderNo = OFFENDER_ID_DISPLAY, bookingId = NOMIS_BOOKING_ID)
+          dpsCourtSentencingServer.stubPutCourtCaseForUpdate(courtCaseId = dpsCourtCaseUpdatedId)
+
+          // update to DPS due to booking id change on sentence changing
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(nomisSentenceSequence = nomisSentenceSequence, nomisBookingId = NOMIS_BOOKING_ID, dpsSentenceId = dpsSentenceUpdateId)
+          courtSentencingNomisApiMockServer.stubGetSentence(offenderNo = OFFENDER_ID_DISPLAY, caseId = nomisCourtCaseUpdatedId, bookingId = NOMIS_BOOKING_ID, sentenceSequence = nomisSentenceSequence, response = sentenceResponse(bookingId = NOMIS_BOOKING_ID, sentenceSequence = nomisSentenceSequence, eventId = NOMIS_COURT_APPEARANCE_ID))
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID, dpsCourtAppearanceId = dpsCourtAppearanceId)
+          dpsCourtSentencingServer.stubPutSentenceForUpdate(sentenceId = dpsSentenceUpdateId)
 
           courtSentencingOffenderEventsQueue.sendMessage(
             SQSMessage(
@@ -731,9 +749,46 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               Message = OffenderCaseBookingResynchronisationEvent(
                 offenderNo = OFFENDER_ID_DISPLAY,
                 caseIds = listOf(NOMIS_COURT_CASE_ID),
+                fromBookingId = 54321,
+                toBookingId = NOMIS_BOOKING_ID,
+                casesMoved = listOf(
+                  CaseBookingChanged(
+                    caseId = nomisCourtCaseUpdatedId,
+                    sentences = listOf(
+                      SentenceBookingChanged(
+                        sentenceSequence = nomisSentenceSequence,
+                      ),
+                    ),
+                  ),
+                ),
               ).toJson(),
             ).toJson(),
-          ).also { waitForAnyProcessingToComplete() }
+          ).also { waitForAnyProcessingToComplete("court-case-booking-resynchronisation-success") }
+        }
+
+        @Test
+        fun `will update court case on latest booking in DPS`() {
+          dpsCourtSentencingServer.verify(
+            1,
+            putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCourtCaseUpdatedId"))
+              .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
+          )
+        }
+
+        @Test
+        fun `will recreate court case on previous booking in DPS`() {
+          dpsCourtSentencingServer.verify(
+            1,
+            postRequestedFor(urlPathEqualTo("/legacy/court-case/booking")),
+          )
+        }
+
+        @Test
+        fun `will recreate court case mappings on previous booking`() {
+          courtSentencingMappingApiMockServer.verify(
+            1,
+            putRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/replace")),
+          )
         }
 
         @Test
@@ -743,6 +798,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             check {
               assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
               assertThat(it["nomisCaseIds"]).isEqualTo("$NOMIS_COURT_CASE_ID")
+              assertThat(it["toBookingId"]).isEqualTo("$NOMIS_BOOKING_ID")
+              assertThat(it["fromBookingId"]).isEqualTo("54321")
             },
             isNull(),
           )
@@ -754,8 +811,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @BeforeEach
         fun setUp() {
-          courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(offenderNo = OFFENDER_ID_DISPLAY)
-          dpsCourtSentencingServer.stubPostCourtCasesForCreateMigration(response = dpsMigrationCreateResponseWithTwoAppearancesAndTwoCharges())
+          courtSentencingNomisApiMockServer.stubGetCourtCases(offenderNo = OFFENDER_ID_DISPLAY)
+          dpsCourtSentencingServer.stubCreateCourtCaseCloneBooking(response = dpsBookingCloneCreateResponseWithTwoAppearancesAndTwoCharges())
           courtSentencingMappingApiMockServer.stubReplaceOrCreateMappingsFailureFollowedBySuccess()
 
           courtSentencingOffenderEventsQueue.sendMessage(
@@ -764,6 +821,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               Message = OffenderCaseBookingResynchronisationEvent(
                 offenderNo = OFFENDER_ID_DISPLAY,
                 caseIds = listOf(NOMIS_COURT_CASE_ID),
+                toBookingId = NOMIS_BOOKING_ID,
               ).toJson(),
             ).toJson(),
           ).also { waitForAnyProcessingToComplete("from-nomis-synch-court-case-booking-clone-mapping-retry-success") }

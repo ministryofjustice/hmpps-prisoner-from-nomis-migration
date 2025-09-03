@@ -91,7 +91,6 @@ class SentencingAdjustmentsSynchronisationService(
       }
     }
   }
-
   suspend fun synchroniseSentenceAdjustmentDelete(event: SentenceAdjustmentOffenderEvent) {
     sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
       nomisAdjustmentId = event.adjustmentId,

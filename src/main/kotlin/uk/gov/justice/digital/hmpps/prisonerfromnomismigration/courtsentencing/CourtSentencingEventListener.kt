@@ -125,9 +125,9 @@ class CourtSentencingEventListener(
         CASE_RESYNCHRONISATION -> courtSentencingSynchronisationService.nomisCaseResynchronisation(
           sqsMessage.Message.fromJson(),
         )
-        CASE_BOOKING_RESYNCHRONISATION -> courtSentencingSynchronisationService.nomisCaseBookingResynchronisation(
-          sqsMessage.Message.fromJson(),
-        )
+        CASE_BOOKING_RESYNCHRONISATION ->
+          courtSentencingSynchronisationService.nomisCaseBookingMoveResynchronisation(sqsMessage.Message.fromJson())
+
         RETRY_COURT_CASE_BOOKING_CLONE_SYNCHRONISATION_MAPPING ->
           courtSentencingSynchronisationService.retryCreateCaseBookingCloneMapping(
             sqsMessage.Message.fromJson(),
@@ -225,7 +225,19 @@ data class OffenderCaseResynchronisationEvent(
 
 data class OffenderCaseBookingResynchronisationEvent(
   val offenderNo: String,
+  val fromBookingId: Long = 0,
+  val toBookingId: Long = 0,
   val caseIds: List<Long>,
+  val casesMoved: List<CaseBookingChanged> = emptyList(),
+)
+
+data class CaseBookingChanged(
+  val caseId: Long,
+  val sentences: List<SentenceBookingChanged>,
+)
+
+data class SentenceBookingChanged(
+  val sentenceSequence: Int,
 )
 
 data class OffenderSentenceTermEvent(
