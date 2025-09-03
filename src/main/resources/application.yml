@@ -5,9 +5,6 @@ info.app:
 spring:
   application:
     name: hmpps-prisoner-from-nomis-migration
-  codec:
-    max-in-memory-size: 10MB
-
   jackson:
     date-format: "yyyy-MM-dd HH:mm:ss"
     serialization:
@@ -122,6 +119,9 @@ spring:
   flyway:
     enabled: true
     url: jdbc:postgresql://${DATABASE_ENDPOINT}/${DATABASE_NAME}?sslmode=verify-full
+  http:
+    codecs:
+      max-in-memory-size: 10MB
 
 server:
   port: 8080
@@ -173,6 +173,9 @@ allocations:
   complete-check:
     delay-seconds: 180
     count: 9
+
+finance:
+  transactions.forwardingDelaySeconds: 5
 
 personalrelationships:
   complete-check:

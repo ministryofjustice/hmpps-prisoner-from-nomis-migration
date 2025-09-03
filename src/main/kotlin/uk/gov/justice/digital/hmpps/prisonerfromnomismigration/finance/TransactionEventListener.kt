@@ -52,7 +52,10 @@ class TransactionEventListener(
               "OFFENDER_TRANSACTIONS-UPDATED" -> null // can happen, there are some rows with modify datetime after create
               "OFFENDER_TRANSACTIONS-DELETED" -> null // extremely rare (only happened 61 times ever according to oms_deleted_rows, mostly by scripts)
 
-              "GL_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.glTransactionInsertCheck(sqsMessage.Message.fromJson(), messageId)
+              "GL_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.glTransactionInsertCheck(
+                sqsMessage.Message.fromJson(),
+                messageId
+              )
               "GL_TRANSACTIONS-UPDATED" -> null
               "GL_TRANSACTIONS-DELETED" -> null // extremely rare (only happened once at 11-AUG-2021 10:39:26.470007000 according to oms_deleted_rows, 8 deleted)
 

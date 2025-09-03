@@ -9,7 +9,10 @@ import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.atLeast
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
@@ -26,6 +29,7 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest.builder
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -36,9 +40,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMess
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransactionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GeneralLedgerTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.TransactionIdBufferRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.math.BigDecimal
+import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
@@ -65,6 +71,9 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var financeMappingApiMockServer: FinanceMappingApiMockServer
 
+  @Autowired
+  private lateinit var transactionIdBufferRepository: TransactionIdBufferRepository
+
   @Nested
   @DisplayName("OFFENDER_TRANSACTIONS-INSERTED")
   inner class TransactionInserted {
@@ -75,14 +84,15 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
+        val message = offenderTransactionEvent(
+          "OFFENDER_TRANSACTIONS-INSERTED", // and GL_TRANSACTIONS-INSERTED
+          messageUuid,
+          bookingId = BOOKING_ID,
+          offenderNo = OFFENDER_ID_DISPLAY,
+          auditModuleName = "DPS_SYNCHRONISATION",
+        )
         financeOffenderEventsQueue.sendMessage(
-          offenderTransactionEvent(
-            "OFFENDER_TRANSACTIONS-INSERTED", // and GL_TRANSACTIONS-INSERTED
-            messageUuid,
-            bookingId = BOOKING_ID,
-            offenderNo = OFFENDER_ID_DISPLAY,
-            auditModuleName = "DPS_SYNCHRONISATION",
-          ),
+          message,
         )
       }
 
@@ -117,6 +127,12 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
     @Nested
     @DisplayName("When transaction was created in NOMIS")
     inner class NomisCreated {
+
+      @BeforeEach
+      fun setUp() = runTest {
+        transactionIdBufferRepository.deleteAll()
+      }
+
       @Nested
       @DisplayName("Happy path where transaction does not already exist in DPS")
       inner class HappyPathOffenderTransactionFirst {
@@ -342,6 +358,67 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      @DisplayName("Happy path where there are multiple concurrent events")
+      inner class HappyPathMultipleEvents {
+        val receipt = SyncTransactionReceipt(
+          synchronizedTransactionId = dpsTransactionUuid,
+          requestId = UUID.randomUUID(),
+          action = SyncTransactionReceipt.Action.UPDATED,
+        )
+
+        val nomisTransactions = nomisTransactions()
+
+        @BeforeEach
+        fun setUp() {
+          financeNomisApiMockServer.stubGetOffenderTransaction(
+            bookingId = BOOKING_ID,
+            transactionId = NOMIS_TRANSACTION_ID,
+            response = nomisTransactions,
+          )
+          financeMappingApiMockServer.stubGetByNomisId(
+            NOMIS_TRANSACTION_ID,
+            TransactionMappingDto(
+              nomisBookingId = BOOKING_ID,
+              dpsTransactionId = DPS_TRANSACTION_ID,
+              nomisTransactionId = NOMIS_TRANSACTION_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+              mappingType = TransactionMappingDto.MappingType.NOMIS_CREATED,
+            ),
+          )
+          financeApi.stubPostOffenderTransaction(receipt)
+          financeMappingApiMockServer.stubPostMapping()
+
+          val sendMessageRequest = builder()
+            .queueUrl(financeQueueOffenderEventsUrl)
+            .messageBody(
+              offenderTransactionEvent("OFFENDER_TRANSACTIONS-INSERTED", messageUuid),
+            ).build()
+          val m1 = awsSqsFinanceOffenderEventsClient.sendMessage(sendMessageRequest)
+          val m2 = awsSqsFinanceOffenderEventsClient.sendMessage(sendMessageRequest)
+          val m3 = awsSqsFinanceOffenderEventsClient.sendMessage(sendMessageRequest)
+          val m4 = awsSqsFinanceOffenderEventsClient.sendMessage(sendMessageRequest)
+          m1.get()
+          m2.get()
+          m3.get()
+          m4.get()
+        }
+
+        @Test
+        fun `only one call made to DPS and transaction id is removed from DB afterwards`() {
+          await atLeast Duration.ofSeconds(1) untilAsserted {
+            financeApi.verify(
+              1,
+              postRequestedFor(urlPathEqualTo("/sync/offender-transactions")),
+            )
+          }
+          await untilAsserted {
+            val result = runBlocking { transactionIdBufferRepository.existsById(NOMIS_TRANSACTION_ID) }
+            assertThat(result).isFalse
+          }
+        }
+      }
+
+      @Nested
       @DisplayName("When mapping POST fails")
       inner class MappingFail {
 
@@ -542,6 +619,11 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("GL_TRANSACTIONS-INSERTED")
   inner class GeneralLedgerTransactionInserted {
+
+    @BeforeEach
+    fun setUp() = runTest {
+      transactionIdBufferRepository.deleteAll()
+    }
 
     @Nested
     @DisplayName("When transaction was created in NOMIS")

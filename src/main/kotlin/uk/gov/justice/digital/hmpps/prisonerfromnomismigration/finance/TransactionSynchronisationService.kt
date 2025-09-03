@@ -3,9 +3,9 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -20,7 +20,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 import java.util.UUID
 
 @Service
-@Transactional
 class TransactionSynchronisationService(
   private val nomisApiService: TransactionNomisApiService,
   private val transactionMappingService: TransactionMappingApiService,
@@ -28,6 +27,8 @@ class TransactionSynchronisationService(
   private val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
   private val transactionIdBufferRepository: TransactionIdBufferRepository,
+  @Value("\${finance.transactions.forwardingDelaySeconds}")
+  private val forwardingDelaySeconds: Int,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -54,12 +55,12 @@ class TransactionSynchronisationService(
       synchronisationType = SynchronisationType.FINANCE,
       message = EncapsulatedTransaction(event, requestId),
       telemetryAttributes = mapOf("transactionId" to event.transactionId.toString()),
-      delaySeconds = 5,
+      delaySeconds = forwardingDelaySeconds,
     )
   }
 
-  suspend fun transactionInserted(encapsulatedTransaction: EncapsulatedTransaction) {
-    val (event, requestId) = encapsulatedTransaction
+  suspend fun transactionInserted(encapsulatedTransaction: InternalMessage<EncapsulatedTransaction>) {
+    val (event, requestId) = encapsulatedTransaction.body
     try {
       transactionIdBufferRepository.deleteById(event.transactionId)
 

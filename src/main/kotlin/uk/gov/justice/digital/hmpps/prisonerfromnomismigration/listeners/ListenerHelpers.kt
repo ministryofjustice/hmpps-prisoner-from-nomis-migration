@@ -20,6 +20,7 @@ inline fun <reified T> migrationContext(message: MigrationMessage<*, T>): Migrat
 @JsonInclude(NON_NULL)
 data class SQSMessage(val Type: String, val Message: String, val MessageId: String? = null, val MessageAttributes: MessageAttributes? = null)
 data class MessageAttributes(val eventType: EventType)
+@JsonNaming(value = PropertyNamingStrategies.UpperCamelCaseStrategy::class)
 data class EventType(val Value: String, val Type: String)
 
 fun asCompletableFuture(process: suspend () -> Unit): CompletableFuture<Void?> = CoroutineScope(Context.current().asContextElement()).future {
