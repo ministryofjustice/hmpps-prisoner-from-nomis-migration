@@ -29,7 +29,7 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest.builder
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -154,8 +154,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           financeApi.stubPostOffenderTransaction(receipt)
           financeMappingApiMockServer.stubPostMapping()
 
-          awsSqsFinanceOffenderEventsClient.sendMessage(
-            financeQueueOffenderEventsUrl,
+          financeOffenderEventsQueue.sendMessage(
             offenderTransactionEvent(
               "OFFENDER_TRANSACTIONS-INSERTED",
               messageUuid,
@@ -277,8 +276,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           financeApi.stubPostOffenderTransaction(receipt)
           financeMappingApiMockServer.stubPostMapping()
 
-          awsSqsFinanceOffenderEventsClient.sendMessage(
-            financeQueueOffenderEventsUrl,
+          financeOffenderEventsQueue.sendMessage(
             offenderTransactionEvent(
               "OFFENDER_TRANSACTIONS-INSERTED",
               messageUuid,
@@ -388,7 +386,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           financeApi.stubPostOffenderTransaction(receipt)
           financeMappingApiMockServer.stubPostMapping()
 
-          val sendMessageRequest = builder()
+          val sendMessageRequest = SendMessageRequest.builder()
             .queueUrl(financeQueueOffenderEventsUrl)
             .messageBody(
               offenderTransactionEvent("OFFENDER_TRANSACTIONS-INSERTED", messageUuid),
@@ -448,8 +446,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           fun setUp() {
             financeMappingApiMockServer.stubPostMappingFailureFollowedBySuccess()
 
-            awsSqsFinanceOffenderEventsClient.sendMessage(
-              financeQueueOffenderEventsUrl,
+            financeOffenderEventsQueue.sendMessage(
               offenderTransactionEvent(
                 "OFFENDER_TRANSACTIONS-INSERTED",
                 messageUuid,
@@ -520,8 +517,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           @BeforeEach
           fun setUp() {
             financeMappingApiMockServer.stubPostMapping(status = INTERNAL_SERVER_ERROR)
-            awsSqsFinanceOffenderEventsClient.sendMessage(
-              financeQueueOffenderEventsUrl,
+            financeOffenderEventsQueue.sendMessage(
               offenderTransactionEvent(
                 "OFFENDER_TRANSACTIONS-INSERTED",
                 messageUuid,
@@ -583,8 +579,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           )
           financeApi.stubPostOffenderTransactionFailure()
 
-          awsSqsFinanceOffenderEventsClient.sendMessage(
-            financeQueueOffenderEventsUrl,
+          financeOffenderEventsQueue.sendMessage(
             offenderTransactionEvent(
               "OFFENDER_TRANSACTIONS-INSERTED",
               messageUuid,
@@ -652,8 +647,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           financeApi.stubPostGLTransaction(receipt)
           financeMappingApiMockServer.stubPostMapping()
 
-          awsSqsFinanceOffenderEventsClient.sendMessage(
-            financeQueueOffenderEventsUrl,
+          financeOffenderEventsQueue.sendMessage(
             glTransactionEvent(
               "GL_TRANSACTIONS-INSERTED",
               messageUuid,
@@ -758,8 +752,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           financeApi.stubPostGLTransaction(receipt)
           financeMappingApiMockServer.stubPostMapping()
 
-          awsSqsFinanceOffenderEventsClient.sendMessage(
-            financeQueueOffenderEventsUrl,
+          financeOffenderEventsQueue.sendMessage(
             glTransactionEvent(
               "GL_TRANSACTIONS-INSERTED",
               messageUuid,
