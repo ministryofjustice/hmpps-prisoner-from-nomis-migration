@@ -19,7 +19,9 @@ inline fun <reified T> migrationContext(message: MigrationMessage<*, T>): Migrat
 @JsonNaming(value = PropertyNamingStrategies.UpperCamelCaseStrategy::class)
 @JsonInclude(NON_NULL)
 data class SQSMessage(val Type: String, val Message: String, val MessageId: String? = null, val MessageAttributes: MessageAttributes? = null)
+
 data class MessageAttributes(val eventType: EventType)
+
 @JsonNaming(value = PropertyNamingStrategies.UpperCamelCaseStrategy::class)
 data class EventType(val Value: String, val Type: String)
 
