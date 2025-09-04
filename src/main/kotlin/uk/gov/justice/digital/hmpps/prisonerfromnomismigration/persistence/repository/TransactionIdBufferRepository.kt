@@ -10,6 +10,6 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional
 interface TransactionIdBufferRepository : CoroutineCrudRepository<TransactionIdBuffer, Long> {
   @Modifying
-  @Query("INSERT INTO TRANSACTION_ID_BUFFER VALUES (:id) ON CONFLICT DO NOTHING")
+  @Query("INSERT INTO TRANSACTION_ID_BUFFER VALUES (:id) ON CONFLICT ON CONSTRAINT TRANSACTION_ID_BUFFER_ID_PKEY DO NOTHING")
   suspend fun addId(transactionId: Long): Int
 }

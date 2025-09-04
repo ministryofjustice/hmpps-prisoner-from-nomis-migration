@@ -61,6 +61,12 @@ class SynchronisationQueueService(
           null,
         )
       }
+      .also {
+        val httpStatusCode = it.sdkHttpResponse().statusCode()
+        if (httpStatusCode >= 400) {
+          throw RuntimeException("Attempt to send message $message resulted in an http $httpStatusCode error")
+        }
+      }
   }
 
   private fun Any.toJson() = objectMapper.writeValueAsString(this)

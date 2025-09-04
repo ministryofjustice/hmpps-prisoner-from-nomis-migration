@@ -50,13 +50,19 @@ class TransactionSynchronisationService(
       return
     }
 
-    queueService.sendMessage(
-      messageType = SynchronisationMessageType.PERFORM_TRANSACTION_SYNC.name,
-      synchronisationType = SynchronisationType.FINANCE,
-      message = EncapsulatedTransaction(event, requestId),
-      telemetryAttributes = mapOf("transactionId" to event.transactionId.toString()),
-      delaySeconds = forwardingDelaySeconds,
-    )
+    try {
+      queueService.sendMessage(
+        messageType = SynchronisationMessageType.PERFORM_TRANSACTION_SYNC.name,
+        synchronisationType = SynchronisationType.FINANCE,
+        message = EncapsulatedTransaction(event, requestId),
+        telemetryAttributes = mapOf("transactionId" to event.transactionId.toString()),
+        delaySeconds = forwardingDelaySeconds,
+      )
+    } catch (e: Exception) {
+      log.error("Unexpected error from queuing transaction ${event.transactionId}", e)
+      transactionIdBufferRepository.deleteById(event.transactionId)
+      throw e
+    }
   }
 
   suspend fun transactionInserted(encapsulatedTransaction: InternalMessage<EncapsulatedTransaction>) {

@@ -12,7 +12,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
-import org.awaitility.kotlin.atLeast
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
@@ -44,7 +43,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.math.BigDecimal
-import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
@@ -403,7 +401,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `only one call made to DPS and transaction id is removed from DB afterwards`() {
-          await atLeast Duration.ofSeconds(1) untilAsserted {
+          await untilAsserted {
             financeApi.verify(
               1,
               postRequestedFor(urlPathEqualTo("/sync/offender-transactions")),
