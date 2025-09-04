@@ -33,5 +33,3 @@ data class TransactionIdBuffer(
 
   override fun getId(): Long = transactionId
 }
-
-// enum class TransactionProcessStatus { PROCESSING, STARTED, COMPLETED }
