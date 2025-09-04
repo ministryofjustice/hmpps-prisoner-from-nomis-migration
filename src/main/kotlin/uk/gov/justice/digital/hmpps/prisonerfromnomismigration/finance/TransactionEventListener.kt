@@ -42,12 +42,6 @@ class TransactionEventListener(
                 messageId,
               )
               // NOTE: Several inserts per second!
-              /*
-              when event arrives, check DB table of txn_ids:
-               if not there, add and requeue message for 5s time
-               if it is there and target time not yet arrived (or not expired), ignore
-              when requeued message arrives: remove from cache if necessary and call api
-               */
 
               "OFFENDER_TRANSACTIONS-UPDATED" -> null // can happen, there are some rows with modify datetime after create
               "OFFENDER_TRANSACTIONS-DELETED" -> null // extremely rare (only happened 61 times ever according to oms_deleted_rows, mostly by scripts)

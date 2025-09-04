@@ -9,7 +9,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
@@ -28,7 +27,6 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -45,20 +43,22 @@ import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
 import java.util.AbstractMap.SimpleEntry
+import java.util.UUID
 
-private const val BOOKING_ID = 1234L
-private const val NOMIS_TRANSACTION_ID = 2345678L
-private const val OFFENDER_ID = 101L
-private const val OFFENDER_ID_DISPLAY = "A3864DZ"
-private const val DPS_TRANSACTION_ID = "a04f7a8d-61aa-400c-9395-000011112222"
-private const val MESSAGE_ID = "abcdef01-0000-1111-2222-000011112222"
+internal const val BOOKING_ID = 1234L
+internal const val NOMIS_TRANSACTION_ID = 2345678L
+internal const val OFFENDER_ID = 101L
+internal const val OFFENDER_ID_DISPLAY = "A3864DZ"
+internal const val DPS_TRANSACTION_ID = "a04f7a8d-61aa-400c-9395-000011112222"
+internal const val MESSAGE_ID = "abcdef01-0000-1111-2222-000011112222"
 
 class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
 
-  private val dpsTransactionUuid = UUID.fromString(DPS_TRANSACTION_ID)
-  private val messageUuid = UUID.fromString(MESSAGE_ID)
+  companion object {
+    val dpsTransactionUuid: UUID = UUID.fromString(DPS_TRANSACTION_ID)
+    val messageUuid: UUID = UUID.fromString(MESSAGE_ID)
+  }
 
   @Autowired
   private lateinit var financeNomisApiMockServer: FinanceNomisApiMockServer
@@ -350,67 +350,6 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
             0,
             postRequestedFor(urlPathEqualTo("/mapping/transactions")),
           )
-        }
-      }
-
-      @Nested
-      @DisplayName("Happy path where there are multiple concurrent events")
-      inner class HappyPathMultipleEvents {
-        val receipt = SyncTransactionReceipt(
-          synchronizedTransactionId = dpsTransactionUuid,
-          requestId = UUID.randomUUID(),
-          action = SyncTransactionReceipt.Action.UPDATED,
-        )
-
-        val nomisTransactions = nomisTransactions()
-
-        @BeforeEach
-        fun setUp() {
-          financeNomisApiMockServer.stubGetOffenderTransaction(
-            bookingId = BOOKING_ID,
-            transactionId = NOMIS_TRANSACTION_ID,
-            response = nomisTransactions,
-          )
-          financeMappingApiMockServer.stubGetByNomisId(
-            NOMIS_TRANSACTION_ID,
-            TransactionMappingDto(
-              nomisBookingId = BOOKING_ID,
-              dpsTransactionId = DPS_TRANSACTION_ID,
-              nomisTransactionId = NOMIS_TRANSACTION_ID,
-              offenderNo = OFFENDER_ID_DISPLAY,
-              mappingType = TransactionMappingDto.MappingType.NOMIS_CREATED,
-            ),
-          )
-          financeApi.stubPostOffenderTransaction(receipt)
-          financeMappingApiMockServer.stubPostMapping()
-
-          val sendMessageRequest = SendMessageRequest.builder()
-            .queueUrl(financeQueueOffenderEventsUrl)
-            .messageBody(
-              offenderTransactionEvent("OFFENDER_TRANSACTIONS-INSERTED", messageUuid),
-            ).build()
-          val m1 = awsSqsFinanceOffenderEventsClient.sendMessage(sendMessageRequest)
-          val m2 = awsSqsFinanceOffenderEventsClient.sendMessage(sendMessageRequest)
-          val m3 = awsSqsFinanceOffenderEventsClient.sendMessage(sendMessageRequest)
-          val m4 = awsSqsFinanceOffenderEventsClient.sendMessage(sendMessageRequest)
-          m1.get()
-          m2.get()
-          m3.get()
-          m4.get()
-        }
-
-        @Test
-        fun `only one call made to DPS and transaction id is removed from DB afterwards`() {
-          await untilAsserted {
-            financeApi.verify(
-              1,
-              postRequestedFor(urlPathEqualTo("/sync/offender-transactions")),
-            )
-          }
-          await untilAsserted {
-            val result = runBlocking { transactionIdBufferRepository.existsById(NOMIS_TRANSACTION_ID) }
-            assertThat(result).isFalse
-          }
         }
       }
 
@@ -859,7 +798,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
   ).toJson()
 }
 
-private fun nomisTransactions(bookingId: Long = BOOKING_ID, transactionId: Long = NOMIS_TRANSACTION_ID) = listOf(
+fun nomisTransactions(bookingId: Long = BOOKING_ID, transactionId: Long = NOMIS_TRANSACTION_ID) = listOf(
   OffenderTransactionDto(
     transactionId = transactionId,
     transactionEntrySequence = 1,
@@ -885,7 +824,7 @@ private fun nomisTransactions(bookingId: Long = BOOKING_ID, transactionId: Long 
   ),
 )
 
-private fun nomisGLTransactions(transactionId: Long = NOMIS_TRANSACTION_ID) = listOf(
+fun nomisGLTransactions(transactionId: Long = NOMIS_TRANSACTION_ID) = listOf(
   GeneralLedgerTransactionDto(
     transactionId = transactionId,
     transactionEntrySequence = 1,
