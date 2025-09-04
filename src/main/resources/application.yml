@@ -5,9 +5,9 @@ info.app:
 spring:
   application:
     name: hmpps-prisoner-from-nomis-migration
-  codec:
-    max-in-memory-size: 10MB
-
+  http:
+    codecs:
+      max-in-memory-size: 10MB
   jackson:
     date-format: "yyyy-MM-dd HH:mm:ss"
     serialization:
@@ -173,6 +173,9 @@ allocations:
   complete-check:
     delay-seconds: 180
     count: 9
+
+finance:
+  transactions.forwardingDelaySeconds: 5
 
 personalrelationships:
   complete-check:

@@ -8,10 +8,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.PERFORM_TRANSACTION_SYNC
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.FINANCE_SYNC_QUEUE_ID
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -36,7 +37,7 @@ class TransactionEventListener(
           if (eventFeatureSwitch.isEnabled(eventType, "transactions")) {
             val messageId = UUID.fromString(sqsMessage.MessageId)
             when (eventType) {
-              "OFFENDER_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.transactionInserted(
+              "OFFENDER_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.transactionInsertCheck(
                 sqsMessage.Message.fromJson(),
                 messageId,
               )
@@ -45,7 +46,10 @@ class TransactionEventListener(
               "OFFENDER_TRANSACTIONS-UPDATED" -> null // can happen, there are some rows with modify datetime after create
               "OFFENDER_TRANSACTIONS-DELETED" -> null // extremely rare (only happened 61 times ever according to oms_deleted_rows, mostly by scripts)
 
-              "GL_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.glTransactionInserted(sqsMessage.Message.fromJson(), messageId)
+              "GL_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.glTransactionInsertCheck(
+                sqsMessage.Message.fromJson(),
+                messageId,
+              )
               "GL_TRANSACTIONS-UPDATED" -> null
               "GL_TRANSACTIONS-DELETED" -> null // extremely rare (only happened once at 11-AUG-2021 10:39:26.470007000 according to oms_deleted_rows, 8 deleted)
 
@@ -59,6 +63,8 @@ class TransactionEventListener(
         }
 
         RETRY_SYNCHRONISATION_MAPPING.name -> transactionSynchronisationService.retryCreateTransactionMapping(sqsMessage.Message.fromJson())
+
+        PERFORM_TRANSACTION_SYNC.name -> transactionSynchronisationService.transactionInserted(sqsMessage.Message.fromJson())
       }
     }
   }

@@ -60,6 +60,8 @@ courtsentencing:
   page:
     size: 10
   has-migrated-data: true
+finance:
+  transactions.forwardingDelaySeconds: 0
 personalrelationships:
    complete-check:
      delay-seconds: 0

@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.exactly
@@ -8,6 +9,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
@@ -29,34 +31,46 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceAp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageAttributes
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransactionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GeneralLedgerTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.TransactionIdBufferRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
 import java.util.AbstractMap.SimpleEntry
+import java.util.UUID
 
-private const val BOOKING_ID = 1234L
-private const val NOMIS_TRANSACTION_ID = 2345678L
-private const val OFFENDER_ID = 101L
-private const val OFFENDER_ID_DISPLAY = "A3864DZ"
-private const val DPS_TRANSACTION_ID = "a04f7a8d-61aa-400c-9395-000011112222"
-private const val MESSAGE_ID = "abcdef01-0000-1111-2222-000011112222"
+internal const val BOOKING_ID = 1234L
+internal const val NOMIS_TRANSACTION_ID = 2345678L
+internal const val OFFENDER_ID = 101L
+internal const val OFFENDER_ID_DISPLAY = "A3864DZ"
+internal const val DPS_TRANSACTION_ID = "a04f7a8d-61aa-400c-9395-000011112222"
+internal const val MESSAGE_ID = "abcdef01-0000-1111-2222-000011112222"
 
 class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
 
-  private val dpsTransactionUuid = UUID.fromString(DPS_TRANSACTION_ID)
-  private val messageUuid = UUID.fromString(MESSAGE_ID)
+  companion object {
+    val dpsTransactionUuid: UUID = UUID.fromString(DPS_TRANSACTION_ID)
+    val messageUuid: UUID = UUID.fromString(MESSAGE_ID)
+  }
 
   @Autowired
   private lateinit var financeNomisApiMockServer: FinanceNomisApiMockServer
 
   @Autowired
+  private lateinit var objectMapper: ObjectMapper
+
+  @Autowired
   private lateinit var financeMappingApiMockServer: FinanceMappingApiMockServer
+
+  @Autowired
+  private lateinit var transactionIdBufferRepository: TransactionIdBufferRepository
 
   @Nested
   @DisplayName("OFFENDER_TRANSACTIONS-INSERTED")
@@ -68,14 +82,15 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
+        val message = offenderTransactionEvent(
+          "OFFENDER_TRANSACTIONS-INSERTED",
+          messageUuid,
+          bookingId = BOOKING_ID,
+          offenderNo = OFFENDER_ID_DISPLAY,
+          auditModuleName = "DPS_SYNCHRONISATION",
+        )
         financeOffenderEventsQueue.sendMessage(
-          offenderTransactionEvent(
-            "OFFENDER_TRANSACTIONS-INSERTED", // and GL_TRANSACTIONS-INSERTED
-            messageUuid,
-            bookingId = BOOKING_ID,
-            offenderNo = OFFENDER_ID_DISPLAY,
-            auditModuleName = "DPS_SYNCHRONISATION",
-          ),
+          message,
         )
       }
 
@@ -110,6 +125,12 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
     @Nested
     @DisplayName("When transaction was created in NOMIS")
     inner class NomisCreated {
+
+      @BeforeEach
+      fun setUp() = runTest {
+        transactionIdBufferRepository.deleteAll()
+      }
+
       @Nested
       @DisplayName("Happy path where transaction does not already exist in DPS")
       inner class HappyPathOffenderTransactionFirst {
@@ -131,8 +152,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           financeApi.stubPostOffenderTransaction(receipt)
           financeMappingApiMockServer.stubPostMapping()
 
-          awsSqsFinanceOffenderEventsClient.sendMessage(
-            financeQueueOffenderEventsUrl,
+          financeOffenderEventsQueue.sendMessage(
             offenderTransactionEvent(
               "OFFENDER_TRANSACTIONS-INSERTED",
               messageUuid,
@@ -254,8 +274,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           financeApi.stubPostOffenderTransaction(receipt)
           financeMappingApiMockServer.stubPostMapping()
 
-          awsSqsFinanceOffenderEventsClient.sendMessage(
-            financeQueueOffenderEventsUrl,
+          financeOffenderEventsQueue.sendMessage(
             offenderTransactionEvent(
               "OFFENDER_TRANSACTIONS-INSERTED",
               messageUuid,
@@ -364,8 +383,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           fun setUp() {
             financeMappingApiMockServer.stubPostMappingFailureFollowedBySuccess()
 
-            awsSqsFinanceOffenderEventsClient.sendMessage(
-              financeQueueOffenderEventsUrl,
+            financeOffenderEventsQueue.sendMessage(
               offenderTransactionEvent(
                 "OFFENDER_TRANSACTIONS-INSERTED",
                 messageUuid,
@@ -436,8 +454,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           @BeforeEach
           fun setUp() {
             financeMappingApiMockServer.stubPostMapping(status = INTERNAL_SERVER_ERROR)
-            awsSqsFinanceOffenderEventsClient.sendMessage(
-              financeQueueOffenderEventsUrl,
+            financeOffenderEventsQueue.sendMessage(
               offenderTransactionEvent(
                 "OFFENDER_TRANSACTIONS-INSERTED",
                 messageUuid,
@@ -499,8 +516,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           )
           financeApi.stubPostOffenderTransactionFailure()
 
-          awsSqsFinanceOffenderEventsClient.sendMessage(
-            financeQueueOffenderEventsUrl,
+          financeOffenderEventsQueue.sendMessage(
             offenderTransactionEvent(
               "OFFENDER_TRANSACTIONS-INSERTED",
               messageUuid,
@@ -536,6 +552,11 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
   @DisplayName("GL_TRANSACTIONS-INSERTED")
   inner class GeneralLedgerTransactionInserted {
 
+    @BeforeEach
+    fun setUp() = runTest {
+      transactionIdBufferRepository.deleteAll()
+    }
+
     @Nested
     @DisplayName("When transaction was created in NOMIS")
     inner class NomisCreated {
@@ -563,8 +584,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           financeApi.stubPostGLTransaction(receipt)
           financeMappingApiMockServer.stubPostMapping()
 
-          awsSqsFinanceOffenderEventsClient.sendMessage(
-            financeQueueOffenderEventsUrl,
+          financeOffenderEventsQueue.sendMessage(
             glTransactionEvent(
               "GL_TRANSACTIONS-INSERTED",
               messageUuid,
@@ -669,8 +689,7 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           financeApi.stubPostGLTransaction(receipt)
           financeMappingApiMockServer.stubPostMapping()
 
-          awsSqsFinanceOffenderEventsClient.sendMessage(
-            financeQueueOffenderEventsUrl,
+          financeOffenderEventsQueue.sendMessage(
             glTransactionEvent(
               "GL_TRANSACTIONS-INSERTED",
               messageUuid,
@@ -733,48 +752,53 @@ class TransactionSynchronisationIntTest : SqsIntegrationTestBase() {
       }
     }
   }
+
+  private fun Any.toJson(): String = objectMapper.writeValueAsString(this)
+
+  fun offenderTransactionEvent(
+    eventType: String,
+    messageId: UUID,
+    bookingId: Long = BOOKING_ID,
+    transactionId: Long = NOMIS_TRANSACTION_ID,
+    offenderNo: String = OFFENDER_ID_DISPLAY,
+    auditModuleName: String = "OIDNOMIS",
+  ) = SQSMessage(
+    MessageId = "$messageId",
+    Type = "Notification",
+    Message = TransactionEvent(
+      transactionId = transactionId,
+      entrySequence = 1,
+      caseload = "SWI",
+      offenderIdDisplay = offenderNo,
+      bookingId = bookingId,
+      auditModuleName = auditModuleName,
+    ).toJson(),
+    MessageAttributes = MessageAttributes(EventType(eventType, "String")),
+  ).toJson()
+
+  fun glTransactionEvent(
+    eventType: String,
+    messageId: UUID,
+    bookingId: Long = BOOKING_ID,
+    transactionId: Long = NOMIS_TRANSACTION_ID,
+    offenderNo: String = OFFENDER_ID_DISPLAY,
+  ) = SQSMessage(
+    MessageId = "$messageId",
+    Type = "Notification",
+    Message = GLTransactionEvent(
+      transactionId = transactionId,
+      entrySequence = 1,
+      gLEntrySequence = 1,
+      caseload = "SWI",
+      offenderIdDisplay = offenderNo,
+      bookingId = bookingId,
+      auditModuleName = "PRISON_API",
+    ).toJson(),
+    MessageAttributes = MessageAttributes(EventType(eventType, "String")),
+  ).toJson()
 }
 
-fun offenderTransactionEvent(
-  eventType: String,
-  messageId: UUID,
-  bookingId: Long = BOOKING_ID,
-  transactionId: Long = NOMIS_TRANSACTION_ID,
-  offenderNo: String = OFFENDER_ID_DISPLAY,
-  auditModuleName: String = "OIDNOMIS",
-) = """{
-    "MessageId": "$messageId", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
-    "Message": "{\"eventType\":\"$eventType\",\"nomisEventType\":\"$eventType\",\"eventDatetime\":\"2024-07-10T15:00:25.0000000Z\",\"bookingId\": \"$bookingId\",\"transactionId\": \"$transactionId\",\"offenderIdDisplay\": \"$offenderNo\",\"auditModuleName\":\"$auditModuleName\",\"caseload\":\"SWI\",\"entrySequence\":\"1\" }",
-    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
-    "MessageAttributes": {
-      "eventType": {"Type": "String", "Value": "$eventType"}, 
-      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
-      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
-      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
-    }
-}
-""".trimIndent()
-
-fun glTransactionEvent(
-  eventType: String,
-  messageId: UUID,
-  bookingId: Long = BOOKING_ID,
-  transactionId: Long = NOMIS_TRANSACTION_ID,
-  offenderNo: String = OFFENDER_ID_DISPLAY,
-) = """{
-    "MessageId": "$messageId", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
-    "Message": "{\"eventType\":\"$eventType\",\"nomisEventType\":\"$eventType\",\"eventDatetime\":\"2024-07-10T15:00:25.0000000Z\",\"bookingId\": \"$bookingId\",\"transactionId\": \"$transactionId\",\"offenderIdDisplay\": \"$offenderNo\",\"auditModuleName\":\"PRISON_API\",\"caseload\":\"SWI\",\"entrySequence\":\"1\",\"glentrySequence\":\"1\" }",
-    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
-    "MessageAttributes": {
-      "eventType": {"Type": "String", "Value": "$eventType"}, 
-      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
-      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
-      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
-    }
-}
-""".trimIndent()
-
-private fun nomisTransactions(bookingId: Long = BOOKING_ID, transactionId: Long = NOMIS_TRANSACTION_ID) = listOf(
+fun nomisTransactions(bookingId: Long = BOOKING_ID, transactionId: Long = NOMIS_TRANSACTION_ID) = listOf(
   OffenderTransactionDto(
     transactionId = transactionId,
     transactionEntrySequence = 1,
@@ -800,7 +824,7 @@ private fun nomisTransactions(bookingId: Long = BOOKING_ID, transactionId: Long 
   ),
 )
 
-private fun nomisGLTransactions(transactionId: Long = NOMIS_TRANSACTION_ID) = listOf(
+fun nomisGLTransactions(transactionId: Long = NOMIS_TRANSACTION_ID) = listOf(
   GeneralLedgerTransactionDto(
     transactionId = transactionId,
     transactionEntrySequence = 1,
