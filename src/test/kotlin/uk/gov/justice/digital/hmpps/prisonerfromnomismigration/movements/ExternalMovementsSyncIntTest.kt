@@ -31,6 +31,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.util.*
 
 @ExtendWith(OutputCaptureExtension::class)
@@ -616,6 +617,7 @@ class ExternalMovementsSyncIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetOutsideMovementMapping(41, NOT_FOUND)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         mappingApi.stubCreateOutsideMovementMapping()
         nomisApi.stubGetTemporaryAbsenceApplicationOutsideMovement(offenderNo = "A1234BC", appMultiId = 41)
         // TODO stub DPS API
@@ -627,6 +629,11 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should check mapping`() {
         mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/outside-movement/nomis-application-multi-id/41")))
+      }
+
+      @Test
+      fun `should check parent mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")))
       }
 
       @Test
@@ -673,6 +680,7 @@ class ExternalMovementsSyncIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetOutsideMovementMapping(41)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
 
         sendMessage(externalMovementApplicationMultiEvent("MOVEMENT_APPLICATION_MULTI-INSERTED", "DPS_SYNCHRONISATION"))
           .also { waitForAnyProcessingToComplete() }
@@ -748,11 +756,55 @@ class ExternalMovementsSyncIntTest(
     }
 
     @Nested
+    inner class WhenParentApplicationNotCreatedYet {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetOutsideMovementMapping(41, NOT_FOUND)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
+
+        sendMessage(externalMovementApplicationMultiEvent("MOVEMENT_APPLICATION_MULTI-INSERTED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should check mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/outside-movement/nomis-application-multi-id/41")))
+      }
+
+      @Test
+      fun `should check parent mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")))
+      }
+
+      @Test
+      fun `should create error telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-outside-movement-inserted-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationMultiId"]).isEqualTo("41")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            assertThat(it["error"]).isEqualTo("Application 111 not created yet so children cannot be processed")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should send message to DLQ`() {
+        assertThat(awsSqsExternalMovementsOffenderEventsDlqClient.countAllMessagesOnQueue(externalMovementsQueueOffenderEventsDlqUrl).get())
+          .isEqualTo(1)
+      }
+    }
+
+    @Nested
     @Disabled("Waiting for DPS API to become available")
     inner class WhenCreateFailsInDps {
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetOutsideMovementMapping(41, NOT_FOUND)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         mappingApi.stubCreateOutsideMovementMapping()
         nomisApi.stubGetTemporaryAbsenceApplicationOutsideMovement(appMultiId = 41)
         // TODO stub DPS to reject create
@@ -799,6 +851,7 @@ class ExternalMovementsSyncIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetOutsideMovementMapping(41, NOT_FOUND)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         nomisApi.stubGetTemporaryAbsenceApplicationOutsideMovement(offenderNo = "A1234BC", appMultiId = 41)
         // TODO stub DPS API
         mappingApi.stubCreateOutsideMovementMappingConflict(
@@ -883,6 +936,7 @@ class ExternalMovementsSyncIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetOutsideMovementMapping(41, NOT_FOUND)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         nomisApi.stubGetTemporaryAbsenceApplicationOutsideMovement(offenderNo = "A1234BC", appMultiId = 41)
         // TODO stub DPS API
         mappingApi.stubCreateOutsideMovementMappingFailureFollowedBySuccess()
@@ -1195,6 +1249,7 @@ class ExternalMovementsSyncIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         mappingApi.stubCreateScheduledMovementMapping()
         nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678)
         // TODO stub DPS API
@@ -1206,6 +1261,11 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should check mapping`() {
         mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
+      }
+
+      @Test
+      fun `should check parent mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")))
       }
 
       @Test
@@ -1348,10 +1408,55 @@ class ExternalMovementsSyncIntTest(
     }
 
     @Nested
+    inner class WhenParentApplicationNotCreatedYet {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
+
+        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should check mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
+      }
+
+      @Test
+      fun `should check parent mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")))
+      }
+
+      @Test
+      fun `should create error telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-inserted-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("45678")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            assertThat(it["error"]).isEqualTo("Application 111 not created yet so children cannot be processed")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should send message to DLQ`() {
+        assertThat(awsSqsExternalMovementsOffenderEventsDlqClient.countAllMessagesOnQueue(externalMovementsQueueOffenderEventsDlqUrl).get())
+          .isEqualTo(1)
+      }
+    }
+
+    @Nested
     inner class WhenDuplicateMapping {
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678)
         // TODO stub DPS API
         mappingApi.stubCreateScheduledMovementMappingConflict(
@@ -1436,6 +1541,7 @@ class ExternalMovementsSyncIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678)
         // TODO stub DPS API
         mappingApi.stubCreateScheduledMovementMappingFailureFollowedBySuccess()

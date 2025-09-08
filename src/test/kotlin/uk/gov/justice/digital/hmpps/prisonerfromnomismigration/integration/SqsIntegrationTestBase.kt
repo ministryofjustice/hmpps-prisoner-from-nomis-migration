@@ -186,7 +186,9 @@ class SqsIntegrationTestBase : TestBase() {
 
   internal val externalMovementsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(EXTERNALMOVEMENTS_SYNC_QUEUE_ID) as HmppsQueue }
   internal val awsSqsExternalMovementsOffenderEventsClient by lazy { externalMovementsOffenderEventsQueue.sqsClient }
+  internal val awsSqsExternalMovementsOffenderEventsDlqClient by lazy { externalMovementsOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
   internal val externalMovementsQueueOffenderEventsUrl by lazy { externalMovementsOffenderEventsQueue.queueUrl }
+  internal val externalMovementsQueueOffenderEventsDlqUrl by lazy { externalMovementsOffenderEventsQueue.dlqUrl as String }
 
   private val allQueues by lazy {
     listOf(

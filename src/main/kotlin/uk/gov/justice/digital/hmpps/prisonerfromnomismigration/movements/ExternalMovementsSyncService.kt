@@ -5,6 +5,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.doesOriginateInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
@@ -119,6 +120,7 @@ class ExternalMovementsSyncService(
       ?.also { telemetryClient.trackEvent("$TELEMETRY_PREFIX-outside-movement-inserted-ignored", telemetry) }
       ?: run {
         track("$TELEMETRY_PREFIX-outside-movement-inserted", telemetry) {
+          requireParentApplicationExists(nomisApplicationId)
           nomisApiService.getTemporaryAbsenceApplicationOutsideMovement(prisonerNumber, nomisApplicationMultiId)
             .also {
               // TODO call DPS to synchronise outside movement
@@ -129,6 +131,9 @@ class ExternalMovementsSyncService(
         }
       }
   }
+
+  private suspend fun requireParentApplicationExists(nomisApplicationId: Long) = mappingApiService.getApplicationMapping(nomisApplicationId)
+    ?: throw ParentEntityNotFoundRetry("Application $nomisApplicationId not created yet so children cannot be processed")
 
   suspend fun outsideMovementUpdated(event: MovementApplicationMultiEvent) {
     val (nomisApplicationMultiId, nomisApplicationId, bookingId, prisonerNumber) = event
@@ -195,6 +200,7 @@ class ExternalMovementsSyncService(
           nomisApiService.getTemporaryAbsenceScheduledMovement(prisonerNumber, eventId)
             .also {
               telemetry["nomisApplicationId"] = it.movementApplicationId
+              requireParentApplicationExists(it.movementApplicationId)
               // TODO call DPS to synchronise scheduled movement
               val dpsScheduledMovementId = UUID.randomUUID().also { telemetry["dpsScheduledMovementId"] = it }
               val mapping = ScheduledMovementSyncMappingDto(prisonerNumber, bookingId, eventId, dpsScheduledMovementId, SCHEDULED_MOVEMENT_NOMIS_CREATED)
