@@ -792,6 +792,7 @@ class ExternalMovementsSyncIntTest(
         )
       }
 
+      // Note we only send to the DLQ to assert the message is rejected in tests - in real life we'll retry 3 times as per redrive policy (1 of which should succeed after the parent is created)
       @Test
       fun `should send message to DLQ`() {
         assertThat(awsSqsExternalMovementsOffenderEventsDlqClient.countAllMessagesOnQueue(externalMovementsQueueOffenderEventsDlqUrl).get())
@@ -1445,6 +1446,7 @@ class ExternalMovementsSyncIntTest(
         )
       }
 
+      // Note we only send to the DLQ to assert the message is rejected in tests - in real life we'll retry 3 times as per redrive policy (1 of which should succeed after the parent is created)
       @Test
       fun `should send message to DLQ`() {
         assertThat(awsSqsExternalMovementsOffenderEventsDlqClient.countAllMessagesOnQueue(externalMovementsQueueOffenderEventsDlqUrl).get())
@@ -2096,6 +2098,13 @@ class ExternalMovementsSyncIntTest(
           isNull(),
         )
       }
+
+      // Note we only send to the DLQ to assert the message is rejected in tests - in real life we'll retry 3 times as per redrive policy (1 of which should succeed after the parent is created)
+      @Test
+      fun `should send message to DLQ`() {
+        assertThat(awsSqsExternalMovementsOffenderEventsDlqClient.countAllMessagesOnQueue(externalMovementsQueueOffenderEventsDlqUrl).get())
+          .isEqualTo(1)
+      }
     }
 
     @Nested
@@ -2132,6 +2141,13 @@ class ExternalMovementsSyncIntTest(
           },
           isNull(),
         )
+      }
+
+      // Note we only send to the DLQ to assert the message is rejected in tests - in real life we'll retry 3 times as per redrive policy (1 of which should succeed after the parent is created)
+      @Test
+      fun `should send message to DLQ`() {
+        assertThat(awsSqsExternalMovementsOffenderEventsDlqClient.countAllMessagesOnQueue(externalMovementsQueueOffenderEventsDlqUrl).get())
+          .isEqualTo(1)
       }
     }
 
@@ -2170,6 +2186,13 @@ class ExternalMovementsSyncIntTest(
           isNull(),
         )
       }
+
+      // Note we only send to the DLQ to assert the message is rejected in tests - in real life we'll retry 3 times as per redrive policy (1 of which should succeed after the parent is created)
+      @Test
+      fun `should send message to DLQ`() {
+        assertThat(awsSqsExternalMovementsOffenderEventsDlqClient.countAllMessagesOnQueue(externalMovementsQueueOffenderEventsDlqUrl).get())
+          .isEqualTo(1)
+      }
     }
 
     @Nested
@@ -2206,6 +2229,13 @@ class ExternalMovementsSyncIntTest(
           },
           isNull(),
         )
+      }
+
+      // Note we only send to the DLQ to assert the message is rejected in tests - in real life we'll retry 3 times as per redrive policy (1 of which should succeed after the parent is created)
+      @Test
+      fun `should send message to DLQ`() {
+        assertThat(awsSqsExternalMovementsOffenderEventsDlqClient.countAllMessagesOnQueue(externalMovementsQueueOffenderEventsDlqUrl).get())
+          .isEqualTo(1)
       }
     }
 
