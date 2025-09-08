@@ -213,7 +213,25 @@ AppEvents
 
 The `type` indicates which of person contact entities has created the duplicate. 
  
-For the scenario above the value would be `DPS_CONTACT`
+For the scenario above the value would be `DPS_CONTACT`. Typically, we will still raise the alert in `#syscon-alerts` but the alert can be ignored if it only happens one since these duplicates are retried and eventually pushed to the DLQ.
+
+To be confident, the single alert can be ignored run 
+```ksql
+let ops = AppEvents
+| where AppRoleName == 'hmpps-prisoner-from-nomis-migration'
+| where Name == "from-nomis-sync-contactperson-duplicate"
+| project OperationId;
+AppEvents
+| where OperationId in (ops)
+| where AppRoleName == 'hmpps-prisoner-from-nomis-migration'
+```
+
+You would then expect the following events:
+ * `contactperson-contact-synchronisation-created-error`
+ * `from-nomis-sync-contactperson-duplicate`
+ * `contactperson-contact-synchronisation-created-success`
+
+With the last event confirming that the duplicate was transient and has been resolved.
 
 The other values are for mapping failures due to duplicate with values of:
 * PERSON
