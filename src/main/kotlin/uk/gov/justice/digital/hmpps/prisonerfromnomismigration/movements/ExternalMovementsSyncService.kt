@@ -135,6 +135,9 @@ class ExternalMovementsSyncService(
   private suspend fun requireParentApplicationExists(nomisApplicationId: Long) = mappingApiService.getApplicationMapping(nomisApplicationId)
     ?: throw ParentEntityNotFoundRetry("Application $nomisApplicationId not created yet so children cannot be processed")
 
+  private suspend fun requireParentScheduleExists(nomisEventId: Long) = mappingApiService.getScheduledMovementMapping(nomisEventId)
+    ?: throw ParentEntityNotFoundRetry("Scheduled event ID $nomisEventId not created yet so children cannot be processed")
+
   suspend fun outsideMovementUpdated(event: MovementApplicationMultiEvent) {
     val (nomisApplicationMultiId, nomisApplicationId, bookingId, prisonerNumber) = event
     val telemetry = mutableMapOf<String, Any>(
@@ -424,6 +427,8 @@ class ExternalMovementsSyncService(
     .also {
       it.scheduledTemporaryAbsenceId?.run { telemetry["nomisScheduledEventId"] = this }
       it.movementApplicationId?.run { telemetry["nomisApplicationId"] = this }
+      it.scheduledTemporaryAbsenceId?.run { requireParentScheduleExists(it.scheduledTemporaryAbsenceId) }
+      it.movementApplicationId?.run { requireParentApplicationExists(it.movementApplicationId) }
     }
     .let {
       // TODO dpsApi.sync(it.toDpsTemporaryAbsence()) }
@@ -434,6 +439,8 @@ class ExternalMovementsSyncService(
     .also {
       it.scheduledTemporaryAbsenceReturnId?.run { telemetry["nomisScheduledEventId"] = this }
       it.movementApplicationId?.run { telemetry["nomisApplicationId"] = this }
+      it.scheduledTemporaryAbsenceReturnId?.run { requireParentScheduleExists(it.scheduledTemporaryAbsenceReturnId) }
+      it.movementApplicationId?.run { requireParentApplicationExists(it.movementApplicationId) }
     }
     .let {
       // TODO dpsApi.sync(it.toDpsTemporaryAbsence()) }

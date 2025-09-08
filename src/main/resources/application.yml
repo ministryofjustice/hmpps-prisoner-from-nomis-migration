@@ -210,6 +210,8 @@ hmpps.sqs:
       errorVisibilityTimeout: 1
     eventpersonalrelationships:
       errorVisibilityTimeout: 1
+    eventexternalmovements:
+      errorVisibilityTimeout: 1
     migrationvisits:
       propagateTracing: false
     migrationactivities:

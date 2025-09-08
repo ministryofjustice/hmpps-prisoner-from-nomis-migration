@@ -148,6 +148,7 @@ hmpps.sqs:
       dlqMaxReceiveCount: 1
     eventexternalmovements:
       dlqMaxReceiveCount: 1
+      errorVisibilityTimeout: 0
     domaineventpersonalrelationships:
       dlqMaxReceiveCount: 1
     migrationpersonalrelationshipsprofiledetails:
