@@ -187,6 +187,67 @@ curl --location --request DELETE https://adjustments-api.hmpps.service.justice.g
 --header 'Content-Type: application/vnd.nomis-offence+json' \
 --header 'Authorization: Bearer <token with role SENTENCE_ADJUSTMENTS_SYNCHRONISATION >' 
 ```
+## Contacts a.k.a Personal Relationships
+
+DPS has different terminology for the 2 key entities to NOMIS:
+---
+* NOMIS: Person
+* DPS: Contact
+
+---
+* NOMIS: Contact
+* DPS: Prisoner Contact
+---
+#### Duplicate handling
+
+Both DPS and NOMIS share teh same primary key for NOMIS person/DPS - so duplicates for this entity is impossible.  
+
+Since a prisoner contact can not exist twice in either NOMIS or DPS; i.e. a prisoner and a civilian can not be related twice with the same type a network failure can result in an attempted duplicate.
+
+These would result in a `from-nomis-sync-contactperson-duplicate` custom event
+```ksql
+AppEvents
+| where Name == "from-nomis-sync-contactperson-duplicate"
+| where AppRoleName == "hmpps-prisoner-from-nomis-migration"
+```
+
+The `type` indicates which of person contact entities has created the duplicate. 
+ 
+For the scenario above the value would be `DPS_CONTACT`
+
+The other values are for mapping failures due to duplicate with values of:
+* PERSON
+* CONTACT
+* ADDRESS
+* PHONE
+* EMAIL
+* IDENTIFIER
+* EMPLOYMENT
+* CONTACT_RESTRICTION
+* PERSON_RESTRICTION
+
+In theory these should never happen anymore since they can only happen if a DPS POST succeeds and the mapping succeeds but the process takes longer then the SQS visibility timeout. Configuration should prevent this.
+If it does happen the duplicate record in DPS would need to be deleted and the DLQ cleared. `#move_and_improve-syscon-collaboration` channel should be used to discuss this.
+
+#### Repair
+
+If for any reason the DPS data is out of sync with NOMIS but the NOMIS data is in the correct state you can manually repair the DPS data by essentially re-migrating the NOMIS data back over to DPS.
+
+The scenario this might be necessary is of the mappings between DPS and NOMIS are themseleves incorrect due to a bug from when the mappings where first created.
+
+To run the repair for just contacts related to a prisoner the run  
+```
+POST https://prisoner-nomis-migration.hmpps.service.justice.gov.uk/prisoners/{{repairOffenderNo}}/contacts/resynchronise
+Authorization: Bearer {{$auth.token("hmpps-auth")}}
+```
+
+To run the repair for just teh entire person and all child entities the run 
+```
+POST https://prisoner-nomis-migration.hmpps.service.justice.gov.uk/persons/{{personId}}/resynchronise
+Authorization: Bearer {{$auth.token("hmpps-auth")}}
+```
+
+The is currently not a repair that pushes data from DPS to NOMIS. There maybe a requirement for this in the future.
 
 # Architecture
 
