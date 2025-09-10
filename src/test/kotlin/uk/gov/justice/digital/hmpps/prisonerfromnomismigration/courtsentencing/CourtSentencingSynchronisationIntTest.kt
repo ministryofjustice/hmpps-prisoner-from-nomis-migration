@@ -33,7 +33,13 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateSentence
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationSentenceId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeCreateChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeCreateCourtAppearanceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeCreateCourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeCreateCourtCasesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeCreatePeriodLengthResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeCreateSentenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -3772,6 +3778,17 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         courtSentencingNomisApiMockServer.stubGetCourtCasesChangedByMerge(offenderNo = offenderNumberRetained, courtCasesCreated = emptyList(), courtCasesDeactivated = emptyList())
+        dpsCourtSentencingServer.stubUpdateCourtCasePostMerge(
+          mergeResponse = dpsMergeCreateResponse(
+            courtCases = emptyList(),
+            charges = emptyList(),
+            courtAppearances = emptyList(),
+            sentences = emptyList(),
+            sentenceTerms = emptyList(),
+          ),
+          retainedOffender = offenderNumberRetained,
+        )
+
         courtSentencingOffenderEventsQueue.sendMessage(
           mergeDomainEvent(
             bookingId = 1234,
@@ -3789,8 +3806,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `will not call DPS to synchronise any cases`() {
-        dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+      fun `will call DPS merge endpoint even with no cases changed`() {
+        dpsCourtSentencingServer.verify(1, postRequestedFor(anyUrl()))
       }
 
       @Test
@@ -3957,7 +3974,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         )
 
         dpsCourtSentencingServer.stubUpdateCourtCasePostMerge(
-          courtCasesCreated = dpsMigrationCreateResponse(
+          mergeResponse = dpsMergeCreateResponse(
             courtCases = listOf(
               dpsCourtCaseIdFor10001 to 10001,
               dpsCourtCaseIdFor10002 to 10002,
@@ -3973,10 +3990,10 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               dpsCourtAppearanceFor402 to 402,
             ),
             sentences = listOf(
-              dpsSentenceIdForSequence1 to MigrationSentenceId(offenderBookingId = 301, sequence = 1),
-              dpsSentenceIdForSequence2 to MigrationSentenceId(offenderBookingId = 301, sequence = 2),
-              dpsSentenceIdForSequence3 to MigrationSentenceId(offenderBookingId = 301, sequence = 3),
-              dpsSentenceIdForSequence4 to MigrationSentenceId(offenderBookingId = 301, sequence = 4),
+              dpsSentenceIdForSequence1 to MergeSentenceId(offenderBookingId = 301, sequence = 1),
+              dpsSentenceIdForSequence2 to MergeSentenceId(offenderBookingId = 301, sequence = 2),
+              dpsSentenceIdForSequence3 to MergeSentenceId(offenderBookingId = 301, sequence = 3),
+              dpsSentenceIdForSequence4 to MergeSentenceId(offenderBookingId = 301, sequence = 4),
             ),
             sentenceTerms = listOf(
               dpsSentenceTermIdForSequence1Term1 to NomisPeriodLengthId(offenderBookingId = 301, sentenceSequence = 1, termSequence = 1),
@@ -3984,8 +4001,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               dpsSentenceTermIdForSequence2Term1 to NomisPeriodLengthId(offenderBookingId = 301, sentenceSequence = 2, termSequence = 1),
             ),
           ),
-          courtCasesDeactivatedIds = listOf(dpsCourtCaseIdFor10001, dpsCourtCaseIdFor10002),
-          sentencesDeactivatedIds = listOf(dpsSentenceIdForSequence1, dpsSentenceIdForSequence2, dpsSentenceIdForSequence3, dpsSentenceIdForSequence4),
+          retainedOffender = offenderNumberRetained,
+          // courtCasesDeactivatedIds = listOf(dpsCourtCaseIdFor10001, dpsCourtCaseIdFor10002),
+          // sentencesDeactivatedIds = listOf(dpsSentenceIdForSequence1, dpsSentenceIdForSequence2, dpsSentenceIdForSequence3, dpsSentenceIdForSequence4),
         )
       }
 
@@ -4024,14 +4042,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will call DPS to synchronise any cases`() {
-          // TODO - these verify calls will be collapsed into a single DPS API call
-          dpsCourtSentencingServer.verify(postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")))
-          dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCourtCaseIdFor10001")))
-          dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCourtCaseIdFor10002")))
-          dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence1")))
-          dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence2")))
-          dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence3")))
-          dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence4")))
+          dpsCourtSentencingServer.verify(postRequestedFor(urlPathEqualTo("/legacy/court-case/merge/person/$offenderNumberRetained")))
         }
 
         @Test
@@ -4122,14 +4133,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will call DPS to synchronise any cases once`() {
-          // TODO - these verify calls will be collapsed into a single DPS API call
-          dpsCourtSentencingServer.verify(1, postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")))
-          dpsCourtSentencingServer.verify(1, putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCourtCaseIdFor10001")))
-          dpsCourtSentencingServer.verify(1, putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCourtCaseIdFor10002")))
-          dpsCourtSentencingServer.verify(1, putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence1")))
-          dpsCourtSentencingServer.verify(1, putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence2")))
-          dpsCourtSentencingServer.verify(1, putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence3")))
-          dpsCourtSentencingServer.verify(1, putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceIdForSequence4")))
+          dpsCourtSentencingServer.verify(1, postRequestedFor(urlPathEqualTo("/legacy/court-case/merge/person/$offenderNumberRetained")))
         }
 
         @Test
@@ -4496,6 +4500,40 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     }
   }
 }
+
+fun dpsMergeCreateResponse(
+  courtCases: List<Pair<String, Long>>,
+  charges: List<Pair<String, Long>>,
+  courtAppearances: List<Pair<String, Long>>,
+  sentences: List<Pair<String, MergeSentenceId>>,
+  sentenceTerms: List<Pair<String, NomisPeriodLengthId>>,
+): MergeCreateCourtCasesResponse = MergeCreateCourtCasesResponse(
+  courtCases = courtCases.map { MergeCreateCourtCaseResponse(courtCaseUuid = it.first, caseId = it.second) },
+  appearances = courtAppearances.map {
+    MergeCreateCourtAppearanceResponse(
+      appearanceUuid = UUID.fromString(it.first),
+      eventId = it.second,
+    )
+  },
+  charges = charges.map {
+    MergeCreateChargeResponse(
+      chargeUuid = UUID.fromString(it.first),
+      chargeNOMISId = it.second,
+    )
+  },
+  sentences = sentences.map {
+    MergeCreateSentenceResponse(
+      sentenceUuid = UUID.fromString(it.first),
+      sentenceNOMISId = it.second,
+    )
+  },
+  sentenceTerms = sentenceTerms.map {
+    MergeCreatePeriodLengthResponse(
+      periodLengthUuid = UUID.fromString(it.first),
+      sentenceTermNOMISId = it.second,
+    )
+  },
+)
 
 fun courtCaseEvent(
   eventType: String,

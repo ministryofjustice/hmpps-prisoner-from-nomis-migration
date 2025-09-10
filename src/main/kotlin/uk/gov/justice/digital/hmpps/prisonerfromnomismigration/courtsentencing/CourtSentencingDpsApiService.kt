@@ -22,6 +22,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateWholeCharge
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeCreateCourtCasesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergePerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCases
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityIgnoreNotFound
@@ -53,19 +55,12 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
     .retrieve()
     .awaitBody()
 
-  suspend fun updateCourtCasePostMerge(
-    courtCasesCreated: MigrationCreateCourtCases,
-    courtCasesDeactivated: List<Pair<String, LegacyCreateCourtCase>>,
-    sentencesDeactivated: List<Pair<String, LegacyCreateSentence>>,
-  ): MigrationCreateCourtCasesResponse {
-    // TODO - switch to a DPS API that:
-    //  - merges the cases
-    //  - created new cases
-    //  - updates sentences
-    courtCasesDeactivated.forEach { (courtCaseId, courtCase) -> updateCourtCase(courtCaseId, courtCase) }
-    sentencesDeactivated.forEach { (sentenceId, sentence) -> updateSentence(sentenceId, sentence) }
-    return createCourtCaseMigration(courtCasesCreated, deleteExisting = false)
-  }
+  suspend fun createCourtCaseMerge(mergePerson: MergePerson, offenderNo: String): MergeCreateCourtCasesResponse = webClient
+    .post()
+    .uri("/legacy/court-case/merge/person/{offenderNo}", offenderNo)
+    .bodyValue(mergePerson)
+    .retrieve()
+    .awaitBody()
 
   suspend fun updateCourtCase(courtCaseId: String, courtCase: LegacyCreateCourtCase): ResponseEntity<Void> = webClient
     .put()

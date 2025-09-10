@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyPeriodLengthCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeCreateCourtCasesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.objectMapper
@@ -136,24 +137,24 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubUpdateCourtCasePostMerge(
-    courtCasesCreated: MigrationCreateCourtCasesResponse = MigrationCreateCourtCasesResponse(
+    mergeResponse: MergeCreateCourtCasesResponse = MergeCreateCourtCasesResponse(
       courtCases = emptyList(),
       appearances = emptyList(),
       charges = emptyList(),
       sentences = emptyList(),
       sentenceTerms = emptyList(),
     ),
-    courtCasesDeactivatedIds: List<String> = emptyList(),
-    sentencesDeactivatedIds: List<String> = emptyList(),
+    retainedOffender: String,
   ) {
-    // TODO - switch to real merge endpoint when available
-    courtCasesDeactivatedIds.forEach { courtCaseId ->
-      stubPutCourtCaseForUpdate(courtCaseId = courtCaseId)
-    }
-    sentencesDeactivatedIds.forEach { sentenceId ->
-      stubPutSentenceForUpdate(sentenceId = sentenceId)
-    }
-    stubPostCourtCasesForCreateMigration(response = courtCasesCreated)
+    stubFor(
+      post("/legacy/court-case/merge/person/$retainedOffender")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(mergeResponse)),
+        ),
+    )
   }
 
   fun stubPutCourtCaseForUpdate(
