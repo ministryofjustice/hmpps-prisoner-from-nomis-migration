@@ -16,6 +16,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreatePeriodLengthResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateSentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CourtCaseLegacyData
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.DeactivatedCourtCase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.DeactivatedSentence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyChargeCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtAppearanceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
@@ -23,7 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyPeriodLengthCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateWholeCharge
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCases
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergePerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
@@ -56,6 +58,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SEN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SENTENCE_TERM_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import java.util.UUID
 
 @Service
 class CourtSentencingSynchronisationService(
@@ -1498,35 +1501,29 @@ class CourtSentencingSynchronisationService(
         telemetry["courtCasesDeactivatedCount"] = it.courtCasesDeactivated.size
       }
 
-    if (courtCasesCreated.isNotEmpty()) {
-      // TODO this will be simplified by a new DPS endpoint
-      val newCourtCaseMappings = dpsApiService.updateCourtCasePostMerge(
-        courtCasesCreated = MigrationCreateCourtCases(
-          prisonerId = retainedOffenderNumber,
-          courtCases = courtCasesCreated.map { it.toMigrationDpsCourtCase() },
-        ),
-        courtCasesDeactivated = courtCasesDeactivated.map { mappingApiService.getCourtCaseByNomisId(it.id).dpsCourtCaseId to it.toLegacyDpsCourtCase() },
+    val newCourtCaseMappings = dpsApiService.createCourtCaseMerge(
+      offenderNo = retainedOffenderNumber,
+      mergePerson = MergePerson(
+        casesCreated = courtCasesCreated.map { it.toDpsCourtCasePostMerge() },
+        casesDeactivated = courtCasesDeactivated.map { DeactivatedCourtCase(mappingApiService.getCourtCaseByNomisId(it.id).dpsCourtCaseId, active = it.caseStatus.code == "A") },
         sentencesDeactivated = courtCasesDeactivated.flatMap {
           it.sentences.map { nomisSentence ->
-            mappingApiService.getSentenceByNomisId(
-              bookingId = nomisSentence.bookingId,
-              sentenceSequence = nomisSentence.sentenceSeq,
-            ).dpsSentenceId to nomisSentence.toDpsSentence(
-              dpsConsecUuid = nomisSentence.consecSequence?.let { consecSequence ->
-                getConsecutiveSequenceMappingOrThrow(
+            DeactivatedSentence(
+              dpsSentenceUuid = UUID.fromString(
+                mappingApiService.getSentenceByNomisId(
                   bookingId = nomisSentence.bookingId,
-                  sentenceSequence = nomisSentence.sentenceSeq.toInt(),
-                  consecSequence = consecSequence,
-                )
-              },
-              sentenceChargeIds = getDpsChargeMappings(nomisSentence),
-              // TODO as not used yet
-              dpsAppearanceUuid = "6f35a357-f458-40b9-b824-de729ffeb459",
+                  sentenceSequence = nomisSentence.sentenceSeq,
+                ).dpsSentenceId,
+              ),
+              active = nomisSentence.status == "A",
             )
           }
         },
-      )
+        removedPrisonerNumber = removedOffenderNumber,
+      ),
+    )
 
+    if (courtCasesCreated.isNotEmpty()) {
       val mapping = CourtCaseBatchMappingDto(
         courtCases = newCourtCaseMappings.courtCases.map {
           CourtCaseMappingDto(
@@ -1563,7 +1560,6 @@ class CourtSentencingSynchronisationService(
         },
         mappingType = CourtCaseBatchMappingDto.MappingType.NOMIS_CREATED,
       )
-
       tryToCreateMapping(offenderNo = retainedOffenderNumber, mapping = mapping, telemetry = telemetry)
     }
 
