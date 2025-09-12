@@ -663,6 +663,7 @@ private fun locationResponse(id: Long = 1234, parentLocationId: Long = 5678): St
     "listSequence": 1,
     "comment": "A comment",
     "unitType": "NA",
+    "tracking": true,
     "profiles": [
       {
         "profileType": "HOU_SANI_FIT",

@@ -322,6 +322,7 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse, parentId: Strin
     nomisLocationResponse.reactivateDate
   },
   isDeactivated = !nomisLocationResponse.active,
+  internalMovementAllowed = nomisLocationResponse.tracking,
 )
 
 private fun toLocationType(locationType: String): NomisSyncLocationRequest.LocationType = when (locationType) {
