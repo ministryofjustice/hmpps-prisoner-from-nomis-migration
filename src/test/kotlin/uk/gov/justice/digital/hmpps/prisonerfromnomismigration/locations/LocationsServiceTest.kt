@@ -40,6 +40,7 @@ internal class LocationsServiceTest {
             prisonId = "LEI",
             lastUpdatedBy = "TJONES_ADM",
             isDeactivated = false,
+            internalMovementAllowed = true,
           ),
         )
       }
@@ -62,7 +63,8 @@ internal class LocationsServiceTest {
           .withRequestBody(matchingJsonPath("localName", equalTo("Wing C")))
           .withRequestBody(matchingJsonPath("prisonId", equalTo("LEI")))
           .withRequestBody(matchingJsonPath("comments", equalTo("Test comment")))
-          .withRequestBody(matchingJsonPath("lastUpdatedBy", equalTo("TJONES_ADM"))),
+          .withRequestBody(matchingJsonPath("lastUpdatedBy", equalTo("TJONES_ADM")))
+          .withRequestBody(matchingJsonPath("internalMovementAllowed", equalTo("true"))),
       )
     }
   }

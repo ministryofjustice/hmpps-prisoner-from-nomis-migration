@@ -143,7 +143,12 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create the location in the locations service`() {
           await untilAsserted {
-            locationsApi.verify(postRequestedFor(urlPathEqualTo("/sync/upsert")))
+            locationsApi.verify(
+              postRequestedFor(urlPathEqualTo("/sync/upsert"))
+                .withRequestBody(matchingJsonPath("code", equalTo("001")))
+                .withRequestBody(matchingJsonPath("locationType", equalTo("CELL")))
+                .withRequestBody(matchingJsonPath("internalMovementAllowed", equalTo("true"))),
+            )
           }
         }
 
