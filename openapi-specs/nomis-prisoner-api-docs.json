@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-09-11.519.532d496"
+    "version" : "2025-09-12.524.224b192"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -10790,6 +10790,88 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/CreateTemporaryAbsenceResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "One or more fields in the request contains invalid data",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_MOVEMENTS",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Prisoner does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/movements/{offenderNo}/temporary-absences/temporary-absence-return" : {
+      "post" : {
+        "tags" : [ "movements-resource" ],
+        "summary" : "Inserts a temporary absence return for an offender",
+        "description" : "Creates a temporary absence return on the prisoner's latest booking. Requires ROLE_NOMIS_MOVEMENTS",
+        "operationId" : "createTemporaryAbsenceReturn",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "description" : "Offender no (aka prisoner number)",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Offender no (aka prisoner number)",
+            "example" : "A1234AK"
+          },
+          "example" : "A1234AK"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateTemporaryAbsenceReturnRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Temporary absence return created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CreateTemporaryAbsenceReturnResponse"
                 }
               }
             }
@@ -25967,6 +26049,78 @@
       "CreateTemporaryAbsenceResponse" : {
         "type" : "object",
         "description" : "Create scheduled temporary absence response",
+        "properties" : {
+          "bookingId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Booking ID"
+          },
+          "movementSequence" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Movement sequence"
+          }
+        },
+        "required" : [ "bookingId", "movementSequence" ]
+      },
+      "CreateTemporaryAbsenceReturnRequest" : {
+        "type" : "object",
+        "description" : "Create temporary absence return request",
+        "properties" : {
+          "scheduledTemporaryAbsenceReturnId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Scheduled temporary absence return event ID"
+          },
+          "movementDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Movement date"
+          },
+          "movementTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Movement time"
+          },
+          "movementReason" : {
+            "type" : "string",
+            "description" : "Movement reason"
+          },
+          "arrestAgency" : {
+            "type" : "string",
+            "description" : "Arresting agency code"
+          },
+          "escort" : {
+            "type" : "string",
+            "description" : "Escort"
+          },
+          "escortText" : {
+            "type" : "string",
+            "description" : "Escort text"
+          },
+          "fromAgency" : {
+            "type" : "string",
+            "description" : "From agency"
+          },
+          "toPrison" : {
+            "type" : "string",
+            "description" : "To prison"
+          },
+          "commentText" : {
+            "type" : "string",
+            "description" : "Comment text"
+          },
+          "fromAddressId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "From address ID"
+          }
+        },
+        "required" : [ "movementDate", "movementReason", "movementTime" ]
+      },
+      "CreateTemporaryAbsenceReturnResponse" : {
+        "type" : "object",
+        "description" : "Create temporary absence return response",
         "properties" : {
           "bookingId" : {
             "type" : "integer",
