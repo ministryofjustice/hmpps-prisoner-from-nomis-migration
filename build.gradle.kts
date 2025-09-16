@@ -135,6 +135,13 @@ val models = listOf(
     models = "Capacity,Certification,ChangeHistory,ErrorResponse,LegacyLocation,NomisSyncLocationRequest,NonResidentialUsageDto",
   ),
   ModelConfiguration(
+    name = "movements",
+    packageName = "movements",
+    testPackageName = "movements",
+    url = "https://external-movements-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+    models = "NomisAudit,SyncResponse,TapApplicationRequest",
+  ),
+  ModelConfiguration(
     name = "nomis-prisoner",
     packageName = "nomisprisoner",
     url = "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk/v3/api-docs",
