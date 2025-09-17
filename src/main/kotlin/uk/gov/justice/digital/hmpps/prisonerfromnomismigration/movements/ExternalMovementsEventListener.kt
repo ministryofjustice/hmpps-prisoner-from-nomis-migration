@@ -89,6 +89,7 @@ data class ScheduledMovementEvent(
   val bookingId: Long,
   val offenderIdDisplay: String,
   val eventMovementType: MovementType,
+  val directionCode: DirectionCode,
   override val auditModuleName: String,
 ) : EventAudited
 
