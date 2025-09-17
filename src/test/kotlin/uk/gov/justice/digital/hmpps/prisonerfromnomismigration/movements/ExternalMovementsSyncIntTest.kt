@@ -1247,7 +1247,7 @@ class ExternalMovementsSyncIntTest(
   inner class TemporaryAbsenceScheduledMovementCreated {
 
     @Nested
-    inner class HappyPath {
+    inner class HappyPathOutbound {
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
@@ -1302,6 +1302,71 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisEventId"]).isEqualTo("45678")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            assertThat(it["directionCode"]).isEqualTo("OUT")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class HappyPathInbound {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        mappingApi.stubCreateScheduledMovementMapping()
+        nomisApi.stubGetTemporaryAbsenceScheduledReturnMovement(eventId = 45678)
+        // TODO stub DPS API
+
+        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED", direction = "IN"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should check mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
+      }
+
+      @Test
+      fun `should check parent mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")))
+      }
+
+      @Test
+      fun `should get NOMIS scheduled movement`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence-return/45678")))
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should create DPS scheduled movement`() {
+        // TODO verify DPS endpoint called
+      }
+
+      @Test
+      fun `should create mapping`() {
+        mappingApi.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+            .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
+            .withRequestBodyJsonPath("bookingId", 12345)
+            .withRequestBodyJsonPath("nomisEventId", 45678)
+            // TODO verify DPS id
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-inserted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("45678")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            assertThat(it["directionCode"]).isEqualTo("IN")
             // TODO assert DPS id is tracked
           },
           isNull(),
@@ -1608,7 +1673,7 @@ class ExternalMovementsSyncIntTest(
   inner class TemporaryAbsenceScheduledMovementUpdated {
 
     @Nested
-    inner class HappyPath {
+    inner class HappyPathOutbound {
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetScheduledMovementMapping(45678)
@@ -1644,6 +1709,52 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
             assertThat(it["nomisEventId"]).isEqualTo("45678")
+            assertThat(it["directionCode"]).isEqualTo("OUT")
+            // TODO assert DPS id is tracked
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class HappyPathInbound {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetScheduledMovementMapping(45678)
+        nomisApi.stubGetTemporaryAbsenceScheduledReturnMovement(eventId = 45678)
+        // TODO stub DPS API
+
+        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-UPDATED", direction = "IN"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should get mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
+      }
+
+      @Test
+      fun `should get NOMIS scheduled movement`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence-return/45678")))
+      }
+
+      @Test
+      @Disabled("Waiting for DPS API to become available")
+      fun `should update DPS scheduled movement`() {
+        // TODO verify DPS endpoint called
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            assertThat(it["nomisEventId"]).isEqualTo("45678")
+            assertThat(it["directionCode"]).isEqualTo("IN")
             // TODO assert DPS id is tracked
           },
           isNull(),
@@ -1681,6 +1792,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisEventId"]).isEqualTo("45678")
+            assertThat(it["directionCode"]).isEqualTo("OUT")
             // TODO assert DPS id is tracked
           },
           isNull(),
@@ -2853,12 +2965,12 @@ class ExternalMovementsSyncIntTest(
        }
     """.trimMargin()
 
-  private fun scheduledMovementEvent(eventType: String, auditModuleName: String = "OCUCANTR", nomisEventType: String = "TAP") = // language=JSON
+  private fun scheduledMovementEvent(eventType: String, auditModuleName: String = "OCUCANTR", nomisEventType: String = "TAP", direction: String = "OUT") = // language=JSON
     """{
          "Type" : "Notification",
          "MessageId" : "57126174-e2d7-518f-914e-0056a63363b0",
          "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
-         "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2025-09-02T09:19:03\",\"nomisEventType\":\"$eventType\",\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\",\"eventId\":45678,\"eventMovementType\":\"$nomisEventType\",\"auditModuleName\":\"$auditModuleName\"}",
+         "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2025-09-02T09:19:03\",\"nomisEventType\":\"$eventType\",\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\",\"eventId\":45678,\"eventMovementType\":\"$nomisEventType\",\"auditModuleName\":\"$auditModuleName\",\"directionCode\":\"$direction\"}",
          "Timestamp" : "2025-09-02T09:19:03.998Z",
          "SignatureVersion" : "1",
          "Signature" : "eePe/HtUdMyeFriH6GJe4FAJjYhQFjohJOu0+t8qULvpaw+qsGBfolKYa83fARpGDZJf9ceKd6kYGwF+OVeNViXluqPeUyoWbJ/lOjCs1tvlUuceCLy/7+eGGxkNASKJ1sWdwhO5J5I8WKUq5vfyYgL/Mygae6U71Bc0H9I2uVkw7tUYg0ZQBMSkA8HpuLLAN06qR5ahJnNDDxxoV07KY6E2dy8TheEo2Dhxq8hicl272LxWKMifM9VfR+D1i1eZNXDGsvvHmMCjumpxxYAJmrU+aqUzAU2KnhoZJTfeZT+RV+ZazjPLqX52zwA47ZFcqzCBnmrU6XwuHT4gKJcj1Q==",
