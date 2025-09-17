@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-09-12.524.224b192"
+    "version" : "2025-09-17.537.272e3ce"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -17570,6 +17570,121 @@
         }
       }
     },
+    "/finance/prison/{prisonId}/balance" : {
+      "get" : {
+        "tags" : [ "prison-balance-resource" ],
+        "summary" : "Gets the balances for the prison.",
+        "description" : "Retrieves all the balances for a prison. Requires NOMIS_PRISONER_API__SYNCHRONISATION__RW role.",
+        "operationId" : "getPrisonBalance",
+        "parameters" : [ {
+          "name" : "prisonId",
+          "in" : "path",
+          "description" : "prisonId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "prisonId",
+            "example" : "MDI"
+          },
+          "example" : "MDI"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Balance information returned.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonBalanceDto"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Prison does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/prison/ids" : {
+      "get" : {
+        "tags" : [ "prison-balance-resource" ],
+        "summary" : "Gets all the caseloads (prisons) that have balance entries.",
+        "description" : "Retrieves a list of caseloads that have a balance.\n\n      This will include caseloads for prisons that have closed (e.g. Medway STC, Everthorpe) and also caseloads that \n      aren't prisons (e.g. Transfer, Ghost Holding Establishment).\n\n      Certain caseloads (e.g. CADM_I, NWEB and LIC) don't have a balance so aren't returned.\n\n      Requires NOMIS_PRISONER_API__SYNCHRONISATION__RW role.",
+        "operationId" : "getPrisonIds",
+        "responses" : {
+          "200" : {
+            "description" : "Balance information returned.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Prison does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/documents/{id}" : {
       "get" : {
         "tags" : [ "document-resource" ],
@@ -27363,12 +27478,12 @@
           "paged" : {
             "type" : "boolean"
           },
+          "unpaged" : {
+            "type" : "boolean"
+          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "unpaged" : {
-            "type" : "boolean"
           }
         }
       },
@@ -32285,6 +32400,46 @@
           }
         },
         "required" : [ "auditModule", "bookingId", "currentIep", "iepDateTime", "iepLevel", "incentiveSequence", "offenderNo", "prisonId", "whenCreated" ]
+      },
+      "PrisonAccountBalanceDto" : {
+        "type" : "object",
+        "properties" : {
+          "accountCode" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The account code for the balance entry",
+            "example" : 2101
+          },
+          "balance" : {
+            "type" : "number",
+            "description" : "The balance for this prison and account code",
+            "example" : 33.12
+          },
+          "transactionDate" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date and time of the last transaction OR the date and time of the consolidation of the transactions"
+          }
+        },
+        "required" : [ "accountCode", "balance", "transactionDate" ]
+      },
+      "PrisonBalanceDto" : {
+        "type" : "object",
+        "properties" : {
+          "prisonId" : {
+            "type" : "string",
+            "description" : "The prison id",
+            "example" : "MDI"
+          },
+          "accountBalances" : {
+            "type" : "array",
+            "description" : "The list of account balances for the prison",
+            "items" : {
+              "$ref" : "#/components/schemas/PrisonAccountBalanceDto"
+            }
+          }
+        },
+        "required" : [ "accountBalances", "prisonId" ]
       },
       "CSIPIdResponse" : {
         "type" : "object",
