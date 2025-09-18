@@ -16,7 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 class ExternalMovementsNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
   suspend fun getTemporaryAbsences(offenderNo: String): OffenderTemporaryAbsencesResponse = webClient.get()
     .uri {
-      it.path("/prisoners/{offenderNo}/temporary-absences")
+      it.path("/movements/{offenderNo}/temporary-absences")
         .build(offenderNo)
     }
     .retrieve()
@@ -24,7 +24,7 @@ class ExternalMovementsNomisApiService(@Qualifier("nomisApiWebClient") private v
 
   suspend fun getTemporaryAbsenceApplication(offenderNo: String, applicationId: Long) = webClient.get()
     .uri {
-      it.path("/prisoners/{offenderNo}/temporary-absences/application/{applicationId}")
+      it.path("/movements/{offenderNo}/temporary-absences/application/{applicationId}")
         .build(offenderNo, applicationId)
     }
     .retrieve()

@@ -72,7 +72,7 @@ class ExternalMovementsSyncIntTest(
 
       @Test
       fun `should get NOMIS application`() {
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234BC/temporary-absences/application/111")))
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/application/111")))
       }
 
       @Test
@@ -392,7 +392,7 @@ class ExternalMovementsSyncIntTest(
 
       @Test
       fun `should get NOMIS application`() {
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234BC/temporary-absences/application/111")))
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/application/111")))
       }
 
       @Test

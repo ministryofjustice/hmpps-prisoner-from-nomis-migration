@@ -49,7 +49,7 @@ class ExternalMovementsNomisApiServiceTest {
       apiService.getTemporaryAbsences(offenderNo = "A1234BC")
 
       externalMovementsNomisApiMockServer.verify(
-        getRequestedFor(urlPathEqualTo("/prisoners/A1234BC/temporary-absences")),
+        getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences")),
       )
     }
 
@@ -109,7 +109,7 @@ class ExternalMovementsNomisApiServiceTest {
       apiService.getTemporaryAbsenceApplication(offenderNo = "A1234BC", applicationId = 111)
 
       externalMovementsNomisApiMockServer.verify(
-        getRequestedFor(urlPathEqualTo("/prisoners/A1234BC/temporary-absences/application/111")),
+        getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/application/111")),
       )
     }
 
