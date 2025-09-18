@@ -16,15 +16,19 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_OUTSIDE_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType.TAP
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapApplicationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceApplicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.util.*
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.NomisAudit as DpsAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED as SCHEDULED_MOVEMENT_NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto.MappingType.NOMIS_CREATED as OUTSIDE_MOVEMENT_NOMIS_CREATED
 
@@ -36,6 +40,7 @@ class ExternalMovementsSyncService(
   private val queueService: SynchronisationQueueService,
   private val mappingApiService: ExternalMovementsMappingApiService,
   private val nomisApiService: ExternalMovementsNomisApiService,
+  private val dpsApiService: ExternalMovementsDpsApiService,
 ) : TelemetryEnabled {
   suspend fun movementApplicationInserted(event: MovementApplicationEvent) {
     val (nomisApplicationId, bookingId, prisonerNumber) = event
@@ -56,8 +61,9 @@ class ExternalMovementsSyncService(
         track("$TELEMETRY_PREFIX-application-inserted", telemetry) {
           nomisApiService.getTemporaryAbsenceApplication(prisonerNumber, nomisApplicationId)
             .also {
-              // TODO call DPS to synchronise application
-              val dpsApplicationId = UUID.randomUUID().also { telemetry["dpsApplicationId"] = it }
+              val dpsApplicationId = dpsApiService.syncTemporaryAbsenceApplication(prisonerNumber, it.toDpsRequest())
+                .id
+                .also { telemetry["dpsApplicationId"] = it }
               val mapping = TemporaryAbsenceApplicationSyncMappingDto(prisonerNumber, bookingId, nomisApplicationId, dpsApplicationId, NOMIS_CREATED)
               tryToCreateApplicationMapping(mapping, telemetry)
             }
@@ -582,3 +588,36 @@ class ExternalMovementsSyncService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 }
+
+private fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) = TapApplicationRequest(
+  id = id,
+  movementApplicationId = movementApplicationId,
+  eventSubType = eventSubType,
+  applicationDate = applicationDate,
+  fromDate = fromDate,
+  releaseTime = releaseTime,
+  toDate = toDate,
+  returnTime = returnTime,
+  applicationStatus = applicationStatus,
+  applicationType = applicationType,
+  transportType = transportType,
+  escortCode = escortCode,
+  prisonId = prisonId,
+  toAgencyId = toAgencyId,
+  toAddressId = toAddressId,
+  toAddressOwnerClass = toAddressOwnerClass,
+  comment = comment,
+  contactPersonName = contactPersonName,
+  temporaryAbsenceType = temporaryAbsenceType,
+  temporaryAbsenceSubType = temporaryAbsenceSubType,
+  audit = audit.toDpsRequest(),
+)
+
+private fun NomisAudit.toDpsRequest() = DpsAudit(
+  createDatetime = createDatetime,
+  createUsername = createUsername,
+  modifyDatetime = modifyDatetime,
+  modifyUserId = modifyUserId,
+  auditTimestamp = auditTimestamp,
+  auditUserId = auditUserId,
+)
