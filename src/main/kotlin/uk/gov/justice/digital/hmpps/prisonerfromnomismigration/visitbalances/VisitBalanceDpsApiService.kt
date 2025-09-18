@@ -5,23 +5,22 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityOrLogAndRethrowBadRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.api.NomisControllerApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerMigrationDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncDto
 
 @Service
-class VisitBalanceDpsApiService(@Qualifier("visitBalanceApiWebClient") private val webClient: WebClient) {
+class VisitBalanceDpsApiService(@Qualifier("visitBalanceApiWebClient") webClient: WebClient) {
+  private val api = NomisControllerApi(webClient)
+
   suspend fun migrateVisitBalance(visitBalanceMigrateDto: VisitAllocationPrisonerMigrationDto) {
-    webClient.post()
-      .uri("/visits/allocation/prisoner/migrate")
-      .bodyValue(visitBalanceMigrateDto)
+    api.prepare(api.migratePrisonerVisitOrdersRequestConfig(visitBalanceMigrateDto))
       .retrieve()
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
   }
 
   suspend fun syncVisitBalanceAdjustment(visitBalanceSyncDto: VisitAllocationPrisonerSyncDto) {
-    webClient.post()
-      .uri("/visits/allocation/prisoner/sync")
-      .bodyValue(visitBalanceSyncDto)
+    api.prepare(api.syncPrisonerVisitOrdersRequestConfig(visitBalanceSyncDto))
       .retrieve()
       .awaitBodilessEntity()
   }
