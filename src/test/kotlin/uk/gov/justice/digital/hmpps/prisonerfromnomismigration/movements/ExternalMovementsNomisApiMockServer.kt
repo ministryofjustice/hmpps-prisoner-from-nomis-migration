@@ -40,7 +40,7 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     response: OffenderTemporaryAbsencesResponse = temporaryAbsencesResponse(),
   ) {
     nomisApi.stubFor(
-      get(urlPathEqualTo("/prisoners/$offenderNo/temporary-absences")).willReturn(
+      get(urlPathEqualTo("/movements/$offenderNo/temporary-absences")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
@@ -52,13 +52,13 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
   fun verifyGetTemporaryAbsences(offenderNo: String = "A1234BC", count: Int = 1) {
     nomisApi.verify(
       count,
-      getRequestedFor(urlPathEqualTo("/prisoners/$offenderNo/temporary-absences")),
+      getRequestedFor(urlPathEqualTo("/movements/$offenderNo/temporary-absences")),
     )
   }
 
   fun stubGetTemporaryAbsences(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
-      get(urlPathMatching("/prisoners/.*/temporary-absences")).willReturn(
+      get(urlPathMatching("/movements/.*/temporary-absences")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -223,7 +223,7 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     response: TemporaryAbsenceApplicationResponse = temporaryAbsenceApplicationResponse(),
   ) {
     nomisApi.stubFor(
-      get(urlPathEqualTo("/prisoners/$offenderNo/temporary-absences/application/$applicationId")).willReturn(
+      get(urlPathEqualTo("/movements/$offenderNo/temporary-absences/application/$applicationId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
@@ -237,7 +237,7 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     nomisApi.stubFor(
-      get(urlPathMatching("/prisoners/.*/temporary-absences/application/.*")).willReturn(
+      get(urlPathMatching("/movements/.*/temporary-absences/application/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
