@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-05-06.351.57f2634"
+    "version" : "2025-09-18.623.cd1d4c0"
   },
   "servers" : [ {
     "url" : "https://hmpps-visit-allocation-api-dev.prison.service.justice.gov.uk",
@@ -151,7 +151,7 @@
       "post" : {
         "tags" : [ "nomis-controller" ],
         "summary" : "Endpoint to migrate prisoner VO / PVO balances from NOMIS to DPS.",
-        "description" : "Takes a prisoner and 'onboards' them onto DPS, syncing their balance with NOMIS.\n\nRequires one of the following roles:\n* ROLE_VISIT_ALLOCATION_API__NOMIS_API",
+        "description" : "Takes a prisoner and 'onboards' them onto DPS, syncing their balance with NOMIS. Also used by NOMIS for Initial IEP Entitlement syncs, not just initial migration\n\nRequires one of the following roles:\n* ROLE_VISIT_ALLOCATION_API__NOMIS_API",
         "operationId" : "migratePrisonerVisitOrders",
         "requestBody" : {
           "content" : {
@@ -610,7 +610,7 @@
           "changeLogType" : {
             "type" : "string",
             "description" : "type of change applied",
-            "enum" : [ "MIGRATION", "SYNC", "PRISONER_REMOVED", "BATCH_PROCESS" ],
+            "enum" : [ "MIGRATION", "SYNC", "PRISONER_REMOVED", "BATCH_PROCESS", "ALLOCATION_USED_BY_VISIT", "ALLOCATION_REFUNDED_BY_VISIT_CANCELLED", "ALLOCATION_ADDED_AFTER_PRISONER_MERGE", "PRISONER_BALANCE_RESET" ],
             "example" : "SYNC"
           },
           "userId" : {
