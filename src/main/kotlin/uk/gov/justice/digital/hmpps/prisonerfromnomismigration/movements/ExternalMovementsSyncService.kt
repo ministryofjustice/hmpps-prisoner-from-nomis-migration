@@ -88,7 +88,7 @@ class ExternalMovementsSyncService(
       val dpsApplicationId = mappingApiService.getApplicationMapping(nomisApplicationId)!!.dpsMovementApplicationId
         .also { telemetry["dpsApplicationId"] = it }
       val nomisApplication = nomisApiService.getTemporaryAbsenceApplication(prisonerNumber, nomisApplicationId)
-      // TODO update DPS
+      dpsApiService.syncTemporaryAbsenceApplication(prisonerNumber, nomisApplication.toDpsRequest(dpsApplicationId))
     }
   }
 

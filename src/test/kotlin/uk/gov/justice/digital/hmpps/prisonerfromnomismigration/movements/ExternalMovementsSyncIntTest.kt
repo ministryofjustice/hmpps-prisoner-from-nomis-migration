@@ -372,14 +372,15 @@ class ExternalMovementsSyncIntTest(
   @Nested
   @DisplayName("MOVEMENT_APPLICATION-UPDATED")
   inner class TemporaryAbsenceApplicationUpdated {
+    private var dpsId: UUID = UUID.randomUUID()
 
     @Nested
     inner class HappyPath {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsId)
         nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
-        // TODO stub DPS API
+        dpsApi.stubSyncTapApplication(response = SyncResponse(dpsId))
 
         sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-UPDATED"))
           .also { waitForAnyProcessingToComplete() }
@@ -396,9 +397,13 @@ class ExternalMovementsSyncIntTest(
       }
 
       @Test
-      @Disabled("Waiting for DPS API to become available")
       fun `should update DPS application`() {
-        // TODO verify DPS endpoint called
+        dpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-application/A1234BC"))
+            .withRequestBodyJsonPath("id", equalTo = dpsId)
+            .withRequestBodyJsonPath("movementApplicationId", equalTo = 111)
+            .withRequestBodyJsonPath("eventSubType", equalTo = "C5"),
+        )
       }
 
       @Test
@@ -409,7 +414,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            // TODO assert DPS id is tracked
+            assertThat(it["dpsApplicationId"]).isEqualTo(dpsId.toString())
           },
           isNull(),
         )
@@ -425,9 +430,8 @@ class ExternalMovementsSyncIntTest(
       }
 
       @Test
-      @Disabled("Waiting for DPS API to become available")
       fun `should NOT create DPS application`() {
-        // TODO verify DPS endpoint not called
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/temporary-absence-application/A1234BC")))
       }
 
       @Test
@@ -446,7 +450,6 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            // TODO assert DPS id is tracked
           },
           isNull(),
         )
@@ -454,22 +457,20 @@ class ExternalMovementsSyncIntTest(
     }
 
     @Nested
-    @Disabled("Waiting for DPS API to become available")
     inner class WhenDpsUpdateFails {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsId)
         nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
-        // TODO stub DPS API to reject update
+        dpsApi.stubSyncTapApplicationError()
 
         sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-UPDATED"))
           .also { waitForAnyProcessingToComplete() }
       }
 
       @Test
-      @Disabled("Waiting for DPS API to become available")
       fun `should try to update DPS application`() {
-        // TODO verify DPS endpoint called
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/temporary-absence-application/A1234BC")))
       }
 
       @Test
@@ -480,7 +481,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            // TODO assert DPS id is tracked
+            assertThat(it["dpsApplicationId"]).isEqualTo(dpsId.toString())
           },
           isNull(),
         )

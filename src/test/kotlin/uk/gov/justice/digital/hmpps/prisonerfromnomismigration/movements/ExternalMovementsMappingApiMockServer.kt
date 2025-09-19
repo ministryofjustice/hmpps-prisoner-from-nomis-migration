@@ -111,12 +111,12 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
 
   fun stubCreateTemporaryAbsenceApplicationMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/temporary-absence/application")
 
-  fun stubGetTemporaryAbsenceApplicationMapping(nomisApplicationId: Long = 1L) {
+  fun stubGetTemporaryAbsenceApplicationMapping(nomisApplicationId: Long = 1L, dpsApplicationId: UUID = UUID.randomUUID()) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/temporary-absence/application/nomis-application-id/$nomisApplicationId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody(objectMapper.writeValueAsString(temporaryAbsenceApplicationMapping(nomisApplicationId))),
+          .withBody(objectMapper.writeValueAsString(temporaryAbsenceApplicationMapping(nomisApplicationId, dpsApplicationId))),
       ),
     )
   }
@@ -441,11 +441,15 @@ fun temporaryAbsencePrisonerMappings(prisonerNumber: String = "A1234BC") = Tempo
   ),
 )
 
-fun temporaryAbsenceApplicationMapping(nomisApplicationId: Long = 1L, prisonerNumber: String = "A1234BC") = TemporaryAbsenceApplicationSyncMappingDto(
+fun temporaryAbsenceApplicationMapping(
+  nomisApplicationId: Long = 1L,
+  dpsApplicationId: UUID = UUID.randomUUID(),
+  prisonerNumber: String = "A1234BC",
+) = TemporaryAbsenceApplicationSyncMappingDto(
   prisonerNumber = prisonerNumber,
   bookingId = 12345,
   nomisMovementApplicationId = nomisApplicationId,
-  dpsMovementApplicationId = UUID.randomUUID(),
+  dpsMovementApplicationId = dpsApplicationId,
   mappingType = TemporaryAbsenceApplicationSyncMappingDto.MappingType.MIGRATED,
 )
 
