@@ -178,7 +178,6 @@ val models = listOf(
     packageName = "visit.balance",
     testPackageName = "visitbalances",
     url = "https://hmpps-visit-allocation-api-dev.prison.service.justice.gov.uk/v3/api-docs",
-    models = "VisitAllocationPrisonerMigrationDto,VisitAllocationPrisonerSyncDto",
   ),
 )
 
