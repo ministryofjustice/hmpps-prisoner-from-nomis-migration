@@ -21,7 +21,7 @@ import java.util.UUID
 
 @Service
 class TransactionSynchronisationService(
-  private val nomisApiService: TransactionNomisApiService,
+  private val nomisApiService: FinanceNomisApiService,
   private val transactionMappingService: TransactionMappingApiService,
   private val financeService: FinanceApiService,
   private val telemetryClient: TelemetryClient,
