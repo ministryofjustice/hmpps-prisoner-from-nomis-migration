@@ -1,17 +1,23 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GeneralLedgerTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonAccountBalanceDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonBalanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
+import kotlin.math.min
 
 @Component
 class FinanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
@@ -83,22 +89,44 @@ class FinanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-// TODO fun stubPutTransaction(
-//    transactionId: Long,
-//    status: HttpStatus = HttpStatus.OK,
-//  ) {
-//    nomisApi.stubFor(
-//      put(urlEqualTo("/transactions/$transactionId")).willReturn(status(status.value())),
-//    )
-//  }
-//
-//  fun stubDeleteTransaction(
-//    transactionId: Long,
-//  ) {
-//    nomisApi.stubFor(
-//      delete(urlEqualTo("/transactions/$transactionId")).willReturn(status(HttpStatus.NO_CONTENT.value())),
-//    )
-//  }
+  fun stubGetPrisonBalanceIds(totalElements: Long = 20, pageSize: Long = 20, firstPrisonBalanceId: String = "MDI") {
+    val content: List<String> = (1..min(pageSize, totalElements)).map {
+      "$firstPrisonBalanceId$it"
+    }
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/finance/prison/ids")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(content)),
+      ),
+    )
+  }
+
+  fun stubGetPrisonBalance(
+    prisonId: String = "MDI",
+    PrisonBalance: PrisonBalanceDto = PrisonBalanceDto(
+      prisonId = prisonId,
+      accountBalances = listOf(
+        PrisonAccountBalanceDto(
+          accountCode = 2101,
+          balance = BigDecimal("23.45"),
+          transactionDate = LocalDateTime.now(),
+        ),
+      ),
+    ),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/finance/prison/$prisonId/balance")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(
+            objectMapper.writeValueAsString(PrisonBalance),
+          ),
+      ),
+    )
+  }
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)

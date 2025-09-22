@@ -47,19 +47,19 @@ const val VISIT_BALANCE_SYNC_QUEUE_ID = "eventvisitbalance"
 const val EXTERNALMOVEMENTS_SYNC_QUEUE_ID = "eventexternalmovements"
 
 enum class MigrationType(val queueId: String, val telemetryName: String) {
-  VISITS(VISITS_QUEUE_ID, "visits"),
-  APPOINTMENTS(APPOINTMENTS_QUEUE_ID, "appointments"),
   ACTIVITIES(ACTIVITIES_QUEUE_ID, "activity"),
   ALLOCATIONS(ALLOCATIONS_QUEUE_ID, "activity-allocation"),
+  APPOINTMENTS(APPOINTMENTS_QUEUE_ID, "appointments"),
   CORE_PERSON(CORE_PERSON_QUEUE_ID, "coreperson"),
-  INCIDENTS(INCIDENTS_QUEUE_ID, "incidents"),
   COURT_SENTENCING(COURT_SENTENCING_QUEUE_ID, "court-sentencing"),
+  EXTERNAL_MOVEMENTS(EXTERNAL_MOVEMENTS_QUEUE_ID, "temporary-absences"),
+  INCIDENTS(INCIDENTS_QUEUE_ID, "incidents"),
+  ORGANISATIONS(ORGANISATIONS_QUEUE_ID, "corporate"),
   PERSONALRELATIONSHIPS(PERSONALRELATIONSHIPS_QUEUE_ID, "contactperson"),
   PERSONALRELATIONSHIPS_PROFILEDETAIL(PERSONALRELATIONSHIPS_PROFILEDETAILS_QUEUE_ID, "contactperson-profiledetails"),
-  ORGANISATIONS(ORGANISATIONS_QUEUE_ID, "corporate"),
   SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_QUEUE_ID, "sentencing-adjustments"),
   VISIT_BALANCE(VISIT_BALANCE_QUEUE_ID, "visitbalance"),
-  EXTERNAL_MOVEMENTS(EXTERNAL_MOVEMENTS_QUEUE_ID, "temporary-absences"),
+  VISITS(VISITS_QUEUE_ID, "visits"),
 }
 
 enum class SynchronisationType(val queueId: String) {

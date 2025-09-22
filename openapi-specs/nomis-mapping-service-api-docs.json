@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-09-22.171.14d5784"
+    "version" : "2025-09-22.173.b141a2b"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -8204,8 +8204,8 @@
     "/mapping/prison-balance/nomis-id/{nomisId}" : {
       "get" : {
         "tags" : [ "prison-balance-mapping-resource" ],
-        "summary" : "Get prison balance mapping by Nomis rootOffenderId",
-        "description" : "Retrieves the prison balance mapping by Nomis rootOffenderId. Requires role ROLE_NOMIS_MAPPINGS_SYNCHRONISATION_RW",
+        "summary" : "Get prison balance mapping by Nomis ID (Prison ID)",
+        "description" : "Retrieves the prison balance mapping by Nomis ID. Requires role ROLE_NOMIS_MAPPINGS_SYNCHRONISATION_RW",
         "operationId" : "getPrisonMappingByNomisId",
         "parameters" : [ {
           "name" : "nomisId",
