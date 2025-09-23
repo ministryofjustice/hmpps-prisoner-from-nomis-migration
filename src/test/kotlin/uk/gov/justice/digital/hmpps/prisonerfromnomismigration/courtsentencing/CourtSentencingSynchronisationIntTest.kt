@@ -3917,34 +3917,43 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-        courtSentencingMappingApiMockServer.stubGetByNomisId(
-          nomisCourtCaseId = 10001,
-          dpsCourtCaseId = dpsCourtCaseIdFor10001,
+        courtSentencingMappingApiMockServer.stubGetCasesByNomisIds(
+          listOf(
+            CourtCaseMappingDto(
+              nomisCourtCaseId = 10001,
+              dpsCourtCaseId = dpsCourtCaseIdFor10001,
+            ),
+            CourtCaseMappingDto(
+              nomisCourtCaseId = 10002,
+              dpsCourtCaseId = dpsCourtCaseIdFor10002,
+            ),
+          ),
         )
-        courtSentencingMappingApiMockServer.stubGetByNomisId(
-          nomisCourtCaseId = 10002,
-          dpsCourtCaseId = dpsCourtCaseIdFor10002,
+        courtSentencingMappingApiMockServer.stubGetSentencesByNomisIds(
+          listOf(
+            SentenceMappingDto(
+              nomisBookingId = 201,
+              nomisSentenceSequence = 1,
+              dpsSentenceId = dpsSentenceIdForSequence1,
+            ),
+            SentenceMappingDto(
+              nomisBookingId = 201,
+              nomisSentenceSequence = 2,
+              dpsSentenceId = dpsSentenceIdForSequence2,
+            ),
+            SentenceMappingDto(
+              nomisBookingId = 201,
+              nomisSentenceSequence = 3,
+              dpsSentenceId = dpsSentenceIdForSequence3,
+            ),
+            SentenceMappingDto(
+              nomisBookingId = 201,
+              nomisSentenceSequence = 4,
+              dpsSentenceId = dpsSentenceIdForSequence4,
+            ),
+          ),
         )
-        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
-          nomisBookingId = 201,
-          nomisSentenceSequence = 1,
-          dpsSentenceId = dpsSentenceIdForSequence1,
-        )
-        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
-          nomisBookingId = 201,
-          nomisSentenceSequence = 2,
-          dpsSentenceId = dpsSentenceIdForSequence2,
-        )
-        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
-          nomisBookingId = 201,
-          nomisSentenceSequence = 3,
-          dpsSentenceId = dpsSentenceIdForSequence3,
-        )
-        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
-          nomisBookingId = 201,
-          nomisSentenceSequence = 4,
-          dpsSentenceId = dpsSentenceIdForSequence4,
-        )
+
         courtSentencingMappingApiMockServer.stubGetSentenceTermByNomisId(
           nomisBookingId = 201,
           nomisSentenceSequence = 1,
@@ -4032,12 +4041,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will call mapping service to get DPS ids for cases and sentences to updated`() {
-          courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/nomis-court-case-id/10001")))
-          courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/nomis-court-case-id/10002")))
-          courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/1")))
-          courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/2")))
-          courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/3")))
-          courtSentencingMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-booking-id/201/nomis-sentence-sequence/4")))
+          courtSentencingMappingApiMockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/nomis-case-ids/get-list")))
+          courtSentencingMappingApiMockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-sentence-ids/get-list")))
         }
 
         @Test
@@ -4604,7 +4609,7 @@ fun courtAppearanceEvent(
   isBreachHearing: Boolean = false,
 ) = """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
-    "Message": "{\"eventId\":\"$courtAppearanceId\",${courtCaseId.let {"""\"caseId\":\"$courtCaseId\","""}}\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"COURT_EVENT\",\"auditModuleName\":\"$auditModule\",\"isBreachHearing\": $isBreachHearing }",
+    "Message": "{\"eventId\":\"$courtAppearanceId\",${courtCaseId.let { """\"caseId\":\"$courtCaseId\",""" }}\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"COURT_EVENT\",\"auditModuleName\":\"$auditModule\",\"isBreachHearing\": $isBreachHearing }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 
