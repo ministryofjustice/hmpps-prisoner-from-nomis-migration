@@ -1286,6 +1286,7 @@ class CourtSentencingSynchronisationService(
   suspend fun nomisCaseResynchronisation(event: OffenderCaseResynchronisationEvent) {
     nomisCaseResynchronisation(nomisCaseId = event.caseId, dpsCaseId = event.dpsCaseUuid, offenderNo = event.offenderNo)
   }
+
   private suspend fun nomisCaseResynchronisation(nomisCaseId: Long, offenderNo: String) {
     nomisCaseResynchronisation(nomisCaseId = nomisCaseId, dpsCaseId = mappingApiService.getCourtCaseByNomisId(nomisCaseId).dpsCourtCaseId, offenderNo = offenderNo)
   }
@@ -1501,19 +1502,57 @@ class CourtSentencingSynchronisationService(
         telemetry["courtCasesDeactivatedCount"] = it.courtCasesDeactivated.size
       }
 
+    val courtCasesDeactivatedMappings =
+      if (courtCasesDeactivated.isNotEmpty()) {
+        mappingApiService.getCourtCasesByNomisIds(
+          courtCasesDeactivated.map {
+            it.id
+          },
+        )
+      } else {
+        emptyList()
+      }
+    val sentencesDeactivated = courtCasesDeactivated.flatMap { case ->
+      case.sentences
+    }.toSet()
+    val sentencesDeactivatedMappings = if (sentencesDeactivated.isNotEmpty()) {
+      mappingApiService.getSentencesByNomisIds(
+        sentencesDeactivated.map {
+          NomisSentenceId(
+            nomisBookingId = it.bookingId,
+            nomisSentenceSequence = it.sentenceSeq.toInt(),
+          )
+        },
+      )
+    } else {
+      emptyList()
+    }
+    courtCasesDeactivatedMappings.forEach { mapping ->
+      courtCasesDeactivated.find {
+        it.id == mapping.nomisCourtCaseId
+      }
+        ?: throw IllegalStateException("Received Prisoner merged event for offender $retainedOffenderNumber with missing deactivated case mapping - nomis case id: ${mapping.nomisCourtCaseId}")
+    }
+
     val newCourtCaseMappings = dpsApiService.createCourtCaseMerge(
       offenderNo = retainedOffenderNumber,
       mergePerson = MergePerson(
         casesCreated = courtCasesCreated.map { it.toDpsCourtCasePostMerge() },
-        casesDeactivated = courtCasesDeactivated.map { DeactivatedCourtCase(mappingApiService.getCourtCaseByNomisId(it.id).dpsCourtCaseId, active = it.caseStatus.code == "A") },
+        casesDeactivated = courtCasesDeactivated.map { ccd ->
+          DeactivatedCourtCase(
+            courtCasesDeactivatedMappings.first { ccdMapping -> ccdMapping.nomisCourtCaseId == ccd.id }.dpsCourtCaseId,
+            active = ccd.caseStatus.code == "A",
+          )
+        },
         sentencesDeactivated = courtCasesDeactivated.flatMap {
           it.sentences.map { nomisSentence ->
             DeactivatedSentence(
               dpsSentenceUuid = UUID.fromString(
-                mappingApiService.getSentenceByNomisId(
-                  bookingId = nomisSentence.bookingId,
-                  sentenceSequence = nomisSentence.sentenceSeq,
-                ).dpsSentenceId,
+                sentencesDeactivatedMappings.firstOrNull { mapping ->
+                  mapping.nomisBookingId == nomisSentence.bookingId &&
+                    mapping.nomisSentenceSequence == nomisSentence.sentenceSeq.toInt()
+                }?.dpsSentenceId
+                  ?: throw IllegalStateException("Received Prisoner merged event for offender $retainedOffenderNumber with missing deactivated sentence mapping - nomis sentence seq: ${nomisSentence.sentenceSeq} nomis booking id: ${nomisSentence.bookingId}"),
               ),
               active = nomisSentence.status == "A",
             )
@@ -1604,22 +1643,23 @@ class CourtSentencingSynchronisationService(
             }
               ?: throw IllegalStateException("Received ${event.eventType} event for booking ${event.bookingId} with missing sentence mapping")
 
-            courtSentencingMappingApiService.getCourtAppearanceByNomisId(nomisSentence.courtOrder!!.eventId).let { appearanceMapping ->
-              dpsApiService.updateSentence(
-                sentenceId = mapping.dpsSentenceId,
-                nomisSentence.toDpsSentence(
-                  dpsConsecUuid = nomisSentence.consecSequence?.let {
-                    getConsecutiveSequenceMappingOrThrow(
-                      bookingId = mapping.nomisBookingId,
-                      sentenceSequence = mapping.nomisSentenceSequence,
-                      consecSequence = it,
-                    )
-                  },
-                  sentenceChargeIds = getDpsChargeMappings(nomisSentence),
-                  dpsAppearanceUuid = appearanceMapping.dpsCourtAppearanceId,
-                ),
-              )
-            }
+            courtSentencingMappingApiService.getCourtAppearanceByNomisId(nomisSentence.courtOrder!!.eventId)
+              .let { appearanceMapping ->
+                dpsApiService.updateSentence(
+                  sentenceId = mapping.dpsSentenceId,
+                  nomisSentence.toDpsSentence(
+                    dpsConsecUuid = nomisSentence.consecSequence?.let {
+                      getConsecutiveSequenceMappingOrThrow(
+                        bookingId = mapping.nomisBookingId,
+                        sentenceSequence = mapping.nomisSentenceSequence,
+                        consecSequence = it,
+                      )
+                    },
+                    sentenceChargeIds = getDpsChargeMappings(nomisSentence),
+                    dpsAppearanceUuid = appearanceMapping.dpsCourtAppearanceId,
+                  ),
+                )
+              }
           }
         }
       }

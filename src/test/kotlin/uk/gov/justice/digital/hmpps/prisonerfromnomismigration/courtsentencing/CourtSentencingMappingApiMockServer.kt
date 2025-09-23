@@ -63,6 +63,16 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
+  fun stubGetCasesByNomisIds(response: List<CourtCaseMappingDto>) {
+    mappingApi.stubFor(
+      post(urlPathEqualTo("/mapping/court-sentencing/court-cases/nomis-case-ids/get-list")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(objectMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
   fun stubGetMigrationSummaryByOffenderNo(
     offenderNo: String = UUID.randomUUID().toString(),
     summary: CourtSentencingMigrationSummary = CourtSentencingMigrationSummary(

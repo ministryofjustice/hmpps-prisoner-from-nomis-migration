@@ -77,6 +77,14 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
     .retrieve()
     .awaitBody()
 
+  suspend fun getCourtCasesByNomisIds(nomisCaseIds: List<Long>): List<CourtCaseMappingDto> = webClient.post()
+    .uri(
+      "/mapping/court-sentencing/court-cases/nomis-case-ids/get-list",
+    )
+    .bodyValue(nomisCaseIds)
+    .retrieve()
+    .awaitBody()
+
   suspend fun deleteCourtCaseMappingByDpsId(courtCaseId: String): ResponseEntity<Void> = webClient.delete()
     .uri(
       "/mapping/court-sentencing/court-cases/dps-court-case-id/{courtCase}",
