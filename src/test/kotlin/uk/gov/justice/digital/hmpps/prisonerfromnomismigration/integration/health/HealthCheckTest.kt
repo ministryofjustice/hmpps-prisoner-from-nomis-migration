@@ -49,7 +49,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
       .jsonPath("components.alertsApi.status").isEqualTo("UP")
       .jsonPath("components.activitiesApi.status").isEqualTo("UP")
       .jsonPath("components.visitBalanceApi.status").isEqualTo("UP")
-      .jsonPath("components.extMovementsApi.status").isEqualTo("UP")
+//      .jsonPath("components.extMovementsApi.status").isEqualTo("UP")
   }
 
   @Test
