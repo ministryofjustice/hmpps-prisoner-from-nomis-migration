@@ -14,7 +14,10 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialPrisonerBalance
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialPrisonerBalancesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
+import java.math.BigDecimal
 
 class FinanceApiExtension :
   BeforeAllCallback,
@@ -43,6 +46,27 @@ class FinanceApiExtension :
 class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8102
+
+    fun prisonerBalanceMigrationDto() = InitialPrisonerBalancesRequest(
+      prisonId = "ASI",
+      initialBalances = listOf(
+        InitialPrisonerBalance(
+          // TODO Check if need these
+          // prisonId = "ASI",
+          // lastTransactionId = 173,
+          accountCode = 2101,
+          balance = BigDecimal.valueOf(23.50),
+          holdBalance = BigDecimal.valueOf(1.25),
+        ),
+        InitialPrisonerBalance(
+          // prisonId = "ASI",
+          // lastTransactionId = 174,
+          accountCode = 2102,
+          balance = BigDecimal.valueOf(11.50),
+          holdBalance = BigDecimal.ZERO,
+        ),
+      ),
+    )
   }
 
   fun stubHealthPing(status: Int) {
@@ -113,6 +137,17 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
             ),
           ),
       ),
+    )
+  }
+
+  fun stubMigratePrisonerBalance(prisonNumber: String = "A1234BC") {
+    stubFor(
+      post("/migrate/prisoner-balances/$prisonNumber")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json"),
+        ),
     )
   }
 }
