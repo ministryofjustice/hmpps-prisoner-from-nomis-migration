@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-09-18.580.1806461"
+    "version" : "2025-09-23.592.0b3a004"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -13984,7 +13984,7 @@
       "get" : {
         "tags" : [ "prisoners-resource" ],
         "summary" : "Gets the prisoner's details",
-        "description" : "Requires role NOMIS_ALERTS or NOMIS_CONTACTPERSONS.",
+        "description" : "Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW.",
         "operationId" : "getPrisonerDetails",
         "parameters" : [ {
           "name" : "offenderNo",
@@ -14021,7 +14021,7 @@
             }
           },
           "403" : {
-            "description" : "Forbidden to access this endpoint when role NOMIS_ALERTS or NOMIS_CONTACTPERSONS not present",
+            "description" : "Forbidden to access this endpoint when role NOMIS_PRISONER_API__SYNCHRONISATION__RW not present",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -14969,7 +14969,7 @@
       "get" : {
         "tags" : [ "prisoners-resource" ],
         "summary" : "Gets a prisoner's previous booking relative to the supplied booking id",
-        "description" : "Requires role NOMIS_ALERTS.",
+        "description" : "Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW.",
         "operationId" : "getPreviousBooking",
         "parameters" : [ {
           "name" : "offenderNo",
@@ -15018,7 +15018,7 @@
             }
           },
           "403" : {
-            "description" : "Forbidden to access this endpoint when role NOMIS_ALERTS not present",
+            "description" : "Forbidden to access this endpoint when role NOMIS_PRISONER_API__SYNCHRONISATION__RW not present",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -15364,7 +15364,7 @@
       "get" : {
         "tags" : [ "prisoners-resource" ],
         "summary" : "Gets the identifiers for all prisoners. By default only active prisoners will be returned unless active=false",
-        "description" : "Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW or ROLE_NOMIS_ALERTS.",
+        "description" : "Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW.",
         "operationId" : "getPrisonerIdentifiers",
         "parameters" : [ {
           "name" : "pageRequest",
@@ -15422,7 +15422,7 @@
       "get" : {
         "tags" : [ "prisoners-resource" ],
         "summary" : "Gets the identifier for all prisoners.",
-        "description" : "Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW, NOMIS_ALERTS, 'ROLE_NOMIS_SENTENCING' or NOMIS_CORE_PERSON.",
+        "description" : "Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW.",
         "operationId" : "getAllPrisoners",
         "parameters" : [ {
           "name" : "pageRequest",
@@ -15454,7 +15454,7 @@
             }
           },
           "403" : {
-            "description" : "Forbidden to access this endpoint when role NOMIS_PRISONER_API__SYNCHRONISATION__RW, 'ROLE_NOMIS_SENTENCING' or ROLE_NOMIS_ALERTS not present",
+            "description" : "Forbidden to access this endpoint when role NOMIS_PRISONER_API__SYNCHRONISATION__RW not present",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -15470,7 +15470,7 @@
       "get" : {
         "tags" : [ "prisoners-resource" ],
         "summary" : "Gets the identifier for all prisoners.",
-        "description" : "Gets the specified number of prisoners starting after the given id number.\n      Clients can iterate through all prisoners by calling this endpoint using the id from the last call (omit for first call).\n      Iteration ends when the returned prisonerIds list has size less than the requested page size.\n      Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW or NOMIS_CASENOTES.",
+        "description" : "Gets the specified number of prisoners starting after the given id number.\n      Clients can iterate through all prisoners by calling this endpoint using the id from the last call (omit for first call).\n      Iteration ends when the returned prisonerIds list has size less than the requested page size.\n      Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW.",
         "operationId" : "getAllPrisonersFromId",
         "parameters" : [ {
           "name" : "offenderId",
@@ -15519,7 +15519,7 @@
             }
           },
           "403" : {
-            "description" : "Forbidden to access this endpoint when role NOMIS_PRISONER_API__SYNCHRONISATION__RW or ROLE_NOMIS_ALERTS not present",
+            "description" : "Forbidden to access this endpoint when role NOMIS_PRISONER_API__SYNCHRONISATION__RW not present",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -17645,6 +17645,15 @@
           "required" : true,
           "schema" : {
             "$ref" : "#/components/schemas/Pageable"
+          }
+        }, {
+          "name" : "prisonId",
+          "in" : "query",
+          "description" : "Prison id",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison id"
           }
         } ],
         "responses" : {
