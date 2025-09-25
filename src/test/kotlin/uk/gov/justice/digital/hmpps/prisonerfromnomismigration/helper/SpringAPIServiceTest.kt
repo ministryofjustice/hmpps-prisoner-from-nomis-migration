@@ -15,6 +15,7 @@ import org.springframework.web.reactive.config.EnableWebFlux
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.WebClientConfiguration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension
@@ -56,6 +57,7 @@ import kotlin.annotation.AnnotationTarget.CLASS
   LocationsApiExtension::class,
   AlertsDpsApiExtension::class,
   ContactPersonDpsApiExtension::class,
+  FinanceApiExtension::class,
   OrganisationsDpsApiExtension::class,
   VisitBalanceDpsApiExtension::class,
   NomisSyncApiExtension::class,
