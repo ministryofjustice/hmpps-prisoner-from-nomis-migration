@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.web.PagedModel
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
@@ -253,5 +254,32 @@ class RestResponsePage<T>(
   @Suppress("UNUSED_PARAMETER")
   @JsonProperty("pageable") pageable: JsonNode,
 ) : PageImpl<T>(content, PageRequest.of(number, size), totalElements)
+
+data class PageMetadata(
+  val size: Int,
+  val number: Int,
+  val totalElements: Long,
+  val totalPages: Int,
+)
+
+class RestResponsePagedModel<T>(
+  @JsonProperty("content") content: List<T>,
+  @JsonProperty("page") page: PageMetadata,
+) : PagedModel<T>(
+  PageImpl(content, PageRequest.of(page.number.toInt(), page.size.toInt()), page.totalElements),
+)
+
+fun <T> PagedModel<T>.toPageImpl(): PageImpl<T> {
+  val content = this.content.toList()
+  val metadata = this.metadata ?: return PageImpl(content)
+
+  val pageNumber = metadata.number.toInt()
+  val pageSize = metadata.size.toInt()
+  val totalElements = metadata.totalElements
+
+  val pageable = PageRequest.of(pageNumber, pageSize)
+
+  return PageImpl(content, pageable, totalElements)
+}
 
 inline fun <reified T> typeReference() = object : ParameterizedTypeReference<T>() {}
