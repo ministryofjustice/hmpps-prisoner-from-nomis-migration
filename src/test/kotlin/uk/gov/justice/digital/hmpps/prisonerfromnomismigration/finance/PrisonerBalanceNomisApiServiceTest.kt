@@ -7,7 +7,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -64,7 +63,6 @@ class PrisonerBalanceNomisApiServiceTest {
     }
 
     @Test
-    @Disabled
     internal fun `will pass all filters when present`() = runTest {
       mockServer.stubGetRootOffenderIdsToMigrate(1, 20)
 
