@@ -237,6 +237,8 @@ hmpps.sqs:
       propagateTracing: false
     migrationcoreperson:
       propagateTracing: false
+    migrationprisonerbalance:
+      propagateTracing: false
     migrationvisitbalance:
       propagateTracing: false
     migrationexternalmovements:

@@ -114,6 +114,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONCOREPERSON_QUEUE_NAME: "sqs_name"
     sqs-migration-coreperson-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONCOREPERSON_DLQ_NAME: "sqs_name"
+    sqs-migration-prisonerbalance-queue:
+     HMPPS_SQS_QUEUES_MIGRATIONPRISONERBALANCE_QUEUE_NAME: "sqs_name"
+    sqs-migration-prisonerbalance-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONPRISONERBALANCE_DLQ_NAME: "sqs_name"
     sqs-migration-sentencing-queue:
       HMPPS_SQS_QUEUES_MIGRATIONSENTENCING_QUEUE_NAME: "sqs_name"
     sqs-migration-sentencing-dlq:

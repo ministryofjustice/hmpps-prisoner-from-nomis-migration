@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -17,6 +18,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.Err
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialPrisonerBalance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialPrisonerBalancesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.math.BigDecimal
 
 class FinanceApiExtension :
@@ -27,6 +30,16 @@ class FinanceApiExtension :
     @JvmField
     val financeApi = FinanceApiMockServer()
     lateinit var objectMapper: ObjectMapper
+
+    @Suppress("unused")
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = financeApi.getRequestBody(
+      pattern,
+      objectMapper,
+    )
+    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = financeApi.getRequestBodies(
+      pattern,
+      objectMapper,
+    )
   }
 
   override fun beforeAll(context: ExtensionContext) {
