@@ -10,7 +10,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAccountDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAccountsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBalanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pagedModelContent
@@ -44,7 +44,7 @@ class PrisonerBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) 
   fun stubGetPrisonerBalance(
     rootOffenderId: Long = 10000,
     prisonNumber: String = "A0001BC",
-    prisonerBalance: PrisonerAccountsDto = prisonerAccounts(rootOffenderId = rootOffenderId, prisonNumber = prisonNumber),
+    prisonerBalance: PrisonerBalanceDto = prisonerBalance(rootOffenderId = rootOffenderId, prisonNumber = prisonNumber),
   ) {
     nomisApi.stubFor(
       get(urlEqualTo("/finance/prisoners/$rootOffenderId/balance")).willReturn(
@@ -79,7 +79,7 @@ class PrisonerBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) 
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
 
-fun prisonerAccounts(rootOffenderId: Long = 12345, prisonNumber: String = "A0001BC"): PrisonerAccountsDto = PrisonerAccountsDto(
+fun prisonerBalance(rootOffenderId: Long = 12345, prisonNumber: String = "A0001BC"): PrisonerBalanceDto = PrisonerBalanceDto(
   rootOffenderId = rootOffenderId,
   prisonNumber = prisonNumber,
   accounts = listOf(

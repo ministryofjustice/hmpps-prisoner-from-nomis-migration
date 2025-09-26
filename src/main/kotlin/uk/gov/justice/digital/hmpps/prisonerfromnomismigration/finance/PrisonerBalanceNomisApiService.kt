@@ -6,7 +6,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.PrisonerBalanceResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Pageable
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAccountsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBalanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePagedModel
 
 @Service
@@ -18,7 +18,7 @@ class PrisonerBalanceNomisApiService(@Qualifier("nomisApiWebClient") webClient: 
     .retrieve()
     .awaitBody()
 
-  suspend fun getPrisonerBalance(rootOffenderId: Long): PrisonerAccountsDto = api
+  suspend fun getPrisonerBalance(rootOffenderId: Long): PrisonerBalanceDto = api
     .prepare(api.getPrisonerAccountDetailsRequestConfig(rootOffenderId))
     .retrieve()
     .awaitBody()
