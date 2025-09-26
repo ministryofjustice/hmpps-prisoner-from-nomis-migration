@@ -6,7 +6,6 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.VisitBalanceResourceApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Pageable
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceDetailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceIdResponse
@@ -31,7 +30,7 @@ class VisitBalanceNomisApiService(@Qualifier("nomisApiWebClient") webClient: Web
     .awaitBody()
 
   suspend fun getVisitBalanceIds(prisonId: String?, pageNumber: Long, pageSize: Long): RestResponsePage<VisitBalanceIdResponse> = api
-    .prepare(api.findVisitBalanceIdsRequestConfig(Pageable(pageNumber.toInt(), pageSize.toInt()), prisonId))
+    .prepare(api.findVisitBalanceIdsRequestConfig(page = pageNumber.toInt(), size = pageSize.toInt(), sort = null, prisonId = prisonId))
     .retrieve()
     .awaitBody()
 }
