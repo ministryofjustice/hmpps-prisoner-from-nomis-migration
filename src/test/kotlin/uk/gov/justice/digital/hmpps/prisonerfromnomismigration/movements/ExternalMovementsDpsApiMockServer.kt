@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.ScheduledTemporaryAbsenceRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapApplicationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
@@ -83,6 +84,28 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
     )
 
+    fun syncScheduledTemporaryAbsenceRequest() = ScheduledTemporaryAbsenceRequest(
+      eventId = 1234,
+      eventStatus = "SCH",
+      startTime = today,
+      returnTime = tomorrow,
+      toAddressOwnerClass = "CORP",
+      toAddressId = 1234567,
+      contactPersonName = "Contact Person Name",
+      escort = "PECS",
+      comment = "Scheduled temporary absence comment",
+      transportType = "VAN",
+      audit = NomisAudit(
+        createDatetime = today,
+        createUsername = "AAA11A",
+        modifyDatetime = today,
+        modifyUserId = "AAA11A",
+        auditTimestamp = today,
+        auditUserId = "AAA11A",
+      ),
+
+    )
+
     fun syncResponse() = SyncResponse(UUID.randomUUID())
   }
 
@@ -116,6 +139,34 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     dpsExtMovementsServer.stubFor(
       put("/sync/temporary-absence-application/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubSyncScheduledTemporaryAbsence(parentId: UUID, response: SyncResponse = syncResponse()) {
+    dpsExtMovementsServer.stubFor(
+      put("/sync/scheduled-temporary-absence/$parentId")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubSyncScheduledTemporaryAbsenceError(
+    parentId: UUID,
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsExtMovementsServer.stubFor(
+      put("/sync/scheduled-temporary-absence/$parentId")
         .willReturn(
           aResponse()
             .withStatus(status)
