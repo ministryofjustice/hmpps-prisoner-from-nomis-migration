@@ -142,7 +142,7 @@ val models = listOf(
     packageName = "movements",
     testPackageName = "movements",
     url = "https://external-movements-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
-    models = "NomisAudit,SyncResponse,TapApplicationRequest",
+    models = "NomisAudit,ScheduledTemporaryAbsenceRequest,SyncResponse,TapApplicationRequest",
   ),
   ModelConfiguration(
     name = "nomis-prisoner",

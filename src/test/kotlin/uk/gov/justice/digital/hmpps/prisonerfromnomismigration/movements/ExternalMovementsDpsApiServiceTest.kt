@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncScheduledTemporaryAbsenceRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapApplicationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import java.time.LocalDate
@@ -69,6 +70,55 @@ class ExternalMovementsDpsApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.syncTemporaryAbsenceApplication("A1234BC", syncTapApplicationRequest())
+      }
+    }
+  }
+
+  @Nested
+  inner class SyncScheduledTemporaryAbsence {
+    val parentId = UUID.randomUUID()
+
+    @Test
+    internal fun `should pass oath2 token`() = runTest {
+      dpsExtMovementsServer.stubSyncScheduledTemporaryAbsence(parentId)
+
+      apiService.syncTemporaryAbsenceScheduledMovement(parentId, syncScheduledTemporaryAbsenceRequest())
+
+      dpsExtMovementsServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should call the sync endpoint`() = runTest {
+      dpsExtMovementsServer.stubSyncScheduledTemporaryAbsence(parentId)
+
+      apiService.syncTemporaryAbsenceScheduledMovement(parentId, syncScheduledTemporaryAbsenceRequest())
+
+      dpsExtMovementsServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/$parentId"))
+          .withRequestBody(matchingJsonPath("eventId", equalTo("1234")))
+          .withRequestBody(matchingJsonPath("eventStatus", equalTo("SCH")))
+          .withRequestBody(matchingJsonPath("audit.createUsername", equalTo("AAA11A"))),
+      )
+    }
+
+    @Test
+    fun `should parse the response`() = runTest {
+      val dpsId = UUID.randomUUID()
+      dpsExtMovementsServer.stubSyncScheduledTemporaryAbsence(parentId, response = SyncResponse(dpsId))
+
+      assertThat(apiService.syncTemporaryAbsenceScheduledMovement(parentId, syncScheduledTemporaryAbsenceRequest()).id)
+        .isEqualTo(dpsId)
+    }
+
+    @Test
+    fun `should throw if error`() = runTest {
+      dpsExtMovementsServer.stubSyncScheduledTemporaryAbsenceError(parentId)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.syncTemporaryAbsenceScheduledMovement(parentId, syncScheduledTemporaryAbsenceRequest())
       }
     }
   }

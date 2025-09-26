@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_OUTSIDE_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType.TAP
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.ScheduledTemporaryAbsenceRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapApplicationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
@@ -23,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceApplicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -33,6 +35,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto.MappingType.NOMIS_CREATED as OUTSIDE_MOVEMENT_NOMIS_CREATED
 
 private const val TELEMETRY_PREFIX: String = "temporary-absence-sync"
+private const val DEFAULT_ESCORT_CODE = "U"
+private const val DEFAULT_TRANSPORT_TYPE = "TNR"
 
 @Service
 class ExternalMovementsSyncService(
@@ -138,7 +142,8 @@ class ExternalMovementsSyncService(
       }
   }
 
-  private suspend fun requireParentApplicationExists(nomisApplicationId: Long) = mappingApiService.getApplicationMapping(nomisApplicationId)
+  private suspend fun requireParentApplicationExists(nomisApplicationId: Long): UUID = mappingApiService.getApplicationMapping(nomisApplicationId)
+    ?.dpsMovementApplicationId
     ?: throw ParentEntityNotFoundRetry("Application $nomisApplicationId not created yet so children cannot be processed")
 
   private suspend fun requireParentScheduleExists(nomisEventId: Long) = mappingApiService.getScheduledMovementMapping(nomisEventId)
@@ -218,13 +223,12 @@ class ExternalMovementsSyncService(
       }
   }
 
-  private suspend fun scheduledMovementTapOutInserted(prisonerNumber: String, eventId: Long, telemetry: MutableMap<String, Any>) = nomisApiService.getTemporaryAbsenceScheduledMovement(prisonerNumber, eventId)
+  private suspend fun scheduledMovementTapOutInserted(prisonerNumber: String, eventId: Long, telemetry: MutableMap<String, Any>): UUID = nomisApiService.getTemporaryAbsenceScheduledMovement(prisonerNumber, eventId)
     .also {
       telemetry["nomisApplicationId"] = it.movementApplicationId
-      requireParentApplicationExists(it.movementApplicationId)
     }.let {
-      // TODO dpsApi.sync(it.toDpsScheduledTemporaryAbsence()
-      UUID.randomUUID()
+      val dpsApplicationId = requireParentApplicationExists(it.movementApplicationId)
+      dpsApiService.syncTemporaryAbsenceScheduledMovement(dpsApplicationId, it.toDpsRequest()).id
     }
 
   private suspend fun scheduledMovementTapInInserted(prisonerNumber: String, eventId: Long, telemetry: MutableMap<String, Any>) = nomisApiService.getTemporaryAbsenceScheduledReturnMovement(prisonerNumber, eventId)
@@ -603,6 +607,21 @@ private fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) =
   contactPersonName = contactPersonName,
   temporaryAbsenceType = temporaryAbsenceType,
   temporaryAbsenceSubType = temporaryAbsenceSubType,
+  audit = audit.toDpsRequest(),
+)
+
+private fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null) = ScheduledTemporaryAbsenceRequest(
+  id = id,
+  eventId = eventId,
+  eventStatus = eventStatus,
+  startTime = startTime,
+  returnTime = returnTime,
+  toAddressOwnerClass = toAddressOwnerClass,
+  toAddressId = toAddressId,
+  contactPersonName = contactPersonName,
+  escort = escort ?: DEFAULT_ESCORT_CODE,
+  transportType = transportType ?: DEFAULT_TRANSPORT_TYPE,
+  comment = comment,
   audit = audit.toDpsRequest(),
 )
 
