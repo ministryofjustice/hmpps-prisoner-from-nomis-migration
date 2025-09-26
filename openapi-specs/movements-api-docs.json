@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-09-16.78.c3a3e6d"
+    "version" : "2025-09-26.111.fa84be1"
   },
   "servers" : [ {
     "url" : "https://external-movements-api-dev.hmpps.service.justice.gov.uk",
@@ -63,11 +63,49 @@
         }
       }
     },
-    "/temporary-absence-series/{personIdentifier}" : {
+    "/sync/scheduled-temporary-absence/{parentId}" : {
+      "put" : {
+        "tags" : [ "sync-controller" ],
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_EXTERNAL_MOVEMENTS__SYNC__RW",
+        "operationId" : "syncTap_1",
+        "parameters" : [ {
+          "name" : "parentId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ScheduledTemporaryAbsenceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/temporary-absence-authorisations/{personIdentifier}" : {
       "post" : {
-        "tags" : [ "tap-series-controller" ],
+        "tags" : [ "tap-authorisation-controller" ],
         "description" : "\n\nRequires one of the following roles:\n* ROLE_EXTERNAL_MOVEMENTS__EXTERNAL_MOVEMENTS_UI",
-        "operationId" : "createTapSeries",
+        "operationId" : "createTapAuthorisation",
         "parameters" : [ {
           "name" : "personIdentifier",
           "in" : "path",
@@ -80,7 +118,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/CreateTapSeriesRequest"
+                "$ref" : "#/components/schemas/CreateTapAuthorisationRequest"
               }
             }
           },
@@ -112,7 +150,7 @@
           "required" : true,
           "schema" : {
             "type" : "string",
-            "enum" : [ "absence-reason", "absence-reason-category", "absence-sub-type", "absence-type", "accompanied-by", "location-type", "tap-status", "transport" ]
+            "enum" : [ "absence-reason", "absence-reason-category", "absence-sub-type", "absence-type", "accompanied-by", "location-type", "tap-authorisation-status", "tap-occurrence-status", "transport" ]
           }
         } ],
         "responses" : {
@@ -242,45 +280,13 @@
             "type" : "string",
             "format" : "date"
           },
-          "fromDate" : {
-            "type" : "string",
-            "format" : "date"
-          },
-          "releaseTime" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "toDate" : {
-            "type" : "string",
-            "format" : "date"
-          },
-          "returnTime" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
           "applicationStatus" : {
-            "type" : "string"
-          },
-          "escortCode" : {
-            "type" : "string"
-          },
-          "transportType" : {
             "type" : "string"
           },
           "comment" : {
             "type" : "string"
           },
           "prisonId" : {
-            "type" : "string"
-          },
-          "toAgencyId" : {
-            "type" : "string"
-          },
-          "toAddressId" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "toAddressOwnerClass" : {
             "type" : "string"
           },
           "contactPersonName" : {
@@ -295,11 +301,19 @@
           "temporaryAbsenceSubType" : {
             "type" : "string"
           },
+          "fromDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "toDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
           "audit" : {
             "$ref" : "#/components/schemas/NomisAudit"
           }
         },
-        "required" : [ "applicationDate", "applicationStatus", "applicationType", "audit", "eventSubType", "fromDate", "movementApplicationId", "releaseTime", "returnTime", "toDate" ]
+        "required" : [ "applicationDate", "applicationStatus", "applicationType", "audit", "eventSubType", "fromDate", "movementApplicationId", "toDate" ]
       },
       "SyncResponse" : {
         "type" : "object",
@@ -311,18 +325,60 @@
         },
         "required" : [ "id" ]
       },
-      "CreateTapSeriesRequest" : {
+      "ScheduledTemporaryAbsenceRequest" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "eventId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "eventStatus" : {
+            "type" : "string"
+          },
+          "startTime" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "returnTime" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "toAddressOwnerClass" : {
+            "type" : "string"
+          },
+          "toAddressId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "contactPersonName" : {
+            "type" : "string"
+          },
+          "escort" : {
+            "type" : "string"
+          },
+          "comment" : {
+            "type" : "string"
+          },
+          "transportType" : {
+            "type" : "string"
+          },
+          "audit" : {
+            "$ref" : "#/components/schemas/NomisAudit",
+            "description" : "Audit data associated with the records"
+          }
+        },
+        "required" : [ "audit", "eventId", "eventStatus", "returnTime", "startTime" ]
+      },
+      "CreateTapAuthorisationRequest" : {
         "type" : "object",
         "properties" : {
           "submittedAt" : {
             "type" : "string",
             "format" : "date-time"
-          },
-          "repeat" : {
-            "type" : "boolean"
-          },
-          "statusCode" : {
-            "type" : "string"
           },
           "absenceTypeCode" : {
             "type" : "string"
@@ -333,6 +389,36 @@
           "absenceReasonCode" : {
             "type" : "string"
           },
+          "occurrences" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CreateTapOccurrenceRequest"
+            }
+          },
+          "statusCode" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "APPROVED" ]
+          },
+          "notes" : {
+            "type" : "string"
+          },
+          "repeat" : {
+            "type" : "boolean"
+          },
+          "fromDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "toDate" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        },
+        "required" : [ "absenceTypeCode", "fromDate", "occurrences", "repeat", "statusCode", "submittedAt", "toDate" ]
+      },
+      "CreateTapOccurrenceRequest" : {
+        "type" : "object",
+        "properties" : {
           "releaseAt" : {
             "type" : "string",
             "format" : "date-time"
@@ -341,16 +427,10 @@
             "type" : "string",
             "format" : "date-time"
           },
-          "accompanied" : {
-            "type" : "boolean"
-          },
           "accompaniedByCode" : {
             "type" : "string"
           },
           "transportCode" : {
-            "type" : "string"
-          },
-          "notes" : {
             "type" : "string"
           },
           "locationTypeCode" : {
@@ -358,9 +438,12 @@
           },
           "locationId" : {
             "type" : "string"
+          },
+          "notes" : {
+            "type" : "string"
           }
         },
-        "required" : [ "absenceTypeCode", "accompanied", "locationTypeCode", "releaseAt", "repeat", "returnBy", "statusCode", "submittedAt" ]
+        "required" : [ "accompaniedByCode", "locationId", "locationTypeCode", "releaseAt", "returnBy", "transportCode" ]
       },
       "ReferenceId" : {
         "type" : "object",
@@ -379,6 +462,9 @@
             "type" : "string"
           },
           "description" : {
+            "type" : "string"
+          },
+          "hintText" : {
             "type" : "string"
           }
         },
@@ -413,7 +499,7 @@
           },
           "nextDomain" : {
             "type" : "string",
-            "enum" : [ "ABSENCE_TYPE", "ABSENCE_SUB_TYPE", "ABSENCE_REASON_CATEGORY", "ABSENCE_REASON", "ACCOMPANIED_BY", "TRANSPORT", "TAP_STATUS", "LOCATION_TYPE" ]
+            "enum" : [ "ABSENCE_TYPE", "ABSENCE_SUB_TYPE", "ABSENCE_REASON_CATEGORY", "ABSENCE_REASON", "ACCOMPANIED_BY", "TRANSPORT", "TAP_AUTHORISATION_STATUS", "TAP_OCCURRENCE_STATUS", "LOCATION_TYPE" ]
           }
         },
         "required" : [ "code", "description" ]
