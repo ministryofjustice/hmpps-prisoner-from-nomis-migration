@@ -72,9 +72,10 @@ class PrisonerBalanceMappingApiMockServer(private val objectMapper: ObjectMapper
 
   fun stubGetPrisonerBalanceByNomisIdOrNull(
     nomisRootOffenderId: Long = 12345,
+    dpsId: String = "A1234BC",
     mapping: PrisonerBalanceMappingDto? = PrisonerBalanceMappingDto(
       nomisRootOffenderId = nomisRootOffenderId,
-      dpsId = "A1234BC",
+      dpsId = dpsId,
       mappingType = PrisonerBalanceMappingDto.MappingType.MIGRATED,
     ),
   ) {
@@ -106,7 +107,7 @@ class PrisonerBalanceMappingApiMockServer(private val objectMapper: ObjectMapper
       dpsId = "A1234BC",
       mappingType = PrisonerBalanceMappingDto.MappingType.MIGRATED,
     ),
-  ) = stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId, mapping)
+  ) = stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = nomisRootOffenderId, mapping = mapping)
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
