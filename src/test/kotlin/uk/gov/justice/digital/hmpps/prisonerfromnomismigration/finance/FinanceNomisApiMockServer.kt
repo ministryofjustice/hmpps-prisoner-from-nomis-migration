@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GeneralLedgerTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonAccountBalanceDto
@@ -123,6 +124,23 @@ class FinanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withStatus(HttpStatus.OK.value())
           .withBody(
             objectMapper.writeValueAsString(prisonBalance),
+          ),
+      ),
+    )
+  }
+
+  fun stubGetPrisonBalanceNotFound(
+    nomisId: String = "MDI",
+    status: HttpStatus = HttpStatus.NOT_FOUND,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/finance/prison/$nomisId/balance")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(
+            objectMapper.writeValueAsString(error),
           ),
       ),
     )
