@@ -105,7 +105,7 @@ class FinanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubGetPrisonBalance(
     prisonId: String = "MDI",
-    PrisonBalance: PrisonBalanceDto = PrisonBalanceDto(
+    prisonBalance: PrisonBalanceDto = PrisonBalanceDto(
       prisonId = prisonId,
       accountBalances = listOf(
         PrisonAccountBalanceDto(
@@ -122,7 +122,7 @@ class FinanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(
-            objectMapper.writeValueAsString(PrisonBalance),
+            objectMapper.writeValueAsString(prisonBalance),
           ),
       ),
     )
@@ -131,3 +131,14 @@ class FinanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
+
+fun prisonBalance(prisonId: String = "MDI"): PrisonBalanceDto = PrisonBalanceDto(
+  prisonId = prisonId,
+  accountBalances = listOf(
+    PrisonAccountBalanceDto(
+      accountCode = 2101,
+      balance = BigDecimal.valueOf(23.50),
+      transactionDate = LocalDateTime.parse("2025-06-01T01:02:03"),
+    ),
+  ),
+)

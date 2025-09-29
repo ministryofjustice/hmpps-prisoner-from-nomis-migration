@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.NOMISMigrationApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.NOMISSyncApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialGeneralLedgerBalancesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialPrisonerBalancesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncGeneralLedgerTransactionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncOffenderTransactionRequest
@@ -30,6 +31,13 @@ class FinanceApiService(@Qualifier("financeApiWebClient") webClient: WebClient) 
   suspend fun migratePrisonerBalance(prisonNumber: String, migrationDto: InitialPrisonerBalancesRequest) {
     migrateApi
       .prepare(migrateApi.migratePrisonerBalancesRequestConfig(prisonNumber, migrationDto))
+      .retrieve()
+      .awaitBodilessEntityOrLogAndRethrowBadRequest()
+  }
+
+  suspend fun migratePrisonBalance(prisonId: String, migrationDto: InitialGeneralLedgerBalancesRequest) {
+    migrateApi
+      .prepare(migrateApi.migrateGeneralLedgerBalancesRequestConfig(prisonId, migrationDto))
       .retrieve()
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
   }
