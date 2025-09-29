@@ -272,7 +272,8 @@ class ExternalMovementsSyncService(
   private suspend fun scheduledMovementTapOutUpdated(dpsScheduleMovementId: UUID, prisonerNumber: String, eventId: Long, telemetry: MutableMap<String, Any>) = nomisApiService.getTemporaryAbsenceScheduledMovement(prisonerNumber, eventId)
     .also { telemetry["nomisApplicationId"] = it.movementApplicationId }
     .let {
-      // TODO dpsApi.sync(dpsScheduledMovementId, it.toDpsScheduledTemporaryAbsence()
+      val dpsApplicationId = requireParentApplicationExists(it.movementApplicationId)
+      dpsApiService.syncTemporaryAbsenceScheduledMovement(dpsApplicationId, it.toDpsRequest(id = dpsScheduleMovementId)).id
     }
 
   private suspend fun scheduledMovementTapInUpdated(dpsScheduleMovementId: UUID, prisonerNumber: String, eventId: Long, telemetry: MutableMap<String, Any>) = nomisApiService.getTemporaryAbsenceScheduledReturnMovement(prisonerNumber, eventId)
