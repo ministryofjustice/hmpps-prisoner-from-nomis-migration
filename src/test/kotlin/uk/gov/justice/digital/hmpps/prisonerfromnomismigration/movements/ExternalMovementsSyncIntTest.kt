@@ -1674,14 +1674,17 @@ class ExternalMovementsSyncIntTest(
   @Nested
   @DisplayName("SCHEDULED_EXT_MOVE-UPDATED")
   inner class TemporaryAbsenceScheduledMovementUpdated {
+    private val dpsApplicationId: UUID = UUID.randomUUID()
+    private val dpsScheduledMovementId: UUID = UUID.randomUUID()
 
     @Nested
     inner class HappyPathOutbound {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678)
+        mappingApi.stubGetScheduledMovementMapping(45678, dpsScheduledMovementId)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsApplicationId)
         nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678)
-        // TODO stub DPS API
+        dpsApi.stubSyncScheduledTemporaryAbsence(parentId = dpsApplicationId, response = SyncResponse(dpsScheduledMovementId))
 
         sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-UPDATED"))
           .also { waitForAnyProcessingToComplete() }
@@ -1698,9 +1701,11 @@ class ExternalMovementsSyncIntTest(
       }
 
       @Test
-      @Disabled("Waiting for DPS API to become available")
       fun `should update DPS scheduled movement`() {
-        // TODO verify DPS endpoint called
+        dpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/$dpsApplicationId"))
+            .withRequestBodyJsonPath("id", "$dpsScheduledMovementId"),
+        )
       }
 
       @Test
@@ -1713,7 +1718,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
             assertThat(it["nomisEventId"]).isEqualTo("45678")
             assertThat(it["directionCode"]).isEqualTo("OUT")
-            // TODO assert DPS id is tracked
+            assertThat(it["dpsScheduledMovementId"]).isEqualTo("$dpsScheduledMovementId")
           },
           isNull(),
         )
@@ -1776,7 +1781,10 @@ class ExternalMovementsSyncIntTest(
       @Test
       @Disabled("Waiting for DPS API to become available")
       fun `should NOT create DPS scheduled movement`() {
-        // TODO verify DPS endpoint not called
+        dpsApi.verify(
+          0,
+          putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/$dpsApplicationId")),
+        )
       }
 
       @Test
@@ -1796,7 +1804,6 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisEventId"]).isEqualTo("45678")
             assertThat(it["directionCode"]).isEqualTo("OUT")
-            // TODO assert DPS id is tracked
           },
           isNull(),
         )
@@ -1804,22 +1811,24 @@ class ExternalMovementsSyncIntTest(
     }
 
     @Nested
-    @Disabled("Waiting for DPS API to become available")
     inner class WhenDpsUpdateFails {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678)
+        mappingApi.stubGetScheduledMovementMapping(45678, dpsScheduledMovementId = dpsScheduledMovementId)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsApplicationId)
         nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678)
-        // TODO stub DPS API to reject update
+        dpsApi.stubSyncScheduledTemporaryAbsenceError(parentId = dpsApplicationId, status = 500)
 
         sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-UPDATED"))
           .also { waitForAnyProcessingToComplete() }
       }
 
       @Test
-      @Disabled("Waiting for DPS API to become available")
       fun `should try to update DPS scheduled movement`() {
-        // TODO verify DPS endpoint called
+        dpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/$dpsApplicationId"))
+            .withRequestBodyJsonPath("id", "$dpsScheduledMovementId"),
+        )
       }
 
       @Test
@@ -1831,7 +1840,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisEventId"]).isEqualTo("45678")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            // TODO assert DPS id is tracked
+            assertThat(it["dpsScheduledMovementId"]).isEqualTo("$dpsScheduledMovementId")
           },
           isNull(),
         )
