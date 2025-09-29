@@ -58,7 +58,7 @@ class PrisonerBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) 
     )
   }
 
-  fun stubGetPrisonerBalanceForPrisonerNotFound(
+  fun stubGetPrisonerBalanceNotFound(
     rootOffenderId: Long = 1,
     status: HttpStatus = HttpStatus.NOT_FOUND,
     error: ErrorResponse = ErrorResponse(status = status.value()),
