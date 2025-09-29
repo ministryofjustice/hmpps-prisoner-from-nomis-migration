@@ -15,6 +15,8 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialGeneralLedgerBalance
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialGeneralLedgerBalancesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialPrisonerBalance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialPrisonerBalancesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
@@ -77,6 +79,18 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
           accountCode = 2102,
           balance = BigDecimal.valueOf(11.50),
           holdBalance = BigDecimal.ZERO,
+        ),
+      ),
+    )
+    fun prisonBalanceMigrationDto() = InitialGeneralLedgerBalancesRequest(
+      initialBalances = listOf(
+        InitialGeneralLedgerBalance(
+          accountCode = 2101,
+          balance = BigDecimal.valueOf(23.50),
+        ),
+        InitialGeneralLedgerBalance(
+          accountCode = 2102,
+          balance = BigDecimal.valueOf(11.50),
         ),
       ),
     )
@@ -156,6 +170,17 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubMigratePrisonerBalance(prisonNumber: String = "A1234BC") {
     stubFor(
       post("/migrate/prisoner-balances/$prisonNumber")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubMigratePrisonBalance(prisonId: String = "MDI") {
+    stubFor(
+      post("/migrate/general-ledger-balances/$prisonId")
         .willReturn(
           aResponse()
             .withStatus(200)

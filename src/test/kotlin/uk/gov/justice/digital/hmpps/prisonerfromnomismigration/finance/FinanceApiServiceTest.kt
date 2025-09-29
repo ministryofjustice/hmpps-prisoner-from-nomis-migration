@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.prisonBalanceMigrationDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.prisonerBalanceMigrationDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
@@ -59,6 +60,47 @@ class FinanceApiServiceTest {
 
       financeApi.verify(
         postRequestedFor(urlPathEqualTo("/migrate/prisoner-balances/A1234BC")),
+      )
+    }
+  }
+
+  @Nested
+  inner class MigratePrisonBalance {
+    @Test
+    internal fun `will pass oath2 token to migrate endpoint`() = runTest {
+      financeApi.stubMigratePrisonBalance()
+
+      apiService.migratePrisonBalance("MDI", prisonBalanceMigrationDto())
+
+      financeApi.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will migrate request data  to migrate endpoint`() = runTest {
+      financeApi.stubMigratePrisonBalance()
+
+      apiService.migratePrisonBalance("MDI", prisonBalanceMigrationDto())
+
+      financeApi.verify(
+        postRequestedFor(anyUrl())
+          .withRequestBodyJsonPath("initialBalances[0].accountCode", equalTo("2101"))
+          .withRequestBodyJsonPath("initialBalances[0].balance", equalTo("23.5"))
+          .withRequestBodyJsonPath("initialBalances[1].accountCode", equalTo("2102"))
+          .withRequestBodyJsonPath("initialBalances[1].balance", equalTo("11.5")),
+      )
+    }
+
+    @Test
+    fun `will call the migrate endpoint`() = runTest {
+      financeApi.stubMigratePrisonBalance()
+
+      apiService.migratePrisonBalance("MDI", prisonBalanceMigrationDto())
+
+      financeApi.verify(
+        postRequestedFor(urlPathEqualTo("/migrate/general-ledger-balances/MDI")),
       )
     }
   }

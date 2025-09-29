@@ -6,6 +6,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.Alloca
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonBalanceMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerBalanceMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
@@ -26,6 +27,7 @@ class GeneralMappingService(
   private val prisonerRestrictionMappingApiService: PrisonerRestrictionMappingApiService,
   private val contactPersonProfileDetailsMappingApiService: ContactPersonProfileDetailsMappingApiService,
   private val organisationsMappingApiService: OrganisationsMappingApiService,
+  private val prisonBalanceMappingApiService: PrisonBalanceMappingApiService,
   private val prisonerBalanceMappingApiService: PrisonerBalanceMappingApiService,
   private val visitBalanceMappingApiService: VisitBalanceMappingApiService,
   private val externalMovementsMappingApiService: ExternalMovementsMappingApiService,
@@ -41,6 +43,7 @@ class GeneralMappingService(
     MigrationType.ORGANISATIONS -> organisationsMappingApiService.getMigrationCount(migrationId)
     MigrationType.PERSONALRELATIONSHIPS -> prisonerRestrictionMappingApiService.getMigrationCount(migrationId)
     MigrationType.PERSONALRELATIONSHIPS_PROFILEDETAIL -> contactPersonProfileDetailsMappingApiService.getMigrationCount(migrationId)
+    MigrationType.PRISON_BALANCE -> prisonBalanceMappingApiService.getMigrationCount(migrationId)
     MigrationType.PRISONER_BALANCE -> prisonerBalanceMappingApiService.getMigrationCount(migrationId)
     // since this is a patch we cannot count mappings created since none are created - it will have to be manual Telemetry
     MigrationType.SENTENCING_ADJUSTMENTS -> 0
