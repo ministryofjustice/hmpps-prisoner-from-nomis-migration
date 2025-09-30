@@ -18,7 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 
 @RestController
 @RequestMapping("/migrate/visit-balance", produces = [MediaType.APPLICATION_JSON_VALUE])
-@Tag(name = "visit-balance-migration-resource")
+@Tag(name = "Visit Balance Migration Resource")
 @PreAuthorize("hasAnyRole('ROLE_MIGRATE_VISIT_BALANCE', 'ROLE_MIGRATE_NOMIS_SYSCON')")
 class VisitBalanceMigrationResource(
   private val migrationService: VisitBalanceMigrationService,

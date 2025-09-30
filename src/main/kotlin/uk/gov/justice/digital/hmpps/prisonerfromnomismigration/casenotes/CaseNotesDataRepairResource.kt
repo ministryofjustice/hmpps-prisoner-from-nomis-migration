@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes
 
 import com.microsoft.applicationinsights.TelemetryClient
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 
 @RestController
+@Tag(name = "Case Notes Migration Resource")
 @PreAuthorize("hasRole('ROLE_NOMIS_CASENOTES')")
 class CaseNotesDataRepairResource(
   private val caseNotesSynchronisationService: CaseNotesSynchronisationService,

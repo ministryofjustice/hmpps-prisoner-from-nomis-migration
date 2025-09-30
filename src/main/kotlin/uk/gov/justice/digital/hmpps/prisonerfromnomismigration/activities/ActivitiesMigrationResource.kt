@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Future
 import org.springframework.http.HttpStatus
@@ -22,6 +23,7 @@ import java.time.LocalDate
 
 @RestController
 @RequestMapping("/migrate/activities", produces = [MediaType.APPLICATION_JSON_VALUE])
+@Tag(name = "Activities Migration Resource")
 @Validated
 class ActivitiesMigrationResource(
   private val activitiesMigrationService: ActivitiesMigrationService,

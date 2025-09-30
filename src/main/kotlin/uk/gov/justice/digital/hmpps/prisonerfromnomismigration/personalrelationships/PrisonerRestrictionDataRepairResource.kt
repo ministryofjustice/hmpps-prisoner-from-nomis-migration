@@ -1,7 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships
 
-import com.microsoft.applicationinsights.TelemetryClient
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PathVariable
@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@Tag(name = "Contact Person Migration Resource")
 @PreAuthorize("hasAnyRole('ROLE_MIGRATE_CONTACTPERSON', 'ROLE_MIGRATE_NOMIS_SYSCON')")
 class PrisonerRestrictionDataRepairResource(
   private val prisonerRestrictionSynchronisationService: PrisonerRestrictionSynchronisationService,
-  private val telemetryClient: TelemetryClient,
 ) {
 
   @PostMapping("/prisoners/{offenderNo}/restrictions/resynchronise")

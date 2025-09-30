@@ -18,7 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 
 @RestController
 @RequestMapping("/migrate/corporate", produces = [MediaType.APPLICATION_JSON_VALUE])
-@Tag(name = "corporate-migration-resource")
+@Tag(name = "Corporate Migration Resource")
 @PreAuthorize("hasAnyRole('ROLE_MIGRATE_CONTACTPERSON', 'ROLE_MIGRATE_NOMIS_SYSCON')")
 class OrganisationsMigrationResource(
   private val migrationService: OrganisationsMigrationService,

@@ -18,7 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 
 @RestController
 @RequestMapping("/migrate/external-movements", produces = [MediaType.APPLICATION_JSON_VALUE])
-@Tag(name = "external-movements-migration-resource")
+@Tag(name = "External Movements Migration Resource")
 @PreAuthorize("hasAnyRole('ROLE_MIGRATE_EXTERNAL_MOVEMENTS','ROLE_MIGRATE_NOMIS_SYSCON')")
 class ExternalMovementsMigrationResource(
   private val migrationService: ExternalMovementsMigrationService,
