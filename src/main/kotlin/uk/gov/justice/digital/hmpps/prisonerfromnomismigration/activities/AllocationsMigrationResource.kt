@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -17,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 
 @RestController
 @RequestMapping("/migrate/allocations", produces = [MediaType.APPLICATION_JSON_VALUE])
+@Tag(name = "Activities Migration Resource")
 class AllocationsMigrationResource(
   private val allocationsMigrationService: AllocationsMigrationService,
 ) {

@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.ArraySchema
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.MediaType
 import org.springframework.security.access.prepost.PreAuthorize
@@ -22,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import java.time.LocalDateTime
 
 @RestController
+@Tag(name = "Migrate Resource")
 @RequestMapping("/migrate/history", produces = [MediaType.APPLICATION_JSON_VALUE])
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
 class MigrateHistoryResource(private val migrationHistoryService: MigrationHistoryService) {

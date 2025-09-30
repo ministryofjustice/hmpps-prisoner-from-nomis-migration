@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.ArraySchema
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.tags.Tag
 import kotlinx.coroutines.future.await
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -24,6 +25,7 @@ import uk.gov.justice.hmpps.sqs.PurgeQueueRequest
 import uk.gov.justice.hmpps.sqs.countMessagesOnQueue
 
 @RestController
+@Tag(name = "Migrate Resource")
 @RequestMapping("/migrate/dead-letter-queue", produces = [MediaType.APPLICATION_JSON_VALUE])
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
 class MigrateDeadLetterQueueResource(

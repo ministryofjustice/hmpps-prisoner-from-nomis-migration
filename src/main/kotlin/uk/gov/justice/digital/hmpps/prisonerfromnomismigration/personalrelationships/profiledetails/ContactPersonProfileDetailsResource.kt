@@ -18,7 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 
 @RestController
 @RequestMapping("/sync/contactperson/profile-details", produces = [MediaType.APPLICATION_JSON_VALUE])
-@Tag(name = "contact-person-migration-resource")
+@Tag(name = "Contact Person Migration Resource")
 @PreAuthorize("hasAnyRole('ROLE_MIGRATE_CONTACTPERSON', 'ROLE_MIGRATE_NOMIS_SYSCON')")
 class ContactPersonProfileDetailsResource(
   private val syncService: ContactPersonProfileDetailsSyncService,

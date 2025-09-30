@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus.ACCEPTED
 import org.springframework.http.MediaType
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 
 @RestController
+@Tag(name = "Incidents Migration Resource")
 @RequestMapping("/migrate/incidents", produces = [MediaType.APPLICATION_JSON_VALUE])
 @PreAuthorize("hasAnyRole('ROLE_MIGRATE_INCIDENT_REPORTS', 'ROLE_MIGRATE_NOMIS_SYSCON')")
 class IncidentsMigrationResource(
