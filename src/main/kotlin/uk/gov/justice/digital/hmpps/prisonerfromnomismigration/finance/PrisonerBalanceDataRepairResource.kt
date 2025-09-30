@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 import com.microsoft.applicationinsights.TelemetryClient
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PathVariable
@@ -12,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 
 @RestController
+@Tag(name = "Finance Migration Resource")
 class PrisonerBalanceDataRepairResource(
   private val prisonerBalanceSynchronisationService: PrisonerBalanceSynchronisationService,
   private val telemetryClient: TelemetryClient,
