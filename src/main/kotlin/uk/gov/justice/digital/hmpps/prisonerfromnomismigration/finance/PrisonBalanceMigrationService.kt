@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialGeneralLedgerBalance
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialGeneralLedgerBalancesRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerBalancesSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerPointInTimeBalance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonBalanceMappingDto
@@ -108,11 +108,12 @@ class PrisonBalanceMigrationService(
   }
 }
 
-fun PrisonBalanceDto.toMigrationDto() = InitialGeneralLedgerBalancesRequest(
-  initialBalances = accountBalances.map { it.toMigrationDto() },
+fun PrisonBalanceDto.toMigrationDto() = GeneralLedgerBalancesSyncRequest(
+  accountBalances = accountBalances.map { it.toMigrationDto() },
 )
 
-fun PrisonAccountBalanceDto.toMigrationDto() = InitialGeneralLedgerBalance(
+fun PrisonAccountBalanceDto.toMigrationDto() = GeneralLedgerPointInTimeBalance(
   accountCode = accountCode.toInt(),
   balance = balance,
+  asOfTimestamp = transactionDate,
 )

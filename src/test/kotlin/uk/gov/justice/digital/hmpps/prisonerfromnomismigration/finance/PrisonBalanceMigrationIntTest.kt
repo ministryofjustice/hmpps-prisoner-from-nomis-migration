@@ -25,7 +25,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialGeneralLedgerBalancesRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -329,8 +329,8 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPathNomisToDPSMapping {
-      private lateinit var dpsRequests: List<InitialGeneralLedgerBalancesRequest>
-      private lateinit var dpsRequests2: List<InitialGeneralLedgerBalancesRequest>
+      private lateinit var dpsRequests: List<GeneralLedgerBalancesSyncRequest>
+      private lateinit var dpsRequests2: List<GeneralLedgerBalancesSyncRequest>
       private lateinit var mappingRequests: List<PrisonBalanceMappingDto>
       private lateinit var migrationResult: MigrationResult
 
@@ -369,16 +369,15 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
           MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/prison-balance")))
       }
 
-      // TODO the structure of the DPS object is not quite right - this will need to change once updated
       @Test
       fun `will send prison balance data to Dps`() {
-        dpsRequests.find { it.initialBalances[0].accountCode == 2101 }?.let {
-          assertThat(it.initialBalances[0].balance).isEqualTo(BigDecimal(20.50))
-          // TODO assertThat(it.initialBalances[0].transactionDate).isEqualTo(1)
+        dpsRequests.find { it.accountBalances[0].accountCode == 2101 }?.let {
+          assertThat(it.accountBalances[0].balance).isEqualTo(BigDecimal(20.50))
+          assertThat(it.accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-01T01:02:03"))
         }
-        dpsRequests2.find { it.initialBalances[0].accountCode == 2102 }?.let {
-          assertThat(it.initialBalances[0].balance).isEqualTo(BigDecimal(25.50))
-          // TODO assertThat(it.initialBalances[1].transactionDate).isEqualTo(180)
+        dpsRequests2.find { it.accountBalances[0].accountCode == 2102 }?.let {
+          assertThat(it.accountBalances[0].balance).isEqualTo(BigDecimal(25.50))
+          assertThat(it.accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-02T02:02:03"))
         }
       }
 

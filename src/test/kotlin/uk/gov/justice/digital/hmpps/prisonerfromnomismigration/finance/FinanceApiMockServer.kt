@@ -15,14 +15,15 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialGeneralLedgerBalance
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialGeneralLedgerBalancesRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialPrisonerBalance
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialPrisonerBalancesRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerBalancesSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerPointInTimeBalance
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerAccountPointInTimeBalance
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.math.BigDecimal
+import java.time.LocalDateTime
 
 class FinanceApiExtension :
   BeforeAllCallback,
@@ -62,35 +63,38 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8102
 
-    fun prisonerBalanceMigrationDto() = InitialPrisonerBalancesRequest(
-      prisonId = "ASI",
-      initialBalances = listOf(
-        InitialPrisonerBalance(
+    fun prisonerBalanceMigrationDto() = PrisonerBalancesSyncRequest(
+      accountBalances = listOf(
+        PrisonerAccountPointInTimeBalance(
+          prisonId = "ASI",
           // TODO Check if need these
-          // prisonId = "ASI",
           // lastTransactionId = 173,
           accountCode = 2101,
           balance = BigDecimal.valueOf(23.50),
           holdBalance = BigDecimal.valueOf(1.25),
+          asOfTimestamp = LocalDateTime.parse("2025-06-02T02:02:03"),
         ),
-        InitialPrisonerBalance(
-          // prisonId = "ASI",
+        PrisonerAccountPointInTimeBalance(
+          prisonId = "ASI",
           // lastTransactionId = 174,
           accountCode = 2102,
           balance = BigDecimal.valueOf(11.50),
           holdBalance = BigDecimal.ZERO,
+          asOfTimestamp = LocalDateTime.parse("2025-06-01T01:02:03"),
         ),
       ),
     )
-    fun prisonBalanceMigrationDto() = InitialGeneralLedgerBalancesRequest(
-      initialBalances = listOf(
-        InitialGeneralLedgerBalance(
+    fun prisonBalanceMigrationDto() = GeneralLedgerBalancesSyncRequest(
+      accountBalances = listOf(
+        GeneralLedgerPointInTimeBalance(
           accountCode = 2101,
           balance = BigDecimal.valueOf(23.50),
+          LocalDateTime.parse("2025-06-01T01:02:03"),
         ),
-        InitialGeneralLedgerBalance(
+        GeneralLedgerPointInTimeBalance(
           accountCode = 2102,
           balance = BigDecimal.valueOf(11.50),
+          LocalDateTime.parse("2025-06-02T02:02:03"),
         ),
       ),
     )
