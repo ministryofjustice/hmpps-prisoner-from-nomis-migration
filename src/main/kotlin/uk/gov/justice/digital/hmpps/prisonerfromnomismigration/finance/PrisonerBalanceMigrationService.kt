@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialPrisonerBalance
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.InitialPrisonerBalancesRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerAccountPointInTimeBalance
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerBalanceMappingDto
@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.toPageImpl
 import java.math.BigDecimal
+import java.time.LocalDateTime
 
 @Service
 class PrisonerBalanceMigrationService(
@@ -26,9 +27,9 @@ class PrisonerBalanceMigrationService(
   val prisonerBalanceMappingService: PrisonerBalanceMappingApiService,
   val prisonerBalanceNomisApiService: PrisonerBalanceNomisApiService,
   val dpsApiService: FinanceApiService,
-  @Value("\${prisonerbalance.page.size:1000}") pageSize: Long,
-  @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
-  @Value("\${complete-check.count}") completeCheckCount: Int,
+  @Value($$"${prisonerbalance.page.size:1000}") pageSize: Long,
+  @Value($$"${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value($$"${complete-check.count}") completeCheckCount: Int,
 ) : MigrationService<PrisonerBalanceMigrationFilter, Long, PrisonerBalanceMappingDto>(
   mappingService = prisonerBalanceMappingService,
   migrationType = MigrationType.PRISONER_BALANCE,
@@ -112,13 +113,15 @@ class PrisonerBalanceMigrationService(
   }
 }
 
-fun PrisonerBalanceDto.toMigrationDto() = InitialPrisonerBalancesRequest(
-  prisonId = accounts[0].prisonId,
-  initialBalances = accounts.map { it.toMigrationDto() },
+fun PrisonerBalanceDto.toMigrationDto() = PrisonerBalancesSyncRequest(
+  accountBalances = accounts.map { it.toMigrationDto() },
 )
 
-fun PrisonerAccountDto.toMigrationDto() = InitialPrisonerBalance(
+fun PrisonerAccountDto.toMigrationDto() = PrisonerAccountPointInTimeBalance(
+  prisonId = prisonId,
   accountCode = accountCode.toInt(),
   balance = balance,
   holdBalance = holdBalance ?: BigDecimal.ZERO,
+  // TODO: This is passing through timestamp, but think we need transactionId instead?
+  asOfTimestamp = LocalDateTime.now(),
 )
