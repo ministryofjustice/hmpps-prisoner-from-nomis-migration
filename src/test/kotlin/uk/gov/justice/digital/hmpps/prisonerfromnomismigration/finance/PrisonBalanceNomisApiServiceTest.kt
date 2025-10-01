@@ -91,7 +91,7 @@ class PrisonBalanceNomisApiServiceTest {
       assertThat(prisonBalance.accountBalances).hasSize(1)
       assertThat(prisonBalance.accountBalances[0].balance).isEqualTo("23.45")
       assertThat(prisonBalance.accountBalances[0].accountCode).isEqualTo(2101)
-      assertThat(prisonBalance.accountBalances[0].transactionDate.toLocalDate()).isEqualTo(LocalDate.now())
+      assertThat(prisonBalance.accountBalances[0].transactionDate.toLocalDate()).isEqualTo(LocalDate.parse("2025-06-02"))
     }
   }
 }

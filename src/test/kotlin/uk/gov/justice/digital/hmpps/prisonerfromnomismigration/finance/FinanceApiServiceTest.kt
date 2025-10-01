@@ -43,12 +43,16 @@ class FinanceApiServiceTest {
 
       financeApi.verify(
         postRequestedFor(anyUrl())
-          .withRequestBodyJsonPath("initialBalances[0].accountCode", equalTo("2101"))
-          .withRequestBodyJsonPath("initialBalances[0].balance", equalTo("23.5"))
-          .withRequestBodyJsonPath("initialBalances[0].holdBalance", equalTo("1.25"))
-          .withRequestBodyJsonPath("initialBalances[1].accountCode", equalTo("2102"))
-          .withRequestBodyJsonPath("initialBalances[1].balance", equalTo("11.5"))
-          .withRequestBodyJsonPath("initialBalances[1].holdBalance", equalTo("0")),
+          .withRequestBodyJsonPath("accountBalances[0].prisonId", equalTo("ASI"))
+          .withRequestBodyJsonPath("accountBalances[0].accountCode", equalTo("2101"))
+          .withRequestBodyJsonPath("accountBalances[0].balance", equalTo("23.5"))
+          .withRequestBodyJsonPath("accountBalances[0].holdBalance", equalTo("1.25"))
+          .withRequestBodyJsonPath("accountBalances[0].asOfTimestamp", equalTo("2025-06-02T02:02:03"))
+          .withRequestBodyJsonPath("accountBalances[1].prisonId", equalTo("ASI"))
+          .withRequestBodyJsonPath("accountBalances[1].accountCode", equalTo("2102"))
+          .withRequestBodyJsonPath("accountBalances[1].balance", equalTo("11.5"))
+          .withRequestBodyJsonPath("accountBalances[1].holdBalance", equalTo("0"))
+          .withRequestBodyJsonPath("accountBalances[1].asOfTimestamp", equalTo("2025-06-01T01:02:03")),
       )
     }
 
@@ -86,10 +90,10 @@ class FinanceApiServiceTest {
 
       financeApi.verify(
         postRequestedFor(anyUrl())
-          .withRequestBodyJsonPath("initialBalances[0].accountCode", equalTo("2101"))
-          .withRequestBodyJsonPath("initialBalances[0].balance", equalTo("23.5"))
-          .withRequestBodyJsonPath("initialBalances[1].accountCode", equalTo("2102"))
-          .withRequestBodyJsonPath("initialBalances[1].balance", equalTo("11.5")),
+          .withRequestBodyJsonPath("accountBalances[0].accountCode", equalTo("2101"))
+          .withRequestBodyJsonPath("accountBalances[0].balance", equalTo("23.5"))
+          .withRequestBodyJsonPath("accountBalances[1].accountCode", equalTo("2102"))
+          .withRequestBodyJsonPath("accountBalances[1].balance", equalTo("11.5")),
       )
     }
 
