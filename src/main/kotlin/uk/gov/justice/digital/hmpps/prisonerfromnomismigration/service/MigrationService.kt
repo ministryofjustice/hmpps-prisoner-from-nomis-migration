@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -66,11 +67,10 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
     }.also {
       telemetryClient.trackEvent(
         "${migrationType.telemetryName}-migration-started",
-        mapOf<String, String>(
+        mapOf(
           "migrationId" to it.migrationId,
           "estimatedCount" to it.estimatedCount.toString(),
         ) + migrationFilter.asMap(),
-        null,
       )
       migrationHistoryService.recordMigrationStarted(
         migrationId = it.migrationId,

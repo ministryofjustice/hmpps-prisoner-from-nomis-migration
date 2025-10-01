@@ -42,9 +42,9 @@ class PrisonBalanceMigrationService(
     migrationFilter: PrisonBalanceMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<String> = prisonBalanceNomisApiService.getPrisonBalanceIds().let {
-    PageImpl(it)
-  }
+  ): PageImpl<String> = PageImpl(
+    migrationFilter.prisonId?.let { listOf(it) } ?: prisonBalanceNomisApiService.getPrisonBalanceIds(),
+  )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<String>) {
     val prisonId = context.body
