@@ -112,7 +112,7 @@ class FinanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
         PrisonAccountBalanceDto(
           accountCode = 2101,
           balance = BigDecimal("23.45"),
-          transactionDate = LocalDateTime.now(),
+          transactionDate = LocalDateTime.parse("2025-06-02T02:02:03"),
         ),
       ),
     ),

@@ -78,8 +78,9 @@ class PrisonBalanceDataRepairResourceIntTest : SqsIntegrationTestBase() {
       fun `will send prison balance to DPS`() {
         financeApi.verify(
           postRequestedFor(urlPathEqualTo("/migrate/general-ledger-balances/$prisonId"))
-            .withRequestBodyJsonPath("initialBalances[0].accountCode", 2101)
-            .withRequestBodyJsonPath("initialBalances[0].balance", "23.45"),
+            .withRequestBodyJsonPath("accountBalances[0].accountCode", 2101)
+            .withRequestBodyJsonPath("accountBalances[0].balance", "23.45")
+            .withRequestBodyJsonPath("accountBalances[0].asOfTimestamp", "2025-06-02T02:02:03"),
         )
       }
 

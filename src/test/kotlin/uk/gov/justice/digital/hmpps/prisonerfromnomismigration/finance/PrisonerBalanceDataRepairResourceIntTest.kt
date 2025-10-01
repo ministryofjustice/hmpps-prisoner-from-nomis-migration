@@ -79,10 +79,10 @@ class PrisonerBalanceDataRepairResourceIntTest : SqsIntegrationTestBase() {
       fun `will send prisonerBalance to DPS`() {
         financeApi.verify(
           postRequestedFor(urlPathEqualTo("/migrate/prisoner-balances/$prisonNumber"))
-            .withRequestBodyJsonPath("prisonId", "ASI")
-            .withRequestBodyJsonPath("initialBalances[0].accountCode", 2101)
-            .withRequestBodyJsonPath("initialBalances[0].balance", 23.5)
-            .withRequestBodyJsonPath("initialBalances[0].holdBalance", 1.25),
+            .withRequestBodyJsonPath("accountBalances[0].accountCode", 2101)
+            .withRequestBodyJsonPath("accountBalances[0].prisonId", "ASI")
+            .withRequestBodyJsonPath("accountBalances[0].balance", 23.5)
+            .withRequestBodyJsonPath("accountBalances[0].holdBalance", 1.25),
         )
       }
 
