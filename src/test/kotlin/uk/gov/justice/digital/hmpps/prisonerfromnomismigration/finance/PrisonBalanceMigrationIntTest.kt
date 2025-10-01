@@ -254,6 +254,79 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    inner class HappyPathWithFilter {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetPrisonBalanceByNomisIdOrNull(nomisId = "MDI", mapping = null)
+
+        nomisPrisonBalanceApiMock.stubGetPrisonBalance(
+          prisonId = "MDI",
+          prisonBalance = prisonBalance(prisonId = "MDI").copy(
+            accountBalances = listOf(
+              PrisonAccountBalanceDto(
+                accountCode = 2102,
+                balance = BigDecimal.valueOf(24.50),
+                transactionDate = LocalDateTime.parse("2025-06-01T01:02:03"),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubMigratePrisonBalance(prisonId = "MDI")
+        mappingApiMock.stubCreateMappingsForMigration()
+        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 1)
+        migrationResult = performMigration(PrisonBalanceMigrationFilter("MDI"))
+      }
+
+      @Test
+      fun `will get the prisons to migrate`() {
+        nomisPrisonBalanceApiMock.verify(0, getRequestedFor(urlPathEqualTo("/finance/prison/ids")))
+      }
+
+      @Test
+      fun `will get prison balance details for each prison`() {
+        nomisPrisonBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prison/MDI/balance")))
+      }
+
+      @Test
+      fun `will create mapping for each prison`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/prison-balance"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("dpsId", "MDI")
+            .withRequestBodyJsonPath("nomisId", "MDI"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for each prison migrated`() {
+        verify(telemetryClient).trackEvent(
+          eq("prisonbalance-migration-entity-migrated"),
+          check {
+            assertThat(it["nomisId"]).isEqualTo("MDI")
+            assertThat(it["dpsId"]).isEqualTo("MDI")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will record the number of prisons migrated`() {
+        webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+          .jsonPath("$.recordsMigrated").isEqualTo("1")
+      }
+    }
+
+    @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPathNomisToDPSMapping {
       private lateinit var dpsRequests: List<InitialGeneralLedgerBalancesRequest>
