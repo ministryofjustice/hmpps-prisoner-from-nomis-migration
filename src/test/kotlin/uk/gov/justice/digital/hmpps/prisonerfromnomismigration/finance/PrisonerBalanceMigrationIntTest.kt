@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -197,6 +198,120 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will get the offenders to migrate`() {
         nomisPrisonerBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/ids")))
+      }
+
+      @Test
+      fun `will get prisoner balance details for each offender`() {
+        nomisPrisonerBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/10000/balance")))
+        nomisPrisonerBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/10001/balance")))
+      }
+
+      @Test
+      fun `will create mapping for each prisoner`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/prisoner-balance"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("dpsId", "A0001BC")
+            .withRequestBodyJsonPath("nomisRootOffenderId", 10000),
+        )
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/prisoner-balance"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("dpsId", "A0002BC")
+            .withRequestBodyJsonPath("nomisRootOffenderId", 10001),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for each prisoner migrated`() {
+        verify(telemetryClient).trackEvent(
+          eq("prisonerbalance-migration-entity-migrated"),
+          check {
+            assertThat(it["nomisRootOffenderId"]).isEqualTo("10000")
+            assertThat(it["dpsPrisonerId"]).isEqualTo("A0001BC")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("prisonerbalance-migration-entity-migrated"),
+          check {
+            assertThat(it["nomisRootOffenderId"]).isEqualTo("10001")
+            assertThat(it["dpsPrisonerId"]).isEqualTo("A0002BC")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will record the number of prisoners migrated`() {
+        webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+          .jsonPath("$.recordsMigrated").isEqualTo("2")
+      }
+    }
+
+    @Nested
+    inner class HappyPathWithFiltering {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeEach
+      fun setUp() {
+        val prisonId = "ASI"
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(totalElements = 2, pageSize = 10, firstRootOffenderId = 10000L)
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = 10000, dpsId = "A0001BC", mapping = null)
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = 10001, dpsId = "A0002BC", mapping = null)
+
+        nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(
+          rootOffenderId = 10000,
+          prisonerBalance = prisonerBalance(prisonNumber = "A0001BC").copy(
+            accounts = listOf(
+              PrisonerAccountDto(
+                prisonId = "ASI",
+                lastTransactionId = 175,
+                accountCode = 2102,
+                balance = BigDecimal.valueOf(24.50),
+                holdBalance = BigDecimal.valueOf(2.25),
+              ),
+            ),
+          ),
+        )
+        nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(
+          rootOffenderId = 10001,
+          prisonerBalance = prisonerBalance(prisonNumber = "A0002BC").copy(
+            accounts = listOf(
+              PrisonerAccountDto(
+                prisonId = "ASI",
+                lastTransactionId = 176,
+                accountCode = 2103,
+                balance = BigDecimal.valueOf(25.50),
+                holdBalance = BigDecimal.valueOf(2.15),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
+        dpsApiMock.stubMigratePrisonerBalance(prisonNumber = "A0002BC")
+        mappingApiMock.stubCreateMappingsForMigration()
+        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
+        migrationResult = performMigration(PrisonerBalanceMigrationFilter(prisonId = "ASI"))
+      }
+
+      @Test
+      fun `will get the offenders to migrate, filtering by prisonId, page and size`() {
+        nomisPrisonerBalanceApiMock.verify(
+          getRequestedFor(urlPathEqualTo("/finance/prisoners/ids"))
+            .withQueryParam("prisonId", equalTo("ASI"))
+            .withQueryParam("page", equalTo("0"))
+            .withQueryParam("size", equalTo("10")),
+        )
       }
 
       @Test
