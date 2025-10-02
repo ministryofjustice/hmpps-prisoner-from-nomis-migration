@@ -170,6 +170,7 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
                 accountCode = 2102,
                 balance = BigDecimal.valueOf(24.50),
                 holdBalance = BigDecimal.valueOf(2.25),
+                transactionDate = LocalDateTime.parse("2025-06-02T02:02:03"),
               ),
             ),
           ),
@@ -184,6 +185,7 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
                 accountCode = 2103,
                 balance = BigDecimal.valueOf(25.50),
                 holdBalance = BigDecimal.valueOf(2.15),
+                transactionDate = LocalDateTime.parse("2025-07-02T01:02:05"),
               ),
             ),
           ),
@@ -279,6 +281,7 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
                 accountCode = 2102,
                 balance = BigDecimal.valueOf(24.50),
                 holdBalance = BigDecimal.valueOf(2.25),
+                transactionDate = LocalDateTime.parse("2025-06-02T02:02:03"),
               ),
             ),
           ),
@@ -293,6 +296,7 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
                 accountCode = 2103,
                 balance = BigDecimal.valueOf(25.50),
                 holdBalance = BigDecimal.valueOf(2.15),
+                transactionDate = LocalDateTime.parse("2025-07-02T01:02:05"),
               ),
             ),
           ),
@@ -394,6 +398,7 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
                 accountCode = 2102,
                 balance = BigDecimal.valueOf(20.50),
                 holdBalance = BigDecimal.valueOf(2.15),
+                transactionDate = LocalDateTime.parse("2025-06-02T02:02:03"),
               ),
             ),
           ),
@@ -407,6 +412,7 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
                 accountCode = 2103,
                 balance = BigDecimal.valueOf(25.50),
                 holdBalance = BigDecimal.valueOf(1.15),
+                transactionDate = LocalDateTime.parse("2025-07-02T01:02:05"),
               ),
             ),
           ),
@@ -427,14 +433,14 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(it.accountBalances[0].balance).isEqualTo(BigDecimal(20.50))
           assertThat(it.accountBalances[0].holdBalance).isEqualTo(BigDecimal(2.15))
           assertThat(it.accountBalances[0].prisonId).isEqualTo("ASI")
-          // TODO assertThat(it.accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-02T02:02:03"))
+          assertThat(it.accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-02T02:02:03"))
           assertThat(it.accountBalances[0].transactionId).isEqualTo(173)
         }
         dpsRequests2.find { it.accountBalances[0].accountCode == 2102 }?.let {
           assertThat(it.accountBalances[0].balance).isEqualTo(BigDecimal(25.50))
           assertThat(it.accountBalances[0].holdBalance).isEqualTo(BigDecimal(1.15))
           assertThat(it.accountBalances[0].prisonId).isEqualTo("ASI")
-          // TODO assertThat(it.accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-01T01:02:03"))
+          assertThat(it.accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-07-02T01:02:05"))
           assertThat(it.accountBalances[1].transactionId).isEqualTo(174)
         }
       }
@@ -475,6 +481,7 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
                 accountCode = 2102,
                 balance = BigDecimal.valueOf(25.10),
                 holdBalance = BigDecimal.valueOf(2.15),
+                transactionDate = LocalDateTime.parse("2025-06-02T02:02:03"),
               ),
             ),
           ),
@@ -547,6 +554,7 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
                 accountCode = 2102,
                 balance = BigDecimal.valueOf(25.70),
                 holdBalance = BigDecimal.valueOf(2.75),
+                transactionDate = LocalDateTime.parse("2025-07-02T01:02:05"),
               ),
             ),
           ),
