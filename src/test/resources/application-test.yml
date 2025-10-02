@@ -141,6 +141,7 @@ complete-check:
   count: 1
 
 hmpps.sqs:
+  defaultErrorVisibilityTimeout: 0
   provider: localstack
   queues:
     eventsentencing:
@@ -155,15 +156,12 @@ hmpps.sqs:
       dlqMaxReceiveCount: 2
     eventcourtsentencing:
       dlqMaxReceiveCount: 2
-      errorVisibilityTimeout: 0
     eventpersonalrelationships:
       dlqMaxReceiveCount: 1
-      errorVisibilityTimeout: 0
     eventvisitbalance:
       dlqMaxReceiveCount: 1
     eventexternalmovements:
       dlqMaxReceiveCount: 1
-      errorVisibilityTimeout: 0
     domaineventpersonalrelationships:
       dlqMaxReceiveCount: 1
     migrationpersonalrelationshipsprofiledetails:

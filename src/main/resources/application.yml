@@ -203,20 +203,12 @@ azure:
       enabled: false
 
 hmpps.sqs:
+  defaultErrorVisibilityTimeout: 1, 10, 60, 600
   queues:
-    # The incidents sync can have multiple events relating to the same incident (e.g. INCIDENT-DELETED-RESPONSES) this can cause
-    # OptimisticLockExceptions in the incident-reporting-api service as it tries to process the same incident (it clears and
-    # recreates the incident on each upsert). Stagger incident messages every 5 seconds.
-    eventincidents:
-      errorVisibilityTimeout: 5
     # court sentencing will have to process creation events for parent and child entities simultaneously
     # a short delay should be enough for the hierarchy to be created in the right order.
     eventcourtsentencing:
-      errorVisibilityTimeout: 1
-    eventpersonalrelationships:
-      errorVisibilityTimeout: 1
-    eventexternalmovements:
-      errorVisibilityTimeout: 1
+      errorVisibilityTimeout: 1, 1, 1, 10, 60
     migrationvisits:
       propagateTracing: false
     migrationactivities:
