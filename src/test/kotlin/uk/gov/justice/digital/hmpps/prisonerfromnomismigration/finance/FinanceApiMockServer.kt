@@ -67,19 +67,18 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
       accountBalances = listOf(
         PrisonerAccountPointInTimeBalance(
           prisonId = "ASI",
-          // TODO Check if need these
-          // lastTransactionId = 173,
           accountCode = 2101,
           balance = BigDecimal.valueOf(23.50),
           holdBalance = BigDecimal.valueOf(1.25),
+          transactionId = 173,
           asOfTimestamp = LocalDateTime.parse("2025-06-02T02:02:03"),
         ),
         PrisonerAccountPointInTimeBalance(
           prisonId = "ASI",
-          // lastTransactionId = 174,
           accountCode = 2102,
           balance = BigDecimal.valueOf(11.50),
           holdBalance = BigDecimal.ZERO,
+          transactionId = 174,
           asOfTimestamp = LocalDateTime.parse("2025-06-01T01:02:03"),
         ),
       ),

@@ -124,4 +124,5 @@ fun PrisonerAccountDto.toMigrationDto() = PrisonerAccountPointInTimeBalance(
   holdBalance = holdBalance ?: BigDecimal.ZERO,
   // TODO: This is passing through timestamp, but think we need transactionId instead?
   asOfTimestamp = LocalDateTime.now(),
+  transactionId = lastTransactionId,
 )
