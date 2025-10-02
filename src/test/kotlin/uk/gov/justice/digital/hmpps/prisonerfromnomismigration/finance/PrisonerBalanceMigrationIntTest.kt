@@ -421,7 +421,6 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
           MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/prisoner-balance")))
       }
 
-      // TODO the structure of the DPS object is not quite right - this will need to change once updated
       @Test
       fun `will send prisoner balance data to Dps`() {
         dpsRequests.find { it.accountBalances[0].accountCode == 2101 }?.let {
@@ -429,14 +428,14 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
           assertThat(it.accountBalances[0].holdBalance).isEqualTo(BigDecimal(2.15))
           assertThat(it.accountBalances[0].prisonId).isEqualTo("ASI")
           // TODO assertThat(it.accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-02T02:02:03"))
-          // TODO assertThat(it.accountBalances[0].transactionId).isEqualTo(1)
+          assertThat(it.accountBalances[0].transactionId).isEqualTo(173)
         }
         dpsRequests2.find { it.accountBalances[0].accountCode == 2102 }?.let {
           assertThat(it.accountBalances[0].balance).isEqualTo(BigDecimal(25.50))
           assertThat(it.accountBalances[0].holdBalance).isEqualTo(BigDecimal(1.15))
           assertThat(it.accountBalances[0].prisonId).isEqualTo("ASI")
           // TODO assertThat(it.accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-01T01:02:03"))
-          // TODO assertThat(it.accountBalances[1].transactionId).isEqualTo(180)
+          assertThat(it.accountBalances[1].transactionId).isEqualTo(174)
         }
       }
 
