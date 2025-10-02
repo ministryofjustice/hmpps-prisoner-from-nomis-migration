@@ -27,7 +27,7 @@ class PrisonerBalanceMigrationResource(
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
     summary = "Starts a prisoner balance migration. The entity type is determined by the migration filter",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_PRISONER_BALANCE</b>",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_NOMIS_SYSCON</b>",
     responses = [
       ApiResponse(
         responseCode = "202",
