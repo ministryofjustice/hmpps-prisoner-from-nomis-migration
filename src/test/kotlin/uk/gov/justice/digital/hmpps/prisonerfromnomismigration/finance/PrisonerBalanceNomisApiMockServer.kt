@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pagedModelContent
 import java.math.BigDecimal
+import java.time.LocalDateTime
 import kotlin.collections.map
 import kotlin.math.min
 
@@ -89,6 +90,7 @@ fun prisonerBalance(rootOffenderId: Long = 12345, prisonNumber: String = "A0001B
       accountCode = 2101,
       balance = BigDecimal.valueOf(23.50),
       holdBalance = BigDecimal.valueOf(1.25),
+      transactionDate = LocalDateTime.parse("2025-07-02T01:02:05"),
     ),
   ),
 )
