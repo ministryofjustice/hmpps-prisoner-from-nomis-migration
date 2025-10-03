@@ -3,12 +3,14 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerAccountPointInTimeBalance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerBalanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerBalanceMappingDto.MappingType.MIGRATED
@@ -83,7 +85,11 @@ class PrisonerBalanceMigrationService(
     failureHandler: suspend (error: Throwable) -> Unit,
   ) {
     runCatching {
-      prisonerBalanceMappingService.createMapping(mapping)
+      prisonerBalanceMappingService.createMapping(
+        mapping,
+        object :
+          ParameterizedTypeReference<DuplicateErrorResponse<PrisonerBalanceMappingDto>>() {},
+      )
     }.onFailure {
       failureHandler(it)
     }.onSuccess {

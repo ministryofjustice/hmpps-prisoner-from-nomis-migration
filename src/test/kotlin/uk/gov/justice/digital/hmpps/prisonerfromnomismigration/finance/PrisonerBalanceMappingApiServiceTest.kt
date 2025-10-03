@@ -11,7 +11,9 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.core.ParameterizedTypeReference
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse.Status._409_CONFLICT
@@ -135,6 +137,7 @@ class PrisonerBalanceMappingApiServiceTest {
             dpsId = "A1234KT",
             nomisRootOffenderId = 12345L,
           ),
+          object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonerBalanceMappingDto>>() {},
         )
 
         mockServer.verify(
@@ -156,6 +159,7 @@ class PrisonerBalanceMappingApiServiceTest {
             dpsId = "A1234KT",
             nomisRootOffenderId = 12345L,
           ),
+          object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonerBalanceMappingDto>>() {},
         )
 
         assertThat(result.isError).isFalse()
@@ -194,6 +198,7 @@ class PrisonerBalanceMappingApiServiceTest {
             dpsId = "A1234KT",
             nomisRootOffenderId = 12345L,
           ),
+          object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonerBalanceMappingDto>>() {},
         )
 
         assertThat(result.isError).isTrue()
