@@ -11,7 +11,9 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.core.ParameterizedTypeReference
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse.Status._409_CONFLICT
@@ -128,13 +130,14 @@ class PrisonBalanceMappingApiServiceTest {
       internal fun `will pass oath2 token to migrate endpoint`() = runTest {
         mockServer.stubCreateMappingsForMigration()
 
-        apiService.createPrisonBalanceMapping(
+        apiService.createMapping(
           PrisonBalanceMappingDto(
             mappingType = MIGRATED,
             label = "2020-01-01T10:00",
             dpsId = "A1234KT",
             nomisId = "MDI",
           ),
+          object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonBalanceMappingDto>>() {},
         )
 
         mockServer.verify(
@@ -149,13 +152,14 @@ class PrisonBalanceMappingApiServiceTest {
       fun `will return success when OK response`() = runTest {
         mockServer.stubCreateMappingsForMigration()
 
-        val result = apiService.createPrisonBalanceMapping(
+        val result = apiService.createMapping(
           PrisonBalanceMappingDto(
             mappingType = MIGRATED,
             label = "2020-01-01T10:00",
             dpsId = "A1234KT",
             nomisId = "MDI",
           ),
+          object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonBalanceMappingDto>>() {},
         )
 
         assertThat(result.isError).isFalse()
@@ -187,13 +191,14 @@ class PrisonBalanceMappingApiServiceTest {
           ),
         )
 
-        val result = apiService.createPrisonBalanceMapping(
+        val result = apiService.createMapping(
           PrisonBalanceMappingDto(
             mappingType = MIGRATED,
             label = "2020-01-01T10:00",
             dpsId = "A1234KT",
             nomisId = "MDI",
           ),
+          object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonBalanceMappingDto>>() {},
         )
 
         assertThat(result.isError).isTrue()
