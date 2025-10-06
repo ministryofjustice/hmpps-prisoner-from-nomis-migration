@@ -67,16 +67,31 @@ class CourtSentencingMigrationService(
   override suspend fun getContextProperties(migrationFilter: CourtSentencingMigrationFilter): MutableMap<String, Any> = mutableMapOf("deleteExisting" to migrationFilter.deleteExisting)
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
-    val offenderNo = context.body.offenderNo
+    synchronisePrisonerCases(
+      offenderNo = context.body.offenderNo,
+      deleteExisting = context.properties["deleteExisting"] == true,
+      context = context,
+    ) {
+      telemetryClient.trackEvent(
+        "court-sentencing-migration-entity-migrated",
+        mapOf(
+          "offenderNo" to context.body.offenderNo,
+          "migrationId" to context.migrationId,
+        ),
+        null,
+      )
+    }
+  }
+
+  suspend fun synchronisePrisonerCases(offenderNo: String, deleteExisting: Boolean, context: MigrationContext<PrisonerId>, onSuccess: () -> Unit) {
     val nomisCourtCases = courtSentencingNomisApiService.getCourtCasesForMigration(offenderNo = offenderNo)
     val dpsCases = nomisCourtCases.map { it.toMigrationDpsCourtCase() }
-    // idempotent migration - will migrate without checking for existing migration
     courtSentencingDpsService.createCourtCaseMigration(
       MigrationCreateCourtCases(
         prisonerId = offenderNo,
         courtCases = dpsCases,
       ),
-      deleteExisting = context.properties["deleteExisting"] == true,
+      deleteExisting = deleteExisting,
     )
       .also { dpsCourtCaseCreateResponse ->
         createMigrationMapping(
@@ -84,14 +99,7 @@ class CourtSentencingMigrationService(
           dpsCourtCasesCreateResponse = dpsCourtCaseCreateResponse,
           context,
         )
-        telemetryClient.trackEvent(
-          "court-sentencing-migration-entity-migrated",
-          mapOf(
-            "offenderNo" to offenderNo,
-            "migrationId" to context.migrationId,
-          ),
-          null,
-        )
+        onSuccess()
       }
   }
 
