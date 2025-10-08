@@ -55,6 +55,7 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         alertTypeDescription = "Alert type description",
         code = "ABC",
         description = "Alert code description",
+        canBeAdministered = false,
       ),
       description = "Alert description",
       authorisedBy = "A. Nurse, An Agency",
