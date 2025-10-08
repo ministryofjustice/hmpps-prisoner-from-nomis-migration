@@ -68,6 +68,7 @@ jobs:
       postgres-password: "migration"
       postgres-db: 'migration'
       artifact-name: ${{ matrix.tests }}
+      java-version: "25"
     needs:
       - gradle-build
       - setup-test-matrix
@@ -88,8 +89,8 @@ jobs:
     name: Deploy to the dev environment
     if: github.ref == 'refs/heads/main'
     needs:
-    - build
-    - helm_lint
+      - build
+      - helm_lint
     uses: ministryofjustice/hmpps-github-actions/.github/workflows/deploy_env.yml@v2 # WORKFLOW_VERSION
     secrets: inherit
     with:
@@ -98,9 +99,9 @@ jobs:
   deploy_preprod:
     name: Deploy to the preprod environment
     needs:
-    - build
-    - helm_lint
-    - deploy_dev
+      - build
+      - helm_lint
+      - deploy_dev
     uses: ministryofjustice/hmpps-github-actions/.github/workflows/deploy_env.yml@v2 # WORKFLOW_VERSION
     secrets: inherit
     with:
@@ -109,9 +110,9 @@ jobs:
   deploy_prod:
     name: Deploy to the prod environment
     needs:
-    - build
-    - helm_lint
-    - deploy_preprod
+      - build
+      - helm_lint
+      - deploy_preprod
     uses: ministryofjustice/hmpps-github-actions/.github/workflows/deploy_env.yml@v2 # WORKFLOW_VERSION
     secrets: inherit
     with:
