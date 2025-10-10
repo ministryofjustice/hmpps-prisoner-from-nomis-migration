@@ -1,12 +1,14 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@Tag(name = "Court Sentencing Migration Resource")
 class CourtSentencingRepairResource(
   private val courtSentencingRepairService: CourtSentencingRepairService,
 ) {
