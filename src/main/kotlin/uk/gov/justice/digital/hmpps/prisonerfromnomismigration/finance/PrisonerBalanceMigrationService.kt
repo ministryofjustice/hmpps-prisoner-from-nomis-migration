@@ -21,7 +21,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.toPageImpl
 import java.math.BigDecimal
-import java.time.LocalDateTime
 
 @Service
 class PrisonerBalanceMigrationService(
@@ -128,7 +127,6 @@ fun PrisonerAccountDto.toMigrationDto() = PrisonerAccountPointInTimeBalance(
   accountCode = accountCode.toInt(),
   balance = balance,
   holdBalance = holdBalance ?: BigDecimal.ZERO,
-  // TODO: This is passing through timestamp, but think we need transactionId instead?
-  asOfTimestamp = LocalDateTime.now(),
+  asOfTimestamp = transactionDate,
   transactionId = lastTransactionId,
 )

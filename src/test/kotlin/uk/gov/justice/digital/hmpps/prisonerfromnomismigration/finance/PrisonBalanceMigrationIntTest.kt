@@ -51,7 +51,7 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var nomisPrisonBalanceApiMock: FinanceNomisApiMockServer
 
-  private val dpsApiMock = FinanceApiExtension.Companion.financeApi
+  private val dpsApiMock = FinanceApiExtension.financeApi
 
   @Autowired
   private lateinit var mappingApiMock: PrisonBalanceMappingApiMockServer
@@ -371,13 +371,13 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will send prison balance data to Dps`() {
-        dpsRequests.find { it.accountBalances[0].accountCode == 2101 }?.let {
-          assertThat(it.accountBalances[0].balance).isEqualTo(BigDecimal(20.50))
-          assertThat(it.accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-01T01:02:03"))
+        with(dpsRequests.find { it.accountBalances[0].accountCode == 2102 } ?: throw AssertionError("Request not found")) {
+          assertThat(accountBalances[0].balance).isEqualTo(BigDecimal.valueOf(20.50))
+          assertThat(accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-01T01:02:03"))
         }
-        dpsRequests2.find { it.accountBalances[0].accountCode == 2102 }?.let {
-          assertThat(it.accountBalances[0].balance).isEqualTo(BigDecimal(25.50))
-          assertThat(it.accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-02T02:02:03"))
+        with(dpsRequests2.find { it.accountBalances[0].accountCode == 2103 } ?: throw AssertionError("Request not found")) {
+          assertThat(accountBalances[0].balance).isEqualTo(BigDecimal.valueOf(25.50))
+          assertThat(accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-02T02:02:03"))
         }
       }
 

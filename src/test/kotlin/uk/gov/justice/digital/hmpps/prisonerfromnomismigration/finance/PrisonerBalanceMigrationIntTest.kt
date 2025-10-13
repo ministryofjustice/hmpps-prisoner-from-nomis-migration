@@ -52,7 +52,7 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var nomisPrisonerBalanceApiMock: PrisonerBalanceNomisApiMockServer
 
-  private val dpsApiMock = FinanceApiExtension.Companion.financeApi
+  private val dpsApiMock = FinanceApiExtension.financeApi
 
   @Autowired
   private lateinit var mappingApiMock: PrisonerBalanceMappingApiMockServer
@@ -276,7 +276,7 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
           prisonerBalance = prisonerBalance(prisonNumber = "A0001BC").copy(
             accounts = listOf(
               PrisonerAccountDto(
-                prisonId = "ASI",
+                prisonId = prisonId,
                 lastTransactionId = 175,
                 accountCode = 2102,
                 balance = BigDecimal.valueOf(24.50),
@@ -291,7 +291,7 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
           prisonerBalance = prisonerBalance(prisonNumber = "A0002BC").copy(
             accounts = listOf(
               PrisonerAccountDto(
-                prisonId = "ASI",
+                prisonId = prisonId,
                 lastTransactionId = 176,
                 accountCode = 2103,
                 balance = BigDecimal.valueOf(25.50),
@@ -305,7 +305,7 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
         dpsApiMock.stubMigratePrisonerBalance(prisonNumber = "A0002BC")
         mappingApiMock.stubCreateMappingsForMigration()
         mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
-        migrationResult = performMigration(PrisonerBalanceMigrationFilter(prisonId = "ASI"))
+        migrationResult = performMigration(PrisonerBalanceMigrationFilter(prisonId = prisonId))
       }
 
       @Test
@@ -417,7 +417,6 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
             ),
           ),
         )
-
         migrationResult = performMigration()
         dpsRequests =
           FinanceApiExtension.Companion.getRequestBodies(postRequestedFor(urlPathMatching("/migrate/prisoner-balances/A0001BC")))
@@ -429,19 +428,19 @@ class PrisonerBalanceMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will send prisoner balance data to Dps`() {
-        dpsRequests.find { it.accountBalances[0].accountCode == 2101 }?.let {
-          assertThat(it.accountBalances[0].balance).isEqualTo(BigDecimal(20.50))
-          assertThat(it.accountBalances[0].holdBalance).isEqualTo(BigDecimal(2.15))
-          assertThat(it.accountBalances[0].prisonId).isEqualTo("ASI")
-          assertThat(it.accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-02T02:02:03"))
-          assertThat(it.accountBalances[0].transactionId).isEqualTo(173)
+        with(dpsRequests.find { it.accountBalances[0].accountCode == 2102 } ?: throw AssertionError("Request not found")) {
+          assertThat(accountBalances[0].balance).isEqualTo(BigDecimal.valueOf(20.50))
+          assertThat(accountBalances[0].holdBalance).isEqualTo(BigDecimal.valueOf(2.15))
+          assertThat(accountBalances[0].prisonId).isEqualTo("ASI")
+          assertThat(accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-02T02:02:03"))
+          assertThat(accountBalances[0].transactionId).isEqualTo(175)
         }
-        dpsRequests2.find { it.accountBalances[0].accountCode == 2102 }?.let {
-          assertThat(it.accountBalances[0].balance).isEqualTo(BigDecimal(25.50))
-          assertThat(it.accountBalances[0].holdBalance).isEqualTo(BigDecimal(1.15))
-          assertThat(it.accountBalances[0].prisonId).isEqualTo("ASI")
-          assertThat(it.accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-07-02T01:02:05"))
-          assertThat(it.accountBalances[1].transactionId).isEqualTo(174)
+        with(dpsRequests2.find { it.accountBalances[0].accountCode == 2103 } ?: throw AssertionError("Request not found")) {
+          assertThat(accountBalances[0].balance).isEqualTo(BigDecimal.valueOf(25.50))
+          assertThat(accountBalances[0].holdBalance).isEqualTo(BigDecimal.valueOf(1.15))
+          assertThat(accountBalances[0].prisonId).isEqualTo("ASI")
+          assertThat(accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-07-02T01:02:05"))
+          assertThat(accountBalances[0].transactionId).isEqualTo(176)
         }
       }
 

@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.NOMISMigrationApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.NOMISSyncApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
@@ -16,7 +15,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 @Service
 class FinanceApiService(@Qualifier("financeApiWebClient") webClient: WebClient) {
   private val syncApi = NOMISSyncApi(webClient)
-  private val migrateApi = NOMISMigrationApi(webClient)
 
   suspend fun syncTransactions(request: SyncOffenderTransactionRequest): SyncTransactionReceipt = syncApi
     .prepare(syncApi.postOffenderTransactionRequestConfig(request))
@@ -29,15 +27,15 @@ class FinanceApiService(@Qualifier("financeApiWebClient") webClient: WebClient) 
     .awaitBodyOrLogAndRethrowBadRequest()
 
   suspend fun migratePrisonerBalance(prisonNumber: String, migrationDto: PrisonerBalancesSyncRequest) {
-    migrateApi
-      .prepare(migrateApi.migratePrisonerBalancesRequestConfig(prisonNumber, migrationDto))
+    syncApi
+      .prepare(syncApi.migratePrisonerBalancesRequestConfig(prisonNumber, migrationDto))
       .retrieve()
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
   }
 
   suspend fun migratePrisonBalance(prisonId: String, migrationDto: GeneralLedgerBalancesSyncRequest) {
-    migrateApi
-      .prepare(migrateApi.migrateGeneralLedgerBalancesRequestConfig(prisonId, migrationDto))
+    syncApi
+      .prepare(syncApi.migrateGeneralLedgerBalancesRequestConfig(prisonId, migrationDto))
       .retrieve()
       .awaitBodilessEntityOrLogAndRethrowBadRequest()
   }
