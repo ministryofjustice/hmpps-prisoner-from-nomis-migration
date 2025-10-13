@@ -78,7 +78,7 @@ class AlertsDataRepairResourceIntTest : SqsIntegrationTestBase() {
         alertsMappingApiMockServer.stubReplaceMappings(offenderNo)
 
         webTestClient.post().uri("/prisoners/$offenderNo/alerts/resynchronise")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ALERTS")))
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isOk
       }
