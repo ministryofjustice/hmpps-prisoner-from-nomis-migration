@@ -8,3 +8,4 @@
 **/.openapi-generator-ignore
 **/client/infrastructure/
 **/src/test/
+!**/NOMISSyncApi.kt
