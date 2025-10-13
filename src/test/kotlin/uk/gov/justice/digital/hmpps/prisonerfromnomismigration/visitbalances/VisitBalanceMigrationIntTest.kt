@@ -462,7 +462,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
           )
         }
         webTestClient.post().uri("/migrate/visit-balance")
-          .headers(setAuthorisation(roles = listOf("MIGRATE_VISIT_BALANCE")))
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(VisitBalanceMigrationFilter())
           .exchange()
@@ -487,7 +487,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
           )
         }
         webTestClient.post().uri("/migrate/visit-balance")
-          .headers(setAuthorisation(roles = listOf("MIGRATE_VISIT_BALANCE")))
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(VisitBalanceMigrationFilter())
           .exchange()
@@ -590,7 +590,7 @@ class VisitBalanceMigrationIntTest : SqsIntegrationTestBase() {
   }
 
   private fun performMigration(body: VisitBalanceMigrationFilter = VisitBalanceMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/visit-balance")
-    .headers(setAuthorisation(roles = listOf("MIGRATE_VISIT_BALANCE")))
+    .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .bodyValue(body)
     .exchange()

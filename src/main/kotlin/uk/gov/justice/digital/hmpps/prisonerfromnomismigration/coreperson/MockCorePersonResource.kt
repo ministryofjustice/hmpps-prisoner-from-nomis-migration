@@ -23,7 +23,7 @@ class MockCorePersonResource {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_CORE_PERSON')")
+  @PreAuthorize("hasRole('ROLE_MOCK_MIGRATE_CORE_PERSON')")
   @PutMapping("/syscon-sync/{nomisPrisonNumber}")
   @Operation(hidden = true)
   suspend fun migrateCorePerson(

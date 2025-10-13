@@ -945,7 +945,7 @@ class CorePersonMigrationIntTest(
   }
 
   private fun performMigration(body: CorePersonMigrationFilter = CorePersonMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/core-person")
-    .headers(setAuthorisation(roles = listOf("MIGRATE_CORE_PERSON")))
+    .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .bodyValue(body)
     .exchange()

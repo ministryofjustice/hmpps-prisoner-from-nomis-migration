@@ -19,7 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 @RestController
 @RequestMapping("/migrate/visit-balance", produces = [MediaType.APPLICATION_JSON_VALUE])
 @Tag(name = "Visit Balance Migration Resource")
-@PreAuthorize("hasAnyRole('ROLE_MIGRATE_VISIT_BALANCE', 'ROLE_MIGRATE_NOMIS_SYSCON')")
+@PreAuthorize("hasAnyRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
 class VisitBalanceMigrationResource(
   private val migrationService: VisitBalanceMigrationService,
 ) {
@@ -27,7 +27,7 @@ class VisitBalanceMigrationResource(
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
     summary = "Starts a visit balance migration. The entity type is determined by the migration filter",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_VISIT_BALANCE</b>",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
     responses = [
       ApiResponse(
         responseCode = "202",
