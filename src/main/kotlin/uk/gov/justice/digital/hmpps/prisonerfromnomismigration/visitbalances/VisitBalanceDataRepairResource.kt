@@ -18,10 +18,10 @@ class VisitBalanceDataRepairResource(
 ) {
   @PostMapping("/prisoners/{prisonNumber}/visit-balance/repair")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @PreAuthorize("hasRole('ROLE_MIGRATE_VISIT_BALANCE')")
+  @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__UPDATE__RW')")
   @Operation(
     summary = "Resynchronises a visit balance for the given prisoner from NOMIS to DPS",
-    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_MIGRATE_VISIT_BALANCE",
+    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW",
   )
   suspend fun repairVisitBalance(@PathVariable prisonNumber: String) {
     visitBalanceSynchronisationService.resynchroniseVisitBalance(prisonNumber)

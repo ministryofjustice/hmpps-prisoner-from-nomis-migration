@@ -64,7 +64,7 @@ class VisitBalanceDataRepairResourceIntTest : SqsIntegrationTestBase() {
         dpsVisitBalanceServer.stubMigrateVisitBalance()
 
         webTestClient.post().uri("/prisoners/$prisonNumber/visit-balance/repair")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISIT_BALANCE")))
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isNoContent
       }
@@ -107,7 +107,7 @@ class VisitBalanceDataRepairResourceIntTest : SqsIntegrationTestBase() {
         dpsVisitBalanceServer.stubMigrateVisitBalance()
 
         webTestClient.post().uri("/prisoners/$prisonNumber/visit-balance/repair")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISIT_BALANCE")))
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isNoContent
       }
