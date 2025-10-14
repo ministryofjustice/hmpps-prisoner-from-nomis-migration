@@ -24,9 +24,9 @@ class ExternalMovementsDpsApiService(@Qualifier("extMovementsDpsApiWebClient") p
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncTemporaryAbsenceMovement(personIdentifier: String, scheduledRequest: TapMovementRequest): SyncResponse = webClient.put()
+  suspend fun syncTemporaryAbsenceMovement(personIdentifier: String, movementRequest: TapMovementRequest): SyncResponse = webClient.put()
     .uri("/sync/temporary-absence-movement/{personIdentifier}", personIdentifier)
-    .bodyValue(scheduledRequest)
+    .bodyValue(movementRequest)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 }
