@@ -149,13 +149,17 @@ class ExternalMovementsSyncService(
       }
   }
 
-  private suspend fun requireParentApplicationExists(nomisApplicationId: Long): UUID = mappingApiService.getApplicationMapping(nomisApplicationId)
-    ?.dpsMovementApplicationId
+  private suspend fun requireParentApplicationExists(nomisApplicationId: Long): UUID = getParentApplicationId(nomisApplicationId)
     ?: throw ParentEntityNotFoundRetry("Application $nomisApplicationId not created yet so children cannot be processed")
 
-  private suspend fun requireParentScheduleExists(nomisEventId: Long) = mappingApiService.getScheduledMovementMapping(nomisEventId)
-    ?.dpsScheduledMovementId
+  private suspend fun getParentApplicationId(nomisApplicationId: Long): UUID? = mappingApiService.getApplicationMapping(nomisApplicationId)
+    ?.dpsMovementApplicationId
+
+  private suspend fun requireParentScheduleExists(nomisEventId: Long) = getParentScheduledId(nomisEventId)
     ?: throw ParentEntityNotFoundRetry("Scheduled event ID $nomisEventId not created yet so children cannot be processed")
+
+  private suspend fun getParentScheduledId(nomisEventId: Long): UUID? = mappingApiService.getScheduledMovementMapping(nomisEventId)
+    ?.dpsScheduledMovementId
 
   suspend fun outsideMovementUpdated(event: MovementApplicationMultiEvent) {
     val (nomisApplicationMultiId, nomisApplicationId, bookingId, prisonerNumber) = event
@@ -464,8 +468,8 @@ class ExternalMovementsSyncService(
       ?: run {
         track("$TELEMETRY_PREFIX-external-movement-inserted", telemetry) {
           val dpsExternalMovementId = when (directionCode) {
-            DirectionCode.OUT -> externalMovementTapOutInserted(prisonerNumber, bookingId, movementSeq, telemetry)
-            DirectionCode.IN -> externalMovementTapInInserted(prisonerNumber, bookingId, movementSeq, telemetry)
+            DirectionCode.OUT -> externalMovementTapOutUpserted(prisonerNumber, bookingId, movementSeq, telemetry)
+            DirectionCode.IN -> externalMovementTapInUpserted(prisonerNumber, bookingId, movementSeq, telemetry)
           }
             .also { telemetry["dpsExternalMovementId"] = it }
           tryToCreateExternalMovementMapping(
@@ -476,7 +480,13 @@ class ExternalMovementsSyncService(
       }
   }
 
-  private suspend fun externalMovementTapOutInserted(prisonerNumber: String, bookingId: Long, movementSeq: Int, telemetry: MutableMap<String, Any>) = nomisApiService.getTemporaryAbsenceMovement(prisonerNumber, bookingId, movementSeq)
+  private suspend fun externalMovementTapOutUpserted(
+    prisonerNumber: String,
+    bookingId: Long,
+    movementSeq: Int,
+    telemetry: MutableMap<String, Any>,
+    dpsExternalMovementId: UUID? = null,
+  ) = nomisApiService.getTemporaryAbsenceMovement(prisonerNumber, bookingId, movementSeq)
     .also {
       it.scheduledTemporaryAbsenceId?.run { telemetry["nomisScheduledEventId"] = this }
       it.movementApplicationId?.run { telemetry["nomisApplicationId"] = this }
@@ -484,10 +494,16 @@ class ExternalMovementsSyncService(
     }
     .let {
       val occurrenceId = it.scheduledTemporaryAbsenceId?.let { requireParentScheduleExists(it) }
-      dpsApiService.syncTemporaryAbsenceMovement(prisonerNumber, it.toDpsRequest(occurrenceId = occurrenceId)).id
+      dpsApiService.syncTemporaryAbsenceMovement(prisonerNumber, it.toDpsRequest(id = dpsExternalMovementId, occurrenceId = occurrenceId)).id
     }
 
-  private suspend fun externalMovementTapInInserted(prisonerNumber: String, bookingId: Long, movementSeq: Int, telemetry: MutableMap<String, Any>) = nomisApiService.getTemporaryAbsenceReturnMovement(prisonerNumber, bookingId, movementSeq)
+  private suspend fun externalMovementTapInUpserted(
+    prisonerNumber: String,
+    bookingId: Long,
+    movementSeq: Int,
+    telemetry: MutableMap<String, Any>,
+    dpsExternalMovementId: UUID? = null,
+  ) = nomisApiService.getTemporaryAbsenceReturnMovement(prisonerNumber, bookingId, movementSeq)
     .also {
       it.scheduledTemporaryAbsenceReturnId?.run { telemetry["nomisScheduledEventId"] = this }
       it.movementApplicationId?.run { telemetry["nomisApplicationId"] = this }
@@ -495,7 +511,7 @@ class ExternalMovementsSyncService(
     }
     .let {
       val occurrenceId = it.scheduledTemporaryAbsenceReturnId?.let { requireParentScheduleExists(it) }
-      dpsApiService.syncTemporaryAbsenceMovement(prisonerNumber, it.toDpsRequest(occurrenceId = occurrenceId)).id
+      dpsApiService.syncTemporaryAbsenceMovement(prisonerNumber, it.toDpsRequest(id = dpsExternalMovementId, occurrenceId = occurrenceId)).id
     }
 
   suspend fun externalMovementTapUpdated(event: ExternalMovementEvent) {
@@ -516,29 +532,11 @@ class ExternalMovementsSyncService(
       val dpsExternalMovementId = mappingApiService.getExternalMovementMapping(bookingId, movementSeq)!!.dpsExternalMovementId
         .also { telemetry["dpsExternalMovementId"] = it }
       when (directionCode) {
-        DirectionCode.OUT -> externalMovementTapOutUpdated(dpsExternalMovementId, prisonerNumber, bookingId, movementSeq, telemetry)
-        DirectionCode.IN -> externalMovementTapInUpdated(dpsExternalMovementId, prisonerNumber, bookingId, movementSeq, telemetry)
+        DirectionCode.OUT -> externalMovementTapOutUpserted(prisonerNumber, bookingId, movementSeq, telemetry, dpsExternalMovementId)
+        DirectionCode.IN -> externalMovementTapInUpserted(prisonerNumber, bookingId, movementSeq, telemetry, dpsExternalMovementId)
       }
     }
   }
-
-  private suspend fun externalMovementTapOutUpdated(dpsExternalMovementId: UUID, prisonerNumber: String, bookingId: Long, movementSeq: Int, telemetry: MutableMap<String, Any>) = nomisApiService.getTemporaryAbsenceMovement(prisonerNumber, bookingId, movementSeq)
-    .also {
-      it.scheduledTemporaryAbsenceId?.run { telemetry["nomisScheduledEventId"] = this }
-      it.movementApplicationId?.run { telemetry["nomisApplicationId"] = this }
-    }
-    .let {
-      // TODO dpsApi.sync(dpsExternalMovementId, it.toDpsTemporaryAbsence()) }
-    }
-
-  private suspend fun externalMovementTapInUpdated(dpsExternalMovementId: UUID, prisonerNumber: String, bookingId: Long, movementSeq: Int, telemetry: MutableMap<String, Any>) = nomisApiService.getTemporaryAbsenceReturnMovement(prisonerNumber, bookingId, movementSeq)
-    .also {
-      it.scheduledTemporaryAbsenceReturnId?.run { telemetry["nomisScheduledEventId"] = this }
-      it.movementApplicationId?.run { telemetry["nomisApplicationId"] = this }
-    }
-    .let {
-      // TODO dpsApi.sync(dpsExternalMovementId, it.toDpsTemporaryAbsenceReturn()) }
-    }
 
   suspend fun externalMovementTapDeleted(event: ExternalMovementEvent) {
     val (bookingId, prisonerNumber, movementSeq, _, directionCode) = event
