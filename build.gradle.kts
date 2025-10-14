@@ -12,7 +12,7 @@ import kotlin.io.path.name
 import kotlin.io.path.Path as KotlinPath
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "9.1.2"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "9.1.3"
   kotlin("plugin.spring") version "2.2.20"
   id("org.openapi.generator") version "7.16.0"
 }
@@ -38,7 +38,7 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk9")
 
-  runtimeOnly("org.postgresql:r2dbc-postgresql:1.0.7.RELEASE")
+  runtimeOnly("org.postgresql:r2dbc-postgresql:1.1.0.RELEASE")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
   runtimeOnly("org.postgresql:postgresql:42.7.8")
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
@@ -48,10 +48,10 @@ dependencies {
   implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:2.18.1")
 
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:1.7.0")
-  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.34") {
+  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.35") {
     exclude(group = "io.swagger.core.v3")
   }
-  testImplementation("io.swagger.core.v3:swagger-core-jakarta:2.2.38")
+  testImplementation("io.swagger.core.v3:swagger-core-jakarta:2.2.39")
 
   testImplementation("org.wiremock:wiremock-standalone:3.13.1")
   testImplementation("org.testcontainers:localstack:1.21.3")
