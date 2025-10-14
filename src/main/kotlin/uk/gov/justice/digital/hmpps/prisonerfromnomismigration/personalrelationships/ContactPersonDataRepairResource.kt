@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @Tag(name = "Contact Person Migration Resource")
-@PreAuthorize("hasAnyRole('ROLE_MIGRATE_CONTACTPERSON', 'ROLE_MIGRATE_NOMIS_SYSCON')")
+@PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__UPDATE__RW')")
 class ContactPersonDataRepairResource(
   private val contactPersonSynchronisationService: ContactPersonSynchronisationService,
   private val telemetryClient: TelemetryClient,
@@ -26,7 +26,7 @@ class ContactPersonDataRepairResource(
   @ResponseStatus(HttpStatus.OK)
   @Operation(
     summary = "Resynchronises person data from NOMIS back to DPS",
-    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_MIGRATE_CONTACTPERSON or ROLE_MIGRATE_NOMIS_SYSCON",
+    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW",
   )
   suspend fun repairPerson(
     @PathVariable personId: Long,
@@ -45,7 +45,7 @@ class ContactPersonDataRepairResource(
   @ResponseStatus(HttpStatus.ACCEPTED)
   @Operation(
     summary = "Resynchronises person data from NOMIS back to DPS asynchronously",
-    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only and when operation will take a very long time. Requires ROLE_MIGRATE_CONTACTPERSON or ROLE_MIGRATE_NOMIS_SYSCON",
+    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only and when operation will take a very long time. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW",
   )
   suspend fun repairPersonAsync(
     @PathVariable personId: Long,
@@ -66,7 +66,7 @@ class ContactPersonDataRepairResource(
   @ResponseStatus(HttpStatus.OK)
   @Operation(
     summary = "Resynchronises prisoner contacts from NOMIS back to DPS",
-    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_MIGRATE_CONTACTPERSON or ROLE_MIGRATE_NOMIS_SYSCON",
+    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW",
   )
   suspend fun repairPrisonerContacts(
     @PathVariable offenderNo: String,

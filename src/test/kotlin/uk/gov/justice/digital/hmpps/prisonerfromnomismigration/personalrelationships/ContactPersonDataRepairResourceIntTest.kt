@@ -66,7 +66,7 @@ class ContactPersonDataRepairResourceIntTest : SqsIntegrationTestBase() {
         mappingApiMock.stubReplaceMappingsForPerson(personId)
 
         webTestClient.post().uri("/persons/$personId/resynchronise")
-          .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isOk
       }
@@ -145,7 +145,7 @@ class ContactPersonDataRepairResourceIntTest : SqsIntegrationTestBase() {
         mappingApiMock.stubReplaceMappingsForPerson(personId)
 
         webTestClient.post().uri("/persons/$personId/resynchronise-async")
-          .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isAccepted
 
@@ -215,7 +215,7 @@ class ContactPersonDataRepairResourceIntTest : SqsIntegrationTestBase() {
         mappingApiMock.stubReplaceMappingsForPrisoner(offenderNo)
 
         webTestClient.post().uri("/prisoners/$offenderNo/contacts/resynchronise")
-          .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isOk
       }

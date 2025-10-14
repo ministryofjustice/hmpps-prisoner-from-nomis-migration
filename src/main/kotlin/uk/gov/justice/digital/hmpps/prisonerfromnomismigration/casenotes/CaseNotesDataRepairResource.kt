@@ -13,7 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 
 @RestController
 @Tag(name = "Case Notes Migration Resource")
-@PreAuthorize("hasRole('ROLE_NOMIS_CASENOTES')")
+@PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__UPDATE__RW')")
 class CaseNotesDataRepairResource(
   private val caseNotesSynchronisationService: CaseNotesSynchronisationService,
   private val telemetryClient: TelemetryClient,
@@ -25,7 +25,7 @@ class CaseNotesDataRepairResource(
       *** IMPORTANT*** This endpoint will delete any other associated Nomis Mappings (if matching the associated DPS Case Note) as there is a
       one to many mapping between DPS and Nomis case notes.
       Any related (deleted) Nomis case notes will be indicated with the casenotes-synchronisation-deleted-related-success telemetry event""",
-    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_NOMIS_CASENOTES",
+    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW",
   )
   suspend fun repairDeletedCaseNote(@PathVariable nomisCaseNoteId: Long) {
     caseNotesSynchronisationService.repairDeletedCaseNote(nomisCaseNoteId)

@@ -94,7 +94,7 @@ class PrisonerRestrictionsDataRepairResourceIntTest : SqsIntegrationTestBase() {
         mappingApiMock.stubReplacePrisonerRestrictions(offenderNo)
 
         webTestClient.post().uri("/prisoners/$offenderNo/restrictions/resynchronise")
-          .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isOk
       }

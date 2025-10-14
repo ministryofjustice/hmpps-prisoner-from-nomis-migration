@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @Tag(name = "Locations Migration Resource")
 @RequestMapping("/locations", produces = [MediaType.APPLICATION_JSON_VALUE])
-@PreAuthorize("hasRole('ROLE_NOMIS_LOCATIONS')")
+@PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__UPDATE__RW')")
 class LocationsRepairResource(
   private val locationsSynchronisationService: LocationsSynchronisationService,
   private val telemetryClient: TelemetryClient,
@@ -23,7 +23,7 @@ class LocationsRepairResource(
   @PostMapping("/id/{internalLocationId}/repair")
   @Operation(
     summary = "Resynchronises location from NOMIS to DPS, i.e. updates DPS with the data from Nomis",
-    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_NOMIS_LOCATIONS",
+    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW",
   )
   suspend fun repairPunishments(
     @Schema(description = "Id of the location in Nomis")

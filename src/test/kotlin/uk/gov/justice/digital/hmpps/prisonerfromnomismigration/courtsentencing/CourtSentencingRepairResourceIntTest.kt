@@ -66,7 +66,7 @@ class CourtSentencingRepairResourceIntTest : SqsIntegrationTestBase() {
         courtSentencingMappingApiMockServer.stubPostMigrationMapping()
 
         webTestClient.post().uri("/prisoners/{offenderNo}/court-sentencing/court-cases/repair", offenderNo)
-          .headers(setAuthorisation(roles = listOf("NOMIS_SENTENCING")))
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isOk
@@ -101,7 +101,7 @@ class CourtSentencingRepairResourceIntTest : SqsIntegrationTestBase() {
         courtSentencingMappingApiMockServer.stubPostMigrationMappingFailureFollowedBySuccess()
 
         webTestClient.post().uri("/prisoners/{offenderNo}/court-sentencing/court-cases/repair", offenderNo)
-          .headers(setAuthorisation(roles = listOf("NOMIS_SENTENCING")))
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isOk

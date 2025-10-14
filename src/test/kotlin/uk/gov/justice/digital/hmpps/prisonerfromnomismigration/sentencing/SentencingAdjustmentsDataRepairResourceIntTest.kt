@@ -85,7 +85,7 @@ class SentencingAdjustmentsDataRepairResourceIntTest : SqsIntegrationTestBase() 
         mappingApi.stubMappingCreate(MappingApiExtension.ADJUSTMENTS_CREATE_MAPPING_URL)
 
         webTestClient.post().uri("/prisoners/booking-id/$bookingId/merge/sentencing-adjustments/repair")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isOk
       }

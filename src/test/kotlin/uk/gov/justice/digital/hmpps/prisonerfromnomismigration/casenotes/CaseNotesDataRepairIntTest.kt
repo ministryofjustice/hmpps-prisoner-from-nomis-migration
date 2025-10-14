@@ -80,7 +80,7 @@ class CaseNotesDataRepairIntTest : SqsIntegrationTestBase() {
           caseNotesMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
 
           webTestClient.delete().uri("/casenotes/$NOMIS_CASE_NOTE_ID/repair")
-            .headers(setAuthorisation(roles = listOf("NOMIS_CASENOTES")))
+            .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
             .exchange()
             .expectStatus().isNoContent
         }
@@ -130,7 +130,7 @@ class CaseNotesDataRepairIntTest : SqsIntegrationTestBase() {
           caseNotesMappingApiMockServer.stubDeleteMapping()
 
           webTestClient.delete().uri("/casenotes/$NOMIS_CASE_NOTE_ID/repair")
-            .headers(setAuthorisation(roles = listOf("NOMIS_CASENOTES")))
+            .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
             .exchange()
             .expectStatus().isNoContent
         }
@@ -216,7 +216,7 @@ class CaseNotesDataRepairIntTest : SqsIntegrationTestBase() {
           caseNotesMappingApiMockServer.stubDeleteMapping()
 
           webTestClient.delete().uri("/casenotes/$NOMIS_CASE_NOTE_ID/repair")
-            .headers(setAuthorisation(roles = listOf("NOMIS_CASENOTES")))
+            .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
             .exchange()
             .expectStatus().isNoContent
         }
@@ -306,7 +306,7 @@ class CaseNotesDataRepairIntTest : SqsIntegrationTestBase() {
           caseNotesMappingApiMockServer.stubDeleteMapping(status = INTERNAL_SERVER_ERROR)
 
           webTestClient.delete().uri("/casenotes/$NOMIS_CASE_NOTE_ID/repair")
-            .headers(setAuthorisation(roles = listOf("NOMIS_CASENOTES")))
+            .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
             .exchange()
             .expectStatus().isNoContent
         }
@@ -369,7 +369,7 @@ class CaseNotesDataRepairIntTest : SqsIntegrationTestBase() {
           caseNotesMappingApiMockServer.stubDeleteMapping()
 
           webTestClient.delete().uri("/casenotes/$NOMIS_CASE_NOTE_ID/repair")
-            .headers(setAuthorisation(roles = listOf("NOMIS_CASENOTES")))
+            .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
             .exchange()
             .expectStatus().isNoContent
         }

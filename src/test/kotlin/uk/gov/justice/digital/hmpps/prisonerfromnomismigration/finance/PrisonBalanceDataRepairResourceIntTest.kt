@@ -64,7 +64,7 @@ class PrisonBalanceDataRepairResourceIntTest : SqsIntegrationTestBase() {
         financeApi.stubMigratePrisonBalance()
 
         webTestClient.post().uri("/prisons/$prisonId/prison-balance/repair")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_NOMIS_SYSCON")))
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isNoContent
       }
@@ -106,7 +106,7 @@ class PrisonBalanceDataRepairResourceIntTest : SqsIntegrationTestBase() {
         financeApi.stubMigratePrisonBalance()
 
         webTestClient.post().uri("/prisons/$prisonId/prison-balance/repair")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_NOMIS_SYSCON")))
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isNotFound
           .expectBody()

@@ -76,7 +76,7 @@ class IncidentDataRepairResourceIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           incidentsMappingApiMockServer.stubGetAnyIncidentNotFound()
           webTestClient.post().uri("/incidents/$nomisIncidentId/repair?createIncident=true")
-            .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
+            .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
             .exchange()
             .expectStatus().isOk
         }
@@ -131,7 +131,7 @@ class IncidentDataRepairResourceIntTest : SqsIntegrationTestBase() {
         fun setUp() {
           incidentsMappingApiMockServer.stubGetIncident(nomisIncidentId, dpsIncidentId = dpsIncidentId)
           webTestClient.post().uri("/incidents/$nomisIncidentId/repair")
-            .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_INCIDENT_REPORTS")))
+            .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
             .exchange()
             .expectStatus().isOk
         }
