@@ -1314,75 +1314,11 @@ class ExternalMovementsSyncIntTest(
     }
 
     @Nested
-    inner class HappyPathInbound {
-      @BeforeEach
-      fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
-        mappingApi.stubCreateScheduledMovementMapping()
-        nomisApi.stubGetTemporaryAbsenceScheduledReturnMovement(eventId = 45678)
-        // TODO stub DPS API
-
-        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED", direction = "IN"))
-          .also { waitForAnyProcessingToComplete() }
-      }
-
-      @Test
-      fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
-      }
-
-      @Test
-      fun `should check parent mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")))
-      }
-
-      @Test
-      fun `should get NOMIS scheduled movement`() {
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence-return/45678")))
-      }
-
-      @Test
-      @Disabled("Waiting for DPS API to become available")
-      fun `should create DPS scheduled movement`() {
-        // TODO verify DPS endpoint called
-      }
-
-      @Test
-      fun `should create mapping`() {
-        mappingApi.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
-            .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
-            .withRequestBodyJsonPath("bookingId", 12345)
-            .withRequestBodyJsonPath("nomisEventId", 45678)
-            // TODO verify DPS id
-            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
-        )
-      }
-
-      @Test
-      fun `should create success telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("temporary-absence-sync-scheduled-movement-inserted-success"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-            assertThat(it["bookingId"]).isEqualTo("12345")
-            assertThat(it["nomisEventId"]).isEqualTo("45678")
-            assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            assertThat(it["directionCode"]).isEqualTo("IN")
-            // TODO assert DPS id is tracked
-          },
-          isNull(),
-        )
-      }
-    }
-
-    @Nested
     inner class WhenNotTapMovement {
       @BeforeEach
       fun setUp(output: CapturedOutput) {
         sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED", nomisEventType = "TRN"))
-          .also { await untilCallTo { output.out } matches { it!!.contains("Ignoring scheduled movement event with type TRN") } }
+          .also { await untilCallTo { output.out } matches { it!!.contains("Ignoring") } }
       }
 
       @Test
@@ -1723,51 +1659,6 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["nomisEventId"]).isEqualTo("45678")
             assertThat(it["directionCode"]).isEqualTo("OUT")
             assertThat(it["dpsScheduledMovementId"]).isEqualTo("$dpsScheduledMovementId")
-          },
-          isNull(),
-        )
-      }
-    }
-
-    @Nested
-    inner class HappyPathInbound {
-      @BeforeEach
-      fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678)
-        nomisApi.stubGetTemporaryAbsenceScheduledReturnMovement(eventId = 45678)
-        // TODO stub DPS API
-
-        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-UPDATED", direction = "IN"))
-          .also { waitForAnyProcessingToComplete() }
-      }
-
-      @Test
-      fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
-      }
-
-      @Test
-      fun `should get NOMIS scheduled movement`() {
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence-return/45678")))
-      }
-
-      @Test
-      @Disabled("Waiting for DPS API to become available")
-      fun `should update DPS scheduled movement`() {
-        // TODO verify DPS endpoint called
-      }
-
-      @Test
-      fun `should create success telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("temporary-absence-sync-scheduled-movement-updated-success"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-            assertThat(it["bookingId"]).isEqualTo("12345")
-            assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            assertThat(it["nomisEventId"]).isEqualTo("45678")
-            assertThat(it["directionCode"]).isEqualTo("IN")
-            // TODO assert DPS id is tracked
           },
           isNull(),
         )

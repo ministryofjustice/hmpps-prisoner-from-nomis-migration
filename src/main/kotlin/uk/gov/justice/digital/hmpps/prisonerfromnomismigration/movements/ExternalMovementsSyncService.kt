@@ -201,11 +201,11 @@ class ExternalMovementsSyncService(
   }
 
   suspend fun scheduledMovementInserted(event: ScheduledMovementEvent) = when (event.eventMovementType) {
-    TAP -> scheduledMovementTapInserted(event)
-    else -> log.info(("Ignoring scheduled movement event with type ${event.eventMovementType}"))
+    TAP if (event.directionCode == DirectionCode.OUT) -> scheduledMovementTapOutInserted(event)
+    else -> log.info("Ignoring insert of scheduled movement event ID ${event.eventId} with type ${event.eventMovementType} and direction ${event.directionCode} ")
   }
 
-  suspend fun scheduledMovementTapInserted(event: ScheduledMovementEvent) {
+  suspend fun scheduledMovementTapOutInserted(event: ScheduledMovementEvent) {
     val (eventId, bookingId, prisonerNumber, _, directionCode) = event
     val telemetry = mutableMapOf<String, Any>(
       "offenderNo" to prisonerNumber,
@@ -223,12 +223,8 @@ class ExternalMovementsSyncService(
       ?.also { telemetryClient.trackEvent("$TELEMETRY_PREFIX-scheduled-movement-inserted-ignored", telemetry) }
       ?: run {
         track("$TELEMETRY_PREFIX-scheduled-movement-inserted", telemetry) {
-          val dpsScheduledMovementId = when (directionCode) {
-            DirectionCode.OUT -> scheduledMovementTapOutInserted(prisonerNumber, eventId, telemetry)
-            DirectionCode.IN -> scheduledMovementTapInInserted(prisonerNumber, eventId, telemetry)
-          }.also {
-            telemetry["dpsScheduledMovementId"] = it
-          }
+          val dpsScheduledMovementId = scheduledMovementTapOutInserted(prisonerNumber, eventId, telemetry)
+            .also { telemetry["dpsScheduledMovementId"] = it }
           val mapping = ScheduledMovementSyncMappingDto(prisonerNumber, bookingId, eventId, dpsScheduledMovementId, SCHEDULED_MOVEMENT_NOMIS_CREATED)
           tryToCreateScheduledMovementMapping(mapping, telemetry)
         }
@@ -243,21 +239,12 @@ class ExternalMovementsSyncService(
       dpsApiService.syncTemporaryAbsenceScheduledMovement(dpsApplicationId, it.toDpsRequest()).id
     }
 
-  private suspend fun scheduledMovementTapInInserted(prisonerNumber: String, eventId: Long, telemetry: MutableMap<String, Any>) = nomisApiService.getTemporaryAbsenceScheduledReturnMovement(prisonerNumber, eventId)
-    .also {
-      telemetry["nomisApplicationId"] = it.movementApplicationId
-      requireParentApplicationExists(it.movementApplicationId)
-    }.let {
-      // TODO dpsApi.sync(it.toDpsScheduledTemporaryAbsenceReturn()
-      UUID.randomUUID()
-    }
-
   suspend fun scheduledMovementUpdated(event: ScheduledMovementEvent) = when (event.eventMovementType) {
-    TAP -> scheduledMovementTapUpdated(event)
-    else -> log.info(("Ignoring scheduled movement updated event with type ${event.eventMovementType}"))
+    TAP if (event.directionCode == DirectionCode.OUT) -> scheduledMovementTapOutUpdated(event)
+    else -> log.info("Ignoring update of scheduled movement event ID ${event.eventId} with type ${event.eventMovementType} and direction ${event.directionCode} ")
   }
 
-  suspend fun scheduledMovementTapUpdated(event: ScheduledMovementEvent) {
+  suspend fun scheduledMovementTapOutUpdated(event: ScheduledMovementEvent) {
     val (eventId, bookingId, prisonerNumber, _, directionCode) = event
     val telemetry = mutableMapOf<String, Any>(
       "offenderNo" to prisonerNumber,
@@ -274,10 +261,7 @@ class ExternalMovementsSyncService(
     track("$TELEMETRY_PREFIX-scheduled-movement-updated", telemetry) {
       val dpsScheduledMovementId = mappingApiService.getScheduledMovementMapping(eventId)!!.dpsScheduledMovementId
         .also { telemetry["dpsScheduledMovementId"] = it }
-      when (directionCode) {
-        DirectionCode.OUT -> scheduledMovementTapOutUpdated(dpsScheduledMovementId, prisonerNumber, eventId, telemetry)
-        DirectionCode.IN -> scheduledMovementTapInUpdated(dpsScheduledMovementId, prisonerNumber, eventId, telemetry)
-      }
+      scheduledMovementTapOutUpdated(dpsScheduledMovementId, prisonerNumber, eventId, telemetry)
     }
   }
 
@@ -288,18 +272,12 @@ class ExternalMovementsSyncService(
       dpsApiService.syncTemporaryAbsenceScheduledMovement(dpsApplicationId, it.toDpsRequest(id = dpsScheduleMovementId)).id
     }
 
-  private suspend fun scheduledMovementTapInUpdated(dpsScheduleMovementId: UUID, prisonerNumber: String, eventId: Long, telemetry: MutableMap<String, Any>) = nomisApiService.getTemporaryAbsenceScheduledReturnMovement(prisonerNumber, eventId)
-    .also { telemetry["nomisApplicationId"] = it.movementApplicationId }
-    .let {
-      // TODO dpsApi.sync(dpsScheduledMovementId, it.toDpsScheduledTemporaryAbsenceReturn()
-    }
-
   suspend fun scheduledMovementDeleted(event: ScheduledMovementEvent) = when (event.eventMovementType) {
-    TAP -> scheduledMovementTapDeleted(event)
-    else -> log.info(("Ignoring scheduled movement deleted event with type ${event.eventMovementType}"))
+    TAP if (event.directionCode == DirectionCode.OUT) -> scheduledMovementTapOutDeleted(event)
+    else -> log.info("Ignoring delete of scheduled movement event ID ${event.eventId} with type ${event.eventMovementType} and direction ${event.directionCode} ")
   }
 
-  suspend fun scheduledMovementTapDeleted(event: ScheduledMovementEvent) {
+  suspend fun scheduledMovementTapOutDeleted(event: ScheduledMovementEvent) {
     val (eventId, bookingId, prisonerNumber, _, directionCode) = event
     val telemetry = mutableMapOf<String, Any>(
       "offenderNo" to prisonerNumber,
