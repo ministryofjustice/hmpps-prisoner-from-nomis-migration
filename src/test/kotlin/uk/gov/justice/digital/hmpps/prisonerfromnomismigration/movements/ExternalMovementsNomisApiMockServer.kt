@@ -529,6 +529,14 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     commentText = "Return comment text",
     fromAddressId = 321L,
     fromAddressOwnerClass = "OFF",
+    fromAddressDescription = "Some description",
+    fromAddressHouse = "Flat 1  41",
+    fromAddressStreet = "High Street",
+    fromAddressLocality = "Hillsborough",
+    fromAddressCity = "Sheffield",
+    fromAddressCounty = "South Yorkshire",
+    fromAddressCountry = "England",
+    fromAddressPostcode = "S1 1AB",
   )
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)

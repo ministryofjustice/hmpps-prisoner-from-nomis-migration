@@ -342,12 +342,24 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
 
   fun stubCreateExternalMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/temporary-absence/external-movement")
 
-  fun stubGetExternalMovementMapping(bookingId: Long = 12345L, movementSeq: Int = 1) {
+  fun stubGetExternalMovementMapping(
+    bookingId: Long = 12345L,
+    movementSeq: Int = 1,
+    dpsExternalMovementId: UUID = UUID.randomUUID(),
+  ) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/temporary-absence/external-movement/nomis-movement-id/$bookingId/$movementSeq")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody(objectMapper.writeValueAsString(temporaryAbsenceExternalMovementMapping(bookingId, movementSeq))),
+          .withBody(
+            objectMapper.writeValueAsString(
+              temporaryAbsenceExternalMovementMapping(
+                bookingId,
+                movementSeq,
+                dpsExternalMovementId = dpsExternalMovementId,
+              ),
+            ),
+          ),
       ),
     )
   }
@@ -469,10 +481,15 @@ fun temporaryAbsenceScheduledMovementMapping(nomisEventId: Long = 1L, prisonerNu
   mappingType = ScheduledMovementSyncMappingDto.MappingType.MIGRATED,
 )
 
-fun temporaryAbsenceExternalMovementMapping(bookingId: Long = 12345L, movementSeq: Int = 1, prisonerNumber: String = "A1234BC") = ExternalMovementSyncMappingDto(
+fun temporaryAbsenceExternalMovementMapping(
+  bookingId: Long = 12345L,
+  movementSeq: Int = 1,
+  prisonerNumber: String = "A1234BC",
+  dpsExternalMovementId: UUID = UUID.randomUUID(),
+) = ExternalMovementSyncMappingDto(
   prisonerNumber = prisonerNumber,
   bookingId = bookingId,
   nomisMovementSeq = movementSeq,
-  dpsExternalMovementId = UUID.randomUUID(),
+  dpsExternalMovementId = dpsExternalMovementId,
   mappingType = ExternalMovementSyncMappingDto.MappingType.MIGRATED,
 )
