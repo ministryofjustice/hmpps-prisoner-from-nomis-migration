@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundE
 
 @RestController
 @Tag(name = "Finance Migration Resource")
+@PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__UPDATE__RW')")
 class PrisonerBalanceDataRepairResource(
   private val prisonerBalanceSynchronisationService: PrisonerBalanceSynchronisationService,
   private val telemetryClient: TelemetryClient,
@@ -21,10 +22,9 @@ class PrisonerBalanceDataRepairResource(
 
   @PostMapping("/prisoners/{rootOffenderId}/prisoner-balance/repair")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  @PreAuthorize("hasRole('ROLE_MIGRATE_NOMIS_SYSCON')")
   @Operation(
     summary = "Resynchronises account balances for the given prisoner (Nomis rootOffenderId) from NOMIS to DPS",
-    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_MIGRATE_NOMIS_SYSCON",
+    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW",
   )
   suspend fun repairPrisonerBalance(@PathVariable rootOffenderId: Long) {
     try {

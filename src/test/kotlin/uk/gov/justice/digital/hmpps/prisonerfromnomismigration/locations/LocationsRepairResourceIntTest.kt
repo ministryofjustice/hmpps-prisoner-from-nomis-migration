@@ -66,7 +66,7 @@ class LocationsRepairResourceIntTest : SqsIntegrationTestBase() {
         mappingApi.stubMappingCreate(LOCATIONS_CREATE_MAPPING_URL)
 
         webTestClient.post().uri("/locations/id/$NOMIS_LOCATION_ID/repair")
-          .headers(setAuthorisation(roles = listOf("ROLE_NOMIS_LOCATIONS")))
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isOk
       }

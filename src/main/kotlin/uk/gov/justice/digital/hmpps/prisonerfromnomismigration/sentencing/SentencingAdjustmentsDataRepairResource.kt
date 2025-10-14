@@ -12,16 +12,16 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @Tag(name = "Sentencing Migration Resource")
+@PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__UPDATE__RW')")
 class SentencingAdjustmentsDataRepairResource(
   private val sentencingAdjustmentsSynchronisationService: SentencingAdjustmentsSynchronisationService,
   private val telemetryClient: TelemetryClient,
 ) {
   @PostMapping("/prisoners/booking-id/{bookingId}/merge/sentencing-adjustments/repair")
   @ResponseStatus(HttpStatus.OK)
-  @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
   @Operation(
     summary = "Resynchronises new adjustments for the given booking from NOMIS back to DPS",
-    description = "Used when a merge has not be detected so new adjustments have not been copied to DPS, so emergency use only. Requires ROLE_MIGRATE_SENTENCING",
+    description = "Used when a merge has not be detected so new adjustments have not been copied to DPS, so emergency use only. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW",
   )
   suspend fun repairPostMergeAdjustments(
     @PathVariable bookingId: Long,

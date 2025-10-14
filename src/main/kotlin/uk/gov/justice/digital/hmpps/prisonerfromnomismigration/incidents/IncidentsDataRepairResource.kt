@@ -14,16 +14,16 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @Tag(name = "Incidents Migration Resource")
+@PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__UPDATE__RW')")
 class IncidentsDataRepairResource(
   private val incidentsSynchronisationService: IncidentsSynchronisationService,
   private val telemetryClient: TelemetryClient,
 ) {
   @PostMapping("/incidents/{incidentId}/repair")
   @ResponseStatus(HttpStatus.OK)
-  @PreAuthorize("hasRole('ROLE_MIGRATE_INCIDENT_REPORTS')")
   @Operation(
     summary = "Resynchronises an existing incident from NOMIS back to DPS",
-    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_MIGRATE_INCIDENT_REPORTS",
+    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW",
   )
   suspend fun repairIncident(
     @PathVariable incidentId: Long,
