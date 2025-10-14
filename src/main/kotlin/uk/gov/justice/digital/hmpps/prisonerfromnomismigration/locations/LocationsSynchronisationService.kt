@@ -86,7 +86,9 @@ class LocationsSynchronisationService(
     event.description != null &&
     (
       event.description.endsWith("-VISITS-VSIP_CLO") ||
-        event.description.endsWith("-VISITS-VSIP_SOC")
+        event.description.endsWith("-VISITS-VSIP_SOC") ||
+        event.description.endsWith("-VISIT-VSIP_CLO") ||
+        event.description.endsWith("-VISIT-VSIP_SOC")
       )
 
   private suspend fun synchroniseCreate(event: LocationsOffenderEvent) {
