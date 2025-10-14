@@ -84,7 +84,7 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
 
       awsSqsLocationsOffenderEventsClient.sendMessage(
         locationsQueueOffenderEventsUrl,
-        locationEvent(auditModuleName = "DPS_SYNCHRONISATION", description = "BLI-VISITS-VSIP_SOC"),
+        locationEvent(auditModuleName = "DPS_SYNCHRONISATION", description = "BLI-VISIT-VSIP_SOC"),
       )
       await untilAsserted {
         verify(telemetryClient).trackEvent(
