@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.ScheduledTemporaryAbsenceRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapApplicationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest
 import java.util.UUID
 
 @Service
@@ -19,6 +20,12 @@ class ExternalMovementsDpsApiService(@Qualifier("extMovementsDpsApiWebClient") p
 
   suspend fun syncTemporaryAbsenceScheduledMovement(parentId: UUID, scheduledRequest: ScheduledTemporaryAbsenceRequest): SyncResponse = webClient.put()
     .uri("/sync/scheduled-temporary-absence/{parentId}", parentId)
+    .bodyValue(scheduledRequest)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun syncTemporaryAbsenceMovement(personIdentifier: String, scheduledRequest: TapMovementRequest): SyncResponse = webClient.put()
+    .uri("/sync/temporary-absence-movement/{personIdentifier}", personIdentifier)
     .bodyValue(scheduledRequest)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
