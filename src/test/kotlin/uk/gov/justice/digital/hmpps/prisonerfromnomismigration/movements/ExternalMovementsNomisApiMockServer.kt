@@ -468,6 +468,14 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     commentText = "Absence comment text",
     toAddressId = 321L,
     toAddressOwnerClass = "OFF",
+    toAddressDescription = "Some description",
+    toAddressHouse = "Flat 1  41",
+    toAddressStreet = "High Street",
+    toAddressLocality = "Hillsborough",
+    toAddressCity = "Sheffield",
+    toAddressCounty = "South Yorkshire",
+    toAddressCountry = "England",
+    toAddressPostcode = "S1 1AB",
   )
 
   fun stubGetTemporaryAbsenceReturnMovement(

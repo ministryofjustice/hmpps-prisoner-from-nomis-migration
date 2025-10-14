@@ -13,10 +13,14 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.stereotype.Component
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Address
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.ScheduledTemporaryAbsenceRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapApplicationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapLocation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest.Direction.OUT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
@@ -103,7 +107,40 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         auditTimestamp = today,
         auditUserId = "AAA11A",
       ),
+    )
 
+    fun syncTemporaryAbsenceMovementRequest(occurrenceId: UUID? = UUID.randomUUID()) = TapMovementRequest(
+      occurrenceId = occurrenceId,
+      legacyId = 1234567,
+      movementDateTime = today,
+      movementReason = "C5",
+      direction = OUT,
+      escort = "U",
+      escortText = "Some escort text",
+      prisonCode = "LEI",
+      commentText = "Movement comment",
+      location = TapLocation(
+        id = "654",
+        typeCode = "OFF",
+        description = "Some tap location",
+        address = Address(
+          premise = "Some premise",
+          street = "Some street",
+          area = "Some area",
+          city = "Some city",
+          county = "Some country",
+          country = "Some country",
+          postcode = "Some postcode",
+        ),
+      ),
+      audit = NomisAudit(
+        createDatetime = today,
+        createUsername = "AAA11A",
+        modifyDatetime = today,
+        modifyUserId = "AAA11A",
+        auditTimestamp = today,
+        auditUserId = "AAA11A",
+      ),
     )
 
     fun syncResponse() = SyncResponse(UUID.randomUUID())
@@ -167,6 +204,34 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     dpsExtMovementsServer.stubFor(
       put("/sync/scheduled-temporary-absence/$parentId")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubSyncTemporaryAbsenceMovement(personIdentifier: String = "A1234BC", response: SyncResponse = syncResponse()) {
+    dpsExtMovementsServer.stubFor(
+      put("/sync/temporary-absence-movement/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubSyncTemporaryAbsenceMovementError(
+    personIdentifier: String = "A1234BC",
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsExtMovementsServer.stubFor(
+      put("/sync/temporary-absence-movement/$personIdentifier")
         .willReturn(
           aResponse()
             .withStatus(status)
