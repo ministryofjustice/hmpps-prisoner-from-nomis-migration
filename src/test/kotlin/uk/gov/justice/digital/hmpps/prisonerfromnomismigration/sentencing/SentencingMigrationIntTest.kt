@@ -205,7 +205,7 @@ class SentencingMigrationIntTest(
   }
 
   private fun WebTestClient.performMigration(body: String = "{ }"): MigrationResult = post().uri("/migrate/sentencing")
-    .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
+    .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .header("Content-Type", "application/json")
     .body(BodyInserters.fromValue(body))
     .exchange()

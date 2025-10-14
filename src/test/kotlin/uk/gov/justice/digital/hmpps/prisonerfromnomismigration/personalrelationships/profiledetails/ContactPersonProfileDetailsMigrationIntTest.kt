@@ -447,7 +447,7 @@ class ContactPersonProfileDetailsMigrationIntTest(
 
   private fun performMigration(prisonerNumber: String? = null): String = webTestClient.post()
     .uri("/migrate/contact-person-profile-details")
-    .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+    .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .apply { prisonerNumber?.let { bodyValue("""{"prisonerNumber":"$prisonerNumber"}""") } ?: bodyValue("{}") }
     .exchange()

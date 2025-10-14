@@ -26,12 +26,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 class CourtSentencingMigrationResource(
   private val courtSentencingMigrationService: CourtSentencingMigrationService,
 ) {
-  @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
+  @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
   @PostMapping("/court-sentencing")
   @ResponseStatus(value = ACCEPTED)
   @Operation(
     summary = "Starts a court case migration",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_SENTENCING</b>",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
     requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
       content = [
         Content(
@@ -67,12 +67,12 @@ class CourtSentencingMigrationResource(
     migrationFilter: CourtSentencingMigrationFilter,
   ) = courtSentencingMigrationService.startMigration(migrationFilter)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_SENTENCING')")
+  @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
   @GetMapping("/court-sentencing/offender-payload/{offenderNo}")
   @ResponseStatus(value = OK)
   @Operation(
     summary = "provides the migration payload for debug purposes",
-    description = "Provides the migration payload for an offender, no migration is performed. Useful for investigating migration errors. Requires role <b>MIGRATE_SENTENCING</b>",
+    description = "Provides the migration payload for an offender, no migration is performed. Useful for investigating migration errors. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
     responses = [
       ApiResponse(
         responseCode = "200",

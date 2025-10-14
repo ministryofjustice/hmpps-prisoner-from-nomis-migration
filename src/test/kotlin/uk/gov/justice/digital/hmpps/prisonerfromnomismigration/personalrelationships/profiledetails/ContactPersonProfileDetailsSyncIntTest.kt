@@ -410,7 +410,7 @@ class ContactPersonProfileDetailsSyncIntTest(
       @Test
       fun `should sync profile details`() = runTest {
         webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/MARITAL")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .exchange()
           .expectStatus().isOk
 
@@ -424,7 +424,7 @@ class ContactPersonProfileDetailsSyncIntTest(
         nomisApi.stubGetProfileDetails(status = NOT_FOUND)
 
         webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/MARITAL")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .exchange()
           .expectStatus().isBadRequest
           .expectBody()
@@ -446,7 +446,7 @@ class ContactPersonProfileDetailsSyncIntTest(
         dpsApi.stubSyncDomesticStatus(status = INTERNAL_SERVER_ERROR)
 
         webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/MARITAL")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .exchange()
           .expectStatus().isBadRequest
           .expectBody()
@@ -462,7 +462,7 @@ class ContactPersonProfileDetailsSyncIntTest(
       @Test
       fun `should handle invalid profile type`() = runTest {
         webTestClient.put().uri("/sync/contactperson/profile-details/A1234AA/BUILD")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_CONTACTPERSON")))
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .exchange()
           .expectStatus().isBadRequest
 

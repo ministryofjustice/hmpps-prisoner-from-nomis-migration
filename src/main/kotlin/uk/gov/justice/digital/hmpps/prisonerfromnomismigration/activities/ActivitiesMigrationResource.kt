@@ -28,12 +28,12 @@ import java.time.LocalDate
 class ActivitiesMigrationResource(
   private val activitiesMigrationService: ActivitiesMigrationService,
 ) {
-  @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
+  @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
   @PostMapping
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
     summary = "Starts an activities migration",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_ACTIVITIES</b>",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
     requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
       content = [
         Content(
@@ -69,11 +69,11 @@ class ActivitiesMigrationResource(
     migrationFilter: ActivitiesMigrationFilter,
   ) = activitiesMigrationService.startMigration(migrationFilter)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
+  @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
   @PutMapping("/{migrationId}/end")
   @Operation(
     summary = "End all NOMIS activities and allocations for a migration on the day before the DPS activity start date",
-    description = "Get all NOMIS activities migrated on a migrationId and ends them all on the day before the DPS activity start date. Requires role MIGRATE_ACTIVITIES",
+    description = "Get all NOMIS activities migrated on a migrationId and ends them all on the day before the DPS activity start date. Requires role PRISONER_FROM_NOMIS__MIGRATION__RW",
     responses = [
       ApiResponse(
         responseCode = "200",
@@ -113,11 +113,11 @@ class ActivitiesMigrationResource(
     @Schema(description = "Migration ID", type = "string") @PathVariable migrationId: String,
   ) = activitiesMigrationService.endMigratedActivities(migrationId)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_ACTIVITIES')")
+  @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
   @PutMapping("/{migrationId}/move-start-dates")
   @Operation(
     summary = "Moves the start date for future activities in DPS.",
-    description = "Update all DPS activities for this prison to the new start date. Get all NOMIS activities migrated move the end dates to the day before the new start date. Requires role MIGRATE_ACTIVITIES",
+    description = "Update all DPS activities for this prison to the new start date. Get all NOMIS activities migrated move the end dates to the day before the new start date. Requires role PRISONER_FROM_NOMIS__MIGRATION__RW",
     responses = [
       ApiResponse(
         responseCode = "200",

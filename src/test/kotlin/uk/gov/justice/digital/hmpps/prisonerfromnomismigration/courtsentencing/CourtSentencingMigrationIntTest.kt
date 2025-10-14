@@ -108,7 +108,7 @@ class CourtSentencingMigrationIntTest(
     }
 
     private fun WebTestClient.performMigration(body: String = "{ }"): MigrationResult = post().uri("/migrate/court-sentencing")
-      .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
+      .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
       .header("Content-Type", "application/json")
       .body(BodyInserters.fromValue(body))
       .exchange()
@@ -605,7 +605,7 @@ class CourtSentencingMigrationIntTest(
       )
 
       webTestClient.get().uri("/migrate/court-sentencing/offender-payload/AN1")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_SENTENCING")))
+        .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
         .exchange()
         .expectStatus().isOk
         .expectBody()

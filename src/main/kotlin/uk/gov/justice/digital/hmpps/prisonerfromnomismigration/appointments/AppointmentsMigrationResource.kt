@@ -22,12 +22,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 class AppointmentsMigrationResource(
   private val appointmentsMigrationService: AppointmentsMigrationService,
 ) {
-  @PreAuthorize("hasRole('ROLE_MIGRATE_APPOINTMENTS')")
+  @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
   @PostMapping("/appointments")
   @ResponseStatus(value = ACCEPTED)
   @Operation(
     summary = "Starts an appointments migration",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_APPOINTMENTS</b>",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
     requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
       content = [
         Content(

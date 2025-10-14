@@ -577,7 +577,7 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
           )
         }
         webTestClient.post().uri("/migrate/prison-balance")
-          .headers(setAuthorisation(roles = listOf("MIGRATE_NOMIS_SYSCON")))
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(PrisonBalanceMigrationFilter())
           .exchange()
@@ -602,7 +602,7 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
           )
         }
         webTestClient.post().uri("/migrate/prison-balance")
-          .headers(setAuthorisation(roles = listOf("MIGRATE_NOMIS_SYSCON")))
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(PrisonBalanceMigrationFilter())
           .exchange()
@@ -705,7 +705,7 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
   }
 
   private fun performMigration(body: PrisonBalanceMigrationFilter = PrisonBalanceMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/prison-balance")
-    .headers(setAuthorisation(roles = listOf("MIGRATE_NOMIS_SYSCON")))
+    .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .bodyValue(body)
     .exchange()

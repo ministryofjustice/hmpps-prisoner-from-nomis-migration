@@ -27,12 +27,12 @@ import java.time.LocalDateTime
 class VisitMigrationResource(
   private val visitsMigrationService: VisitsMigrationService,
 ) {
-  @PreAuthorize("hasRole('ROLE_MIGRATE_VISITS')")
+  @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
   @PostMapping("/visits")
   @ResponseStatus(value = ACCEPTED)
   @Operation(
     summary = "Starts a visit migration",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_VISITS</b>",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
     requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
       content = [
         Content(
@@ -68,7 +68,7 @@ class VisitMigrationResource(
     migrationFilter: VisitsMigrationFilter,
   ) = visitsMigrationService.startMigration(migrationFilter)
 
-  @PreAuthorize("hasRole('ROLE_MIGRATE_VISITS')")
+  @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
   @GetMapping("/visits/rooms/usage")
   @Operation(
     summary = "get visit room usage and mappings by filter",

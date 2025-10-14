@@ -188,7 +188,7 @@ class ExternalMovementsMigrationIntTest(
 
   private fun performMigration(prisonerNumber: String? = null): String = webTestClient.post()
     .uri("/migrate/external-movements")
-    .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_EXTERNAL_MOVEMENTS")))
+    .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .apply { prisonerNumber?.let { bodyValue("""{"prisonerNumber":"$prisonerNumber"}""") } ?: bodyValue("{}") }
     .exchange()

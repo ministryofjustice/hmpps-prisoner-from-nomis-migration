@@ -65,7 +65,7 @@ class AllocationMigrationIntTest(
     }
 
     private fun WebTestClient.performMigration(body: String = """{ "prisonId": "BXI" }""") = post().uri("/migrate/allocations")
-      .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+      .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
       .header("Content-Type", "application/json")
       .body(BodyInserters.fromValue(body))
       .exchange()

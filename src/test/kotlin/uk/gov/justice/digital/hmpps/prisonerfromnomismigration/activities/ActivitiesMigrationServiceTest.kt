@@ -348,7 +348,7 @@ class ActivitiesMigrationServiceTest {
     }
 
     @Test
-    internal fun `will send MIGRATE_ACTIVITIES with context for each activity`(): Unit = runBlocking {
+    internal fun `will send PRISONER_FROM_NOMIS__MIGRATION__RW with context for each activity`(): Unit = runBlocking {
       service.migrateEntitiesForPage(
         MigrationContext(
           type = MigrationType.ACTIVITIES,
@@ -373,7 +373,7 @@ class ActivitiesMigrationServiceTest {
     }
 
     @Test
-    internal fun `will send MIGRATE_ACTIVITIES with courseActivityId and start date for each activity`(): Unit = runBlocking {
+    internal fun `will send PRISONER_FROM_NOMIS__MIGRATION__RW with courseActivityId and start date for each activity`(): Unit = runBlocking {
       val context: KArgumentCaptor<MigrationContext<ActivitiesMigrationRequest>> = argumentCaptor()
 
       whenever(nomisApiService.getActivityIds(any(), anyOrNull(), any(), any())).thenReturn(
@@ -413,7 +413,7 @@ class ActivitiesMigrationServiceTest {
     }
 
     @Test
-    internal fun `will not send MIGRATE_ACTIVITIES when cancelling`(): Unit = runBlocking {
+    internal fun `will not send PRISONER_FROM_NOMIS__MIGRATION__RW when cancelling`(): Unit = runBlocking {
       whenever(migrationHistoryService.isCancelling(any())).thenReturn(true)
 
       whenever(nomisApiService.getActivityIds(any(), anyOrNull(), any(), any())).thenReturn(
