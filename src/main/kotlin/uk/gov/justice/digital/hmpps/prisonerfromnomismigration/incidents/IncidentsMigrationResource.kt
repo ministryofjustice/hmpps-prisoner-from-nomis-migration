@@ -19,7 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 @RestController
 @Tag(name = "Incidents Migration Resource")
 @RequestMapping("/migrate/incidents", produces = [MediaType.APPLICATION_JSON_VALUE])
-@PreAuthorize("hasAnyRole('ROLE_MIGRATE_INCIDENT_REPORTS', 'ROLE_MIGRATE_NOMIS_SYSCON')")
+@PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
 class IncidentsMigrationResource(
   private val incidentsMigrationService: IncidentsMigrationService,
 ) {
@@ -27,7 +27,7 @@ class IncidentsMigrationResource(
   @ResponseStatus(value = ACCEPTED)
   @Operation(
     summary = "Starts an incidents migration",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_INCIDENT_REPORTS</b>",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
     requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
       content = [
         Content(

@@ -458,7 +458,7 @@ class PrisonerRestrictionMigrationIntTest(
   }
 
   private fun performMigration(body: PrisonerRestrictionMigrationFilter = PrisonerRestrictionMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/contactperson")
-    .headers(setAuthorisation(roles = listOf("MIGRATE_CONTACTPERSON")))
+    .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .bodyValue(body)
     .exchange()

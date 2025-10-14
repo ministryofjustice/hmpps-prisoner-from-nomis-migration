@@ -82,7 +82,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     private fun WebTestClient.performMigration(body: String = """{ "prisonId": "BXI", "activityStartDate": "$tomorrow" }""") = post().uri("/migrate/activities")
-      .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+      .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
       .header("Content-Type", "application/json")
       .body(BodyInserters.fromValue(body))
       .exchange()
@@ -285,7 +285,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
           )
         }
         webTestClient.post().uri("/migrate/activities")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .header("Content-Type", "application/json")
           .body(BodyInserters.fromValue("""{ "prisonId": "BXI", "activityStartDate": "$tomorrow" }"""))
           .exchange()
@@ -310,7 +310,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
           )
         }
         webTestClient.post().uri("/migrate/activities")
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .header("Content-Type", "application/json")
           .body(BodyInserters.fromValue("""{ "prisonId": "BXI", "activityStartDate": "$tomorrow" }"""))
           .exchange()
@@ -442,7 +442,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubActivityMappingCountByMigrationIdFails(404)
 
       webTestClient.put().uri("/migrate/activities/$migrationId/end")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isNotFound
@@ -453,7 +453,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubActivityMappingCountByMigrationIdFails(500)
 
       webTestClient.put().uri("/migrate/activities/$migrationId/end")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().is5xxServerError
@@ -462,7 +462,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will end activities`() = runTest {
       webTestClient.put().uri("/migrate/activities/$migrationId/end")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -483,7 +483,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
       mappingApi.stubActivitiesMappingByMigrationId(count = 3, migrationId = migrationId, hasScheduleRules = false)
 
       webTestClient.put().uri("/migrate/activities/$migrationId/end")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+        .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
         .header("Content-Type", "application/json")
         .exchange()
         .expectStatus().isOk
@@ -662,7 +662,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     private fun WebTestClient.moveStartDates(migrationId: String, requestBody: String? = null) = put().uri("/migrate/activities/$migrationId/move-start-dates")
-      .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_ACTIVITIES")))
+      .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
       .header("Content-Type", "application/json")
       .bodyValue(requestBody ?: request)
       .exchange()

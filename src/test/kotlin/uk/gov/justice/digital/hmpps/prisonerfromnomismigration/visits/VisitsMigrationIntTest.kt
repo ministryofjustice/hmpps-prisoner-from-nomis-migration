@@ -46,7 +46,7 @@ class VisitsMigrationIntTest(
     }
 
     private fun WebTestClient.performMigration(body: String = "{ }") = post().uri("/migrate/visits")
-      .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+      .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
       .header("Content-Type", "application/json")
       .body(BodyInserters.fromValue(body))
       .exchange()
@@ -270,7 +270,7 @@ class VisitsMigrationIntTest(
       mappingApi.stubMissingRoomMapping("BXI")
       mappingApi.stubRoomMapping("AKI")
       webTestClient.get().uri("migrate/visits/rooms/usage")
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
         .exchange()
         .expectStatus().isOk
         .expectBody()
@@ -296,7 +296,7 @@ class VisitsMigrationIntTest(
           .queryParam("fromDateTime", "202-10-01T09:00:00")
           .build()
       }
-        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_VISITS")))
+        .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
         .exchange()
         .expectStatus().isBadRequest
     }

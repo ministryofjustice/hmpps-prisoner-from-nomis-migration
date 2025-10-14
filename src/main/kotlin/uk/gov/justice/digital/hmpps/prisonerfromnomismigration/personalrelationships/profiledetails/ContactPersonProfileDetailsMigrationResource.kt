@@ -19,7 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 @RestController
 @RequestMapping("/migrate/contact-person-profile-details", produces = [MediaType.APPLICATION_JSON_VALUE])
 @Tag(name = "Contact Person Migration Resource")
-@PreAuthorize("hasAnyRole('ROLE_MIGRATE_CONTACTPERSON','ROLE_MIGRATE_NOMIS_SYSCON')")
+@PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
 class ContactPersonProfileDetailsMigrationResource(
   private val migrationService: ContactPersonProfileDetailsMigrationService,
 ) {
@@ -27,7 +27,7 @@ class ContactPersonProfileDetailsMigrationResource(
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
     summary = "Starts a contact person profile details migration",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_CONTACTPERSON</b>",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
     responses = [
       ApiResponse(
         responseCode = "202",

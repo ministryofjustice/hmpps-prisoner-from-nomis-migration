@@ -19,7 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 @RestController
 @RequestMapping("/migrate/external-movements", produces = [MediaType.APPLICATION_JSON_VALUE])
 @Tag(name = "External Movements Migration Resource")
-@PreAuthorize("hasAnyRole('ROLE_MIGRATE_EXTERNAL_MOVEMENTS','ROLE_MIGRATE_NOMIS_SYSCON')")
+@PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
 class ExternalMovementsMigrationResource(
   private val migrationService: ExternalMovementsMigrationService,
 ) {
@@ -27,7 +27,7 @@ class ExternalMovementsMigrationResource(
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
     summary = "Starts an external movements migration",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_EXTERNAL_MOVEMENTS</b> ot <b>MIGRATE_NOMIS_SYSCON</b>",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b> ot <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
     responses = [
       ApiResponse(
         responseCode = "202",

@@ -19,7 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 @RestController
 @RequestMapping("/migrate/prisoner-balance", produces = [MediaType.APPLICATION_JSON_VALUE])
 @Tag(name = "Finance Migration Resource")
-@PreAuthorize("hasAnyRole('ROLE_MIGRATE_NOMIS_SYSCON')")
+@PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
 class PrisonerBalanceMigrationResource(
   private val migrationService: PrisonerBalanceMigrationService,
 ) {
@@ -27,7 +27,7 @@ class PrisonerBalanceMigrationResource(
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
     summary = "Starts a prisoner balance migration. The entity type is determined by the migration filter",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>MIGRATE_NOMIS_SYSCON</b>",
+    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
     responses = [
       ApiResponse(
         responseCode = "202",
