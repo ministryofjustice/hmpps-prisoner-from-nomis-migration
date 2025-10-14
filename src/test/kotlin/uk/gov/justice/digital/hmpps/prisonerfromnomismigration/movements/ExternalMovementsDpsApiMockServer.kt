@@ -146,17 +146,6 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun syncResponse() = SyncResponse(UUID.randomUUID())
   }
 
-  fun stubHealthPing(status: Int) {
-    stubFor(
-      get("/health/ping").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(if (status == 200) "pong" else "some error")
-          .withStatus(status),
-      ),
-    )
-  }
-
   fun stubSyncTapApplication(personIdentifier: String = "A1234BC", response: SyncResponse = syncResponse()) {
     dpsExtMovementsServer.stubFor(
       put("/sync/temporary-absence-application/$personIdentifier")

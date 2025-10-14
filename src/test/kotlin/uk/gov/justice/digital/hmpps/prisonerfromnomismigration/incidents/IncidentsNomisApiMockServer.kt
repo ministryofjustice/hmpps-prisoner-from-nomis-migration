@@ -36,14 +36,6 @@ class IncidentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
   companion object {
     const val INCIDENTS_ID_URL = "/incidents/ids"
   }
-  fun stubHealthPing(status: Int) {
-    nomisApi.stubFor(
-      get("/health/ping").willReturn(
-        aResponse().withHeader("Content-Type", "application/json").withBody(if (status == 200) "pong" else "some error")
-          .withStatus(status),
-      ),
-    )
-  }
 
   fun stubMultipleGetIncidentIdCounts(totalElements: Long, pageSize: Long) {
     // for each page create a response for each incident id starting from 1 up to `totalElements`

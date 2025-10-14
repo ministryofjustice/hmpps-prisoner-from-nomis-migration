@@ -41,17 +41,6 @@ class SentencingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     private const val WIREMOCK_PORT = 8085
   }
 
-  fun stubHealthPing(status: Int) {
-    stubFor(
-      get("/health/ping").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(if (status == 200) "pong" else "some error")
-          .withStatus(status),
-      ),
-    )
-  }
-
   fun stubCreateSentencingAdjustmentForSynchronisation(sentenceAdjustmentId: String = "05b332ad-58eb-4ec2-963c-c9c927856788") {
     stubFor(
       post(WireMock.urlMatching("/legacy/adjustments")).willReturn(
