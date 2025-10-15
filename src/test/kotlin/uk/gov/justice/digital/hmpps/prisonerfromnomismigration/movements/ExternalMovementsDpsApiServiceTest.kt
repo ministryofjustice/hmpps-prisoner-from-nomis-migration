@@ -150,7 +150,7 @@ class ExternalMovementsDpsApiServiceTest {
       dpsExtMovementsServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/$prisonerNumber"))
           .withRequestBody(matchingJsonPath("occurrenceId", equalTo("$occurrenceId")))
-          .withRequestBody(matchingJsonPath("legacyId", equalTo("1234567")))
+          .withRequestBody(matchingJsonPath("legacyId", equalTo("12345_154")))
           .withRequestBody(matchingJsonPath("location.id", equalTo("654")))
           .withRequestBody(matchingJsonPath("location.address.premise", equalTo("Some premise"))),
       )

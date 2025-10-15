@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-10-10.155.8e1d865"
+    "version" : "2025-10-14.159.e3f96e8"
   },
   "servers" : [ {
     "url" : "https://external-movements-api-dev.hmpps.service.justice.gov.uk",
@@ -561,8 +561,7 @@
             "format" : "uuid"
           },
           "legacyId" : {
-            "type" : "integer",
-            "format" : "int64"
+            "type" : "string"
           },
           "movementDateTime" : {
             "type" : "string",

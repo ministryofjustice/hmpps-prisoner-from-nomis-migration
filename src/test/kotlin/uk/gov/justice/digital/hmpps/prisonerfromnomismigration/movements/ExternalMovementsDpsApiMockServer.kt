@@ -111,7 +111,7 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
     fun syncTemporaryAbsenceMovementRequest(occurrenceId: UUID? = UUID.randomUUID()) = TapMovementRequest(
       occurrenceId = occurrenceId,
-      legacyId = 1234567,
+      legacyId = "12345_154",
       movementDateTime = today,
       movementReason = "C5",
       direction = OUT,

@@ -614,8 +614,7 @@ private fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null) = S
 private fun TemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, occurrenceId: UUID? = null) = TapMovementRequest(
   id = id,
   occurrenceId = occurrenceId,
-  // TODO - when this changes to a string it needs to be "${bookingId}_${movementSeq}"
-  legacyId = 1,
+  legacyId = "${bookingId}_$sequence",
   movementDateTime = movementTime,
   movementReason = movementReason,
   direction = OUT,
@@ -643,8 +642,7 @@ private fun TemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, occurrenceId
 private fun TemporaryAbsenceReturnResponse.toDpsRequest(id: UUID? = null, occurrenceId: UUID? = null) = TapMovementRequest(
   id = id,
   occurrenceId = occurrenceId,
-  // TODO - when this changes to a string it needs to be "${bookingId}_${movementSeq}"
-  legacyId = 1,
+  legacyId = "${bookingId}_$sequence",
   movementDateTime = movementTime,
   movementReason = movementReason,
   direction = IN,

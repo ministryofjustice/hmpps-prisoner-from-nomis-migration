@@ -422,7 +422,7 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     movementSeq: Int = 1,
     movementApplicationId: Long? = 111,
     scheduledTemporaryAbsenceId: Long? = 1,
-    response: TemporaryAbsenceResponse = temporaryAbsenceResponse(movementApplicationId, scheduledTemporaryAbsenceId),
+    response: TemporaryAbsenceResponse = temporaryAbsenceResponse(movementApplicationId, scheduledTemporaryAbsenceId, movementSeq),
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/movements/$offenderNo/temporary-absences/temporary-absence/$bookingId/$movementSeq")).willReturn(
@@ -448,9 +448,10 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
   fun temporaryAbsenceResponse(
     movementApplicationId: Long? = 111,
     scheduledTemporaryAbsenceId: Long? = 1,
+    sequence: Int = 1,
   ) = TemporaryAbsenceResponse(
     bookingId = 12345,
-    sequence = 1,
+    sequence = sequence,
     movementDate = now.toLocalDate(),
     movementTime = now,
     movementReason = "C6",
@@ -484,7 +485,7 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     movementSeq: Int = 1,
     movementApplicationId: Long? = 111,
     scheduledTemporaryAbsenceReturnId: Long? = 2,
-    response: TemporaryAbsenceReturnResponse = temporaryAbsenceReturnResponse(movementApplicationId, scheduledTemporaryAbsenceReturnId),
+    response: TemporaryAbsenceReturnResponse = temporaryAbsenceReturnResponse(movementApplicationId, scheduledTemporaryAbsenceReturnId, movementSeq),
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/movements/$offenderNo/temporary-absences/temporary-absence-return/$bookingId/$movementSeq")).willReturn(
@@ -510,9 +511,10 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
   fun temporaryAbsenceReturnResponse(
     movementApplicationId: Long? = 111,
     scheduledTemporaryAbsenceReturnId: Long? = 2,
+    sequence: Int = 1,
   ) = TemporaryAbsenceReturnResponse(
     bookingId = 12345,
-    sequence = 1,
+    sequence = sequence,
     movementDate = now.toLocalDate(),
     movementTime = now,
     movementReason = "C5",
