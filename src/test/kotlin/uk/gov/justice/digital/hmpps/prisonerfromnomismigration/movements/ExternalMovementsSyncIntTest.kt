@@ -1909,7 +1909,7 @@ class ExternalMovementsSyncIntTest(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
             .withRequestBodyJsonPath("id", absent())
             .withRequestBodyJsonPath("occurrenceId", dpsScheduledMovementId)
-            .withRequestBodyJsonPath("legacyId", 1)
+            .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
             .withRequestBodyJsonPath("location.id", "321")
             .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
@@ -1982,7 +1982,7 @@ class ExternalMovementsSyncIntTest(
         dpsApi.verify(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
             .withRequestBodyJsonPath("id", absent())
-            .withRequestBodyJsonPath("legacyId", 1)
+            .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
             .withRequestBodyJsonPath("location.id", "321")
             .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
@@ -2329,7 +2329,7 @@ class ExternalMovementsSyncIntTest(
           dpsApi.verify(
             putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
               .withRequestBodyJsonPath("id", absent())
-              .withRequestBodyJsonPath("legacyId", 1)
+              .withRequestBodyJsonPath("legacyId", "12345_154")
               .withRequestBodyJsonPath("direction", "OUT")
               .withRequestBodyJsonPath("location.id", "321")
               .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
@@ -2406,7 +2406,7 @@ class ExternalMovementsSyncIntTest(
           dpsApi.verify(
             putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
               .withRequestBodyJsonPath("id", absent())
-              .withRequestBodyJsonPath("legacyId", 1)
+              .withRequestBodyJsonPath("legacyId", "12345_154")
               .withRequestBodyJsonPath("direction", "IN")
               .withRequestBodyJsonPath("location.id", "321")
               .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
@@ -2486,7 +2486,7 @@ class ExternalMovementsSyncIntTest(
         dpsApi.verify(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
             .withRequestBodyJsonPath("id", absent())
-            .withRequestBodyJsonPath("legacyId", 1)
+            .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
             .withRequestBodyJsonPath("location.id", "321")
             .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
@@ -2558,7 +2558,7 @@ class ExternalMovementsSyncIntTest(
         dpsApi.verify(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
             .withRequestBodyJsonPath("id", absent())
-            .withRequestBodyJsonPath("legacyId", 1)
+            .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
             .withRequestBodyJsonPath("location.id", "321")
             .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
@@ -2649,7 +2649,7 @@ class ExternalMovementsSyncIntTest(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
             .withRequestBodyJsonPath("id", dpsExternalMovementId)
             .withRequestBodyJsonPath("occurrenceId", dpsScheduledMovementId)
-            .withRequestBodyJsonPath("legacyId", 1)
+            .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
             .withRequestBodyJsonPath("location.id", "321")
             .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
@@ -2705,7 +2705,7 @@ class ExternalMovementsSyncIntTest(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
             .withRequestBodyJsonPath("id", dpsExternalMovementId)
             .withRequestBodyJsonPath("occurrenceId", absent())
-            .withRequestBodyJsonPath("legacyId", 1)
+            .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
             .withRequestBodyJsonPath("location.id", "321")
             .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
@@ -2760,7 +2760,7 @@ class ExternalMovementsSyncIntTest(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
             .withRequestBodyJsonPath("id", dpsExternalMovementId)
             .withRequestBodyJsonPath("occurrenceId", dpsScheduledMovementId)
-            .withRequestBodyJsonPath("legacyId", 1)
+            .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
             .withRequestBodyJsonPath("location.id", "321")
             .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
@@ -2816,7 +2816,7 @@ class ExternalMovementsSyncIntTest(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
             .withRequestBodyJsonPath("id", dpsExternalMovementId)
             .withRequestBodyJsonPath("occurrenceId", absent())
-            .withRequestBodyJsonPath("legacyId", 1)
+            .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
             .withRequestBodyJsonPath("location.id", "321")
             .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
