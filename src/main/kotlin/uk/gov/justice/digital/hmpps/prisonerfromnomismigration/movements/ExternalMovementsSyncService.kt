@@ -483,12 +483,13 @@ class ExternalMovementsSyncService(
     dpsExternalMovementId: UUID? = null,
   ) = nomisApiService.getTemporaryAbsenceReturnMovement(prisonerNumber, bookingId, movementSeq)
     .also {
+      it.scheduledTemporaryAbsenceId?.run { telemetry["nomisScheduledParentEventId"] = this }
       it.scheduledTemporaryAbsenceReturnId?.run { telemetry["nomisScheduledEventId"] = this }
       it.movementApplicationId?.run { telemetry["nomisApplicationId"] = this }
       it.movementApplicationId?.run { requireParentApplicationExists(it.movementApplicationId) }
     }
     .let {
-      val occurrenceId = it.scheduledTemporaryAbsenceReturnId?.let { requireParentScheduleExists(it) }
+      val occurrenceId = it.scheduledTemporaryAbsenceId?.let { requireParentScheduleExists(it) }
       dpsApiService.syncTemporaryAbsenceMovement(prisonerNumber, it.toDpsRequest(id = dpsExternalMovementId, occurrenceId = occurrenceId)).id
     }
 
