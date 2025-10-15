@@ -31,7 +31,7 @@ class SentencingPrisonOffenderEventListener(
       when (sqsMessage.Type) {
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
-          if (eventFeatureSwitch.isEnabled(eventType)) {
+          if (eventFeatureSwitch.isEnabled(eventType, "sentencing")) {
             when (eventType) {
               "SENTENCE_ADJUSTMENT_UPSERTED" -> sentencingAdjustmentsSynchronisationService.synchroniseSentenceAdjustmentCreateOrUpdate(
                 (sqsMessage.Message.fromJson()),

@@ -26,7 +26,7 @@ class ContactPersonProfileDetailsResource(
   @PutMapping("/{prisonerNumber}/{profileType}")
   @Operation(
     summary = "Synchronises a profile detail to DPS",
-    description = "Manually synchronises a profile detail to DPS. This is intended for use by developers to recover from errors. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b> or <b>PRISONER_FROM_NOMIS__MIGRATION__RW/b>",
+    description = "Manually synchronises a profile detail to DPS. This is intended for use by developers to recover from errors. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
     responses = [
       ApiResponse(
         responseCode = "200",

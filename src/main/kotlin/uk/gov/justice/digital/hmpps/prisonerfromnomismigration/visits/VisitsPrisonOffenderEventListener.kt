@@ -28,7 +28,7 @@ class VisitsPrisonOffenderEventListener(
     val sqsMessage: SQSMessage = objectMapper.readValue(message)
     val eventType = sqsMessage.MessageAttributes!!.eventType.Value
     return asCompletableFuture {
-      if (eventFeatureSwitch.isEnabled(eventType)) {
+      if (eventFeatureSwitch.isEnabled(eventType, "visits")) {
         when (eventType) {
           "VISIT_CANCELLED" -> {
             val (offenderIdDisplay, visitId, auditModuleName) = objectMapper.readValue<VisitCancelledOffenderEvent>(
