@@ -45,7 +45,7 @@ class PrisonBalanceMigrationService(
     pageSize: Long,
     pageNumber: Long,
   ): PageImpl<String> = PageImpl(
-    migrationFilter.prisonId?.let { listOf(it) } ?: prisonBalanceNomisApiService.getPrisonBalanceIds(),
+    migrationFilter.prisonId?.ifEmpty { null }?.let { listOf(it) } ?: prisonBalanceNomisApiService.getPrisonBalanceIds(),
   )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<String>) {
