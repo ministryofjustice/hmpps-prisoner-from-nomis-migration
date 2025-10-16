@@ -321,7 +321,7 @@ class ContactPersonProfileDetailsSyncIntTest(
     @Nested
     inner class Errors {
       @Test
-      fun `should handle failed NOMIS API call`() = runTest {
+      fun `should handle failed NOMIS API call by trying until message is sent to DLQ`() = runTest {
         nomisApi.stubGetProfileDetails(status = NOT_FOUND)
 
         sendProfileDetailsChangedEvent()
@@ -329,11 +329,11 @@ class ContactPersonProfileDetailsSyncIntTest(
 
         nomisApi.verify()
         dpsApi.verify(type = "ignored")
-        verifyTelemetry(telemetryType = "error", errorReason = "404 Not Found from GET http://localhost:8081/prisoners/A1234AA/profile-details")
+        verifyTelemetry(telemetryType = "error", errorReason = "404 Not Found from GET http://localhost:8081/prisoners/A1234AA/profile-details", count = 2)
       }
 
       @Test
-      fun `should handle failed DPS API call`() = runTest {
+      fun `should handle failed DPS API call by trying until message is sent to DLQ`() = runTest {
         nomisApi.stubGetProfileDetails("A1234AA", profileTypes = listOf("MARITAL"), response = nomisResponse(offenderNo = "A1234AA"))
         dpsApi.stubSyncDomesticStatus(status = INTERNAL_SERVER_ERROR)
 
@@ -341,7 +341,7 @@ class ContactPersonProfileDetailsSyncIntTest(
 
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/A1234AA/profile-details")))
         dpsApi.verify()
-        verifyTelemetry(telemetryType = "error", errorReason = "500 Internal Server Error from PUT http://localhost:8097/sync/A1234AA/domestic-status")
+        verifyTelemetry(telemetryType = "error", errorReason = "500 Internal Server Error from PUT http://localhost:8097/sync/A1234AA/domestic-status", count = 2)
       }
     }
 
@@ -560,7 +560,8 @@ class ContactPersonProfileDetailsSyncIntTest(
     bookingId: Long? = 12345,
     ignoreReason: String? = null,
     errorReason: String? = null,
-  ) = verify(telemetryClient).trackEvent(
+    count: Int = 1,
+  ) = verify(telemetryClient, times(count)).trackEvent(
     eq("contact-person-$profileType-synchronisation-$telemetryType"),
     check {
       assertThat(it["offenderNo"]).isEqualTo(offenderNo)

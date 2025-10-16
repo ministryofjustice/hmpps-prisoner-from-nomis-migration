@@ -5,6 +5,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.NomisBookingDeletedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerReceiveDomainEvent
@@ -1077,6 +1078,34 @@ class ContactPersonSynchronisationService(
       }
     }
   }
+  suspend fun resetPrisonerContactsForBookingDeleted(bookingDeletedEvent: NomisBookingDeletedEvent) {
+    val offenderNo = bookingDeletedEvent.offenderIdDisplay
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to offenderNo,
+      "bookingId" to bookingDeletedEvent.bookingId,
+    )
+
+    val nomisContacts = nomisApiService.getContactsForPrisoner(offenderNo).contacts.also {
+      telemetry["contactsCount"] = it.size
+    }
+    val dpsChangedResponse = dpsApiService.resetPrisonerContacts(
+      ResetPrisonerContactRequest(
+        prisonerContacts = nomisContacts.map { it.toDpsSyncPrisonerRelationship(offenderNo) },
+        prisonerNumber = offenderNo,
+      ),
+    )
+    replaceBookingDeletedMappings(
+      offenderNo = offenderNo,
+      mapping = ContactPersonPrisonerMappingsDto(
+        mappingType = ContactPersonPrisonerMappingsDto.MappingType.NOMIS_CREATED,
+        personContactMapping = dpsChangedResponse.relationshipsCreated.map { ContactPersonSimpleMappingIdDto(nomisId = it.relationship.nomisId, dpsId = "${it.relationship.dpsId}") },
+        personContactRestrictionMapping = dpsChangedResponse.relationshipsCreated.flatMap { it.restrictions.map { restriction -> ContactPersonSimpleMappingIdDto(nomisId = restriction.nomisId, dpsId = "${restriction.dpsId}") } },
+        personContactMappingsToRemoveByDpsId = dpsChangedResponse.relationshipsRemoved.map { "${it.prisonerContactId}" },
+        personContactRestrictionMappingsToRemoveByDpsId = dpsChangedResponse.relationshipsRemoved.flatMap { contact -> contact.prisonerContactRestrictionIds.map { "$it" } },
+      ),
+      telemetry = telemetry,
+    )
+  }
 
   private suspend fun tryToCreateMapping(
     mapping: PersonMappingDto,
@@ -1255,6 +1284,18 @@ class ContactPersonSynchronisationService(
       telemetry,
     )
   }
+  private suspend fun replaceBookingDeletedMappings(
+    offenderNo: String,
+    mapping: ContactPersonPrisonerMappingsDto,
+    telemetry: Map<String, Any>,
+  ) {
+    mappingApiService.replaceMappingsForPrisoner(offenderNo, mapping)
+    telemetryClient.trackEvent(
+      "from-nomis-synch-contactperson-booking-deleted",
+      telemetry,
+    )
+  }
+
   private suspend fun tryToReplaceBookingMovedMappings(
     offenderNo: String,
     mapping: ContactPersonPrisonerMappingsDto,
