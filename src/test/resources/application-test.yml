@@ -157,7 +157,7 @@ hmpps.sqs:
     eventcourtsentencing:
       dlqMaxReceiveCount: 2
     eventpersonalrelationships:
-      dlqMaxReceiveCount: 1
+      dlqMaxReceiveCount: 2
     eventvisitbalance:
       dlqMaxReceiveCount: 1
     eventexternalmovements:

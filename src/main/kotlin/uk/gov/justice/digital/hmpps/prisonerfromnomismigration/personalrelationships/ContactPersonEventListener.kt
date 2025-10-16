@@ -77,6 +77,7 @@ class ContactPersonEventListener(
               "PERSON_IDENTIFIERS-INSERTED" -> service.personIdentifierAdded(sqsMessage.Message.fromJson())
               "PERSON_IDENTIFIERS-UPDATED" -> service.personIdentifierUpdated(sqsMessage.Message.fromJson())
               "PERSON_IDENTIFIERS-DELETED" -> service.personIdentifierDeleted(sqsMessage.Message.fromJson())
+              "BOOKING-DELETED" -> service.resetPrisonerContactsForBookingDeleted(sqsMessage.Message.fromJson())
               "OFFENDER_PHYSICAL_DETAILS-CHANGED" -> profileDetailService.profileDetailsChanged(sqsMessage.Message.fromJson())
               "RESTRICTION-UPSERTED" -> prisonerRestrictionSynchronisationService.prisonerRestrictionUpserted(sqsMessage.Message.fromJson())
               "RESTRICTION-DELETED" -> prisonerRestrictionSynchronisationService.prisonerRestrictionDeleted(sqsMessage.Message.fromJson())
