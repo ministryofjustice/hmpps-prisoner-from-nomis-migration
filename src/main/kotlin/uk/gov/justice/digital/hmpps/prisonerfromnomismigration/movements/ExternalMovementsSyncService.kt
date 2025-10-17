@@ -603,12 +603,16 @@ private fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null) = S
   eventStatus = eventStatus,
   startTime = startTime,
   returnTime = returnTime,
-  toAddressOwnerClass = toAddressOwnerClass,
-  toAddressId = toAddressId,
+//  toAddressOwnerClass = toAddressOwnerClass,
+//  toAddressId = toAddressId,
   contactPersonName = contactPersonName,
   escort = escort ?: DEFAULT_ESCORT_CODE,
   transportType = transportType ?: DEFAULT_TRANSPORT_TYPE,
   comment = comment,
+  location = TapLocation(
+    id = toAddressId.toString(),
+    typeCode = toAddressOwnerClass,
+  ),
   audit = audit.toDpsRequest(),
 )
 
