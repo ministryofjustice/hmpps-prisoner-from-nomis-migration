@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-10-14.159.e3f96e8"
+    "version" : "2025-10-16.173.709a98c"
   },
   "servers" : [ {
     "url" : "https://external-movements-api-dev.hmpps.service.justice.gov.uk",
@@ -285,41 +285,6 @@
         }
       }
     },
-    "/search/locations/{typeCode}" : {
-      "get" : {
-        "tags" : [ "location-controller" ],
-        "description" : "\n\nRequires one of the following roles:\n* ROLE_EXTERNAL_MOVEMENTS__EXTERNAL_MOVEMENTS_UI",
-        "operationId" : "findLocations",
-        "parameters" : [ {
-          "name" : "typeCode",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "enum" : [ "CORP", "OFF", "AGY", "OTHER" ]
-          }
-        }, {
-          "name" : "request",
-          "in" : "query",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/LocationSearchRequest"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/LocationSearchResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/reference-data/{domain}" : {
       "get" : {
         "tags" : [ "reference-data-controller" ],
@@ -332,7 +297,7 @@
           "required" : true,
           "schema" : {
             "type" : "string",
-            "enum" : [ "absence-reason", "absence-reason-category", "absence-sub-type", "absence-type", "accompanied-by", "location-type", "tap-authorisation-status", "tap-occurrence-status", "transport" ]
+            "enum" : [ "absence-reason", "absence-reason-category", "absence-sub-type", "absence-type", "accompanied-by", "tap-authorisation-status", "tap-occurrence-status", "transport" ]
           }
         } ],
         "responses" : {
@@ -369,41 +334,6 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PrisonExternalMovementOverview"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/locations/{typeCode}/{id}" : {
-      "get" : {
-        "tags" : [ "location-controller" ],
-        "description" : "\n\nRequires one of the following roles:\n* ROLE_EXTERNAL_MOVEMENTS__EXTERNAL_MOVEMENTS_UI",
-        "operationId" : "findLocationById",
-        "parameters" : [ {
-          "name" : "typeCode",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "enum" : [ "CORP", "OFF", "AGY", "OTHER" ]
-          }
-        }, {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/Location"
                 }
               }
             }
@@ -680,12 +610,8 @@
             "type" : "string",
             "format" : "date-time"
           },
-          "toAddressOwnerClass" : {
-            "type" : "string"
-          },
-          "toAddressId" : {
-            "type" : "integer",
-            "format" : "int64"
+          "location" : {
+            "$ref" : "#/components/schemas/TapLocation"
           },
           "contactPersonName" : {
             "type" : "string"
@@ -704,7 +630,7 @@
             "description" : "Audit data associated with the records"
           }
         },
-        "required" : [ "audit", "eventId", "eventStatus", "returnTime", "startTime" ]
+        "required" : [ "audit", "eventId", "eventStatus", "location", "returnTime", "startTime" ]
       },
       "CreateTapAuthorisationRequest" : {
         "type" : "object",
@@ -745,6 +671,9 @@
           "toDate" : {
             "type" : "string",
             "format" : "date"
+          },
+          "schedule" : {
+            "$ref" : "#/components/schemas/JsonNode"
           }
         },
         "required" : [ "absenceTypeCode", "fromDate", "occurrences", "repeat", "statusCode", "submittedAt", "toDate" ]
@@ -766,17 +695,35 @@
           "transportCode" : {
             "type" : "string"
           },
-          "locationTypeCode" : {
-            "type" : "string"
+          "location" : {
+            "$ref" : "#/components/schemas/Location"
           },
-          "locationId" : {
+          "contactInformation" : {
             "type" : "string"
           },
           "notes" : {
             "type" : "string"
+          },
+          "scheduleReference" : {
+            "$ref" : "#/components/schemas/JsonNode"
           }
         },
-        "required" : [ "accompaniedByCode", "locationId", "locationTypeCode", "releaseAt", "returnBy", "transportCode" ]
+        "required" : [ "accompaniedByCode", "location", "releaseAt", "returnBy", "transportCode" ]
+      },
+      "JsonNode" : { },
+      "Location" : {
+        "type" : "object",
+        "properties" : {
+          "description" : {
+            "type" : "string"
+          },
+          "address" : {
+            "$ref" : "#/components/schemas/Address"
+          },
+          "id" : {
+            "type" : "string"
+          }
+        }
       },
       "ReferenceId" : {
         "type" : "object",
@@ -844,73 +791,6 @@
         },
         "required" : [ "code", "description" ]
       },
-      "ContactInformation" : {
-        "type" : "object",
-        "properties" : {
-          "names" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            },
-            "uniqueItems" : true
-          },
-          "phones" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/Phone"
-            }
-          },
-          "emails" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/EmailAddress"
-            }
-          },
-          "webAddresses" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/WebAddress"
-            }
-          }
-        },
-        "required" : [ "emails", "names", "phones", "webAddresses" ]
-      },
-      "EmailAddress" : {
-        "type" : "object",
-        "properties" : {
-          "email" : {
-            "type" : "string"
-          },
-          "isAddressSpecific" : {
-            "type" : "boolean"
-          }
-        },
-        "required" : [ "email", "isAddressSpecific" ]
-      },
-      "Location" : {
-        "type" : "object",
-        "properties" : {
-          "type" : {
-            "$ref" : "#/components/schemas/CodedDescription"
-          },
-          "description" : {
-            "type" : "string"
-          },
-          "isActive" : {
-            "type" : "boolean"
-          },
-          "address" : {
-            "$ref" : "#/components/schemas/Address"
-          },
-          "contactInformation" : {
-            "$ref" : "#/components/schemas/ContactInformation"
-          },
-          "id" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "description", "isActive", "type" ]
-      },
       "Person" : {
         "type" : "object",
         "properties" : {
@@ -932,24 +812,6 @@
           }
         },
         "required" : [ "dateOfBirth", "firstName", "lastName", "personIdentifier" ]
-      },
-      "Phone" : {
-        "type" : "object",
-        "properties" : {
-          "type" : {
-            "type" : "string"
-          },
-          "number" : {
-            "type" : "string"
-          },
-          "extension" : {
-            "type" : "string"
-          },
-          "isAddressSpecific" : {
-            "type" : "boolean"
-          }
-        },
-        "required" : [ "isAddressSpecific", "number", "type" ]
       },
       "TapOccurrence" : {
         "type" : "object",
@@ -983,21 +845,15 @@
           },
           "cancelled" : {
             "$ref" : "#/components/schemas/AtAndBy"
+          },
+          "contactInformation" : {
+            "type" : "string"
+          },
+          "scheduleReference" : {
+            "$ref" : "#/components/schemas/JsonNode"
           }
         },
         "required" : [ "accompaniedBy", "added", "authorisation", "id", "location", "releaseAt", "returnBy", "transport" ]
-      },
-      "WebAddress" : {
-        "type" : "object",
-        "properties" : {
-          "web" : {
-            "type" : "string"
-          },
-          "isAddressSpecific" : {
-            "type" : "boolean"
-          }
-        },
-        "required" : [ "isAddressSpecific", "web" ]
       },
       "Occurrence" : {
         "type" : "object",
@@ -1073,6 +929,9 @@
           },
           "approved" : {
             "$ref" : "#/components/schemas/AtAndBy"
+          },
+          "schedule" : {
+            "$ref" : "#/components/schemas/JsonNode"
           }
         },
         "required" : [ "fromDate", "id", "occurrences", "person", "repeat", "status", "submitted", "toDate" ]
@@ -1301,77 +1160,6 @@
         },
         "required" : [ "content", "metadata" ]
       },
-      "LocationSearchRequest" : {
-        "type" : "object",
-        "properties" : {
-          "query" : {
-            "type" : "string",
-            "minLength" : 1
-          },
-          "page" : {
-            "type" : "integer",
-            "format" : "int32",
-            "minimum" : 1
-          },
-          "size" : {
-            "type" : "integer",
-            "format" : "int32",
-            "minimum" : 1
-          },
-          "sort" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "page", "query", "size", "sort" ]
-      },
-      "LocationResult" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string"
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "premise" : {
-            "type" : "string"
-          },
-          "street" : {
-            "type" : "string"
-          },
-          "area" : {
-            "type" : "string"
-          },
-          "city" : {
-            "type" : "string"
-          },
-          "county" : {
-            "type" : "string"
-          },
-          "country" : {
-            "type" : "string"
-          },
-          "postcode" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "id" ]
-      },
-      "LocationSearchResponse" : {
-        "type" : "object",
-        "properties" : {
-          "content" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/LocationResult"
-            }
-          },
-          "metadata" : {
-            "$ref" : "#/components/schemas/PageMetadata"
-          }
-        },
-        "required" : [ "content", "metadata" ]
-      },
       "ReferenceDataResponse" : {
         "type" : "object",
         "properties" : {
@@ -1453,7 +1241,7 @@
           },
           "nextDomain" : {
             "type" : "string",
-            "enum" : [ "ABSENCE_TYPE", "ABSENCE_SUB_TYPE", "ABSENCE_REASON_CATEGORY", "ABSENCE_REASON", "ACCOMPANIED_BY", "TRANSPORT", "TAP_AUTHORISATION_STATUS", "TAP_OCCURRENCE_STATUS", "LOCATION_TYPE" ]
+            "enum" : [ "ABSENCE_TYPE", "ABSENCE_SUB_TYPE", "ABSENCE_REASON_CATEGORY", "ABSENCE_REASON", "ACCOMPANIED_BY", "TRANSPORT", "TAP_AUTHORISATION_STATUS", "TAP_OCCURRENCE_STATUS" ]
           }
         },
         "required" : [ "code", "description" ]
