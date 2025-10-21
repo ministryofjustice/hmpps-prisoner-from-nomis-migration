@@ -106,4 +106,4 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
 
-fun prisonerDetails(): PrisonerDetails = PrisonerDetails(offenderNo = "A1234KT", bookingId = 1234, location = "MDI", active = true)
+fun prisonerDetails(): PrisonerDetails = PrisonerDetails(offenderNo = "A1234KT", offenderId = 5678, bookingId = 1234, location = "MDI", active = true)
