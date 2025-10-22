@@ -134,6 +134,14 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONEXTERNALMOVEMENTS_QUEUE_NAME: "sqs_name"
     sqs-migration-externalmovements-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONEXTERNALMOVEMENTS_DLQ_NAME: "sqs_name"
+    sqs-migration-officialvisits-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONOFFICIALVISITS_QUEUE_NAME: "sqs_name"
+    sqs-migration-officialvisits-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONOFFICIALVISITS_DLQ_NAME: "sqs_name"
+    sqs-migration-visitslots-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONVISITSLOTS_QUEUE_NAME: "sqs_name"
+    sqs-migration-visitslots-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONVISITSLOTS_DLQ_NAME: "sqs_name"
     prison-events-visits-queue:
       HMPPS_SQS_QUEUES_EVENTVISITS_QUEUE_NAME: "sqs_name"
     prison-events-visits-dl-queue:
@@ -194,6 +202,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTEXTERNALMOVEMENTS_QUEUE_NAME: "sqs_name"
     prison-events-externalmovements-dl-queue:
       HMPPS_SQS_QUEUES_EVENTEXTERNALMOVEMENTS_DLQ_NAME: "sqs_name"
+    prison-events-officialvisits-queue:
+      HMPPS_SQS_QUEUES_EVENTOFFICIALVISITS_QUEUE_NAME: "sqs_name"
+    prison-events-officialvisits-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTOFFICIALVISITS_DLQ_NAME: "sqs_name"
     rds-database:
       SPRING_FLYWAY_USER: "database_username"
       SPRING_FLYWAY_PASSWORD: "database_password"

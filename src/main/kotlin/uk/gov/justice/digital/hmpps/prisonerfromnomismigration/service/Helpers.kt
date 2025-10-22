@@ -30,6 +30,8 @@ const val PRISON_BALANCE_QUEUE_ID = "migrationprisonbalance"
 const val PRISONER_BALANCE_QUEUE_ID = "migrationprisonerbalance"
 const val SENTENCING_ADJUSTMENTS_QUEUE_ID = "migrationsentencing"
 const val VISITS_QUEUE_ID = "migrationvisits"
+const val OFFICIAL_VISITS_QUEUE_ID = "migrationofficialvisits"
+const val VISIT_SLOTS_QUEUE_ID = "migrationvisitslots"
 const val VISIT_BALANCE_QUEUE_ID = "migrationvisitbalance"
 
 const val VISITS_SYNC_QUEUE_ID = "eventvisits"
@@ -47,6 +49,7 @@ const val ORGANISATIONS_SYNC_QUEUE_ID = "eventorganisations"
 const val FINANCE_SYNC_QUEUE_ID = "eventfinance"
 const val VISIT_BALANCE_SYNC_QUEUE_ID = "eventvisitbalance"
 const val EXTERNALMOVEMENTS_SYNC_QUEUE_ID = "eventexternalmovements"
+const val OFFICIAL_VISITS_SYNC_QUEUE_ID = "eventofficialvisits"
 
 enum class MigrationType(val queueId: String, val telemetryName: String) {
   ACTIVITIES(ACTIVITIES_QUEUE_ID, "activity"),
@@ -64,6 +67,8 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_QUEUE_ID, "sentencing-adjustments"),
   VISIT_BALANCE(VISIT_BALANCE_QUEUE_ID, "visitbalance"),
   VISITS(VISITS_QUEUE_ID, "visits"),
+  OFFICIAL_VISITS(OFFICIAL_VISITS_QUEUE_ID, "officialvisits"),
+  VISIT_SLOTS(VISIT_SLOTS_QUEUE_ID, "visitslots"),
 }
 
 enum class SynchronisationType(val queueId: String) {

@@ -151,3 +151,10 @@ generic-prometheus-alerts:
     externalmovements:
       - "syscon-devs-prod-prisoner_from_nomis_externalmovements_queue"
       - "syscon-devs-prod-prisoner_from_nomis_externalmovements_dl_queue"
+    officialvisits:
+      - "syscon-devs-prod-migration_visitslots_queue"
+      - "syscon-devs-prod-migration_visitslots_dlq"
+      - "syscon-devs-prod-migration_officialvisits_queue"
+      - "syscon-devs-prod-migration_officialvisits_dlq"
+      - "syscon-devs-prod-prisoner_from_nomis_officialvisits_queue"
+      - "syscon-devs-prod-prisoner_from_nomis_officialvisits_dl_queue"
