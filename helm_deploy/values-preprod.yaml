@@ -137,6 +137,13 @@ generic-prometheus-alerts:
     externalmovements:
       - "syscon-devs-preprod-prisoner_from_nomis_externalmovements_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_externalmovements_dl_queue"
+    officialvisits:
+      - "syscon-devs-preprod-migration_visitslots_queue"
+      - "syscon-devs-preprod-migration_visitslots_dlq"
+      - "syscon-devs-preprod-migration_officialvisits_queue"
+      - "syscon-devs-preprod-migration_officialvisits_dlq"
+      - "syscon-devs-preprod-prisoner_from_nomis_officialvisits_queue"
+      - "syscon-devs-preprod-prisoner_from_nomis_officialvisits_dl_queue"
 
 cron:
   retry_dlqs_schedule: "*/10 7-20 * * 1-5"

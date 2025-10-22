@@ -49,5 +49,7 @@ class GeneralMappingService(
     MigrationType.SENTENCING_ADJUSTMENTS -> 0
     MigrationType.VISIT_BALANCE -> visitBalanceMappingApiService.getMigrationCount(migrationId)
     MigrationType.EXTERNAL_MOVEMENTS -> externalMovementsMappingApiService.getMigrationCount(migrationId)
+    MigrationType.OFFICIAL_VISITS -> TODO()
+    MigrationType.VISIT_SLOTS -> TODO()
   }
 }

@@ -166,3 +166,9 @@ hmpps.sqs:
       dlqMaxReceiveCount: 1
     migrationpersonalrelationshipsprofiledetails:
       dlqMaxReceiveCount: 1
+    eventofficialvisits:
+      dlqMaxReceiveCount: 2
+    migrationofficialvisits:
+      dlqMaxReceiveCount: 2
+    migrationvisitslots:
+      dlqMaxReceiveCount: 2

@@ -95,3 +95,12 @@ hmpps.sqs:
     eventexternalmovements:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventofficialvisits:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
+    migrationofficialvisits:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
+    migrationvisitslots:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
