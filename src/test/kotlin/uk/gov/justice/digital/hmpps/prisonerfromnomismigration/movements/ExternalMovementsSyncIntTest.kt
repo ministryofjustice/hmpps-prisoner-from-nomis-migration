@@ -197,7 +197,7 @@ class ExternalMovementsSyncIntTest(
         dpsApi.stubSyncTapApplicationError()
 
         sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-INSERTED"))
-          .also { waitForAnyProcessingToComplete() }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-application-inserted-error") }
       }
 
       @Test
@@ -465,7 +465,7 @@ class ExternalMovementsSyncIntTest(
         dpsApi.stubSyncTapApplicationError()
 
         sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-UPDATED"))
-          .also { waitForAnyProcessingToComplete() }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-application-updated-error") }
       }
 
       @Test
@@ -764,7 +764,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
 
         sendMessage(externalMovementApplicationMultiEvent("MOVEMENT_APPLICATION_MULTI-INSERTED"))
-          .also { waitForAnyProcessingToComplete() }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-outside-movement-inserted-error") }
       }
 
       @Test
@@ -1427,7 +1427,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
 
         sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED"))
-          .also { waitForAnyProcessingToComplete() }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-inserted-error") }
       }
 
       @Test
@@ -1714,7 +1714,7 @@ class ExternalMovementsSyncIntTest(
         dpsApi.stubSyncScheduledTemporaryAbsenceError(parentId = dpsApplicationId, status = 500)
 
         sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-UPDATED"))
-          .also { waitForAnyProcessingToComplete() }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-updated-error") }
       }
 
       @Test
@@ -2113,7 +2113,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetScheduledMovementMapping(45678)
 
         sendMessage(externalMovementEvent(inserted = true, direction = "OUT"))
-          .also { waitForAnyProcessingToComplete() }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-error") }
       }
 
       @Test
@@ -2159,7 +2159,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
 
         sendMessage(externalMovementEvent(inserted = true, direction = "OUT"))
-          .also { waitForAnyProcessingToComplete() }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-error") }
       }
 
       @Test
@@ -2205,7 +2205,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetScheduledMovementMapping(45678)
 
         sendMessage(externalMovementEvent(inserted = true, direction = "IN"))
-          .also { waitForAnyProcessingToComplete() }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-error") }
       }
 
       @Test
@@ -2251,7 +2251,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetScheduledMovementMapping(23456, NOT_FOUND)
 
         sendMessage(externalMovementEvent(inserted = true, direction = "IN"))
-          .also { waitForAnyProcessingToComplete() }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-error") }
       }
 
       @Test
