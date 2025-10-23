@@ -24,12 +24,12 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.eq
 import org.mockito.internal.verification.Times
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.verifyNoInteractions
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -682,7 +682,11 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will not create telemetry tracking the deletion`() {
           await untilAsserted {
-            verifyNoInteractions(telemetryClient)
+            verify(telemetryClient, times(0)).trackEvent(
+              eq("locations-deleted-synchronisation-success"),
+              any(),
+              anyOrNull(),
+            )
           }
         }
       }

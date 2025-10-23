@@ -224,7 +224,7 @@ class IncidentsSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will not create telemetry tracking`() {
-          verify(telemetryClient, Times(0)).trackEvent(any(), any(), isNull())
+          verify(telemetryClient, Times(0)).trackEvent(eq("incidents-synchronisation-created-success"), any(), isNull())
         }
       }
 
