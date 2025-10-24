@@ -1,0 +1,603 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "Official Visits API",
+    "description" : "API for managing official visits",
+    "contact" : {
+      "name" : "HMPPS Digital Studio",
+      "email" : "feedback@digital.justice.gov.uk"
+    },
+    "version" : "2025-10-23.42.3c7790c"
+  },
+  "servers" : [ {
+    "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
+    "description" : "Development"
+  }, {
+    "url" : "https://official-visits-api-preprod.hmpps.service.justice.gov.uk",
+    "description" : "Pre-Production"
+  }, {
+    "url" : "https://official-visits-api.hmpps.service.justice.gov.uk",
+    "description" : "Production"
+  }, {
+    "url" : "/",
+    "description" : "Local"
+  } ],
+  "security" : [ {
+    "bearer-jwt" : [ "read", "write" ]
+  } ],
+  "paths" : {
+    "/queue-admin/retry-dlq/{dlqName}" : {
+      "put" : {
+        "tags" : [ "hmpps-queue-resource" ],
+        "description" : "\n\nRequires one of the following roles:\n* OFFICIAL_VISITS_ADMIN",
+        "operationId" : "retryDlq",
+        "parameters" : [ {
+          "name" : "dlqName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RetryDlqResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue-admin/retry-all-dlqs" : {
+      "put" : {
+        "tags" : [ "hmpps-queue-resource" ],
+        "operationId" : "retryAllDlqs",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/RetryDlqResult"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue-admin/purge-queue/{queueName}" : {
+      "put" : {
+        "tags" : [ "hmpps-queue-resource" ],
+        "description" : "\n\nRequires one of the following roles:\n* OFFICIAL_VISITS_ADMIN",
+        "operationId" : "purgeQueue",
+        "parameters" : [ {
+          "name" : "queueName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PurgeQueueResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/migrate/visit-configuration" : {
+      "post" : {
+        "tags" : [ "Migration" ],
+        "summary" : "Migrate official visits configuration",
+        "description" : "Migrate a visit time slot and its associated visit slots, locations and capacity limits\n\nRequires one of the following roles:\n* OFFICIAL_VISITS_MIGRATION\n* OFFICIAL_VISITS_ADMIN",
+        "operationId" : "migrateVisitConfiguration",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MigrateVisitConfigRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "The time slot and associated visit slots was migrated successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MigrateVisitConfigResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "The request failed validation with invalid or missing data",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reference-data/group/{groupCode}" : {
+      "get" : {
+        "tags" : [ "Reference data" ],
+        "summary" : "Endpoint to return reference data for a provided group key, sorted by display sequence and description",
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_OFFICIAL_VISITS_ADMIN\n* ROLE_OFFICIAL_VISITS__R\n* ROLE_OFFICIAL_VISITS__RW",
+        "operationId" : "getReferenceDataByGroup",
+        "parameters" : [ {
+          "name" : "groupCode",
+          "in" : "path",
+          "description" : "The group code of the reference codes to load",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/ReferenceDataGroup"
+          },
+          "example" : "VIS_STS"
+        }, {
+          "name" : "activeOnly",
+          "in" : "query",
+          "description" : "Whether to only return active codes or not, defaults to true",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : true
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "List of reference data codes/values",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ReferenceDataItem"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue-admin/get-dlq-messages/{dlqName}" : {
+      "get" : {
+        "tags" : [ "hmpps-queue-resource" ],
+        "description" : "\n\nRequires one of the following roles:\n* OFFICIAL_VISITS_ADMIN",
+        "operationId" : "getDlqMessages",
+        "parameters" : [ {
+          "name" : "dlqName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "maxMessages",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 100
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GetDlqResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "RetryDlqResult" : {
+        "type" : "object",
+        "properties" : {
+          "messagesFoundCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "messagesFoundCount" ]
+      },
+      "PurgeQueueResult" : {
+        "type" : "object",
+        "properties" : {
+          "messagesFoundCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "messagesFoundCount" ]
+      },
+      "MigrateVisitConfigRequest" : {
+        "type" : "object",
+        "description" : "Request to migrate a day and time slot for a prison and its associated visit slots from NOMIS",
+        "properties" : {
+          "prisonCode" : {
+            "type" : "string",
+            "description" : "The 3-letter agy_loc_id from NOMIS where this visit time slot exists",
+            "example" : "MDI"
+          },
+          "dayCode" : {
+            "type" : "string",
+            "description" : "The 3-letter day of the week code where this slot falls in this prison.",
+            "example" : "TUE"
+          },
+          "timeSlotSeq" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The time slot sequence in NOMIS. This is used to build a response object for cross-reference",
+            "example" : 1
+          },
+          "startTime" : {
+            "type" : "string",
+            "description" : "The start time for this visit time slot",
+            "example" : "13:30"
+          },
+          "endTime" : {
+            "type" : "string",
+            "description" : "The end time for this visit time slot",
+            "example" : "14:30"
+          },
+          "effectiveDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The date from which this row will be effective",
+            "example" : "1980-01-01"
+          },
+          "expiryDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The date from which this row will no longer be effective",
+            "example" : "1980-01-01"
+          },
+          "visitSlots" : {
+            "type" : "array",
+            "description" : "The list of visit slots which are linked to this time slot",
+            "items" : {
+              "$ref" : "#/components/schemas/MigrateVisitSlot"
+            }
+          },
+          "createDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The data and time the record was created",
+            "example" : "2022-10-01T16:45:45"
+          },
+          "createUsername" : {
+            "type" : "string",
+            "description" : "The username who created the record",
+            "example" : "X999X"
+          },
+          "modifyDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date and time the record was last amended",
+            "example" : "2022-10-01T16:45:45"
+          },
+          "modifyUsername" : {
+            "type" : "string",
+            "description" : "The username who last modified the record",
+            "example" : "X999X"
+          }
+        },
+        "required" : [ "dayCode", "effectiveDate", "endTime", "prisonCode", "startTime", "timeSlotSeq", "visitSlots" ]
+      },
+      "MigrateVisitSlot" : {
+        "type" : "object",
+        "properties" : {
+          "agencyVisitSlotId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Unique ID for this visit slot in NOMIS. For building a response to cross-reference with a DPS visit slot.",
+            "example" : 1
+          },
+          "internalLocationId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The internal location ID from NOMIS. Information only",
+            "example" : 1090909
+          },
+          "locationKey" : {
+            "type" : "string",
+            "description" : "The internal location ID from NOMIS. Information only",
+            "example" : "MDI-OFFICIAL_VISITS"
+          },
+          "dpsLocationId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The DPS location ID (mapped from the NOMIS internal location ID)",
+            "example" : "9485cf4a-750b-4d74-b594-59bacbcda247"
+          },
+          "maxGroups" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The maximum number of groups that can be booked into this visit slot. Effectively, the max visits limit for the slot.",
+            "example" : 8,
+            "maximum" : 200,
+            "minimum" : 0
+          },
+          "maxAdults" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The maximum number of adults who can be booked into this visits slot.",
+            "example" : 22,
+            "maximum" : 400,
+            "minimum" : 0
+          },
+          "maxVideoSessions" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The maximum number of video sessions that can be booked into this visits slot.",
+            "example" : 8,
+            "maximum" : 200,
+            "minimum" : 0
+          },
+          "createDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The data and time the record was created",
+            "example" : "2022-10-01T16:45:45"
+          },
+          "createUsername" : {
+            "type" : "string",
+            "description" : "The username who created the record",
+            "example" : "X999X"
+          },
+          "modifyDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date and time the record was last amended",
+            "example" : "2022-10-01T16:45:45"
+          },
+          "modifyUsername" : {
+            "type" : "string",
+            "description" : "The username who last modified the record",
+            "example" : "X999X"
+          }
+        },
+        "required" : [ "agencyVisitSlotId", "dpsLocationId", "maxAdults", "maxGroups" ]
+      },
+      "IdPair" : {
+        "type" : "object",
+        "properties" : {
+          "elementType" : {
+            "type" : "string",
+            "description" : "The category of information returned",
+            "enum" : [ "PRISON_VISIT_SLOT" ],
+            "example" : "PRISON_VISIT_SLOT"
+          },
+          "nomisId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The unique ID for this data item provided in the request",
+            "example" : 123435
+          },
+          "dpsId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The unique ID created in the DPS official visits service",
+            "example" : 1234
+          }
+        },
+        "required" : [ "dpsId", "elementType", "nomisId" ]
+      },
+      "MigrateVisitConfigResponse" : {
+        "type" : "object",
+        "description" : "The migration response for an official visit time slot and its visit slots",
+        "properties" : {
+          "prisonCode" : {
+            "type" : "string",
+            "description" : "The 3-letter agy_loc_id from NOMIS where this time slot exists",
+            "example" : "MDI"
+          },
+          "dayCode" : {
+            "type" : "string",
+            "description" : "The 3-letter day of the week code where this slot exists in this prison.",
+            "example" : "TUE"
+          },
+          "timeSlotSeq" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The time slot sequence from NOMIS",
+            "example" : 1
+          },
+          "dpsTimeSlotId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The ID created in DPS for this prison time slot",
+            "example" : 123456
+          },
+          "visitSlots" : {
+            "type" : "array",
+            "description" : "List of NOMIS and DPS IDs for the visit slots created",
+            "items" : {
+              "$ref" : "#/components/schemas/IdPair"
+            }
+          }
+        },
+        "required" : [ "dayCode", "dpsTimeSlotId", "prisonCode", "timeSlotSeq", "visitSlots" ]
+      },
+      "ErrorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "errorCode" : {
+            "type" : "string"
+          },
+          "userMessage" : {
+            "type" : "string"
+          },
+          "developerMessage" : {
+            "type" : "string"
+          },
+          "moreInfo" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "status" ]
+      },
+      "ReferenceDataGroup" : {
+        "type" : "string",
+        "enum" : [ "DAY", "CONTACTS", "EQUIP_CATEGORY", "SEARCH_LEVEL", "TEST_TYPE", "VIS_COMPLETE", "VIS_LOC_TYPE", "VIS_STS", "VIS_TYPE_CODE" ]
+      },
+      "ReferenceDataItem" : {
+        "type" : "object",
+        "description" : "Describes the details of a reference code",
+        "properties" : {
+          "referenceDataId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "An internally-generated unique identifier for this reference code.",
+            "example" : 12345
+          },
+          "groupCode" : {
+            "$ref" : "#/components/schemas/ReferenceDataGroup",
+            "description" : "The group name for related reference codes.",
+            "example" : "VIS_STS"
+          },
+          "code" : {
+            "type" : "string",
+            "description" : "The code for this reference data",
+            "example" : "SCH"
+          },
+          "description" : {
+            "type" : "string",
+            "description" : "A fuller description of the reference code",
+            "example" : "Scheduled"
+          },
+          "displaySequence" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The default order configured for the reference code, lowest number first.",
+            "example" : 5
+          },
+          "enabled" : {
+            "type" : "boolean",
+            "description" : "Whether the reference code is still in use. Old reference codes are maintained for compatability with legacy data.",
+            "example" : true
+          }
+        },
+        "required" : [ "code", "description", "displaySequence", "enabled", "groupCode", "referenceDataId" ]
+      },
+      "DlqMessage" : {
+        "type" : "object",
+        "properties" : {
+          "body" : {
+            "type" : "object",
+            "additionalProperties" : { }
+          },
+          "messageId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "body", "messageId" ]
+      },
+      "GetDlqResult" : {
+        "type" : "object",
+        "properties" : {
+          "messagesFoundCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "messagesReturnedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "messages" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DlqMessage"
+            }
+          }
+        },
+        "required" : [ "messages", "messagesFoundCount", "messagesReturnedCount" ]
+      }
+    },
+    "securitySchemes" : {
+      "bearer-jwt" : {
+        "type" : "http",
+        "name" : "Authorization",
+        "in" : "header",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT"
+      }
+    }
+  }
+}
