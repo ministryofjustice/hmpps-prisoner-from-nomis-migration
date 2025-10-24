@@ -377,12 +377,7 @@ class ExternalMovementsNomisApiServiceTest {
           assertThat(toAddressId).isEqualTo(321)
           assertThat(toAddressOwnerClass).isEqualTo("OFF")
           assertThat(toAddressDescription).isEqualTo("Some description")
-          assertThat(toAddressHouse).isEqualTo("Flat 1  41")
-          assertThat(toAddressStreet).isEqualTo("High Street")
-          assertThat(toAddressLocality).isEqualTo("Hillsborough")
-          assertThat(toAddressCity).isEqualTo("Sheffield")
-          assertThat(toAddressCounty).isEqualTo("South Yorkshire")
-          assertThat(toAddressCountry).isEqualTo("England")
+          assertThat(toFullAddress).isEqualTo("full address")
           assertThat(audit.createUsername).isEqualTo("USER")
         }
     }

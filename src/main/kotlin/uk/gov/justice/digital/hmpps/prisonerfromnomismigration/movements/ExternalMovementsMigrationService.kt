@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import java.time.LocalDateTime
 import java.util.UUID
 
 @Service
@@ -162,21 +163,35 @@ class ExternalMovementsMigrationService(
 
   private fun ScheduledTemporaryAbsence.toMappingDto(): ScheduledMovementMappingDto = ScheduledMovementMappingDto(
     nomisEventId = this.eventId,
-    dpsScheduledMovementId = UUID.randomUUID(),
+    dpsOccurrenceId = UUID.randomUUID(),
+    0,
+    "",
+    "",
+    "${LocalDateTime.now()}",
   )
 
   private fun ScheduledTemporaryAbsenceReturn.toMappingDto(): ScheduledMovementMappingDto = ScheduledMovementMappingDto(
     nomisEventId = this.eventId,
-    dpsScheduledMovementId = UUID.randomUUID(),
+    dpsOccurrenceId = UUID.randomUUID(),
+    0,
+    "",
+    "",
+    "${LocalDateTime.now()}",
   )
 
   private fun TemporaryAbsence.toMappingDto(): ExternalMovementMappingDto = ExternalMovementMappingDto(
     nomisMovementSeq = this.sequence,
-    dpsExternalMovementId = UUID.randomUUID(),
+    dpsMovementId = UUID.randomUUID(),
+    "",
+    0,
+    "",
   )
 
   private fun TemporaryAbsenceReturn.toMappingDto(): ExternalMovementMappingDto = ExternalMovementMappingDto(
     nomisMovementSeq = this.sequence,
-    dpsExternalMovementId = UUID.randomUUID(),
+    dpsMovementId = UUID.randomUUID(),
+    "",
+    0,
+    "",
   )
 }

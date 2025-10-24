@@ -420,21 +420,35 @@ fun temporaryAbsencePrisonerMappings(prisonerNumber: String = "A1234BC") = Tempo
           schedules = listOf(
             ScheduledMovementMappingDto(
               nomisEventId = 1,
-              dpsScheduledMovementId = UUID.randomUUID(),
+              dpsOccurrenceId = UUID.randomUUID(),
+              0,
+              "",
+              "",
+              "",
             ),
             ScheduledMovementMappingDto(
               nomisEventId = 2,
-              dpsScheduledMovementId = UUID.randomUUID(),
+              dpsOccurrenceId = UUID.randomUUID(),
+              0,
+              "",
+              "",
+              "",
             ),
           ),
           movements = listOf(
             ExternalMovementMappingDto(
               nomisMovementSeq = 3,
-              dpsExternalMovementId = UUID.randomUUID(),
+              dpsMovementId = UUID.randomUUID(),
+              "",
+              0,
+              "",
             ),
             ExternalMovementMappingDto(
               nomisMovementSeq = 4,
-              dpsExternalMovementId = UUID.randomUUID(),
+              dpsMovementId = UUID.randomUUID(),
+              "",
+              0,
+              "",
             ),
           ),
         ),
@@ -442,11 +456,17 @@ fun temporaryAbsencePrisonerMappings(prisonerNumber: String = "A1234BC") = Tempo
       unscheduledMovements = listOf(
         ExternalMovementMappingDto(
           nomisMovementSeq = 1,
-          dpsExternalMovementId = UUID.randomUUID(),
+          dpsMovementId = UUID.randomUUID(),
+          "",
+          0,
+          "",
         ),
         ExternalMovementMappingDto(
           nomisMovementSeq = 2,
-          dpsExternalMovementId = UUID.randomUUID(),
+          dpsMovementId = UUID.randomUUID(),
+          "",
+          0,
+          "",
         ),
       ),
     ),
@@ -477,8 +497,12 @@ fun temporaryAbsenceScheduledMovementMapping(nomisEventId: Long = 1L, prisonerNu
   prisonerNumber = prisonerNumber,
   bookingId = 12345,
   nomisEventId = nomisEventId,
-  dpsScheduledMovementId = dpsScheduledMovementId,
+  dpsOccurrenceId = dpsScheduledMovementId,
   mappingType = ScheduledMovementSyncMappingDto.MappingType.MIGRATED,
+  0,
+  "",
+  "",
+  "",
 )
 
 fun temporaryAbsenceExternalMovementMapping(
@@ -490,6 +514,9 @@ fun temporaryAbsenceExternalMovementMapping(
   prisonerNumber = prisonerNumber,
   bookingId = bookingId,
   nomisMovementSeq = movementSeq,
-  dpsExternalMovementId = dpsExternalMovementId,
+  dpsMovementId = dpsExternalMovementId,
   mappingType = ExternalMovementSyncMappingDto.MappingType.MIGRATED,
+  "",
+  0,
+  "",
 )

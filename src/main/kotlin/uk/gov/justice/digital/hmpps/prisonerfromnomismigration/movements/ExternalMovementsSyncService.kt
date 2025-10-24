@@ -159,7 +159,7 @@ class ExternalMovementsSyncService(
     ?: throw ParentEntityNotFoundRetry("Scheduled event ID $nomisEventId not created yet so children cannot be processed")
 
   private suspend fun getParentScheduledId(nomisEventId: Long): UUID? = mappingApiService.getScheduledMovementMapping(nomisEventId)
-    ?.dpsScheduledMovementId
+    ?.dpsOccurrenceId
 
   suspend fun outsideMovementUpdated(event: MovementApplicationMultiEvent) {
     val (nomisApplicationMultiId, nomisApplicationId, bookingId, prisonerNumber) = event
@@ -225,7 +225,7 @@ class ExternalMovementsSyncService(
         track("$TELEMETRY_PREFIX-scheduled-movement-inserted", telemetry) {
           val dpsScheduledMovementId = scheduledMovementTapOutInserted(prisonerNumber, eventId, telemetry)
             .also { telemetry["dpsScheduledMovementId"] = it }
-          val mapping = ScheduledMovementSyncMappingDto(prisonerNumber, bookingId, eventId, dpsScheduledMovementId, SCHEDULED_MOVEMENT_NOMIS_CREATED)
+          val mapping = ScheduledMovementSyncMappingDto(prisonerNumber, bookingId, eventId, dpsScheduledMovementId, SCHEDULED_MOVEMENT_NOMIS_CREATED, 0, "", "", "")
           tryToCreateScheduledMovementMapping(mapping, telemetry)
         }
       }
@@ -259,7 +259,7 @@ class ExternalMovementsSyncService(
     }
 
     track("$TELEMETRY_PREFIX-scheduled-movement-updated", telemetry) {
-      val dpsScheduledMovementId = mappingApiService.getScheduledMovementMapping(eventId)!!.dpsScheduledMovementId
+      val dpsScheduledMovementId = mappingApiService.getScheduledMovementMapping(eventId)!!.dpsOccurrenceId
         .also { telemetry["dpsScheduledMovementId"] = it }
       scheduledMovementTapOutUpdated(dpsScheduledMovementId, prisonerNumber, eventId, telemetry)
     }
@@ -287,7 +287,7 @@ class ExternalMovementsSyncService(
     )
     mappingApiService.getScheduledMovementMapping(eventId)?.also {
       track("$TELEMETRY_PREFIX-scheduled-movement-deleted", telemetry) {
-        telemetry["dpsScheduledMovementId"] = it.dpsScheduledMovementId
+        telemetry["dpsScheduledMovementId"] = it.dpsOccurrenceId
         mappingApiService.deleteScheduledMovementMapping(eventId)
         // TODO delete in DPS
       }
@@ -364,11 +364,11 @@ class ExternalMovementsSyncService(
               "existingOffenderNo" to existing.prisonerNumber,
               "existingBookingId" to existing.bookingId,
               "existingNomisEventId" to existing.nomisEventId,
-              "existingDpsScheduledMovementId" to existing.dpsScheduledMovementId,
+              "existingDpsScheduledMovementId" to existing.dpsOccurrenceId,
               "duplicateOffenderNo" to duplicate.prisonerNumber,
               "duplicateBookingId" to duplicate.bookingId,
               "duplicateNomisEventId" to duplicate.nomisEventId,
-              "duplicateDpsScheduledMovementId" to duplicate.dpsScheduledMovementId,
+              "duplicateDpsScheduledMovementId" to duplicate.dpsOccurrenceId,
             ),
           )
         }
@@ -440,7 +440,7 @@ class ExternalMovementsSyncService(
 
     mappingApiService.getExternalMovementMapping(bookingId, movementSeq)
       ?.also {
-        telemetry["dpsExternalMovementId"] = it.dpsExternalMovementId
+        telemetry["dpsExternalMovementId"] = it.dpsMovementId
         telemetryClient.trackEvent("$TELEMETRY_PREFIX-external-movement-inserted-ignored", telemetry)
       }
       ?: run {
@@ -451,7 +451,7 @@ class ExternalMovementsSyncService(
           }
             .also { telemetry["dpsExternalMovementId"] = it }
           tryToCreateExternalMovementMapping(
-            ExternalMovementSyncMappingDto(prisonerNumber, bookingId, movementSeq, dpsExternalMovementId, ExternalMovementSyncMappingDto.MappingType.NOMIS_CREATED),
+            ExternalMovementSyncMappingDto(prisonerNumber, bookingId, movementSeq, dpsExternalMovementId, ExternalMovementSyncMappingDto.MappingType.NOMIS_CREATED, "", 0, ""),
             telemetry,
           )
         }
@@ -508,7 +508,7 @@ class ExternalMovementsSyncService(
     }
 
     track("$TELEMETRY_PREFIX-external-movement-updated", telemetry) {
-      val dpsExternalMovementId = mappingApiService.getExternalMovementMapping(bookingId, movementSeq)!!.dpsExternalMovementId
+      val dpsExternalMovementId = mappingApiService.getExternalMovementMapping(bookingId, movementSeq)!!.dpsMovementId
         .also { telemetry["dpsExternalMovementId"] = it }
       when (directionCode) {
         DirectionCode.OUT -> externalMovementTapOutUpserted(prisonerNumber, bookingId, movementSeq, telemetry, dpsExternalMovementId)
@@ -527,7 +527,7 @@ class ExternalMovementsSyncService(
     )
     mappingApiService.getExternalMovementMapping(bookingId, movementSeq)?.also {
       track("$TELEMETRY_PREFIX-external-movement-deleted", telemetry) {
-        telemetry["dpsExternalMovementId"] = it.dpsExternalMovementId
+        telemetry["dpsExternalMovementId"] = it.dpsMovementId
         mappingApiService.deleteExternalMovementMapping(bookingId, movementSeq)
         // TODO delete in DPS
       }
@@ -544,11 +544,11 @@ class ExternalMovementsSyncService(
               "existingOffenderNo" to existing.prisonerNumber,
               "existingBookingId" to existing.bookingId,
               "existingMovementSeq" to existing.nomisMovementSeq,
-              "existingDpsExternalMovementId" to existing.dpsExternalMovementId,
+              "existingDpsExternalMovementId" to existing.dpsMovementId,
               "duplicateOffenderNo" to duplicate.prisonerNumber,
               "duplicateBookingId" to duplicate.bookingId,
               "duplicateMovementSeq" to duplicate.nomisMovementSeq,
-              "duplicateDpsExternalMovementId" to duplicate.dpsExternalMovementId,
+              "duplicateDpsExternalMovementId" to duplicate.dpsMovementId,
             ),
           )
         }
@@ -630,14 +630,9 @@ private fun TemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, occurrenceId
   location = TapLocation(
     id = toAddressId.toString(),
     typeCode = toAddressOwnerClass,
+    // TODO does full address go in description? Then why are we sending description back from nomis-prisoner-api?
     description = toAddressDescription,
     address = Address(
-      premise = toAddressHouse,
-      street = toAddressStreet,
-      area = toAddressLocality,
-      city = toAddressCity,
-      county = toAddressCounty,
-      country = toAddressCountry,
       postcode = toAddressPostcode,
     ),
   ),
@@ -658,14 +653,9 @@ private fun TemporaryAbsenceReturnResponse.toDpsRequest(id: UUID? = null, occurr
   location = TapLocation(
     id = fromAddressId.toString(),
     typeCode = fromAddressOwnerClass,
+    // TODO does full address go in description? Then why are we sending description back from nomis-prisoner-api?
     description = fromAddressDescription,
     address = Address(
-      premise = fromAddressHouse,
-      street = fromAddressStreet,
-      area = fromAddressLocality,
-      city = fromAddressCity,
-      county = fromAddressCounty,
-      country = fromAddressCountry,
       postcode = fromAddressPostcode,
     ),
   ),

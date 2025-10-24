@@ -470,12 +470,7 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     toAddressId = 321L,
     toAddressOwnerClass = "OFF",
     toAddressDescription = "Some description",
-    toAddressHouse = "Flat 1  41",
-    toAddressStreet = "High Street",
-    toAddressLocality = "Hillsborough",
-    toAddressCity = "Sheffield",
-    toAddressCounty = "South Yorkshire",
-    toAddressCountry = "England",
+    toFullAddress = "full address",
     toAddressPostcode = "S1 1AB",
   )
 
@@ -535,12 +530,7 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     fromAddressId = 321L,
     fromAddressOwnerClass = "OFF",
     fromAddressDescription = "Some description",
-    fromAddressHouse = "Flat 1  41",
-    fromAddressStreet = "High Street",
-    fromAddressLocality = "Hillsborough",
-    fromAddressCity = "Sheffield",
-    fromAddressCounty = "South Yorkshire",
-    fromAddressCountry = "England",
+    fromFullAddress = "full address",
     fromAddressPostcode = "S1 1AB",
   )
 
