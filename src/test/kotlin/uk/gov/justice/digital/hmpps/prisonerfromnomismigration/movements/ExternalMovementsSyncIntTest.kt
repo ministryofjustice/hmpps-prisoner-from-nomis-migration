@@ -1291,7 +1291,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisEventId", 45678)
-            .withRequestBodyJsonPath("dpsScheduledMovementId", dpsScheduledMovementId)
+            .withRequestBodyJsonPath("dpsOccurrenceId", dpsScheduledMovementId)
             .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
         )
       }
@@ -1480,15 +1480,23 @@ class ExternalMovementsSyncIntTest(
                 prisonerNumber = "A1234BC",
                 bookingId = 12345L,
                 nomisEventId = 222L,
-                dpsScheduledMovementId = dpsScheduledMovementId,
+                dpsOccurrenceId = dpsScheduledMovementId,
                 mappingType = ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+                0,
+                "",
+                "",
+                "",
               ),
               duplicate = ScheduledMovementSyncMappingDto(
                 prisonerNumber = "A1234BC",
                 bookingId = 12345L,
                 nomisEventId = 45678L,
-                dpsScheduledMovementId = dpsScheduledMovementId,
+                dpsOccurrenceId = dpsScheduledMovementId,
                 mappingType = ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+                0,
+                "",
+                "",
+                "",
               ),
             ),
             errorCode = 1409,
@@ -1513,7 +1521,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisEventId", 45678)
-            .withRequestBodyJsonPath("dpsScheduledMovementId", dpsScheduledMovementId)
+            .withRequestBodyJsonPath("dpsOccurrenceId", dpsScheduledMovementId)
             .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
         )
       }
@@ -1575,7 +1583,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisEventId", 45678)
-            .withRequestBodyJsonPath("dpsScheduledMovementId", dpsScheduledMovementId)
+            .withRequestBodyJsonPath("dpsOccurrenceId", dpsScheduledMovementId)
             .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
         )
       }
@@ -1912,7 +1920,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
             .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
+            .withRequestBodyJsonPath("location.address.postcode", "S1 1AB"),
         )
       }
 
@@ -1923,7 +1931,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisMovementSeq", 154)
-            .withRequestBodyJsonPath("dpsExternalMovementId", "$dpsExternalMovementId")
+            .withRequestBodyJsonPath("dpsMovementId", "$dpsExternalMovementId")
             .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
         )
       }
@@ -1985,7 +1993,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
             .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
+            .withRequestBodyJsonPath("location.address.postcode", "S1 1AB"),
         )
       }
 
@@ -1996,7 +2004,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisMovementSeq", 154)
-            .withRequestBodyJsonPath("dpsExternalMovementId", "$dpsExternalMovementId")
+            .withRequestBodyJsonPath("dpsMovementId", "$dpsExternalMovementId")
             .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
         )
       }
@@ -2334,7 +2342,7 @@ class ExternalMovementsSyncIntTest(
               .withRequestBodyJsonPath("legacyId", "12345_154")
               .withRequestBodyJsonPath("direction", "OUT")
               .withRequestBodyJsonPath("location.id", "321")
-              .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
+              .withRequestBodyJsonPath("location.address.postcode", "S1 1AB"),
           )
         }
 
@@ -2345,7 +2353,7 @@ class ExternalMovementsSyncIntTest(
               .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
               .withRequestBodyJsonPath("bookingId", 12345)
               .withRequestBodyJsonPath("nomisMovementSeq", 154)
-              .withRequestBodyJsonPath("dpsExternalMovementId", "$dpsExternalMovementId")
+              .withRequestBodyJsonPath("dpsMovementId", "$dpsExternalMovementId")
               .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
           )
         }
@@ -2411,7 +2419,7 @@ class ExternalMovementsSyncIntTest(
               .withRequestBodyJsonPath("legacyId", "12345_154")
               .withRequestBodyJsonPath("direction", "IN")
               .withRequestBodyJsonPath("location.id", "321")
-              .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
+              .withRequestBodyJsonPath("location.address.postcode", "S1 1AB"),
           )
         }
 
@@ -2422,7 +2430,7 @@ class ExternalMovementsSyncIntTest(
               .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
               .withRequestBodyJsonPath("bookingId", 12345)
               .withRequestBodyJsonPath("nomisMovementSeq", 154)
-              .withRequestBodyJsonPath("dpsExternalMovementId", "$dpsExternalMovementId")
+              .withRequestBodyJsonPath("dpsMovementId", "$dpsExternalMovementId")
               .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
           )
         }
@@ -2463,15 +2471,21 @@ class ExternalMovementsSyncIntTest(
                 prisonerNumber = "A1234BC",
                 bookingId = 12345,
                 nomisMovementSeq = 444,
-                dpsExternalMovementId = dpsExternalMovementId,
+                dpsMovementId = dpsExternalMovementId,
                 mappingType = ExternalMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+                "",
+                0,
+                "",
               ),
               duplicate = ExternalMovementSyncMappingDto(
                 prisonerNumber = "A1234BC",
                 bookingId = 12345,
                 nomisMovementSeq = 154,
-                dpsExternalMovementId = dpsExternalMovementId,
+                dpsMovementId = dpsExternalMovementId,
                 mappingType = ExternalMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+                "",
+                0,
+                "",
               ),
             ),
             errorCode = 1409,
@@ -2492,7 +2506,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
             .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
+            .withRequestBodyJsonPath("location.address.postcode", "S1 1AB"),
         )
       }
 
@@ -2503,7 +2517,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisMovementSeq", 154)
-            .withRequestBodyJsonPath("dpsExternalMovementId", "$dpsExternalMovementId")
+            .withRequestBodyJsonPath("dpsMovementId", "$dpsExternalMovementId")
             .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
         )
       }
@@ -2564,7 +2578,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
             .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
+            .withRequestBodyJsonPath("location.address.postcode", "S1 1AB"),
         )
       }
 
@@ -2576,7 +2590,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisMovementSeq", 154)
-            .withRequestBodyJsonPath("dpsExternalMovementId", "$dpsExternalMovementId")
+            .withRequestBodyJsonPath("dpsMovementId", "$dpsExternalMovementId")
             .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
         )
       }
@@ -2655,7 +2669,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
             .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
+            .withRequestBodyJsonPath("location.address.postcode", "S1 1AB"),
         )
       }
 
@@ -2711,7 +2725,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
             .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
+            .withRequestBodyJsonPath("location.address.postcode", "S1 1AB"),
         )
       }
 
@@ -2766,7 +2780,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
             .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
+            .withRequestBodyJsonPath("location.address.postcode", "S1 1AB"),
         )
       }
 
@@ -2823,7 +2837,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
             .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.address.premise", "Flat 1  41"),
+            .withRequestBodyJsonPath("location.address.postcode", "S1 1AB"),
         )
       }
 
