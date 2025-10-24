@@ -72,7 +72,7 @@ java {
   targetCompatibility = JavaVersion.VERSION_24
 }
 
-data class ModelConfiguration(val name: String, val packageName: String, val testPackageName: String? = null, val url: String, val models: String = "") {
+data class ModelConfiguration(val name: String, val packageName: String, val testPackageName: String? = null, val url: String, val models: String = "", val isLive: Boolean = true) {
   fun toBuildModelTaskName(): String = "build${nameToCamel()}ApiModel"
   fun toWriteJsonTaskName(): String = "write${nameToCamel()}Json"
   fun toReadProductionVersionTaskName(): String = "read${nameToCamel()}ProductionVersion"
@@ -128,6 +128,7 @@ val models = listOf(
     packageName = "finance",
     testPackageName = "finance",
     url = "https://prisoner-finance-poc-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+    isLive = false,
   ),
   ModelConfiguration(
     name = "incidents",
@@ -185,6 +186,13 @@ val models = listOf(
     testPackageName = "visitbalances",
     url = "https://hmpps-visit-allocation-api-dev.prison.service.justice.gov.uk/v3/api-docs",
   ),
+  ModelConfiguration(
+    name = "officialvisits",
+    packageName = "officialvisits",
+    testPackageName = "officialvisits",
+    url = "https://official-visits-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+    isLive = false,
+  ),
 )
 
 tasks {
@@ -231,7 +239,7 @@ models.forEach {
       Files.write(Paths.get(it.input), formattedJson.toByteArray())
     }
   }
-  if (it.name != "finance") {
+  if (it.isLive) {
     tasks.register(it.toReadProductionVersionTaskName()) {
       group = "Read current production version"
       description = "Read current production version for ${it.name}"
