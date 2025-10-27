@@ -258,6 +258,7 @@ private fun incidentResponse(
       ),
       createDateTime = LocalDateTime.parse("2021-07-05T10:35:17"),
       createdBy = "JSMITH",
+      hasMultipleAnswers = false,
     ),
   ),
   history = listOf(
