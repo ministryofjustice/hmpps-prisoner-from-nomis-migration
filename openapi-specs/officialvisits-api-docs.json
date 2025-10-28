@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-10-23.42.3c7790c"
+    "version" : "2025-10-27.45.1d91607"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -161,6 +161,59 @@
         }
       }
     },
+    "/visits-booked/prison/{prisonCode}" : {
+      "get" : {
+        "tags" : [ "Visits booked" ],
+        "summary" : "Endpoint to return the official visits booked for a prison - TRIAL ONLY",
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_OFFICIAL_VISITS_ADMIN\n* ROLE_OFFICIAL_VISITS__R\n* ROLE_OFFICIAL_VISITS__RW",
+        "operationId" : "getVisitsBookedForPrison",
+        "parameters" : [ {
+          "name" : "prisonCode",
+          "in" : "path",
+          "description" : "The prison code",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "MDI"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "List of visits booked at the prison",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/VisitBookedEntity"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/reference-data/group/{groupCode}" : {
       "get" : {
         "tags" : [ "Reference data" ],
@@ -252,6 +305,59 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/GetDlqResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/available-slots/prison/{prisonCode}" : {
+      "get" : {
+        "tags" : [ "Available slots" ],
+        "summary" : "Endpoint to return the available slots for official visits for a prison - TRIAL ONLY.",
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_OFFICIAL_VISITS_ADMIN\n* ROLE_OFFICIAL_VISITS__R\n* ROLE_OFFICIAL_VISITS__RW",
+        "operationId" : "getAvailableSlotsForPrison",
+        "parameters" : [ {
+          "name" : "prisonCode",
+          "in" : "path",
+          "description" : "The prison code",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "MDI"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "List of available slots at the prison",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AvailableSlotEntity"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -513,6 +619,75 @@
         },
         "required" : [ "status" ]
       },
+      "VisitBookedEntity" : {
+        "type" : "object",
+        "properties" : {
+          "officialVisitId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "prisonCode" : {
+            "type" : "string"
+          },
+          "dayCode" : {
+            "type" : "string"
+          },
+          "dayDescription" : {
+            "type" : "string"
+          },
+          "prisonVisitSlotId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "prisonTimeSlotId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "visitDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "startTime" : {
+            "type" : "string"
+          },
+          "endTime" : {
+            "type" : "string"
+          },
+          "visitStatusCode" : {
+            "type" : "string"
+          },
+          "visitTypeCode" : {
+            "type" : "string"
+          },
+          "prisonerNumber" : {
+            "type" : "string"
+          },
+          "contactId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "visitorTypeCode" : {
+            "type" : "string"
+          },
+          "contactTypeCode" : {
+            "type" : "string"
+          },
+          "relationshipCode" : {
+            "type" : "string"
+          },
+          "firstName" : {
+            "type" : "string"
+          },
+          "lastName" : {
+            "type" : "string"
+          },
+          "dpsLocationId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "dayCode", "dayDescription", "dpsLocationId", "endTime", "officialVisitId", "prisonCode", "prisonTimeSlotId", "prisonVisitSlotId", "prisonerNumber", "startTime", "visitDate", "visitTypeCode" ]
+      },
       "ReferenceDataGroup" : {
         "type" : "string",
         "enum" : [ "DAY", "CONTACTS", "EQUIP_CATEGORY", "SEARCH_LEVEL", "TEST_TYPE", "VIS_COMPLETE", "VIS_LOC_TYPE", "VIS_STS", "VIS_TYPE_CODE" ]
@@ -588,6 +763,55 @@
           }
         },
         "required" : [ "messages", "messagesFoundCount", "messagesReturnedCount" ]
+      },
+      "AvailableSlotEntity" : {
+        "type" : "object",
+        "properties" : {
+          "prisonVisitSlotId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "prisonTimeSlotId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "prisonCode" : {
+            "type" : "string"
+          },
+          "displaySequence" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "dayCode" : {
+            "type" : "string"
+          },
+          "dayDescription" : {
+            "type" : "string"
+          },
+          "startTime" : {
+            "type" : "string"
+          },
+          "endTime" : {
+            "type" : "string"
+          },
+          "dpsLocationId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "maxAdults" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "maxGroups" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "maxVideoSessions" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "dayCode", "dayDescription", "displaySequence", "dpsLocationId", "endTime", "maxAdults", "maxGroups", "maxVideoSessions", "prisonCode", "prisonTimeSlotId", "prisonVisitSlotId", "startTime" ]
       }
     },
     "securitySchemes" : {
