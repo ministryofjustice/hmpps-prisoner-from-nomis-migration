@@ -139,7 +139,7 @@ class LocationsSynchronisationService(
       )
     } catch (e: Exception) {
       if (e is WebClientResponseException.Conflict &&
-        (e.getResponseBodyAs(ErrorResponse::class.java) as ErrorResponse).errorCode == 107
+        with(e.getResponseBodyAs(ErrorResponse::class.java) as ErrorResponse) { errorCode == 107 || errorCode == 120 }
       ) {
         log.error("Detected a permanent deactivation or cell converted to non-res: ignoring update", e)
         telemetryClient.trackEvent(
