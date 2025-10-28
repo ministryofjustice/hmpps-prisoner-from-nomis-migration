@@ -21,6 +21,12 @@ suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrLogAndRet
   }
   .awaitSingle()
 
+suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrLogAndRethrowError(): T = this.bodyToMono<T>()
+  .doOnError(WebClientResponseException::class.java) {
+    log.error("Received ${it.message} with body {}", it.responseBodyAsString)
+  }
+  .awaitSingle()
+
 suspend inline fun WebClient.ResponseSpec.awaitBodilessEntityOrLogAndRethrowBadRequest() = this.toBodilessEntity()
   .doOnError(WebClientResponseException.BadRequest::class.java) {
     log.error("Received Bad Request (400) with body {}", it.responseBodyAsString)
