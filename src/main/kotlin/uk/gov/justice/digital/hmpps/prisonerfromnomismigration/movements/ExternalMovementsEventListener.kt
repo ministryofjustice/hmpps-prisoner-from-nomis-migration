@@ -14,6 +14,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_OUTSIDE_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -64,6 +66,8 @@ class ExternalMovementsEventListener(
     RETRY_MAPPING_TEMPORARY_ABSENCE_OUTSIDE_MOVEMENT -> syncService.retryCreateOutsideMovementMapping(message.fromJson())
     RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT -> syncService.retryCreateScheduledMovementMapping(message.fromJson())
     RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT -> syncService.retryCreateExternalMovementMapping(message.fromJson())
+    RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT -> syncService.retryUpdateExternalMovementMapping(message.fromJson())
+    RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT -> syncService.retryUpdateScheduledMovementMapping(message.fromJson())
   }
 
   private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this)
@@ -112,4 +116,6 @@ enum class ExternalMovementRetryMappingMessageTypes {
   RETRY_MAPPING_TEMPORARY_ABSENCE_OUTSIDE_MOVEMENT,
   RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT,
   RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT,
+  RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT,
+  RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT,
 }

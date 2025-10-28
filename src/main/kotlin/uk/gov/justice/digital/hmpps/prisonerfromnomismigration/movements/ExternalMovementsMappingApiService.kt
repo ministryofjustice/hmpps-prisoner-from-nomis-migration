@@ -66,6 +66,8 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
 
   suspend fun createScheduledMovementMapping(mapping: ScheduledMovementSyncMappingDto) = webClient.createMapping("$domainUrl/scheduled-movement", mapping)
 
+  suspend fun updateScheduledMovementMapping(mapping: ScheduledMovementSyncMappingDto) = webClient.updateMapping("$domainUrl/scheduled-movement", mapping)
+
   suspend fun getScheduledMovementMapping(nomisEventId: Long): ScheduledMovementSyncMappingDto? = webClient.get()
     .uri("$domainUrl/scheduled-movement/nomis-event-id/{nomisEventId}", nomisEventId)
     .retrieve()
@@ -77,6 +79,8 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
     .awaitBodyOrNullWhenNotFound<Unit>()
 
   suspend fun createExternalMovementMapping(mapping: ExternalMovementSyncMappingDto) = webClient.createMapping("$domainUrl/external-movement", mapping)
+
+  suspend fun updateExternalMovementMapping(mapping: ExternalMovementSyncMappingDto) = webClient.updateMapping("$domainUrl/external-movement", mapping)
 
   suspend fun getExternalMovementMapping(bookingId: Long, movementSeq: Int): ExternalMovementSyncMappingDto? = webClient.get()
     .uri("$domainUrl/external-movement/nomis-movement-id/{bookingId}/{movementSeq}", bookingId, movementSeq)
@@ -97,5 +101,13 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
     .onErrorResume(WebClientResponseException.Conflict::class.java) {
       Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<T>>() {})))
     }
+    .awaitFirstOrDefault(CreateMappingResult())
+
+  private suspend inline fun <reified T : Any> WebClient.updateMapping(url: String, mapping: T) = put()
+    .uri(url)
+    .bodyValue(mapping)
+    .retrieve()
+    .bodyToMono(Unit::class.java)
+    .map { CreateMappingResult<T>() }
     .awaitFirstOrDefault(CreateMappingResult())
 }
