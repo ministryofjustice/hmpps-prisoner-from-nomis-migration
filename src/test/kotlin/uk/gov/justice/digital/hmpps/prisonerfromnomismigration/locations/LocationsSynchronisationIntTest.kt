@@ -21,6 +21,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito.eq
 import org.mockito.internal.verification.Times
 import org.mockito.kotlin.any
@@ -524,16 +526,17 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Nested
       inner class WhenCellPermanentlyDeactivated {
 
-        @Test
-        internal fun `it will ignore the event after a locations api 409 occurs (cell cannot be modified)`() {
+        @ParameterizedTest
+        @ValueSource(strings = ["107", "120"])
+        internal fun `it will ignore the event after a locations api 409 occurs`(error: String) {
           mappingApi.stubGetLocation(DPS_LOCATION_ID, NOMIS_LOCATION_ID)
           nomisApi.stubGetLocationWithMinimalData(NOMIS_LOCATION_ID)
           locationsApi.stubUpsertLocationForSynchronisationWithError(
             ErrorResponse(
               409,
               "Deactivated Location Exception: xxx",
-              "Location MDI-A-1-003 cannot be updated as permanently deactivated (or has been converted to non-res cell)",
-              107,
+              "Location MDI-A-1-003 cannot be updated as permanently deactivated/has been converted to non-res cell)",
+              error.toInt(),
             ),
           )
 
