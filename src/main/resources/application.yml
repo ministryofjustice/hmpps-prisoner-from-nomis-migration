@@ -207,6 +207,8 @@ azure:
     web:
       enabled: false
 
+# For migrations the failure count is taken from the number of messages on the DLQ at the end of a migration. While this
+# is the case we need to fail fast so the failure numbers are accurate. Ideally we'd have a better way to count failures.
 hmpps.sqs:
   defaultErrorVisibilityTimeout: 1, 10, 60, 600
   queues:
@@ -217,28 +219,41 @@ hmpps.sqs:
     migrationvisits:
       propagateTracing: false
     migrationactivities:
+      errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationallocations:
+      errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationappointments:
+      errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationincidents:
+      errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationcourtsentencing:
+      errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationpersonalrelationships:
+      errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationpersonalrelationshipsprofiledetails:
+      errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationorganisations:
+      errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationcoreperson:
+      errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationprisonbalance:
+      errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationprisonerbalance:
+      errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationvisitbalance:
+      errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationexternalmovements:
+      errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false

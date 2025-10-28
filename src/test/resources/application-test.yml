@@ -167,9 +167,34 @@ hmpps.sqs:
       dlqMaxReceiveCount: 1
     migrationpersonalrelationshipsprofiledetails:
       dlqMaxReceiveCount: 1
+      errorVisibilityTimeout: 0
     eventofficialvisits:
       dlqMaxReceiveCount: 2
     migrationofficialvisits:
       dlqMaxReceiveCount: 2
     migrationvisitslots:
       dlqMaxReceiveCount: 2
+    migrationactivities:
+      errorVisibilityTimeout: 0
+    migrationallocations:
+      errorVisibilityTimeout: 0
+    migrationappointments:
+      errorVisibilityTimeout: 0
+    migrationincidents:
+      errorVisibilityTimeout: 0
+    migrationcourtsentencing:
+      errorVisibilityTimeout: 0
+    migrationpersonalrelationships:
+      errorVisibilityTimeout: 0
+    migrationorganisations:
+      errorVisibilityTimeout: 0
+    migrationcoreperson:
+      errorVisibilityTimeout: 0
+    migrationprisonbalance:
+      errorVisibilityTimeout: 0
+    migrationprisonerbalance:
+      errorVisibilityTimeout: 0
+    migrationvisitbalance:
+      errorVisibilityTimeout: 0
+    migrationexternalmovements:
+      errorVisibilityTimeout: 0
