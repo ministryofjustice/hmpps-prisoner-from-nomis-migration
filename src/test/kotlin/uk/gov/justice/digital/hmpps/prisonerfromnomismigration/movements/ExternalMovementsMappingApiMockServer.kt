@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesOutsideMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
+import java.time.LocalDateTime
 import java.util.UUID
 
 @Component
@@ -265,12 +266,36 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
 
   fun stubCreateScheduledMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/temporary-absence/scheduled-movement")
 
-  fun stubGetScheduledMovementMapping(nomisEventId: Long = 1L, dpsScheduledMovementId: UUID = UUID.randomUUID()) {
+  fun stubUpdateScheduledMovementMapping() {
+    mappingApi.stubFor(
+      put("/mapping/temporary-absence/scheduled-movement")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(200),
+        ),
+    )
+  }
+
+  fun stubUpdateScheduledMovementMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      put("/mapping/temporary-absence/scheduled-movement").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubUpdateScheduledMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingUpdateFailureFollowedBySuccess("/mapping/temporary-absence/scheduled-movement")
+
+  fun stubGetScheduledMovementMapping(nomisEventId: Long = 1L, dpsOccurrenceId: UUID = UUID.randomUUID(), eventTime: LocalDateTime = LocalDateTime.now()) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/temporary-absence/scheduled-movement/nomis-event-id/$nomisEventId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody(objectMapper.writeValueAsString(temporaryAbsenceScheduledMovementMapping(nomisEventId = nomisEventId, dpsScheduledMovementId = dpsScheduledMovementId))),
+          .withBody(objectMapper.writeValueAsString(temporaryAbsenceScheduledMovementMapping(nomisEventId = nomisEventId, dpsOccurrenceId = dpsOccurrenceId, eventTime = eventTime))),
       ),
     )
   }
@@ -342,10 +367,34 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
 
   fun stubCreateExternalMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/temporary-absence/external-movement")
 
+  fun stubUpdateExternalMovementMapping() {
+    mappingApi.stubFor(
+      put("/mapping/temporary-absence/external-movement")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(200),
+        ),
+    )
+  }
+
+  fun stubUpdateExternalMovementMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      put("/mapping/temporary-absence/external-movement").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubUpdateExternalMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingUpdateFailureFollowedBySuccess("/mapping/temporary-absence/external-movement")
+
   fun stubGetExternalMovementMapping(
     bookingId: Long = 12345L,
     movementSeq: Int = 1,
-    dpsExternalMovementId: UUID = UUID.randomUUID(),
+    dpsMovementId: UUID = UUID.randomUUID(),
   ) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/temporary-absence/external-movement/nomis-movement-id/$bookingId/$movementSeq")).willReturn(
@@ -356,7 +405,7 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
               temporaryAbsenceExternalMovementMapping(
                 bookingId,
                 movementSeq,
-                dpsExternalMovementId = dpsExternalMovementId,
+                dpsMovementId = dpsMovementId,
               ),
             ),
           ),
@@ -493,30 +542,35 @@ fun temporaryAbsenceOutsideMovementMapping(nomisApplicationMultiId: Long = 1L, p
   mappingType = TemporaryAbsenceOutsideMovementSyncMappingDto.MappingType.MIGRATED,
 )
 
-fun temporaryAbsenceScheduledMovementMapping(nomisEventId: Long = 1L, prisonerNumber: String = "A1234BC", dpsScheduledMovementId: UUID = UUID.randomUUID()) = ScheduledMovementSyncMappingDto(
+fun temporaryAbsenceScheduledMovementMapping(
+  nomisEventId: Long = 1L,
+  prisonerNumber: String = "A1234BC",
+  dpsOccurrenceId: UUID = UUID.randomUUID(),
+  eventTime: LocalDateTime = LocalDateTime.now(),
+) = ScheduledMovementSyncMappingDto(
   prisonerNumber = prisonerNumber,
   bookingId = 12345,
   nomisEventId = nomisEventId,
-  dpsOccurrenceId = dpsScheduledMovementId,
+  dpsOccurrenceId = dpsOccurrenceId,
   mappingType = ScheduledMovementSyncMappingDto.MappingType.MIGRATED,
-  0,
-  "",
-  "",
-  "",
+  nomisAddressId = 321,
+  nomisAddressOwnerClass = "OFF",
+  dpsAddressText = "to full address",
+  eventTime = "$eventTime",
 )
 
 fun temporaryAbsenceExternalMovementMapping(
   bookingId: Long = 12345L,
   movementSeq: Int = 1,
   prisonerNumber: String = "A1234BC",
-  dpsExternalMovementId: UUID = UUID.randomUUID(),
+  dpsMovementId: UUID = UUID.randomUUID(),
 ) = ExternalMovementSyncMappingDto(
   prisonerNumber = prisonerNumber,
   bookingId = bookingId,
   nomisMovementSeq = movementSeq,
-  dpsMovementId = dpsExternalMovementId,
+  dpsMovementId = dpsMovementId,
   mappingType = ExternalMovementSyncMappingDto.MappingType.MIGRATED,
-  "",
-  0,
-  "",
+  nomisAddressId = 321,
+  nomisAddressOwnerClass = "OFF",
+  dpsAddressText = "full address",
 )
