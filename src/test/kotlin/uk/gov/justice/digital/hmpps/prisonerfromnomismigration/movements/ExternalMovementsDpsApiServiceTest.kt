@@ -101,6 +101,7 @@ class ExternalMovementsDpsApiServiceTest {
         putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/$parentId"))
           .withRequestBody(matchingJsonPath("eventId", equalTo("1234")))
           .withRequestBody(matchingJsonPath("eventStatus", equalTo("SCH")))
+          .withRequestBody(matchingJsonPath("location.description", equalTo("Boots")))
           .withRequestBody(matchingJsonPath("audit.createUsername", equalTo("AAA11A"))),
       )
     }
@@ -151,8 +152,7 @@ class ExternalMovementsDpsApiServiceTest {
         putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/$prisonerNumber"))
           .withRequestBody(matchingJsonPath("occurrenceId", equalTo("$occurrenceId")))
           .withRequestBody(matchingJsonPath("legacyId", equalTo("12345_154")))
-          .withRequestBody(matchingJsonPath("location.id", equalTo("654")))
-          .withRequestBody(matchingJsonPath("location.address.premise", equalTo("Some premise"))),
+          .withRequestBody(matchingJsonPath("location.postcode", equalTo("B12 3AA"))),
       )
     }
 

@@ -13,7 +13,6 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.stereotype.Component
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Address
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.ScheduledTemporaryAbsenceRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
@@ -93,11 +92,10 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       eventStatus = "SCH",
       startTime = today,
       returnTime = tomorrow,
-//      toAddressOwnerClass = "CORP",
-//      toAddressId = 1234567,
       location = TapLocation(
-        id = "1234567",
-        typeCode = "CORP",
+        description = "Boots",
+        address = "High Street, Sheffield",
+        postcode = "S1 1AA",
       ),
       contactPersonName = "Contact Person Name",
       escort = "PECS",
@@ -124,18 +122,9 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       prisonCode = "LEI",
       commentText = "Movement comment",
       location = TapLocation(
-        id = "654",
-        typeCode = "OFF",
-        description = "Some tap location",
-        address = Address(
-          premise = "Some premise",
-          street = "Some street",
-          area = "Some area",
-          city = "Some city",
-          county = "Some country",
-          country = "Some country",
-          postcode = "Some postcode",
-        ),
+        description = "home",
+        address = "123 Acacia Avenue, Birmingham",
+        postcode = "B12 3AA",
       ),
       audit = NomisAudit(
         createDatetime = today,

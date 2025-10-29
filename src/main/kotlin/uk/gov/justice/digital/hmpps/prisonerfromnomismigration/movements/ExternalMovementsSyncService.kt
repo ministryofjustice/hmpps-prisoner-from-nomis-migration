@@ -701,9 +701,9 @@ private fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null) = S
   transportType = transportType ?: DEFAULT_TRANSPORT_TYPE,
   comment = comment,
   location = TapLocation(
-    id = toAddressId.toString(),
-    typeCode = toAddressOwnerClass,
-    description = toFullAddress,
+    description = toAddressDescription,
+    address = toFullAddress,
+    postcode = toAddressPostcode,
   ),
   audit = audit.toDpsRequest(),
 )
@@ -720,9 +720,9 @@ private fun TemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, occurrenceId
   prisonCode = fromPrison,
   commentText = commentText,
   location = TapLocation(
-    id = toAddressId.toString(),
-    typeCode = toAddressOwnerClass,
-    description = toFullAddress,
+    description = toAddressDescription,
+    address = toFullAddress,
+    postcode = toAddressPostcode,
   ),
   audit = audit.toDpsRequest(),
 )
@@ -739,9 +739,9 @@ private fun TemporaryAbsenceReturnResponse.toDpsRequest(id: UUID? = null, occurr
   prisonCode = toPrison,
   commentText = commentText,
   location = TapLocation(
-    id = fromAddressId.toString(),
-    typeCode = fromAddressOwnerClass,
-    description = fromFullAddress,
+    description = fromAddressDescription,
+    address = fromFullAddress,
+    postcode = fromAddressPostcode,
   ),
   audit = audit.toDpsRequest(),
 )

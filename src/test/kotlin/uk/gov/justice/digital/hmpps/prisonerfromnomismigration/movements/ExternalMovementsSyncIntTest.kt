@@ -1287,7 +1287,7 @@ class ExternalMovementsSyncIntTest(
         dpsApi.verify(
           putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/$dpsApplicationId"))
             .withRequestBodyJsonPath("id", absent())
-            .withRequestBodyJsonPath("location.description", "to full address"),
+            .withRequestBodyJsonPath("location.address", "to full address"),
         )
       }
 
@@ -1672,7 +1672,7 @@ class ExternalMovementsSyncIntTest(
         dpsApi.verify(
           putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/$dpsApplicationId"))
             .withRequestBodyJsonPath("id", "$dpsOccurrenceId")
-            .withRequestBodyJsonPath("location.description", "to full address"),
+            .withRequestBodyJsonPath("location.address", "to full address"),
         )
       }
 
@@ -1726,7 +1726,7 @@ class ExternalMovementsSyncIntTest(
         dpsApi.verify(
           putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/$dpsApplicationId"))
             .withRequestBodyJsonPath("id", "$dpsOccurrenceId")
-            .withRequestBodyJsonPath("location.description", "to full address"),
+            .withRequestBodyJsonPath("location.address", "to full address"),
         )
       }
 
@@ -1780,7 +1780,7 @@ class ExternalMovementsSyncIntTest(
         dpsApi.verify(
           putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/$dpsApplicationId"))
             .withRequestBodyJsonPath("id", "$dpsOccurrenceId")
-            .withRequestBodyJsonPath("location.description", "to full address"),
+            .withRequestBodyJsonPath("location.address", "to full address"),
         )
       }
 
@@ -2060,8 +2060,8 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("occurrenceId", dpsOccurrenceId)
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
-            .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.description", "full address"),
+            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
+            .withRequestBodyJsonPath("location.address", "full address"),
         )
       }
 
@@ -2133,8 +2133,8 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("id", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
-            .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.description", "full address"),
+            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
+            .withRequestBodyJsonPath("location.address", "full address"),
         )
       }
 
@@ -2482,8 +2482,8 @@ class ExternalMovementsSyncIntTest(
               .withRequestBodyJsonPath("id", absent())
               .withRequestBodyJsonPath("legacyId", "12345_154")
               .withRequestBodyJsonPath("direction", "OUT")
-              .withRequestBodyJsonPath("location.id", "321")
-              .withRequestBodyJsonPath("location.description", "full address"),
+              .withRequestBodyJsonPath("location.postcode", "S1 1AB")
+              .withRequestBodyJsonPath("location.address", "full address"),
           )
         }
 
@@ -2559,8 +2559,8 @@ class ExternalMovementsSyncIntTest(
               .withRequestBodyJsonPath("id", absent())
               .withRequestBodyJsonPath("legacyId", "12345_154")
               .withRequestBodyJsonPath("direction", "IN")
-              .withRequestBodyJsonPath("location.id", "321")
-              .withRequestBodyJsonPath("location.description", "full address"),
+              .withRequestBodyJsonPath("location.postcode", "S1 1AB")
+              .withRequestBodyJsonPath("location.address", "full address"),
           )
         }
 
@@ -2646,8 +2646,8 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("id", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
-            .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.description", "full address"),
+            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
+            .withRequestBodyJsonPath("location.address", "full address"),
         )
       }
 
@@ -2718,8 +2718,8 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("id", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
-            .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.description", "full address"),
+            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
+            .withRequestBodyJsonPath("location.address", "full address"),
         )
       }
 
@@ -2809,8 +2809,8 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("occurrenceId", dpsOccurrenceId)
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
-            .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.description", "full address"),
+            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
+            .withRequestBodyJsonPath("location.address", "full address"),
         )
       }
 
@@ -2857,8 +2857,8 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("occurrenceId", dpsOccurrenceId)
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
-            .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.description", "new address"),
+            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
+            .withRequestBodyJsonPath("location.address", "new address"),
         )
       }
 
@@ -2912,7 +2912,7 @@ class ExternalMovementsSyncIntTest(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
             .withRequestBodyJsonPath("id", dpsMovementId)
             .withRequestBodyJsonPath("occurrenceId", dpsOccurrenceId)
-            .withRequestBodyJsonPath("location.description", "new address"),
+            .withRequestBodyJsonPath("location.address", "new address"),
         )
       }
 
@@ -2977,8 +2977,8 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("occurrenceId", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
-            .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.description", "full address"),
+            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
+            .withRequestBodyJsonPath("location.address", "full address"),
         )
       }
 
@@ -3032,8 +3032,8 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("occurrenceId", dpsOccurrenceId)
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
-            .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.description", "full address"),
+            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
+            .withRequestBodyJsonPath("location.address", "full address"),
         )
       }
 
@@ -3089,8 +3089,8 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("occurrenceId", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
-            .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.description", "full address"),
+            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
+            .withRequestBodyJsonPath("location.address", "full address"),
         )
       }
 
@@ -3139,8 +3139,8 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("occurrenceId", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
-            .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.description", "new address"),
+            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
+            .withRequestBodyJsonPath("location.address", "new address"),
         )
       }
 
@@ -3199,8 +3199,8 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("occurrenceId", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
-            .withRequestBodyJsonPath("location.id", "321")
-            .withRequestBodyJsonPath("location.description", "new address"),
+            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
+            .withRequestBodyJsonPath("location.address", "new address"),
         )
       }
 
