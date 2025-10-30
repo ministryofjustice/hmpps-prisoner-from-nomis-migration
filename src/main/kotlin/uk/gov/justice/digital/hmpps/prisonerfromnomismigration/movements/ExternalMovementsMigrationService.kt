@@ -18,14 +18,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsence
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsenceReturn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceReturn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 @Service
 class ExternalMovementsMigrationService(
@@ -149,8 +148,7 @@ class ExternalMovementsMigrationService(
                 dpsOutsideMovementId = UUID.randomUUID(),
               )
             },
-            schedules = application.absences.mapNotNull { it.scheduledTemporaryAbsence }.map { it.toMappingDto() } +
-              application.absences.mapNotNull { it.scheduledTemporaryAbsenceReturn }.map { it.toMappingDto() },
+            schedules = application.absences.mapNotNull { it.scheduledTemporaryAbsence }.map { it.toMappingDto() },
             movements = application.absences.mapNotNull { it.temporaryAbsence }.map { it.toMappingDto() } +
               application.absences.mapNotNull { it.temporaryAbsenceReturn }.map { it.toMappingDto() },
           )
@@ -164,34 +162,25 @@ class ExternalMovementsMigrationService(
   private fun ScheduledTemporaryAbsence.toMappingDto(): ScheduledMovementMappingDto = ScheduledMovementMappingDto(
     nomisEventId = this.eventId,
     dpsOccurrenceId = UUID.randomUUID(),
-    0,
-    "",
-    "",
-    "${LocalDateTime.now()}",
-  )
-
-  private fun ScheduledTemporaryAbsenceReturn.toMappingDto(): ScheduledMovementMappingDto = ScheduledMovementMappingDto(
-    nomisEventId = this.eventId,
-    dpsOccurrenceId = UUID.randomUUID(),
-    0,
-    "",
-    "",
-    "${LocalDateTime.now()}",
+    nomisAddressId = this.toAddressId,
+    nomisAddressOwnerClass = this.toAddressOwnerClass,
+    dpsAddressText = this.toFullAddress ?: "",
+    eventTime = "${LocalDateTime.now()}",
   )
 
   private fun TemporaryAbsence.toMappingDto(): ExternalMovementMappingDto = ExternalMovementMappingDto(
     nomisMovementSeq = this.sequence,
     dpsMovementId = UUID.randomUUID(),
-    "",
-    0,
-    "",
+    nomisAddressId = this.toAddressId,
+    nomisAddressOwnerClass = this.toAddressOwnerClass,
+    dpsAddressText = this.toFullAddress ?: "",
   )
 
   private fun TemporaryAbsenceReturn.toMappingDto(): ExternalMovementMappingDto = ExternalMovementMappingDto(
     nomisMovementSeq = this.sequence,
     dpsMovementId = UUID.randomUUID(),
-    "",
-    0,
-    "",
+    nomisAddressId = this.fromAddressId,
+    nomisAddressOwnerClass = this.fromAddressOwnerClass,
+    dpsAddressText = this.fromFullAddress ?: "",
   )
 }

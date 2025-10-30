@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-10-29.685.111c82a"
+    "version" : "2025-10-30.689.a5d8be4"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -28552,14 +28552,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -28737,14 +28737,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -28901,14 +28901,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -29497,14 +29497,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -30794,14 +30794,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -30868,14 +30868,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -30932,14 +30932,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -31579,14 +31579,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -31735,14 +31735,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -31891,6 +31891,18 @@
             "type" : "string",
             "description" : "To address owner class"
           },
+          "toAddressDescription" : {
+            "type" : "string",
+            "description" : "To address description"
+          },
+          "toFullAddress" : {
+            "type" : "string",
+            "description" : "To full address"
+          },
+          "toAddressPostcode" : {
+            "type" : "string",
+            "description" : "TO address postcode"
+          },
           "applicationDate" : {
             "type" : "string",
             "format" : "date-time",
@@ -32013,6 +32025,18 @@
           "toAddressOwnerClass" : {
             "type" : "string",
             "description" : "To address owner class"
+          },
+          "toAddressDescription" : {
+            "type" : "string",
+            "description" : "To address description"
+          },
+          "toFullAddress" : {
+            "type" : "string",
+            "description" : "Full to address"
+          },
+          "toAddressPostcode" : {
+            "type" : "string",
+            "description" : "To address postcode"
           },
           "audit" : {
             "$ref" : "#/components/schemas/NomisAudit",
@@ -32249,6 +32273,18 @@
           "fromAddressOwnerClass" : {
             "type" : "string",
             "description" : "From address owner class"
+          },
+          "fromAddressDescription" : {
+            "type" : "string",
+            "description" : "From address description"
+          },
+          "fromFullAddress" : {
+            "type" : "string",
+            "description" : "From full address"
+          },
+          "fromAddressPostcode" : {
+            "type" : "string",
+            "description" : "From address postcode"
           },
           "audit" : {
             "$ref" : "#/components/schemas/NomisAudit",
@@ -32516,15 +32552,15 @@
           },
           "toAddressDescription" : {
             "type" : "string",
-            "description" : "From address description"
+            "description" : "To address description"
           },
           "toFullAddress" : {
             "type" : "string",
-            "description" : "From full address"
+            "description" : "To full address"
           },
           "toAddressPostcode" : {
             "type" : "string",
-            "description" : "From address postcode"
+            "description" : "To address postcode"
           },
           "applicationDate" : {
             "type" : "string",
@@ -32989,14 +33025,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -33526,14 +33562,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -33636,14 +33672,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -33923,14 +33959,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -34229,14 +34265,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -34990,14 +35026,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -35287,14 +35323,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -35366,14 +35402,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -35433,14 +35469,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -35731,14 +35767,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
