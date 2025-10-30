@@ -25,11 +25,17 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesOutsideMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.objectMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDateTime
 import java.util.UUID
 
 @Component
 class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapper) {
+  companion object {
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = mappingApi.getRequestBody(pattern, objectMapper = objectMapper)
+  }
+
   fun stubCreateTemporaryAbsenceMapping() {
     mappingApi.stubFor(
       put("/mapping/temporary-absence/migrate")
@@ -470,34 +476,34 @@ fun temporaryAbsencePrisonerMappings(prisonerNumber: String = "A1234BC") = Tempo
             ScheduledMovementMappingDto(
               nomisEventId = 1,
               dpsOccurrenceId = UUID.randomUUID(),
-              0,
-              "",
-              "",
-              "",
+              nomisAddressId = 321,
+              nomisAddressOwnerClass = "OFF",
+              dpsAddressText = "schedule OFF address",
+              eventTime = "${LocalDateTime.now()}",
             ),
             ScheduledMovementMappingDto(
               nomisEventId = 2,
               dpsOccurrenceId = UUID.randomUUID(),
-              0,
-              "",
-              "",
-              "",
+              nomisAddressId = 432,
+              nomisAddressOwnerClass = "CORP",
+              dpsAddressText = "schedule CORP address",
+              eventTime = "${LocalDateTime.now()}",
             ),
           ),
           movements = listOf(
             ExternalMovementMappingDto(
               nomisMovementSeq = 3,
               dpsMovementId = UUID.randomUUID(),
-              "",
-              0,
-              "",
+              nomisAddressId = 543,
+              nomisAddressOwnerClass = "AGY",
+              dpsAddressText = "movement AGY address",
             ),
             ExternalMovementMappingDto(
               nomisMovementSeq = 4,
               dpsMovementId = UUID.randomUUID(),
-              "",
-              0,
-              "",
+              nomisAddressId = 654,
+              nomisAddressOwnerClass = "OFF",
+              dpsAddressText = "movement OFF address",
             ),
           ),
         ),
@@ -506,16 +512,16 @@ fun temporaryAbsencePrisonerMappings(prisonerNumber: String = "A1234BC") = Tempo
         ExternalMovementMappingDto(
           nomisMovementSeq = 1,
           dpsMovementId = UUID.randomUUID(),
-          "",
-          0,
-          "",
+          nomisAddressId = 654,
+          nomisAddressOwnerClass = "CORP",
+          dpsAddressText = "movement CORP address",
         ),
         ExternalMovementMappingDto(
           nomisMovementSeq = 2,
           dpsMovementId = UUID.randomUUID(),
-          "",
-          0,
-          "",
+          nomisAddressId = 765,
+          nomisAddressOwnerClass = "OFF",
+          dpsAddressText = "movement OFF address",
         ),
       ),
     ),

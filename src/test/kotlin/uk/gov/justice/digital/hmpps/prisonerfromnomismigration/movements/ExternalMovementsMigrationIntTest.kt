@@ -24,10 +24,12 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
+import java.time.LocalDate
 
 class ExternalMovementsMigrationIntTest(
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
@@ -126,6 +128,63 @@ class ExternalMovementsMigrationIntTest(
           .withRequestBodyJsonPath("prisonerNumber", "A0002KT")
           .withRequestBodyJsonPath("migrationId", migrationId),
       )
+    }
+
+    @Test
+    fun `will populate correct mapping details`() {
+      ExternalMovementsMappingApiMockServer.getRequestBody<TemporaryAbsencesPrisonerMappingDto>(
+        putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate")),
+      )
+        .apply {
+          assertThat(bookings[0].bookingId).isEqualTo(12345)
+
+          assertThat(bookings[0].applications[0].nomisMovementApplicationId).isEqualTo(1)
+          // TODO check DPS application ID "bookings[0].applications[0].dpsApplicationId"
+
+          with(bookings[0].applications[0].schedules[0]) {
+            assertThat(nomisEventId).isEqualTo(1)
+            // TODO check DPS occurrence ID
+            assertThat(nomisAddressId).isEqualTo(543)
+            assertThat(nomisAddressOwnerClass).isEqualTo("OFF")
+            assertThat(dpsAddressText).isEqualTo("Schedule full address")
+            assertThat(eventTime).contains("${LocalDate.now()}")
+          }
+
+          // We don't map the scheduled return because they don't exist in DPS
+          assertThat(bookings[0].applications[0].schedules.size).isEqualTo(1)
+
+          with(bookings[0].applications[0].movements[0]) {
+            assertThat(nomisMovementSeq).isEqualTo(3)
+            // TODO check DPS movement ID
+            assertThat(nomisAddressId).isEqualTo(432)
+            assertThat(nomisAddressOwnerClass).isEqualTo("AGY")
+            assertThat(dpsAddressText).isEqualTo("Absence full address")
+          }
+
+          with(bookings[0].applications[0].movements[1]) {
+            // TODO check DPS movement ID
+            assertThat(nomisMovementSeq).isEqualTo(4)
+            assertThat(nomisAddressId).isEqualTo(321)
+            assertThat(nomisAddressOwnerClass).isEqualTo("CORP")
+            assertThat(dpsAddressText).isEqualTo("Absence return full address")
+          }
+
+          with(bookings[0].unscheduledMovements[0]) {
+            assertThat(nomisMovementSeq).isEqualTo(1)
+            // TODO check DPS movement ID
+            assertThat(nomisAddressId).isEqualTo(432)
+            assertThat(nomisAddressOwnerClass).isEqualTo("AGY")
+            assertThat(dpsAddressText).isEqualTo("Absence full address")
+          }
+
+          with(bookings[0].unscheduledMovements[1]) {
+            assertThat(nomisMovementSeq).isEqualTo(2)
+            // TODO check DPS movement ID
+            assertThat(nomisAddressId).isEqualTo(321)
+            assertThat(nomisAddressOwnerClass).isEqualTo("CORP")
+            assertThat(dpsAddressText).isEqualTo("Absence return full address")
+          }
+        }
     }
 
     @Test

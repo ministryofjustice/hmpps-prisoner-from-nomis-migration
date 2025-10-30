@@ -1652,6 +1652,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsApplicationId)
         nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678, eventTime = eventTime)
         dpsApi.stubSyncScheduledTemporaryAbsence(parentId = dpsApplicationId, response = SyncResponse(dpsOccurrenceId))
+        mappingApi.stubUpdateScheduledMovementMapping()
 
         sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-UPDATED"))
           .also { waitForAnyProcessingToComplete() }

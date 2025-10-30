@@ -243,15 +243,15 @@ class ExternalMovementsSyncService(
       val dpsOccurrenceId = dpsApiService.syncTemporaryAbsenceScheduledMovement(dpsApplicationId, nomisSchedule.toDpsRequest(dpsOccurrenceId)).id
         .also { telemetry["dpsOccurrenceId"] = it }
       ScheduledMovementSyncMappingDto(
-        prisonerNumber,
-        nomisSchedule.bookingId,
-        eventId,
-        dpsOccurrenceId,
-        SCHEDULED_MOVEMENT_NOMIS_CREATED,
-        nomisSchedule.toAddressId ?: 0,
-        nomisSchedule.toAddressOwnerClass ?: "",
-        nomisSchedule.toFullAddress ?: "",
-        "${nomisSchedule.startTime}",
+        prisonerNumber = prisonerNumber,
+        bookingId = nomisSchedule.bookingId,
+        nomisEventId = eventId,
+        dpsOccurrenceId = dpsOccurrenceId,
+        mappingType = SCHEDULED_MOVEMENT_NOMIS_CREATED,
+        nomisAddressId = nomisSchedule.toAddressId ?: 0,
+        nomisAddressOwnerClass = nomisSchedule.toAddressOwnerClass ?: "",
+        dpsAddressText = nomisSchedule.toFullAddress ?: "",
+        eventTime = "${nomisSchedule.startTime}",
       )
         .also {
           telemetry["nomisAddressId"] = nomisSchedule.toAddressId ?: ""
