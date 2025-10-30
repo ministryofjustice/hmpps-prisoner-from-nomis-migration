@@ -17,22 +17,24 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 
 class PrisonerBalanceDataRepairResourceIntTest : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var nomisApiMockServer: PrisonerBalanceNomisApiMockServer
 
-  @DisplayName("POST /prisoners/{rootOffenderId}/prisoner-balance/repair")
+  @DisplayName("POST /prisoners/id/{rootOffenderId}/prisoner-balance/repair")
   @Nested
-  inner class RepairPrisonerBalance {
+  inner class RepairPrisonerBalanceOffenderId {
     val rootOffenderId = 12345L
 
     @Nested
     inner class Security {
       @Test
       fun `access forbidden when no role`() {
-        webTestClient.post().uri("/prisoners/$rootOffenderId/prisoner-balance/repair")
+        webTestClient.post().uri("/prisoners/id/$rootOffenderId/prisoner-balance/repair")
           .headers(setAuthorisation(roles = listOf()))
           .exchange()
           .expectStatus().isForbidden
@@ -40,7 +42,7 @@ class PrisonerBalanceDataRepairResourceIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `access forbidden with wrong role`() {
-        webTestClient.post().uri("/prisoners/$rootOffenderId/prisoner-balance/repair")
+        webTestClient.post().uri("/prisoners/id/$rootOffenderId/prisoner-balance/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
           .exchange()
           .expectStatus().isForbidden
@@ -48,7 +50,7 @@ class PrisonerBalanceDataRepairResourceIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `access unauthorised with no auth token`() {
-        webTestClient.post().uri("/prisoners/$rootOffenderId/repair")
+        webTestClient.post().uri("/prisoners/id/$rootOffenderId/repair")
           .exchange()
           .expectStatus().isUnauthorized
       }
@@ -64,7 +66,7 @@ class PrisonerBalanceDataRepairResourceIntTest : SqsIntegrationTestBase() {
         nomisApiMockServer.stubGetPrisonerBalance(rootOffenderId = rootOffenderId, prisonNumber = prisonNumber)
         financeApi.stubMigratePrisonerBalance()
 
-        webTestClient.post().uri("/prisoners/$rootOffenderId/prisoner-balance/repair")
+        webTestClient.post().uri("/prisoners/id/$rootOffenderId/prisoner-balance/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isNoContent
@@ -108,12 +110,170 @@ class PrisonerBalanceDataRepairResourceIntTest : SqsIntegrationTestBase() {
         nomisApiMockServer.stubGetPrisonerBalanceNotFound(rootOffenderId)
         financeApi.stubMigratePrisonerBalance()
 
-        webTestClient.post().uri("/prisoners/$rootOffenderId/prisoner-balance/repair")
+        webTestClient.post().uri("/prisoners/id/$rootOffenderId/prisoner-balance/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isNotFound
           .expectBody()
           .jsonPath("userMessage").isEqualTo("Not Found: No prisoner balance for 12345 was found")
+      }
+
+      @Test
+      fun `will try to retrieve current prisonerBalance for the prisoner`() {
+        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/$rootOffenderId/balance")))
+      }
+
+      @Test
+      fun `will not send prisonerBalance to DPS`() {
+        financeApi.verify(0, getRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will not track telemetry for the repair`() {
+        verifyNoInteractions(telemetryClient)
+      }
+    }
+  }
+
+  @DisplayName("POST /prisoners/{offenderNo}/prisoner-balance/repair")
+  @Nested
+  inner class RepairPrisonerBalanceOffenderNo {
+    val rootOffenderId = 12345L
+    val prisonNumber = "A1234BC"
+
+    @Nested
+    inner class Security {
+      @Test
+      fun `access forbidden when no role`() {
+        webTestClient.post().uri("/prisoners/$prisonNumber/prisoner-balance/repair")
+          .headers(setAuthorisation(roles = listOf()))
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access forbidden with wrong role`() {
+        webTestClient.post().uri("/prisoners/$prisonNumber/prisoner-balance/repair")
+          .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access unauthorised with no auth token`() {
+        webTestClient.post().uri("/prisoners/$prisonNumber/repair")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubGetPrisonerDetails(
+          prisonNumber,
+          PrisonerDetails(
+            offenderNo = prisonNumber,
+            offenderId = rootOffenderId,
+            bookingId = 1,
+            location = "BXI",
+            active = true,
+            rootOffenderId = rootOffenderId,
+          ),
+        )
+        nomisApiMockServer.stubGetPrisonerBalance(rootOffenderId = rootOffenderId, prisonNumber = prisonNumber)
+        financeApi.stubMigratePrisonerBalance()
+
+        webTestClient.post().uri("/prisoners/$prisonNumber/prisoner-balance/repair")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .exchange()
+          .expectStatus().isNoContent
+      }
+
+      @Test
+      fun `will retrieve current prisonerBalance for the prisoner`() {
+        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/$rootOffenderId/balance")))
+      }
+
+      @Test
+      fun `will send prisonerBalance to DPS`() {
+        financeApi.verify(
+          postRequestedFor(urlPathEqualTo("/migrate/prisoner-balances/$prisonNumber"))
+            .withRequestBodyJsonPath("accountBalances[0].accountCode", 2101)
+            .withRequestBodyJsonPath("accountBalances[0].prisonId", "ASI")
+            .withRequestBodyJsonPath("accountBalances[0].balance", 23.5)
+            .withRequestBodyJsonPath("accountBalances[0].holdBalance", 1.25),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for the repair`() {
+        verify(telemetryClient).trackEvent(
+          eq("prisonerbalance-resynchronisation-repair"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(prisonNumber)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class OffenderNotFound {
+      @BeforeEach
+      fun setUp() {
+        webTestClient.post().uri("/prisoners/DOESNOTEXIST/prisoner-balance/repair")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .exchange()
+          .expectStatus().isNotFound
+          .expectBody()
+          .jsonPath("userMessage").isEqualTo("Not Found: offenderNo DOESNOTEXIST not found")
+      }
+
+      @Test
+      fun `will try to get the rootOffenderId for the prisoner`() {
+        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/prisoners/DOESNOTEXIST")))
+      }
+
+      @Test
+      fun `will not send prisonerBalance to DPS`() {
+        financeApi.verify(0, getRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will not track telemetry for the repair`() {
+        verifyNoInteractions(telemetryClient)
+      }
+    }
+
+    @Nested
+    inner class BalanceNotFound {
+      val rootOffenderId = 12345L
+      val prisonNumber = "A1234BC"
+
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubGetPrisonerDetails(
+          prisonNumber,
+          PrisonerDetails(
+            offenderNo = prisonNumber,
+            offenderId = rootOffenderId,
+            bookingId = 1,
+            location = "BXI",
+            active = true,
+            rootOffenderId = rootOffenderId,
+          ),
+        )
+        nomisApiMockServer.stubGetPrisonerBalanceNotFound(rootOffenderId)
+        financeApi.stubMigratePrisonerBalance()
+
+        webTestClient.post().uri("/prisoners/$prisonNumber/prisoner-balance/repair")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .exchange()
+          .expectStatus().isNotFound
+          .expectBody()
+          .jsonPath("userMessage").isEqualTo("Not Found: No prisoner balance for A1234BC was found")
       }
 
       @Test
