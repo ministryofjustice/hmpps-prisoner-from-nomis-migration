@@ -1,6 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
+
 import com.microsoft.applicationinsights.TelemetryClient
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
@@ -20,13 +22,13 @@ class PrisonerBalanceDataRepairResource(
   private val telemetryClient: TelemetryClient,
 ) {
 
-  @PostMapping("/prisoners/{rootOffenderId}/prisoner-balance/repair")
+  @PostMapping("/prisoners/id/{rootOffenderId}/prisoner-balance/repair")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @Operation(
     summary = "Resynchronises account balances for the given prisoner (Nomis rootOffenderId) from NOMIS to DPS",
     description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW",
   )
-  suspend fun repairPrisonerBalance(@PathVariable rootOffenderId: Long) {
+  suspend fun repairPrisonerBalanceId(@PathVariable rootOffenderId: Long) {
     try {
       prisonerBalanceSynchronisationService.resynchronisePrisonerBalance(rootOffenderId)
       telemetryClient.trackEvent(
@@ -37,6 +39,29 @@ class PrisonerBalanceDataRepairResource(
       )
     } catch (_: NotFound) {
       throw NotFoundException("No prisoner balance for $rootOffenderId was found")
+    }
+  }
+
+  @PostMapping("/prisoners/{offenderNo}/prisoner-balance/repair")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Operation(
+    summary = "Resynchronises account balances for the given prisoner number from NOMIS to DPS",
+    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW",
+  )
+  suspend fun repairPrisonerBalance(
+    @Schema(description = "Prisoner number", example = "A1234BC", required = true)
+    @PathVariable offenderNo: String,
+  ) {
+    try {
+      prisonerBalanceSynchronisationService.resynchronisePrisonerBalance(offenderNo)
+      telemetryClient.trackEvent(
+        "prisonerbalance-resynchronisation-repair",
+        mapOf(
+          "offenderNo" to offenderNo,
+        ),
+      )
+    } catch (_: NotFound) {
+      throw NotFoundException("No prisoner balance for $offenderNo was found")
     }
   }
 }
