@@ -761,4 +761,45 @@ class ExternalMovementsMappingApiServiceTest {
       }
     }
   }
+
+  @Nested
+  inner class FindScheduledMovementsForAddresses {
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubFindScheduledMovementsForAddress()
+
+      apiService.findScheduledMovementMappingsForAddress(123L)
+
+      mappingApi.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should return list of schedule mappings`() = runTest {
+      mappingApi.stubFindScheduledMovementsForAddress()
+
+      with(apiService.findScheduledMovementMappingsForAddress(123L)) {
+        assertThat(scheduleMappings).extracting("prisonerNumber").containsExactlyInAnyOrder("A1234AA", "B1234BB")
+      }
+    }
+
+    @Test
+    fun `should handle empty list if none found`() = runTest {
+      mappingApi.stubFindScheduledMovementsForAddress(prisoners = listOf())
+
+      with(apiService.findScheduledMovementMappingsForAddress(123L)) {
+        assertThat(scheduleMappings.size).isEqualTo(0)
+      }
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubFindScheduledMovementsForAddressError(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.findScheduledMovementMappingsForAddress(123L)
+      }
+    }
+  }
 }
