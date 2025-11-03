@@ -40,7 +40,12 @@ class VisitBalanceSynchronisationService(
     val telemetry =
       telemetryOf("nomisVisitBalanceAdjustmentId" to visitBalanceAdjustmentId, "nomisPrisonNumber" to nomisPrisonNumber)
 
-    if (event.originatesInDpsOrHasMissingAudit()) {
+    if (event.originatesInDpsOrHasMissingAudit() &&
+      nomisApiService.isServiceAgencyOnForPrisoner(
+        serviceCode = VISIT_ALLOCATION_SERVICE,
+        prisonNumber = nomisPrisonNumber,
+      )
+    ) {
       telemetryClient.trackEvent(
         "visitbalance-adjustment-synchronisation-created-skipped",
         telemetry,
