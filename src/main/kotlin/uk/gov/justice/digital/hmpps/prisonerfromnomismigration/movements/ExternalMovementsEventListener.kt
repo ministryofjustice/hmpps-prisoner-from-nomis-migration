@@ -50,8 +50,9 @@ class ExternalMovementsEventListener(
               "SCHEDULED_EXT_MOVE-UPDATED" -> syncService.scheduledMovementUpdated(sqsMessage.Message.fromJson())
               "SCHEDULED_EXT_MOVE-DELETED" -> syncService.scheduledMovementDeleted(sqsMessage.Message.fromJson())
               "EXTERNAL_MOVEMENT-CHANGED" -> syncService.externalMovementChanged(sqsMessage.Message.fromJson())
-              // TODO handle corporate and agency addresses
               "ADDRESSES_OFFENDER-UPDATED" -> syncService.offenderAddressUpdated(sqsMessage.Message.fromJson())
+              "ADDRESSES_CORPORATE-UPDATED" -> syncService.corporateAddressUpdated(sqsMessage.Message.fromJson())
+              "ADDRESSES_AGENCY-UPDATED" -> syncService.agencyAddressUpdated(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -113,6 +114,22 @@ data class ExternalMovementEvent(
 data class OffenderAddressUpdatedEvent(
   val eventType: String,
   val offenderId: Long,
+  val addressId: Long,
+  val nomisEventType: String,
+  override val auditModuleName: String,
+) : EventAudited
+
+data class CorporateAddressUpdatedEvent(
+  val eventType: String,
+  val corporateId: Long,
+  val addressId: Long,
+  val nomisEventType: String,
+  override val auditModuleName: String,
+) : EventAudited
+
+data class AgencyAddressUpdatedEvent(
+  val eventType: String,
+  val agencyCode: String,
   val addressId: Long,
   val nomisEventType: String,
   override val auditModuleName: String,
