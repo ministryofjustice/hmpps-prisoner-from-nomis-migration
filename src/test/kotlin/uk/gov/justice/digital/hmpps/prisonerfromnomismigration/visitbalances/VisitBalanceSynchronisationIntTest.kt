@@ -44,7 +44,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
     @Nested
     inner class WhenMissingAudit {
       @Test
-      fun `the event is ignored`() {
+      fun `the event is ignored if DPS Allocation`() {
         nomisApi.stubCheckServiceAgencyForPrisoner()
         visitBalanceOffenderEventsQueue.sendMessage(
           visitBalanceAdjustmentEvent(
@@ -54,9 +54,39 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
           ),
         ).also { waitForAnyProcessingToComplete() }
 
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/agency-switches/VISIT_ALLOCATION/prisoner/A1234BC")))
+
         dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
         verify(telemetryClient).trackEvent(
           eq("visitbalance-adjustment-synchronisation-created-skipped"),
+          check {
+            assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
+            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `the event is not ignored if Nomis Allocation`() {
+        nomisApi.stubCheckServiceAgencyForPrisonerNotFound()
+        nomisVisitBalanceApiMock.stubGetVisitBalanceAdjustment(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
+        mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(mapping = null)
+        dpsApiMock.stubSyncVisitBalanceAdjustment()
+        mappingApiMock.stubCreateVisitBalanceAdjustmentMapping()
+
+        visitBalanceOffenderEventsQueue.sendMessage(
+          visitBalanceAdjustmentEvent(
+            eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
+            visitBalanceAdjId = visitBalanceAdjId,
+            auditModuleName = "",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/agency-switches/VISIT_ALLOCATION/prisoner/A1234BC")))
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
+        verify(telemetryClient).trackEvent(
+          eq("visitbalance-adjustment-synchronisation-created-success"),
           check {
             assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
             assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
