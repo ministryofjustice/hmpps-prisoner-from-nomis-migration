@@ -52,7 +52,7 @@ class VisitSlotsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
 
     fun visitSlotResponse() = VisitSlotResponse(
-      // TODO missing id
+      id = 123,
       internalLocation = VisitInternalLocationResponse(id = 122, "LEI-VISIT-1"),
     )
   }

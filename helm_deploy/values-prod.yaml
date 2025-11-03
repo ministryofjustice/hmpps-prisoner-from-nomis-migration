@@ -28,8 +28,7 @@ generic-service:
     API_BASE_URL_PERSONAL_RELATIONSHIPS: https://personal-relationships-api.hmpps.service.justice.gov.uk
     API_BASE_URL_ORGANISATIONS: https://organisations-api.hmpps.service.justice.gov.uk
     API_BASE_URL_EXT_MOVEMENTS: https://external-movements-api.hmpps.service.justice.gov.uk
-    # TODO DPS preprod environment is currently missing this API
-    API_BASE_URL_OFFICIALVISITS: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
+    API_BASE_URL_OFFICIALVISITS: https://official-visits-api.hmpps.service.justice.gov.uk
     FEATURE_EVENT_OFFENDER_TRANSACTIONS-INSERTED: false
     FEATURE_EVENT_OFFENDER_TRANSACTIONS-UPDATED: false
     FEATURE_EVENT_OFFENDER_TRANSACTIONS-DELETED: false
