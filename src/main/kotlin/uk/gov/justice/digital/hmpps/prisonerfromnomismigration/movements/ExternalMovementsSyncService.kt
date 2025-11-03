@@ -668,6 +668,31 @@ class ExternalMovementsSyncService(
     }
   }
 
+  suspend fun offenderAddressUpdated(offenderAddressUpdatedEvent: OffenderAddressUpdatedEvent) = addressUpdated(offenderAddressUpdatedEvent.addressId, "OFF")
+
+  private suspend fun addressUpdated(addressId: Long, addressOwnerClass: String) {
+    val addressUpdateTelemetry = mutableMapOf("nomisAddressId" to "$addressId", "nomisAddressOwnerClass" to addressOwnerClass)
+
+    val affectedSchedules = mappingApiService.findScheduledMovementMappingsForAddress(addressId)
+      .also { addressUpdateTelemetry["nomisEventIds"] = it.scheduleMappings.map { it.nomisEventId }.toString() }
+      .also { addressUpdateTelemetry["dpsOccurrenceIds"] = it.scheduleMappings.map { it.dpsOccurrenceId }.toString() }
+
+    affectedSchedules.scheduleMappings.forEach {
+      val syncTelemetry = mutableMapOf<String, Any>(
+        "offenderNo" to it.prisonerNumber,
+        "bookingId" to it.bookingId,
+        "nomisEventId" to it.nomisEventId,
+        "directionCode" to "OUT",
+      )
+      track("$TELEMETRY_PREFIX-scheduled-movement-updated", syncTelemetry) {
+        syncScheduledMovementTapOut(it.prisonerNumber, it.nomisEventId, syncTelemetry, it.dpsOccurrenceId)
+          .also { tryToUpdateScheduledMovementMapping(it, syncTelemetry) }
+      }
+    }
+
+    telemetryClient.trackEvent("temporary-absence-sync-address-updated-success", addressUpdateTelemetry)
+  }
+
   companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }

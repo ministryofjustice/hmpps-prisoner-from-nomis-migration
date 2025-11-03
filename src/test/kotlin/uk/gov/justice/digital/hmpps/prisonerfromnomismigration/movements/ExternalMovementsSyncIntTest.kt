@@ -3408,6 +3408,108 @@ class ExternalMovementsSyncIntTest(
     }
   }
 
+  // TODO add tests for corporate and agency addresses, and for retry mappings
+  @Nested
+  inner class AddressUpdated {
+
+    private inner class TestData(val dpsApplicationId: UUID, val nomisApplicationId: Long, val mapping: ScheduledMovementSyncMappingDto)
+
+    @Nested
+    inner class HappyPathOffenderAddress {
+      private lateinit var scheduleMappings: List<TestData>
+
+      @BeforeEach
+      fun setUp() {
+        scheduleMappings = listOf(
+          TestData(UUID.randomUUID(), 111, temporaryAbsenceScheduledMovementMapping(1L, "A1234AA", UUID.randomUUID())),
+          TestData(UUID.randomUUID(), 222, temporaryAbsenceScheduledMovementMapping(2L, "B1234BB", UUID.randomUUID())),
+        )
+        mappingApi.stubFindScheduledMovementsForAddressMappings(321, scheduleMappings.map { it.mapping })
+        scheduleMappings.forEach {
+          mappingApi.stubGetTemporaryAbsenceApplicationMapping(it.nomisApplicationId, it.dpsApplicationId)
+          nomisApi.stubGetTemporaryAbsenceScheduledMovement(offenderNo = it.mapping.prisonerNumber, eventId = it.mapping.nomisEventId, applicationId = it.nomisApplicationId)
+          dpsApi.stubSyncScheduledTemporaryAbsence(parentId = it.dpsApplicationId, response = SyncResponse(it.mapping.dpsOccurrenceId))
+        }
+        mappingApi.stubUpdateScheduledMovementMapping()
+
+        sendMessage(addressUpdatedEventOf(321, "OFFENDER"))
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-address-updated-success") }
+      }
+
+      @Test
+      fun `should get mappings`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movements/nomis-address-id/321")))
+      }
+
+      @Test
+      fun `should get NOMIS scheduled movements`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234AA/temporary-absences/scheduled-temporary-absence/1")))
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/B1234BB/temporary-absences/scheduled-temporary-absence/2")))
+      }
+
+      @Test
+      fun `should update DPS scheduled movement`() {
+        dpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/${scheduleMappings[0].dpsApplicationId}"))
+            .withRequestBodyJsonPath("id", "${scheduleMappings[0].mapping.dpsOccurrenceId}")
+            .withRequestBodyJsonPath("eventId", "1"),
+        )
+        dpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/${scheduleMappings[1].dpsApplicationId}"))
+            .withRequestBodyJsonPath("id", "${scheduleMappings[1].mapping.dpsOccurrenceId}")
+            .withRequestBodyJsonPath("eventId", "2"),
+        )
+      }
+
+      @Test
+      fun `should update mappings`() {
+        mappingApi.verify(
+          putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+            .withRequestBodyJsonPath("dpsOccurrenceId", "${scheduleMappings[0].mapping.dpsOccurrenceId}")
+            .withRequestBodyJsonPath("nomisEventId", "1")
+            .withRequestBodyJsonPath("dpsAddressText", "to full address"),
+        )
+
+        mappingApi.verify(
+          putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+            .withRequestBodyJsonPath("dpsOccurrenceId", "${scheduleMappings[1].mapping.dpsOccurrenceId}")
+            .withRequestBodyJsonPath("nomisEventId", "2")
+            .withRequestBodyJsonPath("dpsAddressText", "to full address"),
+        )
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-address-updated-success"),
+          check {
+            assertThat(it["nomisAddressId"]).isEqualTo("321")
+            assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
+            assertThat(it["nomisEventIds"]).isEqualTo("[1, 2]")
+            assertThat(it["dpsOccurrenceIds"]).isEqualTo("${scheduleMappings.map { it.mapping.dpsOccurrenceId }}")
+          },
+          isNull(),
+        )
+
+        scheduleMappings.forEach { testData ->
+          verify(telemetryClient).trackEvent(
+            eq("temporary-absence-sync-scheduled-movement-updated-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(testData.mapping.prisonerNumber)
+              assertThat(it["nomisApplicationId"]).isEqualTo("${testData.nomisApplicationId}")
+              assertThat(it["nomisEventId"]).isEqualTo("${testData.mapping.nomisEventId}")
+              assertThat(it["directionCode"]).isEqualTo("OUT")
+              assertThat(it["dpsOccurrenceId"]).isEqualTo("${testData.mapping.dpsOccurrenceId}")
+              assertThat(it["nomisAddressId"]).isEqualTo("321")
+              assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
+            },
+            isNull(),
+          )
+        }
+      }
+    }
+  }
+
   private fun sendMessage(event: String) = awsSqsExternalMovementsOffenderEventsClient.sendMessage(
     externalMovementsQueueOffenderEventsUrl,
     event,
@@ -3494,5 +3596,27 @@ class ExternalMovementsSyncIntTest(
            "eventType" : {"Type":"String","Value":"EXTERNAL_MOVEMENT-CHANGED"}
          }
         }
+    """.trimMargin()
+
+  private fun addressUpdatedEventOf(
+    addressId: Long = 123L,
+    addressType: String = "OFFENDER",
+  ) = // language=JSON
+    """{
+          "Type" : "Notification",
+          "MessageId" : "d6c0d1af-7f49-5f42-b1d0-b0d5f7c1983c",
+          "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-160f3055cc4e04c4105ee85f2ed1fccb",
+          "Message" : "{\"eventType\":\"ADDRESSES_$addressType-UPDATED\",\"eventDatetime\":\"2025-10-28T09:00:56\",\"nomisEventType\":\"ADDRESSES_$addressType-UPDATED\",\"auditModuleName\":\"OUMAGENC\",\"offenderId\":348250,\"addressId\":$addressId}",
+          "Timestamp" : "2025-10-28T09:00:56.300Z",
+          "SignatureVersion" : "1",
+          "Signature" : "XrlCPnj/Vj137LXUb3nvveGcnkRF3OWJQhDi4czTRKMYVgRidZmJTiS3xPumWwsNYH2RwrRLP2Ghuqoyk3X8k1X+lRfb2Z2PksEsdS6EaqQG9Aqa+QAF6G6TqPJPHK8ghhLod9nY2bEZdKgBBxWXstw2M2u+NQgSHr6bWtKnRpMq7whIka7Dd8mIQ4op+0S5xe/glso+pPIr1cIp0mKtWfrNXNOFp/V4LBkJJwqr6P31honkRDiTZF6I3k52YxmIO0hRL2HF+J7Edw7wIZYpwbKb/kmzt+9HKeyAQmF3fLZYTm4SIkqu0TtKuGPxFaODmnm3WSadwkYHsfvesLWtbw==",
+          "SigningCertURL" : "https://sns.eu-west-2.amazonaws.com/SimpleNotificationService-6209c161c6221fdf56ec1eb5c821d112.pem",
+          "UnsubscribeURL" : "https://sns.eu-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-160f3055cc4e04c4105ee85f2ed1fccb:763eba96-d154-4a47-b9a1-22b957832b57",
+          "MessageAttributes" : {
+              "publishedAt" : {"Type":"String","Value":"2025-10-28T09:00:56.296568943Z"},
+              "traceparent" : {"Type":"String","Value":"00-2231237d40643c5334f02ee002e61e86-47b44dc460337f0b-01"},
+              "eventType" : {"Type":"String","Value":"ADDRESSES_$addressType-UPDATED"}
+            }
+          }
     """.trimMargin()
 }
