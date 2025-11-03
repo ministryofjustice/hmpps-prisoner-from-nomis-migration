@@ -9,8 +9,8 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.VisitsConfigurationResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageVisitTimeSlotIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageableObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageMetadata
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PagedModelVisitTimeSlotIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitTimeSlotIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitTimeSlotResponse
 
@@ -37,6 +37,6 @@ class VisitSlotsNomisApiService(@Qualifier("nomisApiWebClient") private val webC
   ).awaitSingle()
 }
 
-fun PageVisitTimeSlotIdResponse.asPageImpl(): PageImpl<VisitTimeSlotIdResponse> = PageImpl(this.content!!.toMutableList(), this.pageable!!.asPageable(), this.totalElements!!)
+fun PagedModelVisitTimeSlotIdResponse.asPageImpl(): PageImpl<VisitTimeSlotIdResponse> = PageImpl(this.content!!.toMutableList(), this.page!!.asPageable(), this.page.totalElements!!)
 
-fun PageableObject.asPageable(): Pageable = PageRequest.of(this.pageNumber!!, this.pageSize!!)
+fun PageMetadata.asPageable(): Pageable = PageRequest.of(this.number!!.toInt(), this.propertySize!!.toInt())
