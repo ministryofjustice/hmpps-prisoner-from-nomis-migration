@@ -42,7 +42,7 @@ class PrisonerRestrictionMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  override suspend fun getIds(
+  suspend fun getIds(
     migrationFilter: PrisonerRestrictionMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
@@ -52,6 +52,14 @@ class PrisonerRestrictionMigrationService(
     pageNumber = pageNumber,
     pageSize = pageSize,
   )
+
+  override suspend fun getPageOfIds(
+    migrationFilter: PrisonerRestrictionMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): List<PrisonerRestrictionIdResponse> = getIds(migrationFilter, pageSize, pageNumber).content
+
+  override suspend fun getTotalNumberOfIds(migrationFilter: PrisonerRestrictionMigrationFilter): Long = getIds(migrationFilter, 1, 0).totalElements
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerRestrictionIdResponse>) {
     val nomisPrisonerRestrictionId = context.body.restrictionId

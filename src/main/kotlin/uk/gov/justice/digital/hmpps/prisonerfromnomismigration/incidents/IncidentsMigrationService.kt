@@ -37,7 +37,7 @@ class IncidentsMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  override suspend fun getIds(
+  suspend fun getIds(
     migrationFilter: IncidentsMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
@@ -47,6 +47,14 @@ class IncidentsMigrationService(
     pageNumber = pageNumber,
     pageSize = pageSize,
   )
+
+  override suspend fun getPageOfIds(
+    migrationFilter: IncidentsMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): List<IncidentIdResponse> = getIds(migrationFilter, pageSize, pageNumber).content
+
+  override suspend fun getTotalNumberOfIds(migrationFilter: IncidentsMigrationFilter): Long = getIds(migrationFilter, 1, 0).totalElements
 
   override suspend fun migrateNomisEntity(context: MigrationContext<IncidentIdResponse>) {
     log.info("attempting to migrate $this")

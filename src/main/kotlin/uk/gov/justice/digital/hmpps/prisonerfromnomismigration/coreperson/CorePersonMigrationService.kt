@@ -42,7 +42,7 @@ class CorePersonMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  override suspend fun getIds(
+  suspend fun getIds(
     migrationFilter: CorePersonMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
@@ -51,6 +51,14 @@ class CorePersonMigrationService(
     pageNumber = pageNumber,
     pageSize = pageSize,
   )
+
+  override suspend fun getPageOfIds(
+    migrationFilter: CorePersonMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): List<PrisonerId> = getIds(migrationFilter, pageSize, pageNumber).content
+
+  override suspend fun getTotalNumberOfIds(migrationFilter: CorePersonMigrationFilter): Long = getIds(migrationFilter, 1, 0).totalElements
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     val nomisPrisonNumber = context.body.offenderNo

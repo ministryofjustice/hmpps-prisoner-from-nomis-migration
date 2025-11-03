@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.ParameterizedTypeReference
-import org.springframework.data.domain.PageImpl
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
@@ -36,7 +35,9 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
   @Autowired
   protected lateinit var auditService: AuditService
 
-  abstract suspend fun getIds(migrationFilter: FILTER, pageSize: Long, pageNumber: Long): PageImpl<NOMIS_ID>
+  abstract suspend fun getPageOfIds(migrationFilter: FILTER, pageSize: Long, pageNumber: Long): List<NOMIS_ID>
+
+  abstract suspend fun getTotalNumberOfIds(migrationFilter: FILTER): Long
 
   abstract suspend fun migrateNomisEntity(context: MigrationContext<NOMIS_ID>)
 
@@ -50,11 +51,9 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
       throw MigrationAlreadyInProgressException("Migration already in progress for $migrationFilter")
     }
 
-    val count = getIds(
+    val count = getTotalNumberOfIds(
       migrationFilter,
-      pageSize = 1,
-      pageNumber = 0,
-    ).totalElements
+    )
 
     return MigrationContext(
       type = migrationType,
@@ -111,9 +110,9 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
     )
   }
 
-  suspend fun migrateEntitiesForPage(context: MigrationContext<MigrationPage<FILTER>>) = getIds(context.body.filter, context.body.pageSize, context.body.pageNumber).takeUnless {
+  suspend fun migrateEntitiesForPage(context: MigrationContext<MigrationPage<FILTER>>) = getPageOfIds(context.body.filter, context.body.pageSize, context.body.pageNumber).takeUnless {
     migrationHistoryService.isCancelling(context.migrationId)
-  }?.content?.map {
+  }?.map {
     MigrationContext(
       context = context,
       body = it,
