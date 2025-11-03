@@ -8,9 +8,8 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageVisitTimeSlotIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageableObject
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SortObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageMetadata
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PagedModelVisitTimeSlotIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitInternalLocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitSlotResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitTimeSlotIdResponse
@@ -21,30 +20,20 @@ import java.time.LocalDate
 @Component
 class VisitSlotsNomisApiMockServer(private val objectMapper: ObjectMapper) {
   companion object {
-    fun pageVisitTimeSlotIdResponse(content: List<VisitTimeSlotIdResponse>, totalElements: Long = content.size.toLong(), pageSize: Int = 20, pageNumber: Int = 1): PageVisitTimeSlotIdResponse = PageVisitTimeSlotIdResponse(
+    fun pageVisitTimeSlotIdResponse(content: List<VisitTimeSlotIdResponse>, totalElements: Long = content.size.toLong(), pageSize: Int = 20, pageNumber: Int = 1): PagedModelVisitTimeSlotIdResponse = PagedModelVisitTimeSlotIdResponse(
       content = content,
-      totalElements = totalElements,
-      totalPages = (totalElements / pageSize + 1).toInt(),
-      number = pageNumber,
-      first = true,
-      last = false,
-      sort = SortObject(),
-      numberOfElements = content.size,
-      pageable = PageableObject(
-        offset = 0,
-        pageSize = pageSize,
-        pageNumber = pageNumber,
-        paged = true,
-        unpaged = false,
+      page = PageMetadata(
+        propertySize = pageSize.toLong(),
+        number = pageNumber.toLong(),
+        totalElements = totalElements,
+        totalPages = (totalElements / pageSize + 1),
       ),
-      empty = false,
     )
 
     fun visitTimeSlotResponse() = VisitTimeSlotResponse(
       prisonId = "LEI",
       dayOfWeek = VisitTimeSlotResponse.DayOfWeek.MONDAY,
       timeSlotSequence = 1,
-      // TODO - find out why these are not LocalTime instances
       startTime = "10:00",
       endTime = "11:00",
       effectiveDate = LocalDate.parse("2020-01-01"),
