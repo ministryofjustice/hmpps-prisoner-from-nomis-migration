@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-10-27.717.ce3d2dd"
+    "version" : "2025-10-31.734.5209113"
   },
   "servers" : [ {
     "url" : "https://remand-and-sentencing-api.hmpps.service.justice.gov.uk",
@@ -61,6 +61,9 @@
   }, {
     "name" : "court-appearance-controller",
     "description" : "Court Appearances"
+  }, {
+    "name" : "immigration-detention-controller",
+    "description" : "Immigration Detention"
   }, {
     "name" : "appearance-outcome-controller",
     "description" : "Appearance outcome"
@@ -1252,6 +1255,169 @@
         }
       }
     },
+    "/immigration-detention/{immigrationDetentionUuid}" : {
+      "get" : {
+        "tags" : [ "immigration-detention-controller" ],
+        "summary" : "Retrieve an immigration detention record",
+        "description" : "This endpoint will retrieve the details of an immigration detention record",
+        "operationId" : "getImmigrationDetention",
+        "parameters" : [ {
+          "name" : "immigrationDetentionUuid",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Returns immigration detention details",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImmigrationDetention"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImmigrationDetention"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImmigrationDetention"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not found if no immigration detention uuid",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ImmigrationDetention"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "immigration-detention-controller" ],
+        "summary" : "Update an immigration detention record (or create one with the passed in details)",
+        "description" : "This endpoint will update an immigration detention record (or create one with the passed in details)",
+        "operationId" : "updateImmigrationDetention",
+        "parameters" : [ {
+          "name" : "immigrationDetentionUuid",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateImmigrationDetention"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Returns court case UUID",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SaveImmigrationDetentionResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SaveImmigrationDetentionResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SaveImmigrationDetentionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "immigration-detention-controller" ],
+        "summary" : "Delete an immigration detention record",
+        "description" : "This endpoint will delete an immigration detention record",
+        "operationId" : "deleteImmigrationDetention",
+        "parameters" : [ {
+          "name" : "immigrationDetentionUuid",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Immigration Detention deleted",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DeleteImmigrationDetentionResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DeleteImmigrationDetentionResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DeleteImmigrationDetentionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/court-case/{courtCaseUuid}" : {
       "get" : {
         "tags" : [ "court-case-controller" ],
@@ -2176,6 +2342,56 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/LegacyChargeCreatedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/immigration-detention" : {
+      "post" : {
+        "tags" : [ "immigration-detention-controller" ],
+        "summary" : "Create an immigration detention record",
+        "description" : "This endpoint will create a record for managing immigration detention",
+        "operationId" : "createImmigrationDetention",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateImmigrationDetention"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Returns immigration detention record UUID",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SaveImmigrationDetentionResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SaveImmigrationDetentionResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SaveImmigrationDetentionResponse"
                 }
               }
             }
@@ -3627,6 +3843,63 @@
         }
       }
     },
+    "/immigration-detention/person/{prisonerId}" : {
+      "get" : {
+        "tags" : [ "immigration-detention-controller" ],
+        "summary" : "Retrieve all active immigration detention records for a person",
+        "description" : "This endpoint will retrieve  all active immigration detention records for a person",
+        "operationId" : "getImmigrationDetentionByPrisonerId",
+        "parameters" : [ {
+          "name" : "prisonerId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Returns all active immigration detention records for person",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ImmigrationDetention"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ImmigrationDetention"
+                  }
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ImmigrationDetention"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/court-case/{prisonerId}/recallable-court-cases" : {
       "get" : {
         "tags" : [ "court-case-controller" ],
@@ -4874,7 +5147,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:25.629681836"
+            "example" : "06:23:26.349674406"
           },
           "outcomeDispositionCode" : {
             "type" : "string"
@@ -4997,6 +5270,49 @@
           }
         },
         "required" : [ "offenceCode" ]
+      },
+      "CreateImmigrationDetention" : {
+        "type" : "object",
+        "properties" : {
+          "prisonerId" : {
+            "type" : "string"
+          },
+          "immigrationDetentionRecordType" : {
+            "type" : "string",
+            "enum" : [ "IS91", "DEPORTATION_ORDER", "NO_LONGER_OF_INTEREST" ]
+          },
+          "recordDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "homeOfficeReferenceNumber" : {
+            "type" : "string"
+          },
+          "noLongerOfInterestReason" : {
+            "type" : "string",
+            "enum" : [ "BRITISH_CITIZEN", "RIGHT_TO_REMAIN", "OTHER_REASON" ]
+          },
+          "noLongerOfInterestComment" : {
+            "type" : "string"
+          },
+          "createdByUsername" : {
+            "type" : "string"
+          },
+          "createdByPrison" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "createdByPrison", "createdByUsername", "immigrationDetentionRecordType", "prisonerId", "recordDate" ]
+      },
+      "SaveImmigrationDetentionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "immigrationDetentionUuid" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "immigrationDetentionUuid" ]
       },
       "CreateCharge" : {
         "type" : "object",
@@ -5136,7 +5452,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:25.629681836"
+            "example" : "06:23:26.349674406"
           },
           "courtCode" : {
             "type" : "string"
@@ -6858,9 +7174,80 @@
             "items" : {
               "type" : "string"
             }
+          },
+          "courtCases" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RecallCourtCaseDetails"
+            }
           }
         },
-        "required" : [ "createdAt", "createdByUsername", "prisonerId", "recallType", "recallUuid", "source" ]
+        "required" : [ "courtCases", "createdAt", "createdByUsername", "prisonerId", "recallType", "recallUuid", "source" ]
+      },
+      "RecallCourtCaseDetails" : {
+        "type" : "object",
+        "properties" : {
+          "courtCaseReference" : {
+            "type" : "string"
+          },
+          "courtCode" : {
+            "type" : "string"
+          },
+          "sentencingAppearanceDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "sentences" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RecalledSentence"
+            }
+          }
+        },
+        "required" : [ "sentences" ]
+      },
+      "RecalledSentence" : {
+        "type" : "object",
+        "properties" : {
+          "sentenceUuid" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "offenceCode" : {
+            "type" : "string"
+          },
+          "offenceStartDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "offenceEndDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "sentenceDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "lineNumber" : {
+            "type" : "string"
+          },
+          "countNumber" : {
+            "type" : "string"
+          },
+          "periodLengths" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PeriodLength"
+            }
+          },
+          "sentenceServeType" : {
+            "type" : "string"
+          },
+          "sentenceTypeDescription" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "offenceCode", "periodLengths", "sentenceServeType", "sentenceUuid" ]
       },
       "DlqMessage" : {
         "type" : "object",
@@ -7196,7 +7583,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:25.629681836"
+            "example" : "06:23:26.349674406"
           },
           "courtCode" : {
             "type" : "string"
@@ -7815,7 +8202,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:25.629681836"
+            "example" : "06:23:26.349674406"
           },
           "nomisOutcomeCode" : {
             "type" : "string"
@@ -7875,7 +8262,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:25.629681836"
+            "example" : "06:23:26.349674406"
           },
           "courtId" : {
             "type" : "string"
@@ -8015,7 +8402,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:25.629681836"
+            "example" : "06:23:26.349674406"
           },
           "charges" : {
             "type" : "array",
@@ -8042,13 +8429,52 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:25.629681836"
+            "example" : "06:23:26.349674406"
           },
           "courtId" : {
             "type" : "string"
           }
         },
         "required" : [ "appearanceDate", "courtId" ]
+      },
+      "ImmigrationDetention" : {
+        "type" : "object",
+        "properties" : {
+          "immigrationDetentionUuid" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "prisonerId" : {
+            "type" : "string"
+          },
+          "immigrationDetentionRecordType" : {
+            "type" : "string",
+            "enum" : [ "IS91", "DEPORTATION_ORDER", "NO_LONGER_OF_INTEREST" ]
+          },
+          "recordDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "homeOfficeReferenceNumber" : {
+            "type" : "string"
+          },
+          "noLongerOfInterestReason" : {
+            "type" : "string",
+            "enum" : [ "BRITISH_CITIZEN", "RIGHT_TO_REMAIN", "OTHER_REASON" ]
+          },
+          "noLongerOfInterestComment" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "source" : {
+            "type" : "string",
+            "enum" : [ "NOMIS", "DPS" ]
+          }
+        },
+        "required" : [ "createdAt", "immigrationDetentionRecordType", "immigrationDetentionUuid", "prisonerId", "recordDate", "source" ]
       },
       "RecallableCourtCase" : {
         "type" : "object",
@@ -8588,7 +9014,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:25.629681836"
+            "example" : "06:23:26.349674406"
           },
           "courtCode" : {
             "type" : "string"
@@ -8707,6 +9133,16 @@
           }
         },
         "required" : [ "recallUuid" ]
+      },
+      "DeleteImmigrationDetentionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "immigrationDetentionUuid" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "immigrationDetentionUuid" ]
       }
     }
   }
