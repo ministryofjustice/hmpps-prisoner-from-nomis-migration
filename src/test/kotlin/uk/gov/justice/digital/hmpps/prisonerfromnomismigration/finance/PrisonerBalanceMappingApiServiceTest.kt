@@ -206,19 +206,5 @@ class PrisonerBalanceMappingApiServiceTest {
         assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
       }
     }
-
-    @Nested
-    inner class GetMigrationDetails {
-      @Test
-      fun `will call the prisoner balance mapping endpoint`() = runTest {
-        mockServer.stubGetMigrationDetails(migrationId = "2020-01-01T10%3A00")
-
-        apiService.getMigrationDetails(migrationId = "2020-01-01T10:00")
-
-        mockServer.verify(
-          getRequestedFor(urlPathEqualTo("/mapping/prisoner-balance/migration-id/2020-01-01T10%3A00")),
-        )
-      }
-    }
   }
 }

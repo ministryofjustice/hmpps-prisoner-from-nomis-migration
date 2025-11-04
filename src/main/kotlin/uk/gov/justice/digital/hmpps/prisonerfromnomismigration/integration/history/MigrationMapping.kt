@@ -1,13 +1,11 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history
 
 import kotlinx.coroutines.reactive.awaitFirstOrDefault
-import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import reactor.core.publisher.Mono
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.LatestMigration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDetails
 
 abstract class MigrationMapping<MAPPING : Any>(
@@ -15,25 +13,6 @@ abstract class MigrationMapping<MAPPING : Any>(
   internal val webClient: WebClient,
 ) {
   open fun createMappingUrl() = domainUrl
-
-  open suspend fun findLatestMigration(): LatestMigration? = webClient.get()
-    .uri("$domainUrl/migrated/latest")
-    .retrieve()
-    .bodyToMono(LatestMigration::class.java)
-    .onErrorResume(WebClientResponseException.NotFound::class.java) {
-      Mono.empty()
-    }
-    .awaitSingleOrNull()
-
-  open suspend fun getMigrationDetails(migrationId: String): MigrationDetails = webClient.get()
-    .uri {
-      it.path("$domainUrl/migration-id/{migrationId}")
-        .queryParam("size", 1)
-        .build(migrationId)
-    }
-    .retrieve()
-    .bodyToMono(MigrationDetails::class.java)
-    .awaitSingle()!!
 
   open suspend fun getMigrationCount(migrationId: String): Long = webClient.get()
     .uri {
