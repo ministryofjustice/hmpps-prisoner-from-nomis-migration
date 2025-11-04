@@ -603,6 +603,7 @@ fun temporaryAbsenceScheduledMovementMapping(
   prisonerNumber: String = "A1234BC",
   dpsOccurrenceId: UUID = UUID.randomUUID(),
   eventTime: LocalDateTime = LocalDateTime.now(),
+  nomisAddressOwnerClass: String = "OFF",
 ) = ScheduledMovementSyncMappingDto(
   prisonerNumber = prisonerNumber,
   bookingId = 12345,
@@ -610,7 +611,7 @@ fun temporaryAbsenceScheduledMovementMapping(
   dpsOccurrenceId = dpsOccurrenceId,
   mappingType = ScheduledMovementSyncMappingDto.MappingType.MIGRATED,
   nomisAddressId = 321,
-  nomisAddressOwnerClass = "OFF",
+  nomisAddressOwnerClass = nomisAddressOwnerClass,
   dpsAddressText = "to full address",
   eventTime = "$eventTime",
 )

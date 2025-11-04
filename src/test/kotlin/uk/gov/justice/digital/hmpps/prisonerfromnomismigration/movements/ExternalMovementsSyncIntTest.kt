@@ -3411,59 +3411,285 @@ class ExternalMovementsSyncIntTest(
   // TODO add tests for corporate and agency addresses, and for retry mappings
   @Nested
   inner class AddressUpdated {
-
     private inner class TestData(val dpsApplicationId: UUID, val nomisApplicationId: Long, val mapping: ScheduledMovementSyncMappingDto)
+    private lateinit var scheduleMappings: List<TestData>
 
     @Nested
-    inner class HappyPathOffenderAddress {
-      private lateinit var scheduleMappings: List<TestData>
+    inner class HappyPath {
 
+      @Nested
+      inner class OffenderAddress {
+
+        @BeforeEach
+        fun setUp() {
+          createStubs("OFF")
+
+          sendMessage(addressUpdatedEventOf(321, "OFFENDER"))
+            .also { waitForAnyProcessingToComplete("temporary-absence-sync-address-updated-success") }
+        }
+
+        @Test
+        fun `should get mappings`() {
+          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movements/nomis-address-id/321")))
+        }
+
+        @Test
+        fun `should get NOMIS scheduled movements`() {
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234AA/temporary-absences/scheduled-temporary-absence/1")))
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/B1234BB/temporary-absences/scheduled-temporary-absence/2")))
+        }
+
+        @Test
+        fun `should update DPS scheduled movement`() {
+          dpsApi.verify(
+            putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/${scheduleMappings[0].dpsApplicationId}"))
+              .withRequestBodyJsonPath("id", "${scheduleMappings[0].mapping.dpsOccurrenceId}")
+              .withRequestBodyJsonPath("eventId", "1"),
+          )
+          dpsApi.verify(
+            putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/${scheduleMappings[1].dpsApplicationId}"))
+              .withRequestBodyJsonPath("id", "${scheduleMappings[1].mapping.dpsOccurrenceId}")
+              .withRequestBodyJsonPath("eventId", "2"),
+          )
+        }
+
+        @Test
+        fun `should update mappings`() {
+          mappingApi.verify(
+            putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+              .withRequestBodyJsonPath("dpsOccurrenceId", "${scheduleMappings[0].mapping.dpsOccurrenceId}")
+              .withRequestBodyJsonPath("nomisEventId", "1")
+              .withRequestBodyJsonPath("dpsAddressText", "to full address"),
+          )
+
+          mappingApi.verify(
+            putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+              .withRequestBodyJsonPath("dpsOccurrenceId", "${scheduleMappings[1].mapping.dpsOccurrenceId}")
+              .withRequestBodyJsonPath("nomisEventId", "2")
+              .withRequestBodyJsonPath("dpsAddressText", "to full address"),
+          )
+        }
+
+        @Test
+        fun `should create success telemetry for address update`() {
+          verify(telemetryClient).trackEvent(
+            eq("temporary-absence-sync-address-updated-success"),
+            check {
+              assertThat(it["nomisAddressId"]).isEqualTo("321")
+              assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
+              assertThat(it["nomisEventIds"]).isEqualTo("[1, 2]")
+              assertThat(it["dpsOccurrenceIds"]).isEqualTo("${scheduleMappings.map { it.mapping.dpsOccurrenceId }}")
+            },
+            isNull(),
+          )
+        }
+
+        @Test
+        fun `should create success telemetry for schedule updates`() {
+          scheduleMappings.forEach { testData ->
+            verify(telemetryClient).trackEvent(
+              eq("temporary-absence-sync-scheduled-movement-updated-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(testData.mapping.prisonerNumber)
+                assertThat(it["nomisApplicationId"]).isEqualTo("${testData.nomisApplicationId}")
+                assertThat(it["nomisEventId"]).isEqualTo("${testData.mapping.nomisEventId}")
+                assertThat(it["directionCode"]).isEqualTo("OUT")
+                assertThat(it["dpsOccurrenceId"]).isEqualTo("${testData.mapping.dpsOccurrenceId}")
+                assertThat(it["nomisAddressId"]).isEqualTo("321")
+                assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      inner class CorporateAddress {
+
+        @BeforeEach
+        fun setUp() {
+          createStubs("CORP")
+
+          sendMessage(addressUpdatedEventOf(321, "CORPORATE"))
+            .also { waitForAnyProcessingToComplete("temporary-absence-sync-address-updated-success") }
+        }
+
+        @Test
+        fun `should update DPS scheduled movement`() {
+          dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/${scheduleMappings[0].dpsApplicationId}")))
+          dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/${scheduleMappings[1].dpsApplicationId}")))
+        }
+
+        @Test
+        fun `should update mappings`() {
+          mappingApi.verify(putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")))
+          mappingApi.verify(putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")))
+        }
+
+        @Test
+        fun `should create success telemetry for address updates`() {
+          verify(telemetryClient).trackEvent(
+            eq("temporary-absence-sync-address-updated-success"),
+            check {
+              assertThat(it["nomisAddressOwnerClass"]).isEqualTo("CORP")
+            },
+            isNull(),
+          )
+        }
+
+        @Test
+        fun `should create success telemetry for schedule updates`() {
+          scheduleMappings.forEach { testData ->
+            verify(telemetryClient).trackEvent(
+              eq("temporary-absence-sync-scheduled-movement-updated-success"),
+              check {
+                assertThat(it["dpsOccurrenceId"]).isEqualTo("${testData.mapping.dpsOccurrenceId}")
+                assertThat(it["nomisAddressOwnerClass"]).isEqualTo("CORP")
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      inner class AgencyAddress {
+
+        @BeforeEach
+        fun setUp() {
+          createStubs("AGY")
+
+          sendMessage(addressUpdatedEventOf(321, "AGENCY"))
+            .also { waitForAnyProcessingToComplete("temporary-absence-sync-address-updated-success") }
+        }
+
+        @Test
+        fun `should update DPS scheduled movement`() {
+          dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/${scheduleMappings[0].dpsApplicationId}")))
+          dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/${scheduleMappings[1].dpsApplicationId}")))
+        }
+
+        @Test
+        fun `should update mappings`() {
+          mappingApi.verify(putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")))
+          mappingApi.verify(putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")))
+        }
+
+        @Test
+        fun `should create success telemetry for address updates`() {
+          verify(telemetryClient).trackEvent(
+            eq("temporary-absence-sync-address-updated-success"),
+            check {
+              assertThat(it["nomisAddressOwnerClass"]).isEqualTo("AGY")
+            },
+            isNull(),
+          )
+        }
+
+        @Test
+        fun `should create success telemetry for schedule updates`() {
+          scheduleMappings.forEach { testData ->
+            verify(
+              telemetryClient,
+            ).trackEvent(
+              eq("temporary-absence-sync-scheduled-movement-updated-success"),
+              check {
+                assertThat(it["dpsOccurrenceId"]).isEqualTo("${testData.mapping.dpsOccurrenceId}")
+                assertThat(it["nomisAddressOwnerClass"]).isEqualTo("AGY")
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+
+    @Nested
+    inner class WhenDpsUpdateFails {
       @BeforeEach
       fun setUp() {
-        scheduleMappings = listOf(
-          TestData(UUID.randomUUID(), 111, temporaryAbsenceScheduledMovementMapping(1L, "A1234AA", UUID.randomUUID())),
-          TestData(UUID.randomUUID(), 222, temporaryAbsenceScheduledMovementMapping(2L, "B1234BB", UUID.randomUUID())),
+        createStubs("OFF")
+        dpsApi.stubSyncScheduledTemporaryAbsenceError(parentId = scheduleMappings[0].dpsApplicationId, status = 500)
+
+        sendMessage(addressUpdatedEventOf(321, "OFFENDER"))
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-address-updated-error") }
+      }
+
+      @Test
+      fun `should try to update only first DPS scheduled movement`() {
+        dpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/${scheduleMappings[0].dpsApplicationId}"))
+            .withRequestBodyJsonPath("id", "${scheduleMappings[0].mapping.dpsOccurrenceId}"),
         )
-        mappingApi.stubFindScheduledMovementsForAddressMappings(321, scheduleMappings.map { it.mapping })
-        scheduleMappings.forEach {
-          mappingApi.stubGetTemporaryAbsenceApplicationMapping(it.nomisApplicationId, it.dpsApplicationId)
-          nomisApi.stubGetTemporaryAbsenceScheduledMovement(offenderNo = it.mapping.prisonerNumber, eventId = it.mapping.nomisEventId, applicationId = it.nomisApplicationId)
-          dpsApi.stubSyncScheduledTemporaryAbsence(parentId = it.dpsApplicationId, response = SyncResponse(it.mapping.dpsOccurrenceId))
-        }
-        mappingApi.stubUpdateScheduledMovementMapping()
+        dpsApi.verify(
+          0,
+          putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/${scheduleMappings[1].dpsApplicationId}"))
+            .withRequestBodyJsonPath("id", "${scheduleMappings[1].mapping.dpsOccurrenceId}"),
+        )
+      }
+
+      @Test
+      fun `should create error telemetry for sync`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-updated-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(scheduleMappings[0].mapping.prisonerNumber)
+            assertThat(it["nomisApplicationId"]).isEqualTo("${scheduleMappings[0].nomisApplicationId}")
+            assertThat(it["dpsApplicationId"]).isEqualTo("${scheduleMappings[0].dpsApplicationId}")
+            assertThat(it["nomisEventId"]).isEqualTo("${scheduleMappings[0].mapping.nomisEventId}")
+            assertThat(it["directionCode"]).isEqualTo("OUT")
+            assertThat(it["error"]).isEqualTo("500 Internal Server Error from PUT http://localhost:8103/sync/scheduled-temporary-absence/${scheduleMappings[0].dpsApplicationId}")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should create error telemetry for address update`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-address-updated-error"),
+          check {
+            assertThat(it["nomisAddressId"]).isEqualTo("321")
+            assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
+            assertThat(it["nomisEventIds"]).isEqualTo("[1, 2]")
+            assertThat(it["dpsOccurrenceIds"]).isEqualTo("${scheduleMappings.map { it.mapping.dpsOccurrenceId }}")
+            assertThat(it["error"]).isEqualTo("500 Internal Server Error from PUT http://localhost:8103/sync/scheduled-temporary-absence/${scheduleMappings[0].dpsApplicationId}")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenMappingUpdateFailsOnce {
+      @BeforeEach
+      fun setUp() {
+        createStubs("OFF")
+        mappingApi.stubUpdateScheduledMovementMappingFailureFollowedBySuccess()
 
         sendMessage(addressUpdatedEventOf(321, "OFFENDER"))
           .also { waitForAnyProcessingToComplete("temporary-absence-sync-address-updated-success") }
       }
 
       @Test
-      fun `should get mappings`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movements/nomis-address-id/321")))
-      }
-
-      @Test
-      fun `should get NOMIS scheduled movements`() {
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234AA/temporary-absences/scheduled-temporary-absence/1")))
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/B1234BB/temporary-absences/scheduled-temporary-absence/2")))
-      }
-
-      @Test
-      fun `should update DPS scheduled movement`() {
+      fun `should update both DPS scheduled movement`() {
         dpsApi.verify(
           putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/${scheduleMappings[0].dpsApplicationId}"))
             .withRequestBodyJsonPath("id", "${scheduleMappings[0].mapping.dpsOccurrenceId}")
-            .withRequestBodyJsonPath("eventId", "1"),
+            .withRequestBodyJsonPath("location.address", "to full address"),
         )
         dpsApi.verify(
           putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/${scheduleMappings[1].dpsApplicationId}"))
             .withRequestBodyJsonPath("id", "${scheduleMappings[1].mapping.dpsOccurrenceId}")
-            .withRequestBodyJsonPath("eventId", "2"),
+            .withRequestBodyJsonPath("location.address", "to full address"),
         )
       }
 
       @Test
       fun `should update mappings`() {
         mappingApi.verify(
+          2,
           putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
             .withRequestBodyJsonPath("dpsOccurrenceId", "${scheduleMappings[0].mapping.dpsOccurrenceId}")
             .withRequestBodyJsonPath("nomisEventId", "1")
@@ -3479,7 +3705,7 @@ class ExternalMovementsSyncIntTest(
       }
 
       @Test
-      fun `should create success telemetry`() {
+      fun `should create success telemetry for address updates`() {
         verify(telemetryClient).trackEvent(
           eq("temporary-absence-sync-address-updated-success"),
           check {
@@ -3490,7 +3716,10 @@ class ExternalMovementsSyncIntTest(
           },
           isNull(),
         )
+      }
 
+      @Test
+      fun `should create success telemetry for schedule updates`() {
         scheduleMappings.forEach { testData ->
           verify(telemetryClient).trackEvent(
             eq("temporary-absence-sync-scheduled-movement-updated-success"),
@@ -3507,6 +3736,36 @@ class ExternalMovementsSyncIntTest(
           )
         }
       }
+    }
+
+    private fun createStubs(addressOwnerClass: String) {
+      scheduleMappings = listOf(
+        TestData(
+          UUID.randomUUID(),
+          111,
+          temporaryAbsenceScheduledMovementMapping(1L, "A1234AA", UUID.randomUUID(), nomisAddressOwnerClass = addressOwnerClass),
+        ),
+        TestData(
+          UUID.randomUUID(),
+          222,
+          temporaryAbsenceScheduledMovementMapping(2L, "B1234BB", UUID.randomUUID(), nomisAddressOwnerClass = addressOwnerClass),
+        ),
+      )
+      mappingApi.stubFindScheduledMovementsForAddressMappings(321, scheduleMappings.map { it.mapping })
+      scheduleMappings.forEach {
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(it.nomisApplicationId, it.dpsApplicationId)
+        nomisApi.stubGetTemporaryAbsenceScheduledMovement(
+          offenderNo = it.mapping.prisonerNumber,
+          eventId = it.mapping.nomisEventId,
+          applicationId = it.nomisApplicationId,
+          addressOwnerClass = addressOwnerClass,
+        )
+        dpsApi.stubSyncScheduledTemporaryAbsence(
+          parentId = it.dpsApplicationId,
+          response = SyncResponse(it.mapping.dpsOccurrenceId),
+        )
+      }
+      mappingApi.stubUpdateScheduledMovementMapping()
     }
   }
 
@@ -3601,12 +3860,19 @@ class ExternalMovementsSyncIntTest(
   private fun addressUpdatedEventOf(
     addressId: Long = 123L,
     addressType: String = "OFFENDER",
-  ) = // language=JSON
-    """{
+  ): String {
+    val idField = when (addressType) {
+      "OFFENDER" -> """\"offenderId\":348250"""
+      "CORPORATE" -> """\"corporateId\":87663"""
+      "AGENCY" -> """\"agencyCode\":\"HALWD\""""
+      else -> throw IllegalStateException("unknown address type: $addressType")
+    }
+    // language=JSON
+    return """{
           "Type" : "Notification",
           "MessageId" : "d6c0d1af-7f49-5f42-b1d0-b0d5f7c1983c",
           "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-160f3055cc4e04c4105ee85f2ed1fccb",
-          "Message" : "{\"eventType\":\"ADDRESSES_$addressType-UPDATED\",\"eventDatetime\":\"2025-10-28T09:00:56\",\"nomisEventType\":\"ADDRESSES_$addressType-UPDATED\",\"auditModuleName\":\"OUMAGENC\",\"offenderId\":348250,\"addressId\":$addressId}",
+          "Message" : "{\"eventType\":\"ADDRESSES_$addressType-UPDATED\",\"eventDatetime\":\"2025-10-28T09:00:56\",\"nomisEventType\":\"ADDRESSES_$addressType-UPDATED\",\"auditModuleName\":\"OUMAGENC\",$idField,\"addressId\":$addressId}",
           "Timestamp" : "2025-10-28T09:00:56.300Z",
           "SignatureVersion" : "1",
           "Signature" : "XrlCPnj/Vj137LXUb3nvveGcnkRF3OWJQhDi4czTRKMYVgRidZmJTiS3xPumWwsNYH2RwrRLP2Ghuqoyk3X8k1X+lRfb2Z2PksEsdS6EaqQG9Aqa+QAF6G6TqPJPHK8ghhLod9nY2bEZdKgBBxWXstw2M2u+NQgSHr6bWtKnRpMq7whIka7Dd8mIQ4op+0S5xe/glso+pPIr1cIp0mKtWfrNXNOFp/V4LBkJJwqr6P31honkRDiTZF6I3k52YxmIO0hRL2HF+J7Edw7wIZYpwbKb/kmzt+9HKeyAQmF3fLZYTm4SIkqu0TtKuGPxFaODmnm3WSadwkYHsfvesLWtbw==",
@@ -3619,4 +3885,5 @@ class ExternalMovementsSyncIntTest(
             }
           }
     """.trimMargin()
+  }
 }
