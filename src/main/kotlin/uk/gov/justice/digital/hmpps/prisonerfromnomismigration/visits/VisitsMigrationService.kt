@@ -39,7 +39,7 @@ class VisitsMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  override suspend fun getIds(
+  suspend fun getIds(
     migrationFilter: VisitsMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
@@ -52,6 +52,14 @@ class VisitsMigrationService(
     pageNumber = pageNumber,
     pageSize = pageSize,
   )
+
+  override suspend fun getPageOfIds(
+    migrationFilter: VisitsMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): List<VisitId> = getIds(migrationFilter, pageSize, pageNumber).content
+
+  override suspend fun getTotalNumberOfIds(migrationFilter: VisitsMigrationFilter): Long = getIds(migrationFilter, 1, 0).totalElements
 
   override suspend fun migrateNomisEntity(context: MigrationContext<VisitId>) {
     visitMappingService.findNomisVisitMapping(context.body.visitId)

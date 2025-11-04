@@ -50,7 +50,7 @@ class ActivitiesMigrationService(
 
   private val log = LoggerFactory.getLogger(this::class.java)
 
-  override suspend fun getIds(
+  suspend fun getIds(
     migrationFilter: ActivitiesMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
@@ -63,6 +63,14 @@ class ActivitiesMigrationService(
       pageSize = pageSize,
     ).map { ActivitiesMigrationRequest(it.courseActivityId, start, it.hasScheduleRules) } as PageImpl<ActivitiesMigrationRequest>
   }
+
+  override suspend fun getPageOfIds(
+    migrationFilter: ActivitiesMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): List<ActivitiesMigrationRequest> = getIds(migrationFilter, pageSize, pageNumber).content
+
+  override suspend fun getTotalNumberOfIds(migrationFilter: ActivitiesMigrationFilter): Long = getIds(migrationFilter, 1, 0).totalElements
 
   override suspend fun migrateNomisEntity(context: MigrationContext<ActivitiesMigrationRequest>) {
     val courseActivityId = context.body.courseActivityId

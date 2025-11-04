@@ -276,17 +276,4 @@ class RestResponsePagedModel<T>(
   PageImpl(content, PageRequest.of(page.number.toInt(), page.size.toInt()), page.totalElements),
 )
 
-fun <T> PagedModel<T>.toPageImpl(): PageImpl<T> {
-  val content = this.content.toList()
-  val metadata = this.metadata ?: return PageImpl(content)
-
-  val pageNumber = metadata.number.toInt()
-  val pageSize = metadata.size.toInt()
-  val totalElements = metadata.totalElements
-
-  val pageable = PageRequest.of(pageNumber, pageSize)
-
-  return PageImpl(content, pageable, totalElements)
-}
-
 inline fun <reified T> typeReference() = object : ParameterizedTypeReference<T>() {}

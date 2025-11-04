@@ -38,7 +38,7 @@ class VisitBalanceMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  override suspend fun getIds(
+  suspend fun getIds(
     migrationFilter: VisitBalanceMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
@@ -47,6 +47,13 @@ class VisitBalanceMigrationService(
     pageNumber = pageNumber,
     pageSize = pageSize,
   )
+  override suspend fun getPageOfIds(
+    migrationFilter: VisitBalanceMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): List<VisitBalanceIdResponse> = getIds(migrationFilter, pageSize, pageNumber).content
+
+  override suspend fun getTotalNumberOfIds(migrationFilter: VisitBalanceMigrationFilter): Long = getIds(migrationFilter, 1, 0).totalElements
 
   override suspend fun migrateNomisEntity(context: MigrationContext<VisitBalanceIdResponse>) {
     val nomisVisitBalanceId = context.body.visitBalanceId

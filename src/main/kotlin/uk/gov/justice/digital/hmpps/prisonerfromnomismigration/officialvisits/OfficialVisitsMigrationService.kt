@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
-import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
@@ -18,13 +17,13 @@ class OfficialVisitsMigrationService(
   completeCheckRetrySeconds = 1,
   completeCheckScheduledRetrySeconds = 1,
 ) {
-  override suspend fun getIds(
+  override suspend fun getPageOfIds(
     migrationFilter: Any,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<Any> {
-    TODO("Not yet implemented")
-  }
+  ): List<Any> = TODO("Not yet implemented")
+
+  override suspend fun getTotalNumberOfIds(migrationFilter: Any): Long = TODO("Not yet implemented")
 
   override suspend fun migrateNomisEntity(context: MigrationContext<Any>) {
     TODO("Not yet implemented")

@@ -4,7 +4,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
-import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerAccountPointInTimeBalance
@@ -19,7 +18,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.toPageImpl
 import java.math.BigDecimal
 
 @Service
@@ -42,15 +40,23 @@ class PrisonerBalanceMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  override suspend fun getIds(
+  suspend fun getIds(
     migrationFilter: PrisonerBalanceMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<Long> = prisonerBalanceNomisApiService.getRootOffenderIdsToMigrate(
+  ) = prisonerBalanceNomisApiService.getRootOffenderIdsToMigrate(
     prisonId = migrationFilter.prisonId,
     pageNumber = pageNumber,
     pageSize = pageSize,
-  ).toPageImpl()
+  )
+
+  override suspend fun getPageOfIds(
+    migrationFilter: PrisonerBalanceMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): List<Long> = getIds(migrationFilter, pageSize, pageNumber).content
+
+  override suspend fun getTotalNumberOfIds(migrationFilter: PrisonerBalanceMigrationFilter): Long = getIds(migrationFilter, 1, 0).metadata.totalElements
 
   override suspend fun migrateNomisEntity(context: MigrationContext<Long>) {
     val nomisRootOffenderId = context.body

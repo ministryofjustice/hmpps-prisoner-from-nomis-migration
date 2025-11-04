@@ -45,7 +45,7 @@ class ExternalMovementsMigrationService(
   completeCheckRetrySeconds = completeCheckRetrySeconds,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
 ) {
-  override suspend fun getIds(
+  suspend fun getIds(
     migrationFilter: ExternalMovementsMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
@@ -58,6 +58,14 @@ class ExternalMovementsMigrationService(
     // If a single prisoner migration is requested, then we'll trust the input as we're probably testing. Pretend that we called nomis-prisoner-api which found a single prisoner.
     PageImpl<PrisonerId>(mutableListOf(PrisonerId(migrationFilter.prisonerNumber)), Pageable.ofSize(1), 1)
   }
+
+  override suspend fun getPageOfIds(
+    migrationFilter: ExternalMovementsMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): List<PrisonerId> = getIds(migrationFilter, pageSize, pageNumber).content
+
+  override suspend fun getTotalNumberOfIds(migrationFilter: ExternalMovementsMigrationFilter): Long = getIds(migrationFilter, 1, 0).totalElements
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     val offenderNo = context.body.offenderNo

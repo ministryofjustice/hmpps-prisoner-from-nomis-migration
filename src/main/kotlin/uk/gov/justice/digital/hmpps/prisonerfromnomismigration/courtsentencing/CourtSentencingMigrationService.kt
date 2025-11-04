@@ -49,7 +49,7 @@ class CourtSentencingMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  override suspend fun getIds(
+  suspend fun getIds(
     migrationFilter: CourtSentencingMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
@@ -63,6 +63,14 @@ class CourtSentencingMigrationService(
     val offenderNoList = migrationFilter.offenderNo.split(",").map { PrisonerId(it) }
     PageImpl<PrisonerId>(offenderNoList, Pageable.ofSize(1), 1)
   }
+
+  override suspend fun getPageOfIds(
+    migrationFilter: CourtSentencingMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): List<PrisonerId> = getIds(migrationFilter, pageSize, pageNumber).content
+
+  override suspend fun getTotalNumberOfIds(migrationFilter: CourtSentencingMigrationFilter): Long = getIds(migrationFilter, 1, 0).totalElements
 
   override suspend fun getContextProperties(migrationFilter: CourtSentencingMigrationFilter): MutableMap<String, Any> = mutableMapOf("deleteExisting" to migrationFilter.deleteExisting)
 

@@ -54,7 +54,7 @@ class AllocationsMigrationService(
 
   private val log = LoggerFactory.getLogger(this::class.java)
 
-  override suspend fun getIds(
+  suspend fun getIds(
     migrationFilter: AllocationsMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
@@ -65,6 +65,14 @@ class AllocationsMigrationService(
     pageNumber = pageNumber,
     pageSize = pageSize,
   )
+
+  override suspend fun getPageOfIds(
+    migrationFilter: AllocationsMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): List<FindActiveAllocationIdsResponse> = getIds(migrationFilter, pageSize, pageNumber).content
+
+  override suspend fun getTotalNumberOfIds(migrationFilter: AllocationsMigrationFilter): Long = getIds(migrationFilter, 1, 0).totalElements
 
   override suspend fun migrateNomisEntity(context: MigrationContext<FindActiveAllocationIdsResponse>) {
     val allocationId = context.body.allocationId

@@ -29,7 +29,7 @@ class SentencingAdjustmentsMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  override suspend fun getIds(
+  suspend fun getIds(
     migrationFilter: SentencingMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
@@ -39,6 +39,14 @@ class SentencingAdjustmentsMigrationService(
     pageNumber = pageNumber,
     pageSize = pageSize,
   )
+
+  override suspend fun getPageOfIds(
+    migrationFilter: SentencingMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): List<AdjustmentIdResponse> = getIds(migrationFilter, pageSize, pageNumber).content
+
+  override suspend fun getTotalNumberOfIds(migrationFilter: SentencingMigrationFilter): Long = getIds(migrationFilter, 1, 0).totalElements
 
   override suspend fun migrateNomisEntity(context: MigrationContext<AdjustmentIdResponse>) {
     log.info("attempting to migrate patch ${context.body}")

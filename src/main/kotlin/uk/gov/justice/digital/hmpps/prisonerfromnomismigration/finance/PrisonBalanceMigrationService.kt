@@ -4,7 +4,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
-import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerBalancesSyncRequest
@@ -40,13 +39,17 @@ class PrisonBalanceMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  override suspend fun getIds(
+  suspend fun getIds(
+    migrationFilter: PrisonBalanceMigrationFilter,
+  ): List<String> = migrationFilter.prisonId?.ifEmpty { null }?.let { listOf(it) } ?: prisonBalanceNomisApiService.getPrisonBalanceIds()
+
+  override suspend fun getPageOfIds(
     migrationFilter: PrisonBalanceMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): PageImpl<String> = PageImpl(
-    migrationFilter.prisonId?.ifEmpty { null }?.let { listOf(it) } ?: prisonBalanceNomisApiService.getPrisonBalanceIds(),
-  )
+  ): List<String> = getIds(migrationFilter)
+
+  override suspend fun getTotalNumberOfIds(migrationFilter: PrisonBalanceMigrationFilter): Long = getIds(migrationFilter).size.toLong()
 
   override suspend fun migrateNomisEntity(context: MigrationContext<String>) {
     val prisonId = context.body

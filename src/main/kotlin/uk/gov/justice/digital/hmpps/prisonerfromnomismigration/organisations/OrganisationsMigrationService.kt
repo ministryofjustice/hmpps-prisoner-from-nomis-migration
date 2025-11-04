@@ -46,7 +46,7 @@ class OrganisationsMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  override suspend fun getIds(
+  suspend fun getIds(
     migrationFilter: OrganisationsMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
@@ -56,6 +56,14 @@ class OrganisationsMigrationService(
     pageNumber = pageNumber,
     pageSize = pageSize,
   )
+
+  override suspend fun getPageOfIds(
+    migrationFilter: OrganisationsMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): List<CorporateOrganisationIdResponse> = getIds(migrationFilter, pageSize, pageNumber).content
+
+  override suspend fun getTotalNumberOfIds(migrationFilter: OrganisationsMigrationFilter): Long = getIds(migrationFilter, 1, 0).totalElements
 
   override suspend fun migrateNomisEntity(context: MigrationContext<CorporateOrganisationIdResponse>) {
     val nomisCorporateId = context.body.corporateId
