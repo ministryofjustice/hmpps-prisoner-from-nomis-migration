@@ -18,7 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
-import java.util.UUID
+import java.util.*
 
 @SpringAPIServiceTest
 @Import(CorePersonMappingApiService::class, CorePersonMappingApiMockServer::class)
@@ -210,20 +210,6 @@ class CorePersonMappingApiServiceTest {
       assertThat(result.isError).isTrue()
       assertThat(result.errorResponse!!.moreInfo.duplicate.cprId).isEqualTo(cprId)
       assertThat(result.errorResponse!!.moreInfo.existing.cprId).isEqualTo(existingCprId)
-    }
-  }
-
-  @Nested
-  inner class GetMigrationDetails {
-    @Test
-    fun `will call the person mapping endpoint`() = runTest {
-      mockServer.stubGetMigrationDetails(migrationId = "2020-01-01T10%3A00")
-
-      apiService.getMigrationDetails(migrationId = "2020-01-01T10:00")
-
-      mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/mapping/core-person/migration-id/2020-01-01T10%3A00")),
-      )
     }
   }
 }

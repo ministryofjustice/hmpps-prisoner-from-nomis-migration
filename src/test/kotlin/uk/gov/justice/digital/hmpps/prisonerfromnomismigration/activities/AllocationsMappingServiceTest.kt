@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -13,7 +12,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -21,7 +19,6 @@ import org.springframework.context.annotation.Import
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException.InternalServerError
-import org.springframework.web.reactive.function.client.WebClientResponseException.NotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AllocationMigrationMappingDto
@@ -202,152 +199,6 @@ class AllocationsMappingServiceTest {
       assertThatThrownBy {
         runBlocking {
           allocationsMappingService.findNomisMapping(1234)
-        }
-      }.isInstanceOf(InternalServerError::class.java)
-    }
-  }
-
-  @Nested
-  inner class FindLatestMigration {
-    @BeforeEach
-    internal fun setUp() {
-      mappingApi.stubLatestMigration("2020-01-01T10:00:00")
-    }
-
-    @Test
-    internal fun `should supply authentication token`(): Unit = runBlocking {
-      allocationsMappingService.findLatestMigration()
-
-      mappingApi.verify(
-        getRequestedFor(
-          urlPathEqualTo("/mapping/allocations/migration/migrated/latest"),
-        )
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `should return null when not found`(): Unit = runBlocking {
-      mappingApi.stubFor(
-        get(urlPathEqualTo("/mapping/allocations/migration/migrated/latest")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody("""{"message":"Not found"}"""),
-        ),
-      )
-
-      assertThat(allocationsMappingService.findLatestMigration()).isNull()
-    }
-
-    @Test
-    internal fun `should return the mapping when found`(): Unit = runBlocking {
-      mappingApi.stubFor(
-        get(WireMock.urlEqualTo("/mapping/allocations/migration/migrated/latest")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withBody(
-              """
-                {
-                  "nomisAllocationId": 1234,
-                  "activityAllocationId": "2345",
-                  "activityId": "3456",
-                  "label": "2022-02-16T14:20:15",
-                  "whenCreated": "2022-02-16T16:21:15.589091"
-                }
-              """,
-            ),
-        ),
-      )
-
-      val mapping = allocationsMappingService.findLatestMigration()
-      assertThat(mapping).isNotNull
-      assertThat(mapping?.migrationId).isEqualTo("2022-02-16T14:20:15")
-    }
-
-    @Test
-    internal fun `should throw exception for any other error`() {
-      mappingApi.stubFor(
-        get(urlPathMatching("/mapping/allocations/migration/migrated/latest")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
-            .withBody("""{"message":"Tea"}"""),
-        ),
-      )
-
-      assertThatThrownBy {
-        runBlocking {
-          allocationsMappingService.findLatestMigration()
-        }
-      }.isInstanceOf(InternalServerError::class.java)
-    }
-  }
-
-  @Nested
-  inner class GetMigrationDetails {
-    @BeforeEach
-    internal fun setUp() {
-      mappingApi.stubAllocationsMappingByMigrationId("2020-01-01T11:10:00")
-    }
-
-    @Test
-    internal fun `should supply authentication token`(): Unit = runBlocking {
-      allocationsMappingService.getMigrationDetails("2020-01-01T10:00:00")
-
-      mappingApi.verify(
-        getRequestedFor(
-          urlPathMatching("/mapping/allocations/migration/migration-id/.*"),
-        )
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `should throw error when not found`() {
-      mappingApi.stubFor(
-        get(urlPathMatching("/mapping/allocations/migration/migration-id/.*")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody("""{"message":"Not found"}"""),
-        ),
-      )
-
-      assertThatThrownBy {
-        runBlocking {
-          allocationsMappingService.getMigrationDetails("2020-01-01T10:00:00")
-        }
-      }.isInstanceOf(NotFound::class.java)
-    }
-
-    @Test
-    internal fun `should return the mapping when found`(): Unit = runBlocking {
-      mappingApi.stubAllocationsMappingByMigrationId(
-        whenCreated = "2020-01-01T11:10:00",
-        count = 56_766,
-      )
-
-      val mapping = allocationsMappingService.getMigrationDetails("2020-01-01T10:00:00")
-      assertThat(mapping).isNotNull
-      assertThat(mapping.startedDateTime).isEqualTo("2020-01-01T11:10:00")
-      assertThat(mapping.count).isEqualTo(56766)
-    }
-
-    @Test
-    internal fun `should throw exception for any other error`() {
-      mappingApi.stubFor(
-        get(urlPathMatching("/mapping/allocations/migration/migration-id/.*")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
-            .withBody("""{"message":"Tea"}"""),
-        ),
-      )
-
-      assertThatThrownBy {
-        runBlocking {
-          allocationsMappingService.getMigrationDetails("2020-01-01T10:00:00")
         }
       }.isInstanceOf(InternalServerError::class.java)
     }

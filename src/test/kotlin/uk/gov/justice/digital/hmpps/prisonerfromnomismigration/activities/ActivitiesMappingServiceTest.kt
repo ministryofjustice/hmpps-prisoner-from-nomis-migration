@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
@@ -15,7 +14,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -32,7 +30,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ActivityMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import java.util.UUID
+import java.util.*
 
 @SpringAPIServiceTest
 @Import(ActivitiesMappingService::class, ActivitiesConfiguration::class)
@@ -208,152 +206,6 @@ class ActivitiesMappingServiceTest {
       assertThatThrownBy {
         runBlocking {
           activitiesMappingService.findNomisMapping(1234)
-        }
-      }.isInstanceOf(InternalServerError::class.java)
-    }
-  }
-
-  @Nested
-  inner class FindLatestMigration {
-    @BeforeEach
-    internal fun setUp() {
-      mappingApi.stubLatestMigration("2020-01-01T10:00:00")
-    }
-
-    @Test
-    internal fun `should supply authentication token`(): Unit = runBlocking {
-      activitiesMappingService.findLatestMigration()
-
-      mappingApi.verify(
-        getRequestedFor(
-          urlPathEqualTo("/mapping/activities/migration/migrated/latest"),
-        )
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `should return null when not found`(): Unit = runBlocking {
-      mappingApi.stubFor(
-        get(urlPathEqualTo("/mapping/activities/migration/migrated/latest")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(NOT_FOUND.value())
-            .withBody("""{"message":"Not found"}"""),
-        ),
-      )
-
-      assertThat(activitiesMappingService.findLatestMigration()).isNull()
-    }
-
-    @Test
-    internal fun `should return the mapping when found`(): Unit = runBlocking {
-      mappingApi.stubFor(
-        get(WireMock.urlEqualTo("/mapping/activities/migration/migrated/latest")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withBody(
-              """
-                {
-                  "nomisCourseActivityId": 1234,
-                  "activityId": "2345",
-                  "activityId2": "3456",
-                  "label": "2022-02-16T14:20:15",
-                  "whenCreated": "2022-02-16T16:21:15.589091"
-                }
-              """,
-            ),
-        ),
-      )
-
-      val mapping = activitiesMappingService.findLatestMigration()
-      assertThat(mapping).isNotNull
-      assertThat(mapping?.migrationId).isEqualTo("2022-02-16T14:20:15")
-    }
-
-    @Test
-    internal fun `should throw exception for any other error`() {
-      mappingApi.stubFor(
-        get(urlPathMatching("/mapping/activities/migration/migrated/latest")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(INTERNAL_SERVER_ERROR.value())
-            .withBody("""{"message":"Tea"}"""),
-        ),
-      )
-
-      assertThatThrownBy {
-        runBlocking {
-          activitiesMappingService.findLatestMigration()
-        }
-      }.isInstanceOf(InternalServerError::class.java)
-    }
-  }
-
-  @Nested
-  inner class GetMigrationDetails {
-    @BeforeEach
-    internal fun setUp() {
-      mappingApi.stubActivitiesMappingByMigrationId("2020-01-01T11:10:00")
-    }
-
-    @Test
-    internal fun `should supply authentication token`(): Unit = runBlocking {
-      activitiesMappingService.getMigrationDetails("2020-01-01T10:00:00")
-
-      mappingApi.verify(
-        getRequestedFor(
-          urlPathMatching("/mapping/activities/migration/migration-id/.*"),
-        )
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `should throw error when not found`() {
-      mappingApi.stubFor(
-        get(urlPathMatching("/mapping/activities/migration/migration-id/.*")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(NOT_FOUND.value())
-            .withBody("""{"message":"Not found"}"""),
-        ),
-      )
-
-      assertThatThrownBy {
-        runBlocking {
-          activitiesMappingService.getMigrationDetails("2020-01-01T10:00:00")
-        }
-      }.isInstanceOf(NotFound::class.java)
-    }
-
-    @Test
-    internal fun `should return the mapping when found`(): Unit = runBlocking {
-      mappingApi.stubActivitiesMappingByMigrationId(
-        whenCreated = "2020-01-01T11:10:00",
-        count = 7,
-      )
-
-      val mapping = activitiesMappingService.getMigrationDetails("2020-01-01T10:00:00")
-      assertThat(mapping).isNotNull
-      assertThat(mapping.startedDateTime).isEqualTo("2020-01-01T11:10:00")
-      assertThat(mapping.count).isEqualTo(7)
-    }
-
-    @Test
-    internal fun `should throw exception for any other error`() {
-      mappingApi.stubFor(
-        get(urlPathMatching("/mapping/activities/migration/migration-id/.*")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(INTERNAL_SERVER_ERROR.value())
-            .withBody("""{"message":"Tea"}"""),
-        ),
-      )
-
-      assertThatThrownBy {
-        runBlocking {
-          activitiesMappingService.getMigrationDetails("2020-01-01T10:00:00")
         }
       }.isInstanceOf(InternalServerError::class.java)
     }

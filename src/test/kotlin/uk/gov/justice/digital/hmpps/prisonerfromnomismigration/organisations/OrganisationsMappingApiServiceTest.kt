@@ -129,20 +129,6 @@ class OrganisationsMappingApiServiceTest {
   }
 
   @Nested
-  inner class GetMigrationDetails {
-    @Test
-    fun `will call the corporate mapping endpoint`() = runTest {
-      mockServer.stubGetMigrationDetails(migrationId = "2020-01-01T10%3A00")
-
-      apiService.getMigrationDetails(migrationId = "2020-01-01T10:00")
-
-      mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/mapping/corporate/organisation/migration-id/2020-01-01T10%3A00")),
-      )
-    }
-  }
-
-  @Nested
   inner class CreateCorporateMapping {
     @Test
     internal fun `will pass oath2 token to create corporate mapping endpoint`() = runTest {
