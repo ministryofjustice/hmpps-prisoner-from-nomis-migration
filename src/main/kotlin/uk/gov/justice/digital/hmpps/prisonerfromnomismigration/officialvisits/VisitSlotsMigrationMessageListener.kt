@@ -8,6 +8,7 @@ import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VISIT_SLOTS_QUEUE_ID
@@ -17,7 +18,7 @@ import java.util.concurrent.CompletableFuture
 class VisitSlotsMigrationMessageListener(
   objectMapper: ObjectMapper,
   migrationService: VisitSlotsMigrationService,
-) : MigrationMessageListener<Any, Any, Any, Any>(
+) : MigrationMessageListener<Any, Any, Any, VisitTimeSlotMigrationMappingDto>(
   objectMapper,
   migrationService,
 ) {
@@ -37,5 +38,5 @@ class VisitSlotsMigrationMessageListener(
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, Any> = objectMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, Any> = objectMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, VisitTimeSlotMigrationMappingDto> = objectMapper.readValue(json)
 }

@@ -2,13 +2,14 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 
 @Service
 class VisitSlotsMigrationService(
   mappingService: VisitSlotsMappingService,
-) : MigrationService<Any, Any, Any>(
+) : MigrationService<Any, Any, VisitTimeSlotMigrationMappingDto>(
   mappingService,
   MigrationType.VISIT_SLOTS,
   pageSize = 1,
