@@ -3669,7 +3669,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubUpdateScheduledMovementMappingFailureFollowedBySuccess()
 
         sendMessage(addressUpdatedEventOf(321, "OFFENDER"))
-          .also { waitForAnyProcessingToComplete("temporary-absence-sync-address-updated-success") }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-updated-success", times = 2) }
       }
 
       @Test
