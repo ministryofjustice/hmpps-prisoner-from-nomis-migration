@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
 
 import com.github.tomakehurst.wiremock.client.WireMock.absent
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.containing
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.system.CapturedOutput
@@ -3408,7 +3410,6 @@ class ExternalMovementsSyncIntTest(
     }
   }
 
-  // TODO add tests for corporate and agency addresses, and for retry mappings
   @Nested
   inner class AddressUpdated {
     private inner class TestData(val dpsApplicationId: UUID, val nomisApplicationId: Long, val mapping: ScheduledMovementSyncMappingDto)
@@ -3602,6 +3603,63 @@ class ExternalMovementsSyncIntTest(
             )
           }
         }
+      }
+    }
+
+    @Nested
+    inner class WhenScheduleCompleted {
+
+      @BeforeEach
+      fun setUp() {
+        createStubs("OFF")
+        scheduleMappings.forEach {
+          nomisApi.stubGetTemporaryAbsenceScheduledMovement(
+            offenderNo = it.mapping.prisonerNumber,
+            eventId = it.mapping.nomisEventId,
+            applicationId = it.nomisApplicationId,
+            addressOwnerClass = "OFF",
+            eventStatus = "COMP",
+          )
+        }
+
+        sendMessage(addressUpdatedEventOf(321, "OFFENDER"))
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-address-updated-success") }
+      }
+
+      @Test
+      fun `should NOT update DPS scheduled movement`() {
+        dpsApi.verify(0, putRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `should NOT update mappings`() {
+        mappingApi.verify(0, putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")))
+      }
+
+      @Test
+      fun `should create success telemetry for address update`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-address-updated-success"),
+          check {
+            assertThat(it["nomisAddressId"]).isEqualTo("321")
+            assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
+            assertThat(it["nomisEventIds"]).isEqualTo("[1, 2]")
+            assertThat(it["dpsOccurrenceIds"]).isEqualTo("${scheduleMappings.map { it.mapping.dpsOccurrenceId }}")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should included ignored on sync telemetry`() {
+        verify(telemetryClient, times(2))
+          .trackEvent(
+            eq("temporary-absence-sync-scheduled-movement-updated-success"),
+            check {
+              assertThat(it["ignored"]).isEqualTo("true")
+            },
+            isNull(),
+          )
       }
     }
 
