@@ -223,8 +223,8 @@ class ExternalMovementsSyncService(
       ?.also { telemetryClient.trackEvent("$TELEMETRY_PREFIX-scheduled-movement-inserted-ignored", telemetry) }
       ?: run {
         track("$TELEMETRY_PREFIX-scheduled-movement-inserted", telemetry) {
-          val mapping = syncScheduledMovementTapOut(prisonerNumber, eventId, telemetry)
-          tryToCreateScheduledMovementMapping(mapping, telemetry)
+          syncScheduledMovementTapOut(prisonerNumber, eventId, telemetry)
+            ?.also { tryToCreateScheduledMovementMapping(it, telemetry) }
         }
       }
   }
@@ -234,10 +234,11 @@ class ExternalMovementsSyncService(
     eventId: Long,
     telemetry: MutableMap<String, Any>,
     dpsOccurrenceId: UUID? = null,
-  ): ScheduledMovementSyncMappingDto = nomisApiService.getTemporaryAbsenceScheduledMovement(prisonerNumber, eventId)
-    .also {
-      telemetry["nomisApplicationId"] = it.movementApplicationId
-    }.let { nomisSchedule ->
+    onlyIfScheduled: Boolean = false,
+  ): ScheduledMovementSyncMappingDto? = nomisApiService.getTemporaryAbsenceScheduledMovement(prisonerNumber, eventId)
+    .takeIf { !onlyIfScheduled || it.eventStatus == "SCH" }
+    ?.also { telemetry["nomisApplicationId"] = it.movementApplicationId }
+    ?.let { nomisSchedule ->
       val dpsApplicationId = requireParentApplicationExists(nomisSchedule.movementApplicationId)
         .also { telemetry["dpsApplicationId"] = it }
       val dpsOccurrenceId = dpsApiService.syncTemporaryAbsenceScheduledMovement(dpsApplicationId, nomisSchedule.toDpsRequest(dpsOccurrenceId)).id
@@ -281,7 +282,7 @@ class ExternalMovementsSyncService(
     track("$TELEMETRY_PREFIX-scheduled-movement-updated", telemetry) {
       val mapping = mappingApiService.getScheduledMovementMapping(eventId)!!
         .also { telemetry["dpsOccurrenceId"] = it.dpsOccurrenceId }
-      val newMapping = syncScheduledMovementTapOut(prisonerNumber, eventId, telemetry, mapping.dpsOccurrenceId)
+      val newMapping = syncScheduledMovementTapOut(prisonerNumber, eventId, telemetry, mapping.dpsOccurrenceId)!!
       if (newMapping.hasChanged(mapping)) {
         tryToUpdateScheduledMovementMapping(newMapping, telemetry)
       }
@@ -690,8 +691,9 @@ class ExternalMovementsSyncService(
           "directionCode" to "OUT",
         )
         track("$TELEMETRY_PREFIX-scheduled-movement-updated", syncTelemetry) {
-          syncScheduledMovementTapOut(it.prisonerNumber, it.nomisEventId, syncTelemetry, it.dpsOccurrenceId)
-            .also { tryToUpdateScheduledMovementMapping(it, syncTelemetry) }
+          syncScheduledMovementTapOut(it.prisonerNumber, it.nomisEventId, syncTelemetry, it.dpsOccurrenceId, onlyIfScheduled = true)
+            ?.also { tryToUpdateScheduledMovementMapping(it, syncTelemetry) }
+            ?: also { syncTelemetry["ignored"] = true }
         }
       }
     }
