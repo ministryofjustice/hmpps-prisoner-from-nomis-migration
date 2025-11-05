@@ -12,10 +12,12 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
+import java.util.UUID
 
 @Component
 class VisitSlotsMappingApiMockServer(private val objectMapper: ObjectMapper) {
@@ -103,6 +105,24 @@ class VisitSlotsMappingApiMockServer(private val objectMapper: ObjectMapper) {
         ),
       )
     }
+  }
+
+  fun stubGetInternalLocationByNomisId(
+    nomisLocationId: Long,
+    mapping: LocationMappingDto = LocationMappingDto(
+      dpsLocationId = UUID.randomUUID().toString(),
+      nomisLocationId = nomisLocationId,
+      mappingType = LocationMappingDto.MappingType.LOCATION_CREATED,
+    ),
+  ) {
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/locations/nomis/$nomisLocationId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(mapping)),
+      ),
+    )
   }
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
