@@ -202,6 +202,11 @@ externalmovements:
     delay-seconds: 180
     count: 9
 
+visitslots:
+  complete-check:
+    delay-seconds: 10
+    count: 9
+
 azure:
   application-insights:
     web:
