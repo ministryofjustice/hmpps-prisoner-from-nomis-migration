@@ -26,7 +26,7 @@ class VisitSlotsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         propertySize = pageSize.toLong(),
         number = pageNumber.toLong(),
         totalElements = totalElements,
-        totalPages = (totalElements / pageSize + 1),
+        totalPages = Math.ceilDiv(totalElements, pageSize),
       ),
     )
 

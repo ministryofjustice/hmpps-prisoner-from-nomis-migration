@@ -67,7 +67,7 @@ class VisitSlotsNomisApiIntTest {
     }
 
     @Test
-    fun `will return a PageImpl version of the response so it can be used by migration service`() = runTest {
+    fun `will return page metadata in the response so it can be used by migration service`() = runTest {
       mockServer.stubGetVisitTimeSlotIds(
         content = (1..20).map {
           VisitTimeSlotIdResponse(
@@ -84,10 +84,9 @@ class VisitSlotsNomisApiIntTest {
       val pageOfIds = apiService.getVisitTimeSlotIds(pageNumber = 10, pageSize = 20)
 
       assertThat(pageOfIds.content).hasSize(20)
-      assertThat(pageOfIds.totalPages).isEqualTo(50)
-      assertThat(pageOfIds.numberOfElements).isEqualTo(20)
-      assertThat(pageOfIds.totalElements).isEqualTo(1000)
-      assertThat(pageOfIds.pageable.pageSize).isEqualTo(20)
+      assertThat(pageOfIds.page?.totalPages).isEqualTo(50)
+      assertThat(pageOfIds.page?.totalElements).isEqualTo(1000)
+      assertThat(pageOfIds.page?.propertySize).isEqualTo(20)
     }
   }
 
