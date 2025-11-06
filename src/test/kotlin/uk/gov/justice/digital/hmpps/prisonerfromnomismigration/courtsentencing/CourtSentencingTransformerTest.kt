@@ -131,6 +131,7 @@ class CourtSentencingTransformerTest {
                 ),
                 mostSeriousFlag = true,
                 lidsOffenceNumber = 1,
+                createdByUsername = "msmith",
               ),
               resultCode1 = OffenceResultCodeResponse(
                 chargeStatus = "A",
@@ -140,6 +141,7 @@ class CourtSentencingTransformerTest {
                 conviction = true,
               ),
               mostSeriousFlag = true,
+              createdByUsername = "msmith",
             ),
             CourtEventChargeResponse(
               eventId = NON_SENTENCING_APPEARANCE,
@@ -161,6 +163,7 @@ class CourtSentencingTransformerTest {
                 ),
                 mostSeriousFlag = false,
                 lidsOffenceNumber = 2,
+                createdByUsername = "msmith",
               ),
               resultCode1 = OffenceResultCodeResponse(
                 chargeStatus = "A",
@@ -170,6 +173,7 @@ class CourtSentencingTransformerTest {
                 conviction = true,
               ),
               mostSeriousFlag = false,
+              createdByUsername = "msmith",
             ),
           ),
           courtOrders = listOf(
@@ -227,6 +231,7 @@ class CourtSentencingTransformerTest {
                 ),
                 mostSeriousFlag = true,
                 lidsOffenceNumber = 1,
+                createdByUsername = "msmith",
               ),
               resultCode1 = OffenceResultCodeResponse(
                 chargeStatus = "A",
@@ -236,6 +241,7 @@ class CourtSentencingTransformerTest {
                 conviction = true,
               ),
               mostSeriousFlag = true,
+              createdByUsername = "msmith",
             ),
             CourtEventChargeResponse(
               eventId = SENTENCING_APPEARANCE,
@@ -257,6 +263,7 @@ class CourtSentencingTransformerTest {
                 ),
                 mostSeriousFlag = true,
                 lidsOffenceNumber = 1,
+                createdByUsername = "msmith",
               ),
               resultCode1 = OffenceResultCodeResponse(
                 chargeStatus = "A",
@@ -266,6 +273,7 @@ class CourtSentencingTransformerTest {
                 conviction = true,
               ),
               mostSeriousFlag = true,
+              createdByUsername = "msmith",
             ),
             CourtEventChargeResponse(
               eventId = SENTENCING_APPEARANCE,
@@ -287,6 +295,7 @@ class CourtSentencingTransformerTest {
                 ),
                 mostSeriousFlag = false,
                 lidsOffenceNumber = 2,
+                createdByUsername = "msmith",
               ),
               resultCode1 = OffenceResultCodeResponse(
                 chargeStatus = "I",
@@ -296,6 +305,7 @@ class CourtSentencingTransformerTest {
                 conviction = false,
               ),
               mostSeriousFlag = false,
+              createdByUsername = "msmith",
             ),
           ),
           courtOrders = listOf(
@@ -331,6 +341,7 @@ class CourtSentencingTransformerTest {
           ),
           mostSeriousFlag = true,
           lidsOffenceNumber = 1,
+          createdByUsername = "msmith",
         ),
         OffenderChargeResponse(
           id = 3688293,
@@ -350,6 +361,7 @@ class CourtSentencingTransformerTest {
           ),
           mostSeriousFlag = true,
           lidsOffenceNumber = 1,
+          createdByUsername = "msmith",
         ),
         OffenderChargeResponse(
           id = 3688292,
@@ -369,6 +381,7 @@ class CourtSentencingTransformerTest {
           ),
           mostSeriousFlag = false,
           lidsOffenceNumber = 2,
+          createdByUsername = "msmith",
         ),
       ),
       caseInfoNumbers = listOf(
@@ -419,6 +432,7 @@ class CourtSentencingTransformerTest {
               endDate = LocalDate.parse("2020-04-28"),
               lifeSentenceFlag = false,
               prisonId = "OUT",
+              createdByUsername = "msmith",
             ),
           ),
           offenderCharges = listOf(
@@ -440,6 +454,7 @@ class CourtSentencingTransformerTest {
               ),
               mostSeriousFlag = true,
               lidsOffenceNumber = 1,
+              createdByUsername = "msmith",
             ),
             OffenderChargeResponse(
               id = 3688293,
@@ -459,6 +474,7 @@ class CourtSentencingTransformerTest {
               ),
               mostSeriousFlag = true,
               lidsOffenceNumber = 1,
+              createdByUsername = "msmith",
             ),
           ),
           prisonId = "BAI",
