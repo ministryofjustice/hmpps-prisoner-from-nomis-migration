@@ -126,7 +126,7 @@ class VisitSlotsNomisApiIntTest {
         timeSlotSequence = 1,
       )
       mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/visits/configuration/time-slots/prison-id/LEI/day-of-week/MONDAY/time-slot-sequence/1")),
+        getRequestedFor(urlPathEqualTo("/visits/configuration/time-slots/prison-id/LEI/day-of-week/MON/time-slot-sequence/1")),
       )
     }
   }
