@@ -48,5 +48,5 @@ class VisitSlotsMigrationResource(
       ),
     ],
   )
-  suspend fun migrateContactPerson() = migrationService.startMigration("")
+  suspend fun startMigration() = migrationService.startMigration("")
 }

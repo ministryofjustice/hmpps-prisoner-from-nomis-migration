@@ -234,6 +234,41 @@ class VisitSlotsMappingApiServiceTest {
   }
 
   @Nested
+  inner class GetInternalLocationByNomisId {
+    val nomisLocationId = 1234L
+
+    @Test
+    fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetInternalLocationByNomisId(
+        nomisLocationId = nomisLocationId,
+      )
+
+      apiService.getInternalLocationByNomisId(
+        nomisLocationId = nomisLocationId,
+      )
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetInternalLocationByNomisId(
+        nomisLocationId = nomisLocationId,
+      )
+
+      apiService.getInternalLocationByNomisId(
+        nomisLocationId = nomisLocationId,
+      )
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/mapping/locations/nomis/$nomisLocationId")),
+      )
+    }
+  }
+
+  @Nested
   inner class GetMigrationCount {
     @BeforeEach
     fun setUp() {

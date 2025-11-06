@@ -1,8 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
@@ -20,11 +23,26 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.VisitsConfigurationResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitInternalLocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitTimeSlotIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitTimeSlotResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.getRequestBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.migrateVisitConfigResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.VisitSlotsNomisApiMockServer.Companion.visitSlotResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.VisitSlotsNomisApiMockServer.Companion.visitTimeSlotResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.IdPair
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.IdPair.ElementType.PRISON_VISIT_SLOT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.PrisonerRestrictionMigrationFilter
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import java.time.Duration
+import java.time.LocalDate
+import java.util.*
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class VisitSlotsMigrationIntTest(
@@ -32,13 +50,14 @@ class VisitSlotsMigrationIntTest(
 ) : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var nomisApiMock: VisitSlotsNomisApiMockServer
+  private val dpsApiMock = OfficialVisitsDpsApiExtension.dpsOfficialVisitsServer
 
   @Autowired
   private lateinit var mappingApiMock: VisitSlotsMappingApiMockServer
 
   @Nested
   @DisplayName("POST /migrate/visitslots")
-  inner class MigrateContactPersons {
+  inner class StartMigration {
     @BeforeEach
     internal fun deleteHistoryRecords() {
       runBlocking {
@@ -125,6 +144,152 @@ class VisitSlotsMigrationIntTest(
           .expectBody()
           .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
           .jsonPath("$.status").isEqualTo("COMPLETED")
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+      private lateinit var migrationResult: MigrationResult
+      val nomisLocationId = 12345L
+      val dpsLocationId: UUID = UUID.fromString("e7c2a3cc-e5b2-48ff-9e8b-a5038355b36c")
+      val nomisPrisonId = "WWI"
+      val nomisSlotSequence = 2
+      val dpsTimeSlotId = 54321L
+      val dpsVisitSlotId = 45678L
+      val nomisVisitSlotId = 876544L
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetVisitTimeSlotIds(
+          content = listOf(
+            VisitTimeSlotIdResponse(
+              prisonId = nomisPrisonId,
+              dayOfWeek = VisitTimeSlotIdResponse.DayOfWeek.MONDAY,
+              timeSlotSequence = nomisSlotSequence,
+            ),
+          ),
+        )
+        mappingApiMock.stubGetByNomisIdsOrNull(
+          nomisPrisonId = nomisPrisonId,
+          nomisDayOfWeek = VisitTimeSlotMappingDto.NomisDayOfWeek.MONDAY,
+          nomisSlotSequence = nomisSlotSequence,
+          mapping = null,
+        )
+        nomisApiMock.stubGetVisitTimeSlot(
+          prisonId = nomisPrisonId,
+          dayOfWeek = VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MONDAY,
+          timeSlotSequence = nomisSlotSequence,
+          response = visitTimeSlotResponse().copy(
+            visitSlots = listOf(
+              visitSlotResponse().copy(
+                id = 9876,
+                internalLocation = VisitInternalLocationResponse(
+                  id = nomisLocationId,
+                  code = "WWI-VISITS-ROOM-1",
+                ),
+                maxGroups = 19,
+                maxAdults = 20,
+              ),
+            ),
+            prisonId = nomisPrisonId,
+            dayOfWeek = VisitTimeSlotResponse.DayOfWeek.MONDAY,
+            timeSlotSequence = nomisSlotSequence,
+            startTime = "10:00",
+            endTime = "11:15",
+            effectiveDate = LocalDate.parse("2020-01-01"),
+            expiryDate = LocalDate.parse("2030-01-01"),
+          ),
+        )
+        mappingApiMock.stubGetInternalLocationByNomisId(
+          nomisLocationId = nomisLocationId,
+          mapping = LocationMappingDto(
+            dpsLocationId = dpsLocationId.toString(),
+            nomisLocationId = nomisLocationId,
+            mappingType = LocationMappingDto.MappingType.LOCATION_CREATED,
+          ),
+        )
+        dpsApiMock.stubMigrateVisitConfiguration(
+          response = migrateVisitConfigResponse().copy(
+            dpsTimeSlotId = dpsTimeSlotId,
+            visitSlots = listOf(
+              IdPair(elementType = PRISON_VISIT_SLOT, nomisId = nomisVisitSlotId, dpsId = dpsVisitSlotId),
+            ),
+          ),
+        )
+        mappingApiMock.stubCreateMappingsForMigration()
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will retrieve visit time slot details`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/visits/configuration/time-slots/prison-id/$nomisPrisonId/day-of-week/MONDAY/time-slot-sequence/$nomisSlotSequence")))
+      }
+
+      @Test
+      fun `will retrieve DPS visit room location id`() {
+        mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/locations/nomis/$nomisLocationId")))
+      }
+
+      @Test
+      fun `will transform and migrate time and visit slots into DPS`() {
+        val migrationRequest: MigrateVisitConfigRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/migrate/visit-configuration")))
+
+        assertThat(migrationRequest.effectiveDate).isEqualTo(LocalDate.parse("2020-01-01"))
+        assertThat(migrationRequest.expiryDate).isEqualTo(LocalDate.parse("2030-01-01"))
+        assertThat(migrationRequest.startTime).isEqualTo("10:00")
+        assertThat(migrationRequest.endTime).isEqualTo("11:15")
+        assertThat(migrationRequest.dayCode).isEqualTo("MON")
+        assertThat(migrationRequest.visitSlots).hasSize(1)
+        assertThat(migrationRequest.visitSlots[0].maxAdults).isEqualTo(20)
+        assertThat(migrationRequest.visitSlots[0].maxGroups).isEqualTo(19)
+        assertThat(migrationRequest.visitSlots[0].dpsLocationId).isEqualTo(dpsLocationId)
+      }
+
+      @Test
+      fun `will create mappings for time and visit slot`() {
+        val mappingRequests: List<VisitTimeSlotMigrationMappingDto> = MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/visit-slots")))
+
+        assertThat(mappingRequests).hasSize(1)
+
+        with(mappingRequests.first()) {
+          assertThat(mappingType).isEqualTo(VisitTimeSlotMigrationMappingDto.MappingType.MIGRATED)
+          assertThat(label).isEqualTo(migrationResult.migrationId)
+          assertThat(nomisPrisonId).isEqualTo(nomisPrisonId)
+          assertThat(nomisDayOfWeek).isEqualTo(VisitTimeSlotMigrationMappingDto.NomisDayOfWeek.MONDAY)
+          assertThat(nomisSlotSequence).isEqualTo(nomisSlotSequence)
+          assertThat(dpsId).isEqualTo(dpsTimeSlotId.toString())
+          assertThat(visitSlots).hasSize(1)
+          assertThat(visitSlots[0].dpsId).isEqualTo(dpsVisitSlotId.toString())
+          assertThat(visitSlots[0].nomisId).isEqualTo(nomisVisitSlotId)
+        }
+      }
+
+      @Test
+      fun `will track telemetry for each slot migrated`() {
+        verify(telemetryClient).trackEvent(
+          eq("visitslots-migration-entity-migrated"),
+          check {
+            assertThat(it["nomisPrisonId"]).isEqualTo(nomisPrisonId)
+            assertThat(it["nomisDayOfWeek"]).isEqualTo("MONDAY")
+            assertThat(it["nomisSlotSequence"]).isEqualTo(nomisSlotSequence.toString())
+            assertThat(it["dpsId"]).isEqualTo(dpsTimeSlotId.toString())
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will record the number of visit time slots migrated`() {
+        webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+          .jsonPath("$.recordsMigrated").isEqualTo("1")
       }
     }
   }
