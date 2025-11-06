@@ -19,8 +19,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitSlot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
-import java.time.DayOfWeek
-import java.time.LocalDateTime
 import java.util.*
 
 @Service
@@ -64,7 +62,7 @@ class VisitSlotsMigrationService(
     val nomisId = context.body
     val alreadyMigratedMapping = visitSlotsMappingService.getByNomisIdsOrNull(
       nomisPrisonId = nomisId.prisonId,
-      nomisDayOfWeek = nomisId.dayOfWeek.asMappingDayOfWeek(),
+      nomisDayOfWeek = nomisId.dayOfWeek.name,
       nomisSlotSequence = nomisId.timeSlotSequence,
     )
 
@@ -81,7 +79,7 @@ class VisitSlotsMigrationService(
       val mapping = VisitTimeSlotMigrationMappingDto(
         dpsId = dpsVisitTimeSlot.dpsTimeSlotId.toString(),
         nomisPrisonId = nomisId.prisonId,
-        nomisDayOfWeek = nomisId.dayOfWeek.asMappingMigrationDayOfWeek(),
+        nomisDayOfWeek = nomisId.dayOfWeek.name,
         nomisSlotSequence = nomisId.timeSlotSequence,
         visitSlots = dpsVisitTimeSlot.visitSlots.map {
           VisitSlotMigrationMappingDto(
@@ -147,7 +145,7 @@ class VisitSlotsMigrationService(
 
   private suspend fun VisitTimeSlotResponse.toMigrateVisitConfigRequest(): MigrateVisitConfigRequest = MigrateVisitConfigRequest(
     prisonCode = prisonId,
-    dayCode = dayOfWeek.asDpsApiDayOfWeek(),
+    dayCode = dayOfWeek.name,
     timeSlotSeq = timeSlotSequence,
     startTime = startTime,
     endTime = endTime,
@@ -161,58 +159,28 @@ class VisitSlotsMigrationService(
         internalLocationId = visitSlot.internalLocation.id,
         locationKey = visitSlot.internalLocation.code,
         maxVideoSessions = null,
-        createDateTime = LocalDateTime.now(),
-        createUsername = "TODO()",
-        modifyDateTime = null,
-        modifyUsername = null,
+        createDateTime = visitSlot.audit.createDatetime,
+        createUsername = visitSlot.audit.createUsername,
+        modifyDateTime = visitSlot.audit.modifyDatetime,
+        modifyUsername = visitSlot.audit.modifyUserId,
       )
     },
     expiryDate = expiryDate,
-    createDateTime = LocalDateTime.now(),
-    createUsername = "TODO()",
-    modifyDateTime = null,
-    modifyUsername = null,
+    createDateTime = audit.createDatetime,
+    createUsername = audit.createUsername,
+    modifyDateTime = audit.modifyDatetime,
+    modifyUsername = audit.modifyUserId,
   )
 
   private suspend fun VisitInternalLocationResponse.lookUpDpsLocationId(): UUID = visitSlotsMappingService.getInternalLocationByNomisId(id).dpsLocationId.let { UUID.fromString(it) }
 }
 
 private fun VisitTimeSlotIdResponse.DayOfWeek.asNomisApiDayOfWeek(): VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot = when (this) {
-  VisitTimeSlotIdResponse.DayOfWeek.MONDAY -> VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MONDAY
-  VisitTimeSlotIdResponse.DayOfWeek.TUESDAY -> VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.TUESDAY
-  VisitTimeSlotIdResponse.DayOfWeek.WEDNESDAY -> VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.WEDNESDAY
-  VisitTimeSlotIdResponse.DayOfWeek.THURSDAY -> VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.THURSDAY
-  VisitTimeSlotIdResponse.DayOfWeek.FRIDAY -> VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.FRIDAY
-  VisitTimeSlotIdResponse.DayOfWeek.SATURDAY -> VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.SATURDAY
-  VisitTimeSlotIdResponse.DayOfWeek.SUNDAY -> VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.SUNDAY
-}
-
-private fun VisitTimeSlotIdResponse.DayOfWeek.asMappingDayOfWeek(): DayOfWeek = when (this) {
-  VisitTimeSlotIdResponse.DayOfWeek.MONDAY -> DayOfWeek.MONDAY
-  VisitTimeSlotIdResponse.DayOfWeek.TUESDAY -> DayOfWeek.TUESDAY
-  VisitTimeSlotIdResponse.DayOfWeek.WEDNESDAY -> DayOfWeek.WEDNESDAY
-  VisitTimeSlotIdResponse.DayOfWeek.THURSDAY -> DayOfWeek.THURSDAY
-  VisitTimeSlotIdResponse.DayOfWeek.FRIDAY -> DayOfWeek.FRIDAY
-  VisitTimeSlotIdResponse.DayOfWeek.SATURDAY -> DayOfWeek.SATURDAY
-  VisitTimeSlotIdResponse.DayOfWeek.SUNDAY -> DayOfWeek.SUNDAY
-}
-private fun VisitTimeSlotIdResponse.DayOfWeek.asMappingMigrationDayOfWeek(): VisitTimeSlotMigrationMappingDto.NomisDayOfWeek = when (this) {
-  VisitTimeSlotIdResponse.DayOfWeek.MONDAY -> VisitTimeSlotMigrationMappingDto.NomisDayOfWeek.MONDAY
-  VisitTimeSlotIdResponse.DayOfWeek.TUESDAY -> VisitTimeSlotMigrationMappingDto.NomisDayOfWeek.TUESDAY
-  VisitTimeSlotIdResponse.DayOfWeek.WEDNESDAY -> VisitTimeSlotMigrationMappingDto.NomisDayOfWeek.WEDNESDAY
-  VisitTimeSlotIdResponse.DayOfWeek.THURSDAY -> VisitTimeSlotMigrationMappingDto.NomisDayOfWeek.THURSDAY
-  VisitTimeSlotIdResponse.DayOfWeek.FRIDAY -> VisitTimeSlotMigrationMappingDto.NomisDayOfWeek.FRIDAY
-  VisitTimeSlotIdResponse.DayOfWeek.SATURDAY -> VisitTimeSlotMigrationMappingDto.NomisDayOfWeek.SATURDAY
-  VisitTimeSlotIdResponse.DayOfWeek.SUNDAY -> VisitTimeSlotMigrationMappingDto.NomisDayOfWeek.SUNDAY
-}
-
-private fun VisitTimeSlotResponse.DayOfWeek.asDpsApiDayOfWeek(): String = when (this) {
-  VisitTimeSlotResponse.DayOfWeek.MONDAY,
-  VisitTimeSlotResponse.DayOfWeek.TUESDAY,
-  VisitTimeSlotResponse.DayOfWeek.WEDNESDAY,
-  VisitTimeSlotResponse.DayOfWeek.THURSDAY,
-  VisitTimeSlotResponse.DayOfWeek.FRIDAY,
-  VisitTimeSlotResponse.DayOfWeek.SATURDAY,
-  VisitTimeSlotResponse.DayOfWeek.SUNDAY,
-  -> this.name.take(3)
+  VisitTimeSlotIdResponse.DayOfWeek.MON -> VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MON
+  VisitTimeSlotIdResponse.DayOfWeek.TUE -> VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.TUE
+  VisitTimeSlotIdResponse.DayOfWeek.WED -> VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.WED
+  VisitTimeSlotIdResponse.DayOfWeek.THU -> VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.THU
+  VisitTimeSlotIdResponse.DayOfWeek.FRI -> VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.FRI
+  VisitTimeSlotIdResponse.DayOfWeek.SAT -> VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.SAT
+  VisitTimeSlotIdResponse.DayOfWeek.SUN -> VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.SUN
 }

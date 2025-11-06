@@ -31,7 +31,7 @@ class VisitSlotsNomisApiIntTest {
         content = listOf(
           VisitTimeSlotIdResponse(
             prisonId = "LEI",
-            dayOfWeek = VisitTimeSlotIdResponse.DayOfWeek.MONDAY,
+            dayOfWeek = VisitTimeSlotIdResponse.DayOfWeek.MON,
             timeSlotSequence = 1,
           ),
         ),
@@ -51,7 +51,7 @@ class VisitSlotsNomisApiIntTest {
         content = listOf(
           VisitTimeSlotIdResponse(
             prisonId = "LEI",
-            dayOfWeek = VisitTimeSlotIdResponse.DayOfWeek.MONDAY,
+            dayOfWeek = VisitTimeSlotIdResponse.DayOfWeek.MON,
             timeSlotSequence = 1,
           ),
         ),
@@ -72,7 +72,7 @@ class VisitSlotsNomisApiIntTest {
         content = (1..20).map {
           VisitTimeSlotIdResponse(
             prisonId = "LEI",
-            dayOfWeek = VisitTimeSlotIdResponse.DayOfWeek.MONDAY,
+            dayOfWeek = VisitTimeSlotIdResponse.DayOfWeek.MON,
             timeSlotSequence = it,
           )
         },
@@ -96,13 +96,13 @@ class VisitSlotsNomisApiIntTest {
     internal fun `will pass oath2 token to endpoint`() = runTest {
       mockServer.stubGetVisitTimeSlot(
         prisonId = "LEI",
-        dayOfWeek = VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MONDAY,
+        dayOfWeek = VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MON,
         timeSlotSequence = 1,
       )
 
       apiService.getVisitTimeSlot(
         prisonId = "LEI",
-        dayOfWeek = VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MONDAY,
+        dayOfWeek = VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MON,
         timeSlotSequence = 1,
       )
 
@@ -116,17 +116,17 @@ class VisitSlotsNomisApiIntTest {
     fun `will call the get time slot endpoint`() = runTest {
       mockServer.stubGetVisitTimeSlot(
         prisonId = "LEI",
-        dayOfWeek = VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MONDAY,
+        dayOfWeek = VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MON,
         timeSlotSequence = 1,
       )
 
       apiService.getVisitTimeSlot(
         prisonId = "LEI",
-        dayOfWeek = VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MONDAY,
+        dayOfWeek = VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MON,
         timeSlotSequence = 1,
       )
       mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/visits/configuration/time-slots/prison-id/LEI/day-of-week/MONDAY/time-slot-sequence/1")),
+        getRequestedFor(urlPathEqualTo("/visits/configuration/time-slots/prison-id/LEI/day-of-week/MON/time-slot-sequence/1")),
       )
     }
   }

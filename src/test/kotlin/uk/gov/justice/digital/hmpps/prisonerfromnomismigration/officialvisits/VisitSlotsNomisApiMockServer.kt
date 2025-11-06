@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageMetadata
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PagedModelVisitTimeSlotIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitInternalLocationResponse
@@ -16,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitTimeSlotResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Component
 class VisitSlotsNomisApiMockServer(private val objectMapper: ObjectMapper) {
@@ -32,17 +34,25 @@ class VisitSlotsNomisApiMockServer(private val objectMapper: ObjectMapper) {
 
     fun visitTimeSlotResponse() = VisitTimeSlotResponse(
       prisonId = "LEI",
-      dayOfWeek = VisitTimeSlotResponse.DayOfWeek.MONDAY,
+      dayOfWeek = VisitTimeSlotResponse.DayOfWeek.MON,
       timeSlotSequence = 1,
       startTime = "10:00",
       endTime = "11:00",
       effectiveDate = LocalDate.parse("2020-01-01"),
       visitSlots = listOf(visitSlotResponse()),
+      audit = NomisAudit(
+        createDatetime = LocalDateTime.parse("2020-01-01T10:00"),
+        createUsername = "B.BOB",
+      ),
     )
 
     fun visitSlotResponse() = VisitSlotResponse(
       id = 123,
       internalLocation = VisitInternalLocationResponse(id = 122, "LEI-VISIT-1"),
+      audit = NomisAudit(
+        createDatetime = LocalDateTime.parse("2020-01-01T10:00"),
+        createUsername = "B.BOB",
+      ),
     )
   }
   fun stubGetVisitTimeSlotIds(

@@ -24,7 +24,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import java.time.DayOfWeek
 
 @SpringAPIServiceTest
 @Import(VisitSlotsMappingService::class, VisitSlotsMappingApiMockServer::class)
@@ -49,7 +48,7 @@ class VisitSlotsMappingApiServiceTest {
           label = "2020-01-01T10:00",
           dpsId = "1233",
           nomisPrisonId = "WWI",
-          nomisDayOfWeek = VisitTimeSlotMigrationMappingDto.NomisDayOfWeek.MONDAY,
+          nomisDayOfWeek = "MON",
           nomisSlotSequence = 2,
           visitSlots = emptyList(),
         ),
@@ -71,7 +70,7 @@ class VisitSlotsMappingApiServiceTest {
           label = "2020-01-01T10:00",
           dpsId = "1233",
           nomisPrisonId = "WWI",
-          nomisDayOfWeek = VisitTimeSlotMigrationMappingDto.NomisDayOfWeek.MONDAY,
+          nomisDayOfWeek = "MON",
           nomisSlotSequence = 2,
           visitSlots = emptyList(),
         ),
@@ -92,7 +91,7 @@ class VisitSlotsMappingApiServiceTest {
             duplicate = VisitTimeSlotMigrationMappingDto(
               dpsId = dpsId,
               nomisPrisonId = "WWI",
-              nomisDayOfWeek = VisitTimeSlotMigrationMappingDto.NomisDayOfWeek.MONDAY,
+              nomisDayOfWeek = "MON",
               nomisSlotSequence = 2,
               mappingType = VisitTimeSlotMigrationMappingDto.MappingType.MIGRATED,
               visitSlots = emptyList(),
@@ -100,7 +99,7 @@ class VisitSlotsMappingApiServiceTest {
             existing = VisitTimeSlotMigrationMappingDto(
               dpsId = existingDpsId,
               nomisPrisonId = "WWI",
-              nomisDayOfWeek = VisitTimeSlotMigrationMappingDto.NomisDayOfWeek.MONDAY,
+              nomisDayOfWeek = "MON",
               nomisSlotSequence = 2,
               mappingType = VisitTimeSlotMigrationMappingDto.MappingType.MIGRATED,
               visitSlots = emptyList(),
@@ -118,7 +117,7 @@ class VisitSlotsMappingApiServiceTest {
           label = "2020-01-01T10:00",
           dpsId = "1233",
           nomisPrisonId = "WWI",
-          nomisDayOfWeek = VisitTimeSlotMigrationMappingDto.NomisDayOfWeek.MONDAY,
+          nomisDayOfWeek = "MON",
           nomisSlotSequence = 2,
           visitSlots = emptyList(),
         ),
@@ -134,8 +133,7 @@ class VisitSlotsMappingApiServiceTest {
   @Nested
   inner class GetByNomisIdsOrNull {
     val nomisPrisonId = "WWI"
-    val nomisDayOfWeek = VisitTimeSlotMappingDto.NomisDayOfWeek.MONDAY
-    val dayOfWeek = DayOfWeek.MONDAY
+    val nomisDayOfWeek = "MON"
     val nomisSlotSequence = 2
 
     @Test
@@ -155,7 +153,7 @@ class VisitSlotsMappingApiServiceTest {
 
       apiService.getByNomisIdsOrNull(
         nomisPrisonId = nomisPrisonId,
-        nomisDayOfWeek = dayOfWeek,
+        nomisDayOfWeek = nomisDayOfWeek,
         nomisSlotSequence = nomisSlotSequence,
       )
 
@@ -181,7 +179,7 @@ class VisitSlotsMappingApiServiceTest {
 
       apiService.getByNomisIdsOrNull(
         nomisPrisonId = nomisPrisonId,
-        nomisDayOfWeek = dayOfWeek,
+        nomisDayOfWeek = nomisDayOfWeek,
         nomisSlotSequence = nomisSlotSequence,
       )
 
@@ -207,7 +205,7 @@ class VisitSlotsMappingApiServiceTest {
 
       val mapping = apiService.getByNomisIdsOrNull(
         nomisPrisonId = nomisPrisonId,
-        nomisDayOfWeek = dayOfWeek,
+        nomisDayOfWeek = nomisDayOfWeek,
         nomisSlotSequence = nomisSlotSequence,
       )
 
@@ -226,7 +224,7 @@ class VisitSlotsMappingApiServiceTest {
       assertThat(
         apiService.getByNomisIdsOrNull(
           nomisPrisonId = nomisPrisonId,
-          nomisDayOfWeek = dayOfWeek,
+          nomisDayOfWeek = nomisDayOfWeek,
           nomisSlotSequence = nomisSlotSequence,
         ),
       ).isNull()

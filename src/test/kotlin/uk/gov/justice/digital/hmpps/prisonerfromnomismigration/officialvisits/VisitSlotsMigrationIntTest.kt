@@ -27,6 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.VisitsConfigurationResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitInternalLocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitTimeSlotIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitTimeSlotResponse
@@ -42,6 +43,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.*
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -107,19 +109,19 @@ class VisitSlotsMigrationIntTest(
           content = listOf(
             VisitTimeSlotIdResponse(
               prisonId = "WWI",
-              dayOfWeek = VisitTimeSlotIdResponse.DayOfWeek.MONDAY,
+              dayOfWeek = VisitTimeSlotIdResponse.DayOfWeek.MON,
               timeSlotSequence = 2,
             ),
           ),
         )
         mappingApiMock.stubGetByNomisIdsOrNull(
           nomisPrisonId = "WWI",
-          nomisDayOfWeek = VisitTimeSlotMappingDto.NomisDayOfWeek.MONDAY,
+          nomisDayOfWeek = "MON",
           nomisSlotSequence = 2,
           mapping = VisitTimeSlotMappingDto(
             dpsId = "10000",
             nomisPrisonId = "WWI",
-            nomisDayOfWeek = VisitTimeSlotMappingDto.NomisDayOfWeek.MONDAY,
+            nomisDayOfWeek = "MON",
             nomisSlotSequence = 2,
             mappingType = VisitTimeSlotMappingDto.MappingType.MIGRATED,
             label = "2020-01-01T00:00:00",
@@ -164,20 +166,20 @@ class VisitSlotsMigrationIntTest(
           content = listOf(
             VisitTimeSlotIdResponse(
               prisonId = nomisPrisonId,
-              dayOfWeek = VisitTimeSlotIdResponse.DayOfWeek.MONDAY,
+              dayOfWeek = VisitTimeSlotIdResponse.DayOfWeek.MON,
               timeSlotSequence = nomisSlotSequence,
             ),
           ),
         )
         mappingApiMock.stubGetByNomisIdsOrNull(
           nomisPrisonId = nomisPrisonId,
-          nomisDayOfWeek = VisitTimeSlotMappingDto.NomisDayOfWeek.MONDAY,
+          nomisDayOfWeek = "MON",
           nomisSlotSequence = nomisSlotSequence,
           mapping = null,
         )
         nomisApiMock.stubGetVisitTimeSlot(
           prisonId = nomisPrisonId,
-          dayOfWeek = VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MONDAY,
+          dayOfWeek = VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MON,
           timeSlotSequence = nomisSlotSequence,
           response = visitTimeSlotResponse().copy(
             visitSlots = listOf(
@@ -189,15 +191,25 @@ class VisitSlotsMigrationIntTest(
                 ),
                 maxGroups = 19,
                 maxAdults = 20,
+                audit = NomisAudit(
+                  createDatetime = LocalDateTime.parse("2020-01-01T00:00:00"),
+                  createUsername = "JILL.BEAK",
+                ),
               ),
             ),
             prisonId = nomisPrisonId,
-            dayOfWeek = VisitTimeSlotResponse.DayOfWeek.MONDAY,
+            dayOfWeek = VisitTimeSlotResponse.DayOfWeek.MON,
             timeSlotSequence = nomisSlotSequence,
             startTime = "10:00",
             endTime = "11:15",
             effectiveDate = LocalDate.parse("2020-01-01"),
             expiryDate = LocalDate.parse("2030-01-01"),
+            audit = NomisAudit(
+              createDatetime = LocalDateTime.parse("2020-01-03T00:00:00"),
+              createUsername = "JILL.WIK",
+              modifyDatetime = LocalDateTime.parse("2020-01-04T00:00:00"),
+              modifyUserId = "BOB.SMITH",
+            ),
           ),
         )
         mappingApiMock.stubGetInternalLocationByNomisId(
@@ -223,7 +235,7 @@ class VisitSlotsMigrationIntTest(
 
       @Test
       fun `will retrieve visit time slot details`() {
-        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/visits/configuration/time-slots/prison-id/$nomisPrisonId/day-of-week/MONDAY/time-slot-sequence/$nomisSlotSequence")))
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/visits/configuration/time-slots/prison-id/$nomisPrisonId/day-of-week/MON/time-slot-sequence/$nomisSlotSequence")))
       }
 
       @Test
@@ -240,10 +252,18 @@ class VisitSlotsMigrationIntTest(
         assertThat(migrationRequest.startTime).isEqualTo("10:00")
         assertThat(migrationRequest.endTime).isEqualTo("11:15")
         assertThat(migrationRequest.dayCode).isEqualTo("MON")
+        assertThat(migrationRequest.createUsername).isEqualTo("JILL.WIK")
+        assertThat(migrationRequest.createDateTime).isEqualTo(LocalDateTime.parse("2020-01-03T00:00:00"))
+        assertThat(migrationRequest.modifyUsername).isEqualTo("BOB.SMITH")
+        assertThat(migrationRequest.modifyDateTime).isEqualTo(LocalDateTime.parse("2020-01-04T00:00:00"))
         assertThat(migrationRequest.visitSlots).hasSize(1)
         assertThat(migrationRequest.visitSlots[0].maxAdults).isEqualTo(20)
         assertThat(migrationRequest.visitSlots[0].maxGroups).isEqualTo(19)
         assertThat(migrationRequest.visitSlots[0].dpsLocationId).isEqualTo(dpsLocationId)
+        assertThat(migrationRequest.visitSlots[0].createUsername).isEqualTo("JILL.BEAK")
+        assertThat(migrationRequest.visitSlots[0].createDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T00:00:00"))
+        assertThat(migrationRequest.visitSlots[0].modifyUsername).isNull()
+        assertThat(migrationRequest.visitSlots[0].modifyDateTime).isNull()
       }
 
       @Test
@@ -256,7 +276,7 @@ class VisitSlotsMigrationIntTest(
           assertThat(mappingType).isEqualTo(VisitTimeSlotMigrationMappingDto.MappingType.MIGRATED)
           assertThat(label).isEqualTo(migrationResult.migrationId)
           assertThat(nomisPrisonId).isEqualTo(nomisPrisonId)
-          assertThat(nomisDayOfWeek).isEqualTo(VisitTimeSlotMigrationMappingDto.NomisDayOfWeek.MONDAY)
+          assertThat(nomisDayOfWeek).isEqualTo("MON")
           assertThat(nomisSlotSequence).isEqualTo(nomisSlotSequence)
           assertThat(dpsId).isEqualTo(dpsTimeSlotId.toString())
           assertThat(visitSlots).hasSize(1)
@@ -271,7 +291,7 @@ class VisitSlotsMigrationIntTest(
           eq("visitslots-migration-entity-migrated"),
           check {
             assertThat(it["nomisPrisonId"]).isEqualTo(nomisPrisonId)
-            assertThat(it["nomisDayOfWeek"]).isEqualTo("MONDAY")
+            assertThat(it["nomisDayOfWeek"]).isEqualTo("MON")
             assertThat(it["nomisSlotSequence"]).isEqualTo(nomisSlotSequence.toString())
             assertThat(it["dpsId"]).isEqualTo(dpsTimeSlotId.toString())
           },

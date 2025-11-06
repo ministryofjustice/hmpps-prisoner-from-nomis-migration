@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-11-04.56.a8b516d"
+    "version" : "2025-11-06.62.c276947"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -469,9 +469,45 @@
           "visitTypeCode" : {
             "type" : "string",
             "minLength" : 1
+          },
+          "officialVisitors" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OfficialVisitor"
+            }
           }
         },
-        "required" : [ "prisonCode", "prisonVisitSlotId", "prisonerNumber", "visitDate", "visitTypeCode" ]
+        "required" : [ "officialVisitors", "prisonCode", "prisonVisitSlotId", "prisonerNumber", "visitDate", "visitTypeCode" ]
+      },
+      "OfficialVisitor" : {
+        "type" : "object",
+        "properties" : {
+          "visitorTypeCode" : {
+            "type" : "string",
+            "description" : "The visitor type code",
+            "example" : "CONTACT",
+            "minLength" : 1
+          },
+          "contactTypeCode" : {
+            "type" : "string",
+            "description" : "The contact type code",
+            "example" : "SOCIAL",
+            "minLength" : 1
+          },
+          "contactId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The contact ID for the visitor",
+            "example" : 123456
+          },
+          "prisonerContactId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The prisoner contact ID for the visitor",
+            "example" : 123456
+          }
+        },
+        "required" : [ "contactTypeCode", "visitorTypeCode" ]
       },
       "CreateOfficialVisitResponse" : {
         "type" : "object",

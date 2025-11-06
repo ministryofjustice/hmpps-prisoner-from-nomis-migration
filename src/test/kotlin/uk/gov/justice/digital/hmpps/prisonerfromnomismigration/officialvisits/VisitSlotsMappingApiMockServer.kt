@@ -59,7 +59,7 @@ class VisitSlotsMappingApiMockServer(private val objectMapper: ObjectMapper) {
                   label = migrationId,
                   whenCreated = LocalDateTime.now().toString(),
                   nomisPrisonId = "WWI",
-                  nomisDayOfWeek = VisitTimeSlotMappingDto.NomisDayOfWeek.MONDAY,
+                  nomisDayOfWeek = "MON",
                   nomisSlotSequence = 2,
                   mappingType = VisitTimeSlotMappingDto.MappingType.MIGRATED,
                 ),
@@ -76,7 +76,7 @@ class VisitSlotsMappingApiMockServer(private val objectMapper: ObjectMapper) {
 
   fun stubGetByNomisIdsOrNull(
     nomisPrisonId: String = "WWI",
-    nomisDayOfWeek: VisitTimeSlotMappingDto.NomisDayOfWeek = VisitTimeSlotMappingDto.NomisDayOfWeek.MONDAY,
+    nomisDayOfWeek: String = "MON",
     nomisSlotSequence: Int = 2,
     mapping: VisitTimeSlotMappingDto? = VisitTimeSlotMappingDto(
       dpsId = "123456",
