@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-11-04.231.02a7c84"
+    "version" : "2025-11-06.236.482836c"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -6320,7 +6320,6 @@
           "schema" : {
             "type" : "string",
             "description" : "NOMIS day of the week",
-            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ],
             "example" : "MONDAY"
           },
           "example" : "MONDAY"
@@ -19772,8 +19771,7 @@
             "type" : "string"
           },
           "nomisDayOfWeek" : {
-            "type" : "string",
-            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ]
+            "type" : "string"
           },
           "nomisSlotSequence" : {
             "type" : "integer",
@@ -22037,8 +22035,7 @@
             "type" : "string"
           },
           "nomisDayOfWeek" : {
-            "type" : "string",
-            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ]
+            "type" : "string"
           },
           "nomisSlotSequence" : {
             "type" : "integer",

@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-11-05.701.d8ddd1b"
+    "version" : "2025-11-06.703.21e9482"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -13099,7 +13099,7 @@
           "required" : true,
           "schema" : {
             "type" : "string",
-            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ]
+            "enum" : [ "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN" ]
           }
         }, {
           "name" : "timeSlotSequence",
@@ -28693,9 +28693,13 @@
             "format" : "int32",
             "description" : "Optional max adults allowed in slot",
             "example" : 1
+          },
+          "audit" : {
+            "$ref" : "#/components/schemas/NomisAudit",
+            "description" : "Audit information"
           }
         },
-        "required" : [ "id", "internalLocation" ]
+        "required" : [ "audit", "id", "internalLocation" ]
       },
       "VisitTimeSlotResponse" : {
         "type" : "object",
@@ -28708,8 +28712,8 @@
           "dayOfWeek" : {
             "type" : "string",
             "description" : "Day of the week time slot is for",
-            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ],
-            "example" : "MONDAY"
+            "enum" : [ "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN" ],
+            "example" : "MON"
           },
           "timeSlotSequence" : {
             "type" : "integer",
@@ -28745,9 +28749,13 @@
             "items" : {
               "$ref" : "#/components/schemas/VisitSlotResponse"
             }
+          },
+          "audit" : {
+            "$ref" : "#/components/schemas/NomisAudit",
+            "description" : "Audit information"
           }
         },
-        "required" : [ "dayOfWeek", "effectiveDate", "endTime", "prisonId", "startTime", "timeSlotSequence", "visitSlots" ]
+        "required" : [ "audit", "dayOfWeek", "effectiveDate", "endTime", "prisonId", "startTime", "timeSlotSequence", "visitSlots" ]
       },
       "PageMetadata" : {
         "type" : "object",
@@ -28795,8 +28803,8 @@
           "dayOfWeek" : {
             "type" : "string",
             "description" : "Day of the week time slot is for",
-            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ],
-            "example" : "MONDAY"
+            "enum" : [ "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN" ],
+            "example" : "MON"
           },
           "timeSlotSequence" : {
             "type" : "integer",
