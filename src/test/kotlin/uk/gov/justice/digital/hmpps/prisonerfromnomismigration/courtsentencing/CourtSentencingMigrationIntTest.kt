@@ -791,6 +791,7 @@ fun buildSentenceTermResponse(
   days = 3,
   hours = 0,
   prisonId = "OUT",
+  createdByUsername = "msmith",
 )
 
 fun buildSentenceResponse(
@@ -818,6 +819,7 @@ fun buildSentenceResponse(
         description = "Failing to stop at school crossing (horsedrawn vehicle)",
       ),
       mostSeriousFlag = true,
+      createdByUsername = "msmith",
     ),
   ),
   prisonId = "MDI",
@@ -870,7 +872,9 @@ fun buildCourtEventResponse(
           dispositionCode = "F",
           conviction = true,
         ),
+        createdByUsername = "msmith",
       ),
+      createdByUsername = "msmith",
       mostSeriousFlag = false,
       resultCode1 = OffenceResultCodeResponse(
         chargeStatus = "A",

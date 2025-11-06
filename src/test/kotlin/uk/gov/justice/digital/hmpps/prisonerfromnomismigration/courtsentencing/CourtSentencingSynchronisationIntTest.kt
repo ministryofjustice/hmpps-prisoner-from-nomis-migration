@@ -2207,6 +2207,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                   "legacyData.appearanceTime",
                   equalTo("09:00"),
                 ),
+              )
+              .withRequestBody(
+                matchingJsonPath(
+                  "performedByUser",
+                  equalTo("jbell"),
+                ),
               ),
           )
         }

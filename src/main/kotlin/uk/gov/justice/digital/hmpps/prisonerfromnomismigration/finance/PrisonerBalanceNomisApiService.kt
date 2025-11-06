@@ -14,7 +14,7 @@ class PrisonerBalanceNomisApiService(@Qualifier("nomisApiWebClient") webClient: 
   private val api = PrisonerBalanceResourceApi(webClient)
 
   suspend fun getRootOffenderIdsToMigrate(prisonId: String?, pageNumber: Long, pageSize: Long): RestResponsePagedModel<Long> = api
-    .prepare(api.getPrisonerBalanceIdentifiersRequestConfig(page = pageNumber.toInt(), size = pageSize.toInt(), sort = null, prisonId = prisonId))
+    .prepare(api.getPrisonerBalanceIdentifiersRequestConfig(page = pageNumber.toInt(), size = pageSize.toInt(), sort = null, prisonId = if (prisonId != null) listOf(prisonId) else null))
     .retrieve()
     .bodyToMono(typeReference<RestResponsePagedModel<Long>>())
     .awaitSingle()

@@ -129,6 +129,7 @@ fun CourtCaseResponse.toLegacyDpsCourtCase() = LegacyCreateCourtCase(
     },
     bookingId = this.bookingId,
   ),
+  performedByUser = this.modifiedByUsername ?: this.createdByUsername,
 )
 
 fun CourtEventResponse.toDpsCourtAppearance(
@@ -148,6 +149,7 @@ fun CourtEventResponse.toDpsCourtAppearance(
     nextEventDateTime = this.nextEventDateTime,
     appearanceTime = this.eventDateTime.toLocalTime().toString(),
   ),
+  performedByUser = this.modifiedByUsername ?: this.createdByUsername,
 )
 
 fun CourtEventResponse.toMigrationDpsCourtAppearance(
@@ -252,6 +254,7 @@ fun OffenderChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharg
   ),
   offenceEndDate = this.offenceEndDate,
   appearanceLifetimeUuid = UUID.fromString(appearanceId),
+  performedByUser = this.modifiedByUsername ?: this.createdByUsername,
 )
 
 fun CourtEventChargeResponse.toDpsCharge() = LegacyUpdateCharge(
@@ -266,6 +269,7 @@ fun CourtEventChargeResponse.toDpsCharge() = LegacyUpdateCharge(
     offenceDescription = this.offenderCharge.offence.description,
   ),
   offenceEndDate = this.offenceEndDate,
+  performedByUser = this.modifiedByUsername ?: this.createdByUsername,
 )
 
 fun CourtEventChargeResponse.toDpsMigrationCharge(
@@ -341,6 +345,7 @@ fun SentenceResponse.toDpsSentence(sentenceChargeIds: List<String>, dpsAppearanc
   consecutiveToLifetimeUuid = dpsConsecUuid?.let { UUID.fromString(it) },
   returnToCustodyDate = this.recallCustodyDate?.returnToCustodyDate,
   appearanceUuid = UUID.fromString(dpsAppearanceUuid),
+  performedByUser = this.modifiedByUsername ?: this.createdByUsername,
 )
 
 fun SentenceResponse.toDpsMigrationSentence() = MigrationCreateSentence(
@@ -408,6 +413,7 @@ fun SentenceTermResponse.toPeriodLegacyData(dpsSentenceId: String) = LegacyCreat
     sentenceTermCode = this.sentenceTermType?.code,
     sentenceTermDescription = this.sentenceTermType?.description,
   ),
+  performedByUser = this.modifiedByUsername ?: this.createdByUsername,
 )
 
 fun SentenceTermResponse.toPeriodMigrationData(nomisSentence: SentenceResponse) = MigrationCreatePeriodLength(

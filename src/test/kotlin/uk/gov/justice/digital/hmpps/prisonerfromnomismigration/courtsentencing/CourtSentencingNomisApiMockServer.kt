@@ -287,6 +287,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       courtEventCharges = courtEventCharges,
       createdDateTime = LocalDateTime.now(),
       createdByUsername = "Q1251T",
+      modifiedByUsername = "jbell",
       courtEventType = CodeDescription("CRT", "Court Appearance"),
       outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournment", dispositionCode = "I", conviction = false),
       eventStatus = CodeDescription("SCH", "Scheduled (Approved)"),
@@ -327,6 +328,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       offenceDate = LocalDate.of(2024, 4, 4),
       plea = CodeDescription("NG", "Not Guilty"),
       resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F", conviction = false),
+      createdByUsername = "msmith",
     ),
   ) {
     nomisApi.stubFor(
@@ -361,6 +363,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       offenceDate = LocalDate.of(2024, 2, 2),
       resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F", conviction = false),
       plea = CodeDescription("NG", "Not Guilty"),
+      createdByUsername = "msmith",
     ),
     response: CourtEventChargeResponse = CourtEventChargeResponse(
       offenderCharge = offenderCharge,
@@ -369,6 +372,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       plea = CodeDescription("NG", "Not Guilty"),
       eventId = courtAppearanceId,
       resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F", conviction = false),
+      createdByUsername = "msmith",
     ),
   ) {
     nomisApi.stubFor(
@@ -416,6 +420,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         days = 5,
         lifeSentenceFlag = false,
         prisonId = "OUT",
+        createdByUsername = "msmith",
       ),
     ),
     offenderCharges: List<OffenderChargeResponse> = listOf(
@@ -430,6 +435,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
           description = "Act as organiser of flying    without applying for / obtaining permission of CAA",
         ),
         mostSeriousFlag = false,
+        createdByUsername = "msmith",
       ),
       OffenderChargeResponse(
         id = 102,
@@ -442,6 +448,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
           description = "Act in a way likely to cause annoyance / nuisance / injury to others within a Controlled Area of AWE Burghfield",
         ),
         mostSeriousFlag = true,
+        createdByUsername = "msmith",
       ),
     ),
     response: SentenceResponse = SentenceResponse(
@@ -502,6 +509,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       days = 5,
       lifeSentenceFlag = false,
       prisonId = "OUT",
+      createdByUsername = "msmith",
     ),
   ) {
     println("\n\n/prisoners/$offenderNo/sentence-terms/booking-id/$bookingId/sentence-sequence/$sentenceSequence/term-sequence/$termSequence")
@@ -638,7 +646,10 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
               chargeStatus = CodeDescription("A", "Active"),
               resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F", conviction = false),
               mostSeriousFlag = false,
+              createdByUsername = "msmith",
             ),
+            createdByUsername = "msmith",
+            modifiedByUsername = "jbell",
           ),
         ),
         courtOrders = listOf(
@@ -667,6 +678,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         chargeStatus = CodeDescription("A", "Active"),
         resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F", conviction = false),
         mostSeriousFlag = false,
+        createdByUsername = "msmith",
       ),
     ),
     createdDateTime = LocalDateTime.parse("2024-02-08T14:36:16.370572"),
@@ -750,6 +762,7 @@ fun courtEventResponse(eventId: Long) = CourtEventResponse(
   outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournment", dispositionCode = "I", conviction = false),
   createdDateTime = LocalDateTime.parse("2024-02-08T14:36:16.485181"),
   createdByUsername = "PRISONER_MANAGER_API",
+  modifiedByUsername = "jbell",
   courtEventCharges = listOf(
     CourtEventChargeResponse(
       eventId = eventId,
@@ -769,7 +782,9 @@ fun courtEventResponse(eventId: Long) = CourtEventResponse(
         chargeStatus = CodeDescription("A", "Active"),
         resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F", conviction = false),
         mostSeriousFlag = false,
+        createdByUsername = "msmith",
       ),
+      createdByUsername = "msmith",
     ),
   ),
   courtOrders = listOf(
@@ -792,6 +807,7 @@ fun courtEventChargeResponse(eventId: Long, offenderChargeId: Long) = CourtEvent
   resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F", conviction = false),
   mostSeriousFlag = false,
   offenderCharge = offenderChargeResponse(offenderChargeId),
+  createdByUsername = "msmith",
 )
 
 fun offenderChargeResponse(offenderChargeId: Long) = OffenderChargeResponse(
@@ -806,4 +822,6 @@ fun offenderChargeResponse(offenderChargeId: Long) = OffenderChargeResponse(
   chargeStatus = CodeDescription("A", "Active"),
   resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1081", description = "Detention and Training Order", dispositionCode = "F", conviction = false),
   mostSeriousFlag = false,
+  createdByUsername = "msmith",
+  modifiedByUsername = "jbell",
 )
