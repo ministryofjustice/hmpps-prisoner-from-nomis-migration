@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-10-27.45.1d91607"
+    "version" : "2025-11-05.60.c8016ae"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -94,6 +94,56 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PurgeQueueResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/official-visit" : {
+      "post" : {
+        "tags" : [ "Official visits" ],
+        "summary" : "Endpoint to support the creation of official visits.",
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_OFFICIAL_VISITS_ADMIN\n* ROLE_OFFICIAL_VISITS__RW",
+        "operationId" : "createOfficialVisit",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateOfficialVisitRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "The response containing the details of the created official visit",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CreateOfficialVisitResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -388,6 +438,73 @@
         },
         "required" : [ "messagesFoundCount" ]
       },
+      "CreateOfficialVisitRequest" : {
+        "type" : "object",
+        "description" : "The request with the official visit details",
+        "properties" : {
+          "prisonVisitSlotId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "prisonCode" : {
+            "type" : "string",
+            "description" : "The prison code for the prisoner",
+            "example" : "PVI",
+            "maxLength" : 3,
+            "minLength" : 0
+          },
+          "prisonerNumber" : {
+            "type" : "string",
+            "description" : "The prisoner number (NOMIS ID)",
+            "example" : "A1234AA",
+            "maxLength" : 7,
+            "minLength" : 0
+          },
+          "visitDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The date the official visit will take place",
+            "example" : "2022-12-23"
+          },
+          "visitTypeCode" : {
+            "type" : "string",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "prisonCode", "prisonVisitSlotId", "prisonerNumber", "visitDate", "visitTypeCode" ]
+      },
+      "CreateOfficialVisitResponse" : {
+        "type" : "object",
+        "properties" : {
+          "officialVisitId" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "officialVisitId" ]
+      },
+      "ErrorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "errorCode" : {
+            "type" : "string"
+          },
+          "userMessage" : {
+            "type" : "string"
+          },
+          "developerMessage" : {
+            "type" : "string"
+          },
+          "moreInfo" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "status" ]
+      },
       "MigrateVisitConfigRequest" : {
         "type" : "object",
         "description" : "Request to migrate a day and time slot for a prison and its associated visit slots from NOMIS",
@@ -596,28 +713,6 @@
           }
         },
         "required" : [ "dayCode", "dpsTimeSlotId", "prisonCode", "timeSlotSeq", "visitSlots" ]
-      },
-      "ErrorResponse" : {
-        "type" : "object",
-        "properties" : {
-          "status" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "errorCode" : {
-            "type" : "string"
-          },
-          "userMessage" : {
-            "type" : "string"
-          },
-          "developerMessage" : {
-            "type" : "string"
-          },
-          "moreInfo" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "status" ]
       },
       "VisitBookedEntity" : {
         "type" : "object",
