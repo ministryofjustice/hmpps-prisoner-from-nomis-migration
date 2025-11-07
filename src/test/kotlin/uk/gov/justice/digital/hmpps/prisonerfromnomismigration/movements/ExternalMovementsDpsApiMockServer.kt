@@ -109,6 +109,7 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         auditTimestamp = today,
         auditUserId = "AAA11A",
       ),
+      eventSubType = "R2",
     )
 
     fun syncTemporaryAbsenceMovementRequest(occurrenceId: UUID? = UUID.randomUUID()) = TapMovementRequest(
