@@ -737,6 +737,7 @@ private fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null) = S
     postcode = toAddressPostcode,
   ),
   audit = audit.toDpsRequest(),
+  eventSubType = eventSubType,
 )
 
 private fun TemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, occurrenceId: UUID? = null) = TapMovementRequest(
