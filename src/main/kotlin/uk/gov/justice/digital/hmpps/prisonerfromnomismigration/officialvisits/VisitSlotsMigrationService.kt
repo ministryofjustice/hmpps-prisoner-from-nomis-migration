@@ -142,6 +142,9 @@ class VisitSlotsMigrationService(
       }
     }
   }
+  override suspend fun retryCreateMapping(context: MigrationContext<VisitTimeSlotMigrationMappingDto>) = createMappingOrOnFailureDo(context, context.body) {
+    throw it
+  }
 
   private suspend fun VisitTimeSlotResponse.toMigrateVisitConfigRequest(): MigrateVisitConfigRequest = MigrateVisitConfigRequest(
     prisonCode = prisonId,
