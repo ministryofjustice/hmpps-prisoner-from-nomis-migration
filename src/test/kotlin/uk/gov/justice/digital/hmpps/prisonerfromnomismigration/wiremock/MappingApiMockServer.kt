@@ -682,24 +682,25 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willSetStateTo(STARTED),
     )
   }
+
   fun stubMappingUpdateFailureFollowedBySuccess(url: String) {
     stubFor(
-      put(urlPathEqualTo(url))
-        .inScenario("Retry create Scenario")
+      put(urlPathMatching(url))
+        .inScenario("Retry update Scenario")
         .whenScenarioStateIs(STARTED)
         .willReturn(
           aResponse()
             .withStatus(500) // request unsuccessful with status code 500
             .withHeader("Content-Type", "application/json"),
         )
-        .willSetStateTo("Cause create Success"),
+        .willSetStateTo("Cause update Success"),
     )
 
     stubFor(
-      put(urlPathEqualTo(url))
-        .inScenario("Retry create Scenario")
-        .whenScenarioStateIs("Cause create Success")
-        .willReturn(created())
+      put(urlPathMatching(url))
+        .inScenario("Retry update Scenario")
+        .whenScenarioStateIs("Cause update Success")
+        .willReturn(aResponse().withStatus(200))
         .willSetStateTo(STARTED),
     )
   }

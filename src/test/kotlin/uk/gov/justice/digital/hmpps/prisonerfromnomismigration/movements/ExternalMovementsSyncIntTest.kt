@@ -323,7 +323,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubCreateTemporaryAbsenceApplicationMappingFailureFollowedBySuccess()
 
         sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-INSERTED"))
-          .also { waitForAnyProcessingToComplete("temporary-absence-sync-application-mapping-created") }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-application-mapping-retry-created") }
       }
 
       @Test
@@ -361,7 +361,7 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should publish mapping created telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("temporary-absence-sync-application-mapping-created"),
+          eq("temporary-absence-sync-application-mapping-retry-created"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
@@ -951,7 +951,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubCreateOutsideMovementMappingFailureFollowedBySuccess()
 
         sendMessage(externalMovementApplicationMultiEvent("MOVEMENT_APPLICATION_MULTI-INSERTED"))
-          .also { waitForAnyProcessingToComplete("temporary-absence-sync-outside-movement-mapping-created") }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-outside-movement-mapping-retry-created") }
       }
 
       @Test
@@ -991,7 +991,7 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should publish mapping created telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("temporary-absence-sync-outside-movement-mapping-created"),
+          eq("temporary-absence-sync-outside-movement-mapping-retry-created"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
@@ -1587,7 +1587,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubCreateScheduledMovementMappingFailureFollowedBySuccess()
 
         sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED"))
-          .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-mapping-created") }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-mapping-retry-created") }
       }
 
       @Test
@@ -1626,7 +1626,7 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should publish mapping created telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("temporary-absence-sync-scheduled-movement-mapping-created"),
+          eq("temporary-absence-sync-scheduled-movement-mapping-retry-created"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
@@ -1775,7 +1775,7 @@ class ExternalMovementsSyncIntTest(
         dpsApi.stubSyncScheduledTemporaryAbsence(parentId = dpsApplicationId, response = SyncResponse(dpsOccurrenceId))
 
         sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-UPDATED"))
-          .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-mapping-updated") }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-mapping-retry-updated") }
       }
 
       @Test
@@ -2711,7 +2711,7 @@ class ExternalMovementsSyncIntTest(
         dpsApi.stubSyncTemporaryAbsenceMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(externalMovementEvent(inserted = true))
-          .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-mapping-created") }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-mapping-retry-created") }
       }
 
       @Test
@@ -2759,7 +2759,7 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should publish mapping created telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("temporary-absence-sync-external-movement-mapping-created"),
+          eq("temporary-absence-sync-external-movement-mapping-retry-created"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
@@ -3723,29 +3723,24 @@ class ExternalMovementsSyncIntTest(
     inner class WhenMappingUpdateFailsOnce {
       @BeforeEach
       fun setUp() {
-        createStubs("OFF")
+        createStubs("OFF", mappings = 1)
         mappingApi.stubUpdateScheduledMovementMappingFailureFollowedBySuccess()
 
         sendMessage(addressUpdatedEventOf(321, "OFFENDER"))
-          .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-updated-success", times = 2) }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-mapping-retry-updated") }
       }
 
       @Test
-      fun `should update both DPS scheduled movement`() {
+      fun `should update DPS scheduled movement`() {
         dpsApi.verify(
           putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/${scheduleMappings[0].dpsApplicationId}"))
             .withRequestBodyJsonPath("id", "${scheduleMappings[0].mapping.dpsOccurrenceId}")
             .withRequestBodyJsonPath("location.address", "to full address"),
         )
-        dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/${scheduleMappings[1].dpsApplicationId}"))
-            .withRequestBodyJsonPath("id", "${scheduleMappings[1].mapping.dpsOccurrenceId}")
-            .withRequestBodyJsonPath("location.address", "to full address"),
-        )
       }
 
       @Test
-      fun `should update mappings`() {
+      fun `should update mapping`() {
         mappingApi.verify(
           2,
           putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
@@ -3753,23 +3748,16 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("nomisEventId", "1")
             .withRequestBodyJsonPath("dpsAddressText", "to full address"),
         )
-
-        mappingApi.verify(
-          putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
-            .withRequestBodyJsonPath("dpsOccurrenceId", "${scheduleMappings[1].mapping.dpsOccurrenceId}")
-            .withRequestBodyJsonPath("nomisEventId", "2")
-            .withRequestBodyJsonPath("dpsAddressText", "to full address"),
-        )
       }
 
       @Test
-      fun `should create success telemetry for address updates`() {
+      fun `should create success telemetry for address update`() {
         verify(telemetryClient).trackEvent(
           eq("temporary-absence-sync-address-updated-success"),
           check {
             assertThat(it["nomisAddressId"]).isEqualTo("321")
             assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
-            assertThat(it["nomisEventIds"]).isEqualTo("[1, 2]")
+            assertThat(it["nomisEventIds"]).isEqualTo("[1]")
             assertThat(it["dpsOccurrenceIds"]).isEqualTo("${scheduleMappings.map { it.mapping.dpsOccurrenceId }}")
           },
           isNull(),
@@ -3778,15 +3766,15 @@ class ExternalMovementsSyncIntTest(
 
       @Test
       fun `should create success telemetry for schedule updates`() {
-        scheduleMappings.forEach { testData ->
+        with(scheduleMappings[0]) {
           verify(telemetryClient).trackEvent(
             eq("temporary-absence-sync-scheduled-movement-updated-success"),
             check {
-              assertThat(it["offenderNo"]).isEqualTo(testData.mapping.prisonerNumber)
-              assertThat(it["nomisApplicationId"]).isEqualTo("${testData.nomisApplicationId}")
-              assertThat(it["nomisEventId"]).isEqualTo("${testData.mapping.nomisEventId}")
+              assertThat(it["offenderNo"]).isEqualTo(mapping.prisonerNumber)
+              assertThat(it["nomisApplicationId"]).isEqualTo("$nomisApplicationId")
+              assertThat(it["nomisEventId"]).isEqualTo("${mapping.nomisEventId}")
               assertThat(it["directionCode"]).isEqualTo("OUT")
-              assertThat(it["dpsOccurrenceId"]).isEqualTo("${testData.mapping.dpsOccurrenceId}")
+              assertThat(it["dpsOccurrenceId"]).isEqualTo("${mapping.dpsOccurrenceId}")
               assertThat(it["nomisAddressId"]).isEqualTo("321")
               assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
             },
@@ -3796,7 +3784,7 @@ class ExternalMovementsSyncIntTest(
       }
     }
 
-    private fun createStubs(addressOwnerClass: String) {
+    private fun createStubs(addressOwnerClass: String, mappings: Int = 2) {
       scheduleMappings = listOf(
         TestData(
           UUID.randomUUID(),
@@ -3808,7 +3796,7 @@ class ExternalMovementsSyncIntTest(
           222,
           temporaryAbsenceScheduledMovementMapping(2L, "B1234BB", UUID.randomUUID(), nomisAddressOwnerClass = addressOwnerClass),
         ),
-      )
+      ).take(mappings)
       mappingApi.stubFindScheduledMovementsForAddressMappings(321, scheduleMappings.map { it.mapping })
       scheduleMappings.forEach {
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(it.nomisApplicationId, it.dpsApplicationId)
