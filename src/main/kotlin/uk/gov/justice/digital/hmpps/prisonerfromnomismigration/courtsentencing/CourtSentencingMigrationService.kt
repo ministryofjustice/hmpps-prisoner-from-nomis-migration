@@ -184,6 +184,7 @@ class CourtSentencingMigrationService(
     CourtAppearanceMappingDto(
       nomisCourtAppearanceId = it.eventId.toLong(),
       dpsCourtAppearanceId = it.appearanceUuid.toString(),
+      mappingType = CourtAppearanceMappingDto.MappingType.MIGRATED,
     )
   }
 
@@ -191,6 +192,7 @@ class CourtSentencingMigrationService(
     CourtChargeMappingDto(
       nomisCourtChargeId = it.chargeNOMISId.toLong(),
       dpsCourtChargeId = it.chargeUuid.toString(),
+      mappingType = CourtChargeMappingDto.MappingType.MIGRATED,
     )
   }
 
@@ -199,6 +201,7 @@ class CourtSentencingMigrationService(
       nomisSentenceSequence = it.sentenceNOMISId.sequence,
       nomisBookingId = it.sentenceNOMISId.offenderBookingId,
       dpsSentenceId = it.sentenceUuid.toString(),
+      mappingType = SentenceMappingDto.MappingType.MIGRATED,
     )
   }
 
@@ -208,10 +211,11 @@ class CourtSentencingMigrationService(
       nomisBookingId = it.sentenceTermNOMISId.offenderBookingId,
       dpsTermId = it.periodLengthUuid.toString(),
       nomisTermSequence = it.sentenceTermNOMISId.termSequence,
+      mappingType = SentenceTermMappingDto.MappingType.MIGRATED,
     )
   }
 
-  private fun buildCourtCaseMapping(responseMappings: List<MigrationCreateCourtCaseResponse>): List<CourtCaseMappingDto> = responseMappings.map { it -> CourtCaseMappingDto(nomisCourtCaseId = it.caseId, dpsCourtCaseId = it.courtCaseUuid) }
+  private fun buildCourtCaseMapping(responseMappings: List<MigrationCreateCourtCaseResponse>): List<CourtCaseMappingDto> = responseMappings.map { it -> CourtCaseMappingDto(nomisCourtCaseId = it.caseId, dpsCourtCaseId = it.courtCaseUuid, mappingType = CourtCaseMappingDto.MappingType.MIGRATED) }
 
   suspend fun offenderMigrationPayload(offenderNo: String): MigrationCreateCourtCases {
     val nomisCourtCases = courtSentencingNomisApiService.getCourtCasesForMigration(offenderNo = offenderNo)

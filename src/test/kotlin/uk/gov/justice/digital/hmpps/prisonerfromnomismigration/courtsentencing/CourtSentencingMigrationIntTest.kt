@@ -173,6 +173,36 @@ class CourtSentencingMigrationIntTest(
               "courtCharges.size()",
               equalTo("2"),
             ),
+          )
+          .withRequestBody(
+            WireMock.matchingJsonPath(
+              "courtCases[0].mappingType",
+              equalTo("MIGRATED"),
+            ),
+          )
+          .withRequestBody(
+            WireMock.matchingJsonPath(
+              "courtCharges[0].mappingType",
+              equalTo("MIGRATED"),
+            ),
+          )
+          .withRequestBody(
+            WireMock.matchingJsonPath(
+              "sentences[0].mappingType",
+              equalTo("MIGRATED"),
+            ),
+          )
+          .withRequestBody(
+            WireMock.matchingJsonPath(
+              "sentenceTerms[0].mappingType",
+              equalTo("MIGRATED"),
+            ),
+          )
+          .withRequestBody(
+            WireMock.matchingJsonPath(
+              "courtAppearances[0].mappingType",
+              equalTo("MIGRATED"),
+            ),
           ),
       )
 
