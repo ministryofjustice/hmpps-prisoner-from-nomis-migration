@@ -114,7 +114,5 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
     .uri(url)
     .bodyValue(mapping)
     .retrieve()
-    .bodyToMono(Unit::class.java)
-    .map { CreateMappingResult<T>() }
-    .awaitFirstOrDefault(CreateMappingResult())
+    .awaitBody<Unit>()
 }

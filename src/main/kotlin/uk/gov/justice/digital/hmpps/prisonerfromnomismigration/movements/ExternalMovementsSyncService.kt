@@ -420,7 +420,7 @@ class ExternalMovementsSyncService(
       retryMessage.body,
     ).also {
       telemetryClient.trackEvent(
-        "$TELEMETRY_PREFIX-application-mapping-created",
+        "$TELEMETRY_PREFIX-application-mapping-retry-created",
         retryMessage.telemetryAttributes,
       )
     }
@@ -431,7 +431,7 @@ class ExternalMovementsSyncService(
       retryMessage.body,
     ).also {
       telemetryClient.trackEvent(
-        "$TELEMETRY_PREFIX-outside-movement-mapping-created",
+        "$TELEMETRY_PREFIX-outside-movement-mapping-retry-created",
         retryMessage.telemetryAttributes,
       )
     }
@@ -442,7 +442,7 @@ class ExternalMovementsSyncService(
       retryMessage.body,
     ).also {
       telemetryClient.trackEvent(
-        "$TELEMETRY_PREFIX-scheduled-movement-mapping-created",
+        "$TELEMETRY_PREFIX-scheduled-movement-mapping-retry-created",
         retryMessage.telemetryAttributes,
       )
     }
@@ -453,7 +453,7 @@ class ExternalMovementsSyncService(
       retryMessage.body,
     ).also {
       telemetryClient.trackEvent(
-        "$TELEMETRY_PREFIX-scheduled-movement-mapping-updated",
+        "$TELEMETRY_PREFIX-scheduled-movement-mapping-retry-updated",
         retryMessage.telemetryAttributes,
       )
     }
@@ -638,7 +638,7 @@ class ExternalMovementsSyncService(
       retryMessage.body,
     ).also {
       telemetryClient.trackEvent(
-        "$TELEMETRY_PREFIX-external-movement-mapping-created",
+        "$TELEMETRY_PREFIX-external-movement-mapping-retry-created",
         retryMessage.telemetryAttributes,
       )
     }
