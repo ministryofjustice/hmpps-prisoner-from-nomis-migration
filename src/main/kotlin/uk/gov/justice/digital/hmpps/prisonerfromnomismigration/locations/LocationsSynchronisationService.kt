@@ -7,6 +7,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsSynchronisationService.MappingResponse.MAPPING_FAILED
@@ -39,7 +40,7 @@ class LocationsSynchronisationService(
   }
 
   suspend fun synchroniseUsage(event: LocationsOffenderEvent) {
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+    if (event.originatesInDps()) {
       telemetryClient.trackEvent("locations-synchronisation-skipped", event.toTelemetryProperties())
       return
     }
@@ -54,7 +55,7 @@ class LocationsSynchronisationService(
   }
 
   suspend fun synchroniseAttribute(event: LocationsOffenderEvent) {
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+    if (event.originatesInDps()) {
       telemetryClient.trackEvent("locations-synchronisation-skipped", event.toTelemetryProperties())
       return
     }
@@ -64,7 +65,7 @@ class LocationsSynchronisationService(
   }
 
   suspend fun synchroniseLocation(event: LocationsOffenderEvent) {
-    if (event.auditModuleName == "DPS_SYNCHRONISATION" && !isVsipVisitRoomCreation(event)) {
+    if (event.originatesInDps() && !isVsipVisitRoomCreation(event)) {
       telemetryClient.trackEvent("locations-synchronisation-skipped", event.toTelemetryProperties())
       return
     }

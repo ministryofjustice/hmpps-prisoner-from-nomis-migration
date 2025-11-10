@@ -11,8 +11,9 @@ interface EventAudited {
   val auditModuleName: String?
 }
 
-// Caters for null or empty which should be treated as DPS_SYNCHRONISATION
-fun EventAudited.originatesInDps(): Boolean = auditModuleName?.startsWith("DPS_SYNCHRONISATION") ?: true
+// TODO Caters for null or empty which should be treated as DPS_SYNCHRONISATION
+// TODO - this NEEDS to return TRUE if it is empty - BUT some of the repair endpoints pass in null for the auditModule
+fun EventAudited.originatesInDps(): Boolean = auditModuleName?.startsWith("DPS_SYNCHRONISATION") ?: false
 
 interface TelemetryEnabled {
   val telemetryClient: TelemetryClient
