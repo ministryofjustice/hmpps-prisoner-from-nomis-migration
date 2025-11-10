@@ -266,7 +266,7 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     returnTime = tomorrow,
     applicationStatus = "APP-SCH",
     applicationType = "SINGLE",
-    escortCode = "U",
+    escortCode = "P",
     transportType = "VAN",
     comment = "application comment",
     prisonId = "LEI",

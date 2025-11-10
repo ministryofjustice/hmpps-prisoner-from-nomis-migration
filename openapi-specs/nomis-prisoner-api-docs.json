@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-11-06.706.ab7ac56"
+    "version" : "2025-11-10.715.dff0ddf"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -22516,7 +22516,7 @@
             "description" : "Temporary absence sub type"
           }
         },
-        "required" : [ "applicationDate", "applicationStatus", "applicationType", "eventSubType", "fromDate", "releaseTime", "returnTime", "toDate" ]
+        "required" : [ "applicationDate", "applicationStatus", "applicationType", "eventSubType", "fromDate", "prisonId", "releaseTime", "returnTime", "toDate" ]
       },
       "UpsertTemporaryAbsenceApplicationResponse" : {
         "type" : "object",
@@ -32181,7 +32181,7 @@
             "description" : "Audit data associated with the records"
           }
         },
-        "required" : [ "absences", "applicationDate", "applicationStatus", "applicationType", "audit", "eventSubType", "fromDate", "movementApplicationId", "outsideMovements", "releaseTime", "returnTime", "toDate" ]
+        "required" : [ "absences", "applicationDate", "applicationStatus", "applicationType", "audit", "eventSubType", "fromDate", "movementApplicationId", "outsideMovements", "prisonId", "releaseTime", "returnTime", "toDate" ]
       },
       "TemporaryAbsenceApplicationOutsideMovement" : {
         "type" : "object",
@@ -32849,7 +32849,7 @@
             "description" : "Audit data associated with the records"
           }
         },
-        "required" : [ "applicationDate", "applicationStatus", "applicationType", "audit", "bookingId", "eventSubType", "fromDate", "movementApplicationId", "releaseTime", "returnTime", "toDate" ]
+        "required" : [ "applicationDate", "applicationStatus", "applicationType", "audit", "bookingId", "eventSubType", "fromDate", "movementApplicationId", "prisonId", "releaseTime", "returnTime", "toDate" ]
       },
       "AmendmentResponse" : {
         "type" : "object",
