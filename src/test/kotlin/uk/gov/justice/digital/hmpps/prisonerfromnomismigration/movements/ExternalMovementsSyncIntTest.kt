@@ -65,7 +65,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
         mappingApi.stubCreateTemporaryAbsenceApplicationMapping()
         nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
-        dpsApi.stubSyncTapApplication(response = SyncResponse(dpsId))
+        dpsApi.stubSyncTapAuthorisation(response = SyncResponse(dpsId))
 
         sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-INSERTED"))
           .also { waitForAnyProcessingToComplete() }
@@ -84,10 +84,19 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should create DPS application`() {
         dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-application/A1234BC"))
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/A1234BC"))
             .withRequestBodyJsonPath("id", absent())
-            .withRequestBodyJsonPath("movementApplicationId", equalTo = 111)
-            .withRequestBodyJsonPath("eventSubType", equalTo = "C5"),
+            .withRequestBodyJsonPath("prisonCode", equalTo = "LEI")
+            .withRequestBodyJsonPath("statusCode", equalTo = "APPROVED")
+            .withRequestBodyJsonPath("absenceTypeCode", equalTo = "RR")
+            .withRequestBodyJsonPath("absenceSubTypeCode", equalTo = "SPL")
+            .withRequestBodyJsonPath("absenceReasonCode", equalTo = "C5")
+            .withRequestBodyJsonPath("accompaniedByCode", equalTo = "P")
+            .withRequestBodyJsonPath("repeat", equalTo = false)
+            .withRequestBodyJsonPath("fromDate", equalTo = "${LocalDate.now()}")
+            .withRequestBodyJsonPath("toDate", equalTo = "${LocalDate.now().plusDays(1)}")
+            .withRequestBodyJsonPath("notes", equalTo = "application comment")
+            .withRequestBodyJsonPath("legacyId", equalTo = 111),
         )
       }
 
@@ -111,7 +120,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            assertThat(it["dpsApplicationId"]).isEqualTo(dpsId.toString())
+            assertThat(it["dpsAuthorisationId"]).isEqualTo(dpsId.toString())
           },
           isNull(),
         )
@@ -130,7 +139,7 @@ class ExternalMovementsSyncIntTest(
 
       @Test
       fun `should NOT create DPS application`() {
-        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/temporary-absence-application/A1234BC")))
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/A1234BC")))
       }
 
       @Test
@@ -167,7 +176,7 @@ class ExternalMovementsSyncIntTest(
 
       @Test
       fun `should NOT create DPS application`() {
-        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/temporary-absence-application/A1234BC")))
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/A1234BC")))
       }
 
       @Test
@@ -207,7 +216,7 @@ class ExternalMovementsSyncIntTest(
 
       @Test
       fun `should attempt to create DPS application`() {
-        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/temporary-absence-application/A1234BC")))
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/A1234BC")))
       }
 
       @Test
@@ -238,7 +247,7 @@ class ExternalMovementsSyncIntTest(
       fun setUp() {
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
         nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
-        dpsApi.stubSyncTapApplication(response = SyncResponse(dpsId))
+        dpsApi.stubSyncTapAuthorisation(response = SyncResponse(dpsId))
         mappingApi.stubCreateTemporaryAbsenceApplicationMappingConflict(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
@@ -269,7 +278,7 @@ class ExternalMovementsSyncIntTest(
 
       @Test
       fun `should create DPS application only once`() {
-        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/temporary-absence-application/A1234BC")))
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/A1234BC")))
       }
 
       @Test
@@ -292,7 +301,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            assertThat(it["dpsApplicationId"]).isEqualTo(dpsId.toString())
+            assertThat(it["dpsAuthorisationId"]).isEqualTo(dpsId.toString())
           },
           isNull(),
         )
@@ -319,7 +328,7 @@ class ExternalMovementsSyncIntTest(
       fun setUp() {
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
         nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
-        dpsApi.stubSyncTapApplication(response = SyncResponse(dpsId))
+        dpsApi.stubSyncTapAuthorisation(response = SyncResponse(dpsId))
         mappingApi.stubCreateTemporaryAbsenceApplicationMappingFailureFollowedBySuccess()
 
         sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-INSERTED"))
@@ -328,7 +337,7 @@ class ExternalMovementsSyncIntTest(
 
       @Test
       fun `should create DPS application`() {
-        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/temporary-absence-application/A1234BC")))
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/A1234BC")))
       }
 
       @Test
@@ -352,7 +361,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            assertThat(it["dpsApplicationId"]).isEqualTo(dpsId.toString())
+            assertThat(it["dpsAuthorisationId"]).isEqualTo(dpsId.toString())
           },
           isNull(),
         )
@@ -366,7 +375,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            assertThat(it["dpsApplicationId"]).isEqualTo(dpsId.toString())
+            assertThat(it["dpsAuthorisationId"]).isEqualTo(dpsId.toString())
           },
           isNull(),
         )
@@ -385,7 +394,7 @@ class ExternalMovementsSyncIntTest(
       fun setUp() {
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsId)
         nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
-        dpsApi.stubSyncTapApplication(response = SyncResponse(dpsId))
+        dpsApi.stubSyncTapAuthorisation(response = SyncResponse(dpsId))
 
         sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-UPDATED"))
           .also { waitForAnyProcessingToComplete() }
@@ -404,10 +413,19 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should update DPS application`() {
         dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-application/A1234BC"))
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/A1234BC"))
             .withRequestBodyJsonPath("id", equalTo = dpsId)
-            .withRequestBodyJsonPath("movementApplicationId", equalTo = 111)
-            .withRequestBodyJsonPath("eventSubType", equalTo = "C5"),
+            .withRequestBodyJsonPath("prisonCode", equalTo = "LEI")
+            .withRequestBodyJsonPath("statusCode", equalTo = "APPROVED")
+            .withRequestBodyJsonPath("absenceTypeCode", equalTo = "RR")
+            .withRequestBodyJsonPath("absenceSubTypeCode", equalTo = "SPL")
+            .withRequestBodyJsonPath("absenceReasonCode", equalTo = "C5")
+            .withRequestBodyJsonPath("accompaniedByCode", equalTo = "P")
+            .withRequestBodyJsonPath("repeat", equalTo = false)
+            .withRequestBodyJsonPath("fromDate", equalTo = "${LocalDate.now()}")
+            .withRequestBodyJsonPath("toDate", equalTo = "${LocalDate.now().plusDays(1)}")
+            .withRequestBodyJsonPath("notes", equalTo = "application comment")
+            .withRequestBodyJsonPath("legacyId", equalTo = 111),
         )
       }
 
@@ -419,7 +437,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            assertThat(it["dpsApplicationId"]).isEqualTo(dpsId.toString())
+            assertThat(it["dpsAuthorisationId"]).isEqualTo(dpsId.toString())
           },
           isNull(),
         )
@@ -436,7 +454,7 @@ class ExternalMovementsSyncIntTest(
 
       @Test
       fun `should NOT create DPS application`() {
-        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/temporary-absence-application/A1234BC")))
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/A1234BC")))
       }
 
       @Test
@@ -467,7 +485,7 @@ class ExternalMovementsSyncIntTest(
       fun setUp() {
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsId)
         nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
-        dpsApi.stubSyncTapApplicationError()
+        dpsApi.stubSyncTapAuthorisationError()
 
         sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-UPDATED"))
           .also { waitForAnyProcessingToComplete("temporary-absence-sync-application-updated-error") }
@@ -475,7 +493,7 @@ class ExternalMovementsSyncIntTest(
 
       @Test
       fun `should try to update DPS application`() {
-        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/temporary-absence-application/A1234BC")))
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/A1234BC")))
       }
 
       @Test
@@ -486,7 +504,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            assertThat(it["dpsApplicationId"]).isEqualTo(dpsId.toString())
+            assertThat(it["dpsAuthorisationId"]).isEqualTo(dpsId.toString())
           },
           isNull(),
         )

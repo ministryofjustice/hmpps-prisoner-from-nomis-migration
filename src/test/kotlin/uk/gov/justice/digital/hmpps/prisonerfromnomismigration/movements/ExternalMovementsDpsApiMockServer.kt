@@ -15,8 +15,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.ScheduledTemporaryAbsenceRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapApplicationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapLocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest.Direction.OUT
@@ -63,28 +64,20 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     private val today = LocalDateTime.now()
     private val tomorrow = today.plusDays(1)
 
-    fun syncTapApplicationRequest() = TapApplicationRequest(
-      movementApplicationId = 1234,
-      eventSubType = "C5",
-      applicationDate = today.toLocalDate(),
+    fun syncTapAuthorisation() = SyncWriteTapAuthorisation(
+      prisonCode = "LEI",
+      statusCode = "APPROVED",
+      absenceTypeCode = "RDR",
+      absenceSubTypeCode = "RR",
+      absenceReasonCode = "C5",
+      accompaniedByCode = "U",
+      repeat = false,
       fromDate = today.toLocalDate(),
       toDate = tomorrow.toLocalDate(),
-      applicationType = "SINGLE",
-      applicationStatus = "ACCEPTED",
-      prisonId = "LEI",
-      comment = "Application comment",
-      contactPersonName = "Dave",
-      temporaryAbsenceType = "RDR",
-      temporaryAbsenceSubType = "RR",
-      audit = NomisAudit(
-        createDatetime = today,
-        createUsername = "AAA11A",
-        modifyDatetime = today,
-        modifyUserId = "AAA11A",
-        auditTimestamp = today,
-        auditUserId = "AAA11A",
-      ),
-
+      notes = "Authorisation comment",
+      created = SyncAtAndBy(today, "AAA11A"),
+      updated = SyncAtAndBy(today, "AAA11A"),
+      legacyId = 1234,
     )
 
     fun syncScheduledTemporaryAbsenceRequest() = ScheduledTemporaryAbsenceRequest(
@@ -151,9 +144,25 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubSyncTapApplication(personIdentifier: String = "A1234BC", response: SyncResponse = syncResponse()) {
+  fun stubSyncTapApplicationError(
+    personIdentifier: String = "A1234BC",
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
     dpsExtMovementsServer.stubFor(
       put("/sync/temporary-absence-application/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubSyncTapAuthorisation(personIdentifier: String = "A1234BC", response: SyncResponse = syncResponse()) {
+    dpsExtMovementsServer.stubFor(
+      put("/sync/temporary-absence-authorisations/$personIdentifier")
         .willReturn(
           aResponse()
             .withStatus(201)
@@ -163,13 +172,13 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubSyncTapApplicationError(
+  fun stubSyncTapAuthorisationError(
     personIdentifier: String = "A1234BC",
     status: Int = 500,
     error: ErrorResponse = ErrorResponse(status = status),
   ) {
     dpsExtMovementsServer.stubFor(
-      put("/sync/temporary-absence-application/$personIdentifier")
+      put("/sync/temporary-absence-authorisations/$personIdentifier")
         .willReturn(
           aResponse()
             .withStatus(status)

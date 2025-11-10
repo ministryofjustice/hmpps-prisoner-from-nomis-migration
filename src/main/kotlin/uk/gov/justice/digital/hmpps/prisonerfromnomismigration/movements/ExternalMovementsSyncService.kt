@@ -18,7 +18,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType.TAP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.ScheduledTemporaryAbsenceRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapApplicationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapLocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest.Direction.IN
@@ -72,9 +73,9 @@ class ExternalMovementsSyncService(
         track("$TELEMETRY_PREFIX-application-inserted", telemetry) {
           nomisApiService.getTemporaryAbsenceApplication(prisonerNumber, nomisApplicationId)
             .also {
-              val dpsApplicationId = dpsApiService.syncTemporaryAbsenceApplication(prisonerNumber, it.toDpsRequest())
+              val dpsApplicationId = dpsApiService.syncTapAuthorisation(prisonerNumber, it.toDpsRequest())
                 .id
-                .also { telemetry["dpsApplicationId"] = it }
+                .also { telemetry["dpsAuthorisationId"] = it }
               val mapping = TemporaryAbsenceApplicationSyncMappingDto(prisonerNumber, bookingId, nomisApplicationId, dpsApplicationId, NOMIS_CREATED)
               tryToCreateApplicationMapping(mapping, telemetry)
             }
@@ -97,9 +98,9 @@ class ExternalMovementsSyncService(
 
     track("$TELEMETRY_PREFIX-application-updated", telemetry) {
       val dpsApplicationId = mappingApiService.getApplicationMapping(nomisApplicationId)!!.dpsMovementApplicationId
-        .also { telemetry["dpsApplicationId"] = it }
+        .also { telemetry["dpsAuthorisationId"] = it }
       val nomisApplication = nomisApiService.getTemporaryAbsenceApplication(prisonerNumber, nomisApplicationId)
-      dpsApiService.syncTemporaryAbsenceApplication(prisonerNumber, nomisApplication.toDpsRequest(dpsApplicationId))
+      dpsApiService.syncTapAuthorisation(prisonerNumber, nomisApplication.toDpsRequest(dpsApplicationId))
     }
   }
 
@@ -704,22 +705,30 @@ class ExternalMovementsSyncService(
   }
 }
 
-private fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) = TapApplicationRequest(
+private fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) = SyncWriteTapAuthorisation(
   id = id,
-  movementApplicationId = movementApplicationId,
-  eventSubType = eventSubType,
-  applicationDate = applicationDate,
+  prisonCode = prisonId,
+  statusCode = applicationStatus.toDpsStatusCode(),
+  absenceTypeCode = temporaryAbsenceType,
+  absenceSubTypeCode = temporaryAbsenceSubType,
+  absenceReasonCode = eventSubType,
+  accompaniedByCode = escortCode ?: "U",
+  repeat = applicationType == "REPEATING",
   fromDate = fromDate,
   toDate = toDate,
-  applicationStatus = applicationStatus,
-  applicationType = applicationType,
-  prisonId = prisonId,
-  comment = comment,
-  contactPersonName = contactPersonName,
-  temporaryAbsenceType = temporaryAbsenceType,
-  temporaryAbsenceSubType = temporaryAbsenceSubType,
-  audit = audit.toDpsRequest(),
+  notes = comment,
+  created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
+  updated = audit.modifyDatetime?.let { SyncAtAndBy(audit.modifyDatetime, audit.modifyUserId!!) },
+  legacyId = movementApplicationId,
 )
+
+private fun String.toDpsStatusCode() = when (this) {
+  "PEN" -> "PENDING"
+  "APP-SCH", "APP-UNSCH" -> "APPROVED"
+  "DEN" -> "DENIED"
+  "CAN" -> "CANCELLED"
+  else -> throw IllegalArgumentException("Unknown temporary absence status code: $this")
+}
 
 private fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null) = ScheduledTemporaryAbsenceRequest(
   id = id,
