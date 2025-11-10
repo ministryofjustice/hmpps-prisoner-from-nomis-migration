@@ -16,7 +16,8 @@ import java.util.concurrent.CompletableFuture
 class OfficialVisitsEventListener(
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
-  private val service: OfficialVisitsSynchronisationService,
+  private val visitsService: OfficialVisitsSynchronisationService,
+  private val visitSlotsService: VisitSlotsSynchronisationService,
 ) {
 
   private companion object {
@@ -33,9 +34,16 @@ class OfficialVisitsEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType, "officialvisits")) {
             when (eventType) {
-              "OFFENDER_OFFICIAL_VISIT-INSERTED" -> service.visitAdded(sqsMessage.Message.fromJson())
-              "OFFENDER_OFFICIAL_VISIT-UPDATED" -> service.visitUpdated(sqsMessage.Message.fromJson())
-              "OFFENDER_OFFICIAL_VISIT-DELETED" -> service.visitDeleted(sqsMessage.Message.fromJson())
+              "OFFENDER_OFFICIAL_VISIT-INSERTED" -> visitsService.visitAdded(sqsMessage.Message.fromJson())
+              "OFFENDER_OFFICIAL_VISIT-UPDATED" -> visitsService.visitUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_OFFICIAL_VISIT-DELETED" -> visitsService.visitDeleted(sqsMessage.Message.fromJson())
+              "AGENCY_VISIT_TIMES-INSERTED" -> visitSlotsService.visitTimeslotAdded(sqsMessage.Message.fromJson())
+              "AGENCY_VISIT_TIMES-UPDATED" -> visitSlotsService.visitTimeslotUpdated(sqsMessage.Message.fromJson())
+              "AGENCY_VISIT_TIMES-DELETED" -> visitSlotsService.visitTimeslotDeleted(sqsMessage.Message.fromJson())
+              "AGENCY_VISIT_SLOTS-INSERTED" -> visitSlotsService.visitSlotAdded(sqsMessage.Message.fromJson())
+              "AGENCY_VISIT_SLOTS-UPDATED" -> visitSlotsService.visitSlotUpdated(sqsMessage.Message.fromJson())
+              "AGENCY_VISIT_SLOTS-DELETED" -> visitSlotsService.visitSlotDeleted(sqsMessage.Message.fromJson())
+
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -53,5 +61,20 @@ data class VisitEvent(
   val bookingId: Long,
   val offenderIdDisplay: String,
   val agencyLocationId: String,
+  override val auditModuleName: String,
+) : EventAudited
+
+data class AgencyVisitTimeEvent(
+  val agencyLocationId: String,
+  val timeslotSequence: Int,
+  val weekDay: String,
+  override val auditModuleName: String,
+) : EventAudited
+
+data class AgencyVisitSlotEvent(
+  val agencyVisitSlotId: Long,
+  val agencyLocationId: String,
+  val timeslotSequence: Int,
+  val weekDay: String,
   override val auditModuleName: String,
 ) : EventAudited
