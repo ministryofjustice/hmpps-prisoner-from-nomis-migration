@@ -5,9 +5,9 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.api.SyncApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.ScheduledTemporaryAbsenceRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest
 import java.util.UUID
 
@@ -20,9 +20,7 @@ class ExternalMovementsDpsApiService(@Qualifier("extMovementsDpsApiWebClient") p
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncTemporaryAbsenceScheduledMovement(parentId: UUID, scheduledRequest: ScheduledTemporaryAbsenceRequest): SyncResponse = webClient.put()
-    .uri("/sync/scheduled-temporary-absence/{parentId}", parentId)
-    .bodyValue(scheduledRequest)
+  suspend fun syncTapOccurrence(authorisationId: UUID, request: SyncWriteTapOccurrence): SyncResponse = syncApi.prepare(syncApi.syncTemporaryAbsenceOccurrenceRequestConfig(authorisationId, request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 

@@ -15,8 +15,8 @@ import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncScheduledTemporaryAbsenceRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapAuthorisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapOccurrence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTemporaryAbsenceMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import java.time.LocalDate
@@ -81,9 +81,9 @@ class ExternalMovementsDpsApiServiceTest {
 
     @Test
     internal fun `should pass oath2 token`() = runTest {
-      dpsExtMovementsServer.stubSyncScheduledTemporaryAbsence(parentId)
+      dpsExtMovementsServer.stubSyncTapOccurrence(parentId)
 
-      apiService.syncTemporaryAbsenceScheduledMovement(parentId, syncScheduledTemporaryAbsenceRequest())
+      apiService.syncTapOccurrence(parentId, syncTapOccurrence())
 
       dpsExtMovementsServer.verify(
         putRequestedFor(anyUrl())
@@ -93,34 +93,34 @@ class ExternalMovementsDpsApiServiceTest {
 
     @Test
     fun `should call the sync endpoint`() = runTest {
-      dpsExtMovementsServer.stubSyncScheduledTemporaryAbsence(parentId)
+      dpsExtMovementsServer.stubSyncTapOccurrence(parentId)
 
-      apiService.syncTemporaryAbsenceScheduledMovement(parentId, syncScheduledTemporaryAbsenceRequest())
+      apiService.syncTapOccurrence(parentId, syncTapOccurrence())
 
       dpsExtMovementsServer.verify(
-        putRequestedFor(urlPathEqualTo("/sync/scheduled-temporary-absence/$parentId"))
-          .withRequestBody(matchingJsonPath("eventId", equalTo("1234")))
-          .withRequestBody(matchingJsonPath("eventStatus", equalTo("SCH")))
+        putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$parentId/occurrences"))
+          .withRequestBody(matchingJsonPath("legacyId", equalTo("1234")))
+          .withRequestBody(matchingJsonPath("statusCode", equalTo("PENDING")))
           .withRequestBody(matchingJsonPath("location.description", equalTo("Boots")))
-          .withRequestBody(matchingJsonPath("audit.createUsername", equalTo("AAA11A"))),
+          .withRequestBody(matchingJsonPath("created.by", equalTo("AAA11A"))),
       )
     }
 
     @Test
     fun `should parse the response`() = runTest {
       val dpsId = UUID.randomUUID()
-      dpsExtMovementsServer.stubSyncScheduledTemporaryAbsence(parentId, response = SyncResponse(dpsId))
+      dpsExtMovementsServer.stubSyncTapOccurrence(parentId, response = SyncResponse(dpsId))
 
-      assertThat(apiService.syncTemporaryAbsenceScheduledMovement(parentId, syncScheduledTemporaryAbsenceRequest()).id)
+      assertThat(apiService.syncTapOccurrence(parentId, syncTapOccurrence()).id)
         .isEqualTo(dpsId)
     }
 
     @Test
     fun `should throw if error`() = runTest {
-      dpsExtMovementsServer.stubSyncScheduledTemporaryAbsenceError(parentId)
+      dpsExtMovementsServer.stubSyncTapOccurrenceError(parentId)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.syncTemporaryAbsenceScheduledMovement(parentId, syncScheduledTemporaryAbsenceRequest())
+        apiService.syncTapOccurrence(parentId, syncTapOccurrence())
       }
     }
   }

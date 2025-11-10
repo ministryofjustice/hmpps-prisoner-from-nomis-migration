@@ -13,11 +13,12 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.stereotype.Component
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.NomisAudit
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.ScheduledTemporaryAbsenceRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapLocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest.Direction.OUT
@@ -36,11 +37,6 @@ class ExternalMovementsDpsApiExtension :
     @JvmField
     val dpsExtMovementsServer = ExternalMovementsDpsApiMockServer()
     lateinit var objectMapper: ObjectMapper
-
-    @Suppress("unused")
-    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsExtMovementsServer.getRequestBody(pattern, objectMapper)
-
-    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsExtMovementsServer.getRequestBodies(pattern, objectMapper)
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -64,6 +60,10 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     private val today = LocalDateTime.now()
     private val tomorrow = today.plusDays(1)
 
+    @Suppress("unused")
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsExtMovementsServer.getRequestBody(pattern, ExternalMovementsDpsApiExtension.Companion.objectMapper)
+    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsExtMovementsServer.getRequestBodies(pattern, ExternalMovementsDpsApiExtension.Companion.objectMapper)
+
     fun syncTapAuthorisation() = SyncWriteTapAuthorisation(
       prisonCode = "LEI",
       statusCode = "APPROVED",
@@ -80,29 +80,25 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       legacyId = 1234,
     )
 
-    fun syncScheduledTemporaryAbsenceRequest() = ScheduledTemporaryAbsenceRequest(
-      eventId = 1234,
-      eventStatus = "SCH",
-      startTime = today,
-      returnTime = tomorrow,
-      location = TapLocation(
+    fun syncTapOccurrence() = SyncWriteTapOccurrence(
+      statusCode = "PENDING",
+      releaseAt = today,
+      returnBy = tomorrow,
+      location = Location(
         description = "Boots",
         address = "High Street, Sheffield",
         postcode = "S1 1AA",
+        uprn = "abcdef",
       ),
-      contactPersonName = "Contact Person Name",
-      escort = "PECS",
-      comment = "Scheduled temporary absence comment",
-      transportType = "VAN",
-      audit = NomisAudit(
-        createDatetime = today,
-        createUsername = "AAA11A",
-        modifyDatetime = today,
-        modifyUserId = "AAA11A",
-        auditTimestamp = today,
-        auditUserId = "AAA11A",
-      ),
-      eventSubType = "R2",
+      absenceTypeCode = "RDR",
+      absenceSubTypeCode = "RR",
+      absenceReasonCode = "C5",
+      accompaniedByCode = "P",
+      transportCode = "VAN",
+      notes = "Occurrence comment",
+      created = SyncAtAndBy(today, "AAA11A"),
+      updated = SyncAtAndBy(today, "AAA11A"),
+      legacyId = 1234,
     )
 
     fun syncTemporaryAbsenceMovementRequest(occurrenceId: UUID? = UUID.randomUUID()) = TapMovementRequest(
@@ -144,22 +140,6 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubSyncTapApplicationError(
-    personIdentifier: String = "A1234BC",
-    status: Int = 500,
-    error: ErrorResponse = ErrorResponse(status = status),
-  ) {
-    dpsExtMovementsServer.stubFor(
-      put("/sync/temporary-absence-application/$personIdentifier")
-        .willReturn(
-          aResponse()
-            .withStatus(status)
-            .withHeader("Content-Type", "application/json")
-            .withBody(objectMapper.writeValueAsString(error)),
-        ),
-    )
-  }
-
   fun stubSyncTapAuthorisation(personIdentifier: String = "A1234BC", response: SyncResponse = syncResponse()) {
     dpsExtMovementsServer.stubFor(
       put("/sync/temporary-absence-authorisations/$personIdentifier")
@@ -188,9 +168,9 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubSyncScheduledTemporaryAbsence(parentId: UUID, response: SyncResponse = syncResponse()) {
+  fun stubSyncTapOccurrence(authorisationId: UUID, response: SyncResponse = syncResponse()) {
     dpsExtMovementsServer.stubFor(
-      put("/sync/scheduled-temporary-absence/$parentId")
+      put("/sync/temporary-absence-authorisations/$authorisationId/occurrences")
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -200,13 +180,13 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubSyncScheduledTemporaryAbsenceError(
-    parentId: UUID,
+  fun stubSyncTapOccurrenceError(
+    authorisationId: UUID,
     status: Int = 500,
     error: ErrorResponse = ErrorResponse(status = status),
   ) {
     dpsExtMovementsServer.stubFor(
-      put("/sync/scheduled-temporary-absence/$parentId")
+      put("/sync/temporary-absence-authorisations/$authorisationId/occurrences")
         .willReturn(
           aResponse()
             .withStatus(status)

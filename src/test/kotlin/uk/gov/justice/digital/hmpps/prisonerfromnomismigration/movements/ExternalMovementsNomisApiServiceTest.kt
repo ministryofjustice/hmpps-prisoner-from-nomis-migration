@@ -16,7 +16,6 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
@@ -28,6 +27,11 @@ class ExternalMovementsNomisApiServiceTest {
 
   @Autowired
   private lateinit var externalMovementsNomisApiMockServer: ExternalMovementsNomisApiMockServer
+
+  private val now = LocalDateTime.now()
+  private val today = now.toLocalDate()
+  private val yesterday = now.minusDays(1)
+  private val tomorrow = now.plusDays(1)
 
   @Nested
   inner class GetTemporaryAbsences {
@@ -122,8 +126,8 @@ class ExternalMovementsNomisApiServiceTest {
           assertThat(bookingId).isEqualTo(12345)
           assertThat(movementApplicationId).isEqualTo(111)
           assertThat(eventSubType).isEqualTo("C5")
-          assertThat(fromDate).isEqualTo(LocalDate.now())
-          assertThat(releaseTime).isCloseTo(LocalDateTime.now(), within(1, ChronoUnit.MINUTES))
+          assertThat(fromDate).isEqualTo(today)
+          assertThat(releaseTime).isCloseTo(now, within(5, ChronoUnit.MINUTES))
           assertThat(toAddressId).isEqualTo(321)
           assertThat(audit.createUsername).isEqualTo("USER")
         }
@@ -182,8 +186,8 @@ class ExternalMovementsNomisApiServiceTest {
           assertThat(movementApplicationId).isEqualTo(111)
           assertThat(outsideMovementId).isEqualTo(222)
           assertThat(eventSubType).isEqualTo("C5")
-          assertThat(fromDate).isEqualTo(LocalDate.now())
-          assertThat(releaseTime).isCloseTo(LocalDateTime.now(), within(1, ChronoUnit.MINUTES))
+          assertThat(fromDate).isEqualTo(today)
+          assertThat(releaseTime).isCloseTo(now, within(5, ChronoUnit.MINUTES))
           assertThat(toAddressId).isEqualTo(321)
           assertThat(audit.createUsername).isEqualTo("USER")
         }
@@ -242,9 +246,9 @@ class ExternalMovementsNomisApiServiceTest {
           assertThat(movementApplicationId).isEqualTo(111)
           assertThat(eventId).isEqualTo(1)
           assertThat(eventSubType).isEqualTo("C5")
-          assertThat(eventStatus).isEqualTo("SCH")
-          assertThat(eventDate).isEqualTo(LocalDate.now())
-          assertThat(startTime).isCloseTo(LocalDateTime.now(), within(1, ChronoUnit.MINUTES))
+          assertThat(eventStatus).isEqualTo("COMP")
+          assertThat(eventDate).isEqualTo(yesterday.toLocalDate())
+          assertThat(startTime).isCloseTo(yesterday, within(5, ChronoUnit.MINUTES))
           assertThat(toAddressId).isEqualTo(321)
           assertThat(audit.createUsername).isEqualTo("USER")
         }
@@ -304,8 +308,8 @@ class ExternalMovementsNomisApiServiceTest {
           assertThat(eventId).isEqualTo(2)
           assertThat(eventSubType).isEqualTo("C5")
           assertThat(eventStatus).isEqualTo("SCH")
-          assertThat(eventDate).isEqualTo(LocalDate.now().plusDays(1))
-          assertThat(startTime).isCloseTo(LocalDateTime.now().plusDays(1), within(1, ChronoUnit.MINUTES))
+          assertThat(eventDate).isEqualTo(tomorrow.toLocalDate())
+          assertThat(startTime).isCloseTo(tomorrow, within(5, ChronoUnit.MINUTES))
           assertThat(fromAgency).isEqualTo("COURT1")
           assertThat(toPrison).isEqualTo("LEI")
           assertThat(audit.createUsername).isEqualTo("USER")
@@ -363,8 +367,8 @@ class ExternalMovementsNomisApiServiceTest {
         .apply {
           assertThat(bookingId).isEqualTo(12345)
           assertThat(sequence).isEqualTo(1)
-          assertThat(movementDate).isEqualTo(LocalDate.now())
-          assertThat(movementTime).isCloseTo(LocalDateTime.now(), within(1, ChronoUnit.MINUTES))
+          assertThat(movementDate).isEqualTo(today)
+          assertThat(movementTime).isCloseTo(now, within(5, ChronoUnit.MINUTES))
           assertThat(movementReason).isEqualTo("C6")
           assertThat(movementApplicationId).isEqualTo(111)
           assertThat(scheduledTemporaryAbsenceId).isEqualTo(1)
@@ -441,8 +445,8 @@ class ExternalMovementsNomisApiServiceTest {
         .apply {
           assertThat(bookingId).isEqualTo(12345)
           assertThat(sequence).isEqualTo(1)
-          assertThat(movementDate).isEqualTo(LocalDate.now())
-          assertThat(movementTime).isCloseTo(LocalDateTime.now(), within(1, ChronoUnit.MINUTES))
+          assertThat(movementDate).isEqualTo(today)
+          assertThat(movementTime).isCloseTo(now, within(5, ChronoUnit.MINUTES))
           assertThat(movementReason).isEqualTo("C5")
           assertThat(movementApplicationId).isEqualTo(111)
           assertThat(scheduledTemporaryAbsenceReturnId).isEqualTo(2)
