@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
@@ -21,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
 import java.util.*
 
 class CourtSentencingRepairResourceIntTest : SqsIntegrationTestBase() {
@@ -84,10 +86,8 @@ class CourtSentencingRepairResourceIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will recreate mappings`() {
-        courtSentencingMappingApiMockServer.verify(
-          postRequestedFor(urlPathMatching("/mapping/court-sentencing/prisoner/$offenderNo/court-cases")),
-
-        )
+        val mapping: CourtCaseBatchMappingDto = CourtSentencingMappingApiMockServer.getRequestBody(postRequestedFor(urlPathMatching("/mapping/court-sentencing/prisoner/$offenderNo/court-cases")))
+        assertThat(mapping.label).hasSize(19)
       }
     }
 
