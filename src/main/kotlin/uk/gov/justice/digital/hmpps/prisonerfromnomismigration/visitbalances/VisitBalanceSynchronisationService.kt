@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDpsOrHasMissingAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -41,7 +41,7 @@ class VisitBalanceSynchronisationService(
     val telemetry =
       telemetryOf("nomisVisitBalanceAdjustmentId" to visitBalanceAdjustmentId, "nomisPrisonNumber" to nomisPrisonNumber)
 
-    if (event.originatesInDps() &&
+    if (event.originatesInDpsOrHasMissingAudit() &&
       nomisApiService.isServiceAgencyOnForPrisoner(
         serviceCode = VISIT_ALLOCATION_SERVICE,
         prisonNumber = nomisPrisonNumber,
