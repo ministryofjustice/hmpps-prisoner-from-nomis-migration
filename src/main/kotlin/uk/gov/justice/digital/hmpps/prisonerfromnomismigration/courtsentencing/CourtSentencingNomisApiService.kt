@@ -118,6 +118,20 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     .retrieve()
     .awaitBody()
 
+  suspend fun getOffenderSentenceNullable(offenderNo: String, caseId: Long, sentenceSequence: Int): SentenceResponse? = webClient.get()
+    .uri(
+      "/prisoners/{offenderNo}/court-cases/{caseId}/sentences/{sentenceSequence}",
+      offenderNo,
+      caseId,
+      sentenceSequence,
+    )
+    .retrieve()
+    .bodyToMono(SentenceResponse::class.java)
+    .onErrorResume(WebClientResponseException.NotFound::class.java) {
+      Mono.empty()
+    }
+    .awaitSingleOrNull()
+
   suspend fun getPrisonerIds(
     fromDate: LocalDate?,
     toDate: LocalDate?,

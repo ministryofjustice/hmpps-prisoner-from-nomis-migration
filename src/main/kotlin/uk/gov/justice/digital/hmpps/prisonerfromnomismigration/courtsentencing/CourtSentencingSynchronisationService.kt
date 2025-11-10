@@ -663,7 +663,13 @@ class CourtSentencingSynchronisationService(
 
   // New Court event charge.
   // is it a new underlying offender charge? 2 DPS endpoints - create charge or apply new version to appearance
-  suspend fun nomisCourtChargeInserted(eventId: Long, chargeId: Long, offenderNo: String, bookingId: Long, skipSynchronisation: Boolean = false) {
+  suspend fun nomisCourtChargeInserted(
+    eventId: Long,
+    chargeId: Long,
+    offenderNo: String,
+    bookingId: Long,
+    skipSynchronisation: Boolean = false,
+  ) {
     val telemetry =
       mutableMapOf(
         "nomisCourtAppearanceId" to eventId.toString(),
@@ -1225,7 +1231,13 @@ class CourtSentencingSynchronisationService(
       telemetryClient.trackEvent("sentence-synchronisation-updated-skipped", telemetry)
     } else {
       if (isSentenceInScope(event)) {
-        nomisSentenceUpdated(nomisCaseId = event.caseId!!, nomisBookingId = event.bookingId, nomisSentenceSequence = event.sentenceSeq, offenderNo = event.offenderIdDisplay, telemetry = telemetry)
+        nomisSentenceUpdated(
+          nomisCaseId = event.caseId!!,
+          nomisBookingId = event.bookingId,
+          nomisSentenceSequence = event.sentenceSeq,
+          offenderNo = event.offenderIdDisplay,
+          telemetry = telemetry,
+        )
       } else {
         telemetryClient.trackEvent(
           "sentence-synchronisation-updated-ignored",
@@ -1240,11 +1252,23 @@ class CourtSentencingSynchronisationService(
       sentenceSequence = nomisSentenceSequence,
     )
     if (mapping == null) {
-      telemetryClient.trackEvent(
-        "sentence-synchronisation-updated-failed",
-        telemetry,
-      )
-      throw IllegalStateException("Received OFFENDER_SENTENCES-UPDATED or sync request for sentence (sequence $nomisSentenceSequence booking $nomisBookingId) that has never been created")
+      // check for existence as sentence could have been deleted in nomis
+      nomisApiService.getOffenderSentenceNullable(
+        offenderNo = offenderNo,
+        caseId = nomisCaseId,
+        sentenceSequence = nomisSentenceSequence,
+      )?.let {
+        telemetryClient.trackEvent(
+          "sentence-synchronisation-updated-failed",
+          telemetry,
+        )
+        throw IllegalStateException("Received OFFENDER_SENTENCES-UPDATED or sync request for sentence (sequence $nomisSentenceSequence booking $nomisBookingId) that exists in nomis without sync mapping")
+      } ?: run {
+        telemetryClient.trackEvent(
+          "sentence-synchronisation-updated-skipped",
+          telemetry + ("reason" to "sentence does not exist in nomis, no update required"),
+        )
+      }
     } else {
       val nomisSentence =
         nomisApiService.getOffenderSentence(
@@ -1288,7 +1312,11 @@ class CourtSentencingSynchronisationService(
   }
 
   private suspend fun nomisCaseResynchronisation(nomisCaseId: Long, offenderNo: String) {
-    nomisCaseResynchronisation(nomisCaseId = nomisCaseId, dpsCaseId = mappingApiService.getCourtCaseByNomisId(nomisCaseId).dpsCourtCaseId, offenderNo = offenderNo)
+    nomisCaseResynchronisation(
+      nomisCaseId = nomisCaseId,
+      dpsCaseId = mappingApiService.getCourtCaseByNomisId(nomisCaseId).dpsCourtCaseId,
+      offenderNo = offenderNo,
+    )
   }
 
   private suspend fun nomisCaseResynchronisation(nomisCaseId: Long, dpsCaseId: String, offenderNo: String) {
@@ -1325,7 +1353,13 @@ class CourtSentencingSynchronisationService(
     event.casesMoved.forEach { case ->
       nomisCaseResynchronisation(nomisCaseId = case.caseId, offenderNo = event.offenderNo)
       case.sentences.forEach { sentence ->
-        nomisSentenceUpdated(nomisCaseId = case.caseId, nomisBookingId = event.toBookingId, nomisSentenceSequence = sentence.sentenceSequence, offenderNo = event.offenderNo, telemetry = telemetry)
+        nomisSentenceUpdated(
+          nomisCaseId = case.caseId,
+          nomisBookingId = event.toBookingId,
+          nomisSentenceSequence = sentence.sentenceSequence,
+          offenderNo = event.offenderNo,
+          telemetry = telemetry,
+        )
       }
     }
 
