@@ -6,6 +6,7 @@ import io.awspring.cloud.sqs.annotation.SqsListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
@@ -75,12 +76,12 @@ data class SentenceAdjustmentOffenderEvent(
   val bookingId: Long,
   val sentenceSeq: Long,
   val adjustmentId: Long,
-  val auditModuleName: String?,
-)
+  override val auditModuleName: String?,
+) : EventAudited
 
 data class KeyDateAdjustmentOffenderEvent(
   val offenderIdDisplay: String,
   val bookingId: Long,
   val adjustmentId: Long,
-  val auditModuleName: String?,
-)
+  override val auditModuleName: String?,
+) : EventAudited

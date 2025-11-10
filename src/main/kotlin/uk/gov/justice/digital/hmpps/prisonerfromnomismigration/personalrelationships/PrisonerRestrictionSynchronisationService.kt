@@ -12,7 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerRece
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.MoveBookingForPrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.WhichMoveBookingPrisoner
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.doesOriginateInDps
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.shouldReceiveEventHaveBeenRaisedAfterBookingMove
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
@@ -58,7 +58,7 @@ class PrisonerRestrictionSynchronisationService(
       "nomisRestrictionId" to nomisRestrictionId,
     )
 
-    if (event.doesOriginateInDps()) {
+    if (event.originatesInDps()) {
       telemetryClient.trackEvent(
         "contactperson-prisoner-restriction-synchronisation-created-skipped",
         telemetry,
@@ -94,7 +94,7 @@ class PrisonerRestrictionSynchronisationService(
       "offenderNo" to offenderNo,
       "nomisRestrictionId" to nomisRestrictionId,
     )
-    if (event.doesOriginateInDps()) {
+    if (event.originatesInDps()) {
       telemetryClient.trackEvent(
         "contactperson-prisoner-restriction-synchronisation-updated-skipped",
         telemetry,

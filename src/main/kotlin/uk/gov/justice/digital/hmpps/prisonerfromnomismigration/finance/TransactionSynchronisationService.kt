@@ -8,6 +8,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
@@ -27,7 +28,7 @@ class TransactionSynchronisationService(
   private val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
   private val transactionIdBufferRepository: TransactionIdBufferRepository,
-  @Value("\${finance.transactions.forwardingDelaySeconds}")
+  @Value($$"${finance.transactions.forwardingDelaySeconds}")
   private val forwardingDelaySeconds: Int,
 ) {
   private companion object {
@@ -35,7 +36,7 @@ class TransactionSynchronisationService(
   }
 
   suspend fun transactionInsertCheck(event: TransactionEvent, requestId: UUID) {
-    if (event.isSourcedFromDPS()) {
+    if (event.originatesInDps()) {
       telemetryClient.trackEvent("transactions-synchronisation-created-skipped", event.toTelemetryProperties())
       return
     }
@@ -250,8 +251,5 @@ private fun TransactionEvent.toTelemetryProperties(
 ) + (dpsTransactionId?.let { mapOf("dpsTransactionId" to it.toString()) } ?: emptyMap()) + (
   if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap()
   )
-
-private fun TransactionEvent.isSourcedFromDPS() = auditModuleName == "DPS_SYNCHRONISATION"
-private fun TransactionEvent.auditMissing() = auditModuleName == null
 
 data class EncapsulatedTransaction(val transactionEvent: TransactionEvent, val requestId: UUID)

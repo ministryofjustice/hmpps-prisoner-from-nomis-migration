@@ -37,8 +37,8 @@ class LocationsRepairResource(
         null,
         null,
         null,
-        null,
         recordDeleted,
+        null,
       ),
     )
     telemetryClient.trackEvent(

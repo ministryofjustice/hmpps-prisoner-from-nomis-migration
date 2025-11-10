@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.SyncSentenceAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.NomisPrisonerMergeEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.KeyDateAdjustmentResponse
@@ -31,7 +32,7 @@ class SentencingAdjustmentsSynchronisationService(
   }
 
   suspend fun synchroniseSentenceAdjustmentCreateOrUpdate(event: SentenceAdjustmentOffenderEvent) {
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+    if (event.originatesInDps()) {
       telemetryClient.trackEvent(
         "sentence-adjustment-synchronisation-skipped",
         event.toTelemetryProperties(),
@@ -111,7 +112,7 @@ class SentencingAdjustmentsSynchronisationService(
   }
 
   suspend fun synchroniseKeyDateAdjustmentCreateOrUpdate(event: KeyDateAdjustmentOffenderEvent) {
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+    if (event.originatesInDps()) {
       telemetryClient.trackEvent(
         "key-date-adjustment-synchronisation-skipped",
         event.toTelemetryProperties(),

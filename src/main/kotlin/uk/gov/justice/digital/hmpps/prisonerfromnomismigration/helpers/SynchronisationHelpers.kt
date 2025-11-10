@@ -8,10 +8,11 @@ suspend fun <A, B> Pair<Deferred<A>, Deferred<B>>.awaitBoth(): Pair<A, B> = this
 fun Long.asPages(pageSize: Long): Array<Pair<Long, Long>> = (0..(this / pageSize)).map { it to pageSize }.toTypedArray()
 
 interface EventAudited {
-  val auditModuleName: String
+  val auditModuleName: String?
 }
 
-fun EventAudited.doesOriginateInDps() = this.auditModuleName == "DPS_SYNCHRONISATION"
+// Caters for null or empty which should be treated as DPS_SYNCHRONISATION
+fun EventAudited.originatesInDps(): Boolean = auditModuleName?.startsWith("DPS_SYNCHRONISATION") ?: true
 
 interface TelemetryEnabled {
   val telemetryClient: TelemetryClient

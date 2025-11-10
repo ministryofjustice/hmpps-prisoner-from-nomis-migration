@@ -6,6 +6,7 @@ import io.awspring.cloud.sqs.annotation.SqsListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
@@ -143,33 +144,33 @@ data class CourtCaseEvent(
   val caseId: Long,
   val offenderIdDisplay: String,
   val bookingId: Long,
-  val auditModuleName: String?,
-)
+  override val auditModuleName: String?,
+) : EventAudited
 
 data class CourtCaseLinkingEvent(
   val caseId: Long,
   val combinedCaseId: Long,
   val offenderIdDisplay: String,
   val bookingId: Long,
-  val auditModuleName: String?,
-)
+  override val auditModuleName: String?,
+) : EventAudited
 
 data class CourtAppearanceEvent(
   val eventId: Long,
   val caseId: Long?,
   val offenderIdDisplay: String,
   val bookingId: Long,
-  val auditModuleName: String?,
   val isBreachHearing: Boolean,
-)
+  override val auditModuleName: String?,
+) : EventAudited
 
 data class CourtEventChargeEvent(
   val eventId: Long,
   val chargeId: Long,
   val offenderIdDisplay: String,
   val bookingId: Long,
-  val auditModuleName: String?,
-)
+  override val auditModuleName: String?,
+) : EventAudited
 
 data class RecallBreachCourtEventCharge(
   val eventId: Long,
@@ -185,17 +186,17 @@ data class CourtEventChargeLinkingEvent(
   val caseId: Long,
   val offenderIdDisplay: String,
   val bookingId: Long,
-  val auditModuleName: String?,
   val eventDatetime: LocalDateTime,
-)
+  override val auditModuleName: String?,
+) : EventAudited
 
 data class OffenderChargeEvent(
   val chargeId: Long,
   val offenderIdDisplay: String,
   val bookingId: Long,
-  val auditModuleName: String?,
   val offenceCodeChange: Boolean,
-)
+  override val auditModuleName: String?,
+) : EventAudited
 
 data class OffenderSentenceEvent(
   val sentenceSeq: Int,
@@ -204,8 +205,8 @@ data class OffenderSentenceEvent(
   val caseId: Long?,
   val offenderIdDisplay: String,
   val bookingId: Long,
-  val auditModuleName: String?,
-)
+  override val auditModuleName: String?,
+) : EventAudited
 
 data class OffenderSentenceResynchronisationEvent(
   val sentenceSeq: Int,
@@ -245,23 +246,23 @@ data class OffenderSentenceTermEvent(
   val sentenceSeq: Int,
   val offenderIdDisplay: String,
   val bookingId: Long,
-  val auditModuleName: String?,
-)
+  override val auditModuleName: String?,
+) : EventAudited
 
 data class CaseIdentifiersEvent(
   val caseId: Long,
   val identifierType: String,
   val identifierNo: String,
   val bookingId: Long,
-  val auditModuleName: String?,
-)
+  override val auditModuleName: String?,
+) : EventAudited
 
 data class ReturnToCustodyDateEvent(
   val offenderIdDisplay: String,
   val bookingId: Long,
-  val auditModuleName: String,
   val eventType: String,
-)
+  override val auditModuleName: String?,
+) : EventAudited
 
 data class SentenceIdAndAdjustmentType(
   val sentenceId: SentenceId,
