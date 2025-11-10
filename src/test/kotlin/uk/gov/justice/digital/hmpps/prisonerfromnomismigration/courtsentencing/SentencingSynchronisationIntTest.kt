@@ -1235,6 +1235,50 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      @DisplayName("When mapping doesn't exist as sentence was deleted - update event received after deletion")
+      inner class MappingDoesNotExistSentenceDeleted {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+          courtSentencingNomisApiMockServer.stubGetSentence(status = NOT_FOUND)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-UPDATED",
+            ),
+          )
+        }
+
+        @Test
+        fun `telemetry added to track the failure`() {
+          courtSentencingNomisApiMockServer.stubGetSentence(status = NOT_FOUND)
+          await untilAsserted {
+            verify(telemetryClient, times(1)).trackEvent(
+              eq("sentence-synchronisation-updated-skipped"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `the event is not placed on dead letter queue`() {
+          courtSentencingNomisApiMockServer.stubGetSentence(status = NOT_FOUND)
+          await untilAsserted {
+            assertThat(
+              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+                courtSentencingQueueOffenderEventsDlqUrl,
+              ).get(),
+            ).isEqualTo(0)
+          }
+        }
+      }
+
+      @Nested
       @DisplayName("When mapping exists")
       inner class MappingExists {
         @BeforeEach
