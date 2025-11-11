@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -160,6 +161,32 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubDeleteTapAuthorisation(authorisationId: UUID) {
+    dpsExtMovementsServer.stubFor(
+      delete("/sync/temporary-absence-authorisations/$authorisationId")
+        .willReturn(
+          aResponse()
+            .withStatus(204),
+        ),
+    )
+  }
+
+  fun stubDeleteTapAuthorisationError(
+    authorisationId: UUID,
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsExtMovementsServer.stubFor(
+      delete("/sync/temporary-absence-authorisations/$authorisationId")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
   fun stubSyncTapOccurrence(authorisationId: UUID, response: SyncResponse = syncResponse()) {
     dpsExtMovementsServer.stubFor(
       put("/sync/temporary-absence-authorisations/$authorisationId/occurrences")
@@ -188,6 +215,32 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubDeleteTapOccurrence(occurrenceId: UUID) {
+    dpsExtMovementsServer.stubFor(
+      delete("/sync/temporary-absence-occurrences/$occurrenceId")
+        .willReturn(
+          aResponse()
+            .withStatus(204),
+        ),
+    )
+  }
+
+  fun stubDeleteTapOccurrenceError(
+    occurrenceId: UUID,
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsExtMovementsServer.stubFor(
+      delete("/sync/temporary-absence-occurrences/$occurrenceId")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
   fun stubSyncTapMovement(personIdentifier: String = "A1234BC", response: SyncResponse = syncResponse()) {
     dpsExtMovementsServer.stubFor(
       put("/sync/temporary-absence-movements/$personIdentifier")
@@ -207,6 +260,32 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     dpsExtMovementsServer.stubFor(
       put("/sync/temporary-absence-movements/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubDeleteTapMovement(movementId: UUID) {
+    dpsExtMovementsServer.stubFor(
+      delete("/sync/temporary-absence-movements/$movementId")
+        .willReturn(
+          aResponse()
+            .withStatus(204),
+        ),
+    )
+  }
+
+  fun stubDeleteTapMovementError(
+    movementId: UUID,
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsExtMovementsServer.stubFor(
+      delete("/sync/temporary-absence-movements/$movementId")
         .willReturn(
           aResponse()
             .withStatus(status)
