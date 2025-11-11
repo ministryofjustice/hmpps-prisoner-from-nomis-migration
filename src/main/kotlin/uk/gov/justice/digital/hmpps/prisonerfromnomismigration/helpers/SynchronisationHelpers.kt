@@ -2,7 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers
 
 import com.microsoft.applicationinsights.TelemetryClient
 import kotlinx.coroutines.Deferred
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DEFAULT_AUDIT_MODULE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
 
 suspend fun <A, B> Pair<Deferred<A>, Deferred<B>>.awaitBoth(): Pair<A, B> = this.first.await() to this.second.await()
 
@@ -12,15 +12,15 @@ interface EventAudited {
   val auditModuleName: String?
 
   companion object {
-    const val DEFAULT_AUDIT_MODULE = "DPS_SYNCHRONISATION"
+    const val DPS_SYNC_AUDIT_MODULE = "DPS_SYNCHRONISATION"
   }
 }
 
-// Calls to this method should cater for the dodgy Nomis data
-fun EventAudited.originatesInDps(): Boolean = auditModuleName.orEmpty().startsWith(DEFAULT_AUDIT_MODULE)
+fun EventAudited.originatesInDps(): Boolean = auditModuleName.orEmpty().startsWith(DPS_SYNC_AUDIT_MODULE)
 
 // Caters for null or empty which should be treated as DPS_SYNCHRONISATION
-fun EventAudited.originatesInDpsOrHasMissingAudit(): Boolean = auditModuleName.isNullOrEmpty() || auditModuleName?.startsWith(DEFAULT_AUDIT_MODULE) == true
+fun EventAudited.originatesInDpsOrHasMissingAudit(): Boolean = auditModuleName.isNullOrEmpty() || auditModuleName?.startsWith(DPS_SYNC_AUDIT_MODULE) == true
+
 interface TelemetryEnabled {
   val telemetryClient: TelemetryClient
 }
