@@ -37,6 +37,9 @@ class OfficialVisitsEventListener(
               "OFFENDER_OFFICIAL_VISIT-INSERTED" -> visitsService.visitAdded(sqsMessage.Message.fromJson())
               "OFFENDER_OFFICIAL_VISIT-UPDATED" -> visitsService.visitUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_OFFICIAL_VISIT-DELETED" -> visitsService.visitDeleted(sqsMessage.Message.fromJson())
+              "OFFENDER_OFFICIAL_VISIT_VISITORS-INSERTED" -> visitsService.visitorAdded(sqsMessage.Message.fromJson())
+              "OFFENDER_OFFICIAL_VISIT_VISITORS-UPDATED" -> visitsService.visitorUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_OFFICIAL_VISIT_VISITORS-DELETED" -> visitsService.visitorDeleted(sqsMessage.Message.fromJson())
               "AGENCY_VISIT_TIMES-INSERTED" -> visitSlotsService.visitTimeslotAdded(sqsMessage.Message.fromJson())
               "AGENCY_VISIT_TIMES-UPDATED" -> visitSlotsService.visitTimeslotUpdated(sqsMessage.Message.fromJson())
               "AGENCY_VISIT_TIMES-DELETED" -> visitSlotsService.visitTimeslotDeleted(sqsMessage.Message.fromJson())
@@ -61,6 +64,15 @@ data class VisitEvent(
   val bookingId: Long,
   val offenderIdDisplay: String,
   val agencyLocationId: String,
+  override val auditModuleName: String,
+) : EventAudited
+
+data class VisitVisitorEvent(
+  val visitVisitorId: Long,
+  val visitId: Long,
+  val bookingId: Long,
+  val personId: Long?,
+  val offenderIdDisplay: String,
   override val auditModuleName: String,
 ) : EventAudited
 
