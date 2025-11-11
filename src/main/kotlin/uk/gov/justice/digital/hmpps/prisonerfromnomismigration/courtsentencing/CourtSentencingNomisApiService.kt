@@ -155,6 +155,17 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     .retrieve()
     .awaitBody()
 
+  suspend fun getOffenderSentenceTermNullable(offenderNo: String, bookingId: Long, sentenceSequence: Int, termSequence: Int): SentenceTermResponse? = webClient.get()
+    .uri(
+      "/prisoners/{offenderNo}/sentence-terms/booking-id/{bookingId}/sentence-sequence/{sentenceSequence}/term-sequence/{termSequence}",
+      offenderNo,
+      bookingId,
+      sentenceSequence,
+      termSequence,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
   suspend fun getByNomisPrisonNumberOrNull(nomisPrisonNumber: String): CorePersonMappingDto? = webClient.get()
     .uri(
       "/mapping/core-person/person/nomis-prison-number/{nomisPrisonNumber}",

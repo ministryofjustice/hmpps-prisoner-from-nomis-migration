@@ -2253,6 +2253,51 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      @DisplayName("When mapping doesn't exist as sentence term was deleted - update event received after deletion")
+      inner class MappingDoesNotExistSentenceTermDeleted {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetSentenceTermByNomisId(status = NOT_FOUND)
+          courtSentencingNomisApiMockServer.stubGetSentenceTerm(status = NOT_FOUND)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceTermEvent(
+              eventType = "OFFENDER_SENTENCE_TERMS-UPDATED",
+            ),
+          )
+        }
+
+        @Test
+        fun `telemetry added to track the failure`() {
+          courtSentencingNomisApiMockServer.stubGetSentence(status = NOT_FOUND)
+          await untilAsserted {
+            verify(telemetryClient, times(1)).trackEvent(
+              eq("sentence-term-synchronisation-updated-skipped"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["nomisTermSequence"]).isEqualTo(NOMIS_TERM_SEQUENCE.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `the event is not placed on dead letter queue`() {
+          courtSentencingNomisApiMockServer.stubGetSentenceTerm(status = NOT_FOUND)
+          await untilAsserted {
+            assertThat(
+              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+                courtSentencingQueueOffenderEventsDlqUrl,
+              ).get(),
+            ).isEqualTo(0)
+          }
+        }
+      }
+
+      @Nested
       @DisplayName("When mapping exists")
       inner class MappingExists {
         @BeforeEach
