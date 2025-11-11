@@ -48,9 +48,8 @@ fun VisitVisitorEvent.asTelemetry() = mutableMapOf<String, Any>(
   "nomisVisitId" to visitId,
   "offenderNo" to offenderIdDisplay,
   "bookingId" to bookingId,
-).let {
+).also {
   if (personId != null) {
     it["nomisPersonId"] = personId
   }
-  it
 }
