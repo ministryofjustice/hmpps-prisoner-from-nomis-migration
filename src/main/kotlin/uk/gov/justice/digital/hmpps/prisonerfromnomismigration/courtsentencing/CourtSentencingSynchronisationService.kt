@@ -1447,7 +1447,7 @@ class CourtSentencingSynchronisationService(
             "sentence-term-synchronisation-updated-failed",
             telemetry,
           )
-          throw ParentEntityNotFoundRetry("Received OFFENDER_SENTENCE_TERMS-UPDATED for sentence term (term ${event.termSequence}, sequence ${event.sentenceSeq} booking ${event.bookingId}) that exists in nomis without sync mapping")
+          throw IllegalStateException("Received OFFENDER_SENTENCE_TERMS-UPDATED for sentence term (term ${event.termSequence}, sequence ${event.sentenceSeq} booking ${event.bookingId}) that exists in nomis without sync mapping")
         } ?: run {
           telemetryClient.trackEvent(
             "sentence-term-synchronisation-updated-skipped",
