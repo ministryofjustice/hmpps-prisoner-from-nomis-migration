@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.M
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
@@ -41,7 +42,7 @@ class CaseNotesSynchronisationService(
   suspend fun caseNoteInserted(event: CaseNotesEvent) {
     try {
       val nomisCaseNote = nomisApiService.getCaseNote(event.caseNoteId)
-      if (nomisCaseNote.isSourcedFromDPS()) {
+      if (nomisCaseNote.originatesInDps()) {
         telemetryClient.trackEvent("casenotes-synchronisation-created-skipped", event.toTelemetryProperties())
         return
       }
@@ -81,7 +82,7 @@ class CaseNotesSynchronisationService(
 
   suspend fun caseNoteUpdated(event: CaseNotesEvent) {
     val nomisCaseNote = nomisApiService.getCaseNote(event.caseNoteId)
-    if (nomisCaseNote.isSourcedFromDPS()) {
+    if (nomisCaseNote.originatesInDps()) {
       telemetryClient.trackEvent("casenotes-synchronisation-updated-skipped", event.toTelemetryProperties())
       return
     }
@@ -440,7 +441,7 @@ private fun CaseNotesEvent.toTelemetryProperties(
   if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap()
   )
 
-private fun CaseNoteResponse.isSourcedFromDPS() = auditModuleName == "DPS_SYNCHRONISATION"
+private fun CaseNoteResponse.originatesInDps() = auditModuleName.originatesInDps()
 private fun CaseNoteResponse.auditMissing() = auditModuleName == null
 
 private fun isMergeCopy(

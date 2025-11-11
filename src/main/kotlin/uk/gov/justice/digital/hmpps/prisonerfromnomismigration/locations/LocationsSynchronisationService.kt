@@ -40,7 +40,7 @@ class LocationsSynchronisationService(
   }
 
   suspend fun synchroniseUsage(event: LocationsOffenderEvent) {
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("locations-synchronisation-skipped", event.toTelemetryProperties())
       return
     }
@@ -55,7 +55,7 @@ class LocationsSynchronisationService(
   }
 
   suspend fun synchroniseAttribute(event: LocationsOffenderEvent) {
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("locations-synchronisation-skipped", event.toTelemetryProperties())
       return
     }
@@ -65,7 +65,7 @@ class LocationsSynchronisationService(
   }
 
   suspend fun synchroniseLocation(event: LocationsOffenderEvent) {
-    if (event.originatesInDps() && !isVsipVisitRoomCreation(event)) {
+    if (event.originatesInDps && !isVsipVisitRoomCreation(event)) {
       telemetryClient.trackEvent("locations-synchronisation-skipped", event.toTelemetryProperties())
       return
     }

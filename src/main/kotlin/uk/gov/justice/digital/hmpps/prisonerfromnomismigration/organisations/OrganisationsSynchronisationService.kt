@@ -69,7 +69,7 @@ class OrganisationsSynchronisationService(
 
   suspend fun corporateInserted(event: CorporateEvent) {
     val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId)
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "organisations-corporate-synchronisation-created-skipped",
         telemetry,
@@ -100,7 +100,7 @@ class OrganisationsSynchronisationService(
   suspend fun corporateUpdated(event: CorporateEvent) {
     val telemetry =
       telemetryOf("nomisCorporateId" to event.corporateId)
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "organisations-corporate-synchronisation-updated-skipped",
         telemetry,
@@ -133,7 +133,7 @@ class OrganisationsSynchronisationService(
   }
   suspend fun corporateAddressInserted(event: CorporateAddressEvent) {
     val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisAddressId" to event.addressId)
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "organisations-address-synchronisation-created-skipped",
         telemetry,
@@ -166,7 +166,7 @@ class OrganisationsSynchronisationService(
   }
   suspend fun corporateAddressUpdated(event: CorporateAddressEvent) {
     val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisAddressId" to event.addressId)
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "organisations-address-synchronisation-updated-skipped",
         telemetry,
@@ -200,7 +200,7 @@ class OrganisationsSynchronisationService(
 
   suspend fun corporatePhoneInserted(event: CorporatePhoneEvent) {
     val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisPhoneId" to event.phoneId)
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         if (event.isAddress) "organisations-address-phone-synchronisation-created-skipped" else "organisations-phone-synchronisation-created-skipped",
         telemetry,
@@ -233,7 +233,7 @@ class OrganisationsSynchronisationService(
   }
   suspend fun corporatePhoneUpdated(event: CorporatePhoneEvent) {
     val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisPhoneId" to event.phoneId)
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "organisations-phone-synchronisation-updated-skipped",
         telemetry,
@@ -268,7 +268,7 @@ class OrganisationsSynchronisationService(
 
   suspend fun corporateAddressPhoneInserted(event: CorporateAddressPhoneEvent) {
     val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisPhoneId" to event.phoneId, "nomisAddressId" to event.addressId)
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "organisations-address-phone-synchronisation-created-skipped",
         telemetry,
@@ -309,7 +309,7 @@ class OrganisationsSynchronisationService(
   }
   suspend fun corporateAddressPhoneUpdated(event: CorporateAddressPhoneEvent) {
     val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisAddressId" to event.addressId, "nomisPhoneId" to event.phoneId)
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "organisations-address-phone-synchronisation-updated-skipped",
         telemetry,
@@ -344,7 +344,7 @@ class OrganisationsSynchronisationService(
 
   suspend fun corporateInternetAddressInserted(event: CorporateInternetAddressEvent) {
     val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisInternetAddressId" to event.internetAddressId)
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "organisations-internet-address-synchronisation-created-skipped",
         telemetry,
@@ -403,7 +403,7 @@ class OrganisationsSynchronisationService(
   }
   suspend fun corporateInternetAddressUpdated(event: CorporateInternetAddressEvent) {
     val telemetry = telemetryOf("nomisCorporateId" to event.corporateId, "dpsOrganisationId" to event.corporateId, "nomisInternetAddressId" to event.internetAddressId)
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "organisations-internet-address-synchronisation-updated-skipped",
         telemetry,
@@ -558,7 +558,7 @@ class OrganisationsSynchronisationService(
       "dpsOrganisationId" to event.corporateId,
       "nomisCorporateType" to event.corporateType,
     )
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "organisations-type-synchronisation-$eventType-skipped",
         telemetry,

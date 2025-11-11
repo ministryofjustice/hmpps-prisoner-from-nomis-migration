@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerRece
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.ReceivePrisonerAdditionalInformationEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.MoveBookingForPrisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.WhichMoveBookingPrisoner
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
@@ -47,7 +48,7 @@ class AlertsSynchronisationService(
     val telemetry =
       mapOf("bookingId" to event.bookingId, "alertSequence" to event.alertSeq, "offenderNo" to event.offenderIdDisplay)
     val nomisAlert = nomisApiService.getAlert(bookingId = event.bookingId, alertSequence = event.alertSeq)
-    if (nomisAlert.isSourcedFromDPS()) {
+    if (nomisAlert.originatesInDps()) {
       telemetryClient.trackEvent("alert-synchronisation-created-skipped", telemetry)
     } else {
       if (nomisAlert.isCreatedDueToNewBooking()) {
@@ -94,7 +95,7 @@ class AlertsSynchronisationService(
     val telemetry =
       mapOf("bookingId" to event.bookingId, "alertSequence" to event.alertSeq, "offenderNo" to event.offenderIdDisplay)
     val nomisAlert = nomisApiService.getAlert(bookingId = event.bookingId, alertSequence = event.alertSeq)
-    if (nomisAlert.isSourcedFromDPS()) {
+    if (nomisAlert.originatesInDps()) {
       telemetryClient.trackEvent("alert-synchronisation-updated-skipped", telemetry)
     } else {
       val mapping = mappingApiService.getOrNullByNomisId(event.bookingId, event.alertSeq)
@@ -491,7 +492,7 @@ private enum class MappingResponse {
   MAPPING_FAILED,
 }
 
-private fun AlertResponse.isSourcedFromDPS() = audit.auditModuleName == "DPS_SYNCHRONISATION"
+private fun AlertResponse.originatesInDps() = audit.auditModuleName.originatesInDps()
 private fun AlertResponse.isCreatedDueToNewBooking() = audit.auditAdditionalInfo == "OMKCOPY.COPY_BOOKING_DATA"
 
 private fun AlertResponse.shouldBeCreatedInDPS() = bookingSequence == 1L

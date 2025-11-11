@@ -36,7 +36,7 @@ class TransactionSynchronisationService(
   }
 
   suspend fun transactionInsertCheck(event: TransactionEvent, requestId: UUID) {
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("transactions-synchronisation-created-skipped", event.toTelemetryProperties())
       return
     }
