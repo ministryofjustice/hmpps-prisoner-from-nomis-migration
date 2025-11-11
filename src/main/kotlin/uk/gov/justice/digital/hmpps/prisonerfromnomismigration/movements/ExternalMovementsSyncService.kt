@@ -17,9 +17,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType.TAP
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.ScheduledTemporaryAbsenceRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapLocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest.Direction.IN
@@ -37,6 +38,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import java.time.LocalDateTime
 import java.util.*
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.NomisAudit as DpsAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED as SCHEDULED_MOVEMENT_NOMIS_CREATED
@@ -240,9 +242,9 @@ class ExternalMovementsSyncService(
     .takeIf { !onlyIfScheduled || it.eventStatus == "SCH" }
     ?.also { telemetry["nomisApplicationId"] = it.movementApplicationId }
     ?.let { nomisSchedule ->
-      val dpsApplicationId = requireParentApplicationExists(nomisSchedule.movementApplicationId)
-        .also { telemetry["dpsApplicationId"] = it }
-      val dpsOccurrenceId = dpsApiService.syncTemporaryAbsenceScheduledMovement(dpsApplicationId, nomisSchedule.toDpsRequest(dpsOccurrenceId)).id
+      val dpsAuthorisationId = requireParentApplicationExists(nomisSchedule.movementApplicationId)
+        .also { telemetry["dpsAuthorisationId"] = it }
+      val dpsOccurrenceId = dpsApiService.syncTapOccurrence(dpsAuthorisationId, nomisSchedule.toDpsRequest(dpsOccurrenceId)).id
         .also { telemetry["dpsOccurrenceId"] = it }
       ScheduledMovementSyncMappingDto(
         prisonerNumber = prisonerNumber,
@@ -708,7 +710,7 @@ class ExternalMovementsSyncService(
 private fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) = SyncWriteTapAuthorisation(
   id = id,
   prisonCode = prisonId,
-  statusCode = applicationStatus.toDpsStatusCode(),
+  statusCode = applicationStatus.toDpsAuthorisationStatusCode(),
   absenceTypeCode = temporaryAbsenceType,
   absenceSubTypeCode = temporaryAbsenceSubType,
   absenceReasonCode = eventSubType,
@@ -722,7 +724,7 @@ private fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) =
   legacyId = movementApplicationId,
 )
 
-private fun String.toDpsStatusCode() = when (this) {
+private fun String.toDpsAuthorisationStatusCode() = when (this) {
   "PEN" -> "PENDING"
   "APP-SCH", "APP-UNSCH" -> "APPROVED"
   "DEN" -> "DENIED"
@@ -730,24 +732,39 @@ private fun String.toDpsStatusCode() = when (this) {
   else -> throw IllegalArgumentException("Unknown temporary absence status code: $this")
 }
 
-private fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null) = ScheduledTemporaryAbsenceRequest(
+fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null) = SyncWriteTapOccurrence(
   id = id,
-  eventId = eventId,
-  eventStatus = eventStatus,
-  startTime = startTime,
-  returnTime = returnTime,
-  contactPersonName = contactPersonName,
-  escort = escort ?: DEFAULT_ESCORT_CODE,
-  transportType = transportType ?: DEFAULT_TRANSPORT_TYPE,
-  comment = comment,
-  location = TapLocation(
+  statusCode = eventStatus.toDpsOccurrenceStatusCode(inboundEventStatus, returnTime),
+  releaseAt = startTime,
+  returnBy = returnTime,
+  location = Location(
     description = toAddressDescription,
     address = toFullAddress,
     postcode = toAddressPostcode,
+//    uprn = TODO get this from the mapping if we've mapped the DPS address ID???
   ),
-  audit = audit.toDpsRequest(),
-  eventSubType = eventSubType,
+  absenceTypeCode = temporaryAbsenceType,
+  absenceSubTypeCode = temporaryAbsenceSubType,
+  absenceReasonCode = eventSubType,
+  accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
+  transportCode = transportType ?: DEFAULT_TRANSPORT_TYPE,
+  notes = comment,
+  created = SyncAtAndBy(at = audit.createDatetime, by = audit.createUsername),
+  updated = audit.modifyDatetime?.let { SyncAtAndBy(at = audit.modifyDatetime, by = audit.modifyUserId!!) },
+  legacyId = eventId,
 )
+
+private fun String.toDpsOccurrenceStatusCode(inboundStatus: String? = null, returnBy: LocalDateTime) = when (this) {
+  "CANC" -> "CANCELLED"
+  "DEN" -> "DENIED"
+  "EXP" -> "EXPIRED"
+  "PEN" -> "PENDING"
+  "SCH" -> "SCHEDULED"
+  "COMP" if (inboundStatus != "COMP" && returnBy >= LocalDateTime.now()) -> "IN_PROGRESS"
+  "COMP" if (inboundStatus != "COMP" && returnBy < LocalDateTime.now()) -> "OVERDUE"
+  "COMP" if (inboundStatus == "COMP") -> "COMPLETED"
+  else -> throw IllegalArgumentException("Unknown scheduled temporary absence status code: $this")
+}
 
 private fun TemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, occurrenceId: UUID? = null) = TapMovementRequest(
   id = id,

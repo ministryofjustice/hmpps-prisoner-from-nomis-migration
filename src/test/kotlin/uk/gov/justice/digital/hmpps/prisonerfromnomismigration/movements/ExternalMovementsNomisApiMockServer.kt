@@ -31,9 +31,6 @@ import java.time.LocalDateTime
 
 @Component
 class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper) {
-  private val now = LocalDateTime.now()
-  private val yesterday = now.minusDays(1)
-  private val tomorrow = now.plusDays(1)
 
   fun stubGetTemporaryAbsences(
     offenderNo: String = "A1234BC",
@@ -333,10 +330,10 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
   fun stubGetTemporaryAbsenceScheduledMovement(
     offenderNo: String = "A1234BC",
     eventId: Long = 12345L,
-    eventTime: LocalDateTime = now,
+    eventTime: LocalDateTime = yesterday,
     applicationId: Long = 111L,
     addressOwnerClass: String = "OFF",
-    eventStatus: String = "SCH",
+    eventStatus: String = "COMP",
     response: ScheduledTemporaryAbsenceResponse = scheduledTemporaryAbsenceResponse(
       startTime = eventTime,
       applicationId = applicationId,
@@ -365,32 +362,6 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
       ),
     )
   }
-
-  fun scheduledTemporaryAbsenceResponse(startTime: LocalDateTime = now, applicationId: Long = 111, eventId: Long = 1, addressOwnerClass: String = "OFF", eventStatus: String = "SCH") = ScheduledTemporaryAbsenceResponse(
-    bookingId = 12345,
-    movementApplicationId = applicationId,
-    eventId = eventId,
-    eventSubType = "C5",
-    eventStatus = eventStatus,
-    returnDate = tomorrow.toLocalDate(),
-    returnTime = tomorrow,
-    applicationDate = now,
-    eventDate = startTime.toLocalDate(),
-    startTime = startTime,
-    comment = "scheduled absence comment",
-    escort = "PECS",
-    fromPrison = "LEI",
-    toAgency = "COURT1",
-    transportType = "VAN",
-    toAddressId = 321,
-    toAddressOwnerClass = addressOwnerClass,
-    toFullAddress = "to full address",
-    applicationTime = now,
-    audit = NomisAudit(
-      createDatetime = now,
-      createUsername = "USER",
-    ),
-  )
 
   fun stubGetTemporaryAbsenceScheduledReturnMovement(
     offenderNo: String = "A1234BC",
@@ -560,4 +531,41 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
+
+  companion object {
+    private val now = LocalDateTime.now()
+    private val yesterday = now.minusDays(1)
+    private val tomorrow = now.plusDays(1)
+
+    fun scheduledTemporaryAbsenceResponse(startTime: LocalDateTime = now, applicationId: Long = 111, eventId: Long = 1, addressOwnerClass: String = "OFF", eventStatus: String = "COMP") = ScheduledTemporaryAbsenceResponse(
+      bookingId = 12345,
+      movementApplicationId = applicationId,
+      eventId = eventId,
+      eventSubType = "C5",
+      eventStatus = eventStatus,
+      inboundEventStatus = "SCH",
+      returnDate = tomorrow.toLocalDate(),
+      returnTime = tomorrow,
+      applicationDate = now,
+      eventDate = startTime.toLocalDate(),
+      startTime = startTime,
+      comment = "scheduled absence comment",
+      escort = "PECS",
+      fromPrison = "LEI",
+      toAgency = "COURT1",
+      transportType = "VAN",
+      temporaryAbsenceType = "RDR",
+      temporaryAbsenceSubType = "RR",
+      toAddressId = 321,
+      toAddressOwnerClass = addressOwnerClass,
+      toFullAddress = "to full address",
+      toAddressDescription = "Some description",
+      toAddressPostcode = "S1 1AB",
+      applicationTime = now,
+      audit = NomisAudit(
+        createDatetime = now,
+        createUsername = "USER",
+      ),
+    )
+  }
 }
