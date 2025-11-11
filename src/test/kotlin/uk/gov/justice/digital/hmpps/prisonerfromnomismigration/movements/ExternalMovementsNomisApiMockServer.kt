@@ -455,7 +455,7 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     movementApplicationId = movementApplicationId,
     scheduledTemporaryAbsenceId = scheduledTemporaryAbsenceId,
     arrestAgency = "POL",
-    escort = "U",
+    escort = "P",
     escortText = "Absence escort text",
     fromPrison = "LEI",
     toAgency = "COURT1",

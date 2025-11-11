@@ -373,7 +373,7 @@ class ExternalMovementsNomisApiServiceTest {
           assertThat(movementApplicationId).isEqualTo(111)
           assertThat(scheduledTemporaryAbsenceId).isEqualTo(1)
           assertThat(arrestAgency).isEqualTo("POL")
-          assertThat(escort).isEqualTo("U")
+          assertThat(escort).isEqualTo("P")
           assertThat(escortText).isEqualTo("Absence escort text")
           assertThat(fromPrison).isEqualTo("LEI")
           assertThat(toAgency).isEqualTo("COURT1")
