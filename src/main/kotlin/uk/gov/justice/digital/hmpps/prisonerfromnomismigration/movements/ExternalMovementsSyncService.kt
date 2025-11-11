@@ -110,9 +110,9 @@ class ExternalMovementsSyncService(
     )
     mappingApiService.getApplicationMapping(nomisApplicationId)?.also {
       track("$TELEMETRY_PREFIX-application-deleted", telemetry) {
-        telemetry["dpsApplicationId"] = it.dpsMovementApplicationId
+        telemetry["dpsAuthorisationId"] = it.dpsMovementApplicationId
         mappingApiService.deleteApplicationMapping(nomisApplicationId)
-        // TODO delete in DPS
+        dpsApiService.deleteTapAuthorisation(it.dpsMovementApplicationId)
       }
     } ?: run { telemetryClient.trackEvent("$TELEMETRY_PREFIX-application-deleted-ignored", telemetry) }
   }
@@ -302,9 +302,9 @@ class ExternalMovementsSyncService(
     )
     mappingApiService.getScheduledMovementMapping(eventId)?.also {
       track("$TELEMETRY_PREFIX-scheduled-movement-deleted", telemetry) {
-        telemetry["dpsScheduledMovementId"] = it.dpsOccurrenceId
+        telemetry["dpsOccurrenceId"] = it.dpsOccurrenceId
         mappingApiService.deleteScheduledMovementMapping(eventId)
-        // TODO delete in DPS
+        dpsApiService.deleteTapOccurrence(it.dpsOccurrenceId)
       }
     } ?: run { telemetryClient.trackEvent("$TELEMETRY_PREFIX-scheduled-movement-deleted-ignored", telemetry) }
   }
@@ -596,7 +596,7 @@ class ExternalMovementsSyncService(
       track("$TELEMETRY_PREFIX-external-movement-deleted", telemetry) {
         telemetry["dpsMovementId"] = it.dpsMovementId
         mappingApiService.deleteExternalMovementMapping(bookingId, movementSeq)
-        // TODO delete in DPS
+        dpsApiService.deleteTapMovement(it.dpsMovementId)
       }
     } ?: run { telemetryClient.trackEvent("$TELEMETRY_PREFIX-external-movement-deleted-ignored", telemetry) }
   }

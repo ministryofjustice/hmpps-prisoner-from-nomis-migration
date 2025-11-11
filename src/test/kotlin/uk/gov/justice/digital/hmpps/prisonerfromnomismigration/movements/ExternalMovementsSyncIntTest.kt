@@ -523,15 +523,16 @@ class ExternalMovementsSyncIntTest(
   @Nested
   @DisplayName("MOVEMENT_APPLICATION-DELETED")
   inner class TemporaryAbsenceApplicationDeleted {
+    private val dpsAuthorisationId = UUID.randomUUID()
 
     @Nested
     inner class HappyPath {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
         mappingApi.stubDeleteTemporaryAbsenceApplicationMapping(nomisApplicationId = 111)
-        // TODO stub DPS API
+        dpsApi.stubDeleteTapAuthorisation(dpsAuthorisationId)
 
         sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-DELETED"))
           .also { waitForAnyProcessingToComplete() }
@@ -548,9 +549,8 @@ class ExternalMovementsSyncIntTest(
       }
 
       @Test
-      @Disabled("Waiting for DPS API to become available")
       fun `should delete DPS application`() {
-        // TODO verify DPS endpoint called
+        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId")))
       }
 
       @Test
@@ -561,7 +561,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            // TODO assert DPS id is tracked
+            assertThat(it["dpsAuthorisationId"]).isEqualTo("$dpsAuthorisationId")
           },
           isNull(),
         )
@@ -579,9 +579,8 @@ class ExternalMovementsSyncIntTest(
       }
 
       @Test
-      @Disabled("Waiting for DPS API to become available")
       fun `should NOT delete DPS application`() {
-        // TODO verify DPS endpoint not called
+        dpsApi.verify(0, deleteRequestedFor(urlPathMatching("/sync/temporary-absence-authorisations/.*")))
       }
 
       @Test
@@ -599,7 +598,6 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            // TODO assert DPS id is tracked
           },
           isNull(),
         )
@@ -607,21 +605,19 @@ class ExternalMovementsSyncIntTest(
     }
 
     @Nested
-    @Disabled("Waiting for DPS API to become available")
     inner class WhenDpsDeleteFails {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
-        // TODO stub DPS API to reject delete
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
+        dpsApi.stubDeleteTapAuthorisationError(dpsAuthorisationId)
 
         sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-DELETED"))
-          .also { waitForAnyProcessingToComplete() }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-application-deleted-error") }
       }
 
       @Test
-      @Disabled("Waiting for DPS API to become available")
       fun `should try to delete DPS application`() {
-        // TODO verify DPS endpoint called
+        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId")))
       }
 
       @Test
@@ -632,7 +628,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            // TODO assert DPS id is tracked
+            assertThat(it["dpsAuthorisationId"]).isEqualTo("$dpsAuthorisationId")
           },
           isNull(),
         )
@@ -1952,14 +1948,15 @@ class ExternalMovementsSyncIntTest(
   @Nested
   @DisplayName("SCHEDULED_EXT_MOVE-DELETED")
   inner class TemporaryAbsenceScheduledMovementDeleted {
+    private val dpsOccurrenceId = UUID.randomUUID()
 
     @Nested
     inner class HappyPath {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678)
+        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
         mappingApi.stubDeleteScheduledMovementMapping(nomisEventId = 45678)
-        // TODO stub DPS API
+        dpsApi.stubDeleteTapOccurrence(dpsOccurrenceId)
 
         sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-DELETED"))
           .also { waitForAnyProcessingToComplete() }
@@ -1976,9 +1973,8 @@ class ExternalMovementsSyncIntTest(
       }
 
       @Test
-      @Disabled("Waiting for DPS API to become available")
       fun `should delete DPS scheduled movement`() {
-        // TODO verify DPS endpoint called
+        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/temporary-absence-occurrences/$dpsOccurrenceId")))
       }
 
       @Test
@@ -1989,7 +1985,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisEventId"]).isEqualTo("45678")
-            // TODO assert DPS id is tracked
+            assertThat(it["dpsOccurrenceId"]).isEqualTo("$dpsOccurrenceId")
           },
           isNull(),
         )
@@ -2007,9 +2003,8 @@ class ExternalMovementsSyncIntTest(
       }
 
       @Test
-      @Disabled("Waiting for DPS API to become available")
       fun `should NOT delete DPS scheduled movement`() {
-        // TODO verify DPS endpoint not called
+        dpsApi.verify(0, deleteRequestedFor(urlPathMatching("/sync/temporary-absence-occurrences/.*")))
       }
 
       @Test
@@ -2027,7 +2022,6 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisEventId"]).isEqualTo("45678")
-            // TODO assert DPS id is tracked
           },
           isNull(),
         )
@@ -2035,21 +2029,19 @@ class ExternalMovementsSyncIntTest(
     }
 
     @Nested
-    @Disabled("Waiting for DPS API to become available")
     inner class WhenDpsDeleteFails {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678)
-        // TODO stub DPS API to reject delete
+        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
+        dpsApi.stubDeleteTapOccurrenceError(dpsOccurrenceId, status = 500)
 
         sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-DELETED"))
-          .also { waitForAnyProcessingToComplete() }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-deleted-error") }
       }
 
       @Test
-      @Disabled("Waiting for DPS API to become available")
       fun `should try to delete DPS scheduled movement`() {
-        // TODO verify DPS endpoint called
+        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/temporary-absence-occurrences/$dpsOccurrenceId")))
       }
 
       @Test
@@ -2060,7 +2052,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisEventId"]).isEqualTo("45678")
-            // TODO assert DPS id is tracked
+            assertThat(it["dpsOccurrenceId"]).isEqualTo("$dpsOccurrenceId")
           },
           isNull(),
         )
@@ -3343,14 +3335,15 @@ class ExternalMovementsSyncIntTest(
   @Nested
   @DisplayName("EXTERNAL_MOVEMENT-CHANGED (deleted)")
   inner class TemporaryAbsenceExternalMovementDeleted {
+    private val dpsMovementId = UUID.randomUUID()
 
     @Nested
     inner class HappyPathOutboundMovement {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154)
+        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
         mappingApi.stubDeleteExternalMovementMapping(12345, 154)
-        // TODO stub DPS API
+        dpsApi.stubDeleteTapMovement(dpsMovementId)
 
         sendMessage(externalMovementEvent(deleted = true, direction = "OUT"))
           .also { waitForAnyProcessingToComplete() }
@@ -3367,9 +3360,8 @@ class ExternalMovementsSyncIntTest(
       }
 
       @Test
-      @Disabled("Waiting for DPS API to become available")
       fun `should delete DPS external movement`() {
-        // TODO verify DPS endpoint called
+        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/$dpsMovementId")))
       }
 
       @Test
@@ -3381,7 +3373,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["movementSeq"]).isEqualTo("154")
             assertThat(it["directionCode"]).isEqualTo("OUT")
-            // TODO assert DPS id is tracked
+            assertThat(it["dpsMovementId"]).isEqualTo("$dpsMovementId")
           },
           isNull(),
         )
@@ -3392,9 +3384,9 @@ class ExternalMovementsSyncIntTest(
     inner class HappyPathInboundMovement {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154)
+        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
         mappingApi.stubDeleteExternalMovementMapping(12345, 154)
-        // TODO stub DPS API
+        dpsApi.stubDeleteTapMovement(dpsMovementId)
 
         sendMessage(externalMovementEvent(deleted = true, direction = "IN"))
           .also { waitForAnyProcessingToComplete() }
@@ -3411,9 +3403,8 @@ class ExternalMovementsSyncIntTest(
       }
 
       @Test
-      @Disabled("Waiting for DPS API to become available")
       fun `should delete DPS external movement`() {
-        // TODO verify DPS endpoint called
+        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/$dpsMovementId")))
       }
 
       @Test
@@ -3425,7 +3416,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["movementSeq"]).isEqualTo("154")
             assertThat(it["directionCode"]).isEqualTo("IN")
-            // TODO assert DPS id is tracked
+            assertThat(it["dpsMovementId"]).isEqualTo("$dpsMovementId")
           },
           isNull(),
         )
@@ -3446,7 +3437,7 @@ class ExternalMovementsSyncIntTest(
       fun `should NOT delete DPS external movement`() {
         dpsApi.verify(
           0,
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC")),
+          deleteRequestedFor(urlPathMatching("/sync/temporary-absence-movement/.*")),
         )
       }
 
