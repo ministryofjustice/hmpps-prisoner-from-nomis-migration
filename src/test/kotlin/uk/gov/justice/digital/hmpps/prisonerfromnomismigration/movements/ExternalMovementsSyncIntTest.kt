@@ -34,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
@@ -2083,7 +2084,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
         mappingApi.stubCreateExternalMovementMapping()
-        dpsApi.stubSyncTemporaryAbsenceMovement(response = SyncResponse(dpsMovementId))
+        dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(externalMovementEvent(inserted = true, direction = "OUT"))
           .also { waitForAnyProcessingToComplete() }
@@ -2111,15 +2112,23 @@ class ExternalMovementsSyncIntTest(
 
       @Test
       fun `should create DPS external movement`() {
-        dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
-            .withRequestBodyJsonPath("id", absent())
-            .withRequestBodyJsonPath("occurrenceId", dpsOccurrenceId)
-            .withRequestBodyJsonPath("legacyId", "12345_154")
-            .withRequestBodyJsonPath("direction", "OUT")
-            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
-            .withRequestBodyJsonPath("location.address", "full address"),
-        )
+        ExternalMovementsDpsApiMockServer.getRequestBody<SyncWriteTapMovement>(
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC")),
+        ).apply {
+          assertThat(id).isNull()
+          assertThat(occurrenceId).isEqualTo(dpsOccurrenceId)
+          assertThat(direction).isEqualTo(SyncWriteTapMovement.Direction.OUT)
+          assertThat(absenceReasonCode).isEqualTo("C6")
+          assertThat(location.description).isEqualTo("Some description")
+          assertThat(location.address).isEqualTo("full address")
+          assertThat(location.postcode).isEqualTo("S1 1AB")
+          assertThat(accompaniedByCode).isEqualTo("P")
+          assertThat(accompaniedByNotes).isEqualTo("Absence escort text")
+          assertThat(notes).isEqualTo("Absence comment text")
+          assertThat(created.by).isEqualTo("USER")
+          assertThat(created.prisonCode).isEqualTo("LEI")
+          assertThat(legacyId).isEqualTo("12345_154")
+        }
       }
 
       @Test
@@ -2162,7 +2171,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(23456)
         mappingApi.stubCreateExternalMovementMapping()
-        dpsApi.stubSyncTemporaryAbsenceMovement(response = SyncResponse(dpsMovementId))
+        dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(externalMovementEvent(inserted = true, direction = "IN"))
           .also { waitForAnyProcessingToComplete() }
@@ -2186,7 +2195,7 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should create DPS external movement`() {
         dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
             .withRequestBodyJsonPath("id", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
@@ -2238,7 +2247,7 @@ class ExternalMovementsSyncIntTest(
       fun `should NOT create DPS scheduled movement`() {
         dpsApi.verify(
           0,
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC")),
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC")),
         )
       }
 
@@ -2280,7 +2289,7 @@ class ExternalMovementsSyncIntTest(
       fun `should NOT create DPS scheduled movement`() {
         dpsApi.verify(
           0,
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC")),
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC")),
         )
       }
 
@@ -2505,7 +2514,7 @@ class ExternalMovementsSyncIntTest(
           mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
           nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceId = null)
           mappingApi.stubCreateExternalMovementMapping()
-          dpsApi.stubSyncTemporaryAbsenceMovement(response = SyncResponse(dpsMovementId))
+          dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
           sendMessage(externalMovementEvent(inserted = true, direction = "OUT"))
             .also { waitForAnyProcessingToComplete() }
@@ -2535,7 +2544,7 @@ class ExternalMovementsSyncIntTest(
         @Test
         fun `should create DPS external movement`() {
           dpsApi.verify(
-            putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
+            putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
               .withRequestBodyJsonPath("id", absent())
               .withRequestBodyJsonPath("legacyId", "12345_154")
               .withRequestBodyJsonPath("direction", "OUT")
@@ -2582,7 +2591,7 @@ class ExternalMovementsSyncIntTest(
           mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
           nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceReturnId = null, scheduledTemporaryAbsenceId = null)
           mappingApi.stubCreateExternalMovementMapping()
-          dpsApi.stubSyncTemporaryAbsenceMovement(response = SyncResponse(dpsMovementId))
+          dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
           sendMessage(externalMovementEvent(inserted = true, direction = "IN"))
             .also { waitForAnyProcessingToComplete() }
@@ -2612,7 +2621,7 @@ class ExternalMovementsSyncIntTest(
         @Test
         fun `should create DPS external movement`() {
           dpsApi.verify(
-            putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
+            putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
               .withRequestBodyJsonPath("id", absent())
               .withRequestBodyJsonPath("legacyId", "12345_154")
               .withRequestBodyJsonPath("direction", "IN")
@@ -2661,7 +2670,7 @@ class ExternalMovementsSyncIntTest(
         nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, movementApplicationId = 111, scheduledTemporaryAbsenceId = 45678)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(nomisApplicationId = 111)
         mappingApi.stubGetScheduledMovementMapping(nomisEventId = 45678)
-        dpsApi.stubSyncTemporaryAbsenceMovement(response = SyncResponse(dpsMovementId))
+        dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubCreateExternalMovementMappingConflict(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
@@ -2699,7 +2708,7 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should create DPS external movement`() {
         dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
             .withRequestBodyJsonPath("id", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
@@ -2762,7 +2771,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(nomisApplicationId = 111)
         mappingApi.stubGetScheduledMovementMapping(nomisEventId = 45678)
         mappingApi.stubCreateExternalMovementMappingFailureFollowedBySuccess()
-        dpsApi.stubSyncTemporaryAbsenceMovement(response = SyncResponse(dpsMovementId))
+        dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(externalMovementEvent(inserted = true))
           .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-mapping-retry-created") }
@@ -2771,7 +2780,7 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should create DPS external movement`() {
         dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
             .withRequestBodyJsonPath("id", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
@@ -2842,7 +2851,7 @@ class ExternalMovementsSyncIntTest(
         nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, scheduledTemporaryAbsenceId = 45678)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
-        dpsApi.stubSyncTemporaryAbsenceMovement(response = SyncResponse(dpsMovementId))
+        dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(externalMovementEvent(direction = "OUT"))
           .also { waitForAnyProcessingToComplete() }
@@ -2861,7 +2870,7 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should update DPS external movement`() {
         dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
             .withRequestBodyJsonPath("id", dpsMovementId)
             .withRequestBodyJsonPath("occurrenceId", dpsOccurrenceId)
             .withRequestBodyJsonPath("legacyId", "12345_154")
@@ -2899,7 +2908,7 @@ class ExternalMovementsSyncIntTest(
         nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, scheduledTemporaryAbsenceId = 45678, address = newAddress)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
-        dpsApi.stubSyncTemporaryAbsenceMovement(response = SyncResponse(dpsMovementId))
+        dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMapping()
 
         sendMessage(externalMovementEvent(direction = "OUT"))
@@ -2909,7 +2918,7 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should update DPS external movement`() {
         dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
             .withRequestBodyJsonPath("id", dpsMovementId)
             .withRequestBodyJsonPath("occurrenceId", dpsOccurrenceId)
             .withRequestBodyJsonPath("legacyId", "12345_154")
@@ -2956,7 +2965,7 @@ class ExternalMovementsSyncIntTest(
         nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, scheduledTemporaryAbsenceId = 45678, address = newAddress)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
-        dpsApi.stubSyncTemporaryAbsenceMovement(response = SyncResponse(dpsMovementId))
+        dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMappingFailureFollowedBySuccess()
 
         sendMessage(externalMovementEvent(direction = "OUT"))
@@ -2966,7 +2975,7 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should update DPS external movement`() {
         dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
             .withRequestBodyJsonPath("id", dpsMovementId)
             .withRequestBodyJsonPath("occurrenceId", dpsOccurrenceId)
             .withRequestBodyJsonPath("location.address", "new address"),
@@ -3010,7 +3019,7 @@ class ExternalMovementsSyncIntTest(
         nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceId = null)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
-        dpsApi.stubSyncTemporaryAbsenceMovement(response = SyncResponse(dpsMovementId))
+        dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(externalMovementEvent(direction = "OUT"))
           .also { waitForAnyProcessingToComplete() }
@@ -3029,7 +3038,7 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should update DPS external movement`() {
         dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
             .withRequestBodyJsonPath("id", dpsMovementId)
             .withRequestBodyJsonPath("occurrenceId", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
@@ -3065,7 +3074,7 @@ class ExternalMovementsSyncIntTest(
         nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, scheduledTemporaryAbsenceReturnId = 45678, scheduledTemporaryAbsenceId = 23456)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(23456, dpsOccurrenceId)
-        dpsApi.stubSyncTemporaryAbsenceMovement(response = SyncResponse(dpsMovementId))
+        dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(externalMovementEvent(direction = "IN"))
           .also { waitForAnyProcessingToComplete() }
@@ -3084,7 +3093,7 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should update DPS external movement`() {
         dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
             .withRequestBodyJsonPath("id", dpsMovementId)
             .withRequestBodyJsonPath("occurrenceId", dpsOccurrenceId)
             .withRequestBodyJsonPath("legacyId", "12345_154")
@@ -3122,7 +3131,7 @@ class ExternalMovementsSyncIntTest(
         nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceReturnId = null, scheduledTemporaryAbsenceId = null)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
-        dpsApi.stubSyncTemporaryAbsenceMovement(response = SyncResponse(dpsMovementId))
+        dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(externalMovementEvent(direction = "IN"))
           .also { waitForAnyProcessingToComplete() }
@@ -3141,7 +3150,7 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should update DPS external movement`() {
         dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
             .withRequestBodyJsonPath("id", dpsMovementId)
             .withRequestBodyJsonPath("occurrenceId", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
@@ -3181,7 +3190,7 @@ class ExternalMovementsSyncIntTest(
         nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceReturnId = null, scheduledTemporaryAbsenceId = null, address = newAddress)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
-        dpsApi.stubSyncTemporaryAbsenceMovement(response = SyncResponse(dpsMovementId))
+        dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMapping()
 
         sendMessage(externalMovementEvent(direction = "IN"))
@@ -3191,7 +3200,7 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should update DPS external movement`() {
         dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
             .withRequestBodyJsonPath("id", dpsMovementId)
             .withRequestBodyJsonPath("occurrenceId", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
@@ -3241,7 +3250,7 @@ class ExternalMovementsSyncIntTest(
         nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceReturnId = null, scheduledTemporaryAbsenceId = null, address = newAddress)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
-        dpsApi.stubSyncTemporaryAbsenceMovement(response = SyncResponse(dpsMovementId))
+        dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMappingFailureFollowedBySuccess()
 
         sendMessage(externalMovementEvent(direction = "IN"))
@@ -3251,7 +3260,7 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should update DPS external movement`() {
         dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC"))
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
             .withRequestBodyJsonPath("id", dpsMovementId)
             .withRequestBodyJsonPath("occurrenceId", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
@@ -3303,7 +3312,7 @@ class ExternalMovementsSyncIntTest(
       fun `should NOT update DPS external movement`() {
         dpsApi.verify(
           0,
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/A1234BC")),
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC")),
         )
       }
 

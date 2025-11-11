@@ -14,14 +14,12 @@ import org.springframework.stereotype.Component
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndByWithPrison
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapLocation
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest.Direction.OUT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
@@ -101,29 +99,23 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       legacyId = 1234,
     )
 
-    fun syncTemporaryAbsenceMovementRequest(occurrenceId: UUID? = UUID.randomUUID()) = TapMovementRequest(
+    fun syncTapMovement(occurrenceId: UUID? = null) = SyncWriteTapMovement(
       occurrenceId = occurrenceId,
-      legacyId = "12345_154",
-      movementDateTime = today,
-      movementReason = "C5",
-      direction = OUT,
-      escort = "U",
-      escortText = "Some escort text",
-      prisonCode = "LEI",
-      commentText = "Movement comment",
-      location = TapLocation(
-        description = "home",
-        address = "123 Acacia Avenue, Birmingham",
-        postcode = "B12 3AA",
+      occurredAt = today,
+      direction = SyncWriteTapMovement.Direction.OUT,
+      absenceReasonCode = "C5",
+      location = Location(
+        description = "Boots",
+        address = "High Street, Sheffield",
+        postcode = "S1 1AA",
+        uprn = "abcdef",
       ),
-      audit = NomisAudit(
-        createDatetime = today,
-        createUsername = "AAA11A",
-        modifyDatetime = today,
-        modifyUserId = "AAA11A",
-        auditTimestamp = today,
-        auditUserId = "AAA11A",
-      ),
+      accompaniedByCode = "P",
+      accompaniedByNotes = "accompanied notes",
+      notes = "movement notes",
+      created = SyncAtAndByWithPrison(today, "AAA11A", "LEI"),
+      updated = SyncAtAndBy(today, "AAA11A"),
+      legacyId = "12345_6",
     )
 
     fun syncResponse() = SyncResponse(UUID.randomUUID())
@@ -196,9 +188,9 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubSyncTemporaryAbsenceMovement(personIdentifier: String = "A1234BC", response: SyncResponse = syncResponse()) {
+  fun stubSyncTapMovement(personIdentifier: String = "A1234BC", response: SyncResponse = syncResponse()) {
     dpsExtMovementsServer.stubFor(
-      put("/sync/temporary-absence-movement/$personIdentifier")
+      put("/sync/temporary-absence-movements/$personIdentifier")
         .willReturn(
           aResponse()
             .withStatus(200)
@@ -208,13 +200,13 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubSyncTemporaryAbsenceMovementError(
+  fun stubSyncTapMovementError(
     personIdentifier: String = "A1234BC",
     status: Int = 500,
     error: ErrorResponse = ErrorResponse(status = status),
   ) {
     dpsExtMovementsServer.stubFor(
-      put("/sync/temporary-absence-movement/$personIdentifier")
+      put("/sync/temporary-absence-movements/$personIdentifier")
         .willReturn(
           aResponse()
             .withStatus(status)

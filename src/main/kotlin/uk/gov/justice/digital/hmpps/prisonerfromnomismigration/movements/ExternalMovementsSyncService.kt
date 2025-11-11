@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
@@ -19,18 +18,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType.TAP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndByWithPrison
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapLocation
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest.Direction.IN
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.TapMovementRequest.Direction.OUT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceApplicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceResponse
@@ -40,7 +36,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.time.LocalDateTime
 import java.util.*
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.NomisAudit as DpsAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED as SCHEDULED_MOVEMENT_NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto.MappingType.NOMIS_CREATED as OUTSIDE_MOVEMENT_NOMIS_CREATED
 
@@ -514,7 +509,7 @@ class ExternalMovementsSyncService(
     .let { nomisMovement ->
       val dpsOccurrenceId = nomisMovement.scheduledTemporaryAbsenceId?.let { requireParentScheduleExists(it) }
         ?.also { telemetry["dpsOccurrenceId"] = it }
-      val dpsMovementId = dpsApiService.syncTemporaryAbsenceMovement(prisonerNumber, nomisMovement.toDpsRequest(id = existingDpsMovementId, occurrenceId = dpsOccurrenceId)).id
+      val dpsMovementId = dpsApiService.syncTapMovement(prisonerNumber, nomisMovement.toDpsRequest(id = existingDpsMovementId, occurrenceId = dpsOccurrenceId)).id
         .also { telemetry["dpsMovementId"] = it }
       ExternalMovementSyncMappingDto(
         prisonerNumber,
@@ -544,7 +539,7 @@ class ExternalMovementsSyncService(
     .let { nomisMovement ->
       val dpsOccurrenceId = nomisMovement.scheduledTemporaryAbsenceId?.let { requireParentScheduleExists(it) }
         ?.also { telemetry["dpsOccurrenceId"] = it }
-      val dpsMovementId = dpsApiService.syncTemporaryAbsenceMovement(prisonerNumber, nomisMovement.toDpsRequest(id = dpsExternalMovementId, occurrenceId = dpsOccurrenceId)).id
+      val dpsMovementId = dpsApiService.syncTapMovement(prisonerNumber, nomisMovement.toDpsRequest(id = dpsExternalMovementId, occurrenceId = dpsOccurrenceId)).id
         .also { telemetry["dpsMovementId"] = it }
       ExternalMovementSyncMappingDto(
         prisonerNumber,
@@ -766,51 +761,42 @@ private fun String.toDpsOccurrenceStatusCode(inboundStatus: String? = null, retu
   else -> throw IllegalArgumentException("Unknown scheduled temporary absence status code: $this")
 }
 
-private fun TemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, occurrenceId: UUID? = null) = TapMovementRequest(
+private fun TemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, occurrenceId: UUID? = null) = SyncWriteTapMovement(
   id = id,
   occurrenceId = occurrenceId,
-  legacyId = "${bookingId}_$sequence",
-  movementDateTime = movementTime,
-  movementReason = movementReason,
-  direction = OUT,
-  escort = escort,
-  escortText = escortText,
-  prisonCode = fromPrison,
-  commentText = commentText,
-  location = TapLocation(
+  occurredAt = movementTime,
+  direction = SyncWriteTapMovement.Direction.OUT,
+  absenceReasonCode = movementReason,
+  location = Location(
     description = toAddressDescription,
     address = toFullAddress,
     postcode = toAddressPostcode,
   ),
-  audit = audit.toDpsRequest(),
+  accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
+  accompaniedByNotes = escortText,
+  notes = commentText,
+  created = SyncAtAndByWithPrison(audit.createDatetime, audit.createUsername, fromPrison),
+  updated = audit.modifyDatetime?.let { SyncAtAndBy(audit.modifyDatetime, audit.modifyUserId!!) },
+  legacyId = "${bookingId}_$sequence",
 )
 
-private fun TemporaryAbsenceReturnResponse.toDpsRequest(id: UUID? = null, occurrenceId: UUID? = null) = TapMovementRequest(
+private fun TemporaryAbsenceReturnResponse.toDpsRequest(id: UUID? = null, occurrenceId: UUID? = null) = SyncWriteTapMovement(
   id = id,
   occurrenceId = occurrenceId,
-  legacyId = "${bookingId}_$sequence",
-  movementDateTime = movementTime,
-  movementReason = movementReason,
-  direction = IN,
-  escort = escort,
-  escortText = escortText,
-  prisonCode = toPrison,
-  commentText = commentText,
-  location = TapLocation(
+  occurredAt = movementTime,
+  direction = SyncWriteTapMovement.Direction.IN,
+  absenceReasonCode = movementReason,
+  location = Location(
     description = fromAddressDescription,
     address = fromFullAddress,
     postcode = fromAddressPostcode,
   ),
-  audit = audit.toDpsRequest(),
-)
-
-private fun NomisAudit.toDpsRequest() = DpsAudit(
-  createDatetime = createDatetime,
-  createUsername = createUsername,
-  modifyDatetime = modifyDatetime,
-  modifyUserId = modifyUserId,
-  auditTimestamp = auditTimestamp,
-  auditUserId = auditUserId,
+  accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
+  accompaniedByNotes = escortText,
+  notes = commentText,
+  created = SyncAtAndByWithPrison(audit.createDatetime, audit.createUsername, toPrison),
+  updated = audit.modifyDatetime?.let { SyncAtAndBy(audit.modifyDatetime, audit.modifyUserId!!) },
+  legacyId = "${bookingId}_$sequence",
 )
 
 private fun ScheduledMovementSyncMappingDto.hasChanged(original: ScheduledMovementSyncMappingDto) = this.prisonerNumber != original.prisonerNumber ||

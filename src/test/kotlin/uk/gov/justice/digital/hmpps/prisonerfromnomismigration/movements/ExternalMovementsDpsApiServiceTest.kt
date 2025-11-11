@@ -16,8 +16,8 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapAuthorisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapOccurrence
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTemporaryAbsenceMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import java.time.LocalDate
 import java.util.*
@@ -132,9 +132,9 @@ class ExternalMovementsDpsApiServiceTest {
 
     @Test
     internal fun `should pass oath2 token`() = runTest {
-      dpsExtMovementsServer.stubSyncTemporaryAbsenceMovement()
+      dpsExtMovementsServer.stubSyncTapMovement()
 
-      apiService.syncTemporaryAbsenceMovement(prisonerNumber, syncTemporaryAbsenceMovementRequest(occurrenceId))
+      apiService.syncTapMovement(prisonerNumber, syncTapMovement(occurrenceId))
 
       dpsExtMovementsServer.verify(
         putRequestedFor(anyUrl())
@@ -144,33 +144,33 @@ class ExternalMovementsDpsApiServiceTest {
 
     @Test
     fun `should call the sync endpoint`() = runTest {
-      dpsExtMovementsServer.stubSyncTemporaryAbsenceMovement(prisonerNumber)
+      dpsExtMovementsServer.stubSyncTapMovement()
 
-      apiService.syncTemporaryAbsenceMovement(prisonerNumber, syncTemporaryAbsenceMovementRequest(occurrenceId))
+      apiService.syncTapMovement(prisonerNumber, syncTapMovement(occurrenceId))
 
       dpsExtMovementsServer.verify(
-        putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movement/$prisonerNumber"))
+        putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/$prisonerNumber"))
           .withRequestBody(matchingJsonPath("occurrenceId", equalTo("$occurrenceId")))
-          .withRequestBody(matchingJsonPath("legacyId", equalTo("12345_154")))
-          .withRequestBody(matchingJsonPath("location.postcode", equalTo("B12 3AA"))),
+          .withRequestBody(matchingJsonPath("legacyId", equalTo("12345_6")))
+          .withRequestBody(matchingJsonPath("location.postcode", equalTo("S1 1AA"))),
       )
     }
 
     @Test
     fun `should parse the response`() = runTest {
       val dpsId = UUID.randomUUID()
-      dpsExtMovementsServer.stubSyncTemporaryAbsenceMovement(prisonerNumber, response = SyncResponse(dpsId))
+      dpsExtMovementsServer.stubSyncTapMovement(response = SyncResponse(dpsId))
 
-      assertThat(apiService.syncTemporaryAbsenceMovement(prisonerNumber, syncTemporaryAbsenceMovementRequest(occurrenceId)).id)
+      assertThat(apiService.syncTapMovement(prisonerNumber, syncTapMovement(occurrenceId)).id)
         .isEqualTo(dpsId)
     }
 
     @Test
     fun `should throw if error`() = runTest {
-      dpsExtMovementsServer.stubSyncTemporaryAbsenceMovementError(prisonerNumber)
+      dpsExtMovementsServer.stubSyncTapMovementError()
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.syncTemporaryAbsenceMovement(prisonerNumber, syncTemporaryAbsenceMovementRequest(occurrenceId))
+        apiService.syncTapMovement(prisonerNumber, syncTapMovement(occurrenceId))
       }
     }
   }
