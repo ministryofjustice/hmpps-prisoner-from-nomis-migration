@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -76,6 +77,45 @@ class ExternalMovementsDpsApiServiceTest {
   }
 
   @Nested
+  inner class DeleteTapAuthorisation {
+
+    @Test
+    internal fun `should pass oath2 token`() = runTest {
+      val authorisationId = UUID.randomUUID()
+      dpsExtMovementsServer.stubDeleteTapAuthorisation(authorisationId)
+
+      apiService.deleteTapAuthorisation(authorisationId)
+
+      dpsExtMovementsServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should call the endpoint`() = runTest {
+      val authorisationId = UUID.randomUUID()
+      dpsExtMovementsServer.stubDeleteTapAuthorisation(authorisationId)
+
+      apiService.deleteTapAuthorisation(authorisationId)
+
+      dpsExtMovementsServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$authorisationId")),
+      )
+    }
+
+    @Test
+    fun `should throw if error`() = runTest {
+      val authorisationId = UUID.randomUUID()
+      dpsExtMovementsServer.stubDeleteTapAuthorisationError(authorisationId)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.deleteTapAuthorisation(authorisationId)
+      }
+    }
+  }
+
+  @Nested
   inner class SyncScheduledTemporaryAbsence {
     val parentId = UUID.randomUUID()
 
@@ -126,6 +166,45 @@ class ExternalMovementsDpsApiServiceTest {
   }
 
   @Nested
+  inner class DeleteTapOccurrence {
+
+    @Test
+    internal fun `should pass oath2 token`() = runTest {
+      val occurrenceId = UUID.randomUUID()
+      dpsExtMovementsServer.stubDeleteTapOccurrence(occurrenceId)
+
+      apiService.deleteTapOccurrence(occurrenceId)
+
+      dpsExtMovementsServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should call the endpoint`() = runTest {
+      val occurrenceId = UUID.randomUUID()
+      dpsExtMovementsServer.stubDeleteTapOccurrence(occurrenceId)
+
+      apiService.deleteTapOccurrence(occurrenceId)
+
+      dpsExtMovementsServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/temporary-absence-occurrences/$occurrenceId")),
+      )
+    }
+
+    @Test
+    fun `should throw if error`() = runTest {
+      val occurrenceId = UUID.randomUUID()
+      dpsExtMovementsServer.stubDeleteTapOccurrenceError(occurrenceId)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.deleteTapOccurrence(occurrenceId)
+      }
+    }
+  }
+
+  @Nested
   inner class SyncTemporaryAbsenceMovement {
     val prisonerNumber = "A1234BC"
     val occurrenceId = UUID.randomUUID()
@@ -171,6 +250,45 @@ class ExternalMovementsDpsApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.syncTapMovement(prisonerNumber, syncTapMovement(occurrenceId))
+      }
+    }
+  }
+
+  @Nested
+  inner class DeleteTapMovement {
+
+    @Test
+    internal fun `should pass oath2 token`() = runTest {
+      val movementId = UUID.randomUUID()
+      dpsExtMovementsServer.stubDeleteTapMovement(movementId)
+
+      apiService.deleteTapMovement(movementId)
+
+      dpsExtMovementsServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should call the endpoint`() = runTest {
+      val movementId = UUID.randomUUID()
+      dpsExtMovementsServer.stubDeleteTapMovement(movementId)
+
+      apiService.deleteTapMovement(movementId)
+
+      dpsExtMovementsServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/$movementId")),
+      )
+    }
+
+    @Test
+    fun `should throw if error`() = runTest {
+      val movementId = UUID.randomUUID()
+      dpsExtMovementsServer.stubDeleteTapMovementError(movementId)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.deleteTapMovement(movementId)
       }
     }
   }

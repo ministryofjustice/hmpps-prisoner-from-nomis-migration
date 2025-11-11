@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
 
+import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
@@ -20,11 +21,17 @@ class ExternalMovementsDpsApiService(@Qualifier("extMovementsDpsApiWebClient") p
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
+  suspend fun deleteTapAuthorisation(authorisationId: UUID) = syncApi.deleteTapAuthorisationById(authorisationId).awaitSingle()
+
   suspend fun syncTapOccurrence(authorisationId: UUID, request: SyncWriteTapOccurrence): SyncResponse = syncApi.prepare(syncApi.syncTemporaryAbsenceOccurrenceRequestConfig(authorisationId, request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
+  suspend fun deleteTapOccurrence(occurrenceId: UUID) = syncApi.deleteTapOccurrenceById(occurrenceId).awaitSingle()
+
   suspend fun syncTapMovement(personIdentifier: String, request: SyncWriteTapMovement): SyncResponse = syncApi.prepare(syncApi.syncTemporaryAbsenceMovementRequestConfig(personIdentifier, request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun deleteTapMovement(movementId: UUID) = syncApi.deleteTapMovementById(movementId).awaitSingle()
 }
