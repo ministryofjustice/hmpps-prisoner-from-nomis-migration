@@ -7,6 +7,7 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncRequest
@@ -34,7 +35,7 @@ class IncidentsSynchronisationService(
 
   suspend fun synchroniseIncidentInsert(event: IncidentsOffenderEvent) {
     // two way sync so don't want to send an event to DPS that originated there
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+    if (event.originatesInDps()) {
       telemetryClient.trackEvent("incidents-synchronisation-skipped", event.toTelemetryProperties())
       return
     }
@@ -113,7 +114,7 @@ class IncidentsSynchronisationService(
 
   suspend fun synchroniseIncidentUpdate(event: IncidentsOffenderEvent) {
     // two way sync so don't want to send an event to DPS that originated there
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+    if (event.originatesInDps()) {
       telemetryClient.trackEvent("incidents-synchronisation-skipped", event.toTelemetryProperties())
       return
     }
@@ -161,7 +162,7 @@ class IncidentsSynchronisationService(
 
   suspend fun synchroniseIncidentUpdateDelete(event: IncidentsOffenderEvent) {
     // two way sync so don't want to send an event to DPS that originated there
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+    if (event.originatesInDps()) {
       telemetryClient.trackEvent("incidents-synchronisation-skipped", event.toTelemetryProperties())
       return
     }
@@ -210,7 +211,7 @@ class IncidentsSynchronisationService(
 
   suspend fun synchroniseIncidentDelete(event: IncidentsOffenderEvent) {
     // two way sync so don't want to send an event to DPS that originated there
-    if (event.auditModuleName == "DPS_SYNCHRONISATION") {
+    if (event.originatesInDps()) {
       telemetryClient.trackEvent(
         "incidents-synchronisation-deleted-skipped",
         event.toTelemetryProperties(),

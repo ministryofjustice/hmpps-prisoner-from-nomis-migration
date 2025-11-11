@@ -6,6 +6,7 @@ import io.awspring.cloud.sqs.annotation.SqsListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
@@ -60,6 +61,6 @@ data class LocationsOffenderEvent(
   val description: String?,
   val oldDescription: String?,
   val prisonId: String?,
-  val auditModuleName: String?,
   val recordDeleted: Boolean?,
-)
+  override val auditModuleName: String?,
+) : EventAudited

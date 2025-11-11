@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDpsOrHasMissingAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -167,5 +168,3 @@ fun VisitBalanceAdjustmentResponse.toSyncDto(nomisPrisonNumber: String) = VisitA
   changeLogSource = if (createUsername == "OMS_OWNER") VisitAllocationPrisonerSyncDto.ChangeLogSource.SYSTEM else VisitAllocationPrisonerSyncDto.ChangeLogSource.STAFF,
   comment = comment,
 )
-
-fun VisitBalanceOffenderEvent.originatesInDpsOrHasMissingAudit() = auditModuleName == "DPS_SYNCHRONISATION" || auditModuleName.isNullOrEmpty()

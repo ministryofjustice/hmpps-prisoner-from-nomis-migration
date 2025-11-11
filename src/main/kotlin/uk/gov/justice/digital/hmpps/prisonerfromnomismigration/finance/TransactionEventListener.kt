@@ -6,6 +6,7 @@ import io.awspring.cloud.sqs.annotation.SqsListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.PERFORM_TRANSACTION_SYNC
@@ -79,8 +80,8 @@ data class TransactionEvent(
   val transactionType: String? = null,
   val offenderIdDisplay: String,
   val bookingId: Long? = null,
-  val auditModuleName: String? = null,
-)
+  override val auditModuleName: String? = null,
+) : EventAudited
 
 data class GLTransactionEvent(
   val transactionId: Long,
@@ -90,5 +91,5 @@ data class GLTransactionEvent(
   val transactionType: String? = null,
   val offenderIdDisplay: String,
   val bookingId: Long? = null,
-  val auditModuleName: String? = null,
-)
+  override val auditModuleName: String? = null,
+) : EventAudited
