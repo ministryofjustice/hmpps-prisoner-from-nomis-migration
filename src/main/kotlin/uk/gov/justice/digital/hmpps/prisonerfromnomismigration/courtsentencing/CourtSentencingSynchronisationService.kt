@@ -29,7 +29,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -83,7 +82,7 @@ class CourtSentencingSynchronisationService(
         "offenderNo" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId.toString(),
       )
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("court-case-synchronisation-created-skipped", telemetry)
     } else {
       val nomisCourtCase =
@@ -123,7 +122,7 @@ class CourtSentencingSynchronisationService(
         "isBreachHearing" to event.isBreachHearing,
       )
     if (isAppearancePartOfACourtCase(event)) {
-      if (event.originatesInDps() && !event.isBreachHearing) {
+      if (event.originatesInDps && !event.isBreachHearing) {
         telemetryClient.trackEvent("court-appearance-synchronisation-created-skipped", telemetry)
       } else {
         val nomisCourtAppearance =
@@ -158,7 +157,7 @@ class CourtSentencingSynchronisationService(
             )
             // this is a breach court event created by DPS so all charges events will be ignored
             // so add them now via an event
-            if (event.originatesInDps()) {
+            if (event.originatesInDps) {
               nomisCourtAppearance.courtEventCharges.forEach {
                 queueService.sendMessage(
                   messageType = RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED,
@@ -199,7 +198,7 @@ class CourtSentencingSynchronisationService(
         "nomisCourtCaseId" to event.caseId.toString(),
         "offenderNo" to event.offenderIdDisplay,
       )
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("court-case-synchronisation-updated-skipped", telemetry)
     } else {
       val mapping = mappingApiService.getCourtCaseOrNullByNomisId(event.caseId)
@@ -232,7 +231,7 @@ class CourtSentencingSynchronisationService(
         "nomisCombinedCourtCaseId" to event.combinedCaseId.toString(),
         "offenderNo" to event.offenderIdDisplay,
       )
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("court-case-synchronisation-link-skipped", telemetry)
     } else {
       track("court-case-synchronisation-link", telemetry = telemetry) {
@@ -253,7 +252,7 @@ class CourtSentencingSynchronisationService(
         "nomisCombinedCourtCaseId" to event.combinedCaseId.toString(),
         "offenderNo" to event.offenderIdDisplay,
       )
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("court-case-synchronisation-unlink-skipped", telemetry)
     } else {
       track("court-case-synchronisation-unlink", telemetry = telemetry) {
@@ -574,7 +573,7 @@ class CourtSentencingSynchronisationService(
         "isBreachHearing" to event.isBreachHearing,
       )
     if (isAppearancePartOfACourtCase(event)) {
-      if (event.originatesInDps() && !event.isBreachHearing) {
+      if (event.originatesInDps && !event.isBreachHearing) {
         telemetryClient.trackEvent("court-appearance-synchronisation-updated-skipped", telemetry)
       } else {
         val mapping = mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)
@@ -659,7 +658,7 @@ class CourtSentencingSynchronisationService(
     chargeId = event.chargeId,
     offenderNo = event.offenderIdDisplay,
     bookingId = event.bookingId,
-    skipSynchronisation = event.originatesInDps(),
+    skipSynchronisation = event.originatesInDps,
   )
 
   // New Court event charge.
@@ -744,7 +743,7 @@ class CourtSentencingSynchronisationService(
         "offenderNo" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId.toString(),
       )
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("court-charge-synchronisation-deleted-skipped", telemetry)
     } else {
       mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)?.let { courtAppearanceMapping ->
@@ -789,7 +788,7 @@ class CourtSentencingSynchronisationService(
         "nomisCourtAppearanceId" to event.eventId.toString(),
         "offenderNo" to event.offenderIdDisplay,
       )
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("court-charge-synchronisation-updated-skipped", telemetry)
     } else {
       mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)
@@ -838,7 +837,7 @@ class CourtSentencingSynchronisationService(
         "nomisCourtAppearanceId" to event.eventId.toString(),
         "offenderNo" to event.offenderIdDisplay,
       )
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("court-charge-synchronisation-link-skipped", telemetry)
     } else {
       track("court-charge-synchronisation-link", telemetry) {
@@ -870,7 +869,7 @@ class CourtSentencingSynchronisationService(
       )
     // we are only interested in offence code changes as these are the only changes that are not picked up by CEC updates
     if (event.offenceCodeChange) {
-      if (event.originatesInDps()) {
+      if (event.originatesInDps) {
         telemetryClient.trackEvent(
           "court-charge-synchronisation-updated-skipped",
           telemetry + ("reason" to "Change originates from DPS"),
@@ -987,7 +986,7 @@ class CourtSentencingSynchronisationService(
         "nomisCaseId" to event.caseId.toString(),
         "nomisBookingId" to event.bookingId.toString(),
       )
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("sentence-synchronisation-created-skipped", telemetry + ("reason" to "created in dps"))
     } else {
       if (isSentenceInScope(event)) {
@@ -1069,7 +1068,7 @@ class CourtSentencingSynchronisationService(
         "offenderNo" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId.toString(),
       )
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "sentence-term-synchronisation-created-skipped",
         telemetry + ("reason" to "created in dps"),
@@ -1228,7 +1227,7 @@ class CourtSentencingSynchronisationService(
         "nomisSentenceLevel" to event.sentenceLevel,
         "offenderNo" to event.offenderIdDisplay,
       )
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("sentence-synchronisation-updated-skipped", telemetry)
     } else {
       if (isSentenceInScope(event)) {
@@ -1428,7 +1427,7 @@ class CourtSentencingSynchronisationService(
         "nomisTermSequence" to event.termSequence,
         "offenderNo" to event.offenderIdDisplay,
       )
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("sentence-term-synchronisation-updated-skipped", telemetry)
     } else {
       val mapping = mappingApiService.getSentenceTermOrNullByNomisId(
@@ -1483,7 +1482,7 @@ class CourtSentencingSynchronisationService(
         "nomisCourtCaseId" to event.caseId.toString(),
         "eventType" to eventName,
       )
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("case-identifiers-synchronisation-skipped", telemetry)
     } else {
       val mapping = mappingApiService.getCourtCaseOrNullByNomisId(event.caseId)
@@ -1651,7 +1650,7 @@ class CourtSentencingSynchronisationService(
         "changeType" to event.eventType,
       )
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("recall-custody-date-synchronisation-skipped", telemetry)
     } else {
       val recallSentences = nomisApiService.getOffenderActiveRecallSentences(event.bookingId)

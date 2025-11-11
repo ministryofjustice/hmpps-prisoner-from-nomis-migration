@@ -112,7 +112,7 @@ class ContactPersonSynchronisationService(
       "nomisPersonRestrictionId" to event.visitorRestrictionId,
     )
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-person-restriction-synchronisation-upserted-skipped",
         telemetry,
@@ -178,7 +178,7 @@ class ContactPersonSynchronisationService(
       val telemetry =
         telemetryOf("offenderNo" to event.offenderIdDisplay, "bookingId" to event.bookingId, "nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisContactId" to event.contactId)
 
-      if (event.originatesInDps()) {
+      if (event.originatesInDps) {
         telemetryClient.trackEvent(
           "contactperson-contact-synchronisation-created-skipped",
           telemetry,
@@ -238,7 +238,7 @@ class ContactPersonSynchronisationService(
           "nomisContactId" to event.contactId,
         )
 
-      if (event.originatesInDps()) {
+      if (event.originatesInDps) {
         telemetryClient.trackEvent(
           "contactperson-contact-synchronisation-updated-skipped",
           telemetry,
@@ -293,7 +293,7 @@ class ContactPersonSynchronisationService(
     val telemetry =
       telemetryOf("offenderNo" to (event.offenderIdDisplay ?: "unknown"), "nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisContactId" to event.contactPersonId, "nomisContactRestrictionId" to event.offenderPersonRestrictionId)
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-contact-restriction-synchronisation-upserted-skipped",
         telemetry,
@@ -346,7 +346,7 @@ class ContactPersonSynchronisationService(
   }
   suspend fun personAdded(event: PersonEvent) {
     val telemetry = telemetryOf("nomisPersonId" to event.personId)
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-person-synchronisation-created-skipped",
         telemetry,
@@ -379,7 +379,7 @@ class ContactPersonSynchronisationService(
   suspend fun personUpdated(event: PersonEvent) {
     val telemetry =
       telemetryOf("nomisPersonId" to event.personId)
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-person-synchronisation-updated-skipped",
         telemetry,
@@ -416,7 +416,7 @@ class ContactPersonSynchronisationService(
     val telemetry =
       telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisAddressId" to event.addressId)
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-address-synchronisation-created-skipped",
         telemetry,
@@ -450,7 +450,7 @@ class ContactPersonSynchronisationService(
   suspend fun personAddressUpdated(event: PersonAddressEvent) {
     val telemetry =
       telemetryOf("nomisPersonId" to event.personId, "nomisAddressId" to event.addressId, "dpsContactId" to event.personId)
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-address-synchronisation-updated-skipped",
         telemetry,
@@ -489,7 +489,7 @@ class ContactPersonSynchronisationService(
     val telemetry =
       telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisPhoneId" to event.phoneId)
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-phone-synchronisation-created-skipped",
         telemetry,
@@ -575,7 +575,7 @@ class ContactPersonSynchronisationService(
         }
       }
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-phone-synchronisation-updated-skipped",
         telemetry,
@@ -642,7 +642,7 @@ class ContactPersonSynchronisationService(
     val telemetry =
       telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisInternetAddressId" to event.internetAddressId)
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-email-synchronisation-created-skipped",
         telemetry,
@@ -680,7 +680,7 @@ class ContactPersonSynchronisationService(
     val telemetry =
       telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisInternetAddressId" to event.internetAddressId)
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-email-synchronisation-updated-skipped",
         telemetry,
@@ -724,7 +724,7 @@ class ContactPersonSynchronisationService(
     val telemetry =
       telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisSequenceNumber" to event.employmentSequence)
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-employment-synchronisation-created-skipped",
         telemetry,
@@ -763,7 +763,7 @@ class ContactPersonSynchronisationService(
     val telemetry =
       telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisSequenceNumber" to event.employmentSequence)
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-employment-synchronisation-updated-skipped",
         telemetry,
@@ -814,7 +814,7 @@ class ContactPersonSynchronisationService(
     val telemetry =
       telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisSequenceNumber" to event.identifierSequence)
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-identifier-synchronisation-created-skipped",
         telemetry,
@@ -850,7 +850,7 @@ class ContactPersonSynchronisationService(
     val telemetry =
       telemetryOf("nomisPersonId" to event.personId, "dpsContactId" to event.personId, "nomisSequenceNumber" to event.identifierSequence)
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-identifier-synchronisation-updated-skipped",
         telemetry,

@@ -64,7 +64,7 @@ class ExternalMovementsSyncService(
       "nomisApplicationId" to nomisApplicationId,
     )
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-application-inserted-skipped", telemetry)
       return
     }
@@ -93,7 +93,7 @@ class ExternalMovementsSyncService(
       "nomisApplicationId" to nomisApplicationId,
     )
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-application-updated-skipped", telemetry)
       return
     }
@@ -131,7 +131,7 @@ class ExternalMovementsSyncService(
       "nomisApplicationId" to nomisApplicationId,
     )
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-outside-movement-inserted-skipped", telemetry)
       return
     }
@@ -173,7 +173,7 @@ class ExternalMovementsSyncService(
       "nomisApplicationId" to nomisApplicationId,
     )
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-outside-movement-updated-skipped", telemetry)
       return
     }
@@ -217,7 +217,7 @@ class ExternalMovementsSyncService(
       "directionCode" to directionCode,
     )
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-scheduled-movement-inserted-skipped", telemetry)
       return
     }
@@ -277,7 +277,7 @@ class ExternalMovementsSyncService(
       "directionCode" to directionCode,
     )
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-scheduled-movement-updated-skipped", telemetry)
       return
     }
@@ -478,7 +478,7 @@ class ExternalMovementsSyncService(
       "directionCode" to directionCode,
     )
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-external-movement-inserted-skipped", telemetry)
       return
     }
@@ -571,7 +571,7 @@ class ExternalMovementsSyncService(
       "directionCode" to directionCode,
     )
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-external-movement-updated-skipped", telemetry)
       return
     }

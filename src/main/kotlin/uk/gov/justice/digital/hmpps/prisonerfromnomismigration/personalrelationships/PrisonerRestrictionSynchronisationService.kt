@@ -58,7 +58,7 @@ class PrisonerRestrictionSynchronisationService(
       "nomisRestrictionId" to nomisRestrictionId,
     )
 
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-prisoner-restriction-synchronisation-created-skipped",
         telemetry,
@@ -94,7 +94,7 @@ class PrisonerRestrictionSynchronisationService(
       "offenderNo" to offenderNo,
       "nomisRestrictionId" to nomisRestrictionId,
     )
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "contactperson-prisoner-restriction-synchronisation-updated-skipped",
         telemetry,

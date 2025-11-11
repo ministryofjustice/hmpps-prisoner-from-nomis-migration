@@ -32,7 +32,7 @@ class SentencingAdjustmentsSynchronisationService(
   }
 
   suspend fun synchroniseSentenceAdjustmentCreateOrUpdate(event: SentenceAdjustmentOffenderEvent) {
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "sentence-adjustment-synchronisation-skipped",
         event.toTelemetryProperties(),
@@ -112,7 +112,7 @@ class SentencingAdjustmentsSynchronisationService(
   }
 
   suspend fun synchroniseKeyDateAdjustmentCreateOrUpdate(event: KeyDateAdjustmentOffenderEvent) {
-    if (event.originatesInDps()) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "key-date-adjustment-synchronisation-skipped",
         event.toTelemetryProperties(),
