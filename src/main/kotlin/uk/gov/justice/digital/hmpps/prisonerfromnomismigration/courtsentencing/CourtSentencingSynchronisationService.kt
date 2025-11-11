@@ -1263,7 +1263,7 @@ class CourtSentencingSynchronisationService(
           "sentence-synchronisation-updated-failed",
           telemetry,
         )
-        throw IllegalStateException("Received OFFENDER_SENTENCES-UPDATED or sync request for sentence (sequence $nomisSentenceSequence booking $nomisBookingId) that exists in nomis without sync mapping")
+        throw ParentEntityNotFoundRetry("Received OFFENDER_SENTENCES-UPDATED or sync request for sentence (sequence $nomisSentenceSequence booking $nomisBookingId) that exists in nomis without sync mapping")
       } ?: run {
         telemetryClient.trackEvent(
           "sentence-synchronisation-updated-skipped",
@@ -1437,11 +1437,24 @@ class CourtSentencingSynchronisationService(
         termSequence = event.termSequence,
       )
       if (mapping == null) {
-        telemetryClient.trackEvent(
-          "sentence-term-synchronisation-updated-failed",
-          telemetry,
-        )
-        throw IllegalStateException("Received OFFENDER_SENTENCE_TERMS-UPDATED for sentence term (term ${event.termSequence}, sequence ${event.sentenceSeq} booking ${event.bookingId}) that has never been created")
+        // check for existence as sentence could have been deleted in nomis
+        nomisApiService.getOffenderSentenceTermNullable(
+          offenderNo = event.offenderIdDisplay,
+          sentenceSequence = event.sentenceSeq,
+          termSequence = event.termSequence,
+          bookingId = event.bookingId,
+        )?.let {
+          telemetryClient.trackEvent(
+            "sentence-term-synchronisation-updated-failed",
+            telemetry,
+          )
+          throw IllegalStateException("Received OFFENDER_SENTENCE_TERMS-UPDATED for sentence term (term ${event.termSequence}, sequence ${event.sentenceSeq} booking ${event.bookingId}) that exists in nomis without sync mapping")
+        } ?: run {
+          telemetryClient.trackEvent(
+            "sentence-term-synchronisation-updated-skipped",
+            telemetry + ("reason" to "sentence term does not exist in nomis, no update required"),
+          )
+        }
       } else {
         mappingApiService.getSentenceOrNullByNomisId(
           bookingId = event.bookingId,
