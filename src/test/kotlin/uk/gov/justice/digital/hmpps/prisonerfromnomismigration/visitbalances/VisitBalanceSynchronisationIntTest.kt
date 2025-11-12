@@ -42,14 +42,8 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @Nested
     inner class WhenMissingAudit {
-
-      @Test
-      fun `the event is not ignored`() {
-        nomisVisitBalanceApiMock.stubGetVisitBalanceAdjustment(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
-        mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(mapping = null)
-        dpsApiMock.stubSyncVisitBalanceAdjustment()
-        mappingApiMock.stubCreateVisitBalanceAdjustmentMapping()
-
+      @BeforeEach
+      fun setUp() {
         visitBalanceOffenderEventsQueue.sendMessage(
           visitBalanceAdjustmentEvent(
             eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
@@ -57,10 +51,31 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
             auditModuleName = "",
           ),
         ).also { waitForAnyProcessingToComplete() }
+      }
 
-        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
+      @Test
+      fun `will not make a call to Nomis`() {
+        nomisVisitBalanceApiMock.verify(
+          0,
+          getRequestedFor(urlPathEqualTo("/visit-balances/visit-balance-adjustment/$visitBalanceAdjId")),
+        )
+      }
+
+      @Test
+      fun `will not update in DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
+      }
+
+      @Test
+      fun `will not call the mapping service`() {
+        mappingApiMock.verify(0, getRequestedFor(anyUrl()))
+        mappingApiMock.verify(0, postRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("visitbalance-adjustment-synchronisation-created-success"),
+          eq("visitbalance-adjustment-synchronisation-created-skipped"),
           check {
             assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
             assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
@@ -72,55 +87,6 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
 
     @Nested
     inner class WhenCreatedInDps {
-      @Nested
-      inner class WhenDpsSynchronisationAudit {
-        @BeforeEach
-        fun setUp() {
-          nomisVisitBalanceApiMock.stubGetVisitBalanceAdjustment(nomisVisitBalanceAdjustmentId = visitBalanceAdjId)
-          mappingApiMock.stubGetVisitBalanceAdjustmentByNomisId(mapping = null)
-          dpsApiMock.stubSyncVisitBalanceAdjustment()
-          mappingApiMock.stubCreateVisitBalanceAdjustmentMapping()
-
-          visitBalanceOffenderEventsQueue.sendMessage(
-            visitBalanceAdjustmentEvent(
-              eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
-              visitBalanceAdjId = visitBalanceAdjId,
-              auditModuleName = "DPS_SYNCHRONISATION",
-            ),
-          ).also { waitForAnyProcessingToComplete() }
-        }
-
-        @Test
-        fun `will make a call to Nomis`() {
-          nomisVisitBalanceApiMock.verify(
-            getRequestedFor(urlPathEqualTo("/visit-balances/visit-balance-adjustment/$visitBalanceAdjId")),
-          )
-        }
-
-        @Test
-        fun `will update in DPS`() {
-          dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/visits/allocation/prisoner/sync")))
-        }
-
-        @Test
-        fun `will call the mapping service`() {
-          mappingApiMock.verify(getRequestedFor(anyUrl()))
-          mappingApiMock.verify(postRequestedFor(anyUrl()))
-        }
-
-        @Test
-        fun `will track telemetry`() {
-          verify(telemetryClient).trackEvent(
-            eq("visitbalance-adjustment-synchronisation-created-success"),
-            check {
-              assertThat(it["nomisVisitBalanceAdjustmentId"]).isEqualTo(visitBalanceAdjId.toString())
-              assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
-            },
-            isNull(),
-          )
-        }
-      }
-
       @Nested
       inner class WhenDpsSynchronisationVisitBalanceAudit {
         @BeforeEach
@@ -167,7 +133,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
-      inner class WhenNomisVisitAllocation {
+      inner class WhenDpsSynchronisationAudit {
         @Nested
         inner class HappyPath {
           @BeforeEach
@@ -181,6 +147,7 @@ class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
               visitBalanceAdjustmentEvent(
                 eventType = "OFFENDER_VISIT_BALANCE_ADJS-INSERTED",
                 visitBalanceAdjId = visitBalanceAdjId,
+                auditModuleName = "DPS_SYNCHRONISATION",
               ),
             ).also { waitForAnyProcessingToComplete() }
           }
