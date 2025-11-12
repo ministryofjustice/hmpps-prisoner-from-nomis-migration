@@ -365,8 +365,9 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
 
   fun stubGetTemporaryAbsenceScheduledReturnMovement(
     offenderNo: String = "A1234BC",
-    eventId: Long = 12345L,
-    response: ScheduledTemporaryAbsenceReturnResponse = scheduledTemporaryAbsenceReturnResponse(),
+    eventId: Long = 23456L,
+    parentEventId: Long = 12345L,
+    response: ScheduledTemporaryAbsenceReturnResponse = scheduledTemporaryAbsenceReturnResponse(parentEventId),
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/movements/$offenderNo/temporary-absences/scheduled-temporary-absence-return/$eventId")).willReturn(
@@ -389,10 +390,11 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     )
   }
 
-  fun scheduledTemporaryAbsenceReturnResponse() = ScheduledTemporaryAbsenceReturnResponse(
+  fun scheduledTemporaryAbsenceReturnResponse(parentEventId: Long = 1) = ScheduledTemporaryAbsenceReturnResponse(
     bookingId = 12345,
     movementApplicationId = 111,
     eventId = 2,
+    parentEventId = parentEventId,
     eventSubType = "C5",
     eventStatus = "SCH",
     eventDate = tomorrow.toLocalDate(),

@@ -1366,6 +1366,78 @@ class ExternalMovementsSyncIntTest(
     }
 
     @Nested
+    inner class HappyPathInbound {
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubGetTemporaryAbsenceScheduledReturnMovement(eventId = 45555, parentEventId = 45678)
+        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
+        nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678, eventTime = eventTime)
+        dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
+        mappingApi.stubUpdateScheduledMovementMapping()
+
+        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED", direction = "IN", eventId = 45555))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should get NOMIS scheduled inbound movement`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence-return/45555")))
+      }
+
+      @Test
+      fun `should get mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
+      }
+
+      @Test
+      fun `should get NOMIS scheduled outbound movement`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence/45678")))
+      }
+
+      @Test
+      fun `should update DPS occurrence`() {
+        ExternalMovementsDpsApiMockServer.getRequestBody<SyncWriteTapOccurrence>(
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId/occurrences")),
+        ).apply {
+          assertThat(id).isEqualTo(dpsOccurrenceId)
+          assertThat(statusCode).isEqualTo("IN_PROGRESS")
+          assertThat(releaseAt).isCloseTo(now, within(1, ChronoUnit.MINUTES))
+          assertThat(returnBy).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
+          assertThat(location.description).isEqualTo("Some description")
+          assertThat(location.address).isEqualTo("to full address")
+          assertThat(location.postcode).isEqualTo("S1 1AB")
+          assertThat(absenceTypeCode).isEqualTo("RDR")
+          assertThat(absenceSubTypeCode).isEqualTo("RR")
+          assertThat(absenceReasonCode).isEqualTo("C5")
+          assertThat(transportCode).isEqualTo("VAN")
+          assertThat(notes).isEqualTo("scheduled absence comment")
+          assertThat(created.by).isEqualTo("USER")
+          assertThat(updated).isNull()
+          assertThat(legacyId).isEqualTo(45678)
+        }
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            assertThat(it["nomisEventId"]).isEqualTo("45555")
+            assertThat(it["directionCode"]).isEqualTo("IN")
+            assertThat(it["dpsOccurrenceId"]).isEqualTo("$dpsOccurrenceId")
+            assertThat(it["nomisAddressId"]).isEqualTo("321")
+            assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
     inner class WhenNotTapMovement {
       @BeforeEach
       fun setUp(output: CapturedOutput) {
@@ -1740,6 +1812,78 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
             assertThat(it["nomisEventId"]).isEqualTo("45678")
             assertThat(it["directionCode"]).isEqualTo("OUT")
+            assertThat(it["dpsOccurrenceId"]).isEqualTo("$dpsOccurrenceId")
+            assertThat(it["nomisAddressId"]).isEqualTo("321")
+            assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class HappyPathInbound {
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubGetTemporaryAbsenceScheduledReturnMovement(eventId = 45555, parentEventId = 45678)
+        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
+        nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678, eventTime = eventTime)
+        dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
+        mappingApi.stubUpdateScheduledMovementMapping()
+
+        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-UPDATED", direction = "IN", eventId = 45555))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should get NOMIS scheduled inbound movement`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence-return/45555")))
+      }
+
+      @Test
+      fun `should get mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
+      }
+
+      @Test
+      fun `should get NOMIS scheduled outbound movement`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence/45678")))
+      }
+
+      @Test
+      fun `should update DPS occurrence`() {
+        ExternalMovementsDpsApiMockServer.getRequestBody<SyncWriteTapOccurrence>(
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId/occurrences")),
+        ).apply {
+          assertThat(id).isEqualTo(dpsOccurrenceId)
+          assertThat(statusCode).isEqualTo("IN_PROGRESS")
+          assertThat(releaseAt).isCloseTo(yesterday, within(1, ChronoUnit.MINUTES))
+          assertThat(returnBy).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
+          assertThat(location.description).isEqualTo("Some description")
+          assertThat(location.address).isEqualTo("to full address")
+          assertThat(location.postcode).isEqualTo("S1 1AB")
+          assertThat(absenceTypeCode).isEqualTo("RDR")
+          assertThat(absenceSubTypeCode).isEqualTo("RR")
+          assertThat(absenceReasonCode).isEqualTo("C5")
+          assertThat(transportCode).isEqualTo("VAN")
+          assertThat(notes).isEqualTo("scheduled absence comment")
+          assertThat(created.by).isEqualTo("USER")
+          assertThat(updated).isNull()
+          assertThat(legacyId).isEqualTo(45678)
+        }
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            assertThat(it["nomisEventId"]).isEqualTo("45555")
+            assertThat(it["directionCode"]).isEqualTo("IN")
             assertThat(it["dpsOccurrenceId"]).isEqualTo("$dpsOccurrenceId")
             assertThat(it["nomisAddressId"]).isEqualTo("321")
             assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
@@ -3913,12 +4057,12 @@ class ExternalMovementsSyncIntTest(
        }
     """.trimMargin()
 
-  private fun scheduledMovementEvent(eventType: String, auditModuleName: String = "OCUCANTR", nomisEventType: String = "TAP", direction: String = "OUT") = // language=JSON
+  private fun scheduledMovementEvent(eventType: String, auditModuleName: String = "OCUCANTR", nomisEventType: String = "TAP", direction: String = "OUT", eventId: Long = 45678) = // language=JSON
     """{
          "Type" : "Notification",
          "MessageId" : "57126174-e2d7-518f-914e-0056a63363b0",
          "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
-         "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2025-09-02T09:19:03\",\"nomisEventType\":\"$eventType\",\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\",\"eventId\":45678,\"eventMovementType\":\"$nomisEventType\",\"auditModuleName\":\"$auditModuleName\",\"directionCode\":\"$direction\"}",
+         "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2025-09-02T09:19:03\",\"nomisEventType\":\"$eventType\",\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\",\"eventId\":$eventId,\"eventMovementType\":\"$nomisEventType\",\"auditModuleName\":\"$auditModuleName\",\"directionCode\":\"$direction\"}",
          "Timestamp" : "2025-09-02T09:19:03.998Z",
          "SignatureVersion" : "1",
          "Signature" : "eePe/HtUdMyeFriH6GJe4FAJjYhQFjohJOu0+t8qULvpaw+qsGBfolKYa83fARpGDZJf9ceKd6kYGwF+OVeNViXluqPeUyoWbJ/lOjCs1tvlUuceCLy/7+eGGxkNASKJ1sWdwhO5J5I8WKUq5vfyYgL/Mygae6U71Bc0H9I2uVkw7tUYg0ZQBMSkA8HpuLLAN06qR5ahJnNDDxxoV07KY6E2dy8TheEo2Dhxq8hicl272LxWKMifM9VfR+D1i1eZNXDGsvvHmMCjumpxxYAJmrU+aqUzAU2KnhoZJTfeZT+RV+ZazjPLqX52zwA47ZFcqzCBnmrU6XwuHT4gKJcj1Q==",
