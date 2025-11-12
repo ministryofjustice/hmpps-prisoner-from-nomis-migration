@@ -15,7 +15,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceDetailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncDto
@@ -23,14 +22,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.mod
 @Service
 class VisitBalanceSynchronisationService(
   private val nomisVisitBalanceApiService: VisitBalanceNomisApiService,
-  private val nomisApiService: NomisApiService,
   private val dpsApiService: VisitBalanceDpsApiService,
   private val mappingApiService: VisitBalanceMappingApiService,
   private val queueService: SynchronisationQueueService,
   override val telemetryClient: TelemetryClient,
 ) : TelemetryEnabled {
   private companion object {
-    const val VISIT_ALLOCATION_SERVICE = "VISIT_ALLOCATION"
+    const val VISIT_BALANCE_DPS_SYNC_AUDIT_MODULE = "DPS_SYNCHRONISATION_VB"
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
@@ -40,12 +38,7 @@ class VisitBalanceSynchronisationService(
     val telemetry =
       telemetryOf("nomisVisitBalanceAdjustmentId" to visitBalanceAdjustmentId, "nomisPrisonNumber" to nomisPrisonNumber)
 
-    if (event.originatesInDpsOrHasMissingAudit &&
-      nomisApiService.isServiceAgencyOnForPrisoner(
-        serviceCode = VISIT_ALLOCATION_SERVICE,
-        prisonNumber = nomisPrisonNumber,
-      )
-    ) {
+    if (event.auditExactMatchOrHasMissingAudit(VISIT_BALANCE_DPS_SYNC_AUDIT_MODULE)) {
       telemetryClient.trackEvent(
         "visitbalance-adjustment-synchronisation-created-skipped",
         telemetry,

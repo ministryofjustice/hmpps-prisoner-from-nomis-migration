@@ -89,4 +89,32 @@ internal class EventAuditedTest {
       assertThat(event.originatesInDpsOrHasMissingAudit).isTrue()
     }
   }
+
+  @Nested
+  inner class AuditExactMatchOrHasMissingAudit {
+
+    @Test
+    fun `passes when auditModuleName is null`() {
+      val event = TestEvent(null)
+      assertThat(event.auditExactMatchOrHasMissingAudit("DPS_SYNC_ALTERNATIVE")).isTrue()
+    }
+
+    @Test
+    fun `passes when auditModuleName is empty`() {
+      val event = TestEvent("")
+      assertThat(event.auditExactMatchOrHasMissingAudit("DPS_SYNC_ALTERNATIVE")).isTrue()
+    }
+
+    @Test
+    fun `passes when auditModuleName matches exactly`() {
+      val event = TestEvent("DPS_SYNC_ALTERNATIVE")
+      assertThat(event.auditExactMatchOrHasMissingAudit("DPS_SYNC_ALTERNATIVE")).isTrue()
+    }
+
+    @Test
+    fun `fails when auditModuleName differs from audit`() {
+      val event = TestEvent("DPS_SYNC_ALTERNATIVE")
+      assertThat(event.auditExactMatchOrHasMissingAudit("DPS_SYNC_ALTERNATIVE_ABC")).isFalse()
+    }
+  }
 }

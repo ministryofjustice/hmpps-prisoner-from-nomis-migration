@@ -23,6 +23,8 @@ interface EventAudited {
   // Caters for null or empty which should be treated as DPS_SYNCHRONISATION
   val originatesInDpsOrHasMissingAudit: Boolean
     get() = auditModuleName.isNullOrEmpty() || auditModuleName?.startsWith(DPS_SYNC_AUDIT_MODULE) == true
+
+  fun auditExactMatchOrHasMissingAudit(audit: String) = auditModuleName.isNullOrEmpty() || auditModuleName == audit
 }
 
 interface TelemetryEnabled {
