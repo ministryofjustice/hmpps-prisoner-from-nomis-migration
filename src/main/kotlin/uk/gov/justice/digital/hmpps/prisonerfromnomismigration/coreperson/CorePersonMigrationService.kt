@@ -129,6 +129,7 @@ private fun CreateResponse.toCorePersonMappingsDto(nomisPrisonNumber: String, mi
   addressMappings = addressIds.map { it.toCorePersonSimpleMappingIdDto() },
   phoneMappings = phoneIds.map { it.toCorePersonPhoneMappingIdDto() },
   emailMappings = emailIds.map { it.toCorePersonSimpleMappingIdDto() },
+  profileMappings = emptyList()
   // TODO set other mappings beliefs etc
   profileMappings = emptyList(),
 )

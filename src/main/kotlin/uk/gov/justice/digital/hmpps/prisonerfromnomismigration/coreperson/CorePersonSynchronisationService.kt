@@ -2,12 +2,17 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSexualOrientation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import java.util.UUID
 
 @Service
 class CorePersonSynchronisationService(
   private val telemetryClient: TelemetryClient,
+  private val nomisApiService: CorePersonNomisApiService,
+  private val mappingApiService: CorePersonMappingApiService,
+  private val corePersonCprApiService: CorePersonCprApiService,
 ) {
   val eventProfileTypes = setOf("NAT", "NATIO", "SEXO", "DISABILITY", "IMM")
 
@@ -214,14 +219,42 @@ class CorePersonSynchronisationService(
     telemetryClient.trackEvent("coreperson-addressusage-synchronisation-deleted-notimplemented", telemetry)
   }
 
-  fun offenderPhysicalDetailsChanged(event: OffenderProfileDetailsEvent) {
+  suspend fun offenderPhysicalDetailsChanged(event: OffenderProfileDetailsEvent) {
     if (eventProfileTypes.contains(event.profileType)) {
+
+      val mapping = mappingApiService.getProfileByNomisIdsOrNull(event.bookingId, event.profileType)
+      val nomisData = nomisApiService.getProfileDetail(event.bookingId, 1, event.profileType)
+
+      when (event.profileType) {
+        "SEXO" -> {
+          val request = PrisonSexualOrientation(
+            prisonNumber = nomisData.offenderNo,
+            sexualOrientationCode = nomisData.code ?: "",
+            current = true,
+            startDate = nomisData.bookingstartTODO,
+            endDate = nomisData.bookingEndTODO,
+            createUserId = nomisData.createdBy,
+            createDateTime = nomisData.createDateTime,
+            createDisplayName = nomisData.displayNameTODO,
+            modifyDateTime = nomisData.modifiedDateTime,
+            modifyUserId = nomisData.modifiedBy,
+            modifyDisplayName = nomisData.displayNameTODO,
+          )
+          mapping?.also {
+            corePersonCprApiService.syncUpdateSexualOrientation(UUID.fromString(mapping.cprId), request)
+          }
+            ?: run {
+              val created = corePersonCprApiService.syncCreateSexualOrientation(request)
+              tryMapping(created)
+            }
+        }
+      }
       val telemetry = telemetryOf(
         "nomisPrisonNumber" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId,
         "nomisProfileType" to event.profileType,
       )
-      telemetryClient.trackEvent("coreperson-profiledetails-synchronisation-changed-notimplemented", telemetry)
+      telemetryClient.trackEvent("coreperson-profiledetails-synchronisation-changed", telemetry)
     }
   }
 }

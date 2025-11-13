@@ -6,14 +6,21 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.NOMISSyncApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncOffenderTransactionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ProfileMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ProfileMappingIdDto
 
 @Service
 class CorePersonMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorePersonMappingsDto>(domainUrl = "/mapping/core-person", webClient) {
@@ -44,4 +51,19 @@ class CorePersonMappingApiService(@Qualifier("mappingApiWebClient") webClient: W
     )
     .retrieve()
     .awaitBody()
+
+  suspend fun getProfileByNomisIdsOrNull(bookingId: Long, profileType: String): ProfileMappingDto? = webClient
+    .get()
+    .uri("/mapping/core-person/profile/booking/{bookingId}/type/{profileType}", bookingId, profileType)
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun createProfile(mapping: ProfileMappingIdDto) {
+    webClient
+      .post()
+      .uri("/mapping/core-person/profile")
+      .bodyValue(mapping)
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 }
