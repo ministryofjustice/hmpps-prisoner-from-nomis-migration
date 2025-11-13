@@ -138,6 +138,7 @@ class CorePersonMappingApiServiceTest {
           phoneMappings = emptyList(),
           emailMappings = emptyList(),
           addressMappings = emptyList(),
+          profileMappings = emptyList(),
         ),
       )
 
@@ -161,6 +162,7 @@ class CorePersonMappingApiServiceTest {
           phoneMappings = emptyList(),
           emailMappings = emptyList(),
           addressMappings = emptyList(),
+          profileMappings = emptyList(),
         ),
       )
 
@@ -204,6 +206,7 @@ class CorePersonMappingApiServiceTest {
           phoneMappings = emptyList(),
           emailMappings = emptyList(),
           addressMappings = emptyList(),
+          profileMappings = emptyList(),
         ),
       )
 
