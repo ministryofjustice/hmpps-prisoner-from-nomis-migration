@@ -792,6 +792,9 @@ fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null) = SyncWrite
   updated = audit.modifyDatetime?.let { SyncAtAndBy(at = audit.modifyDatetime, by = audit.modifyUserId!!) },
   legacyId = eventId,
 )
+  .also { log.info("Syncing eventId=${it.legacyId}, eventStatus=$eventStatus, inboundEventStatus=$inboundEventStatus, returnTime=$returnTime, dps_status=${it.statusCode}") }
+
+private val log = LoggerFactory.getLogger(ExternalMovementsSyncService::class.java)
 
 private fun String.toDpsOccurrenceStatusCode(inboundStatus: String? = null, returnBy: LocalDateTime) = when (this) {
   "CANC" -> "CANCELLED"
