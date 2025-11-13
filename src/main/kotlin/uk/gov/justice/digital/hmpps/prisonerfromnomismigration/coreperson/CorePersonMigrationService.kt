@@ -130,6 +130,7 @@ private fun CreateResponse.toCorePersonMappingsDto(nomisPrisonNumber: String, mi
   phoneMappings = phoneIds.map { it.toCorePersonPhoneMappingIdDto() },
   emailMappings = emailIds.map { it.toCorePersonSimpleMappingIdDto() },
   // TODO set other mappings beliefs etc
+  profileMappings = emptyList(),
 )
 
 // TODO check why these are nullable fields in the Id pairs
