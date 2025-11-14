@@ -766,7 +766,7 @@ private fun String.toDpsAuthorisationStatusCode() = when (this) {
   "PEN" -> "PENDING"
   "APP-SCH", "APP-UNSCH" -> "APPROVED"
   "DEN" -> "DENIED"
-  "CAN" -> "CANCELLED"
+  "CANC" -> "CANCELLED"
   else -> throw IllegalArgumentException("Unknown temporary absence status code: $this")
 }
 
