@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.CreateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 
 /**
@@ -41,3 +40,9 @@ class MockCorePersonResource {
     )
   }
 }
+
+data class CreateResponse(
+  val addressIds: List<String>,
+  val phoneIds: List<String>,
+  val emailIds: List<String>,
+)

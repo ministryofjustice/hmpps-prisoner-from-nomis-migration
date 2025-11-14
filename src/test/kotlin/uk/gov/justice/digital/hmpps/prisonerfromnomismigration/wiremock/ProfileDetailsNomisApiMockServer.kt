@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.profiledetails
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
@@ -13,27 +13,30 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.profiledetails.ContactPersonProfileType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDateTime
 
 @Component
-class ContactPersonProfileDetailsNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class ProfileDetailsNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetProfileDetails(
     offenderNo: String = "A1234AA",
     bookingId: Long? = 12345,
-    profileTypes: List<String> = ContactPersonProfileType.all(),
+    profileTypes: List<String> = ContactPersonProfileType.Companion.all(),
     response: PrisonerProfileDetailsResponse = profileDetailsResponse(offenderNo),
-  ) = nomisApi.stubFor(
-    get(urlPathMatching("/prisoners/$offenderNo/profile-details"))
-      .apply { bookingId?.run { withQueryParam("bookingId", equalTo(bookingId.toString())) } }
-      .withQueryParam("profileTypes", havingExactly(*profileTypes.toTypedArray()))
-      .willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
-      ),
-  )
+  ) {
+    nomisApi.stubFor(
+      get(urlPathMatching("/prisoners/$offenderNo/profile-details"))
+        .apply { bookingId?.run { withQueryParam("bookingId", equalTo(bookingId.toString())) } }
+        .withQueryParam("profileTypes", havingExactly(*profileTypes.toTypedArray()))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
 
   fun stubGetProfileDetails(
     offenderNo: String = "A1234AA",

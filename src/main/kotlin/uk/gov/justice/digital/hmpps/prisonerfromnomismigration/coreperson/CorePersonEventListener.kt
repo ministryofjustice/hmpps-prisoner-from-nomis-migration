@@ -75,7 +75,7 @@ class CorePersonEventListener(
 //              "ADDRESS_USAGE-UPDATED" -> service.addressUsageUpdated(sqsMessage.Message.fromJson())
 //              "ADDRESS_USAGE-DELETED" -> service.addressUsageDeleted(sqsMessage.Message.fromJson())
 
-              "OFFENDER_PHYSICAL_DETAILS-CHANGED" -> service.offenderPhysicalDetailsChanged(sqsMessage.Message.fromJson())
+              "OFFENDER_PHYSICAL_DETAILS-CHANGED" -> service.offenderProfileDetailsChanged(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {

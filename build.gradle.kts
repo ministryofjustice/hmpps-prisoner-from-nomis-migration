@@ -115,7 +115,6 @@ val models = listOf(
     packageName = "coreperson",
     testPackageName = "coreperson",
     url = "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk/v3/api-docs",
-    models = "Address,AddressId,CreateResponse,Email,EmailId,Identifier,Names,PhoneId,PhoneNumber,Prisoner,Religion",
   ),
   ModelConfiguration(
     name = "court-sentencing",

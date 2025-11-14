@@ -30,6 +30,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MoveActivityEndDateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
 import java.time.LocalDate
@@ -204,6 +205,16 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .uri("/prisoners/{offenderNo}", offenderNo)
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getProfileDetails(offenderNo: String, profileTypes: List<String> = emptyList(), bookingId: Long? = null): PrisonerProfileDetailsResponse = webClient.get()
+    .uri {
+      it.path("/prisoners/{offenderNo}/profile-details")
+        .queryParam("profileTypes", profileTypes)
+        .apply { bookingId?.run { queryParam("bookingId", "$bookingId") } }
+        .build(offenderNo)
+    }
+    .retrieve()
+    .awaitBody()
 
   suspend fun isServiceAgencyOnForPrisoner(serviceCode: String, prisonNumber: String) = webClient.get()
     .uri("/agency-switches/{serviceCode}/prisoner/{prisonerId}", serviceCode, prisonNumber)

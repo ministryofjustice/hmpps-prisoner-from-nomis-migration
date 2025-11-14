@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ProfileDetailsChangedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerDomesticStatusRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncUpdatePrisonerNumberOfChildrenRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.time.LocalDateTime
 
 internal val synchronisationUser = "DPS_SYNCHRONISATION"
@@ -28,7 +29,7 @@ enum class ContactPersonProfileType(val telemetryName: String) {
 
 @Service
 class ContactPersonProfileDetailsSyncService(
-  private val nomisApi: ContactPersonProfileDetailsNomisApiService,
+  private val nomisApi: NomisApiService,
   private val dpsApi: ContactPersonProfileDetailsDpsApiService,
   override val telemetryClient: TelemetryClient,
 ) : TelemetryEnabled {
