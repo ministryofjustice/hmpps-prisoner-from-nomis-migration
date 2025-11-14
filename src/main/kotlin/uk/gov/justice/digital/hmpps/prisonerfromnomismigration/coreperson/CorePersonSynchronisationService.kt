@@ -227,7 +227,6 @@ class CorePersonSynchronisationService(
 
   suspend fun offenderProfileDetailsChanged(event: OffenderProfileDetailsEvent) {
     if (eventProfileTypes.contains(event.profileType)) {
-
       val (offenderIdDisplay, bookingId, profileType) = event
       val telemetry = telemetryOf(
         "offenderNo" to offenderIdDisplay,
@@ -304,5 +303,4 @@ private fun getIgnoreReason(
   null
 }
 
-private fun ProfileDetailsResponse.lastModified(): Pair<LocalDateTime, String> = (modifiedDateTime
-  ?: createDateTime) to (modifiedBy ?: createdBy)
+private fun ProfileDetailsResponse.lastModified(): Pair<LocalDateTime, String> = (modifiedDateTime ?: createDateTime) to (modifiedBy ?: createdBy)

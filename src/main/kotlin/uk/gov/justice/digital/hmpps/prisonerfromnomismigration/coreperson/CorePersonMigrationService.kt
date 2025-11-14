@@ -5,18 +5,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.AddressId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.CreateResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.EmailId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PhoneId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingIdDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingIdDto.CprPhoneType.CORE_PERSON
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonSimpleMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -134,6 +127,6 @@ private fun String.toCorePersonMappingsDto(nomisPrisonNumber: String, migrationI
 )
 
 // TODO check why these are nullable fields in the Id pairs
-private fun AddressId.toCorePersonSimpleMappingIdDto() = CorePersonSimpleMappingIdDto(cprId = this.cprAddressId!!, nomisId = this.prisonAddressId!!)
-private fun PhoneId.toCorePersonPhoneMappingIdDto() = CorePersonPhoneMappingIdDto(cprId = this.cprPhoneId!!, nomisId = this.prisonPhoneId!!, cprPhoneType = CORE_PERSON)
-private fun EmailId.toCorePersonSimpleMappingIdDto() = CorePersonSimpleMappingIdDto(cprId = this.cprEmailId!!, nomisId = this.prisonEmailId!!)
+// private fun Address.toCorePersonSimpleMappingIdDto() = CorePersonSimpleMappingIdDto(cprId = this.cprAddressId!!, nomisId = this.prisonAddressId!!)
+// private fun Phone.toCorePersonPhoneMappingIdDto() = CorePersonPhoneMappingIdDto(cprId = this.cprPhoneId!!, nomisId = this.prisonPhoneId!!, cprPhoneType = CORE_PERSON)
+// private fun Email.toCorePersonSimpleMappingIdDto() = CorePersonSimpleMappingIdDto(cprId = this.cprEmailId!!, nomisId = this.prisonEmailId!!)
