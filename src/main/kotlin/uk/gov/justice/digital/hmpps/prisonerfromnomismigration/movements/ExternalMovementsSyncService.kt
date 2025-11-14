@@ -34,7 +34,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
-import java.time.LocalDateTime
 import java.util.*
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED as SCHEDULED_MOVEMENT_NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto.MappingType.NOMIS_CREATED as OUTSIDE_MOVEMENT_NOMIS_CREATED
@@ -773,7 +772,6 @@ private fun String.toDpsAuthorisationStatusCode() = when (this) {
 
 fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null) = SyncWriteTapOccurrence(
   id = id,
-  statusCode = eventStatus.toDpsOccurrenceStatusCode(inboundEventStatus, returnTime),
   releaseAt = startTime,
   returnBy = returnTime,
   location = Location(
@@ -790,20 +788,9 @@ fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null) = SyncWrite
   notes = comment,
   created = SyncAtAndBy(at = audit.createDatetime, by = audit.createUsername),
   updated = audit.modifyDatetime?.let { SyncAtAndBy(at = audit.modifyDatetime, by = audit.modifyUserId!!) },
+  isCancelled = eventStatus == "CANC",
   legacyId = eventId,
 )
-
-private fun String.toDpsOccurrenceStatusCode(inboundStatus: String? = null, returnBy: LocalDateTime) = when (this) {
-  "CANC" -> "CANCELLED"
-  "DEN" -> "DENIED"
-  "EXP" -> "EXPIRED"
-  "PEN" -> "PENDING"
-  "SCH" -> "SCHEDULED"
-  "COMP" if (inboundStatus != "COMP" && returnBy >= LocalDateTime.now()) -> "IN_PROGRESS"
-  "COMP" if (inboundStatus != "COMP" && returnBy < LocalDateTime.now()) -> "OVERDUE"
-  "COMP" if (inboundStatus == "COMP") -> "COMPLETED"
-  else -> throw IllegalArgumentException("Unknown scheduled temporary absence status code: $this")
-}
 
 private fun TemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, occurrenceId: UUID? = null) = SyncWriteTapMovement(
   id = id,

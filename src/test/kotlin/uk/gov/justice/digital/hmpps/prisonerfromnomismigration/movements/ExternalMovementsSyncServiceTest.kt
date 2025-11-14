@@ -4,8 +4,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvSource
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.scheduledTemporaryAbsenceResponse
 import java.time.LocalDateTime
 
@@ -39,105 +37,16 @@ class ExternalMovementsSyncServiceTest {
         assertThat(transportCode).isEqualTo("TNR")
       }
     }
+  }
 
-    @Test
-    fun `should set status to OVERDUE if no inbound schedule and beyond return time`() {
-      val nomis = scheduledTemporaryAbsenceResponse().copy(
-        inboundEventStatus = null,
-        returnTime = yesterday,
-      )
-
-      with(nomis.toDpsRequest()) {
-        assertThat(statusCode).isEqualTo("OVERDUE")
-      }
-    }
-
-    @Test
-    fun `should set status to OVERDUE if inbound schedule not complete and beyond return time`() {
-      val nomis = scheduledTemporaryAbsenceResponse().copy(
-        inboundEventStatus = "SCH",
-        returnTime = yesterday,
-      )
-
-      with(nomis.toDpsRequest()) {
-        assertThat(statusCode).isEqualTo("OVERDUE")
-      }
-    }
-
-    @Test
-    fun `should set status to IN_PROGRESS if no inbound schedule but NOT beyond return time`() {
-      val nomis = scheduledTemporaryAbsenceResponse().copy(
-        inboundEventStatus = null,
-        returnTime = tomorrow,
-      )
-
-      with(nomis.toDpsRequest()) {
-        assertThat(statusCode).isEqualTo("IN_PROGRESS")
-      }
-    }
-
-    @Test
-    fun `should set status to IN_PROGRESS if inbound schedule not complete and NOT beyond return time`() {
-      val nomis = scheduledTemporaryAbsenceResponse().copy(
-        inboundEventStatus = "SCH",
-        returnTime = tomorrow,
-      )
-
-      with(nomis.toDpsRequest()) {
-        assertThat(statusCode).isEqualTo("IN_PROGRESS")
-      }
-    }
-
-    @Test
-    fun `should set status to COMPLETED if inbound schedule complete`() {
-      val nomis = scheduledTemporaryAbsenceResponse().copy(
-        inboundEventStatus = "COMP",
-      )
-
-      with(nomis.toDpsRequest()) {
-        assertThat(statusCode).isEqualTo("COMPLETED")
-      }
-    }
-
-    @Test
-    fun `should set status to COMPLETED if inbound schedule complete and NOT beyond return time`() {
-      val nomis = scheduledTemporaryAbsenceResponse().copy(
-        inboundEventStatus = "COMP",
-        returnTime = tomorrow,
-      )
-
-      with(nomis.toDpsRequest()) {
-        assertThat(statusCode).isEqualTo("COMPLETED")
-      }
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-      value = [
-        "CANC,CANCELLED",
-        "DEN,DENIED",
-        "EXP,EXPIRED",
-        "PEN,PENDING",
-        "SCH,SCHEDULED",
-      ],
+  @Test
+  fun `should send cancelled flag`() {
+    val nomis = scheduledTemporaryAbsenceResponse().copy(
+      eventStatus = "CANC",
     )
-    fun `should use outbound schedule status regardless of inbound status or return time`(nomisOutStatus: String, dpsStatus: String) {
-      val inboundStatuses = listOf("CANC", "DEN", "EXP", "PEN", "SCH", null)
-      val returnTimes = listOf(yesterday, tomorrow)
 
-      inboundStatuses.forEach { inboundStatus ->
-        returnTimes.forEach { returnTime ->
-          val nomis = scheduledTemporaryAbsenceResponse().copy(
-            eventStatus = nomisOutStatus,
-            inboundEventStatus = inboundStatus,
-            returnTime = returnTime,
-          )
-
-          with(nomis.toDpsRequest()) {
-            assertThat(statusCode).isEqualTo(dpsStatus)
-          }
-        }
-      }
+    with(nomis.toDpsRequest()) {
+      assertThat(isCancelled).isTrue
     }
   }
 }
