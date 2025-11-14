@@ -36,7 +36,7 @@ class LocationsSynchronisationService(
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
-    val invalidPrisons = listOf("ZZGHI", "UNKNWN", "TRN", "LT3", "LT4")
+    val invalidPrisons = listOf("UNKNWN", "TRN", "LT3", "LT4")
   }
 
   suspend fun synchroniseUsage(event: LocationsOffenderEvent) {
