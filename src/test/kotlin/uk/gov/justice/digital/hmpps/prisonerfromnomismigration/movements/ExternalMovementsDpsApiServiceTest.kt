@@ -140,7 +140,7 @@ class ExternalMovementsDpsApiServiceTest {
       dpsExtMovementsServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$parentId/occurrences"))
           .withRequestBody(matchingJsonPath("legacyId", equalTo("1234")))
-          .withRequestBody(matchingJsonPath("statusCode", equalTo("PENDING")))
+          .withRequestBody(matchingJsonPath("isCancelled", equalTo("false")))
           .withRequestBody(matchingJsonPath("location.description", equalTo("Boots")))
           .withRequestBody(matchingJsonPath("created.by", equalTo("AAA11A"))),
       )

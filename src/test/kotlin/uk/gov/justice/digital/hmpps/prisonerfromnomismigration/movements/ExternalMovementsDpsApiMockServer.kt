@@ -80,7 +80,6 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
 
     fun syncTapOccurrence() = SyncWriteTapOccurrence(
-      statusCode = "PENDING",
       releaseAt = today,
       returnBy = tomorrow,
       location = Location(
@@ -97,6 +96,7 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       notes = "Occurrence comment",
       created = SyncAtAndBy(today, "AAA11A"),
       updated = SyncAtAndBy(today, "AAA11A"),
+      isCancelled = false,
       legacyId = 1234,
     )
 
