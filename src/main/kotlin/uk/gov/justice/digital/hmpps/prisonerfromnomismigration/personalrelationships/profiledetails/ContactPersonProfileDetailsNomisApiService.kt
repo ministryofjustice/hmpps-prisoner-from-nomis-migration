@@ -8,13 +8,5 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 
 @Service
 class ContactPersonProfileDetailsNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
-  suspend fun getProfileDetails(offenderNo: String, profileTypes: List<String> = emptyList(), bookingId: Long? = null): PrisonerProfileDetailsResponse = webClient.get()
-    .uri {
-      it.path("/prisoners/{offenderNo}/profile-details")
-        .queryParam("profileTypes", profileTypes)
-        .apply { bookingId?.run { queryParam("bookingId", "$bookingId") } }
-        .build(offenderNo)
-    }
-    .retrieve()
-    .awaitBody()
+
 }

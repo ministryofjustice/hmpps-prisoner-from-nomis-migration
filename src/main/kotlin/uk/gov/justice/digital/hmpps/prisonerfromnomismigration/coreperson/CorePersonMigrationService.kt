@@ -121,17 +121,16 @@ class CorePersonMigrationService(
   }
 }
 
-private fun CreateResponse.toCorePersonMappingsDto(nomisPrisonNumber: String, migrationId: String) = CorePersonMappingsDto(
+private fun String.toCorePersonMappingsDto(nomisPrisonNumber: String, migrationId: String) = CorePersonMappingsDto(
   mappingType = CorePersonMappingsDto.MappingType.MIGRATED,
   label = migrationId,
   personMapping = CorePersonMappingIdDto(cprId = nomisPrisonNumber, nomisPrisonNumber = nomisPrisonNumber),
   // TODO check if following lists can send null rather than emptyList
-  addressMappings = addressIds.map { it.toCorePersonSimpleMappingIdDto() },
-  phoneMappings = phoneIds.map { it.toCorePersonPhoneMappingIdDto() },
-  emailMappings = emailIds.map { it.toCorePersonSimpleMappingIdDto() },
-  profileMappings = emptyList()
-  // TODO set other mappings beliefs etc
+  addressMappings = emptyList(), // addressIds.map { it.toCorePersonSimpleMappingIdDto() },
+  phoneMappings = emptyList(), // phoneIds.map { it.toCorePersonPhoneMappingIdDto() },
+  emailMappings = emptyList(), // emailIds.map { it.toCorePersonSimpleMappingIdDto() },
   profileMappings = emptyList(),
+  // TODO set other mappings beliefs etc
 )
 
 // TODO check why these are nullable fields in the Id pairs

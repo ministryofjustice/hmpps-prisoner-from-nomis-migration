@@ -17,17 +17,22 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ProfileDetailsNomisApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.booking
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.profileDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.profileDetailsResponse
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 @SpringAPIServiceTest
-@Import(ContactPersonProfileDetailsNomisApiService::class, ContactPersonProfileDetailsNomisApiMockServer::class)
+@Import(ContactPersonProfileDetailsNomisApiService::class, ProfileDetailsNomisApiMockServer::class)
 class ContactPersonProfileDetailsNomisApiServiceTest {
   @Autowired
-  private lateinit var apiService: ContactPersonProfileDetailsNomisApiService
+  private lateinit var apiService: NomisApiService
 
   @Autowired
-  private lateinit var profileDetailsNomisApi: ContactPersonProfileDetailsNomisApiMockServer
+  private lateinit var profileDetailsNomisApi: ProfileDetailsNomisApiMockServer
 
   @Nested
   inner class GetProfileDetails {
