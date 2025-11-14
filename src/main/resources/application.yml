@@ -262,3 +262,9 @@ hmpps.sqs:
     migrationexternalmovements:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
+    migrationvisitslots:
+      errorVisibilityTimeout: 1, 1, 1, 10
+      propagateTracing: false
+    migrationofficialvisits:
+      errorVisibilityTimeout: 1, 1, 1, 10
+      propagateTracing: false
