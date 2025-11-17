@@ -564,12 +564,12 @@ class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
-      inner class WhenUpdateByNomisInGhostPrison {
+      inner class WhenUpdateByNomisInIgnoredPrison {
         @BeforeEach
         fun setUp() {
           awsSqsLocationsOffenderEventsClient.sendMessage(
             locationsQueueOffenderEventsUrl,
-            locationEvent(prison = "ZZGHI"),
+            locationEvent(prison = "LT3"),
           )
         }
 
