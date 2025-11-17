@@ -240,6 +240,7 @@ class CorePersonSynchronisationService(
         telemetryClient.trackEvent("coreperson-profiledetails-synchronisation-ignored-booking", telemetry)
         return
       }
+
       val typeHistory = nomisResponse.bookings.flatMap { booking ->
         booking.profileDetails.filter { profile ->
           profile.type == profileType
@@ -249,23 +250,25 @@ class CorePersonSynchronisationService(
 
       if (typeHistory.size >= 2 && typeHistory[0].code == typeHistory[1].code) {
         telemetryClient.trackEvent("coreperson-profiledetails-synchronisation-ignored-duplicate", telemetry)
+        return
       }
 
       with(typeHistory[0]) {
         when (profileType) {
           "SEXO" -> {
-            val request = PrisonSexualOrientation(
-              prisonNumber = offenderIdDisplay,
-              sexualOrientationCode = code ?: "",
-              current = true, // TBC - redundant?
-              createUserId = createdBy,
-              createDateTime = createDateTime,
-              // TBC createDisplayName = nomisData.displayName,
-              modifyDateTime = modifiedDateTime,
-              modifyUserId = modifiedBy,
-              // TBC modifyDisplayName = nomisData.displayName,
+            corePersonCprApiService.syncCreateSexualOrientation(
+              PrisonSexualOrientation(
+                prisonNumber = offenderIdDisplay,
+                sexualOrientationCode = code ?: "",
+                current = true, // TBC - redundant?
+                createUserId = createdBy,
+                createDateTime = createDateTime,
+                // TBC createDisplayName = nomisData.displayName,
+                modifyDateTime = modifiedDateTime,
+                modifyUserId = modifiedBy,
+                // TBC modifyDisplayName = nomisData.displayName,
+              ),
             )
-            corePersonCprApiService.syncCreateSexualOrientation(request)
           }
         }
       }

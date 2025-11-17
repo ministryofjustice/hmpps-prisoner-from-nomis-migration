@@ -40,7 +40,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @SpringAPIServiceTest
-@Import(NomisApiService::class)
+@Import(NomisApiService::class, ProfileDetailsNomisApiMockServer::class)
 internal class NomisApiServiceTest {
 
   @Autowired
