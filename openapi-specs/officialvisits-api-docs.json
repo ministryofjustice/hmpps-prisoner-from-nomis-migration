@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-11-12.65.31cfecf"
+    "version" : "2025-11-14.77.a67b1a7"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -422,10 +422,10 @@
         }
       }
     },
-    "/available-slots/prison/{prisonCode}" : {
+    "/available-slots/{prisonCode}" : {
       "get" : {
         "tags" : [ "Available slots" ],
-        "summary" : "Endpoint to return the available slots for official visits for a prison - TRIAL ONLY.",
+        "summary" : "Endpoint to return the available slots for official visits for a prison for a given date range.",
         "description" : "\n\nRequires one of the following roles:\n* ROLE_OFFICIAL_VISITS_ADMIN\n* ROLE_OFFICIAL_VISITS__R\n* ROLE_OFFICIAL_VISITS__RW",
         "operationId" : "getAvailableSlotsForPrison",
         "parameters" : [ {
@@ -437,6 +437,32 @@
             "type" : "string"
           },
           "example" : "MDI"
+        }, {
+          "name" : "fromDate",
+          "in" : "query",
+          "description" : "The from date in ISO format (YYYY-MM-DD).",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "toDate",
+          "in" : "query",
+          "description" : "The to date in ISO format (YYYY-MM-DD).",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "videoOnly",
+          "in" : "query",
+          "description" : "Boolean flag. A value of 'true' will only return video reservable slots.",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -446,7 +472,7 @@
                 "schema" : {
                   "type" : "array",
                   "items" : {
-                    "$ref" : "#/components/schemas/AvailableSlotEntity"
+                    "$ref" : "#/components/schemas/AvailableSlot"
                   }
                 }
               }
@@ -1275,54 +1301,72 @@
         },
         "required" : [ "messages", "messagesFoundCount", "messagesReturnedCount" ]
       },
-      "AvailableSlotEntity" : {
+      "AvailableSlot" : {
         "type" : "object",
         "properties" : {
-          "prisonVisitSlotId" : {
+          "visitSlotId" : {
             "type" : "integer",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "The prison visit slot identifier for the official visit slot",
+            "example" : 1
           },
-          "prisonTimeSlotId" : {
+          "timeSlotId" : {
             "type" : "integer",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "The prison time slot identifier for the official visit slot",
+            "example" : 1
           },
           "prisonCode" : {
-            "type" : "string"
-          },
-          "displaySequence" : {
-            "type" : "integer",
-            "format" : "int32"
+            "type" : "string",
+            "description" : "The prison code where the visit takes place",
+            "example" : "PVI"
           },
           "dayCode" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "The 3-letter day of the week code where this slot falls in this prison.",
+            "example" : "TUE"
           },
           "dayDescription" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "The day of the week code where this slot falls in this prison.",
+            "example" : "Tuesday"
+          },
+          "visitDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The date for the official visit slot"
           },
           "startTime" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "The start time for the official visit slot"
           },
           "endTime" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "The end time for the official visit slot"
           },
           "dpsLocationId" : {
             "type" : "string",
-            "format" : "uuid"
+            "format" : "uuid",
+            "description" : "The DPS location where the official visit takes place for the slot",
+            "example" : "aaaa-bbbb-xxxxxxxx-yyyyyyyy"
           },
-          "maxAdults" : {
+          "availableVideoSessions" : {
             "type" : "integer",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "The available video sessions for official visit slot"
           },
-          "maxGroups" : {
+          "availableAdults" : {
             "type" : "integer",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "The available adults for official visit slot"
           },
-          "maxVideoSessions" : {
+          "availableGroups" : {
             "type" : "integer",
-            "format" : "int32"
+            "format" : "int32",
+            "description" : "The available groups for official visit slot"
           }
         },
-        "required" : [ "dayCode", "dayDescription", "displaySequence", "dpsLocationId", "endTime", "maxAdults", "maxGroups", "maxVideoSessions", "prisonCode", "prisonTimeSlotId", "prisonVisitSlotId", "startTime" ]
+        "required" : [ "availableAdults", "availableGroups", "availableVideoSessions", "dayCode", "dayDescription", "dpsLocationId", "endTime", "prisonCode", "startTime", "timeSlotId", "visitDate", "visitSlotId" ]
       }
     },
     "securitySchemes" : {
