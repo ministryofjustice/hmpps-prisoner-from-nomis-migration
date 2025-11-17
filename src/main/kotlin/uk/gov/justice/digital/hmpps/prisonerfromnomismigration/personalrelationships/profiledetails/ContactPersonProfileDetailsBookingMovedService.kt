@@ -5,10 +5,11 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 
 @Service
 class ContactPersonProfileDetailsBookingMovedService(
-  private val nomisApiService: ContactPersonProfileDetailsNomisApiService,
+  private val nomisApiService: NomisApiService,
   private val nomisSyncApiService: ContactPersonProfileDetailsNomisSyncApiService,
   private val syncService: ContactPersonProfileDetailsSyncService,
   private val telemetryClient: TelemetryClient,

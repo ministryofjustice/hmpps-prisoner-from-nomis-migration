@@ -38,13 +38,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ProfileDetailsChangedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerDomesticStatusResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerNumberOfChildrenResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ProfileDetailsNomisApiMockServer
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDateTime
 import kotlin.collections.component1
 import kotlin.collections.component2
 
 class ContactPersonProfileDetailsSyncIntTest(
-  @Autowired private val nomisApi: ContactPersonProfileDetailsNomisApiMockServer,
+  @Autowired private val nomisApi: ProfileDetailsNomisApiMockServer,
   @Autowired private val dpsApi: ContactPersonProfileDetailsDpsApiMockServer,
   @Autowired private val service: ContactPersonProfileDetailsSyncService,
 ) : SqsIntegrationTestBase() {
@@ -481,7 +482,7 @@ class ContactPersonProfileDetailsSyncIntTest(
     )
     private fun dpsNumberOfChildrenResponse(id: Long = 321) = SyncPrisonerNumberOfChildrenResponse(id, active = true)
 
-    private fun ContactPersonProfileDetailsNomisApiMockServer.verify(
+    private fun ProfileDetailsNomisApiMockServer.verify(
       offenderNo: String = "A1234AA",
       bookingId: Long? = 12345,
       profileType: String = "MARITAL",

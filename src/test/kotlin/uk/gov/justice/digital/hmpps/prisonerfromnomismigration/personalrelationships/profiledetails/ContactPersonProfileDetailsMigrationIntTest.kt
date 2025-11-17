@@ -30,12 +30,16 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationR
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ProfileDetailsNomisApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.booking
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.profileDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.profileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
 import java.time.LocalDate
 
 class ContactPersonProfileDetailsMigrationIntTest(
-  @Autowired private val nomisProfileDetailsApi: ContactPersonProfileDetailsNomisApiMockServer,
+  @Autowired private val nomisProfileDetailsApi: ProfileDetailsNomisApiMockServer,
   @Autowired private val mappingApi: ContactPersonProfileDetailsMappingApiMockServer,
   @Autowired private val dpsApi: ContactPersonProfileDetailsDpsApiMockServer,
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,

@@ -29,6 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerDomesticStatusResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerNumberOfChildrenResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ProfileDetailsNomisApiMockServer
 import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlin.collections.component1
@@ -36,7 +37,7 @@ import kotlin.collections.component2
 import kotlin.collections.forEach
 
 class ContactPersonBookingMovedIntTest(
-  @Autowired private val nomisApi: ContactPersonProfileDetailsNomisApiMockServer,
+  @Autowired private val nomisApi: ProfileDetailsNomisApiMockServer,
   @Autowired private val dpsApi: ContactPersonProfileDetailsDpsApiMockServer,
   @Autowired private val nomisSyncApi: ContactPersonNomisSyncApiMockServer,
 ) : SqsIntegrationTestBase() {

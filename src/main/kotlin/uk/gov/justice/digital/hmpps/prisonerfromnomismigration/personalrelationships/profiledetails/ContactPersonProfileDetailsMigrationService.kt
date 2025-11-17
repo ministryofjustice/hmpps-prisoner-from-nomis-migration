@@ -27,8 +27,7 @@ import kotlin.collections.first
 @Service
 class ContactPersonProfileDetailsMigrationService(
   val migrationMappingService: ContactPersonProfileDetailsMappingApiService,
-  val nomisApiService: ContactPersonProfileDetailsNomisApiService,
-  val nomisIdsApiService: NomisApiService,
+  val nomisApiService: NomisApiService,
   val dpsApiService: ContactPersonProfileDetailsDpsApiService,
   @Value("\${personalrelationships.profiledetails.page.size:1000}") pageSize: Long,
   @Value("\${personalrelationships.profiledetails.complete-check.delay-seconds:60}") completeCheckDelaySeconds: Int,
@@ -49,7 +48,7 @@ class ContactPersonProfileDetailsMigrationService(
     pageSize: Long,
     pageNumber: Long,
   ): PageImpl<PrisonerId> = if (migrationFilter.prisonerNumber.isNullOrEmpty()) {
-    nomisIdsApiService.getPrisonerIds(
+    nomisApiService.getPrisonerIds(
       pageNumber = pageNumber,
       pageSize = pageSize,
     )
