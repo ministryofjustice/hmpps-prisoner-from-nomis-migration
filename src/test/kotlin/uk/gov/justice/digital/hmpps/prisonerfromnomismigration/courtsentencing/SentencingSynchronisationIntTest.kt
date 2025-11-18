@@ -1438,7 +1438,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
-        courtSentencingNomisApiMockServer.stubGetSentenceByBooking(
+        courtSentencingNomisApiMockServer.stubGetSentence(
+          endpointUsingCase = false,
           sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
           bookingId = NOMIS_BOOKING_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
@@ -1458,7 +1459,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `telemetry added to track the failure`() {
+      fun `telemetry added to track the skip`() {
         await untilAsserted {
           verify(telemetryClient, times(1)).trackEvent(
             eq("sentence-charge-synchronisation-deleted-skipped"),
@@ -1502,7 +1503,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `telemetry added to track the failure`() {
+      fun `telemetry added to track the skip`() {
         await untilAsserted {
           verify(telemetryClient, times(1)).trackEvent(
             eq("sentence-charge-synchronisation-deleted-skipped"),
@@ -1536,7 +1537,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
-        courtSentencingNomisApiMockServer.stubGetSentenceByBooking(
+        courtSentencingNomisApiMockServer.stubGetSentence(
+          endpointUsingCase = false,
           sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
           bookingId = NOMIS_BOOKING_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
