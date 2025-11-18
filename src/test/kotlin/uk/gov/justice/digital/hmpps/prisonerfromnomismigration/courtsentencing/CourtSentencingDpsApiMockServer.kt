@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
+import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCaseResponse
@@ -371,6 +372,21 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(204)
             .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubPutSentenceForUpdate(
+    sentenceId: String = UUID.randomUUID().toString(),
+    status: HttpStatus,
+  ) {
+    stubFor(
+      put("/legacy/sentence/$sentenceId")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody("""{"status":"${status.value()}",userMessage = "NOMIS error"}"""),
         ),
     )
   }

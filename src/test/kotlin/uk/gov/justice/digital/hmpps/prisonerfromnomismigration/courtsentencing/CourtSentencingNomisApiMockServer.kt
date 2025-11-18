@@ -493,6 +493,100 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     )
   }
 
+  fun stubGetSentenceByBooking(
+    bookingId: Long = 123456,
+    offenderNo: String = "A3864DZ",
+    sentenceSequence: Int = 3,
+    caseId: Long = 345,
+    startDate: LocalDate = LocalDate.now(),
+    courtOrder: CourtOrderResponse? = null,
+    consecSequence: Int? = null,
+    sentenceLevel: String = "IND",
+    recallCustodyDate: RecallCustodyDate? = null,
+    sentenceTerms: List<SentenceTermResponse> = listOf(
+      SentenceTermResponse(
+        startDate = LocalDate.now(),
+        sentenceTermType = CodeDescription("IMP", "Imprisonment"),
+        termSequence = 1,
+        years = 1,
+        months = 3,
+        weeks = 4,
+        days = 5,
+        lifeSentenceFlag = false,
+        prisonId = "OUT",
+        createdByUsername = "msmith",
+      ),
+    ),
+    offenderCharges: List<OffenderChargeResponse> = listOf(
+      OffenderChargeResponse(
+        id = 101,
+        chargeStatus = CodeDescription("A", "Active"),
+        offenceDate = LocalDate.of(2024, 1, 1),
+        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F", conviction = false),
+        offence = OffenceResponse(
+          offenceCode = "AN16094",
+          statuteCode = "AN16",
+          description = "Act as organiser of flying    without applying for / obtaining permission of CAA",
+        ),
+        mostSeriousFlag = false,
+        createdByUsername = "msmith",
+      ),
+      OffenderChargeResponse(
+        id = 102,
+        chargeStatus = CodeDescription("A", "Active"),
+        offenceDate = LocalDate.of(2024, 4, 1),
+        resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F", conviction = false),
+        offence = OffenceResponse(
+          offenceCode = "AN10020",
+          statuteCode = "AN10",
+          description = "Act in a way likely to cause annoyance / nuisance / injury to others within a Controlled Area of AWE Burghfield",
+        ),
+        mostSeriousFlag = true,
+        createdByUsername = "msmith",
+      ),
+    ),
+    response: SentenceResponse = SentenceResponse(
+      bookingId = bookingId,
+      sentenceSeq = sentenceSequence.toLong(),
+      caseId = caseId,
+      courtOrder = courtOrder,
+      category = CodeDescription(code = "2003", "2003 Act"),
+      calculationType = CodeDescription(code = "ADIMP_ORA", description = "ADIMP_ORA description"),
+      offenderCharges = offenderCharges,
+      startDate = startDate,
+      status = "I",
+      sentenceTerms = sentenceTerms,
+      createdDateTime = LocalDateTime.now(),
+      createdByUsername = "Q1251T",
+      prisonId = "MDI",
+      fineAmount = BigDecimal.valueOf(1.10),
+      consecSequence = consecSequence,
+      sentenceLevel = sentenceLevel,
+      recallCustodyDate = recallCustodyDate,
+      missingCourtOffenderChargeIds = emptyList(),
+    ),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/booking-id/$bookingId/sentences/$sentenceSequence")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubGetSentenceByBooking(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    nomisApi.stubFor(
+      get(WireMock.urlPathMatching("/prisoners/booking-id/\\d+/sentences/\\d+")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun stubGetSentenceTerm(
     bookingId: Long = 123456,
     offenderNo: String = "A3864DZ",
