@@ -64,10 +64,9 @@ class CorePersonEventListener(
               "OFFENDER_EMAIL-UPDATED" -> service.offenderEmailUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_EMAIL-DELETED" -> service.offenderEmailDeleted(sqsMessage.Message.fromJson())
 
-              // TODO: Awaiting SDIT-2421 to be completed for new trigger on offender beliefs
-//              "OFFENDER_BELIEF-INSERTED" -> service.offenderBeliefAdded(sqsMessage.Message.fromJson())
-//              "OFFENDER_BELIEF-UPDATED" -> service.offenderBeliefUpdated(sqsMessage.Message.fromJson())
-//              "OFFENDER_BELIEF-DELETED" -> service.offenderBeliefDeleted(sqsMessage.Message.fromJson())
+              "OFFENDER_BELIEF-INSERTED" -> service.offenderBeliefAdded(sqsMessage.Message.fromJson())
+              "OFFENDER_BELIEF-UPDATED" -> service.offenderBeliefUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_BELIEF-DELETED" -> service.offenderBeliefDeleted(sqsMessage.Message.fromJson())
 
               // TODO: Ignore for now - core person haven't mapped address usage
               // If needed then a JIRA is required to add in audit module name - maybe new trigger
@@ -100,6 +99,13 @@ data class OffenderEmailEvent(
   val offenderIdDisplay: String,
   val offenderId: Long,
   val internetAddressId: Long,
+  override val auditModuleName: String,
+) : EventAudited
+
+data class OffenderBeliefEvent(
+  val offenderIdDisplay: String,
+  val rootOffenderId: Long,
+  val offenderBeliefId: Long,
   override val auditModuleName: String,
 ) : EventAudited
 
