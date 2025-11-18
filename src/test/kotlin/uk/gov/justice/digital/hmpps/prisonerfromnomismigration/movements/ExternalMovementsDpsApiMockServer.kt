@@ -70,6 +70,7 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       absenceSubTypeCode = "RR",
       absenceReasonCode = "C5",
       accompaniedByCode = "U",
+      transportCode = "TNR",
       repeat = false,
       fromDate = today.toLocalDate(),
       toDate = tomorrow.toLocalDate(),

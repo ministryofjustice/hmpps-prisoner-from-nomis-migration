@@ -100,6 +100,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("absenceSubTypeCode", equalTo = "SPL")
             .withRequestBodyJsonPath("absenceReasonCode", equalTo = "C5")
             .withRequestBodyJsonPath("accompaniedByCode", equalTo = "P")
+            .withRequestBodyJsonPath("transportCode", equalTo = "VAN")
             .withRequestBodyJsonPath("repeat", equalTo = false)
             .withRequestBodyJsonPath("fromDate", equalTo = "$today")
             .withRequestBodyJsonPath("toDate", equalTo = "${tomorrow.toLocalDate()}")

@@ -752,7 +752,7 @@ private fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) =
   absenceTypeCode = temporaryAbsenceType,
   absenceSubTypeCode = temporaryAbsenceSubType,
   absenceReasonCode = eventSubType,
-  accompaniedByCode = escortCode ?: "U",
+  accompaniedByCode = escortCode ?: DEFAULT_ESCORT_CODE,
   repeat = applicationType == "REPEATING",
   fromDate = fromDate,
   toDate = toDate,
@@ -760,6 +760,7 @@ private fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) =
   created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
   updated = audit.modifyDatetime?.let { SyncAtAndBy(audit.modifyDatetime, audit.modifyUserId!!) },
   legacyId = movementApplicationId,
+  transportCode = transportType ?: DEFAULT_TRANSPORT_TYPE,
 )
 
 private fun String.toDpsAuthorisationStatusCode() = when (this) {
