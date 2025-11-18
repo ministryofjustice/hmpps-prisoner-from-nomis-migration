@@ -68,6 +68,7 @@ class CourtSentencingEventListener(
               "OFFENDER_SENTENCE_TERMS-INSERTED" -> courtSentencingSynchronisationService.nomisSentenceTermInserted(sqsMessage.Message.fromJson())
               "OFFENDER_SENTENCE_TERMS-DELETED" -> courtSentencingSynchronisationService.nomisSentenceTermDeleted(sqsMessage.Message.fromJson())
               "OFFENDER_SENTENCE_TERMS-UPDATED" -> courtSentencingSynchronisationService.nomisSentenceTermUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_SENTENCE_CHARGES-DELETED" -> courtSentencingSynchronisationService.nomisSentenceChargeDeleted(sqsMessage.Message.fromJson())
               "OFFENDER_CASE_IDENTIFIERS-DELETED",
               "OFFENDER_CASE_IDENTIFIERS-INSERTED",
               "OFFENDER_CASE_IDENTIFIERS-UPDATED",
@@ -216,6 +217,14 @@ data class OffenderSentenceResynchronisationEvent(
   val caseId: Long,
   val dpsAppearanceUuid: String,
   val dpsConsecutiveSentenceUuid: String?,
+)
+
+data class OffenderSentenceChargeEvent(
+  val sentenceSeq: Int,
+  val chargeId: Long,
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+  val auditModuleName: String?,
 )
 
 data class OffenderCaseResynchronisationEvent(

@@ -1307,6 +1307,71 @@ class CourtSentencingSynchronisationService(
     }
   }
 
+  suspend fun nomisSentenceChargeDeleted(event: OffenderSentenceChargeEvent) {
+    val bookingId = event.bookingId
+    val offenderNo = event.offenderIdDisplay
+    val nomisSentenceSequence = event.sentenceSeq
+    val telemetry =
+      mapOf(
+        "nomisBookingId" to bookingId.toString(),
+        "nomisChargeId" to event.chargeId.toString(),
+        "nomisSentenceSequence" to event.sentenceSeq.toString(),
+        "offenderNo" to event.offenderIdDisplay,
+      )
+
+    val mapping = mappingApiService.getSentenceOrNullByNomisId(
+      bookingId = bookingId,
+      sentenceSequence = nomisSentenceSequence,
+    )
+    if (mapping == null) {
+      // check for existence as sentence could have been deleted in nomis
+      nomisApiService.getOffenderSentenceByBookingNullable(
+        bookingId = bookingId,
+        sentenceSequence = nomisSentenceSequence,
+      )?.let {
+        telemetryClient.trackEvent(
+          "sentence-charge-synchronisation-deleted-skipped",
+          telemetry + ("reason" to "sentence mapping does not exist, no update required"),
+        )
+      } ?: run {
+        telemetryClient.trackEvent(
+          "sentence-charge-synchronisation-deleted-skipped",
+          telemetry + ("reason" to "sentence does not exist in nomis, no update required"),
+        )
+      }
+    } else {
+      nomisApiService.getOffenderSentenceByBookingNullable(
+        bookingId = bookingId,
+        sentenceSequence = nomisSentenceSequence,
+      )?.also { nomisSentence ->
+        val eventId = nomisSentence.courtOrder!!.eventId
+        track("sentence-charge-synchronisation-deleted", telemetry = (telemetry + ("dpsSentenceId" to mapping.dpsSentenceId)).toMutableMap()) {
+          mappingApiService.getCourtAppearanceByNomisId(eventId).let { courtAppearanceMapping ->
+            dpsApiService.updateSentence(
+              sentenceId = mapping.dpsSentenceId,
+              nomisSentence.toDpsSentence(
+                dpsAppearanceUuid = courtAppearanceMapping.dpsCourtAppearanceId,
+                dpsConsecUuid = nomisSentence.consecSequence?.let {
+                  getConsecutiveSequenceMappingOrThrow(
+                    sentenceSequence = nomisSentenceSequence,
+                    bookingId = bookingId,
+                    consecSequence = it,
+                  )
+                },
+                sentenceChargeIds = getDpsChargeMappings(nomisSentence),
+              ),
+            )
+          }
+        }
+      } ?: run {
+        telemetryClient.trackEvent(
+          "sentence-charge-synchronisation-deleted-skipped",
+          telemetry + ("reason" to "sentence does not exist in nomis, no update required"),
+        )
+      }
+    }
+  }
+
   suspend fun nomisCaseResynchronisation(event: OffenderCaseResynchronisationEvent) {
     nomisCaseResynchronisation(nomisCaseId = event.caseId, dpsCaseId = event.dpsCaseUuid, offenderNo = event.offenderNo)
   }

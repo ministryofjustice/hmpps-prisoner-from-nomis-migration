@@ -56,6 +56,7 @@ private const val OFFENDER_ID_DISPLAY = "A3864DZ"
 private const val NOMIS_BOOKING_ID = 12344321L
 private const val NOMIS_COURT_CASE_ID = 1234L
 private const val NOMIS_COURT_APPEARANCE_ID = 5555L
+private const val NOMIS_OFFENDER_CHARGE = 12L
 private const val NOMIS_CONSEC_SENTENCE_SEQUENCE = 7777L
 private const val DPS_CONSECUTIVE_SENTENCE_ID = "c4c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e2d"
 
@@ -1428,6 +1429,258 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("OFFENDER_SENTENCE_CHARGES-DELETED")
+  inner class SentenceChargeDeleted {
+
+    @Nested
+    @DisplayName("When mapping doesn't exist and nomis sentence does exist")
+    inner class SentenceMappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+        courtSentencingNomisApiMockServer.stubGetSentenceByBooking(
+          sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+          bookingId = NOMIS_BOOKING_ID,
+          offenderNo = OFFENDER_ID_DISPLAY,
+          caseId = NOMIS_COURT_CASE_ID,
+          courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
+          recallCustodyDate = RecallCustodyDate(
+            returnToCustodyDate = LocalDate.parse("2024-01-01"),
+            recallLength = 28,
+          ),
+        )
+        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+          courtSentencingQueueOffenderEventsUrl,
+          sentenceChargeEvent(
+            eventType = "OFFENDER_SENTENCE_CHARGES-DELETED",
+          ),
+        )
+      }
+
+      @Test
+      fun `telemetry added to track the failure`() {
+        await untilAsserted {
+          verify(telemetryClient, times(1)).trackEvent(
+            eq("sentence-charge-synchronisation-deleted-skipped"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+              assertThat(it["nomisChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE.toString())
+              assertThat(it["reason"]).isEqualTo("sentence mapping does not exist, no update required")
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Test
+      fun `the event is not placed on dead letter queue`() {
+        await untilAsserted {
+          assertThat(
+            awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+              courtSentencingQueueOffenderEventsDlqUrl,
+            ).get(),
+          ).isEqualTo(0)
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("When mapping for parent sentence (and actual nomis sentence) do not exist")
+    inner class SentenceMappingAndSentenceParentDoNotExist {
+      @BeforeEach
+      fun setUp() {
+        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+        courtSentencingNomisApiMockServer.stubGetSentenceByBooking(status = NOT_FOUND)
+        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+          courtSentencingQueueOffenderEventsUrl,
+          sentenceChargeEvent(
+            eventType = "OFFENDER_SENTENCE_CHARGES-DELETED",
+          ),
+        )
+      }
+
+      @Test
+      fun `telemetry added to track the failure`() {
+        await untilAsserted {
+          verify(telemetryClient, times(1)).trackEvent(
+            eq("sentence-charge-synchronisation-deleted-skipped"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+              assertThat(it["nomisChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE.toString())
+              assertThat(it["reason"]).isEqualTo("sentence does not exist in nomis, no update required")
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Test
+      fun `the event is not placed on dead letter queue`() {
+        await untilAsserted {
+          assertThat(
+            awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+              courtSentencingQueueOffenderEventsDlqUrl,
+            ).get(),
+          ).isEqualTo(0)
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("When sentence mapping exists")
+    inner class SentenceMappingExists {
+
+      @BeforeEach
+      fun setUp() {
+        courtSentencingNomisApiMockServer.stubGetSentenceByBooking(
+          sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+          bookingId = NOMIS_BOOKING_ID,
+          offenderNo = OFFENDER_ID_DISPLAY,
+          caseId = NOMIS_COURT_CASE_ID,
+          courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
+          recallCustodyDate = RecallCustodyDate(
+            returnToCustodyDate = LocalDate.parse("2024-01-01"),
+            recallLength = 28,
+          ),
+        )
+
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+        )
+      }
+
+      @Nested
+      @DisplayName("When mapping exists")
+      inner class MappingExists {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+            nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+            nomisBookingId = NOMIS_BOOKING_ID,
+            dpsSentenceId = DPS_SENTENCE_ID,
+          )
+          mockTwoChargeMappingGets()
+
+          // deletion of sentence charge should trigger an update to the sentence in DPS
+          dpsCourtSentencingServer.stubPutSentenceForUpdate(sentenceId = DPS_SENTENCE_ID)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceChargeEvent(
+              eventType = "OFFENDER_SENTENCE_CHARGES-DELETED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will update DPS with the changes`() {
+          await untilAsserted {
+            dpsCourtSentencingServer.verify(
+              1,
+              putRequestedFor(urlPathEqualTo("/legacy/sentence/$DPS_SENTENCE_ID"))
+                .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1")))
+                .withRequestBody(matchingJsonPath("active", equalTo("false")))
+                .withRequestBody(matchingJsonPath("chargeUuids[0]", equalTo(DPS_CHARGE_ID)))
+                .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
+                .withRequestBody(matchingJsonPath("legacyData.postedDate", isNotNull()))
+                .withRequestBody(matchingJsonPath("legacyData.sentenceCalcType", equalTo("ADIMP_ORA")))
+                .withRequestBody(matchingJsonPath("legacyData.sentenceTypeDesc", equalTo("ADIMP_ORA description")))
+                .withRequestBody(matchingJsonPath("legacyData.sentenceCategory", equalTo("2003")))
+                .withRequestBody(matchingJsonPath("returnToCustodyDate", equalTo("2024-01-01")))
+                .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-charge-synchronisation-deleted-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["nomisChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE.toString())
+                assertThat(it["dpsSentenceId"]).isEqualTo(DPS_SENTENCE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When error from dps updating sentence")
+      inner class FailureFromDps {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+            nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+            nomisBookingId = NOMIS_BOOKING_ID,
+            dpsSentenceId = DPS_SENTENCE_ID,
+          )
+          mockTwoChargeMappingGets()
+
+          // deletion of sentence charge should trigger an update to the sentence in DPS - return an error
+          dpsCourtSentencingServer.stubPutSentenceForUpdate(sentenceId = DPS_SENTENCE_ID, status = INTERNAL_SERVER_ERROR)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceChargeEvent(
+              eventType = "OFFENDER_SENTENCE_CHARGES-DELETED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will update DPS with the changes`() {
+          await untilAsserted {
+            dpsCourtSentencingServer.verify(
+              1,
+              putRequestedFor(urlPathEqualTo("/legacy/sentence/$DPS_SENTENCE_ID"))
+                .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1")))
+                .withRequestBody(matchingJsonPath("active", equalTo("false")))
+                .withRequestBody(matchingJsonPath("chargeUuids[0]", equalTo(DPS_CHARGE_ID)))
+                .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
+                .withRequestBody(matchingJsonPath("legacyData.postedDate", isNotNull()))
+                .withRequestBody(matchingJsonPath("legacyData.sentenceCalcType", equalTo("ADIMP_ORA")))
+                .withRequestBody(matchingJsonPath("legacyData.sentenceTypeDesc", equalTo("ADIMP_ORA description")))
+                .withRequestBody(matchingJsonPath("legacyData.sentenceCategory", equalTo("2003")))
+                .withRequestBody(matchingJsonPath("returnToCustodyDate", equalTo("2024-01-01")))
+                .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-charge-synchronisation-deleted-error"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["nomisChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE.toString())
+                assertThat(it["dpsSentenceId"]).isEqualTo(DPS_SENTENCE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+  }
+
+  @Nested
   @DisplayName("courtsentencing.resync.sentence")
   inner class SentenceResynchronisation {
 
@@ -2385,6 +2638,26 @@ fun sentenceEvent(
 ) = """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
     "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"caseId\": \"$caseId\",\"sentenceSeq\": \"$sentenceSequence\",\"sentenceLevel\": \"$sentenceLevel\",\"sentenceCategory\": \"$sentenceCategory\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"COURT_EVENT\",\"auditModuleName\":\"$auditModule\" }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+""".trimIndent()
+
+fun sentenceChargeEvent(
+  eventType: String,
+  bookingId: Long = NOMIS_BOOKING_ID,
+  chargeId: Long = NOMIS_OFFENDER_CHARGE,
+  sentenceSequence: Int = NOMIS_SENTENCE_SEQUENCE,
+  offenderNo: String = OFFENDER_ID_DISPLAY,
+  auditModule: String = "DPS",
+) = """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventId\":\"5958295\",\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"chargeId\": \"$chargeId\",\"sentenceSeq\": \"$sentenceSequence\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"COURT_EVENT\",\"auditModuleName\":\"$auditModule\" }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 
