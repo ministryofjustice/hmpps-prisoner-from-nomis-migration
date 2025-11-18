@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2025-11-12.1341.02e502f"
+    "version" : "2025-11-17.1396.a81e7e1"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -117,6 +117,45 @@
         "responses" : {
           "200" : {
             "description" : "Sexual Orientation updated in CPR",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/syscon-sync/religion/{cprReligionId}" : {
+      "put" : {
+        "tags" : [ "Syscon Sync" ],
+        "description" : "Update a prisoner religion",
+        "operationId" : "updateReligion",
+        "parameters" : [ {
+          "name" : "cprReligionId",
+          "in" : "path",
+          "description" : "The identifier of the prison religion",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PrisonReligion"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Religion updated in CPR",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -373,6 +412,35 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PrisonSexualOrientationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/syscon-sync/religion" : {
+      "post" : {
+        "tags" : [ "Syscon Sync" ],
+        "description" : "Store a prisoner religion",
+        "operationId" : "createReligion",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PrisonReligion"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Religion created in CPR",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonReligionResponse"
                 }
               }
             }
@@ -1053,6 +1121,90 @@
         },
         "required" : [ "current", "prisonNumber", "sexualOrientationCode" ]
       },
+      "PrisonReligion" : {
+        "type" : "object",
+        "properties" : {
+          "prisonNumber" : {
+            "type" : "string",
+            "description" : "The identifier of the offender source system (NOMIS)"
+          },
+          "religionCode" : {
+            "type" : "string",
+            "description" : "The religion code",
+            "example" : "AGNO"
+          },
+          "religionStatus" : {
+            "type" : "string",
+            "description" : "The religion status",
+            "example" : "blah"
+          },
+          "changeReasonKnown" : {
+            "type" : "string",
+            "description" : "The religion change reason known",
+            "example" : "Foo Bar"
+          },
+          "comments" : {
+            "type" : "string",
+            "description" : "The religion comments",
+            "example" : "Foo Bar"
+          },
+          "verified" : {
+            "type" : "boolean",
+            "description" : "The religion verified flag",
+            "example" : true
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The religion start date",
+            "example" : "1980-01-01"
+          },
+          "endDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The religion end date",
+            "example" : "2000-01-01"
+          },
+          "createUserId" : {
+            "type" : "string",
+            "description" : "The religion creation user id",
+            "example" : 12345
+          },
+          "createDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The religion creation date and time",
+            "example" : "2000-01-01 12:00:00"
+          },
+          "createDisplayName" : {
+            "type" : "string",
+            "description" : "The religion creation display name",
+            "example" : "Other"
+          },
+          "modifyDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The religion modify date and time",
+            "example" : "2000-01-01 12:00:00"
+          },
+          "modifyUserId" : {
+            "type" : "string",
+            "description" : "The religion modify user id",
+            "example" : 12345
+          },
+          "modifyDisplayName" : {
+            "type" : "string",
+            "description" : "The religion modify display name",
+            "example" : "John Smith"
+          },
+          "current" : {
+            "type" : "boolean",
+            "description" : "Flag indicating the current religion",
+            "example" : true
+          }
+        },
+        "required" : [ "current", "prisonNumber", "religionCode" ]
+      },
       "PrisonNationality" : {
         "type" : "object",
         "properties" : {
@@ -1437,6 +1589,16 @@
           }
         },
         "required" : [ "cprSexualOrientationId" ]
+      },
+      "PrisonReligionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "cprReligionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "cprReligionId" ]
       },
       "PrisonNationalityResponse" : {
         "type" : "object",
