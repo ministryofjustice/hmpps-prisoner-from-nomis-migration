@@ -160,6 +160,8 @@ hmpps.sqs:
       dlqMaxReceiveCount: 2
     eventcasenotes:
       dlqMaxReceiveCount: 2
+    eventcoreperson:
+      dlqMaxReceiveCount: 2
     eventfinance:
       dlqMaxReceiveCount: 2
     eventcourtsentencing:

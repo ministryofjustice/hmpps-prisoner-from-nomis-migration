@@ -168,6 +168,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTCASENOTES_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-casenotes-dl-queue:
       HMPPS_SQS_QUEUES_EVENTCASENOTES_DLQ_NAME: "sqs_name"
+    prisoner-from-nomis-coreperson-queue:
+      HMPPS_SQS_QUEUES_EVENTCOREPERSON_QUEUE_NAME: "sqs_name"
+    prisoner-from-nomis-coreperson-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTCOREPERSON_DLQ_NAME: "sqs_name"
     prisoner-from-nomis-finance-queue:
       HMPPS_SQS_QUEUES_EVENTFINANCE_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-finance-dl-queue:

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSexualOrientationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.objectMapper
@@ -144,6 +145,23 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun prisonReligionResponse() = PrisonReligionResponse(UUID.randomUUID())
+
+  fun stubSyncCreateSexualOrientation(status: Int = 201) {
+    stubFor(
+      post("/syscon-sync/sexual-orientation").willReturn(
+        aResponse()
+          .withStatus(status)
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            objectMapper.writeValueAsString(
+              PrisonSexualOrientationResponse(
+                cprSexualOrientationId = UUID.randomUUID(),
+              ),
+            ),
+          ),
+      ),
+    )
+  }
 
   fun stubHealthPing(status: Int) {
     stubFor(
