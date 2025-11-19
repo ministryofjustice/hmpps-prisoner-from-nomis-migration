@@ -1,6 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.microsoft.applicationinsights.TelemetryClient
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSexualOrientation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
@@ -17,6 +19,10 @@ class CorePersonSynchronisationService(
   private val nomisApiService: NomisApiService,
   private val corePersonCprApiService: CorePersonCprApiService,
 ) : TelemetryEnabled {
+  private companion object {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
+
   val eventProfileTypes = listOf("NAT", "NATIO", "SEXO", "DISABILITY", "IMM")
 
   suspend fun offenderAdded(event: OffenderEvent) {
@@ -290,7 +296,11 @@ class CorePersonSynchronisationService(
               corePersonCprApiService.syncCreateSexualOrientation(
                 PrisonSexualOrientation(
                   prisonNumber = offenderIdDisplay,
-                  sexualOrientationCode = code ?: "",
+                  sexualOrientationCode = code ?: ""
+                    .also {
+                      // Not sure how rare this is
+                      log.warn("offenderProfileDetailsChanged(): Null value for offender $offenderIdDisplay, booking $bookingId, profile $profileType")
+                    },
                   current = true, // TBC - redundant?
                   createUserId = modifiedBy ?: createdBy,
                   createDateTime = modifiedDateTime ?: createDateTime,
