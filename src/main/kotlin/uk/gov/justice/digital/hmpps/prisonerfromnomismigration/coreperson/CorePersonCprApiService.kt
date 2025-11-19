@@ -10,7 +10,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSexualOrientationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
-import java.util.UUID
 
 @Service
 class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val webClient: WebClient) {
@@ -21,10 +20,6 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .awaitBodyOrLogAndRethrowBadRequest()
 
   suspend fun syncCreateSexualOrientation(request: PrisonSexualOrientation): PrisonSexualOrientationResponse = api.prepare(api.createSexualOrientationRequestConfig(request))
-    .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
-
-  suspend fun syncUpdateSexualOrientation(cprSexualOrientationId: UUID, request: PrisonSexualOrientation): String = api.prepare(api.updateSexualOrientationRequestConfig(cprSexualOrientationId, request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
