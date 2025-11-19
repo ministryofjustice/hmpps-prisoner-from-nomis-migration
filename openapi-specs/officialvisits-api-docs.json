@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-11-14.77.a67b1a7"
+    "version" : "2025-11-18.95.b6821a5"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -415,6 +415,76 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/GetDlqResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoner/{prisonerNumber}/contact-relationships" : {
+      "get" : {
+        "tags" : [ "Personal Relationships contacts" ],
+        "summary" : "Get the approved contacts for a prisoner for official or social visits",
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_CONTACTS__R",
+        "operationId" : "getApprovedContacts",
+        "parameters" : [ {
+          "name" : "prisonerNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "relationshipType",
+          "in" : "query",
+          "description" : "Relationship Type should be S for social or  O for official",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "O"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "List of all Approved contacts related to the prisoner",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PrisonerContactSummary"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The Prisoner was not found.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1300,6 +1370,169 @@
           }
         },
         "required" : [ "messages", "messagesFoundCount", "messagesReturnedCount" ]
+      },
+      "PrisonerContactSummary" : {
+        "type" : "object",
+        "properties" : {
+          "prisonerContactId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "contactId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "prisonerNumber" : {
+            "type" : "string"
+          },
+          "lastName" : {
+            "type" : "string"
+          },
+          "firstName" : {
+            "type" : "string"
+          },
+          "relationshipTypeCode" : {
+            "type" : "string"
+          },
+          "relationshipTypeDescription" : {
+            "type" : "string"
+          },
+          "relationshipToPrisonerCode" : {
+            "type" : "string"
+          },
+          "relationshipToPrisonerDescription" : {
+            "type" : "string"
+          },
+          "isApprovedVisitor" : {
+            "type" : "boolean"
+          },
+          "isNextOfKin" : {
+            "type" : "boolean"
+          },
+          "isEmergencyContact" : {
+            "type" : "boolean"
+          },
+          "isRelationshipActive" : {
+            "type" : "boolean"
+          },
+          "currentTerm" : {
+            "type" : "boolean"
+          },
+          "isStaff" : {
+            "type" : "boolean"
+          },
+          "restrictionSummary" : {
+            "$ref" : "#/components/schemas/RestrictionsSummary"
+          },
+          "titleCode" : {
+            "type" : "string"
+          },
+          "titleDescription" : {
+            "type" : "string"
+          },
+          "middleNames" : {
+            "type" : "string"
+          },
+          "dateOfBirth" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "deceasedDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "flat" : {
+            "type" : "string"
+          },
+          "property" : {
+            "type" : "string"
+          },
+          "street" : {
+            "type" : "string"
+          },
+          "area" : {
+            "type" : "string"
+          },
+          "cityCode" : {
+            "type" : "string"
+          },
+          "cityDescription" : {
+            "type" : "string"
+          },
+          "countyCode" : {
+            "type" : "string"
+          },
+          "countyDescription" : {
+            "type" : "string"
+          },
+          "postcode" : {
+            "type" : "string"
+          },
+          "countryCode" : {
+            "type" : "string"
+          },
+          "countryDescription" : {
+            "type" : "string"
+          },
+          "noFixedAddress" : {
+            "type" : "boolean"
+          },
+          "primaryAddress" : {
+            "type" : "boolean"
+          },
+          "mailAddress" : {
+            "type" : "boolean"
+          },
+          "phoneType" : {
+            "type" : "string"
+          },
+          "phoneTypeDescription" : {
+            "type" : "string"
+          },
+          "phoneNumber" : {
+            "type" : "string"
+          },
+          "extNumber" : {
+            "type" : "string"
+          },
+          "comments" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "contactId", "currentTerm", "firstName", "isApprovedVisitor", "isEmergencyContact", "isNextOfKin", "isRelationshipActive", "isStaff", "lastName", "prisonerContactId", "prisonerNumber", "relationshipToPrisonerCode", "relationshipToPrisonerDescription", "relationshipTypeCode", "relationshipTypeDescription", "restrictionSummary" ]
+      },
+      "RestrictionTypeDetails" : {
+        "type" : "object",
+        "properties" : {
+          "restrictionType" : {
+            "type" : "string"
+          },
+          "restrictionTypeDescription" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "restrictionType", "restrictionTypeDescription" ]
+      },
+      "RestrictionsSummary" : {
+        "type" : "object",
+        "properties" : {
+          "active" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RestrictionTypeDetails"
+            },
+            "uniqueItems" : true
+          },
+          "totalActive" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalExpired" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "active", "totalActive", "totalExpired" ]
       },
       "AvailableSlot" : {
         "type" : "object",
