@@ -55,6 +55,9 @@ hmpps.sqs:
     eventsentencing:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventcoreperson:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     eventincidents:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

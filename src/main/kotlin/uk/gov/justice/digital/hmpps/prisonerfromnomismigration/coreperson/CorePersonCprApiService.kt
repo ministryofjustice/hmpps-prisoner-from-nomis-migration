@@ -19,7 +19,8 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncCreateSexualOrientation(request: PrisonSexualOrientation): PrisonSexualOrientationResponse = api.prepare(api.createSexualOrientationRequestConfig(request))
+  suspend fun syncCreateSexualOrientation(request: PrisonSexualOrientation): PrisonSexualOrientationResponse = api
+    .prepare(api.createSexualOrientationRequestConfig(request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
