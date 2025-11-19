@@ -16,24 +16,15 @@ import java.util.UUID
 class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val webClient: WebClient) {
   private val api = SysconSyncApi(webClient)
 
-  suspend fun migrateCorePerson(prisonNumber: String, corePerson: Prisoner): String = webClient
-    .put()
-    .uri("/syscon-sync/{prisonNumber}", prisonNumber)
-    .bodyValue(corePerson)
+  suspend fun migrateCorePerson(prisonNumber: String, corePerson: Prisoner): String = api.prepare(api.createRequestConfig(prisonNumber, corePerson))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncCreateSexualOrientation(request: PrisonSexualOrientation): PrisonSexualOrientationResponse = webClient
-    .post()
-    .uri("/syscon-sync/sexual-orientation")
-    .bodyValue(request)
+  suspend fun syncCreateSexualOrientation(request: PrisonSexualOrientation): PrisonSexualOrientationResponse = api.prepare(api.createSexualOrientationRequestConfig(request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncUpdateSexualOrientation(cprSexualOrientationId: UUID, request: PrisonSexualOrientation): String = webClient
-    .post()
-    .uri("/syscon-sync/sexual-orientation/{cprSexualOrientationId}", cprSexualOrientationId)
-    .bodyValue(request)
+  suspend fun syncUpdateSexualOrientation(cprSexualOrientationId: UUID, request: PrisonSexualOrientation): String = api.prepare(api.updateSexualOrientationRequestConfig(cprSexualOrientationId, request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
