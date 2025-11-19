@@ -147,6 +147,33 @@ class CorePersonSynchronisationService(
     telemetryClient.trackEvent("coreperson-email-synchronisation-deleted-notimplemented", telemetry)
   }
 
+  suspend fun offenderBeliefAdded(event: OffenderBeliefEvent) {
+    val telemetry = telemetryOf(
+      "nomisPrisonNumber" to event.offenderIdDisplay,
+      "rootOffenderId" to event.rootOffenderId,
+      "nomisOffenderBeliefId" to event.offenderBeliefId,
+    )
+    telemetryClient.trackEvent("coreperson-belief-synchronisation-added-notimplemented", telemetry)
+  }
+
+  suspend fun offenderBeliefUpdated(event: OffenderBeliefEvent) {
+    val telemetry = telemetryOf(
+      "nomisPrisonNumber" to event.offenderIdDisplay,
+      "rootOffenderId" to event.rootOffenderId,
+      "nomisOffenderBeliefId" to event.offenderBeliefId,
+    )
+    telemetryClient.trackEvent("coreperson-belief-synchronisation-updated-notimplemented", telemetry)
+  }
+
+  suspend fun offenderBeliefDeleted(event: OffenderBeliefEvent) {
+    val telemetry = telemetryOf(
+      "nomisPrisonNumber" to event.offenderIdDisplay,
+      "rootOffenderId" to event.rootOffenderId,
+      "nomisOffenderBeliefId" to event.offenderBeliefId,
+    )
+    telemetryClient.trackEvent("coreperson-belief-synchronisation-deleted-notimplemented", telemetry)
+  }
+
   suspend fun offenderPhoneAdded(event: OffenderPhoneEvent) {
     val telemetry = telemetryOf(
       "nomisPrisonNumber" to event.offenderIdDisplay,

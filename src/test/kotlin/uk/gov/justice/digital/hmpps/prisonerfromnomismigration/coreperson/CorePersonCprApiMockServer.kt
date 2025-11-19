@@ -4,15 +4,21 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
+import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
+import java.util.UUID
 
 class CorePersonCprApiExtension :
   BeforeAllCallback,
@@ -113,6 +119,31 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
 //        ),
 //    )
 //  }
+
+  fun stubSyncCreateOffenderBelief(syncResponse: PrisonReligionResponse = prisonReligionResponse()) {
+    stubFor(
+      post("/syscon-sync/religion")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(syncResponse)),
+        ),
+    )
+  }
+  fun stubSyncCreateOffenderBelief(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    stubFor(
+      post("/syscon-sync/religion")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun prisonReligionResponse() = PrisonReligionResponse(UUID.randomUUID())
 
   fun stubHealthPing(status: Int) {
     stubFor(
