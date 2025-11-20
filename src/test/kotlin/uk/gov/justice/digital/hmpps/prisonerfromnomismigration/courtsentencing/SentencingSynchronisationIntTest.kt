@@ -667,6 +667,72 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      @DisplayName("When error from dps creating sentence")
+      inner class FailureFromDps {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingNomisApiMockServer.stubGetSentence(
+            bookingId = NOMIS_BOOKING_ID,
+            sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            caseId = NOMIS_COURT_CASE_ID,
+            courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
+            recallCustodyDate = RecallCustodyDate(
+              returnToCustodyDate = LocalDate.parse("2023-01-01"),
+              recallLength = 14,
+            ),
+          )
+
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+          )
+
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+          mockTwoChargeMappingGets()
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+          )
+          dpsCourtSentencingServer.stubPostSentenceForCreateError(sentenceId = DPS_SENTENCE_ID)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-INSERTED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for error`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-synchronisation-created-error"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `the event is placed on dead letter queue`() {
+          await untilAsserted {
+            assertThat(
+              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+                courtSentencingQueueOffenderEventsDlqUrl,
+              ).get(),
+            ).isEqualTo(1)
+          }
+        }
+      }
+
+      @Nested
       @DisplayName("Sentence includes a charge that is not mapped. Possible causes: unmigrated data, events (extremely) out of order")
       inner class ReferencesMissingChargeMapping {
         @BeforeEach
@@ -1340,6 +1406,57 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      @DisplayName("When error from dps updating sentence")
+      inner class FailureFromDps {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+            nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+            nomisBookingId = NOMIS_BOOKING_ID,
+            dpsSentenceId = DPS_SENTENCE_ID,
+          )
+          mockTwoChargeMappingGets()
+
+          dpsCourtSentencingServer.stubPutSentenceForUpdate(sentenceId = DPS_SENTENCE_ID, status = INTERNAL_SERVER_ERROR)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-UPDATED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for error`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-synchronisation-updated-error"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["dpsSentenceId"]).isEqualTo(DPS_SENTENCE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `the event is placed on dead letter queue`() {
+          await untilAsserted {
+            assertThat(
+              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+                courtSentencingQueueOffenderEventsDlqUrl,
+              ).get(),
+            ).isEqualTo(1)
+          }
+        }
+      }
+
+      @Nested
       @DisplayName("Sentences without a case or level of 'AGG' or category of 'LICENCE' are ignored")
       inner class SentenceNotInScope {
         @BeforeEach
@@ -1663,7 +1780,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will track a telemetry event for success`() {
+        fun `will track a telemetry event for the error`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
               eq("sentence-charge-synchronisation-deleted-error"),

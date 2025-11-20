@@ -350,6 +350,21 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubPostSentenceForCreateError(
+    sentenceId: String = UUID.randomUUID().toString(),
+    status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+  ) {
+    stubFor(
+      post("/legacy/sentence")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody("""{"status":"${status.value()}",userMessage = "NOMIS error"}"""),
+        ),
+    )
+  }
+
   fun stubDeleteSentence(
     sentenceId: String = UUID.randomUUID().toString(),
   ) {

@@ -32,6 +32,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.Telemetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackIfFailure
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceAllMappingDto
@@ -978,7 +979,7 @@ class CourtSentencingSynchronisationService(
 
   suspend fun nomisSentenceInserted(event: OffenderSentenceEvent) {
     val telemetry =
-      mapOf(
+      mutableMapOf(
         "nomisSentenceSequence" to event.sentenceSeq.toString(),
         "nomisSentenceCategory" to event.sentenceCategory,
         "nomisSentenceLevel" to event.sentenceLevel,
@@ -1014,19 +1015,21 @@ class CourtSentencingSynchronisationService(
           val eventId = nomisSentence.courtOrder!!.eventId
           mappingApiService.getCourtAppearanceOrNullByNomisId(eventId)?.let { courtAppearanceMapping ->
             // retrieve offence mappings (created as part of the court appearance flow)
-            dpsApiService.createSentence(
-              nomisSentence.toDpsSentence(
-                sentenceChargeIds = getDpsChargeMappings(nomisSentence),
-                dpsAppearanceUuid = courtAppearanceMapping.dpsCourtAppearanceId,
-                dpsConsecUuid = nomisSentence.consecSequence?.let {
-                  getConsecutiveSequenceMappingOrThrow(
-                    bookingId = event.bookingId,
-                    sentenceSequence = event.sentenceSeq,
-                    consecSequence = it,
-                  )
-                },
-              ),
-            ).run {
+            trackIfFailure(name = "sentence-synchronisation-created", telemetry = telemetry) {
+              dpsApiService.createSentence(
+                nomisSentence.toDpsSentence(
+                  sentenceChargeIds = getDpsChargeMappings(nomisSentence),
+                  dpsAppearanceUuid = courtAppearanceMapping.dpsCourtAppearanceId,
+                  dpsConsecUuid = nomisSentence.consecSequence?.let {
+                    getConsecutiveSequenceMappingOrThrow(
+                      bookingId = event.bookingId,
+                      sentenceSequence = event.sentenceSeq,
+                      consecSequence = it,
+                    )
+                  },
+                ),
+              )
+            }.run {
               log.info("Created sentence with dps response $this")
               tryToCreateSentenceMapping(
                 nomisSentence = nomisSentence,
@@ -1279,24 +1282,22 @@ class CourtSentencingSynchronisationService(
 
       val eventId = nomisSentence.courtOrder!!.eventId
       mappingApiService.getCourtAppearanceOrNullByNomisId(eventId)?.let { courtAppearanceMapping ->
-        dpsApiService.updateSentence(
-          sentenceId = mapping.dpsSentenceId,
-          nomisSentence.toDpsSentence(
-            dpsAppearanceUuid = courtAppearanceMapping.dpsCourtAppearanceId,
-            dpsConsecUuid = nomisSentence.consecSequence?.let {
-              getConsecutiveSequenceMappingOrThrow(
-                sentenceSequence = nomisSentenceSequence,
-                bookingId = nomisBookingId,
-                consecSequence = it,
-              )
-            },
-            sentenceChargeIds = getDpsChargeMappings(nomisSentence),
-          ),
-        )
-        telemetryClient.trackEvent(
-          "sentence-synchronisation-updated-success",
-          telemetry + ("dpsSentenceId" to mapping.dpsSentenceId),
-        )
+        track("sentence-synchronisation-updated", telemetry = (telemetry + ("dpsSentenceId" to mapping.dpsSentenceId)).toMutableMap()) {
+          dpsApiService.updateSentence(
+            sentenceId = mapping.dpsSentenceId,
+            nomisSentence.toDpsSentence(
+              dpsAppearanceUuid = courtAppearanceMapping.dpsCourtAppearanceId,
+              dpsConsecUuid = nomisSentence.consecSequence?.let {
+                getConsecutiveSequenceMappingOrThrow(
+                  sentenceSequence = nomisSentenceSequence,
+                  bookingId = nomisBookingId,
+                  consecSequence = it,
+                )
+              },
+              sentenceChargeIds = getDpsChargeMappings(nomisSentence),
+            ),
+          )
+        }
       } ?: let {
         telemetryClient.trackEvent(
           "sentence-synchronisation-updated-failed",
