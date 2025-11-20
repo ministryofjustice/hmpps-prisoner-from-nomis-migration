@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-11-14.746.dadc402"
+    "version" : "2025-11-19.768.331996d"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -4057,6 +4057,88 @@
           },
           "403" : {
             "description" : "Forbidden, requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/movements/{offenderNo}/temporary-absences/scheduled-temporary-absence" : {
+      "put" : {
+        "tags" : [ "movements-resource" ],
+        "summary" : "Inserts or updates a scheduled temporary absence for an offender, and potentially its return",
+        "description" : "Creates or updates a scheduled temporary absence on the prisoner's latest booking, and potentially its return. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "operationId" : "upsertScheduledTemporaryAbsence",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "description" : "Offender no (aka prisoner number)",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Offender no (aka prisoner number)",
+            "example" : "A1234AK"
+          },
+          "example" : "A1234AK"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpsertScheduledTemporaryAbsenceRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Scheduled temporary absence created or updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UpsertScheduledTemporaryAbsenceResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "One or more fields in the request contains invalid data",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Prisoner does not exist",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -11106,170 +11188,6 @@
         }
       }
     },
-    "/movements/{offenderNo}/temporary-absences/scheduled-temporary-absence" : {
-      "post" : {
-        "tags" : [ "movements-resource" ],
-        "summary" : "Inserts a scheduled temporary absence for an offender",
-        "description" : "Creates a scheduled temporary absence on the prisoner's latest booking. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
-        "operationId" : "createScheduledTemporaryAbsence",
-        "parameters" : [ {
-          "name" : "offenderNo",
-          "in" : "path",
-          "description" : "Offender no (aka prisoner number)",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Offender no (aka prisoner number)",
-            "example" : "A1234AK"
-          },
-          "example" : "A1234AK"
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/CreateScheduledTemporaryAbsenceRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "201" : {
-            "description" : "Scheduled temporary absence created",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/CreateScheduledTemporaryAbsenceResponse"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "One or more fields in the request contains invalid data",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Prisoner does not exist",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/movements/{offenderNo}/temporary-absences/scheduled-temporary-absence-return" : {
-      "post" : {
-        "tags" : [ "movements-resource" ],
-        "summary" : "Inserts a scheduled temporary absence return for an offender",
-        "description" : "Creates a scheduled temporary absence return on the prisoner's latest booking. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
-        "operationId" : "createScheduledTemporaryAbsenceReturn",
-        "parameters" : [ {
-          "name" : "offenderNo",
-          "in" : "path",
-          "description" : "Offender no (aka prisoner number)",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Offender no (aka prisoner number)",
-            "example" : "A1234AK"
-          },
-          "example" : "A1234AK"
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/CreateScheduledTemporaryAbsenceReturnRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "201" : {
-            "description" : "Scheduled temporary absence created",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/CreateScheduledTemporaryAbsenceReturnResponse"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "One or more fields in the request contains invalid data",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Prisoner does not exist",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/movements/{offenderNo}/temporary-absences/outside-movement" : {
       "post" : {
         "tags" : [ "movements-resource" ],
@@ -13006,7 +12924,7 @@
           "required" : false,
           "schema" : {
             "type" : "array",
-            "default" : [ "whenCreated,ASC" ],
+            "default" : [ "createDatetime,ASC" ],
             "items" : {
               "type" : "string"
             }
@@ -13122,7 +13040,7 @@
             }
           },
           "401" : {
-            "description" : "Visit time slot not found",
+            "description" : "Unauthorized to access this endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -13133,6 +13051,16 @@
           },
           "403" : {
             "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Visit time slot not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -16139,6 +16067,81 @@
         }
       }
     },
+    "/prisoners/booking-id/{bookingId}/sentences/{sequence}" : {
+      "get" : {
+        "tags" : [ "court-sentencing-resource" ],
+        "summary" : "get sentence given booking id and sentence sequence",
+        "description" : "Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW. Retrieves an offender sentence by id",
+        "operationId" : "getOffenderSentenceUsingBookingId",
+        "parameters" : [ {
+          "name" : "bookingId",
+          "in" : "path",
+          "description" : "Booking id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Booking id",
+            "example" : 4565456
+          },
+          "example" : 4565456
+        }, {
+          "name" : "sequence",
+          "in" : "path",
+          "description" : "Sentence sequence",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Sentence sequence",
+            "example" : 1
+          },
+          "example" : 1
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "the sentence details",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SentenceResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint when role NOMIS_PRISONER_API__SYNCHRONISATION__RW not present",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Offender booking not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/booking-id/{bookingId}/sentences/recall" : {
       "get" : {
         "tags" : [ "court-sentencing-resource" ],
@@ -16553,6 +16556,148 @@
           },
           "403" : {
             "description" : "Forbidden to access this endpoint when role NOMIS_PRISONER_API__SYNCHRONISATION__RW not present",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/official-visits/{visitId}" : {
+      "get" : {
+        "tags" : [ "official-visits-resource" ],
+        "summary" : "Get an official visit",
+        "description" : "Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "operationId" : "getOfficialVisit",
+        "parameters" : [ {
+          "name" : "visitId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The official visit",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OfficialVisitResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Visit is not an official visit",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Visit not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/official-visits/ids" : {
+      "get" : {
+        "tags" : [ "official-visits-resource" ],
+        "summary" : "Get all official visit Ids",
+        "description" : "Typically for a migration. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "operationId" : "getOfficialVisitIds",
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "description" : "Zero-based page index (0..N)",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "description" : "The size of the page to be returned",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "default" : 20,
+            "minimum" : 1
+          }
+        }, {
+          "name" : "sort",
+          "in" : "query",
+          "description" : "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "default" : [ "id,ASC" ],
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Page of visit Ids",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PagedModelVisitIdResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -22497,6 +22642,112 @@
         },
         "required" : [ "effectiveDate", "reason", "recipReason", "type" ]
       },
+      "UpsertScheduledTemporaryAbsenceRequest" : {
+        "type" : "object",
+        "description" : "Upsert scheduled temporary absence request",
+        "properties" : {
+          "eventId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Event ID"
+          },
+          "movementApplicationId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Movement application ID"
+          },
+          "eventDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Event date"
+          },
+          "startTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Start time"
+          },
+          "eventSubType" : {
+            "type" : "string",
+            "description" : "Event sub type"
+          },
+          "eventStatus" : {
+            "type" : "string",
+            "description" : "Event status"
+          },
+          "returnEventStatus" : {
+            "type" : "string",
+            "description" : "Event status of the return schedule"
+          },
+          "comment" : {
+            "type" : "string",
+            "description" : "Comment"
+          },
+          "escort" : {
+            "type" : "string",
+            "description" : "Escort"
+          },
+          "fromPrison" : {
+            "type" : "string",
+            "description" : "From prison"
+          },
+          "toAgency" : {
+            "type" : "string",
+            "description" : "To agency"
+          },
+          "transportType" : {
+            "type" : "string",
+            "description" : "Transport type"
+          },
+          "returnDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Return date"
+          },
+          "returnTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Return time"
+          },
+          "toAddressId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "To address ID"
+          },
+          "applicationDate" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Application date"
+          },
+          "applicationTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Application time"
+          }
+        },
+        "required" : [ "applicationDate", "escort", "eventDate", "eventStatus", "eventSubType", "fromPrison", "movementApplicationId", "returnDate", "returnTime", "startTime" ]
+      },
+      "UpsertScheduledTemporaryAbsenceResponse" : {
+        "type" : "object",
+        "description" : "Create scheduled temporary absence response",
+        "properties" : {
+          "bookingId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Booking ID"
+          },
+          "movementApplicationId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Movement application ID"
+          },
+          "eventId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Event ID"
+          }
+        },
+        "required" : [ "bookingId", "eventId", "movementApplicationId" ]
+      },
       "UpsertTemporaryAbsenceApplicationRequest" : {
         "type" : "object",
         "description" : "Upsert temporary absence application request",
@@ -27560,176 +27811,6 @@
         },
         "required" : [ "bookingId", "movementSequence" ]
       },
-      "CreateScheduledTemporaryAbsenceRequest" : {
-        "type" : "object",
-        "description" : "Create scheduled temporary absence request",
-        "properties" : {
-          "movementApplicationId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Movement application ID"
-          },
-          "eventDate" : {
-            "type" : "string",
-            "format" : "date",
-            "description" : "Event date"
-          },
-          "startTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Start time"
-          },
-          "eventSubType" : {
-            "type" : "string",
-            "description" : "Event sub type"
-          },
-          "eventStatus" : {
-            "type" : "string",
-            "description" : "Event status"
-          },
-          "comment" : {
-            "type" : "string",
-            "description" : "Comment"
-          },
-          "escort" : {
-            "type" : "string",
-            "description" : "Escort"
-          },
-          "fromPrison" : {
-            "type" : "string",
-            "description" : "From prison"
-          },
-          "toAgency" : {
-            "type" : "string",
-            "description" : "To agency"
-          },
-          "transportType" : {
-            "type" : "string",
-            "description" : "Transport type"
-          },
-          "returnDate" : {
-            "type" : "string",
-            "format" : "date",
-            "description" : "Return date"
-          },
-          "returnTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Return time"
-          },
-          "toAddressId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "To address ID"
-          },
-          "applicationDate" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Application date"
-          },
-          "applicationTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Application time"
-          }
-        },
-        "required" : [ "applicationDate", "escort", "eventDate", "eventStatus", "eventSubType", "fromPrison", "movementApplicationId", "returnDate", "returnTime", "startTime" ]
-      },
-      "CreateScheduledTemporaryAbsenceResponse" : {
-        "type" : "object",
-        "description" : "Create scheduled temporary absence response",
-        "properties" : {
-          "bookingId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Booking ID"
-          },
-          "movementApplicationId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Movement application ID"
-          },
-          "eventId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Event ID"
-          }
-        },
-        "required" : [ "bookingId", "eventId", "movementApplicationId" ]
-      },
-      "CreateScheduledTemporaryAbsenceReturnRequest" : {
-        "type" : "object",
-        "description" : "Create scheduled temporary absence return request",
-        "properties" : {
-          "movementApplicationId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Movement application ID"
-          },
-          "scheduledTemporaryAbsenceEventId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Scheduled temporary absence ID"
-          },
-          "eventDate" : {
-            "type" : "string",
-            "format" : "date",
-            "description" : "Event date"
-          },
-          "startTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Start time"
-          },
-          "eventSubType" : {
-            "type" : "string",
-            "description" : "Event sub type"
-          },
-          "eventStatus" : {
-            "type" : "string",
-            "description" : "Event status"
-          },
-          "comment" : {
-            "type" : "string",
-            "description" : "Comment"
-          },
-          "escort" : {
-            "type" : "string",
-            "description" : "Escort"
-          },
-          "fromAgency" : {
-            "type" : "string",
-            "description" : "From agency"
-          },
-          "toPrison" : {
-            "type" : "string",
-            "description" : "To prison"
-          }
-        },
-        "required" : [ "escort", "eventDate", "eventStatus", "eventSubType", "movementApplicationId", "scheduledTemporaryAbsenceEventId", "startTime" ]
-      },
-      "CreateScheduledTemporaryAbsenceReturnResponse" : {
-        "type" : "object",
-        "description" : "Create scheduled temporary absence response",
-        "properties" : {
-          "bookingId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Booking ID"
-          },
-          "movementApplicationId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Movement application ID"
-          },
-          "eventId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Event ID"
-          }
-        },
-        "required" : [ "bookingId", "eventId", "movementApplicationId" ]
-      },
       "CreateTemporaryAbsenceOutsideMovementRequest" : {
         "type" : "object",
         "description" : "Create temporary absence outside movement request",
@@ -31719,6 +31800,181 @@
           }
         },
         "required" : [ "lastPersonId", "personIds" ]
+      },
+      "ContactRelationship" : {
+        "type" : "object",
+        "properties" : {
+          "relationshipType" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The relationship type"
+          },
+          "audit" : {
+            "$ref" : "#/components/schemas/NomisAudit",
+            "description" : "Audit information"
+          }
+        },
+        "required" : [ "audit", "relationshipType" ]
+      },
+      "OfficialVisitResponse" : {
+        "type" : "object",
+        "description" : "Official Visit information",
+        "properties" : {
+          "visitId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The visit id"
+          },
+          "visitSlotId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The visit slot id"
+          },
+          "prisonId" : {
+            "type" : "string",
+            "description" : "Prison where the visit is to occur"
+          },
+          "offenderNo" : {
+            "type" : "string",
+            "description" : "The offender number, aka nomsId, prisonerId"
+          },
+          "bookingId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The offender booking id"
+          },
+          "currentTerm" : {
+            "type" : "boolean",
+            "description" : "true if the related booking is current"
+          },
+          "startDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Visit start date and time"
+          },
+          "endDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Visit end date and time"
+          },
+          "internalLocationId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The room where the visit will take place"
+          },
+          "visitStatus" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The status of the visit"
+          },
+          "visitOutcome" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The outcome of the visit"
+          },
+          "outcomeReason" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The outcome reason of the visit"
+          },
+          "prisonerSearchType" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The type of search to apply to prisoner"
+          },
+          "visitorConcernText" : {
+            "type" : "string",
+            "description" : "Visitor concerns text"
+          },
+          "commentText" : {
+            "type" : "string",
+            "description" : "Visit comments"
+          },
+          "overrideBanStaffUsername" : {
+            "type" : "string",
+            "description" : "A username associated with the staff user who override ban"
+          },
+          "visitors" : {
+            "type" : "array",
+            "description" : "Visitors",
+            "items" : {
+              "$ref" : "#/components/schemas/OfficialVisitor"
+            }
+          },
+          "audit" : {
+            "$ref" : "#/components/schemas/NomisAudit",
+            "description" : "Audit information"
+          }
+        },
+        "required" : [ "audit", "bookingId", "currentTerm", "endDateTime", "internalLocationId", "offenderNo", "prisonId", "startDateTime", "visitId", "visitSlotId", "visitStatus", "visitors" ]
+      },
+      "OfficialVisitor" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "ID of the visitor"
+          },
+          "personId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "visitor NOMIS person Id"
+          },
+          "firstName" : {
+            "type" : "string",
+            "description" : "First name of the person"
+          },
+          "lastName" : {
+            "type" : "string",
+            "description" : "Surname name of the person"
+          },
+          "leadVisitor" : {
+            "type" : "boolean",
+            "description" : "Indicates lead visitor for the visit"
+          },
+          "assistedVisit" : {
+            "type" : "boolean",
+            "description" : "Indicates visitor requires assistance"
+          },
+          "visitOutcome" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The outcome of the visit"
+          },
+          "outcomeReason" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The outcome reason of the visit"
+          },
+          "eventStatus" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The status of visitor"
+          },
+          "commentText" : {
+            "type" : "string",
+            "description" : "Visitor comments"
+          },
+          "relationships" : {
+            "type" : "array",
+            "description" : "List of visitor contact relationships",
+            "items" : {
+              "$ref" : "#/components/schemas/ContactRelationship"
+            }
+          },
+          "audit" : {
+            "$ref" : "#/components/schemas/NomisAudit",
+            "description" : "Audit information"
+          }
+        },
+        "required" : [ "assistedVisit", "audit", "firstName", "id", "lastName", "leadVisitor", "personId", "relationships" ]
+      },
+      "PagedModelVisitIdResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VisitIdResponse"
+            }
+          },
+          "page" : {
+            "$ref" : "#/components/schemas/PageMetadata"
+          }
+        }
       },
       "NonAssociationResponse" : {
         "type" : "object",
