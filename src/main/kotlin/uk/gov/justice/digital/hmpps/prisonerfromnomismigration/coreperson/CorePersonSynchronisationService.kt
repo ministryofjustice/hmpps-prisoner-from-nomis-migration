@@ -21,9 +21,8 @@ class CorePersonSynchronisationService(
 ) : TelemetryEnabled {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
+    val eventProfileTypes = listOf("NAT", "NATIO", "SEXO", "DISABILITY", "IMM")
   }
-
-  val eventProfileTypes = listOf("NAT", "NATIO", "SEXO", "DISABILITY", "IMM")
 
   suspend fun offenderAdded(event: OffenderEvent) {
     val telemetry = telemetryOf(
@@ -256,13 +255,13 @@ class CorePersonSynchronisationService(
   }
 
   suspend fun offenderProfileDetailsChanged(event: OffenderProfileDetailsEvent) {
-    if (eventProfileTypes.contains(event.profileType)) {
-      val (offenderIdDisplay, bookingId, profileType) = event
-      val telemetry = telemetryOf(
-        "offenderNo" to offenderIdDisplay,
-        "bookingId" to bookingId.toString(),
-        "profileType" to profileType,
-      )
+    val (offenderIdDisplay, bookingId, profileType) = event
+    val telemetry = telemetryOf(
+      "offenderNo" to offenderIdDisplay,
+      "bookingId" to bookingId.toString(),
+      "profileType" to profileType,
+    )
+    if (eventProfileTypes.contains(profileType)) {
       track("coreperson-profiledetails-synchronisation", telemetry) {
         val nomisResponse = nomisApiService.getProfileDetails(event.offenderIdDisplay, listOf(event.profileType))
         val latestBooking = findBooking(null, nomisResponse.bookings)
@@ -277,11 +276,23 @@ class CorePersonSynchronisationService(
               .find { profile -> profile.type == profileType }
               ?.let { booking to it }
           }
-          .sortedByDescending { it.second.modifiedDateTime ?: it.second.createDateTime }
+          .sortedWith(
+            compareByDescending<Pair<BookingProfileDetailsResponse, ProfileDetailsResponse>> {
+              it.second.modifiedDateTime ?: it.second.createDateTime
+            }
+              .thenByDescending { it.first.bookingId },
+          )
+        // NOTE the create/modify dates are COPIED from one booking to another, so do not refer to the row insert or update time
 
         // The profile that triggered the event is on the latest booking;
         // Is the first profileType in the list, i.e. the most recently updated, the same one?
         if (!typeHistory[0].first.latestBooking) {
+          typeHistory.mapIndexed { index, it ->
+            telemetry["typeHistory-$index-bookingId"] = it.first.bookingId
+            telemetry["typeHistory-$index-latestBooking"] = it.first.latestBooking
+            telemetry["typeHistory-$index-startDateTime"] = it.first.startDateTime
+            telemetry["typeHistory-$index-profile"] = it.second
+          }
           throw BookingException("Most recent update is not for the current booking")
         }
 
@@ -310,6 +321,8 @@ class CorePersonSynchronisationService(
           }
         }
       }
+    } else {
+      telemetryClient.trackEvent("coreperson-profiledetails-synchronisation-ignored-type", telemetry)
     }
   }
 }
