@@ -42,6 +42,14 @@ inline fun TelemetryEnabled.track(name: String, telemetry: MutableMap<String, An
   }
 }
 
+inline fun <T> TelemetryEnabled.trackIfFailure(name: String, telemetry: MutableMap<String, String>, transform: () -> T): T = try {
+  transform()
+} catch (e: Exception) {
+  telemetry["error"] = e.message.toString()
+  telemetryClient.trackEvent("$name-error", telemetry)
+  throw e
+}
+
 enum class WhichMoveBookingPrisoner {
   FROM,
   TO,
