@@ -184,6 +184,61 @@ class CorePersonSynchronisationIntTest(
           profileType = "SEXO",
         )
       }
+
+      @Test
+      fun `event is for a duplicate profile value with same timestamp`() = runTest {
+        nomisApi.stubGetProfileDetails(
+          offenderNo = "A1234AA",
+          bookingId = null,
+          profileTypes = listOf("SEXO"),
+          response = nomisResponse(
+            offenderNo = "A1234AA",
+            bookings = listOf(
+              booking(
+                bookingId = 12345,
+                latestBooking = true,
+                profileDetails = listOf(
+                  profileDetails(type = "SEXO", code = "M", created = LocalDateTime.parse("2024-09-04T12:34:56")),
+                ),
+              ),
+              booking(
+                bookingId = 11111,
+                latestBooking = false,
+                profileDetails = listOf(
+                  profileDetails(type = "SEXO", code = "OTHER", created = LocalDateTime.parse("2024-01-01T12:34:56")),
+                ),
+              ),
+              booking(
+                bookingId = 11223,
+                latestBooking = false,
+                profileDetails = listOf(
+                  profileDetails(type = "SEXO", code = "M", created = LocalDateTime.parse("2024-01-01T12:34:56")),
+                ),
+              ),
+            ),
+          ),
+        )
+        cprApi.stubSyncCreateSexualOrientation()
+
+        sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SEXO")
+          .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-ignored-duplicate") }
+
+        verifyNomis(
+          offenderNo = "A1234AA",
+          bookingId = null,
+          profileType = "SEXO",
+        )
+        cprApi.verify(
+          0,
+          postRequestedFor(urlPathEqualTo("/syscon-sync/sexual-orientation")),
+        )
+        verifyTelemetry(
+          "coreperson-profiledetails-synchronisation-ignored-duplicate",
+          offenderNo = "A1234AA",
+          bookingId = 12345,
+          profileType = "SEXO",
+        )
+      }
     }
 
     @Nested
