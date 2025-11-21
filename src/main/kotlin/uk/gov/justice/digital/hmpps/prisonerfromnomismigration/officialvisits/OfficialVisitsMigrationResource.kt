@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 
 @RestController
-@RequestMapping("/migrate/officialivisits", produces = [MediaType.APPLICATION_JSON_VALUE])
+@RequestMapping("/migrate/official-visits", produces = [MediaType.APPLICATION_JSON_VALUE])
 @Tag(name = "Official Visits Migration Resource")
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
 class OfficialVisitsMigrationResource(
