@@ -1,33 +1,190 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitorMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OfficialVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.CodedValue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import java.time.format.DateTimeFormatter
+import java.util.*
 
 @Service
 class OfficialVisitsMigrationService(
-  mappingService: OfficialVisitsMappingService,
+  private val officialVisitsMappingService: OfficialVisitsMappingService,
+  private val nomisApiService: OfficialVisitsNomisApiService,
+  private val dpsApiService: OfficialVisitsDpsApiService,
+  @Value($$"${officialvisits.page.size:1000}") pageSize: Long,
+  @Value($$"${officialvisits.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value($$"${officialvisits.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
+  @Value($$"${officialvisits.complete-check.count}") completeCheckCount: Int,
+  @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
 ) : MigrationService<Any, VisitIdResponse, OfficialVisitMigrationMappingDto>(
-  mappingService,
+  officialVisitsMappingService,
   MigrationType.OFFICIAL_VISITS,
-  pageSize = 1,
-  completeCheckDelaySeconds = 1,
-  completeCheckCount = 1,
-  completeCheckRetrySeconds = 1,
-  completeCheckScheduledRetrySeconds = 1,
+  pageSize = pageSize,
+  completeCheckDelaySeconds = completeCheckDelaySeconds,
+  completeCheckCount = completeCheckRetrySeconds,
+  completeCheckRetrySeconds = completeCheckCount,
+  completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
 ) {
+
+  private companion object {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
+
   override suspend fun getPageOfIds(
     migrationFilter: Any,
     pageSize: Long,
     pageNumber: Long,
-  ): List<VisitIdResponse> = TODO("Not yet implemented")
+  ): List<VisitIdResponse> = nomisApiService.getOfficialVisitIds(
+    pageNumber = pageNumber,
+    pageSize = pageSize,
+  ).content!!
 
-  override suspend fun getTotalNumberOfIds(migrationFilter: Any): Long = TODO("Not yet implemented")
+  override suspend fun getTotalNumberOfIds(migrationFilter: Any): Long = nomisApiService.getOfficialVisitIds(
+    pageNumber = 0,
+    pageSize = 1,
+  ).page!!.totalElements!!
 
   override suspend fun migrateNomisEntity(context: MigrationContext<VisitIdResponse>) {
-    TODO("Not yet implemented")
+    val nomisVisitId = context.body.visitId
+    val alreadyMigratedMapping = officialVisitsMappingService.getByNomisIdsOrNull(
+      nomisVisitId = nomisVisitId,
+    )
+
+    alreadyMigratedMapping?.run {
+      log.info("Will not migrate the nomis official visit id=$nomisVisitId since it was already mapped to DPS visit $dpsId during migration $label")
+    } ?: run {
+      val nomisOfficialVisit = nomisApiService.getOfficialVisit(visitId = nomisVisitId)
+      val dpsOfficialVisit = dpsApiService.migrateVisit(nomisOfficialVisit.toMigrateVisitRequest())
+
+      val mapping = OfficialVisitMigrationMappingDto(
+        dpsId = dpsOfficialVisit.visit.dpsId.toString(),
+        nomisId = nomisVisitId,
+        visitors = dpsOfficialVisit.visitors.map {
+          VisitorMigrationMappingDto(
+            dpsId = it.dpsId.toString(),
+            nomisId = it.nomisId,
+          )
+        },
+        mappingType = OfficialVisitMigrationMappingDto.MappingType.MIGRATED,
+        label = context.migrationId,
+      )
+      createMappingOrOnFailureDo(context, mapping) {
+        queueService.sendMessage(
+          MigrationMessageType.RETRY_MIGRATION_MAPPING,
+          MigrationContext(
+            context = context,
+            body = mapping,
+          ),
+        )
+      }
+    }
   }
+
+  suspend fun createMappingOrOnFailureDo(
+    context: MigrationContext<*>,
+    mapping: OfficialVisitMigrationMappingDto,
+    failureHandler: suspend (error: Throwable) -> Unit,
+  ) {
+    runCatching {
+      mappingService.createMapping(mapping, object : ParameterizedTypeReference<DuplicateErrorResponse<OfficialVisitMigrationMappingDto>>() {})
+    }.onFailure {
+      failureHandler(it)
+    }.onSuccess {
+      if (it.isError) {
+        val duplicateErrorDetails = it.errorResponse!!.moreInfo
+        telemetryClient.trackEvent(
+          "nomis-migration-officialvisits-duplicate",
+          mapOf(
+            "duplicateDpsId" to duplicateErrorDetails.duplicate.dpsId,
+            "duplicateNomisId" to duplicateErrorDetails.duplicate.nomisId,
+            "existingDpsId" to duplicateErrorDetails.existing.dpsId,
+            "existingNomisId" to duplicateErrorDetails.existing.nomisId,
+            "migrationId" to context.migrationId,
+          ),
+        )
+      } else {
+        telemetryClient.trackEvent(
+          "officialvisits-migration-entity-migrated",
+          mapOf(
+            "nomisId" to mapping.nomisId,
+            "dpsId" to mapping.dpsId,
+            "migrationId" to context.migrationId,
+          ),
+        )
+      }
+    }
+  }
+  override suspend fun retryCreateMapping(context: MigrationContext<OfficialVisitMigrationMappingDto>) = createMappingOrOnFailureDo(context, context.body) {
+    throw it
+  }
+
+  private suspend fun OfficialVisitResponse.toMigrateVisitRequest(): MigrateVisitRequest = MigrateVisitRequest(
+    offenderVisitId = visitId,
+    // TODO - lookup DPS slot id
+    prisonVisitSlotId = visitSlotId,
+    prisonCode = prisonId,
+    offenderBookId = bookingId,
+    prisonerNumber = offenderNo,
+    currentTerm = currentTerm,
+    visitDate = startDateTime.toLocalDate(),
+    startTime = startDateTime.toLocalTime().format(DateTimeFormatter.ISO_LOCAL_TIME),
+    endTime = endDateTime.toLocalTime().format(DateTimeFormatter.ISO_LOCAL_TIME),
+    dpsLocationId = internalLocationId.lookUpDpsLocationId(),
+    visitStatusCode = visitStatus.toCodeValue(),
+    // TODO - remove from DPS API
+    visitTypeCode = CodedValue("OFFI", "Official Visit"),
+    createDateTime = audit.createDatetime,
+    createUsername = audit.createUsername,
+    visitors = visitors.map { visitor ->
+      MigrateVisitor(
+        offenderVisitVisitorId = visitor.id,
+        personId = visitor.personId,
+        createDateTime = visitor.audit.createDatetime,
+        createUsername = visitor.audit.createUsername,
+        firstName = visitor.firstName,
+        lastName = visitor.lastName,
+        // TODO - missing from NOMIS API
+        dateOfBirth = null,
+        relationshipToPrisoner = visitor.relationships.firstOrNull()?.relationshipType?.toCodeValue(),
+        groupLeaderFlag = visitor.leadVisitor,
+        assistedVisitFlag = visitor.assistedVisit,
+        commentText = visitor.commentText,
+        eventOutcomeCode = visitor.visitOutcome?.toCodeValue(),
+        outcomeReasonCode = visitor.outcomeReason?.toCodeValue(),
+        modifyDateTime = visitor.audit.modifyDatetime,
+        modifyUsername = visitor.audit.modifyUserId,
+      )
+    },
+    commentText = commentText,
+    searchTypeCode = prisonerSearchType?.toCodeValue(),
+    eventOutcomeCode = visitOutcome?.toCodeValue(),
+    outcomeReasonCode = outcomeReason?.toCodeValue(),
+    // TODO - remove from DPS API
+    raisedIncidentTypeCode = null,
+    // TODO - remove from DPS API
+    incidentNumber = null,
+    visitorConcernText = visitorConcernText,
+    overrideBanStaffUsername = overrideBanStaffUsername,
+    modifyDateTime = audit.modifyDatetime,
+    modifyUsername = audit.modifyUserId,
+  )
+
+  private suspend fun Long.lookUpDpsLocationId(): UUID = officialVisitsMappingService.getInternalLocationByNomisId(this).dpsLocationId.let { UUID.fromString(it) }
 }
+private fun CodeDescription.toCodeValue(): CodedValue = CodedValue(code = code, description = description)

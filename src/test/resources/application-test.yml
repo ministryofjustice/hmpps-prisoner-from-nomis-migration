@@ -118,6 +118,11 @@ visitslots:
     delay-seconds: 0
     retry-seconds: 0
     count: 1
+officialvisits:
+  complete-check:
+    delay-seconds: 0
+    retry-seconds: 0
+    count: 1
   page:
     size: 10
 spring:
