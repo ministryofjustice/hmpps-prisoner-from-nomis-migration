@@ -85,6 +85,20 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubPostCourtCaseForCreateError(
+    status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+  ) {
+    stubFor(
+      post("/legacy/court-case")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody("""{"status":"${status.value()}",userMessage = "NOMIS error"}"""),
+        ),
+    )
+  }
+
   fun stubPostCourtCasesForCreateMigration(
     courtCaseId: String = UUID.randomUUID().toString(),
     response: MigrationCreateCourtCasesResponse = MigrationCreateCourtCasesResponse(
@@ -219,6 +233,20 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
             .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubPostCourtAppearanceForCreateError(
+    status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+  ) {
+    stubFor(
+      post("/legacy/court-appearance")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody("""{"status":"${status.value()}",userMessage = "NOMIS error"}"""),
         ),
     )
   }
