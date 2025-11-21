@@ -54,7 +54,7 @@ class OfficialVisitsMigrationIntTest(
   private lateinit var mappingApiMock: OfficialVisitsMappingApiMockServer
 
   @Nested
-  @DisplayName("POST /migrate/officialivisits")
+  @DisplayName("POST /migrate/official-visits")
   inner class StartMigration {
     @BeforeEach
     internal fun deleteHistoryRecords() {
@@ -67,7 +67,7 @@ class OfficialVisitsMigrationIntTest(
     inner class Security {
       @Test
       fun `access forbidden when no role`() {
-        webTestClient.post().uri("/migrate/officialivisits")
+        webTestClient.post().uri("/migrate/official-visits")
           .headers(setAuthorisation(roles = listOf()))
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(PrisonerRestrictionMigrationFilter())
@@ -77,7 +77,7 @@ class OfficialVisitsMigrationIntTest(
 
       @Test
       fun `access forbidden with wrong role`() {
-        webTestClient.post().uri("/migrate/officialivisits")
+        webTestClient.post().uri("/migrate/official-visits")
           .headers(setAuthorisation(roles = listOf("BANANAS")))
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(PrisonerRestrictionMigrationFilter())
@@ -87,7 +87,7 @@ class OfficialVisitsMigrationIntTest(
 
       @Test
       fun `access unauthorised with no auth token`() {
-        webTestClient.post().uri("/migrate/officialivisits")
+        webTestClient.post().uri("/migrate/official-visits")
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(PrisonerRestrictionMigrationFilter())
           .exchange()
@@ -487,7 +487,7 @@ class OfficialVisitsMigrationIntTest(
     }
   }
 
-  private fun performMigration(body: PrisonerRestrictionMigrationFilter = PrisonerRestrictionMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/officialivisits")
+  private fun performMigration(body: PrisonerRestrictionMigrationFilter = PrisonerRestrictionMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/official-visits")
     .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .bodyValue(body)
