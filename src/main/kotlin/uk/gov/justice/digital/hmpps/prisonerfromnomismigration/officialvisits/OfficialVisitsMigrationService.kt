@@ -2,13 +2,15 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 
 @Service
 class OfficialVisitsMigrationService(
   mappingService: OfficialVisitsMappingService,
-) : MigrationService<Any, Any, Any>(
+) : MigrationService<Any, VisitIdResponse, OfficialVisitMigrationMappingDto>(
   mappingService,
   MigrationType.OFFICIAL_VISITS,
   pageSize = 1,
@@ -21,11 +23,11 @@ class OfficialVisitsMigrationService(
     migrationFilter: Any,
     pageSize: Long,
     pageNumber: Long,
-  ): List<Any> = TODO("Not yet implemented")
+  ): List<VisitIdResponse> = TODO("Not yet implemented")
 
   override suspend fun getTotalNumberOfIds(migrationFilter: Any): Long = TODO("Not yet implemented")
 
-  override suspend fun migrateNomisEntity(context: MigrationContext<Any>) {
+  override suspend fun migrateNomisEntity(context: MigrationContext<VisitIdResponse>) {
     TODO("Not yet implemented")
   }
 }

@@ -12,12 +12,17 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.objectMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.CodedValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitSlot
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 
 class OfficialVisitsDpsApiExtension :
@@ -78,6 +83,37 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         )
       },
     )
+
+    fun migrateVisitRequest() = MigrateVisitRequest(
+      offenderVisitId = 1,
+      prisonVisitSlotId = 10,
+      prisonCode = "MDI",
+      offenderBookId = 20,
+      prisonerNumber = "A1234KT",
+      currentTerm = true,
+      visitDate = LocalDate.parse("2020-01-01"),
+      startTime = "10:00",
+      endTime = "11:00",
+      dpsLocationId = UUID.fromString("d0cc8fcd-22db-46a7-bdb3-ada7ac1828f5"),
+      visitStatusCode = CodedValue(code = "NORM", description = "Normal Completion"),
+      visitTypeCode = CodedValue(code = "OFFI", description = "Official"),
+      createDateTime = LocalDateTime.parse("2020-01-01T08:00"),
+      createUsername = "T.SMITH",
+      visitors = listOf(
+        MigrateVisitor(
+          offenderVisitVisitorId = 30,
+          personId = 40,
+          createDateTime = LocalDateTime.parse("2020-01-01T08:00"),
+          createUsername = "T.SMITH",
+        ),
+      ),
+    )
+
+    fun migrateVisitResponse() = MigrateVisitResponse(
+      visit = IdPair(nomisId = 1, dpsId = 10, elementType = IdPair.ElementType.OFFICIAL_VISIT),
+      visitors = listOf(IdPair(nomisId = 30, dpsId = 300, elementType = IdPair.ElementType.OFFICIAL_VISITOR)),
+      prisoner = IdPair(nomisId = 20, dpsId = 200, elementType = IdPair.ElementType.PRISONER_VISITED),
+    )
   }
 
   fun stubHealthPing(status: Int) {
@@ -94,6 +130,18 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubMigrateVisitConfiguration(response: MigrateVisitConfigResponse = migrateVisitConfigResponse()) {
     stubFor(
       post("/migrate/visit-configuration")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(201)
+            .withBody(objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubMigrateVisit(response: MigrateVisitResponse = migrateVisitResponse()) {
+    stubFor(
+      post("/migrate/visit")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
