@@ -16,7 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 
 @SpringAPIServiceTest
 @Import(VisitSlotsNomisApiService::class, OfficialVisitsConfiguration::class, VisitSlotsNomisApiMockServer::class)
-class VisitSlotsNomisApiIntTest {
+class VisitSlotsNomisApiServiceTest {
   @Autowired
   private lateinit var apiService: VisitSlotsNomisApiService
 

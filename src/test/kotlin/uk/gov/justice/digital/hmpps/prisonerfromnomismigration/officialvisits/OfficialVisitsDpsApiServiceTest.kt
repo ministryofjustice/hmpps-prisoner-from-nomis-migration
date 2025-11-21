@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.dpsOfficialVisitsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.migrateVisitConfigRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.migrateVisitRequest
 
 @SpringAPIServiceTest
 @Import(OfficialVisitsDpsApiService::class, OfficialVisitsConfiguration::class)
@@ -41,6 +42,32 @@ class OfficialVisitsDpsApiServiceTest {
 
       dpsOfficialVisitsServer.verify(
         postRequestedFor(urlPathEqualTo("/migrate/visit-configuration")),
+      )
+    }
+  }
+
+  @Nested
+  inner class MigrateVisit {
+    @Test
+    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubMigrateVisit()
+
+      apiService.migrateVisit(migrateVisitRequest())
+
+      dpsOfficialVisitsServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the migrate endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubMigrateVisit()
+
+      apiService.migrateVisit(migrateVisitRequest())
+
+      dpsOfficialVisitsServer.verify(
+        postRequestedFor(urlPathEqualTo("/migrate/visit")),
       )
     }
   }
