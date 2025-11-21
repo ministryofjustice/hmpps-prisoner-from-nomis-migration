@@ -94,7 +94,9 @@ class CourtSentencingSynchronisationService(
           telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
         )
       } ?: let {
-        dpsApiService.createCourtCase(nomisCourtCase.toLegacyDpsCourtCase()).run {
+        trackIfFailure(name = "court-case-synchronisation-created", telemetry = telemetry.toMutableMap()) {
+          dpsApiService.createCourtCase(nomisCourtCase.toLegacyDpsCourtCase())
+        }.run {
           tryToCreateMapping(
             nomisCourtCase = nomisCourtCase,
             dpsCourtCaseResponse = this,
@@ -120,7 +122,7 @@ class CourtSentencingSynchronisationService(
         "nomisCourtAppearanceId" to event.eventId.toString(),
         "offenderNo" to event.offenderIdDisplay,
         "nomisBookingId" to event.bookingId.toString(),
-        "isBreachHearing" to event.isBreachHearing,
+        "isBreachHearing" to event.isBreachHearing.toString(),
       )
     if (isAppearancePartOfACourtCase(event)) {
       if (event.originatesInDps && !event.isBreachHearing) {
@@ -140,9 +142,11 @@ class CourtSentencingSynchronisationService(
           mappingApiService.getCourtCaseOrNullByNomisId(nomisCourtAppearance.caseId!!)?.let { courtCaseMapping ->
             telemetry["nomisCourtCaseId"] = courtCaseMapping.nomisCourtCaseId.toString()
             telemetry["dpsCourtCaseId"] = courtCaseMapping.dpsCourtCaseId
-            dpsApiService.createCourtAppearance(
-              nomisCourtAppearance.toDpsCourtAppearance(dpsCaseId = courtCaseMapping.dpsCourtCaseId),
-            ).run {
+            trackIfFailure(name = "court-appearance-synchronisation-created", telemetry = telemetry.toMutableMap()) {
+              dpsApiService.createCourtAppearance(
+                nomisCourtAppearance.toDpsCourtAppearance(dpsCaseId = courtCaseMapping.dpsCourtCaseId),
+              )
+            }.run {
               telemetry["dpsCourtAppearanceId"] = this.lifetimeUuid.toString()
               tryToCreateCourtAppearanceMapping(
                 nomisCourtAppearance = nomisCourtAppearance,

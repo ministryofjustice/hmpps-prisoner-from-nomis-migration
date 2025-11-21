@@ -209,6 +209,40 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      @DisplayName("When dps returns an error on create")
+      inner class DPSCreateFails {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
+          dpsCourtSentencingServer.stubPostCourtCaseForCreate(courtCaseId = DPS_COURT_CASE_ID)
+          dpsCourtSentencingServer.stubPostCourtCaseForCreateError()
+          courtSentencingOffenderEventsQueue.sendMessage(
+            courtCaseEvent(
+              eventType = "OFFENDER_CASES-INSERTED",
+            ),
+          ).also {
+            waitForAnyProcessingToComplete()
+          }
+        }
+
+        @Test
+        fun `DPS failure is tracked`() {
+          verify(telemetryClient).trackEvent(
+            eq("court-case-synchronisation-created-error"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+            },
+            isNull(),
+          )
+
+          // will not create a mapping
+          courtSentencingMappingApiMockServer.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Nested
       @DisplayName("When mapping already exists")
       inner class MappingExists {
         @BeforeEach
@@ -1570,6 +1604,43 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             },
             isNull(),
           )
+        }
+      }
+
+      @Nested
+      @DisplayName("When dps returns an error on create")
+      inner class DPSCreateFails {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
+          courtSentencingMappingApiMockServer.stubGetByNomisId(
+            nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+            dpsCourtCaseId = DPS_COURT_CASE_ID,
+          )
+          dpsCourtSentencingServer.stubPostCourtAppearanceForCreateError()
+          courtSentencingMappingApiMockServer.stubPostCourtAppearanceMapping()
+          courtSentencingOffenderEventsQueue.sendMessage(
+            courtAppearanceEvent(
+              eventType = "COURT_EVENTS-INSERTED",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `DPS failure is tracked`() {
+          verify(telemetryClient).trackEvent(
+            eq("court-appearance-synchronisation-created-error"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtCaseId"]).isEqualTo(NOMIS_COURT_CASE_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+            },
+            isNull(),
+          )
+
+          // will not create a mapping
+          courtSentencingMappingApiMockServer.verify(0, postRequestedFor(anyUrl()))
         }
       }
 
