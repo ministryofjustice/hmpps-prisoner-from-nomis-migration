@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-11-19.108.62b3bf5"
+    "version" : "2025-11-20.117.c9d7641"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -422,9 +422,9 @@
         }
       }
     },
-    "/prisoner/{prisonerNumber}/contact-relationships" : {
+    "/prisoner/{prisonerNumber}/approved-relationships" : {
       "get" : {
-        "tags" : [ "Personal Relationships contacts" ],
+        "tags" : [ "Contacts" ],
         "summary" : "Get the approved contacts for a prisoner for official or social visits",
         "description" : "\n\nRequires one of the following roles:\n* ROLE_OFFICIAL_VISITS_ADMIN\n* ROLE_OFFICIAL_VISITS__R\n* ROLE_OFFICIAL_VISITS__RW",
         "operationId" : "getApprovedContacts",

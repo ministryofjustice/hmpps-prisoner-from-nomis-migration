@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2025-11-17.1396.a81e7e1"
+    "version" : "2025-11-20.1448.0946b03"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -1497,6 +1497,10 @@
             "type" : "string",
             "format" : "date"
           },
+          "dateOfDeath" : {
+            "type" : "string",
+            "format" : "date"
+          },
           "aliases" : {
             "type" : "array",
             "items" : {
@@ -1528,6 +1532,9 @@
             "$ref" : "#/components/schemas/Value"
           },
           "sexualOrientation" : {
+            "$ref" : "#/components/schemas/Value"
+          },
+          "religion" : {
             "$ref" : "#/components/schemas/Value"
           }
         },
