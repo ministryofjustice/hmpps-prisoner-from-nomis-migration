@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonBal
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerBalanceMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.VisitSlotsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.PrisonerRestrictionMappingApiService
@@ -33,6 +34,7 @@ class GeneralMappingService(
   private val visitBalanceMappingApiService: VisitBalanceMappingApiService,
   private val externalMovementsMappingApiService: ExternalMovementsMappingApiService,
   private val visitSlotsMappingService: VisitSlotsMappingService,
+  private val officialVisitsMappingService: OfficialVisitsMappingService,
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long = when (migrationType) {
     MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
@@ -51,7 +53,7 @@ class GeneralMappingService(
     MigrationType.SENTENCING_ADJUSTMENTS -> 0
     MigrationType.VISIT_BALANCE -> visitBalanceMappingApiService.getMigrationCount(migrationId)
     MigrationType.EXTERNAL_MOVEMENTS -> externalMovementsMappingApiService.getMigrationCount(migrationId)
-    MigrationType.OFFICIAL_VISITS -> TODO()
+    MigrationType.OFFICIAL_VISITS -> officialVisitsMappingService.getMigrationCount(migrationId)
     MigrationType.VISIT_SLOTS -> visitSlotsMappingService.getMigrationCount(migrationId)
   }
 }
