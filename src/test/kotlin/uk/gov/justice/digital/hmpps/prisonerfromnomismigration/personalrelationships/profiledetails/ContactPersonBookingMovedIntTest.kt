@@ -576,6 +576,7 @@ class ContactPersonBookingMovedIntTest(
     startDateTime = startDateTime,
     latestBooking = latestBooking,
     profileDetails = profileDetails.asList(),
+    sequence = 1,
   )
 
   fun profileDetailsResponse(

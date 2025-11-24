@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -131,7 +132,35 @@ class OfficialVisitsMigrationIntTest(
           ),
         )
         mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
-        migrationResult = performMigration()
+        migrationResult = performMigration(
+          OfficialVisitsMigrationFilter(
+            prisonIds = listOf("BXI", "MDI"),
+            fromDate = LocalDate.parse("2020-01-01"),
+            toDate = LocalDate.parse("2023-01-01"),
+          ),
+        )
+      }
+
+      @Test
+      fun `will pass filter to get all ids endpoint for initial count and first page`() {
+        nomisApiMock.verify(
+          getRequestedFor(urlPathEqualTo("/official-visits/ids"))
+            .withQueryParam("page", equalTo("0"))
+            .withQueryParam("size", equalTo("1"))
+            .withQueryParam("prisonIds", equalTo("MDI"))
+            .withQueryParam("prisonIds", equalTo("BXI"))
+            .withQueryParam("fromDate", equalTo("2020-01-01"))
+            .withQueryParam("toDate", equalTo("2023-01-01")),
+        )
+        nomisApiMock.verify(
+          getRequestedFor(urlPathEqualTo("/official-visits/ids"))
+            .withQueryParam("page", equalTo("0"))
+            .withQueryParam("size", equalTo("10"))
+            .withQueryParam("prisonIds", equalTo("MDI"))
+            .withQueryParam("prisonIds", equalTo("BXI"))
+            .withQueryParam("fromDate", equalTo("2020-01-01"))
+            .withQueryParam("toDate", equalTo("2023-01-01")),
+        )
       }
 
       @Test
@@ -782,7 +811,7 @@ class OfficialVisitsMigrationIntTest(
     }
   }
 
-  private fun performMigration(body: PrisonerRestrictionMigrationFilter = PrisonerRestrictionMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/official-visits")
+  private fun performMigration(body: OfficialVisitsMigrationFilter = OfficialVisitsMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/official-visits")
     .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .bodyValue(body)

@@ -534,6 +534,7 @@ class ContactPersonProfileDetailsSyncIntTest(
     startDateTime = startDateTime,
     latestBooking = latestBooking,
     profileDetails = profileDetails,
+    sequence = 1,
   )
 
   private fun profileDetails(
