@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -131,14 +132,14 @@ class VisitSlotsMappingApiServiceTest {
   }
 
   @Nested
-  inner class GetByNomisIdsOrNull {
+  inner class GetTimeSlotByNomisIdsOrNull {
     val nomisPrisonId = "WWI"
     val nomisDayOfWeek = "MON"
     val nomisSlotSequence = 2
 
     @Test
     fun `will pass oath2 token to service`() = runTest {
-      mockServer.stubGetByNomisIdsOrNull(
+      mockServer.stubGetTimeSlotByNomisIdsOrNull(
         nomisPrisonId = nomisPrisonId,
         nomisDayOfWeek = nomisDayOfWeek,
         nomisSlotSequence = nomisSlotSequence,
@@ -151,7 +152,7 @@ class VisitSlotsMappingApiServiceTest {
         ),
       )
 
-      apiService.getByNomisIdsOrNull(
+      apiService.getTimeSlotByNomisIdsOrNull(
         nomisPrisonId = nomisPrisonId,
         nomisDayOfWeek = nomisDayOfWeek,
         nomisSlotSequence = nomisSlotSequence,
@@ -164,7 +165,7 @@ class VisitSlotsMappingApiServiceTest {
 
     @Test
     fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubGetByNomisIdsOrNull(
+      mockServer.stubGetTimeSlotByNomisIdsOrNull(
         nomisPrisonId = nomisPrisonId,
         nomisDayOfWeek = nomisDayOfWeek,
         nomisSlotSequence = nomisSlotSequence,
@@ -177,7 +178,7 @@ class VisitSlotsMappingApiServiceTest {
         ),
       )
 
-      apiService.getByNomisIdsOrNull(
+      apiService.getTimeSlotByNomisIdsOrNull(
         nomisPrisonId = nomisPrisonId,
         nomisDayOfWeek = nomisDayOfWeek,
         nomisSlotSequence = nomisSlotSequence,
@@ -190,7 +191,7 @@ class VisitSlotsMappingApiServiceTest {
 
     @Test
     fun `will return dpsId when mapping exists`() = runTest {
-      mockServer.stubGetByNomisIdsOrNull(
+      mockServer.stubGetTimeSlotByNomisIdsOrNull(
         nomisPrisonId = nomisPrisonId,
         nomisDayOfWeek = nomisDayOfWeek,
         nomisSlotSequence = nomisSlotSequence,
@@ -203,7 +204,7 @@ class VisitSlotsMappingApiServiceTest {
         ),
       )
 
-      val mapping = apiService.getByNomisIdsOrNull(
+      val mapping = apiService.getTimeSlotByNomisIdsOrNull(
         nomisPrisonId = nomisPrisonId,
         nomisDayOfWeek = nomisDayOfWeek,
         nomisSlotSequence = nomisSlotSequence,
@@ -214,7 +215,7 @@ class VisitSlotsMappingApiServiceTest {
 
     @Test
     fun `will return null if mapping does not exist`() = runTest {
-      mockServer.stubGetByNomisIdsOrNull(
+      mockServer.stubGetTimeSlotByNomisIdsOrNull(
         nomisPrisonId = nomisPrisonId,
         nomisDayOfWeek = nomisDayOfWeek,
         nomisSlotSequence = nomisSlotSequence,
@@ -222,12 +223,57 @@ class VisitSlotsMappingApiServiceTest {
       )
 
       assertThat(
-        apiService.getByNomisIdsOrNull(
+        apiService.getTimeSlotByNomisIdsOrNull(
           nomisPrisonId = nomisPrisonId,
           nomisDayOfWeek = nomisDayOfWeek,
           nomisSlotSequence = nomisSlotSequence,
         ),
       ).isNull()
+    }
+  }
+
+  @Nested
+  inner class GetVisitSlotByNomisId {
+    val nomisId = 123456L
+
+    @Test
+    fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetVisitSlotByNomisId(
+        nomisId = nomisId,
+        mapping = VisitSlotMappingDto(
+          dpsId = "1234",
+          nomisId = nomisId,
+          mappingType = VisitSlotMappingDto.MappingType.MIGRATED,
+        ),
+      )
+
+      apiService.getVisitSlotByNomisId(
+        nomisVisitSlotId = nomisId,
+      )
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetVisitSlotByNomisId(
+        nomisId = nomisId,
+        mapping = VisitSlotMappingDto(
+          dpsId = "1234",
+          nomisId = nomisId,
+          mappingType = VisitSlotMappingDto.MappingType.MIGRATED,
+        ),
+      )
+
+      apiService.getVisitSlotByNomisId(
+        nomisVisitSlotId = nomisId,
+      )
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/mapping/visit-slots/visit-slot/nomis-id/$nomisId")),
+      )
     }
   }
 

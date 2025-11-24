@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
@@ -74,7 +75,7 @@ class VisitSlotsMappingApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetByNomisIdsOrNull(
+  fun stubGetTimeSlotByNomisIdsOrNull(
     nomisPrisonId: String = "WWI",
     nomisDayOfWeek: String = "MON",
     nomisSlotSequence: Int = 2,
@@ -105,6 +106,23 @@ class VisitSlotsMappingApiMockServer(private val objectMapper: ObjectMapper) {
         ),
       )
     }
+  }
+  fun stubGetVisitSlotByNomisId(
+    nomisId: Long = 123456,
+    mapping: VisitSlotMappingDto = VisitSlotMappingDto(
+      dpsId = "123456",
+      mappingType = VisitSlotMappingDto.MappingType.MIGRATED,
+      nomisId = nomisId,
+    ),
+  ) {
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/visit-slots/visit-slot/nomis-id/$nomisId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(mapping)),
+      ),
+    )
   }
 
   fun stubGetInternalLocationByNomisId(

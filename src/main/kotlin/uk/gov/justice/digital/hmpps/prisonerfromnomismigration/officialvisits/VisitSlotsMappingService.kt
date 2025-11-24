@@ -9,6 +9,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.LocationMappingResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.VisitSlotsResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMigrationMappingDto
 
@@ -17,7 +18,7 @@ class VisitSlotsMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
   private val api = VisitSlotsResourceApi(webClient)
   private val locationApi = LocationMappingResourceApi(webClient)
 
-  suspend fun getByNomisIdsOrNull(nomisPrisonId: String, nomisDayOfWeek: String, nomisSlotSequence: Int): VisitTimeSlotMappingDto? = api.prepare(
+  suspend fun getTimeSlotByNomisIdsOrNull(nomisPrisonId: String, nomisDayOfWeek: String, nomisSlotSequence: Int): VisitTimeSlotMappingDto? = api.prepare(
     api.getVisitTimeSlotMappingByNomisIdsRequestConfig(
       nomisPrisonId = nomisPrisonId,
       nomisDayOfWeek = nomisDayOfWeek,
@@ -27,5 +28,6 @@ class VisitSlotsMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
+  suspend fun getVisitSlotByNomisId(nomisVisitSlotId: Long): VisitSlotMappingDto = api.getVisitSlotMappingByNomisId(nomisId = nomisVisitSlotId).awaitSingle()
   suspend fun getInternalLocationByNomisId(nomisLocationId: Long): LocationMappingDto = locationApi.getMappingGivenNomisId1(nomisLocationId = nomisLocationId).awaitSingle()
 }
