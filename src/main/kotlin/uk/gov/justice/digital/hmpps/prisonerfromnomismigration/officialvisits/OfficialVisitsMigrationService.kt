@@ -33,7 +33,7 @@ class OfficialVisitsMigrationService(
   @Value($$"${officialvisits.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value($$"${officialvisits.complete-check.count}") completeCheckCount: Int,
   @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
-) : MigrationService<Any, VisitIdResponse, OfficialVisitMigrationMappingDto>(
+) : MigrationService<OfficialVisitsMigrationFilter, VisitIdResponse, OfficialVisitMigrationMappingDto>(
   officialVisitsMappingService,
   MigrationType.OFFICIAL_VISITS,
   pageSize = pageSize,
@@ -48,17 +48,23 @@ class OfficialVisitsMigrationService(
   }
 
   override suspend fun getPageOfIds(
-    migrationFilter: Any,
+    migrationFilter: OfficialVisitsMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
   ): List<VisitIdResponse> = nomisApiService.getOfficialVisitIds(
     pageNumber = pageNumber,
     pageSize = pageSize,
+    prisonIds = migrationFilter.prisonIds,
+    fromDate = migrationFilter.fromDate,
+    toDate = migrationFilter.toDate,
   ).content!!
 
-  override suspend fun getTotalNumberOfIds(migrationFilter: Any): Long = nomisApiService.getOfficialVisitIds(
+  override suspend fun getTotalNumberOfIds(migrationFilter: OfficialVisitsMigrationFilter): Long = nomisApiService.getOfficialVisitIds(
     pageNumber = 0,
     pageSize = 1,
+    prisonIds = migrationFilter.prisonIds,
+    fromDate = migrationFilter.fromDate,
+    toDate = migrationFilter.toDate,
   ).page!!.totalElements!!
 
   override suspend fun migrateNomisEntity(context: MigrationContext<VisitIdResponse>) {

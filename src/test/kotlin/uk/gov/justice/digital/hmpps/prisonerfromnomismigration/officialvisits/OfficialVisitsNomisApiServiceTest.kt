@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitIdResponse
+import java.time.LocalDate
 
 @SpringAPIServiceTest
 @Import(OfficialVisitsNomisApiService::class, OfficialVisitsConfiguration::class, OfficialVisitsNomisApiMockServer::class)
@@ -34,7 +35,13 @@ class OfficialVisitsNomisApiServiceTest {
         ),
       )
 
-      apiService.getOfficialVisitIds(pageNumber = 0, pageSize = 20)
+      apiService.getOfficialVisitIds(
+        pageNumber = 0,
+        pageSize = 20,
+        prisonIds = emptyList(),
+        fromDate = null,
+        toDate = null,
+      )
 
       mockServer.verify(
         getRequestedFor(anyUrl())
@@ -52,12 +59,22 @@ class OfficialVisitsNomisApiServiceTest {
         ),
       )
 
-      apiService.getOfficialVisitIds(pageNumber = 10, pageSize = 30)
+      apiService.getOfficialVisitIds(
+        pageNumber = 10,
+        pageSize = 30,
+        prisonIds = listOf("MDI", "BXI"),
+        fromDate = LocalDate.parse("2020-01-01"),
+        toDate = LocalDate.parse("2024-01-01"),
+      )
 
       mockServer.verify(
         getRequestedFor(urlPathEqualTo("/official-visits/ids"))
           .withQueryParam("page", equalTo("10"))
-          .withQueryParam("size", equalTo("30")),
+          .withQueryParam("size", equalTo("30"))
+          .withQueryParam("prisonIds", equalTo("MDI"))
+          .withQueryParam("prisonIds", equalTo("BXI"))
+          .withQueryParam("fromDate", equalTo("2020-01-01"))
+          .withQueryParam("toDate", equalTo("2024-01-01")),
       )
     }
 
@@ -74,7 +91,13 @@ class OfficialVisitsNomisApiServiceTest {
         totalElements = 1000,
       )
 
-      val pageOfIds = apiService.getOfficialVisitIds(pageNumber = 10, pageSize = 20)
+      val pageOfIds = apiService.getOfficialVisitIds(
+        pageNumber = 10,
+        pageSize = 20,
+        prisonIds = emptyList(),
+        fromDate = null,
+        toDate = null,
+      )
 
       assertThat(pageOfIds.content).hasSize(20)
       assertThat(pageOfIds.page?.totalPages).isEqualTo(50)

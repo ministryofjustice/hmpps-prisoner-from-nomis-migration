@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture
 class OfficialVisitsMigrationMessageListener(
   objectMapper: ObjectMapper,
   migrationService: OfficialVisitsMigrationService,
-) : MigrationMessageListener<Any, VisitIdResponse, OfficialVisitResponse, OfficialVisitMigrationMappingDto>(
+) : MigrationMessageListener<OfficialVisitsMigrationFilter, VisitIdResponse, OfficialVisitResponse, OfficialVisitMigrationMappingDto>(
   objectMapper,
   migrationService,
 ) {
@@ -34,9 +34,9 @@ class OfficialVisitsMigrationMessageListener(
   @WithSpan(value = "dps-syscon-migration_officialvisits_queue", kind = SpanKind.SERVER)
   fun onMigrationMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
 
-  override fun parseContextFilter(json: String): MigrationMessage<*, Any> = objectMapper.readValue(json)
+  override fun parseContextFilter(json: String): MigrationMessage<*, OfficialVisitsMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<Any>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<OfficialVisitsMigrationFilter>> = objectMapper.readValue(json)
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, VisitIdResponse> = objectMapper.readValue(json)
 
