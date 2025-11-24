@@ -8,10 +8,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
@@ -31,16 +33,21 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitSlotMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.migrateVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsNomisApiMockServer.Companion.officialVisitResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.CodedValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.PrisonerRestrictionMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import java.time.Duration
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.*
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -221,14 +228,8 @@ class OfficialVisitsMigrationIntTest(
       }
 
       @Test
-      fun `will transform and migrate visit and visitors into DPS`() {
-        val migrationRequest: MigrateVisitRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/migrate/visit")))
-
-        assertThat(migrationRequest.offenderVisitId).isEqualTo(nomisVisitId)
-        assertThat(migrationRequest.dpsLocationId).isEqualTo(dpsLocationId)
-        assertThat(migrationRequest.prisonVisitSlotId).isEqualTo(dpsVisitSlotId)
-
-        // TODO - flesh out asserts
+      fun `will migrate visit and visitors into DPS`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/migrate/visit")))
       }
 
       @Test
@@ -271,6 +272,161 @@ class OfficialVisitsMigrationIntTest(
           .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
           .jsonPath("$.status").isEqualTo("COMPLETED")
           .jsonPath("$.recordsMigrated").isEqualTo("1")
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathNomisToDPSMapping {
+      private lateinit var migrationResult: MigrationResult
+      val nomisLocationId = 12345L
+      val dpsLocationId: UUID = UUID.fromString("e7c2a3cc-e5b2-48ff-9e8b-a5038355b36c")
+      val nomisVisitId = 2L
+      val dpsVisitId = "20"
+      val dpsVisitorId = 45678L
+      val nomisVisitorId = 876544L
+      val nomisVisitSlotId = 3L
+      val dpsVisitSlotId = 30L
+
+      private lateinit var migrationRequest: MigrateVisitRequest
+
+      @BeforeAll
+      fun setUp() {
+        nomisApiMock.stubGetOfficialVisitIds(
+          content = listOf(
+            VisitIdResponse(
+              visitId = nomisVisitId,
+            ),
+          ),
+        )
+        mappingApiMock.stubGetByNomisIdsOrNull(
+          nomisVisitId = nomisVisitId,
+          mapping = null,
+        )
+        nomisApiMock.stubGetOfficialVisit(
+          visitId = nomisVisitId,
+          response = officialVisitResponse().copy(
+            internalLocationId = nomisLocationId,
+            visitId = nomisVisitId,
+            visitSlotId = nomisVisitSlotId,
+            startDateTime = LocalDateTime.parse("2020-01-01T10:00"),
+            endDateTime = LocalDateTime.parse("2020-01-01T11:10"),
+            offenderNo = "A1234KT",
+            bookingId = 1234,
+            currentTerm = true,
+            prisonId = "MDI",
+            commentText = "First visit",
+            visitorConcernText = "Big concerns",
+            overrideBanStaffUsername = "T.SMITH",
+            prisonerSearchType = CodeDescription(code = "FULL", description = "Full search"),
+            visitStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+            visitOutcome = CodeDescription(code = "CANC", description = "Cancelled"),
+            outcomeReason = CodeDescription(code = "ADMIN", description = "Administrative Cancellation"),
+            audit = NomisAudit(
+              createDatetime = LocalDateTime.parse("2020-01-01T10:10:10"),
+              createUsername = "J.JOHN",
+              modifyDatetime = LocalDateTime.parse("2020-02-02T11:10:10"),
+              modifyUserId = "S.SMITH",
+            ),
+          ),
+        )
+        mappingApiMock.stubGetInternalLocationByNomisId(
+          nomisLocationId = nomisLocationId,
+          mapping = LocationMappingDto(
+            dpsLocationId = dpsLocationId.toString(),
+            nomisLocationId = nomisLocationId,
+            mappingType = LocationMappingDto.MappingType.LOCATION_CREATED,
+          ),
+        )
+        visitSlotMappingApiMock.stubGetVisitSlotByNomisId(
+          nomisId = nomisVisitSlotId,
+          mapping = VisitSlotMappingDto(
+            dpsId = dpsVisitSlotId.toString(),
+            nomisId = nomisVisitSlotId,
+            mappingType = VisitSlotMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        dpsApiMock.stubMigrateVisit(
+          response = migrateVisitResponse().copy(
+            visit = IdPair(
+              elementType = IdPair.ElementType.OFFICIAL_VISIT,
+              nomisId = nomisVisitId,
+              dpsId = dpsVisitId.toLong(),
+            ),
+            visitors = listOf(
+              IdPair(elementType = IdPair.ElementType.OFFICIAL_VISITOR, nomisId = nomisVisitorId, dpsId = dpsVisitorId),
+            ),
+          ),
+        )
+        mappingApiMock.stubCreateMappingsForMigration()
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
+        migrationResult = performMigration()
+        migrationRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/migrate/visit")))
+      }
+
+      @Test
+      fun `will map and transform visits ids`() {
+        assertThat(migrationRequest.offenderVisitId).isEqualTo(nomisVisitId)
+        assertThat(migrationRequest.dpsLocationId).isEqualTo(dpsLocationId)
+        assertThat(migrationRequest.prisonVisitSlotId).isEqualTo(dpsVisitSlotId)
+        assertThat(migrationRequest.prisonCode).isEqualTo("MDI")
+      }
+
+      @Test
+      fun `will map and transform visit times`() {
+        assertThat(migrationRequest.visitDate).isEqualTo(LocalDate.parse("2020-01-01"))
+        assertThat(migrationRequest.startTime).isEqualTo("10:00")
+        assertThat(migrationRequest.endTime).isEqualTo("11:10")
+      }
+
+      @Test
+      fun `will map and transform visit attributes`() {
+        assertThat(migrationRequest.commentText).isEqualTo("First visit")
+        assertThat(migrationRequest.visitorConcernText).isEqualTo("Big concerns")
+        assertThat(migrationRequest.overrideBanStaffUsername).isEqualTo("T.SMITH")
+        assertThat(migrationRequest.searchTypeCode).isEqualTo(
+          CodedValue(
+            code = "FULL",
+            description = "Full search",
+          ),
+        )
+      }
+
+      @Test
+      fun `will map and transform prisoner details`() {
+        assertThat(migrationRequest.prisonerNumber).isEqualTo("A1234KT")
+        assertThat(migrationRequest.offenderBookId).isEqualTo(1234L)
+        assertThat(migrationRequest.currentTerm).isTrue
+      }
+
+      @Test
+      fun `will map and transform visit status`() {
+        assertThat(migrationRequest.outcomeReasonCode).isEqualTo(
+          CodedValue(
+            code = "ADMIN",
+            description = "Administrative Cancellation",
+          ),
+        )
+        assertThat(migrationRequest.eventOutcomeCode).isEqualTo(
+          CodedValue(
+            code = "CANC",
+            description = "Cancelled",
+          ),
+        )
+        assertThat(migrationRequest.visitStatusCode).isEqualTo(
+          CodedValue(
+            code = "SCH",
+            description = "Scheduled",
+          ),
+        )
+      }
+
+      @Test
+      fun `will map and transform audit details`() {
+        assertThat(migrationRequest.createUsername).isEqualTo("J.JOHN")
+        assertThat(migrationRequest.createDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T10:10:10"))
+        assertThat(migrationRequest.modifyUsername).isEqualTo("S.SMITH")
+        assertThat(migrationRequest.modifyDateTime).isEqualTo(LocalDateTime.parse("2020-02-02T11:10:10"))
       }
     }
 

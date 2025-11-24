@@ -143,8 +143,8 @@ class OfficialVisitsMigrationService(
     prisonerNumber = offenderNo,
     currentTerm = currentTerm,
     visitDate = startDateTime.toLocalDate(),
-    startTime = startDateTime.toLocalTime().format(DateTimeFormatter.ISO_LOCAL_TIME),
-    endTime = endDateTime.toLocalTime().format(DateTimeFormatter.ISO_LOCAL_TIME),
+    startTime = startDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
+    endTime = endDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
     dpsLocationId = internalLocationId.lookUpDpsLocationId(),
     visitStatusCode = visitStatus.toCodeValue(),
     // TODO - remove from DPS API
