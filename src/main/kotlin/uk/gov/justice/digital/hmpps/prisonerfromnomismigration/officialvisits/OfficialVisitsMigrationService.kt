@@ -25,6 +25,7 @@ import java.util.*
 @Service
 class OfficialVisitsMigrationService(
   private val officialVisitsMappingService: OfficialVisitsMappingService,
+  private val visitSlotsMappingService: VisitSlotsMappingService,
   private val nomisApiService: OfficialVisitsNomisApiService,
   private val dpsApiService: OfficialVisitsDpsApiService,
   @Value($$"${officialvisits.page.size:1000}") pageSize: Long,
@@ -136,8 +137,7 @@ class OfficialVisitsMigrationService(
 
   private suspend fun OfficialVisitResponse.toMigrateVisitRequest(): MigrateVisitRequest = MigrateVisitRequest(
     offenderVisitId = visitId,
-    // TODO - lookup DPS slot id
-    prisonVisitSlotId = visitSlotId,
+    prisonVisitSlotId = visitSlotId.lookUpDpsVisitSlotId(),
     prisonCode = prisonId,
     offenderBookId = bookingId,
     prisonerNumber = offenderNo,
@@ -159,8 +159,7 @@ class OfficialVisitsMigrationService(
         createUsername = visitor.audit.createUsername,
         firstName = visitor.firstName,
         lastName = visitor.lastName,
-        // TODO - missing from NOMIS API
-        dateOfBirth = null,
+        dateOfBirth = visitor.dateOfBirth,
         relationshipToPrisoner = visitor.relationships.firstOrNull()?.relationshipType?.toCodeValue(),
         groupLeaderFlag = visitor.leadVisitor,
         assistedVisitFlag = visitor.assistedVisit,
@@ -186,5 +185,6 @@ class OfficialVisitsMigrationService(
   )
 
   private suspend fun Long.lookUpDpsLocationId(): UUID = officialVisitsMappingService.getInternalLocationByNomisId(this).dpsLocationId.let { UUID.fromString(it) }
+  private suspend fun Long.lookUpDpsVisitSlotId(): Long = visitSlotsMappingService.getVisitSlotByNomisId(this).dpsId.toLong()
 }
 private fun CodeDescription.toCodeValue(): CodedValue = CodedValue(code = code, description = description)

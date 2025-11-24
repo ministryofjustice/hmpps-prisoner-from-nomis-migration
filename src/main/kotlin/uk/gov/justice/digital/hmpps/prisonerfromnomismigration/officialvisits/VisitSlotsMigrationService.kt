@@ -60,7 +60,7 @@ class VisitSlotsMigrationService(
 
   override suspend fun migrateNomisEntity(context: MigrationContext<VisitTimeSlotIdResponse>) {
     val nomisId = context.body
-    val alreadyMigratedMapping = visitSlotsMappingService.getByNomisIdsOrNull(
+    val alreadyMigratedMapping = visitSlotsMappingService.getTimeSlotByNomisIdsOrNull(
       nomisPrisonId = nomisId.prisonId,
       nomisDayOfWeek = nomisId.dayOfWeek.name,
       nomisSlotSequence = nomisId.timeSlotSequence,

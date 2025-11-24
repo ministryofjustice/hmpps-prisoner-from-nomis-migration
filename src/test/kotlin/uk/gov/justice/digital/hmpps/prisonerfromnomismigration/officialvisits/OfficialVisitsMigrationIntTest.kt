@@ -30,6 +30,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.migrateVisitResponse
@@ -52,6 +53,9 @@ class OfficialVisitsMigrationIntTest(
 
   @Autowired
   private lateinit var mappingApiMock: OfficialVisitsMappingApiMockServer
+
+  @Autowired
+  private lateinit var visitSlotMappingApiMock: VisitSlotsMappingApiMockServer
 
   @Nested
   @DisplayName("POST /migrate/official-visits")
@@ -148,6 +152,8 @@ class OfficialVisitsMigrationIntTest(
       val dpsVisitId = "20"
       val dpsVisitorId = 45678L
       val nomisVisitorId = 876544L
+      val nomisVisitSlotId = 3L
+      val dpsVisitSlotId = 30L
 
       @BeforeEach
       fun setUp() {
@@ -164,7 +170,7 @@ class OfficialVisitsMigrationIntTest(
         )
         nomisApiMock.stubGetOfficialVisit(
           visitId = nomisVisitId,
-          response = officialVisitResponse().copy(internalLocationId = nomisLocationId, visitId = nomisVisitId),
+          response = officialVisitResponse().copy(internalLocationId = nomisLocationId, visitId = nomisVisitId, visitSlotId = nomisVisitSlotId),
         )
         mappingApiMock.stubGetInternalLocationByNomisId(
           nomisLocationId = nomisLocationId,
@@ -172,6 +178,14 @@ class OfficialVisitsMigrationIntTest(
             dpsLocationId = dpsLocationId.toString(),
             nomisLocationId = nomisLocationId,
             mappingType = LocationMappingDto.MappingType.LOCATION_CREATED,
+          ),
+        )
+        visitSlotMappingApiMock.stubGetVisitSlotByNomisId(
+          nomisId = nomisVisitSlotId,
+          mapping = VisitSlotMappingDto(
+            dpsId = dpsVisitSlotId.toString(),
+            nomisId = nomisVisitSlotId,
+            mappingType = VisitSlotMappingDto.MappingType.NOMIS_CREATED,
           ),
         )
         dpsApiMock.stubMigrateVisit(
@@ -202,10 +216,18 @@ class OfficialVisitsMigrationIntTest(
       }
 
       @Test
+      fun `will retrieve DPS visit slot id`() {
+        mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/visit-slots/visit-slot/nomis-id/$nomisVisitSlotId")))
+      }
+
+      @Test
       fun `will transform and migrate visit and visitors into DPS`() {
         val migrationRequest: MigrateVisitRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/migrate/visit")))
 
         assertThat(migrationRequest.offenderVisitId).isEqualTo(nomisVisitId)
+        assertThat(migrationRequest.dpsLocationId).isEqualTo(dpsLocationId)
+        assertThat(migrationRequest.prisonVisitSlotId).isEqualTo(dpsVisitSlotId)
+
         // TODO - flesh out asserts
       }
 
@@ -261,6 +283,8 @@ class OfficialVisitsMigrationIntTest(
       val dpsVisitId = 54321L
       val dpsVisitorId = 45678L
       val nomisVisitorId = 876544L
+      val nomisVisitSlotId = 3L
+      val dpsVisitSlotId = "30"
 
       @BeforeEach
       fun setUp() {
@@ -277,7 +301,7 @@ class OfficialVisitsMigrationIntTest(
         )
         nomisApiMock.stubGetOfficialVisit(
           visitId = nomisVisitId,
-          response = officialVisitResponse().copy(internalLocationId = nomisLocationId, visitId = nomisVisitId),
+          response = officialVisitResponse().copy(internalLocationId = nomisLocationId, visitId = nomisVisitId, visitSlotId = nomisVisitSlotId),
         )
         mappingApiMock.stubGetInternalLocationByNomisId(
           nomisLocationId = nomisLocationId,
@@ -285,6 +309,14 @@ class OfficialVisitsMigrationIntTest(
             dpsLocationId = dpsLocationId.toString(),
             nomisLocationId = nomisLocationId,
             mappingType = LocationMappingDto.MappingType.LOCATION_CREATED,
+          ),
+        )
+        visitSlotMappingApiMock.stubGetVisitSlotByNomisId(
+          nomisId = nomisVisitSlotId,
+          mapping = VisitSlotMappingDto(
+            dpsId = dpsVisitSlotId,
+            nomisId = nomisVisitSlotId,
+            mappingType = VisitSlotMappingDto.MappingType.NOMIS_CREATED,
           ),
         )
         dpsApiMock.stubMigrateVisit(
@@ -373,6 +405,8 @@ class OfficialVisitsMigrationIntTest(
       val dpsVisitId = 54321L
       val dpsVisitorId = 45678L
       val nomisVisitorId = 876544L
+      val nomisVisitSlotId = 3L
+      val dpsVisitSlotId = "30"
 
       @BeforeEach
       fun setUp() {
@@ -389,7 +423,7 @@ class OfficialVisitsMigrationIntTest(
         )
         nomisApiMock.stubGetOfficialVisit(
           visitId = nomisVisitId,
-          response = officialVisitResponse().copy(internalLocationId = nomisLocationId, visitId = nomisVisitId),
+          response = officialVisitResponse().copy(internalLocationId = nomisLocationId, visitId = nomisVisitId, visitSlotId = nomisVisitSlotId),
         )
         mappingApiMock.stubGetInternalLocationByNomisId(
           nomisLocationId = nomisLocationId,
@@ -397,6 +431,14 @@ class OfficialVisitsMigrationIntTest(
             dpsLocationId = dpsLocationId.toString(),
             nomisLocationId = nomisLocationId,
             mappingType = LocationMappingDto.MappingType.LOCATION_CREATED,
+          ),
+        )
+        visitSlotMappingApiMock.stubGetVisitSlotByNomisId(
+          nomisId = nomisVisitSlotId,
+          mapping = VisitSlotMappingDto(
+            dpsId = dpsVisitSlotId,
+            nomisId = nomisVisitSlotId,
+            mappingType = VisitSlotMappingDto.MappingType.NOMIS_CREATED,
           ),
         )
         dpsApiMock.stubMigrateVisit(

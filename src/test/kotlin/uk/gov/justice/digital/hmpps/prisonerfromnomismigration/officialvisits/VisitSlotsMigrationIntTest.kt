@@ -118,7 +118,7 @@ class VisitSlotsMigrationIntTest(
             ),
           ),
         )
-        mappingApiMock.stubGetByNomisIdsOrNull(
+        mappingApiMock.stubGetTimeSlotByNomisIdsOrNull(
           nomisPrisonId = "WWI",
           nomisDayOfWeek = "MON",
           nomisSlotSequence = 2,
@@ -175,7 +175,7 @@ class VisitSlotsMigrationIntTest(
             ),
           ),
         )
-        mappingApiMock.stubGetByNomisIdsOrNull(
+        mappingApiMock.stubGetTimeSlotByNomisIdsOrNull(
           nomisPrisonId = nomisPrisonId,
           nomisDayOfWeek = "MON",
           nomisSlotSequence = nomisSlotSequence,
@@ -339,7 +339,7 @@ class VisitSlotsMigrationIntTest(
             ),
           ),
         )
-        mappingApiMock.stubGetByNomisIdsOrNull(
+        mappingApiMock.stubGetTimeSlotByNomisIdsOrNull(
           nomisPrisonId = nomisPrisonId,
           nomisDayOfWeek = "MON",
           nomisSlotSequence = nomisSlotSequence,
@@ -458,7 +458,7 @@ class VisitSlotsMigrationIntTest(
             ),
           ),
         )
-        mappingApiMock.stubGetByNomisIdsOrNull(
+        mappingApiMock.stubGetTimeSlotByNomisIdsOrNull(
           nomisPrisonId = nomisPrisonId,
           nomisDayOfWeek = "MON",
           nomisSlotSequence = nomisSlotSequence,
