@@ -34,11 +34,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactRelationship
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.migrateVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsNomisApiMockServer.Companion.officialVisitResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsNomisApiMockServer.Companion.officialVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.CodedValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitRequest
@@ -328,6 +330,42 @@ class OfficialVisitsMigrationIntTest(
               modifyDatetime = LocalDateTime.parse("2020-02-02T11:10:10"),
               modifyUserId = "S.SMITH",
             ),
+            visitors = listOf(
+              officialVisitor().copy(
+                id = nomisVisitorId,
+                personId = 876,
+                firstName = "JOHN",
+                lastName = "SMITH",
+                dateOfBirth = LocalDate.parse("1965-07-19"),
+                leadVisitor = true,
+                assistedVisit = true,
+                commentText = "Requires access",
+                eventStatus = CodeDescription(code = "COMP", description = "Completed"),
+                visitOutcome = CodeDescription(code = "ATT", description = "Attended"),
+                outcomeReason = CodeDescription(code = "OFFCANC", description = "Offender Cancelled"),
+                relationships = listOf(
+                  ContactRelationship(
+                    relationshipType = CodeDescription(
+                      code = "POL",
+                      description = "Police",
+                    ),
+                  ),
+                  ContactRelationship(
+                    relationshipType = CodeDescription(
+                      code = "DR",
+                      description = "Doctor",
+                    ),
+                  ),
+                ),
+                audit = NomisAudit(
+                  createDatetime = LocalDateTime.parse("2019-01-01T10:10:10"),
+                  createUsername = "S.JOHN",
+                  modifyDatetime = LocalDateTime.parse("2019-02-02T11:10:10"),
+                  modifyUserId = "T.SMITH",
+                ),
+              ),
+              officialVisitor(),
+            ),
           ),
         )
         mappingApiMock.stubGetInternalLocationByNomisId(
@@ -427,6 +465,65 @@ class OfficialVisitsMigrationIntTest(
         assertThat(migrationRequest.createDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T10:10:10"))
         assertThat(migrationRequest.modifyUsername).isEqualTo("S.SMITH")
         assertThat(migrationRequest.modifyDateTime).isEqualTo(LocalDateTime.parse("2020-02-02T11:10:10"))
+      }
+
+      @Test
+      fun `will send all visitors`() {
+        assertThat(migrationRequest.visitors).hasSize(2)
+      }
+
+      @Test
+      fun `will map and transform core details about each visitor`() {
+        with(migrationRequest.visitors[0]) {
+          assertThat(offenderVisitVisitorId).isEqualTo(nomisVisitorId)
+          assertThat(personId).isEqualTo(876)
+          assertThat(firstName).isEqualTo("JOHN")
+          assertThat(lastName).isEqualTo("SMITH")
+          assertThat(dateOfBirth).isEqualTo(LocalDate.parse("1965-07-19"))
+          assertThat(groupLeaderFlag).isTrue
+          assertThat(assistedVisitFlag).isTrue
+          assertThat(commentText).isEqualTo("Requires access")
+        }
+      }
+
+      @Test
+      fun `will map and transform audit details of the visitor being added to visit`() {
+        with(migrationRequest.visitors[0]) {
+          assertThat(createUsername).isEqualTo("S.JOHN")
+          assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2019-01-01T10:10:10"))
+          assertThat(modifyUsername).isEqualTo("T.SMITH")
+          assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2019-02-02T11:10:10"))
+        }
+      }
+
+      @Test
+      fun `will map and transform status details about each visitor`() {
+        with(migrationRequest.visitors[0]) {
+          assertThat(eventOutcomeCode).isEqualTo(
+            CodedValue(
+              code = "ATT",
+              description = "Attended",
+            ),
+          )
+          assertThat(outcomeReasonCode).isEqualTo(
+            CodedValue(
+              code = "OFFCANC",
+              description = "Offender Cancelled",
+            ),
+          )
+        }
+      }
+
+      @Test
+      fun `will map and transform the most relevant relationship between the visitor and prisoner`() {
+        with(migrationRequest.visitors[0]) {
+          assertThat(relationshipToPrisoner).isEqualTo(
+            CodedValue(
+              code = "POL",
+              description = "Police",
+            ),
+          )
+        }
       }
     }
 
