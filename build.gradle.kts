@@ -126,7 +126,7 @@ val models = listOf(
     name = "finance",
     packageName = "finance",
     testPackageName = "finance",
-    url = "https://prisoner-finance-poc-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+    url = "https://prisoner-finance-sync-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
     isLive = false,
   ),
   ModelConfiguration(
