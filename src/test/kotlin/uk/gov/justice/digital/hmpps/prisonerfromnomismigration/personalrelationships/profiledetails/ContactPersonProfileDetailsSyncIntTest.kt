@@ -533,8 +533,12 @@ class ContactPersonProfileDetailsSyncIntTest(
     bookingId = bookingId,
     startDateTime = startDateTime,
     latestBooking = latestBooking,
+    sequence = if (latestBooking) {
+      1
+    } else {
+      2
+    },
     profileDetails = profileDetails,
-    sequence = 1,
   )
 
   private fun profileDetails(

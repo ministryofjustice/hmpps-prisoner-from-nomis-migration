@@ -264,11 +264,6 @@ class CorePersonSynchronisationService(
     if (eventProfileTypes.contains(profileType)) {
       track("coreperson-profiledetails-synchronisation", telemetry) {
         val nomisResponse = nomisApiService.getProfileDetails(event.offenderIdDisplay, listOf(event.profileType))
-        val latestBooking = findBooking(null, nomisResponse.bookings)
-        if (latestBooking.bookingId != bookingId) {
-          telemetryClient.trackEvent("coreperson-profiledetails-synchronisation-ignored-booking", telemetry)
-          return
-        }
 
         val typeHistory = nomisResponse.bookings
           .mapNotNull { booking ->
@@ -276,30 +271,22 @@ class CorePersonSynchronisationService(
               .find { profile -> profile.type == profileType }
               ?.let { booking to it }
           }
-          .sortedWith(
-            compareByDescending<Pair<BookingProfileDetailsResponse, ProfileDetailsResponse>> {
-              it.second.modifiedDateTime ?: it.second.createDateTime
-            }
-              .thenByDescending { it.first.bookingId },
-          )
-        // NOTE the create/modify dates are COPIED from one booking to another, so do not refer to the row insert or update time
+          .sortedBy { it.first.sequence }
 
-        // The profile that triggered the event is on the latest booking;
-        // Is the first profileType in the list, i.e. the most recently updated, the same one?
         if (!typeHistory[0].first.latestBooking) {
-          typeHistory.mapIndexed { index, it ->
-            telemetry["typeHistory-$index-bookingId"] = it.first.bookingId
-            telemetry["typeHistory-$index-latestBooking"] = it.first.latestBooking
-            telemetry["typeHistory-$index-startDateTime"] = it.first.startDateTime
-            telemetry["typeHistory-$index-profile"] = it.second
-          }
-          throw BookingException("Most recent update is not for the current booking")
+          throw BookingException("Could not find latest booking")
         }
-
+        if (typeHistory[0].first.bookingId != bookingId) {
+          telemetryClient.trackEvent("coreperson-profiledetails-synchronisation-ignored-booking", telemetry)
+          return
+        }
         if (firstIsADuplicate(typeHistory)) {
           telemetryClient.trackEvent("coreperson-profiledetails-synchronisation-ignored-duplicate", telemetry)
           return
         }
+
+        // NOTE the profile create/modify dates are COPIED from one booking to another, so do not refer to the row insert or update time
+        // (but the auditTimestamp does)
 
         with(typeHistory[0].second) {
           when (profileType) {
@@ -328,19 +315,5 @@ class CorePersonSynchronisationService(
 }
 
 private fun firstIsADuplicate(typeHistory: List<Pair<BookingProfileDetailsResponse, ProfileDetailsResponse>>): Boolean = typeHistory.size >= 2 && typeHistory[0].second.code == typeHistory[1].second.code
-
-private fun findBooking(
-  bookingId: Long?,
-  bookings: List<BookingProfileDetailsResponse>,
-): BookingProfileDetailsResponse {
-  val booking = if (bookingId != null) {
-    bookings.find { it.bookingId == bookingId }
-      ?: throw BookingException("No booking found for bookingId $bookingId")
-  } else {
-    bookings.find { it.latestBooking }
-      ?: throw BookingException("Could not find latest booking")
-  }
-  return booking
-}
 
 class BookingException(message: String) : IllegalArgumentException(message)

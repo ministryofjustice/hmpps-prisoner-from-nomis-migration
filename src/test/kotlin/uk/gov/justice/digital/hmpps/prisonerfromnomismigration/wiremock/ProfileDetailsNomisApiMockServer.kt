@@ -66,8 +66,12 @@ fun booking(bookingId: Long = 1, latestBooking: Boolean = true, profileDetails: 
   bookingId = bookingId,
   startDateTime = LocalDateTime.parse("2024-02-03T12:34:56"),
   latestBooking = latestBooking,
+  sequence = if (latestBooking) {
+    1
+  } else {
+    2
+  },
   profileDetails = profileDetails,
-  sequence = 1,
 )
 
 fun profileDetails(type: String = "MARITAL", code: String? = "M") = ProfileDetailsResponse(
