@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2025-11-20.1448.0946b03"
+    "version" : "2025-11-24.1504.33e26dd"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -1474,6 +1474,30 @@
             "type" : "string"
           },
           "fullAddress" : {
+            "type" : "string"
+          },
+          "buildingName" : {
+            "type" : "string"
+          },
+          "addressNumber" : {
+            "type" : "string"
+          },
+          "streetName" : {
+            "type" : "string"
+          },
+          "district" : {
+            "type" : "string"
+          },
+          "townCity" : {
+            "type" : "string"
+          },
+          "county" : {
+            "type" : "string"
+          },
+          "uprn" : {
+            "type" : "string"
+          },
+          "notes" : {
             "type" : "string"
           }
         }
