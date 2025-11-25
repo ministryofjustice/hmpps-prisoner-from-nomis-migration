@@ -170,16 +170,18 @@ class OfficialVisitsMigrationService(
         groupLeaderFlag = visitor.leadVisitor,
         assistedVisitFlag = visitor.assistedVisit,
         commentText = visitor.commentText,
-        eventOutcomeCode = visitor.visitOutcome?.toCodeValue(),
-        outcomeReasonCode = visitor.outcomeReason?.toCodeValue(),
+        eventOutcomeCode = visitor.visitorAttendanceOutcome?.toCodeValue(),
+        outcomeReasonCode = visitor.cancellationReason?.toCodeValue(),
         modifyDateTime = visitor.audit.modifyDatetime,
         modifyUsername = visitor.audit.modifyUserId,
       )
     },
     commentText = commentText,
     searchTypeCode = prisonerSearchType?.toCodeValue(),
-    eventOutcomeCode = visitOutcome?.toCodeValue(),
-    outcomeReasonCode = outcomeReason?.toCodeValue(),
+    eventOutcomeCode = prisonerAttendanceOutcome?.toCodeValue(),
+    outcomeReasonCode = cancellationReason?.toCodeValue(),
+    // TODO - where to add visit outcome
+    // outcomeReasonCode = visitOutcome?.toCodeValue(),
     // TODO - remove from DPS API
     raisedIncidentTypeCode = null,
     // TODO - remove from DPS API
