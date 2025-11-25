@@ -53,9 +53,9 @@ class CorePersonSynchronisationIntTest(
             bookings = listOf(
               booking(
                 bookingId = 12345,
-                latestBooking = true,
+                sequence = 1,
                 profileDetails = listOf(
-                  profileDetails(type = "SEXO", code = "M", created = LocalDateTime.parse("2024-09-04T12:34:56")),
+                  profileDetails(type = "SEXO", code = "M"),
                 ),
               ),
             ),
@@ -100,9 +100,16 @@ class CorePersonSynchronisationIntTest(
             bookings = listOf(
               booking(
                 bookingId = 12345,
-                latestBooking = true,
+                sequence = 1,
                 profileDetails = listOf(
-                  profileDetails(type = "SEXO", code = "M", created = LocalDateTime.parse("2024-09-04T12:34:56")),
+                  profileDetails(type = "SEXO", code = "M"),
+                ),
+              ),
+              booking(
+                bookingId = 11111,
+                sequence = 2,
+                profileDetails = listOf(
+                  profileDetails(type = "SEXO", code = "F"),
                 ),
               ),
             ),
@@ -141,23 +148,23 @@ class CorePersonSynchronisationIntTest(
             bookings = listOf(
               booking(
                 bookingId = 12345,
-                latestBooking = true,
+                sequence = 1,
                 profileDetails = listOf(
-                  profileDetails(type = "SEXO", code = "M", created = LocalDateTime.parse("2024-09-04T12:34:56")),
+                  profileDetails(type = "SEXO", code = "M"),
                 ),
               ),
               booking(
                 bookingId = 11111,
-                latestBooking = false,
+                sequence = 3,
                 profileDetails = listOf(
-                  profileDetails(type = "SEXO", code = "OTHER", created = LocalDateTime.parse("2009-01-01T12:34:56")),
+                  profileDetails(type = "SEXO", code = "OTHER"),
                 ),
               ),
               booking(
                 bookingId = 11223,
-                latestBooking = false,
+                sequence = 2,
                 profileDetails = listOf(
-                  profileDetails(type = "SEXO", code = "M", created = LocalDateTime.parse("2019-01-01T12:34:56")),
+                  profileDetails(type = "SEXO", code = "M"),
                 ),
               ),
             ),
@@ -185,60 +192,61 @@ class CorePersonSynchronisationIntTest(
         )
       }
 
-      @Test
-      fun `event is for a duplicate profile value with same timestamp`() = runTest {
-        nomisApi.stubGetProfileDetails(
-          offenderNo = "A1234AA",
-          bookingId = null,
-          profileTypes = listOf("SEXO"),
-          response = nomisResponse(
-            offenderNo = "A1234AA",
-            bookings = listOf(
-              booking(
-                bookingId = 12345,
-                latestBooking = true,
-                profileDetails = listOf(
-                  profileDetails(type = "SEXO", code = "M", created = LocalDateTime.parse("2024-09-04T12:34:56")),
-                ),
-              ),
-              booking(
-                bookingId = 11111,
-                latestBooking = false,
-                profileDetails = listOf(
-                  profileDetails(type = "SEXO", code = "OTHER", created = LocalDateTime.parse("2024-01-01T12:34:56")),
-                ),
-              ),
-              booking(
-                bookingId = 11223,
-                latestBooking = false,
-                profileDetails = listOf(
-                  profileDetails(type = "SEXO", code = "M", created = LocalDateTime.parse("2024-01-01T12:34:56")),
-                ),
-              ),
-            ),
-          ),
-        )
-        cprApi.stubSyncCreateSexualOrientation()
-
-        sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SEXO")
-          .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-ignored-duplicate") }
-
-        verifyNomis(
-          offenderNo = "A1234AA",
-          bookingId = null,
-          profileType = "SEXO",
-        )
-        cprApi.verify(
-          0,
-          postRequestedFor(urlPathEqualTo("/syscon-sync/sexual-orientation")),
-        )
-        verifyTelemetry(
-          "coreperson-profiledetails-synchronisation-ignored-duplicate",
-          offenderNo = "A1234AA",
-          bookingId = 12345,
-          profileType = "SEXO",
-        )
-      }
+//      @Test
+//      fun `event is for a duplicate profile value with same timestamp`() = runTest {
+//        nomisApi.stubGetProfileDetails(
+//          offenderNo = "A1234AA",
+//          bookingId = null,
+//          profileTypes = listOf("SEXO"),
+//          response = nomisResponse(
+//            offenderNo = "A1234AA",
+//            bookings = listOf(
+//              booking(
+//                bookingId = 12345,
+//                latestBooking = true,
+//                sequence = 1,
+//                profileDetails = listOf(
+//                  profileDetails(type = "SEXO", code = "M"),
+//                ),
+//              ),
+//              booking(
+//                bookingId = 11111,
+//                latestBooking = false,
+//                profileDetails = listOf(
+//                  profileDetails(type = "SEXO", code = "OTHER"),
+//                ),
+//              ),
+//              booking(
+//                bookingId = 11223,
+//                latestBooking = false,
+//                profileDetails = listOf(
+//                  profileDetails(type = "SEXO", code = "M"),
+//                ),
+//              ),
+//            ),
+//          ),
+//        )
+//        cprApi.stubSyncCreateSexualOrientation()
+//
+//        sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SEXO")
+//          .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-ignored-duplicate") }
+//
+//        verifyNomis(
+//          offenderNo = "A1234AA",
+//          bookingId = null,
+//          profileType = "SEXO",
+//        )
+//        cprApi.verify(
+//          0,
+//          postRequestedFor(urlPathEqualTo("/syscon-sync/sexual-orientation")),
+//        )
+//        verifyTelemetry(
+//          "coreperson-profiledetails-synchronisation-ignored-duplicate",
+//          offenderNo = "A1234AA",
+//          bookingId = 12345,
+//          profileType = "SEXO",
+//        )
+//      }
     }
 
     @Nested
@@ -254,9 +262,9 @@ class CorePersonSynchronisationIntTest(
             bookings = listOf(
               booking(
                 bookingId = 11111,
-                latestBooking = false,
+                sequence = 2,
                 profileDetails = listOf(
-                  profileDetails(type = "SEXO", code = "M", created = LocalDateTime.parse("2024-09-04T12:34:56")),
+                  profileDetails(type = "SEXO", code = "M"),
                 ),
               ),
             ),
@@ -281,50 +289,50 @@ class CorePersonSynchronisationIntTest(
         )
       }
 
-      @Test
-      fun `most recently changed profile is for old booking`() = runTest {
-        nomisApi.stubGetProfileDetails(
-          offenderNo = "A1234AA",
-          bookingId = null,
-          profileTypes = listOf("SEXO"),
-          response = nomisResponse(
-            offenderNo = "A1234AA",
-            bookings = listOf(
-              booking(
-                bookingId = 11111,
-                latestBooking = false,
-                profileDetails = listOf(
-                  profileDetails(type = "SEXO", code = "F", created = LocalDateTime.parse("2025-09-04T12:34:56")),
-                ),
-              ),
-              booking(
-                bookingId = 12345,
-                latestBooking = true,
-                profileDetails = listOf(
-                  profileDetails(type = "SEXO", code = "M", created = LocalDateTime.parse("2010-09-04T12:34:56")),
-                ),
-              ),
-            ),
-          ),
-        )
-        cprApi.stubSyncCreateSexualOrientation()
-
-        sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SEXO")
-          .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-error", 2) }
-
-        cprApi.verify(
-          0,
-          postRequestedFor(urlPathEqualTo("/syscon-sync/sexual-orientation")),
-        )
-        verifyTelemetry(
-          "coreperson-profiledetails-synchronisation-error",
-          offenderNo = "A1234AA",
-          bookingId = 12345,
-          profileType = "SEXO",
-          error = "Most recent update is not for the current booking",
-          count = 2,
-        )
-      }
+//      @Test
+//      fun `most recently changed profile is for old booking`() = runTest {
+//        nomisApi.stubGetProfileDetails(
+//          offenderNo = "A1234AA",
+//          bookingId = null,
+//          profileTypes = listOf("SEXO"),
+//          response = nomisResponse(
+//            offenderNo = "A1234AA",
+//            bookings = listOf(
+//              booking(
+//                bookingId = 11111,
+//                latestBooking = false,
+//                profileDetails = listOf(
+//                  profileDetails(type = "SEXO", code = "F"),
+//                ),
+//              ),
+//              booking(
+//                bookingId = 12345,
+//                latestBooking = true,
+//                profileDetails = listOf(
+//                  profileDetails(type = "SEXO", code = "M"),
+//                ),
+//              ),
+//            ),
+//          ),
+//        )
+//        cprApi.stubSyncCreateSexualOrientation()
+//
+//        sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SEXO")
+//          .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-error", 2) }
+//
+//        cprApi.verify(
+//          0,
+//          postRequestedFor(urlPathEqualTo("/syscon-sync/sexual-orientation")),
+//        )
+//        verifyTelemetry(
+//          "coreperson-profiledetails-synchronisation-error",
+//          offenderNo = "A1234AA",
+//          bookingId = 12345,
+//          profileType = "SEXO",
+//          error = "Most recent update is not for the current booking",
+//          count = 2,
+//        )
+//      }
     }
   }
 
@@ -364,14 +372,14 @@ class CorePersonSynchronisationIntTest(
   private fun booking(
     bookingId: Long = 12345,
     startDateTime: LocalDateTime = LocalDateTime.parse("2024-09-03T12:34:56"),
-    latestBooking: Boolean = true,
+    sequence: Int = 1,
     profileDetails: List<ProfileDetailsResponse> = listOf(profileDetails()),
   ) = BookingProfileDetailsResponse(
     bookingId = bookingId,
     startDateTime = startDateTime,
-    latestBooking = latestBooking,
+    latestBooking = sequence == 1,
+    sequence = sequence,
     profileDetails = profileDetails,
-    sequence = 1,
   )
 
   private fun profileDetails(

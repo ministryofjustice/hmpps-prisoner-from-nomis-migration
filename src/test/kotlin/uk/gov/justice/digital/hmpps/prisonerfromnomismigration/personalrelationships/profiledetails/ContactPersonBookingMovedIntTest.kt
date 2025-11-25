@@ -575,8 +575,12 @@ class ContactPersonBookingMovedIntTest(
     bookingId = bookingId,
     startDateTime = startDateTime,
     latestBooking = latestBooking,
+    sequence = if (latestBooking) {
+      1
+    } else {
+      2
+    },
     profileDetails = profileDetails.asList(),
-    sequence = 1,
   )
 
   fun profileDetailsResponse(
