@@ -272,10 +272,10 @@ class CourtSentencingSynchronisationService(
 
   suspend fun nomisCourtCaseDeleted(event: CourtCaseEvent) {
     val telemetry =
-      mapOf(
-        "nomisCourtCaseId" to event.caseId,
+      mutableMapOf(
+        "nomisCourtCaseId" to event.caseId.toString(),
         "offenderNo" to event.offenderIdDisplay,
-        "nomisBookingId" to event.bookingId,
+        "nomisBookingId" to event.bookingId.toString(),
       )
     val mapping = mappingApiService.getCourtCaseOrNullByNomisId(event.caseId)
     if (mapping == null) {
@@ -284,12 +284,10 @@ class CourtSentencingSynchronisationService(
         telemetry,
       )
     } else {
-      dpsApiService.deleteCourtCase(courtCaseId = mapping.dpsCourtCaseId)
-      mappingApiService.deleteCourtCaseMappingByDpsId(mapping.dpsCourtCaseId)
-      telemetryClient.trackEvent(
-        "court-case-synchronisation-deleted-success",
-        telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
-      )
+      track(name = "court-case-synchronisation-deleted", telemetry = (telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId)).toMutableMap()) {
+        dpsApiService.deleteCourtCase(courtCaseId = mapping.dpsCourtCaseId)
+        mappingApiService.deleteCourtCaseMappingByDpsId(mapping.dpsCourtCaseId)
+      }
     }
   }
 
@@ -603,14 +601,12 @@ class CourtSentencingSynchronisationService(
             courtAppearanceId = event.eventId,
           )
           mappingApiService.getCourtCaseOrNullByNomisId(nomisCourtAppearance.caseId!!)?.let { courtCaseMapping ->
-            dpsApiService.updateCourtAppearance(
-              courtAppearanceId = mapping.dpsCourtAppearanceId,
-              nomisCourtAppearance.toDpsCourtAppearance(dpsCaseId = courtCaseMapping.dpsCourtCaseId),
-            )
-            telemetryClient.trackEvent(
-              "court-appearance-synchronisation-updated-success",
-              telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId),
-            )
+            track(name = "court-appearance-synchronisation-updated", telemetry = (telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId)).toMutableMap()) {
+              dpsApiService.updateCourtAppearance(
+                courtAppearanceId = mapping.dpsCourtAppearanceId,
+                nomisCourtAppearance.toDpsCourtAppearance(dpsCaseId = courtCaseMapping.dpsCourtCaseId),
+              )
+            }
           } ?: let {
             telemetryClient.trackEvent(
               "court-appearance-synchronisation-updated-failed",
@@ -642,12 +638,10 @@ class CourtSentencingSynchronisationService(
         telemetry,
       )
     } else {
-      dpsApiService.deleteCourtAppearance(courtAppearanceId = mapping.dpsCourtAppearanceId)
-      mappingApiService.deleteCourtAppearanceMappingByDpsId(mapping.dpsCourtAppearanceId)
-      telemetryClient.trackEvent(
-        "court-appearance-synchronisation-deleted-success",
-        telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId),
-      )
+      track(name = "court-appearance-synchronisation-deleted", telemetry = (telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId)).toMutableMap()) {
+        dpsApiService.deleteCourtAppearance(courtAppearanceId = mapping.dpsCourtAppearanceId)
+        mappingApiService.deleteCourtAppearanceMappingByDpsId(mapping.dpsCourtAppearanceId)
+      }
     }
   }
 
@@ -887,16 +881,14 @@ class CourtSentencingSynchronisationService(
             offenderNo = event.offenderIdDisplay,
             offenderChargeId = event.chargeId,
           ).let { nomisOffenderCharge ->
-            dpsApiService.updateChargeOffence(
-              chargeId = chargeMapping.dpsCourtChargeId,
-              charge = LegacyUpdateWholeCharge(
-                offenceCode = nomisOffenderCharge.offence.offenceCode,
-              ),
-            )
-            telemetryClient.trackEvent(
-              "court-charge-synchronisation-updated-success",
-              telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("reason" to "offence code changed"),
-            )
+            track(name = "court-charge-synchronisation-updated", telemetry = (telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("reason" to "offence code changed")).toMutableMap()) {
+              dpsApiService.updateChargeOffence(
+                chargeId = chargeMapping.dpsCourtChargeId,
+                charge = LegacyUpdateWholeCharge(
+                  offenceCode = nomisOffenderCharge.offence.offenceCode,
+                ),
+              )
+            }
           }
         } ?: let {
           telemetryClient.trackEvent(
@@ -1112,9 +1104,11 @@ class CourtSentencingSynchronisationService(
             sentenceSequence = event.sentenceSeq,
             termSequence = event.termSequence,
           )
-        dpsApiService.createPeriodLength(
-          nomisSentenceTerm.toPeriodLegacyData(dpsSentenceId = sentenceMapping.dpsSentenceId),
-        ).run {
+        trackIfFailure(name = "sentence-term-synchronisation-created", telemetry = telemetry.toMutableMap()) {
+          dpsApiService.createPeriodLength(
+            nomisSentenceTerm.toPeriodLegacyData(dpsSentenceId = sentenceMapping.dpsSentenceId),
+          )
+        }.run {
           log.info("Created sentence term with dps response $this")
           tryToCreateSentenceTermMapping(
             offenderBookingId = sentenceMapping.nomisBookingId,
@@ -1148,10 +1142,10 @@ class CourtSentencingSynchronisationService(
 
   suspend fun nomisSentenceDeleted(event: OffenderSentenceEvent) {
     val telemetry =
-      mapOf(
-        "nomisSentenceSequence" to event.sentenceSeq,
+      mutableMapOf(
+        "nomisSentenceSequence" to event.sentenceSeq.toString(),
         "offenderNo" to event.offenderIdDisplay,
-        "nomisBookingId" to event.bookingId,
+        "nomisBookingId" to event.bookingId.toString(),
         "nomisSentenceCategory" to event.sentenceCategory,
         "nomisSentenceLevel" to event.sentenceLevel,
         "nomisCaseId" to event.caseId.toString(),
@@ -1167,7 +1161,9 @@ class CourtSentencingSynchronisationService(
           telemetry,
         )
       } else {
-        dpsApiService.deleteSentence(sentenceId = mapping.dpsSentenceId)
+        trackIfFailure(name = "sentence-synchronisation-deleted", telemetry = telemetry) {
+          dpsApiService.deleteSentence(sentenceId = mapping.dpsSentenceId)
+        }
         tryToDeleteSentenceMapping(mapping.dpsSentenceId)
         telemetryClient.trackEvent(
           "sentence-synchronisation-deleted-success",
@@ -1184,11 +1180,11 @@ class CourtSentencingSynchronisationService(
 
   suspend fun nomisSentenceTermDeleted(event: OffenderSentenceTermEvent) {
     val telemetry =
-      mapOf(
-        "nomisSentenceSequence" to event.sentenceSeq,
+      mutableMapOf(
+        "nomisSentenceSequence" to event.sentenceSeq.toString(),
         "offenderNo" to event.offenderIdDisplay,
-        "nomisBookingId" to event.bookingId,
-        "nomisTermSequence" to event.termSequence,
+        "nomisBookingId" to event.bookingId.toString(),
+        "nomisTermSequence" to event.termSequence.toString(),
       )
     val mapping = mappingApiService.getSentenceTermOrNullByNomisId(
       sentenceSequence = event.sentenceSeq,
@@ -1201,7 +1197,9 @@ class CourtSentencingSynchronisationService(
         telemetry,
       )
     } else {
-      dpsApiService.deletePeriodLength(periodLengthId = mapping.dpsTermId)
+      trackIfFailure(name = "sentence-term-synchronisation-deleted", telemetry = telemetry) {
+        dpsApiService.deletePeriodLength(periodLengthId = mapping.dpsTermId)
+      }
       tryToDeleteSentenceTermMapping(mapping.dpsTermId)
       telemetryClient.trackEvent(
         "sentence-term-synchronisation-deleted-success",
@@ -1393,7 +1391,7 @@ class CourtSentencingSynchronisationService(
 
   private suspend fun nomisCaseResynchronisation(nomisCaseId: Long, dpsCaseId: String, offenderNo: String) {
     val telemetry =
-      mapOf(
+      mutableMapOf(
         "dpsCaseId" to dpsCaseId,
         "nomisCaseId" to nomisCaseId.toString(),
         "offenderNo" to offenderNo,
@@ -1401,14 +1399,15 @@ class CourtSentencingSynchronisationService(
 
     val nomisCourtCase =
       nomisApiService.getCourtCase(offenderNo = offenderNo, courtCaseId = nomisCaseId)
-    dpsApiService.updateCourtCase(
-      courtCaseId = dpsCaseId,
-      nomisCourtCase.toLegacyDpsCourtCase(),
-    )
-    telemetryClient.trackEvent(
-      "court-case-resynchronisation-success",
-      telemetry + ("nomisBookingId" to nomisCourtCase.bookingId.toString()),
-    )
+    track(
+      name = "court-case-resynchronisation",
+      (telemetry + ("nomisBookingId" to nomisCourtCase.bookingId.toString())).toMutableMap(),
+    ) {
+      dpsApiService.updateCourtCase(
+        courtCaseId = dpsCaseId,
+        nomisCourtCase.toLegacyDpsCourtCase(),
+      )
+    }
   }
 
   suspend fun nomisCaseBookingMoveResynchronisation(event: OffenderCaseBookingResynchronisationEvent) {
@@ -1496,7 +1495,7 @@ class CourtSentencingSynchronisationService(
       mapOf(
         "nomisBookingId" to event.bookingId.toString(),
         "nomisSentenceSequence" to event.sentenceSeq.toString(),
-        "nomisTermSequence" to event.termSequence,
+        "nomisTermSequence" to event.termSequence.toString(),
         "offenderNo" to event.offenderIdDisplay,
       )
     if (event.originatesInDps) {
@@ -1538,12 +1537,14 @@ class CourtSentencingSynchronisationService(
               sentenceSequence = event.sentenceSeq,
               termSequence = event.termSequence,
             )
-          dpsApiService.updatePeriodLength(
-            periodLengthId = mapping.dpsTermId,
-            period = nomisSentenceTerm.toPeriodLegacyData(
-              dpsSentenceId = sentenceMapping.dpsSentenceId,
-            ),
-          )
+          trackIfFailure(name = "sentence-term-synchronisation-updated", telemetry = (telemetry + ("dpsTermId" to mapping.dpsTermId)).toMutableMap()) {
+            dpsApiService.updatePeriodLength(
+              periodLengthId = mapping.dpsTermId,
+              period = nomisSentenceTerm.toPeriodLegacyData(
+                dpsSentenceId = sentenceMapping.dpsSentenceId,
+              ),
+            )
+          }
         } ?: let {
           telemetryClient.trackEvent(
             "sentence-term-synchronisation-updated-failed",
