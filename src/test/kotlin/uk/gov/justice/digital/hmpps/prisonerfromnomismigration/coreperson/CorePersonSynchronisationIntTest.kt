@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.havingExactly
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
@@ -19,6 +20,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSexualOrientation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -219,30 +221,231 @@ class CorePersonSynchronisationIntTest(
         )
       }
     }
+
+    private fun verifyCpr(
+      profileType: String,
+      requestBody: PrisonSexualOrientation,
+    ) {
+      cprApi.verify(
+        postRequestedFor(urlPathEqualTo("/syscon-sync/$profileType"))
+          .withRequestBodyJsonPath("prisonNumber", requestBody.prisonNumber)
+          .withRequestBodyJsonPath("sexualOrientationCode", requestBody.sexualOrientationCode)
+          .withRequestBodyJsonPath("createUserId", requestBody.createUserId!!)
+          .withRequestBodyJsonPath("createDateTime", requestBody.createDateTime.toString()),
+      )
+    }
+  }
+
+  @Nested
+  @DisplayName("OFFENDER_PHYSICAL_DETAILS-CHANGED for DISABILITY profile type")
+  inner class Disability {
+    @Nested
+    inner class HappyPath {
+      @Test
+      fun `should sync new profile details to CPR`() = runTest {
+        nomisApi.stubGetProfileDetails(
+          offenderNo = "A1234AA",
+          bookingId = null,
+          profileTypes = listOf("DISABILITY"),
+          response = nomisResponse(
+            offenderNo = "A1234AA",
+            bookings = listOf(
+              booking(
+                bookingId = 12345,
+                sequence = 1,
+                profileDetails = listOf(profileDetails(type = "DISABILITY", code = "Y")),
+              ),
+            ),
+          ),
+        )
+        cprApi.stubSyncCreateDisability()
+
+        sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "DISABILITY")
+          .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-success") }
+
+        verifyNomis(
+          offenderNo = "A1234AA",
+          bookingId = null,
+          profileType = "DISABILITY",
+        )
+        cprApi.verify(
+          postRequestedFor(urlPathEqualTo("/syscon-sync/${"disability-status"}"))
+            .withRequestBodyJsonPath("prisonNumber", "A1234AA")
+            .withRequestBodyJsonPath("disability", true)
+            .withRequestBodyJsonPath("createUserId", "A_USER")
+            .withRequestBodyJsonPath("createDateTime", "2024-09-04T12:34:56"),
+        )
+        verifyTelemetry(
+          "coreperson-profiledetails-synchronisation-success",
+          offenderNo = "A1234AA",
+          bookingId = 12345,
+          profileType = "DISABILITY",
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("OFFENDER_PHYSICAL_DETAILS-CHANGED for IMM profile type")
+  inner class Immigration {
+    @Nested
+    inner class HappyPath {
+      @Test
+      fun `should sync new profile details to CPR`() = runTest {
+        nomisApi.stubGetProfileDetails(
+          offenderNo = "A1234AA",
+          bookingId = null,
+          profileTypes = listOf("IMM"),
+          response = nomisResponse(
+            offenderNo = "A1234AA",
+            bookings = listOf(
+              booking(
+                bookingId = 12345,
+                sequence = 1,
+                profileDetails = listOf(profileDetails(type = "IMM", code = "Y")),
+              ),
+            ),
+          ),
+        )
+        cprApi.stubSyncCreateImmigration()
+
+        sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "IMM")
+          .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-success") }
+
+        verifyNomis(
+          offenderNo = "A1234AA",
+          bookingId = null,
+          profileType = "IMM",
+        )
+        val requestBody = PrisonImmigrationStatus(
+          "A1234AA",
+          true,
+          current = true,
+          createUserId = "A_USER",
+          createDateTime = LocalDateTime.parse("2024-09-04T12:34:56"),
+        )
+        cprApi.verify(
+          postRequestedFor(urlPathEqualTo("/syscon-sync/${"immigration-status"}"))
+            .withRequestBodyJsonPath("prisonNumber", "A1234AA")
+            .withRequestBodyJsonPath("interestToImmigration", true)
+            .withRequestBodyJsonPath("createUserId", "A_USER")
+            .withRequestBodyJsonPath("createDateTime", "2024-09-04T12:34:56"),
+        )
+        verifyTelemetry(
+          "coreperson-profiledetails-synchronisation-success",
+          offenderNo = "A1234AA",
+          bookingId = 12345,
+          profileType = "IMM",
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("OFFENDER_PHYSICAL_DETAILS-CHANGED for Nationality profile types")
+  inner class Nationality {
+    @Nested
+    inner class HappyPath {
+      @Test
+      fun `should sync new NAT details to CPR`() = runTest {
+        nomisApi.stubGetProfileDetails(
+          offenderNo = "A1234AA",
+          bookingId = null,
+          profileTypes = listOf("NAT", "NATIO"),
+          response = nomisResponse(
+            offenderNo = "A1234AA",
+            bookings = listOf(
+              booking(
+                bookingId = 12345,
+                sequence = 1,
+                profileDetails = listOf(
+                  profileDetails(type = "NAT", code = "BRI"),
+                  profileDetails(type = "NATIO", code = null),
+                ),
+              ),
+            ),
+          ),
+        )
+        cprApi.stubSyncCreateNationality()
+
+        sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "NAT")
+          .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-success") }
+
+        nomisApi.verify(
+          getRequestedFor(urlPathMatching("/prisoners/A1234AA/profile-details"))
+            .withQueryParam("profileTypes", havingExactly("NAT", "NATIO")),
+        )
+        cprApi.verify(
+          postRequestedFor(urlPathEqualTo("/syscon-sync/nationality"))
+            .withRequestBodyJsonPath("prisonNumber", "A1234AA")
+            .withRequestBodyJsonPath("nationalityCode", "BRI")
+            .withRequestBodyJsonPath("createUserId", "A_USER")
+            .withRequestBodyJsonPath("createDateTime", "2024-09-04T12:34:56"),
+        )
+        verifyTelemetry(
+          "coreperson-profiledetails-synchronisation-success",
+          offenderNo = "A1234AA",
+          bookingId = 12345,
+          profileType = "NAT",
+        )
+      }
+
+      @Test
+      fun `should sync new NATIO details to CPR`() = runTest {
+        nomisApi.stubGetProfileDetails(
+          offenderNo = "A1234AA",
+          bookingId = null,
+          profileTypes = listOf("NAT", "NATIO"),
+          response = nomisResponse(
+            offenderNo = "A1234AA",
+            bookings = listOf(
+              booking(
+                bookingId = 12345,
+                sequence = 1,
+                profileDetails = listOf(
+                  profileDetails(type = "NAT", code = "BRI"),
+                  profileDetails(type = "NATIO", code = "details"),
+                ),
+              ),
+            ),
+          ),
+        )
+        cprApi.stubSyncCreateNationality()
+
+        sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "NATIO")
+          .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-success") }
+
+        nomisApi.verify(
+          getRequestedFor(urlPathMatching("/prisoners/A1234AA/profile-details"))
+            .withQueryParam("profileTypes", havingExactly("NAT", "NATIO")),
+        )
+        cprApi.verify(
+          postRequestedFor(urlPathEqualTo("/syscon-sync/nationality"))
+            .withRequestBodyJsonPath("prisonNumber", "A1234AA")
+            .withRequestBodyJsonPath("nationalityCode", "BRI")
+            .withRequestBodyJsonPath("createUserId", "A_USER")
+            .withRequestBodyJsonPath("createDateTime", "2024-09-04T12:34:56")
+            .withRequestBodyJsonPath("notes", "details"),
+        )
+        verifyTelemetry(
+          "coreperson-profiledetails-synchronisation-success",
+          offenderNo = "A1234AA",
+          bookingId = 12345,
+          profileType = "NATIO",
+        )
+      }
+    }
   }
 
   private fun verifyNomis(
     offenderNo: String = "A1234AA",
     bookingId: Long? = 12345,
-    profileType: String = "SEXO",
+    profileType: String,
   ) {
     nomisApi.verify(
       getRequestedFor(urlPathMatching("/prisoners/$offenderNo/profile-details"))
         .withQueryParam("profileTypes", equalTo(profileType))
         .apply { bookingId?.run { withQueryParam("bookingId", equalTo("$bookingId")) } },
-    )
-  }
-
-  private fun verifyCpr(
-    profileType: String = "sexual-orientation",
-    requestBody: PrisonSexualOrientation,
-  ) {
-    cprApi.verify(
-      postRequestedFor(urlPathEqualTo("/syscon-sync/$profileType"))
-        .withRequestBodyJsonPath("prisonNumber", requestBody.prisonNumber)
-        .withRequestBodyJsonPath("sexualOrientationCode", requestBody.sexualOrientationCode)
-        .withRequestBodyJsonPath("createUserId", requestBody.createUserId!!)
-        .withRequestBodyJsonPath("createDateTime", requestBody.createDateTime.toString()),
     )
   }
 

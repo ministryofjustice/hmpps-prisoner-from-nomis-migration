@@ -4,6 +4,9 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDisabilityStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonNationality
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSexualOrientation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
@@ -262,8 +265,14 @@ class CorePersonSynchronisationService(
       "profileType" to profileType,
     )
     if (eventProfileTypes.contains(profileType)) {
+      val profileTypes = if (profileType == "NAT" || profileType == "NATIO") {
+        listOf("NAT", "NATIO") // NATIO is multiple languages free text
+      } else {
+        listOf(profileType)
+      }
+
       track("coreperson-profiledetails-synchronisation", telemetry) {
-        val nomisResponse = nomisApiService.getProfileDetails(event.offenderIdDisplay, listOf(event.profileType))
+        val nomisResponse = nomisApiService.getProfileDetails(event.offenderIdDisplay, profileTypes)
 
         val typeHistory = nomisResponse.bookings
           .mapNotNull { booking ->
@@ -294,18 +303,56 @@ class CorePersonSynchronisationService(
               corePersonCprApiService.syncCreateSexualOrientation(
                 PrisonSexualOrientation(
                   prisonNumber = offenderIdDisplay,
-                  sexualOrientationCode = code ?: ""
-                    .also {
-                      // Not sure how rare this is
-                      log.warn("offenderProfileDetailsChanged(): Null value for offender $offenderIdDisplay, booking $bookingId, profile $profileType")
-                    },
+                  sexualOrientationCode = code ?: "",
                   current = true, // TBC - redundant?
                   createUserId = modifiedBy ?: createdBy,
                   createDateTime = modifiedDateTime ?: createDateTime,
                 ),
               )
             }
+
+            "DISABILITY" -> {
+              corePersonCprApiService.syncCreateDisability(
+                PrisonDisabilityStatus(
+                  prisonNumber = offenderIdDisplay,
+                  disability = code == "Y",
+                  current = true,
+                  createUserId = modifiedBy ?: createdBy,
+                  createDateTime = modifiedDateTime ?: createDateTime,
+                ),
+              )
+            }
+
+            "IMM" -> {
+              corePersonCprApiService.syncCreateImmigrationStatus(
+                PrisonImmigrationStatus(
+                  prisonNumber = offenderIdDisplay,
+                  interestToImmigration = code == "Y",
+                  current = true,
+                  createUserId = modifiedBy ?: createdBy,
+                  createDateTime = modifiedDateTime ?: createDateTime,
+                ),
+              )
+            }
+
+            "NAT", "NATIO" -> {
+              val latestBooking = nomisResponse.bookings.find { it.latestBooking }!!
+              val nat = latestBooking.profileDetails.find { it.type == "NAT" }
+              val natio = latestBooking.profileDetails.find { it.type == "NATIO" }
+              corePersonCprApiService.syncCreateNationality(
+                PrisonNationality(
+                  prisonNumber = offenderIdDisplay,
+                  nationalityCode = nat?.code ?: "",
+                  current = true,
+                  createUserId = modifiedBy ?: createdBy,
+                  createDateTime = modifiedDateTime ?: createDateTime,
+                  notes = natio?.code,
+                ),
+              )
+            }
           }
+          code ?: log.warn("offenderProfileDetailsChanged(): Null value for offender $offenderIdDisplay, booking $bookingId, profile $profileType")
+          // Not sure how rare this is, so log for now
         }
       }
     } else {
