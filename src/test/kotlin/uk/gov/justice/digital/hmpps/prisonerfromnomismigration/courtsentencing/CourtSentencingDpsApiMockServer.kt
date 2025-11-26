@@ -302,6 +302,20 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubPostCourtChargeForCreateError(
+    status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+  ) {
+    stubFor(
+      post("/legacy/charge")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody("""{"status":"${status.value()}",userMessage = "NOMIS error"}"""),
+        ),
+    )
+  }
+
   fun stubRemoveCourtCharge(
     chargeId: String = UUID.randomUUID().toString(),
     courtAppearanceId: String = UUID.randomUUID().toString(),
@@ -316,6 +330,22 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubRemoveCourtChargeError(
+    chargeId: String = UUID.randomUUID().toString(),
+    courtAppearanceId: String = UUID.randomUUID().toString(),
+    status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+  ) {
+    stubFor(
+      delete("/legacy/court-appearance/$courtAppearanceId/charge/$chargeId")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody("""{"status":"${status.value()}",userMessage = "NOMIS error"}"""),
+        ),
+    )
+  }
+
   fun stubPutCourtChargeForAddExistingChargeToAppearance(
     courtChargeId: String = UUID.randomUUID().toString(),
     courtAppearanceId: String = UUID.randomUUID().toString(),
@@ -326,6 +356,22 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubPutCourtChargeForAddExistingChargeToAppearanceError(
+    courtChargeId: String = UUID.randomUUID().toString(),
+    courtAppearanceId: String = UUID.randomUUID().toString(),
+    status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+  ) {
+    stubFor(
+      put("/legacy/court-appearance/$courtAppearanceId/charge/$courtChargeId")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody("""{"status":"${status.value()}",userMessage = "NOMIS error"}"""),
         ),
     )
   }
@@ -357,6 +403,22 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubPutAppearanceChargeForUpdateError(
+    chargeId: String = UUID.randomUUID().toString(),
+    appearanceId: String = UUID.randomUUID().toString(),
+    status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+  ) {
+    stubFor(
+      put("/legacy/charge/$chargeId/appearance/$appearanceId")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody("""{"status":"${status.value()}",userMessage = "NOMIS error"}"""),
+        ),
+    )
+  }
+
   fun stubPostSentenceForCreate(
     sentenceId: String = UUID.randomUUID().toString(),
     response: LegacySentenceCreatedResponse = LegacySentenceCreatedResponse(
@@ -379,7 +441,6 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubPostSentenceForCreateError(
-    sentenceId: String = UUID.randomUUID().toString(),
     status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
   ) {
     stubFor(

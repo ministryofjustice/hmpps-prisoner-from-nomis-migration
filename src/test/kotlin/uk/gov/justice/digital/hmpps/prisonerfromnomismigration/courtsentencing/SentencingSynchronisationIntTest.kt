@@ -694,7 +694,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
             dpsCourtAppearanceId = DPS_APPEARANCE_ID,
           )
-          dpsCourtSentencingServer.stubPostSentenceForCreateError(sentenceId = DPS_SENTENCE_ID)
+          dpsCourtSentencingServer.stubPostSentenceForCreateError()
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
             courtSentencingQueueOffenderEventsUrl,
             sentenceEvent(

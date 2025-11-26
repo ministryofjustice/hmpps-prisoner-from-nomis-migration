@@ -2682,6 +2682,44 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      @DisplayName("When dps returns an error on create")
+      inner class DPSCreateFailsWhenNoMapping {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingNomisApiMockServer.stubGetOffenderCharge(
+            offenderNo = OFFENDER_ID_DISPLAY,
+            offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
+          )
+          courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
+          dpsCourtSentencingServer.stubPostCourtChargeForCreateError()
+          courtSentencingOffenderEventsQueue.sendMessage(
+            courtEventChargeEvent(
+              eventType = "COURT_EVENT_CHARGES-INSERTED",
+            ),
+          ).also {
+            waitForAnyProcessingToComplete()
+          }
+        }
+
+        @Test
+        fun `DPS failure is tracked`() {
+          verify(telemetryClient).trackEvent(
+            eq("court-charge-synchronisation-created-error"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+              assertThat(it["existingDpsCharge"]).isEqualTo("false")
+            },
+            isNull(),
+          )
+
+          // will not create a mapping
+          courtSentencingMappingApiMockServer.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
+
+      @Nested
       @DisplayName("When court charge mapping already exists")
       inner class MappingExists {
         @BeforeEach
@@ -2742,6 +2780,52 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             },
             isNull(),
           )
+        }
+      }
+
+      @Nested
+      @DisplayName("When dps returns an error on create with mapping")
+      inner class DPSCreateFailsWhenMappingExists {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingNomisApiMockServer.stubGetCourtEventCharge(
+            offenderNo = OFFENDER_ID_DISPLAY,
+            offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
+            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          )
+
+          courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+            nomisCourtChargeId = NOMIS_OFFENDER_CHARGE_ID,
+            dpsCourtChargeId = DPS_CHARGE_ID,
+          )
+          dpsCourtSentencingServer.stubPutCourtChargeForAddExistingChargeToAppearanceError(
+            courtChargeId = DPS_CHARGE_ID,
+            courtAppearanceId = DPS_COURT_APPEARANCE_ID,
+          )
+
+          courtSentencingOffenderEventsQueue.sendMessage(
+            courtEventChargeEvent(
+              eventType = "COURT_EVENT_CHARGES-INSERTED",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `DPS failure is tracked`() {
+          verify(telemetryClient).trackEvent(
+            eq("court-charge-synchronisation-created-error"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+              assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
+              assertThat(it["existingDpsCharge"]).isEqualTo("true")
+            },
+            isNull(),
+          )
+
+          // will not create a mapping
+          courtSentencingMappingApiMockServer.verify(0, postRequestedFor(anyUrl()))
         }
       }
 
@@ -3089,6 +3173,55 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      @DisplayName("When mappings exists - DPS failure")
+      inner class MappingExistsDpsFailure {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+            mapping = CourtAppearanceMappingDto(
+              nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+              dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+            ),
+          )
+
+          courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+            nomisCourtChargeId = NOMIS_OFFENDER_CHARGE_ID,
+            dpsCourtChargeId = DPS_CHARGE_ID,
+          )
+
+          dpsCourtSentencingServer.stubRemoveCourtChargeError(
+            courtAppearanceId = DPS_COURT_APPEARANCE_ID,
+            chargeId = DPS_CHARGE_ID,
+          )
+
+          courtSentencingNomisApiMockServer.stubGetOffenderCharge(status = NOT_FOUND)
+          courtSentencingOffenderEventsQueue.sendMessage(
+            courtEventChargeEvent(
+              eventType = "COURT_EVENT_CHARGES-DELETED",
+            ),
+          ).also { waitForAnyProcessingToComplete("court-charge-synchronisation-deleted-error") }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          verify(telemetryClient).trackEvent(
+            eq("court-charge-synchronisation-deleted-error"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
+              assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
+              assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
       @DisplayName("When mappings exists, nomis has not deleted the offender charge")
       inner class MappingExistsNomisHasNotDeletedCharge {
         @BeforeEach
@@ -3322,6 +3455,49 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             },
             isNull(),
           )
+        }
+      }
+
+      @Nested
+      @DisplayName("When error from dps updating court event charge")
+      inner class FailureFromDps {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+            nomisCourtChargeId = NOMIS_OFFENDER_CHARGE_ID,
+            dpsCourtChargeId = DPS_CHARGE_ID,
+          )
+
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+          )
+
+          dpsCourtSentencingServer.stubPutAppearanceChargeForUpdateError(
+            chargeId = DPS_CHARGE_ID,
+            appearanceId = DPS_COURT_APPEARANCE_ID,
+          )
+          courtSentencingOffenderEventsQueue.sendMessage(
+            courtEventChargeEvent(
+              eventType = "COURT_EVENT_CHARGES-UPDATED",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track a telemetry event for error`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("court-charge-synchronisation-updated-error"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
+                assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
+              },
+              isNull(),
+            )
+          }
         }
       }
     }
