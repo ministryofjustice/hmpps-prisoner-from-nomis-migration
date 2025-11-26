@@ -698,11 +698,13 @@ class CourtSentencingSynchronisationService(
               offenderChargeId = chargeId,
               eventId = eventId,
             )
-          dpsApiService.associateExistingCourtCharge(
-            courtAppearanceMapping.dpsCourtAppearanceId,
-            mapping.dpsCourtChargeId,
-            nomisCourtEventCharge.toDpsCharge(),
-          )
+          trackIfFailure(name = "court-charge-synchronisation-created", telemetry = telemetry) {
+            dpsApiService.associateExistingCourtCharge(
+              courtAppearanceMapping.dpsCourtAppearanceId,
+              mapping.dpsCourtChargeId,
+              nomisCourtEventCharge.toDpsCharge(),
+            )
+          }
         } ?: let {
           val nomisOffenderCharge =
             nomisApiService.getOffenderCharge(
@@ -711,9 +713,11 @@ class CourtSentencingSynchronisationService(
             )
           // no mapping means this is a new offender charge to be created and applied to the appearance
           telemetry["existingDpsCharge"] = "false"
-          dpsApiService.addNewCourtCharge(
-            nomisOffenderCharge.toDpsCharge(courtAppearanceMapping.dpsCourtAppearanceId),
-          ).run {
+          trackIfFailure(name = "court-charge-synchronisation-created", telemetry = telemetry) {
+            dpsApiService.addNewCourtCharge(
+              nomisOffenderCharge.toDpsCharge(courtAppearanceMapping.dpsCourtAppearanceId),
+            )
+          }.run {
             telemetry["dpsChargeId"] = this.lifetimeUuid.toString()
             tryToCreateChargeMapping(
               nomisOffenderCharge = nomisOffenderCharge,
@@ -756,20 +760,18 @@ class CourtSentencingSynchronisationService(
 
         mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { chargeMapping ->
           telemetry["dpsChargeId"] = chargeMapping.dpsCourtChargeId
-          dpsApiService.removeCourtChargeAssociation(
-            courtAppearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
-            chargeId = chargeMapping.dpsCourtChargeId,
-          ).also {
+          track(name = "court-charge-synchronisation-deleted", telemetry = telemetry.toMutableMap()) {
+            dpsApiService.removeCourtChargeAssociation(
+              courtAppearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
+              chargeId = chargeMapping.dpsCourtChargeId,
+            )
+          }.also {
             // check with nomis to see if offender_charge has been deleted
             nomisApiService.getOffenderChargeOrNull(
               offenderNo = event.offenderIdDisplay,
               offenderChargeId = event.chargeId,
             ) ?: tryToDeleteCourtChargeMapping(chargeMapping)
           }
-          telemetryClient.trackEvent(
-            "court-charge-synchronisation-deleted-success",
-            telemetry,
-          )
         } ?: let {
           telemetryClient.trackEvent(
             "court-charge-synchronisation-deleted-skipped",
@@ -804,16 +806,16 @@ class CourtSentencingSynchronisationService(
               eventId = event.eventId,
               offenderChargeId = event.chargeId,
             ).let { nomisCourtAppearanceCharge ->
-              telemetry = telemetry + ("dpsCourtAppearanceId" to courtAppearanceMapping.dpsCourtAppearanceId)
-              dpsApiService.updateCourtCharge(
-                chargeId = chargeMapping.dpsCourtChargeId,
-                appearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
-                charge = nomisCourtAppearanceCharge.toDpsCharge(),
-              )
-              telemetryClient.trackEvent(
-                "court-charge-synchronisation-updated-success",
-                telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId),
-              )
+              track(
+                name = "court-charge-synchronisation-updated",
+                telemetry = (telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("dpsCourtAppearanceId" to courtAppearanceMapping.dpsCourtAppearanceId)).toMutableMap(),
+              ) {
+                dpsApiService.updateCourtCharge(
+                  chargeId = chargeMapping.dpsCourtChargeId,
+                  appearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
+                  charge = nomisCourtAppearanceCharge.toDpsCharge(),
+                )
+              }
             }
           } ?: let {
             telemetryClient.trackEvent(
