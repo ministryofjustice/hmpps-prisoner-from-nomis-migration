@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-11-24.785.72e3969"
+    "version" : "2025-11-25.787.823099c"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -31916,15 +31916,19 @@
           },
           "visitStatus" : {
             "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The status of the visit"
+            "description" : "The status of the visit; Scheduled, Normal, Cancelled"
           },
           "visitOutcome" : {
             "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The outcome of the visit"
+            "description" : "The outcome of the visit; Completed, Cancelled, Scheduled, Expired"
           },
-          "outcomeReason" : {
+          "cancellationReason" : {
             "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The outcome reason of the visit"
+            "description" : "The reason of the visit cancellation"
+          },
+          "prisonerAttendanceOutcome" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The status of prisoner, Attended or Absent"
           },
           "prisonerSearchType" : {
             "$ref" : "#/components/schemas/CodeDescription",
@@ -31990,17 +31994,17 @@
             "type" : "boolean",
             "description" : "Indicates visitor requires assistance"
           },
-          "visitOutcome" : {
+          "visitorAttendanceOutcome" : {
             "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The outcome of the visit"
+            "description" : "The status of visitor, Attended or Absent"
           },
-          "outcomeReason" : {
+          "cancellationReason" : {
             "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The outcome reason of the visit"
+            "description" : "The reason of the visit cancellation - typically matches the overall cancellation reason"
           },
           "eventStatus" : {
             "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The status of visitor"
+            "description" : "The status of the visit; Scheduled, Normal, Cancelled"
           },
           "commentText" : {
             "type" : "string",

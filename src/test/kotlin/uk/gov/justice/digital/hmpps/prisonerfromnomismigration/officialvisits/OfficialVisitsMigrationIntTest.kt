@@ -352,7 +352,8 @@ class OfficialVisitsMigrationIntTest(
             prisonerSearchType = CodeDescription(code = "FULL", description = "Full search"),
             visitStatus = CodeDescription(code = "SCH", description = "Scheduled"),
             visitOutcome = CodeDescription(code = "CANC", description = "Cancelled"),
-            outcomeReason = CodeDescription(code = "ADMIN", description = "Administrative Cancellation"),
+            prisonerAttendanceOutcome = CodeDescription(code = "ATT", description = "Attended"),
+            cancellationReason = CodeDescription(code = "ADMIN", description = "Administrative Cancellation"),
             audit = NomisAudit(
               createDatetime = LocalDateTime.parse("2020-01-01T10:10:10"),
               createUsername = "J.JOHN",
@@ -370,8 +371,8 @@ class OfficialVisitsMigrationIntTest(
                 assistedVisit = true,
                 commentText = "Requires access",
                 eventStatus = CodeDescription(code = "COMP", description = "Completed"),
-                visitOutcome = CodeDescription(code = "ATT", description = "Attended"),
-                outcomeReason = CodeDescription(code = "OFFCANC", description = "Offender Cancelled"),
+                visitorAttendanceOutcome = CodeDescription(code = "ATT", description = "Attended"),
+                cancellationReason = CodeDescription(code = "OFFCANC", description = "Offender Cancelled"),
                 relationships = listOf(
                   ContactRelationship(
                     relationshipType = CodeDescription(
@@ -476,8 +477,8 @@ class OfficialVisitsMigrationIntTest(
         )
         assertThat(migrationRequest.eventOutcomeCode).isEqualTo(
           CodedValue(
-            code = "CANC",
-            description = "Cancelled",
+            code = "ATT",
+            description = "Attended",
           ),
         )
         assertThat(migrationRequest.visitStatusCode).isEqualTo(
