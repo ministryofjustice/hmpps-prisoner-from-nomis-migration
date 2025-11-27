@@ -106,7 +106,7 @@ services:
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
 
   mapping-db:
-    image: postgres:17
+    image: postgres:18
     networks:
       - hmpps
     container_name: hpfnm-mapping-db
@@ -117,7 +117,7 @@ services:
       - POSTGRES_DB=mapping
 
   migration-db:
-    image: postgres:17
+    image: postgres:18
     networks:
       - hmpps
     container_name: hpfnm-migration-db
