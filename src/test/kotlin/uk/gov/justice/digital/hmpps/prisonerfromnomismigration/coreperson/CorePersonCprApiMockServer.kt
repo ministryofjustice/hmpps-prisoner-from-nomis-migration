@@ -12,6 +12,9 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDisabilityStatusResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatusResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonNationalityResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSexualOrientationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
@@ -154,9 +157,52 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withBody(
             objectMapper.writeValueAsString(
-              PrisonSexualOrientationResponse(
-                cprSexualOrientationId = UUID.randomUUID(),
-              ),
+              PrisonSexualOrientationResponse(cprSexualOrientationId = UUID.randomUUID()),
+            ),
+          ),
+      ),
+    )
+  }
+
+  fun stubSyncCreateDisability(status: Int = 201) {
+    stubFor(
+      post("/syscon-sync/disability-status").willReturn(
+        aResponse()
+          .withStatus(status)
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            objectMapper.writeValueAsString(
+              PrisonDisabilityStatusResponse(cprDisabilityStatusId = UUID.randomUUID()),
+            ),
+          ),
+      ),
+    )
+  }
+
+  fun stubSyncCreateImmigration(status: Int = 201) {
+    stubFor(
+      post("/syscon-sync/immigration-status").willReturn(
+        aResponse()
+          .withStatus(status)
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            objectMapper.writeValueAsString(
+              PrisonImmigrationStatusResponse(cprImmigrationStatusId = UUID.randomUUID()),
+            ),
+          ),
+      ),
+    )
+  }
+
+  fun stubSyncCreateNationality(status: Int = 201) {
+    stubFor(
+      post("/syscon-sync/nationality").willReturn(
+        aResponse()
+          .withStatus(status)
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            objectMapper.writeValueAsString(
+              PrisonNationalityResponse(cprNationalityId = UUID.randomUUID()),
             ),
           ),
       ),
