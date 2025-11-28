@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2025-11-24.1504.33e26dd"
+    "version" : "2025-11-27.1569.7e96c4a"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -1549,11 +1549,17 @@
           "nationality" : {
             "$ref" : "#/components/schemas/Value"
           },
-          "secondaryNationality" : {
+          "secondNationality" : {
             "$ref" : "#/components/schemas/Value"
           },
           "gender" : {
             "$ref" : "#/components/schemas/Value"
+          },
+          "genderIdentity" : {
+            "$ref" : "#/components/schemas/Value"
+          },
+          "genderIdentityDescription" : {
+            "type" : "string"
           },
           "sexualOrientation" : {
             "$ref" : "#/components/schemas/Value"
@@ -1898,23 +1904,6 @@
             "type" : "string",
             "description" : "Person nationality description",
             "example" : "GB"
-          },
-          "startDate" : {
-            "type" : "string",
-            "format" : "date",
-            "description" : "Person nationality start date",
-            "example" : "01/01/2000"
-          },
-          "endDate" : {
-            "type" : "string",
-            "format" : "date",
-            "description" : "Person nationality end date",
-            "example" : "12/08/2025"
-          },
-          "notes" : {
-            "type" : "string",
-            "description" : "Person nationality notes",
-            "example" : "Example notes"
           }
         }
       },
