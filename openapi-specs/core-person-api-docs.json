@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2025-11-27.1569.7e96c4a"
+    "version" : "2025-11-28.1585.46ca48e"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -1498,6 +1498,9 @@
             "type" : "string"
           },
           "notes" : {
+            "type" : "string"
+          },
+          "telephoneNumber" : {
             "type" : "string"
           }
         }
