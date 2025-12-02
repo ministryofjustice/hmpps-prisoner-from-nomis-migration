@@ -15,9 +15,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.prisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerRestrictionIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerWithRestrictions
-import java.time.LocalDate
 
 @SpringAPIServiceTest
 @Import(ContactPersonNomisApiService::class, ContactPersonNomisApiMockServer::class)
@@ -159,66 +157,6 @@ class ContactPersonNomisApiServiceTest {
   }
 
   @Nested
-  inner class GetPrisonerRestrictionIdsToMigrate {
-    @Test
-    fun `will pass oath2 token to service`() = runTest {
-      mockServer.stubGetPrisonerRestrictionIdsToMigrate()
-
-      apiService.getPrisonerRestrictionIdsToMigrate()
-
-      mockServer.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `will pass mandatory parameters to service`() = runTest {
-      mockServer.stubGetPrisonerRestrictionIdsToMigrate()
-
-      apiService.getPrisonerRestrictionIdsToMigrate(pageNumber = 12, pageSize = 20)
-
-      mockServer.verify(
-        getRequestedFor(anyUrl())
-          .withQueryParam("fromDate", equalTo(""))
-          .withQueryParam("toDate", equalTo(""))
-          .withQueryParam("page", equalTo("12"))
-          .withQueryParam("size", equalTo("20")),
-      )
-    }
-
-    @Test
-    fun `can pass optional parameters to service`() = runTest {
-      mockServer.stubGetPrisonerRestrictionIdsToMigrate()
-
-      apiService.getPrisonerRestrictionIdsToMigrate(
-        fromDate = LocalDate.parse("2020-01-01"),
-        toDate = LocalDate.parse("2020-01-02"),
-        pageNumber = 12,
-        pageSize = 20,
-      )
-
-      mockServer.verify(
-        getRequestedFor(anyUrl())
-          .withQueryParam("fromDate", equalTo("2020-01-01"))
-          .withQueryParam("toDate", equalTo("2020-01-02")),
-      )
-    }
-
-    @Test
-    fun `will return person ids`() = runTest {
-      mockServer.stubGetPrisonerRestrictionIdsToMigrate(content = listOf(PrisonerRestrictionIdResponse(1234567), PrisonerRestrictionIdResponse(1234568)))
-
-      val pages = apiService.getPrisonerRestrictionIdsToMigrate(pageNumber = 12, pageSize = 20)
-
-      with(pages.content!!) {
-        assertThat(this).hasSize(2)
-        assertThat(this[0].restrictionId).isEqualTo(1234567)
-        assertThat(this[1].restrictionId).isEqualTo(1234568)
-      }
-    }
-  }
-
-  @Nested
   inner class GetPrisonerRestrictionById {
     @Test
     fun `will pass oath2 token to service`() = runTest {
@@ -280,7 +218,7 @@ class ContactPersonNomisApiServiceTest {
 
     @Test
     fun `will return prisoner restrictions`() = runTest {
-      val restriction = uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.nomisPrisonerRestriction().copy(id = 12345)
+      val restriction = nomisPrisonerRestriction().copy(id = 12345)
       mockServer.stubGetPrisonerRestrictions(
         offenderNo = "A1234KT",
         response = PrisonerWithRestrictions(restrictions = listOf(restriction)),

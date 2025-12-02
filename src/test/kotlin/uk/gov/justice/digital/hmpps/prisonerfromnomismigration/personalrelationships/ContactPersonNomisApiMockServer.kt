@@ -123,22 +123,6 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
   }
 
-  fun stubGetPrisonerRestrictionIdsToMigrate(
-    count: Long = 1,
-    content: List<PrisonerRestrictionIdResponse> = listOf(
-      PrisonerRestrictionIdResponse(123456),
-    ),
-  ) {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/prisoners/restrictions/ids")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(pageResponse(count = count, content = content)),
-      ),
-    )
-  }
-
   fun stubGetPrisonerRestrictionById(restrictionId: Long, response: PrisonerRestriction = nomisPrisonerRestriction()) {
     nomisApi.stubFor(
       get(urlEqualTo("/prisoners/restrictions/$restrictionId")).willReturn(

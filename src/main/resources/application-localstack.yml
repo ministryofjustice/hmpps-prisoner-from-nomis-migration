@@ -19,12 +19,6 @@ hmpps.sqs:
     migrationcourtsentencing:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    migrationpersonalrelationships:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
-    migrationpersonalrelationshipsprofiledetails:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
     migrationcoreperson:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

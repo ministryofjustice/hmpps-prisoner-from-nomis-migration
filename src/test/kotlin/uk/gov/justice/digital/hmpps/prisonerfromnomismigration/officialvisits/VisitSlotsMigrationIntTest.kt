@@ -43,7 +43,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.IdPair.ElementType.PRISON_VISIT_SLOT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.PrisonerRestrictionMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import java.time.Duration
 import java.time.LocalDate
@@ -78,7 +77,6 @@ class VisitSlotsMigrationIntTest(
         webTestClient.post().uri("/migrate/visitslots")
           .headers(setAuthorisation(roles = listOf()))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(PrisonerRestrictionMigrationFilter())
           .exchange()
           .expectStatus().isForbidden
       }
@@ -88,7 +86,6 @@ class VisitSlotsMigrationIntTest(
         webTestClient.post().uri("/migrate/visitslots")
           .headers(setAuthorisation(roles = listOf("BANANAS")))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(PrisonerRestrictionMigrationFilter())
           .exchange()
           .expectStatus().isForbidden
       }
@@ -97,7 +94,6 @@ class VisitSlotsMigrationIntTest(
       fun `access unauthorised with no auth token`() {
         webTestClient.post().uri("/migrate/visitslots")
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(PrisonerRestrictionMigrationFilter())
           .exchange()
           .expectStatus().isUnauthorized
       }
@@ -569,10 +565,9 @@ class VisitSlotsMigrationIntTest(
     }
   }
 
-  private fun performMigration(body: PrisonerRestrictionMigrationFilter = PrisonerRestrictionMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/visitslots")
+  private fun performMigration(): MigrationResult = webTestClient.post().uri("/migrate/visitslots")
     .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
-    .bodyValue(body)
     .exchange()
     .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
     .also {

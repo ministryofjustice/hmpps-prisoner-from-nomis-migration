@@ -23,8 +23,6 @@ const val CORE_PERSON_QUEUE_ID = "migrationcoreperson"
 const val COURT_SENTENCING_QUEUE_ID = "migrationcourtsentencing"
 const val EXTERNAL_MOVEMENTS_QUEUE_ID = "migrationexternalmovements"
 const val INCIDENTS_QUEUE_ID = "migrationincidents"
-const val PERSONALRELATIONSHIPS_QUEUE_ID = "migrationpersonalrelationships"
-const val PERSONALRELATIONSHIPS_PROFILEDETAILS_QUEUE_ID = "migrationpersonalrelationshipsprofiledetails"
 const val PRISON_BALANCE_QUEUE_ID = "migrationprisonbalance"
 const val PRISONER_BALANCE_QUEUE_ID = "migrationprisonerbalance"
 const val SENTENCING_ADJUSTMENTS_QUEUE_ID = "migrationsentencing"
@@ -59,8 +57,6 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   COURT_SENTENCING(COURT_SENTENCING_QUEUE_ID, "court-sentencing"),
   EXTERNAL_MOVEMENTS(EXTERNAL_MOVEMENTS_QUEUE_ID, "temporary-absences"),
   INCIDENTS(INCIDENTS_QUEUE_ID, "incidents"),
-  PERSONALRELATIONSHIPS(PERSONALRELATIONSHIPS_QUEUE_ID, "contactperson"),
-  PERSONALRELATIONSHIPS_PROFILEDETAIL(PERSONALRELATIONSHIPS_PROFILEDETAILS_QUEUE_ID, "contactperson-profiledetails"),
   PRISON_BALANCE(PRISON_BALANCE_QUEUE_ID, "prisonbalance"),
   PRISONER_BALANCE(PRISONER_BALANCE_QUEUE_ID, "prisonerbalance"),
   SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_QUEUE_ID, "sentencing-adjustments"),

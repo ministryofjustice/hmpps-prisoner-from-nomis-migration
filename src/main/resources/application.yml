@@ -238,12 +238,6 @@ hmpps.sqs:
     migrationcourtsentencing:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
-    migrationpersonalrelationships:
-      errorVisibilityTimeout: 1, 1, 1, 10
-      propagateTracing: false
-    migrationpersonalrelationshipsprofiledetails:
-      errorVisibilityTimeout: 1, 1, 1, 10
-      propagateTracing: false
     migrationcoreperson:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false

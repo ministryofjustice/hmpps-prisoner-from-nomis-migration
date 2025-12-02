@@ -111,8 +111,6 @@ generic-prometheus-alerts:
       - "syscon-devs-preprod-migration_adjudications_queue"
       - "syscon-devs-preprod-migration_adjudications_dlq"
     personalrelationships:
-      - "syscon-devs-preprod-migration_personalrelationships_queue"
-      - "syscon-devs-preprod-migration_personalrelationships_dlq"
       - "syscon-devs-preprod-prisoner_from_nomis_personalrelationships_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_personalrelationships_dl_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_personalrelationships_domain_queue"
