@@ -12,8 +12,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.Inciden
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.VisitSlotsMappingService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.PrisonerRestrictionMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.profiledetails.ContactPersonProfileDetailsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMappingService
 
@@ -26,8 +24,6 @@ class GeneralMappingService(
   private val corePersonMappingApiService: CorePersonMappingApiService,
   private val incidentsMappingService: IncidentsMappingService,
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
-  private val prisonerRestrictionMappingApiService: PrisonerRestrictionMappingApiService,
-  private val contactPersonProfileDetailsMappingApiService: ContactPersonProfileDetailsMappingApiService,
   private val prisonBalanceMappingApiService: PrisonBalanceMappingApiService,
   private val prisonerBalanceMappingApiService: PrisonerBalanceMappingApiService,
   private val visitBalanceMappingApiService: VisitBalanceMappingApiService,
@@ -49,10 +45,6 @@ class GeneralMappingService(
     MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
 
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
-
-    MigrationType.PERSONALRELATIONSHIPS -> prisonerRestrictionMappingApiService.getMigrationCount(migrationId)
-
-    MigrationType.PERSONALRELATIONSHIPS_PROFILEDETAIL -> contactPersonProfileDetailsMappingApiService.getMigrationCount(migrationId)
 
     MigrationType.PRISON_BALANCE -> prisonBalanceMappingApiService.getMigrationCount(migrationId)
 

@@ -64,20 +64,6 @@ courtsentencing:
   has-migrated-data: true
 finance:
   transactions.forwardingDelaySeconds: 0
-personalrelationships:
-   complete-check:
-     delay-seconds: 0
-     retry-seconds: 0
-     count: 1
-   page:
-     size: 10
-personalrelationships.profiledetails:
-   complete-check:
-     delay-seconds: 0
-     retry-seconds: 0
-     count: 1
-   page:
-     size: 10
 prisonbalance:
   complete-check:
     delay-seconds: 0
@@ -172,9 +158,6 @@ hmpps.sqs:
       dlqMaxReceiveCount: 1
     domaineventpersonalrelationships:
       dlqMaxReceiveCount: 1
-    migrationpersonalrelationshipsprofiledetails:
-      dlqMaxReceiveCount: 1
-      errorVisibilityTimeout: 0
     eventofficialvisits:
       dlqMaxReceiveCount: 2
     migrationofficialvisits:
@@ -190,8 +173,6 @@ hmpps.sqs:
     migrationincidents:
       errorVisibilityTimeout: 0
     migrationcourtsentencing:
-      errorVisibilityTimeout: 0
-    migrationpersonalrelationships:
       errorVisibilityTimeout: 0
     migrationcoreperson:
       errorVisibilityTimeout: 0

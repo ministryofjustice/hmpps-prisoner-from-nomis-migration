@@ -18,8 +18,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MergePrisonerRestrictionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigrateContactResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.MigratePrisonerRestrictionRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.PrisonerRestrictionMigrationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerContactRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerContactResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.ResetPrisonerRestrictionsRequest
@@ -63,18 +61,6 @@ class ContactPersonDpsApiService(
   @Qualifier("personalRelationshipsApiWebClient") private val webClient: WebClient,
   @Value("\${api.repair.timeout:180s}") val repairTimeout: Duration,
 ) {
-  suspend fun migrateContact(contact: MigrateContactRequest): MigrateContactResponse = webClient.post()
-    .uri("/migrate/contact")
-    .bodyValue(contact)
-    .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
-
-  suspend fun migratePrisonerRestriction(offenderNo: String, restriction: MigratePrisonerRestrictionRequest): PrisonerRestrictionMigrationResponse = webClient.post()
-    .uri("/migrate/prisoner-restriction/{prisonerNumber}", offenderNo)
-    .bodyValue(restriction)
-    .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
-
   suspend fun resyncContactForRepair(contact: MigrateContactRequest): MigrateContactResponse = webClient.mutate().clientConnector(
     ReactorClientHttpConnector(
       HttpClient.create().responseTimeout(repairTimeout),

@@ -46,7 +46,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.PrisonerRestrictionMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import java.time.Duration
 import java.time.LocalDate
@@ -84,7 +83,7 @@ class OfficialVisitsMigrationIntTest(
         webTestClient.post().uri("/migrate/official-visits")
           .headers(setAuthorisation(roles = listOf()))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(PrisonerRestrictionMigrationFilter())
+          .bodyValue(OfficialVisitsMigrationFilter())
           .exchange()
           .expectStatus().isForbidden
       }
@@ -94,7 +93,7 @@ class OfficialVisitsMigrationIntTest(
         webTestClient.post().uri("/migrate/official-visits")
           .headers(setAuthorisation(roles = listOf("BANANAS")))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(PrisonerRestrictionMigrationFilter())
+          .bodyValue(OfficialVisitsMigrationFilter())
           .exchange()
           .expectStatus().isForbidden
       }
@@ -103,7 +102,7 @@ class OfficialVisitsMigrationIntTest(
       fun `access unauthorised with no auth token`() {
         webTestClient.post().uri("/migrate/official-visits")
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(PrisonerRestrictionMigrationFilter())
+          .bodyValue(OfficialVisitsMigrationFilter())
           .exchange()
           .expectStatus().isUnauthorized
       }
