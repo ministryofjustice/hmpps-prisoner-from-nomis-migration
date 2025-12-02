@@ -153,8 +153,6 @@ class OfficialVisitsMigrationService(
     endTime = endDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
     dpsLocationId = internalLocationId.lookUpDpsLocationId(),
     visitStatusCode = visitStatus.toCodeValue(),
-    // TODO - remove from DPS API
-    visitTypeCode = CodedValue("OFFI", "Official Visit"),
     createDateTime = audit.createDatetime,
     createUsername = audit.createUsername,
     visitors = visitors.map { visitor ->
@@ -180,12 +178,6 @@ class OfficialVisitsMigrationService(
     searchTypeCode = prisonerSearchType?.toCodeValue(),
     eventOutcomeCode = prisonerAttendanceOutcome?.toCodeValue(),
     outcomeReasonCode = cancellationReason?.toCodeValue(),
-    // TODO - where to add visit outcome
-    // outcomeReasonCode = visitOutcome?.toCodeValue(),
-    // TODO - remove from DPS API
-    raisedIncidentTypeCode = null,
-    // TODO - remove from DPS API
-    incidentNumber = null,
     visitorConcernText = visitorConcernText,
     overrideBanStaffUsername = overrideBanStaffUsername,
     modifyDateTime = audit.modifyDatetime,
