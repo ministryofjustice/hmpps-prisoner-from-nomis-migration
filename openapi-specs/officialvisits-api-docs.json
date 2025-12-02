@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-11-20.117.c9d7641"
+    "version" : "2025-12-01.124.ff5c8e7"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -338,7 +338,7 @@
           "schema" : {
             "$ref" : "#/components/schemas/ReferenceDataGroup"
           },
-          "example" : "VIS_STS"
+          "example" : "VIS_STATUS"
         }, {
           "name" : "activeOnly",
           "in" : "query",
@@ -644,15 +644,15 @@
             "example" : "IN_PERSON",
             "minLength" : 1
           },
-          "privateNotes" : {
+          "staffNotes" : {
             "type" : "string",
-            "description" : "Notes that will not be shared on movement slips",
-            "example" : "Private note"
+            "description" : "Notes for staff that will not be shared on movement slips",
+            "example" : "Staff notes"
           },
-          "publicNotes" : {
+          "prisonerNotes" : {
             "type" : "string",
-            "description" : "Notes that may be shared on movement slips",
-            "example" : "Public note"
+            "description" : "Notes for prisoners that may be shared on movement slips",
+            "example" : "Prisoner notes"
           },
           "officialVisitors" : {
             "type" : "array",
@@ -675,7 +675,7 @@
           "contactTypeCode" : {
             "type" : "string",
             "description" : "The contact type code",
-            "example" : "SOCIAL",
+            "example" : "OFFICIAL",
             "minLength" : 1
           },
           "contactId" : {
@@ -709,16 +709,6 @@
             "type" : "boolean",
             "description" : "Set to true if this visitor requires an assisted visit",
             "example" : false
-          },
-          "emailAddress" : {
-            "type" : "string",
-            "description" : "The email address for this visitor",
-            "example" : "bob@harris.com"
-          },
-          "phoneNumber" : {
-            "type" : "string",
-            "description" : "The phone number for this visitor",
-            "example" : "09090 9090900"
           },
           "visitorNotes" : {
             "type" : "string",
@@ -840,13 +830,8 @@
           },
           "visitStatusCode" : {
             "$ref" : "#/components/schemas/CodedValue",
-            "description" : "The visit status code from NOMIS (reference data - VIS_STS)",
+            "description" : "The visit status code from NOMIS",
             "example" : "SCH"
-          },
-          "visitTypeCode" : {
-            "$ref" : "#/components/schemas/CodedValue",
-            "description" : "The visit type code from NOMIS expected to be O for all(reference data - VISIT_TYPE)",
-            "example" : "O"
           },
           "commentText" : {
             "type" : "string",
@@ -855,26 +840,16 @@
           },
           "searchTypeCode" : {
             "$ref" : "#/components/schemas/CodedValue",
-            "description" : "The search type code from NOMIS (reference data - SEARCH_TYPE)",
+            "description" : "The search type code from NOMIS",
             "example" : "RUB_A"
           },
           "eventOutcomeCode" : {
             "$ref" : "#/components/schemas/CodedValue",
-            "description" : "The event outcome code NOMIS (reference data - VIS_COMPLETE)"
+            "description" : "The event outcome code NOMIS"
           },
           "outcomeReasonCode" : {
             "$ref" : "#/components/schemas/CodedValue",
-            "description" : "The outcome reason code NOMIS (reference data - MOVE_CANC_RS)"
-          },
-          "raisedIncidentTypeCode" : {
-            "$ref" : "#/components/schemas/CodedValue",
-            "description" : "The raised indcident type code from NOMIS (reference data - INC_TYPE)"
-          },
-          "incidentNumber" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The raised incident number from NOMIS",
-            "example" : 1333
+            "description" : "The outcome reason code NOMIS"
           },
           "visitorConcernText" : {
             "type" : "string",
@@ -915,7 +890,7 @@
             }
           }
         },
-        "required" : [ "createDateTime", "createUsername", "currentTerm", "dpsLocationId", "endTime", "offenderBookId", "offenderVisitId", "prisonCode", "prisonVisitSlotId", "prisonerNumber", "startTime", "visitDate", "visitStatusCode", "visitTypeCode", "visitors" ]
+        "required" : [ "createDateTime", "createUsername", "currentTerm", "dpsLocationId", "endTime", "offenderBookId", "offenderVisitId", "prisonCode", "prisonVisitSlotId", "prisonerNumber", "startTime", "visitDate", "visitStatusCode", "visitors" ]
       },
       "MigrateVisitor" : {
         "type" : "object",
@@ -970,11 +945,11 @@
           },
           "eventOutcomeCode" : {
             "$ref" : "#/components/schemas/CodedValue",
-            "description" : "The event outcome code NOMIS (reference data)"
+            "description" : "The visitor event outcome code from NOMIS"
           },
           "outcomeReasonCode" : {
             "$ref" : "#/components/schemas/CodedValue",
-            "description" : "The outcome reason code NOMIS (reference data)"
+            "description" : "The visitor outcome reason code from NOMIS"
           },
           "createDateTime" : {
             "type" : "string",
@@ -1297,7 +1272,7 @@
       },
       "ReferenceDataGroup" : {
         "type" : "string",
-        "enum" : [ "DAY", "CONTACTS", "EQUIP_CATEGORY", "SEARCH_LEVEL", "TEST_TYPE", "VIS_COMPLETE", "VIS_LOC_TYPE", "VIS_STS", "VIS_TYPE_CODE" ]
+        "enum" : [ "ATTENDANCE", "DAY", "CONTACT_TYPE", "SEARCH_LEVEL", "TEST_TYPE", "VIS_COMPLETION", "VIS_STATUS", "VIS_TYPE", "VISITOR_TYPE" ]
       },
       "ReferenceDataItem" : {
         "type" : "object",
