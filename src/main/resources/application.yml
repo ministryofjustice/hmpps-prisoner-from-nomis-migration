@@ -192,11 +192,6 @@ personalrelationships:
     delay-seconds: 180
     count: 9
 
-organisations:
-  complete-check:
-    delay-seconds: 180
-    count: 9
-
 externalmovements:
   complete-check:
     delay-seconds: 180
@@ -247,9 +242,6 @@ hmpps.sqs:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationpersonalrelationshipsprofiledetails:
-      errorVisibilityTimeout: 1, 1, 1, 10
-      propagateTracing: false
-    migrationorganisations:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationcoreperson:

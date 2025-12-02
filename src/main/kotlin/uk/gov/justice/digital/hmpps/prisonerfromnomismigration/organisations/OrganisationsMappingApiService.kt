@@ -18,17 +18,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 
 @Service
 class OrganisationsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorporateMappingsDto>(domainUrl = "/mapping/corporate/organisation", webClient) {
-  suspend fun createMappingsForMigration(mappings: CorporateMappingsDto): CreateMappingResult<OrganisationsMappingDto> = webClient.post()
-    .uri("/mapping/corporate/migrate")
-    .bodyValue(mappings)
-    .retrieve()
-    .bodyToMono(Unit::class.java)
-    .map { CreateMappingResult<OrganisationsMappingDto>() }
-    .onErrorResume(WebClientResponseException.Conflict::class.java) {
-      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<OrganisationsMappingDto>>() {})))
-    }
-    .awaitFirstOrDefault(CreateMappingResult())
-
   suspend fun createOrganisationMapping(mapping: OrganisationsMappingDto): CreateMappingResult<OrganisationsMappingDto> = createMapping("/mapping/corporate/organisation", mapping)
 
   suspend fun getByNomisCorporateIdOrNull(nomisCorporateId: Long): OrganisationsMappingDto? = webClient.get()

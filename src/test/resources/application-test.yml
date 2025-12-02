@@ -78,13 +78,6 @@ personalrelationships.profiledetails:
      count: 1
    page:
      size: 10
-organisations:
-   complete-check:
-     delay-seconds: 0
-     retry-seconds: 0
-     count: 1
-   page:
-     size: 10
 prisonbalance:
   complete-check:
     delay-seconds: 0
@@ -199,8 +192,6 @@ hmpps.sqs:
     migrationcourtsentencing:
       errorVisibilityTimeout: 0
     migrationpersonalrelationships:
-      errorVisibilityTimeout: 0
-    migrationorganisations:
       errorVisibilityTimeout: 0
     migrationcoreperson:
       errorVisibilityTimeout: 0

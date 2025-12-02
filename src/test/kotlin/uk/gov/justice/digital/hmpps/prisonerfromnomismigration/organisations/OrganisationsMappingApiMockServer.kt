@@ -7,7 +7,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
-import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
@@ -15,61 +14,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
-import java.time.LocalDateTime
 
 @Component
 class OrganisationsMappingApiMockServer(private val objectMapper: ObjectMapper) {
-
-  fun stubCreateMappingsForMigration() {
-    mappingApi.stubFor(
-      post("/mapping/corporate/migrate").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(201),
-      ),
-    )
-  }
-
-  @Suppress("unused")
-  fun stubCreateMappingsForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/corporate/migrate")
-
-  fun stubCreateMappingsForMigration(error: DuplicateMappingErrorResponse) {
-    mappingApi.stubFor(
-      post("/mapping/corporate/migrate").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-  fun stubGetMigrationDetails(migrationId: String = "2020-01-01T11:10:00", count: Int = 1) {
-    mappingApi.stubFor(
-      get(urlPathMatching("/mapping/corporate/organisation/migration-id/$migrationId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(
-            pageContent(
-              objectMapper = objectMapper,
-              content = listOf(
-                OrganisationsMappingDto(
-                  dpsId = "654321",
-                  nomisId = 123456,
-                  mappingType = OrganisationsMappingDto.MappingType.MIGRATED,
-                  label = migrationId,
-                  whenCreated = LocalDateTime.now().toString(),
-                ),
-              ),
-              pageSize = 1L,
-              pageNumber = 0L,
-              totalElements = count.toLong(),
-              size = 1,
-            ),
-          ),
-      ),
-    )
-  }
 
   fun stubCreateCorporateMapping() {
     mappingApi.stubFor(

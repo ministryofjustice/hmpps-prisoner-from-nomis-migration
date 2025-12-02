@@ -108,10 +108,6 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONPERSONALRELATIONSHIPSPROFILEDETAILS_QUEUE_NAME: "sqs_name"
     sqs-migration-personalrelationships-profiledetails-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONPERSONALRELATIONSHIPSPROFILEDETAILS_DLQ_NAME: "sqs_name"
-    sqs-migration-organisations-queue:
-      HMPPS_SQS_QUEUES_MIGRATIONORGANISATIONS_QUEUE_NAME: "sqs_name"
-    sqs-migration-organisations-dlq:
-      HMPPS_SQS_QUEUES_MIGRATIONORGANISATIONS_DLQ_NAME: "sqs_name"
     sqs-migration-coreperson-queue:
       HMPPS_SQS_QUEUES_MIGRATIONCOREPERSON_QUEUE_NAME: "sqs_name"
     sqs-migration-coreperson-dlq:
