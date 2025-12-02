@@ -12,11 +12,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.Inciden
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.VisitSlotsMappingService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.PrisonerRestrictionMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.profiledetails.ContactPersonProfileDetailsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMappingService
+
 @Service
 class GeneralMappingService(
   private val appointmentsMappingService: AppointmentsMappingService,
@@ -28,7 +28,6 @@ class GeneralMappingService(
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
   private val prisonerRestrictionMappingApiService: PrisonerRestrictionMappingApiService,
   private val contactPersonProfileDetailsMappingApiService: ContactPersonProfileDetailsMappingApiService,
-  private val organisationsMappingApiService: OrganisationsMappingApiService,
   private val prisonBalanceMappingApiService: PrisonBalanceMappingApiService,
   private val prisonerBalanceMappingApiService: PrisonerBalanceMappingApiService,
   private val visitBalanceMappingApiService: VisitBalanceMappingApiService,
@@ -38,22 +37,36 @@ class GeneralMappingService(
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long = when (migrationType) {
     MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
+
     MigrationType.VISITS -> visitMappingService.getMigrationCount(migrationId)
+
     MigrationType.ACTIVITIES -> activityMappingService.getMigrationCount(migrationId)
+
     MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
+
     MigrationType.CORE_PERSON -> corePersonMappingApiService.getMigrationCount(migrationId)
+
     MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
+
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
-    MigrationType.ORGANISATIONS -> organisationsMappingApiService.getMigrationCount(migrationId)
+
     MigrationType.PERSONALRELATIONSHIPS -> prisonerRestrictionMappingApiService.getMigrationCount(migrationId)
+
     MigrationType.PERSONALRELATIONSHIPS_PROFILEDETAIL -> contactPersonProfileDetailsMappingApiService.getMigrationCount(migrationId)
+
     MigrationType.PRISON_BALANCE -> prisonBalanceMappingApiService.getMigrationCount(migrationId)
+
     MigrationType.PRISONER_BALANCE -> prisonerBalanceMappingApiService.getMigrationCount(migrationId)
+
     // since this is a patch we cannot count mappings created since none are created - it will have to be manual Telemetry
     MigrationType.SENTENCING_ADJUSTMENTS -> 0
+
     MigrationType.VISIT_BALANCE -> visitBalanceMappingApiService.getMigrationCount(migrationId)
+
     MigrationType.EXTERNAL_MOVEMENTS -> externalMovementsMappingApiService.getMigrationCount(migrationId)
+
     MigrationType.OFFICIAL_VISITS -> officialVisitsMappingService.getMigrationCount(migrationId)
+
     MigrationType.VISIT_SLOTS -> visitSlotsMappingService.getMigrationCount(migrationId)
   }
 }

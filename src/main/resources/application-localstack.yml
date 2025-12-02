@@ -25,9 +25,6 @@ hmpps.sqs:
     migrationpersonalrelationshipsprofiledetails:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    migrationorganisations:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
     migrationcoreperson:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

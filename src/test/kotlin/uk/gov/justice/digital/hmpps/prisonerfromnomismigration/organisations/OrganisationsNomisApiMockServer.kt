@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
-import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
@@ -12,11 +11,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateInternetAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisation
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisationIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporatePhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -35,36 +32,8 @@ class OrganisationsNomisApiMockServer(private val objectMapper: ObjectMapper) {
       ),
     )
   }
-  fun stubGetCorporateOrganisationIdsToMigrate(
-    count: Long = 1,
-    content: List<CorporateOrganisationIdResponse> = listOf(
-      CorporateOrganisationIdResponse(123456),
-    ),
-  ) {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/corporates/ids")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(pageCorporateIdResponse(count = count, content = content)),
-      ),
-    )
-  }
-
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
-
-  fun pageCorporateIdResponse(
-    count: Long,
-    content: List<CorporateOrganisationIdResponse>,
-  ) = pageContent(
-    objectMapper = objectMapper,
-    content = content,
-    pageSize = 1L,
-    pageNumber = 0L,
-    totalElements = count,
-    size = 1,
-  )
 }
 
 fun corporateOrganisation(corporateId: Long = 123456): CorporateOrganisation = CorporateOrganisation(

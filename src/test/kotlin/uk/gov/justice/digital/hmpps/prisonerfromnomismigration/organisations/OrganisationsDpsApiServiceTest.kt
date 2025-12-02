@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.dpsOrganisationsServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.migrateOrganisationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiMockServer.Companion.syncCreateOrganisationAddressPhoneRequest
@@ -33,32 +32,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.Org
 class OrganisationsDpsApiServiceTest {
   @Autowired
   private lateinit var apiService: OrganisationsDpsApiService
-
-  @Nested
-  inner class MigrateOrganisation {
-    @Test
-    internal fun `will pass oath2 token to organisation endpoint`() = runTest {
-      dpsOrganisationsServer.stubMigrateOrganisation()
-
-      apiService.migrateOrganisation(migrateOrganisationRequest())
-
-      dpsOrganisationsServer.verify(
-        postRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `will call the migrate endpoint`() = runTest {
-      dpsOrganisationsServer.stubMigrateOrganisation()
-
-      apiService.migrateOrganisation(migrateOrganisationRequest())
-
-      dpsOrganisationsServer.verify(
-        postRequestedFor(urlPathEqualTo("/migrate/organisation")),
-      )
-    }
-  }
 
   @Nested
   inner class CreateOrganisation {
