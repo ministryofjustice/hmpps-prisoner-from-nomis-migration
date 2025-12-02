@@ -96,7 +96,6 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       endTime = "11:00",
       dpsLocationId = UUID.fromString("d0cc8fcd-22db-46a7-bdb3-ada7ac1828f5"),
       visitStatusCode = CodedValue(code = "NORM", description = "Normal Completion"),
-      visitTypeCode = CodedValue(code = "OFFI", description = "Official"),
       createDateTime = LocalDateTime.parse("2020-01-01T08:00"),
       createUsername = "T.SMITH",
       visitors = listOf(
