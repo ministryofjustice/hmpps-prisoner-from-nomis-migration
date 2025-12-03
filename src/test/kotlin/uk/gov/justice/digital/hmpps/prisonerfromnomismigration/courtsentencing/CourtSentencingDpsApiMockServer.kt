@@ -195,7 +195,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     courtCaseId: String = UUID.randomUUID().toString(),
   ) {
     stubFor(
-      put("/court-case/$courtCaseId/case-references/refresh")
+      put("/legacy/court-case/$courtCaseId/case-references/refresh")
         .willReturn(
           aResponse()
             .withStatus(200)

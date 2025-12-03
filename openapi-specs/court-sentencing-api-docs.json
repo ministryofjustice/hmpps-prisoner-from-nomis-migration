@@ -5447,7 +5447,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:31.076223334"
+            "example" : "06:23:34.828378032"
           },
           "outcomeDispositionCode" : {
             "type" : "string"
@@ -5768,7 +5768,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:31.076223334"
+            "example" : "06:23:34.828378032"
           },
           "courtCode" : {
             "type" : "string"
@@ -7957,7 +7957,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:31.076223334"
+            "example" : "06:23:34.828378032"
           },
           "courtCode" : {
             "type" : "string"
@@ -8588,7 +8588,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:31.076223334"
+            "example" : "06:23:34.828378032"
           },
           "nomisOutcomeCode" : {
             "type" : "string"
@@ -8648,7 +8648,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:31.076223334"
+            "example" : "06:23:34.828378032"
           },
           "courtId" : {
             "type" : "string"
@@ -8788,7 +8788,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:31.076223334"
+            "example" : "06:23:34.828378032"
           },
           "charges" : {
             "type" : "array",
@@ -8815,7 +8815,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:31.076223334"
+            "example" : "06:23:34.828378032"
           },
           "courtId" : {
             "type" : "string"
@@ -9403,7 +9403,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:31.076223334"
+            "example" : "06:23:34.828378032"
           },
           "courtCode" : {
             "type" : "string"
