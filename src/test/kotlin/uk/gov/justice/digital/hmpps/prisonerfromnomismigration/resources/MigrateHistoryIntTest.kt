@@ -8,20 +8,20 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.COMPLETED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCIDENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISIT_BALANCE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceMappingApiMockServer
 import java.time.LocalDateTime
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class MigrateHistoryIntTest : SqsIntegrationTestBase() {
   @Autowired
-  private lateinit var mappingApiMock: VisitBalanceMappingApiMockServer
+  private lateinit var mappingApiMock: IncidentsMappingApiMockServer
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
@@ -99,7 +99,7 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
     inner class Security {
       @Test
       fun `access forbidden when no role`() {
-        webTestClient.get().uri("/migrate/history/all/{migrationType}", VISIT_BALANCE)
+        webTestClient.get().uri("/migrate/history/all/{migrationType}", INCIDENTS)
           .headers(setAuthorisation(roles = listOf()))
           .exchange()
           .expectStatus().isForbidden
@@ -107,7 +107,7 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `access forbidden with wrong role`() {
-        webTestClient.get().uri("/migrate/history/all/{migrationType}", VISIT_BALANCE)
+        webTestClient.get().uri("/migrate/history/all/{migrationType}", INCIDENTS)
           .headers(setAuthorisation(roles = listOf("BANANAS")))
           .exchange()
           .expectStatus().isForbidden
@@ -115,7 +115,7 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `access unauthorised with no auth token`() {
-        webTestClient.get().uri("/migrate/history/all/{migrationType}", VISIT_BALANCE)
+        webTestClient.get().uri("/migrate/history/all/{migrationType}", INCIDENTS)
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isUnauthorized
@@ -239,7 +239,7 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = VISIT_BALANCE,
+            migrationType = INCIDENTS,
           ),
         )
       }
@@ -309,7 +309,7 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_560,
             recordsFailed = 7,
-            migrationType = VISIT_BALANCE,
+            migrationType = INCIDENTS,
           ),
         )
         migrationHistoryRepository.save(
@@ -322,7 +322,7 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = VISIT_BALANCE,
+            migrationType = INCIDENTS,
           ),
         )
       }
@@ -339,7 +339,7 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
     inner class Security {
       @Test
       fun `access forbidden when no role`() {
-        webTestClient.get().uri("/migrate/history/active/{migrationType}", VISIT_BALANCE)
+        webTestClient.get().uri("/migrate/history/active/{migrationType}", INCIDENTS)
           .headers(setAuthorisation(roles = listOf()))
           .exchange()
           .expectStatus().isForbidden
@@ -347,7 +347,7 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `access forbidden with wrong role`() {
-        webTestClient.get().uri("/migrate/history/active/{migrationType}", VISIT_BALANCE)
+        webTestClient.get().uri("/migrate/history/active/{migrationType}", INCIDENTS)
           .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
           .exchange()
           .expectStatus().isForbidden
@@ -355,7 +355,7 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `access unauthorised with no auth token`() {
-        webTestClient.get().uri("/migrate/history/active/{migrationType}", VISIT_BALANCE)
+        webTestClient.get().uri("/migrate/history/active/{migrationType}", INCIDENTS)
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isUnauthorized
@@ -365,7 +365,7 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
     @Test
     internal fun `will return dto with null contents if no migrations are found`() {
       deleteHistoryRecords()
-      webTestClient.get().uri("/migrate/history/active/{migrationType}", VISIT_BALANCE)
+      webTestClient.get().uri("/migrate/history/active/{migrationType}", INCIDENTS)
         .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -381,8 +381,8 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
 
     @Test
     internal fun `can read active migration data`() {
-      mappingApiMock.stubGetMigrationDetails(migrationId = "2020-01-01T00%3A00%3A00", count = 123456)
-      webTestClient.get().uri("/migrate/history/active/{migrationType}", VISIT_BALANCE)
+      mappingApiMock.stubIncidentsMappingByMigrationId(whenCreated = "2020-01-01T00:00:00", count = 123456)
+      webTestClient.get().uri("/migrate/history/active/{migrationType}", INCIDENTS)
         .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
         .header("Content-Type", "application/json")
         .exchange()
@@ -396,7 +396,7 @@ class MigrateHistoryIntTest : SqsIntegrationTestBase() {
         .jsonPath("$.recordsFailed").isEqualTo(0)
         .jsonPath("$.estimatedRecordCount").isEqualTo(123567)
         .jsonPath("$.status").isEqualTo("STARTED")
-        .jsonPath("$.migrationType").isEqualTo("VISIT_BALANCE")
+        .jsonPath("$.migrationType").isEqualTo("INCIDENTS")
     }
   }
 }

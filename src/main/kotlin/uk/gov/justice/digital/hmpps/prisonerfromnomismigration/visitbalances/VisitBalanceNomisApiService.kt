@@ -8,8 +8,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.VisitBalanceResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceDetailResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
 
 @Service
 class VisitBalanceNomisApiService(@Qualifier("nomisApiWebClient") webClient: WebClient) {
@@ -26,11 +24,6 @@ class VisitBalanceNomisApiService(@Qualifier("nomisApiWebClient") webClient: Web
 
   suspend fun getVisitBalanceAdjustment(visitBalanceAdjustmentId: Long): VisitBalanceAdjustmentResponse = api
     .prepare(api.getVisitBalanceAdjustmentRequestConfig(visitBalanceAdjustmentId))
-    .retrieve()
-    .awaitBody()
-
-  suspend fun getVisitBalanceIds(prisonId: String?, pageNumber: Long, pageSize: Long): RestResponsePage<VisitBalanceIdResponse> = api
-    .prepare(api.findVisitBalanceIdsRequestConfig(page = pageNumber.toInt(), size = pageSize.toInt(), sort = null, prisonId = prisonId))
     .retrieve()
     .awaitBody()
 }

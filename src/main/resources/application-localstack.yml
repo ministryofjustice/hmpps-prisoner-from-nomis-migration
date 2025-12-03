@@ -31,9 +31,6 @@ hmpps.sqs:
     migrationsentencing:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
-    migrationvisitbalance:
-      queueName: ${random.uuid}
-      dlqName: ${random.uuid}
     migrationexternalmovements:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

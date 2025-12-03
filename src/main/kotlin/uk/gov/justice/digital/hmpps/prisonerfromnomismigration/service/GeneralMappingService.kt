@@ -12,7 +12,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.Inciden
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.VisitSlotsMappingService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMappingService
 
 @Service
@@ -26,7 +25,6 @@ class GeneralMappingService(
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
   private val prisonBalanceMappingApiService: PrisonBalanceMappingApiService,
   private val prisonerBalanceMappingApiService: PrisonerBalanceMappingApiService,
-  private val visitBalanceMappingApiService: VisitBalanceMappingApiService,
   private val externalMovementsMappingApiService: ExternalMovementsMappingApiService,
   private val visitSlotsMappingService: VisitSlotsMappingService,
   private val officialVisitsMappingService: OfficialVisitsMappingService,
@@ -52,8 +50,6 @@ class GeneralMappingService(
 
     // since this is a patch we cannot count mappings created since none are created - it will have to be manual Telemetry
     MigrationType.SENTENCING_ADJUSTMENTS -> 0
-
-    MigrationType.VISIT_BALANCE -> visitBalanceMappingApiService.getMigrationCount(migrationId)
 
     MigrationType.EXTERNAL_MOVEMENTS -> externalMovementsMappingApiService.getMigrationCount(migrationId)
 
