@@ -13,7 +13,7 @@ class TransactionMappingApiService(@Qualifier("mappingApiWebClient") webClient: 
   private val api = TransactionMappingResourceApi(webClient)
 
   suspend fun getMappingGivenNomisIdOrNull(transactionId: Long): TransactionMappingDto? = api
-    .prepare(api.getMappingByNomisId3RequestConfig(transactionId))
+    .prepare(api.getMappingByNomisId2RequestConfig(transactionId))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 }

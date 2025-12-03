@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
-import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
@@ -12,37 +11,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceDetailResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDate
 
 @Component
 class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
-  fun stubGetVisitBalanceIds(totalElements: Long = 20, pageSize: Long = 20, firstVisitBalanceId: Long = 10000L) {
-    val content: List<VisitBalanceIdResponse> = (1..kotlin.math.min(pageSize, totalElements)).map {
-      VisitBalanceIdResponse(visitBalanceId = firstVisitBalanceId + it - 1)
-    }
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/visit-balances/ids")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(
-            pageContent(
-              objectMapper = NomisApiExtension.Companion.objectMapper,
-              content = content,
-              pageSize = pageSize,
-              pageNumber = 0,
-              totalElements = totalElements,
-              size = pageSize.toInt(),
-            ),
-          ),
-      ),
-    )
-  }
-
   fun stubGetVisitBalanceDetail(
     nomisVisitBalanceId: Long = 12345L,
     prisonNumber: String = "A0001BC",
