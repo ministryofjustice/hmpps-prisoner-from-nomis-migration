@@ -18,16 +18,17 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.incidentsApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMigrationFilter
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsNomisApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsNomisApiMockServer.Companion.INCIDENTS_ID_URL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.incidentIdsPagedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceMappingApiMockServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceMigrationFilter
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceNomisApiMockServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.visitBalanceDetail
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.Duration
 import java.time.LocalDateTime
@@ -35,12 +36,10 @@ import java.time.LocalDateTime
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class MigrateIntTest : SqsIntegrationTestBase() {
   @Autowired
-  private lateinit var nomisVisitBalanceApiMock: VisitBalanceNomisApiMockServer
-
-  private val dpsApiMock = VisitBalanceDpsApiExtension.Companion.dpsVisitBalanceServer
+  private lateinit var nomisApiMock: IncidentsNomisApiMockServer
 
   @Autowired
-  private lateinit var mappingApiMock: VisitBalanceMappingApiMockServer
+  private lateinit var mappingApiMock: IncidentsMappingApiMockServer
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
@@ -95,23 +94,15 @@ class MigrateIntTest : SqsIntegrationTestBase() {
     internal fun `will terminate a running migration`() {
       // slow the API calls so there is time to cancel before it completes
       nomisApi.setGlobalFixedDelay(1000)
-      nomisVisitBalanceApiMock.stubGetVisitBalanceIds(totalElements = 2, pageSize = 10, firstVisitBalanceId = 10000)
-      mappingApiMock.stubGetVisitBalanceByNomisIdOrNull(nomisVisitBalanceId = 10000, mapping = null)
-      mappingApiMock.stubGetVisitBalanceByNomisIdOrNull(nomisVisitBalanceId = 20000, mapping = null)
-      nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(
-        nomisVisitBalanceId = 10000,
-        prisonNumber = "A0001BC",
-        visitBalanceDetail(prisonNumber = "A0001BC").copy(remainingPrivilegedVisitOrders = 3),
-      )
-      nomisVisitBalanceApiMock.stubGetVisitBalanceDetail(
-        nomisVisitBalanceId = 20000,
-        prisonNumber = "A0002BC",
-        visitBalanceDetail(prisonNumber = "A0002BC").copy(remainingPrivilegedVisitOrders = 4),
-      )
+      nomisApi.stubGetInitialCount(INCIDENTS_ID_URL, 86) { incidentIdsPagedResponse(it) }
+      nomisApiMock.stubMultipleGetIncidentIdCounts(totalElements = 86, pageSize = 10)
+      nomisApiMock.stubMultipleGetIncidents(1..86)
 
-      dpsApiMock.stubMigrateVisitBalance()
-      mappingApiMock.stubCreateMappingsForMigration()
-      mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
+      mappingApiMock.stubGetAnyIncidentNotFound()
+      mappingApiMock.stubMappingCreate()
+
+      incidentsApi.stubIncidentUpsert()
+      mappingApiMock.stubIncidentsMappingByMigrationId(count = 86)
 
       val migrationId = performMigration().migrationId
 
@@ -145,7 +136,7 @@ class MigrateIntTest : SqsIntegrationTestBase() {
 
   @Nested
   @DisplayName("POST /migrate/refresh/{migrationId}")
-  inner class RefreshMigrationVisitBalance {
+  inner class RefreshMigration {
     @BeforeEach
     internal fun setUp() = runTest {
       migrationHistoryRepository.deleteAll()
@@ -202,7 +193,7 @@ class MigrateIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = MigrationType.VISIT_BALANCE,
+            migrationType = MigrationType.INCIDENTS,
           ),
         )
       }
@@ -228,11 +219,11 @@ class MigrateIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 123,
-            migrationType = MigrationType.VISIT_BALANCE,
+            migrationType = MigrationType.INCIDENTS,
           ),
         )
       }
-      mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 4)
+      mappingApiMock.stubIncidentsMappingByMigrationId(count = 4)
 
       webTestClient.post().uri("/migrate/refresh/{migrationId}", migrationId)
         .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
@@ -254,7 +245,7 @@ class MigrateIntTest : SqsIntegrationTestBase() {
     }
   }
 
-  private fun performMigration(body: VisitBalanceMigrationFilter = VisitBalanceMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/visit-balance")
+  private fun performMigration(body: IncidentsMigrationFilter = IncidentsMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/incidents")
     .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .bodyValue(body)
@@ -266,7 +257,7 @@ class MigrateIntTest : SqsIntegrationTestBase() {
 
   private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
     verify(telemetryClient).trackEvent(
-      eq("visitbalance-migration-completed"),
+      eq("incidents-migration-completed"),
       any(),
       isNull(),
     )

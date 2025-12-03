@@ -116,10 +116,6 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONSENTENCING_QUEUE_NAME: "sqs_name"
     sqs-migration-sentencing-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONSENTENCING_DLQ_NAME: "sqs_name"
-    sqs-migration-visitbalance-queue:
-      HMPPS_SQS_QUEUES_MIGRATIONVISITBALANCE_QUEUE_NAME: "sqs_name"
-    sqs-migration-visitbalance-dlq:
-      HMPPS_SQS_QUEUES_MIGRATIONVISITBALANCE_DLQ_NAME: "sqs_name"
     sqs-migration-externalmovements-queue:
       HMPPS_SQS_QUEUES_MIGRATIONEXTERNALMOVEMENTS_QUEUE_NAME: "sqs_name"
     sqs-migration-externalmovements-dlq:

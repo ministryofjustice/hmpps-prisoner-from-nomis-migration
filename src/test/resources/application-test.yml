@@ -180,7 +180,5 @@ hmpps.sqs:
       errorVisibilityTimeout: 0
     migrationprisonerbalance:
       errorVisibilityTimeout: 0
-    migrationvisitbalance:
-      errorVisibilityTimeout: 0
     migrationexternalmovements:
       errorVisibilityTimeout: 0

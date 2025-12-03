@@ -372,7 +372,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
               filter = "",
               recordsMigrated = 123_560,
               recordsFailed = 7,
-              migrationType = MigrationType.VISIT_BALANCE,
+              migrationType = MigrationType.INCIDENTS,
             ),
           )
         }
