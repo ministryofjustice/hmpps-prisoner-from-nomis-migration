@@ -13,10 +13,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.VisitBalanceAdjustmentMappingResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceAdjustmentMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceMappingDto
 
 @Service
-class VisitBalanceMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<VisitBalanceMappingDto>(domainUrl = "/mapping/visit-balance", webClient) {
+class VisitBalanceMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<VisitBalanceAdjustmentMappingDto>(domainUrl = "/mapping/visit-balance", webClient) {
   private val adjustmentApi = VisitBalanceAdjustmentMappingResourceApi(webClient)
   suspend fun createVisitBalanceAdjustmentMapping(mapping: VisitBalanceAdjustmentMappingDto): CreateMappingResult<VisitBalanceAdjustmentMappingDto> = adjustmentApi
     .prepare(adjustmentApi.createMapping2RequestConfig(mapping))
@@ -29,7 +28,7 @@ class VisitBalanceMappingApiService(@Qualifier("mappingApiWebClient") webClient:
     .awaitFirstOrDefault(CreateMappingResult())
 
   suspend fun getByNomisVisitBalanceAdjustmentIdOrNull(nomisVisitBalanceAdjustmentId: Long): VisitBalanceAdjustmentMappingDto? = adjustmentApi
-    .prepare(adjustmentApi.getMappingByNomisId2RequestConfig(nomisVisitBalanceAdjustmentId))
+    .prepare(adjustmentApi.getMappingByNomisId1RequestConfig(nomisVisitBalanceAdjustmentId))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 }
