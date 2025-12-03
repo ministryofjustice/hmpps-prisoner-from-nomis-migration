@@ -10,13 +10,11 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AdjustmentIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.KeyDateAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentencingAdjustmentsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 
 @Component
 class SentencingAdjustmentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
@@ -128,34 +126,6 @@ class SentencingAdjustmentsNomisApiMockServer(private val objectMapper: ObjectMa
         ),
     )
   }
-
-  fun stubGetSentencingAdjustmentIds(
-    count: Long = 1,
-    content: List<AdjustmentIdResponse> = listOf(
-      AdjustmentIdResponse(123456, adjustmentCategory = "SENTENCE"),
-    ),
-  ) {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/adjustments/ids")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(pageAdjustmentIdResponse(count = count, content = content)),
-      ),
-    )
-  }
-
-  fun pageAdjustmentIdResponse(
-    count: Long,
-    content: List<AdjustmentIdResponse>,
-  ) = pageContent(
-    objectMapper = objectMapper,
-    content = content,
-    pageSize = 1L,
-    pageNumber = 0L,
-    totalElements = count,
-    size = 1,
-  )
 
   fun verify(countMatchingStrategy: CountMatchingStrategy, pattern: RequestPatternBuilder) = nomisApi.verify(countMatchingStrategy, pattern)
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)

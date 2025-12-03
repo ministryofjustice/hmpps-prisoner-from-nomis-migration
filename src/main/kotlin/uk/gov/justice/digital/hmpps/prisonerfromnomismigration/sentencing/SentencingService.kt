@@ -35,11 +35,4 @@ class SentencingService(@Qualifier("sentencingApiWebClient") private val webClie
       .retrieve()
       .awaitBodyOrNullWhenNotFound<Unit>()
   }
-
-  suspend fun patchSentencingAdjustmentCurrentTerm(adjustmentId: String, sentencingAdjustment: LegacyAdjustment): Unit = webClient.patch()
-    .uri("/legacy/adjustments/{adjustmentId}/current-term", adjustmentId)
-    .header("Content-Type", LEGACY_CONTENT_TYPE)
-    .bodyValue(sentencingAdjustment)
-    .retrieve()
-    .awaitBody()
 }

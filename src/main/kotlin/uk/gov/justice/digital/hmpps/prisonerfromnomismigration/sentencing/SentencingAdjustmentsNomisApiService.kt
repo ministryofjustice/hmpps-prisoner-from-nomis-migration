@@ -1,19 +1,14 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
-import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AdjustmentIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentencingAdjustmentsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment.AdjustmentType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisCodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.typeReference
 import java.time.LocalDate
 
 @Service
@@ -39,24 +34,6 @@ class SentencingAdjustmentsNomisApiService(@Qualifier("nomisApiWebClient") priva
     .uri("/key-date-adjustments/{nomisKeyDateAdjustmentId}", nomisKeyDateAdjustmentId)
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
-
-  suspend fun getSentencingAdjustmentIds(
-    fromDate: LocalDate? = null,
-    toDate: LocalDate? = null,
-    pageNumber: Long = 0,
-    pageSize: Long = 20,
-  ): PageImpl<AdjustmentIdResponse> = webClient.get()
-    .uri {
-      it.path("/adjustments/ids")
-        .queryParam("fromDate", fromDate)
-        .queryParam("toDate", toDate)
-        .queryParam("page", pageNumber)
-        .queryParam("size", pageSize)
-        .build()
-    }
-    .retrieve()
-    .bodyToMono(typeReference<RestResponsePage<AdjustmentIdResponse>>())
-    .awaitSingle()
 }
 
 data class NomisAdjustment(

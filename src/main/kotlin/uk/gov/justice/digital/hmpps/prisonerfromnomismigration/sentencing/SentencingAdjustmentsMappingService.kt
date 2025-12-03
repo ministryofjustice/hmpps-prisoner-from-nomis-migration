@@ -27,18 +27,6 @@ class SentencingAdjustmentsMappingService(@Qualifier("mappingApiWebClient") webC
     }
     .awaitSingleOrNull()
 
-  suspend fun findNomisSentencingAdjustmentMapping(
-    nomisAdjustmentId: Long,
-    nomisAdjustmentCategory: String,
-  ): SentencingAdjustmentNomisMapping = webClient.get()
-    .uri(
-      "/mapping/sentencing/adjustments/nomis-adjustment-category/{nomisAdjustmentCategory}/nomis-adjustment-id/{nomisAdjustmentId}",
-      nomisAdjustmentCategory,
-      nomisAdjustmentId,
-    )
-    .retrieve()
-    .awaitBody()
-
   suspend fun deleteNomisSentenceAdjustmentMapping(
     adjustmentId: String,
   ): Unit = webClient.delete()

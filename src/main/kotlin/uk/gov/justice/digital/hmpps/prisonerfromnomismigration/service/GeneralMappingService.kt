@@ -31,30 +31,16 @@ class GeneralMappingService(
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long = when (migrationType) {
     MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
-
     MigrationType.VISITS -> visitMappingService.getMigrationCount(migrationId)
-
     MigrationType.ACTIVITIES -> activityMappingService.getMigrationCount(migrationId)
-
     MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
-
     MigrationType.CORE_PERSON -> corePersonMappingApiService.getMigrationCount(migrationId)
-
     MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
-
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
-
     MigrationType.PRISON_BALANCE -> prisonBalanceMappingApiService.getMigrationCount(migrationId)
-
     MigrationType.PRISONER_BALANCE -> prisonerBalanceMappingApiService.getMigrationCount(migrationId)
-
-    // since this is a patch we cannot count mappings created since none are created - it will have to be manual Telemetry
-    MigrationType.SENTENCING_ADJUSTMENTS -> 0
-
     MigrationType.EXTERNAL_MOVEMENTS -> externalMovementsMappingApiService.getMigrationCount(migrationId)
-
     MigrationType.OFFICIAL_VISITS -> officialVisitsMappingService.getMigrationCount(migrationId)
-
     MigrationType.VISIT_SLOTS -> visitSlotsMappingService.getMigrationCount(migrationId)
   }
 }
