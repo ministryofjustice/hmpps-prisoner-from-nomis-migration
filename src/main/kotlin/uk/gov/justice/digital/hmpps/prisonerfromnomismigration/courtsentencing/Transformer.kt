@@ -120,6 +120,7 @@ fun CourtCaseResponse.toDpsCourtCasePostMerge() = MergeCreateCourtCase(
 fun CourtCaseResponse.toLegacyDpsCourtCase() = LegacyCreateCourtCase(
   prisonerId = this.offenderNo,
   active = this.caseStatus.code == "A",
+  bookingId = this.bookingId,
   legacyData = CourtCaseLegacyData(
     caseReferences = this.caseInfoNumbers.map {
       CaseReferenceLegacyData(
@@ -127,7 +128,6 @@ fun CourtCaseResponse.toLegacyDpsCourtCase() = LegacyCreateCourtCase(
         updatedDate = LocalDateTime.parse(it.createDateTime.toString()),
       )
     },
-    bookingId = this.bookingId,
   ),
   performedByUser = this.modifiedByUsername ?: this.createdByUsername,
 )

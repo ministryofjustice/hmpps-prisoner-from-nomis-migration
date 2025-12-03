@@ -171,7 +171,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           dpsCourtSentencingServer.verify(
             postRequestedFor(urlPathEqualTo("/legacy/court-case"))
               .withRequestBody(matchingJsonPath("prisonerId", equalTo(OFFENDER_ID_DISPLAY)))
-              .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
+              .withRequestBody(matchingJsonPath("bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
           )
         }
 
@@ -673,7 +673,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           dpsCourtSentencingServer.verify(
             1,
             putRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID"))
-              .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
+              .withRequestBody(matchingJsonPath("bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
           )
         }
 
@@ -729,7 +729,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         dpsCourtSentencingServer.verify(
           1,
           putRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID"))
-            .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
+            .withRequestBody(matchingJsonPath("bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
         )
       }
 
@@ -811,7 +811,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           dpsCourtSentencingServer.verify(
             1,
             putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCourtCaseUpdatedId"))
-              .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
+              .withRequestBody(matchingJsonPath("bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
           )
         }
 
@@ -1365,7 +1365,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will update DPS with the changes`() {
           dpsCourtSentencingServer.verify(
             1,
-            putRequestedFor(urlPathEqualTo("/court-case/$DPS_COURT_CASE_ID/case-references/refresh"))
+            putRequestedFor(urlPathEqualTo("/legacy/court-case/$DPS_COURT_CASE_ID/case-references/refresh"))
               .withRequestBody(matchingJsonPath("caseReferences.size()", equalTo("2")))
               .withRequestBody(
                 matchingJsonPath(
@@ -1373,8 +1373,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                   equalTo(NOMIS_CASE_IDENTIFIER),
                 ),
               )
-              .withRequestBody(matchingJsonPath("caseReferences[1].offenderCaseReference", equalTo("ref2")))
-              .withRequestBody(matchingJsonPath("bookingId", equalTo("$NOMIS_BOOKING_ID"))),
+              .withRequestBody(matchingJsonPath("caseReferences[1].offenderCaseReference", equalTo("ref2"))),
           )
         }
 
