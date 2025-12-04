@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-12-02.948.b5b6111"
+    "version" : "2025-12-03.955.79054d7"
   },
   "servers" : [ {
     "url" : "https://remand-and-sentencing-api.hmpps.service.justice.gov.uk",
@@ -5090,7 +5090,7 @@
           },
           "recallTypeCode" : {
             "type" : "string",
-            "enum" : [ "LR", "FTR_14", "FTR_28", "FTR_HDC_14", "FTR_HDC_28", "CUR_HDC", "IN_HDC" ]
+            "enum" : [ "LR", "FTR_14", "FTR_28", "FTR_56", "FTR_HDC_14", "FTR_HDC_28", "CUR_HDC", "IN_HDC" ]
           },
           "createdByUsername" : {
             "type" : "string"
@@ -5447,7 +5447,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:34.828378032"
+            "example" : "06:23:31.539085416"
           },
           "outcomeDispositionCode" : {
             "type" : "string"
@@ -5768,7 +5768,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:34.828378032"
+            "example" : "06:23:31.539085416"
           },
           "courtCode" : {
             "type" : "string"
@@ -5991,7 +5991,7 @@
           },
           "recallType" : {
             "type" : "string",
-            "enum" : [ "LR", "FTR_14", "FTR_28", "FTR_HDC_14", "FTR_HDC_28", "CUR_HDC", "IN_HDC" ]
+            "enum" : [ "LR", "FTR_14", "FTR_28", "FTR_56", "FTR_HDC_14", "FTR_HDC_28", "CUR_HDC", "IN_HDC" ]
           }
         },
         "required" : [ "recallType", "sentenceIds" ]
@@ -7503,7 +7503,7 @@
           },
           "recallType" : {
             "type" : "string",
-            "enum" : [ "LR", "FTR_14", "FTR_28", "FTR_HDC_14", "FTR_HDC_28", "CUR_HDC", "IN_HDC" ]
+            "enum" : [ "LR", "FTR_14", "FTR_28", "FTR_56", "FTR_HDC_14", "FTR_HDC_28", "CUR_HDC", "IN_HDC" ]
           },
           "createdAt" : {
             "type" : "string",
@@ -7957,7 +7957,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:34.828378032"
+            "example" : "06:23:31.539085416"
           },
           "courtCode" : {
             "type" : "string"
@@ -8441,7 +8441,7 @@
           },
           "recallType" : {
             "type" : "string",
-            "enum" : [ "LR", "FTR_14", "FTR_28", "FTR_HDC_14", "FTR_HDC_28", "CUR_HDC", "IN_HDC" ]
+            "enum" : [ "LR", "FTR_14", "FTR_28", "FTR_56", "FTR_HDC_14", "FTR_HDC_28", "CUR_HDC", "IN_HDC" ]
           },
           "recallBy" : {
             "type" : "string"
@@ -8588,7 +8588,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:34.828378032"
+            "example" : "06:23:31.539085416"
           },
           "nomisOutcomeCode" : {
             "type" : "string"
@@ -8648,7 +8648,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:34.828378032"
+            "example" : "06:23:31.539085416"
           },
           "courtId" : {
             "type" : "string"
@@ -8788,7 +8788,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:34.828378032"
+            "example" : "06:23:31.539085416"
           },
           "charges" : {
             "type" : "array",
@@ -8815,7 +8815,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:34.828378032"
+            "example" : "06:23:31.539085416"
           },
           "courtId" : {
             "type" : "string"
@@ -9403,7 +9403,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:34.828378032"
+            "example" : "06:23:31.539085416"
           },
           "courtCode" : {
             "type" : "string"
