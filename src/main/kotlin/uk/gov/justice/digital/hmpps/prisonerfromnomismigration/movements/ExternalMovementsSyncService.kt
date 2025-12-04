@@ -223,6 +223,7 @@ class ExternalMovementsSyncService(
       ?.also { telemetryClient.trackEvent("$TELEMETRY_PREFIX-scheduled-movement-inserted-ignored", telemetry) }
       ?: run {
         track("$TELEMETRY_PREFIX-scheduled-movement-inserted", telemetry) {
+          // TODO find address mapping and use that, otherwise take nomis full address as now
           syncScheduledMovementTapOut(prisonerNumber, eventId, telemetry)
             ?.also { tryToCreateScheduledMovementMapping(it, telemetry) }
         }
@@ -326,6 +327,7 @@ class ExternalMovementsSyncService(
       val mapping = mappingApiService.getScheduledMovementMapping(eventId)
         ?.also { telemetry["dpsOccurrenceId"] = it.dpsOccurrenceId }
         ?: throw IllegalStateException("No mapping found when handling an update event for scheduled movement $eventId - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
+      // TODO if mapping address ID or class different to NOMIS, find address mapping and use that, otherwise take from NOMIS
       val newMapping = syncScheduledMovementTapOut(prisonerNumber, eventId, telemetry, mapping.dpsOccurrenceId)
         ?: throw IllegalStateException("Could not find NOMIS scheduled movement when handling an update event for scheduled movement $eventId. Check if the schedule was deleted before this event was processed (by setting the TAP application back to pending), in which we can ignore the error.")
       if (newMapping.hasChanged(mapping)) {
@@ -532,6 +534,7 @@ class ExternalMovementsSyncService(
       }
       ?: run {
         track("$TELEMETRY_PREFIX-external-movement-inserted", telemetry) {
+          // TODO if there's an address id find the address mapping and use that, otherwise take NOMIS details as now
           val mapping = when (directionCode) {
             DirectionCode.OUT -> syncExternalMovementTapOut(prisonerNumber, bookingId, movementSeq, telemetry)
             DirectionCode.IN -> syncExternalMovementTapIn(prisonerNumber, bookingId, movementSeq, telemetry)
@@ -622,6 +625,7 @@ class ExternalMovementsSyncService(
       val mapping = mappingApiService.getExternalMovementMapping(bookingId, movementSeq)
         ?.also { telemetry["dpsMovementId"] = it.dpsMovementId }
         ?: throw IllegalStateException("No mapping found when handling an update event for movement $bookingId/$movementSeq - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
+      // TODO if mapping address ID or class different to NOMIS, find address mapping and use that, otherwise take from NOMIS
       val newMapping = when (directionCode) {
         DirectionCode.OUT -> syncExternalMovementTapOut(prisonerNumber, bookingId, movementSeq, telemetry, mapping.dpsMovementId)
         DirectionCode.IN -> syncExternalMovementTapIn(prisonerNumber, bookingId, movementSeq, telemetry, mapping.dpsMovementId)
@@ -715,13 +719,13 @@ class ExternalMovementsSyncService(
     }
   }
 
-  suspend fun offenderAddressUpdated(offenderAddressUpdatedEvent: OffenderAddressUpdatedEvent) = addressUpdated(offenderAddressUpdatedEvent.addressId, "OFF")
+  suspend fun offenderAddressUpdated(offenderAddressUpdatedEvent: OffenderAddressUpdatedEvent) = addressDetailsUpdated(offenderAddressUpdatedEvent.addressId, "OFF")
 
-  suspend fun corporateAddressUpdated(corporateAddressUpdatedEvent: CorporateAddressUpdatedEvent) = addressUpdated(corporateAddressUpdatedEvent.addressId, "CORP")
+  suspend fun corporateAddressUpdated(corporateAddressUpdatedEvent: CorporateAddressUpdatedEvent) = addressDetailsUpdated(corporateAddressUpdatedEvent.addressId, "CORP")
 
-  suspend fun agencyAddressUpdated(agencyAddressUpdatedEvent: AgencyAddressUpdatedEvent) = addressUpdated(agencyAddressUpdatedEvent.addressId, "AGY")
+  suspend fun agencyAddressUpdated(agencyAddressUpdatedEvent: AgencyAddressUpdatedEvent) = addressDetailsUpdated(agencyAddressUpdatedEvent.addressId, "AGY")
 
-  private suspend fun addressUpdated(addressId: Long, addressOwnerClass: String) {
+  private suspend fun addressDetailsUpdated(addressId: Long, addressOwnerClass: String) {
     val addressUpdateTelemetry = mutableMapOf<String, Any>("nomisAddressId" to "$addressId", "nomisAddressOwnerClass" to addressOwnerClass)
 
     track("$TELEMETRY_PREFIX-address-updated", addressUpdateTelemetry) {

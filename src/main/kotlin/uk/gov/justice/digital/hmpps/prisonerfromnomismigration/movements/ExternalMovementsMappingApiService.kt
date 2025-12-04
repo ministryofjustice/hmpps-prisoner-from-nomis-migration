@@ -14,7 +14,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.FindScheduledMovementsForAddressResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.FindTemporaryAbsenceAddressByNomisIdRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceAddressMappingResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
@@ -98,6 +100,12 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
     .uri("$domainUrl/scheduled-movements/nomis-address-id/{nomisAddressId}", nomisAddressId)
     .retrieve()
     .awaitBody()
+
+  suspend fun findAddressMapping(offenderNo: String, addressOwnerClass: String, addressId: Long) = webClient.post()
+    .uri("$domainUrl/addresses/by-nomis-id")
+    .bodyValue(FindTemporaryAbsenceAddressByNomisIdRequest(offenderNo, addressOwnerClass, addressId))
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound<TemporaryAbsenceAddressMappingResponse>()
 
   private suspend inline fun <reified T : Any> WebClient.createMapping(url: String, mapping: T): CreateMappingResult<T> = post()
     .uri(url)
