@@ -325,10 +325,10 @@ class ExternalMovementsSyncService(
   suspend fun scheduledMovementTapOutUpdated(eventId: Long, prisonerNumber: String, telemetry: MutableMap<String, Any>) {
     track("$TELEMETRY_PREFIX-scheduled-movement-updated", telemetry) {
       val mapping = mappingApiService.getScheduledMovementMapping(eventId)
-        .also { telemetry["dpsOccurrenceId"] = it.dpsOccurrenceId }
+        ?.also { telemetry["dpsOccurrenceId"] = it.dpsOccurrenceId }
         ?: throw IllegalStateException("No mapping found when handling an update event for scheduled movement $eventId - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
       // TODO if mapping address ID or class different to NOMIS, find address mapping and use that, otherwise take from NOMIS
-      val newMapping = syncScheduledMovementTapOut(prisonerNumber, eventId, telemetry, mapping.dpsOccurrenceId)!!
+      val newMapping = syncScheduledMovementTapOut(prisonerNumber, eventId, telemetry, mapping.dpsOccurrenceId)
         ?: throw IllegalStateException("Could not find NOMIS scheduled movement when handling an update event for scheduled movement $eventId. Check if the schedule was deleted before this event was processed (by setting the TAP application back to pending), in which we can ignore the error.")
       if (newMapping.hasChanged(mapping)) {
         tryToUpdateScheduledMovementMapping(newMapping, telemetry)
@@ -623,7 +623,7 @@ class ExternalMovementsSyncService(
 
     track("$TELEMETRY_PREFIX-external-movement-updated", telemetry) {
       val mapping = mappingApiService.getExternalMovementMapping(bookingId, movementSeq)
-        .also { telemetry["dpsMovementId"] = it.dpsMovementId }
+        ?.also { telemetry["dpsMovementId"] = it.dpsMovementId }
         ?: throw IllegalStateException("No mapping found when handling an update event for movement $bookingId/$movementSeq - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
       // TODO if mapping address ID or class different to NOMIS, find address mapping and use that, otherwise take from NOMIS
       val newMapping = when (directionCode) {
