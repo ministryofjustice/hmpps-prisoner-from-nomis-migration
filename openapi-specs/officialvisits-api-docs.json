@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-12-01.124.ff5c8e7"
+    "version" : "2025-12-04.132.4db93c2"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -639,10 +639,9 @@
             "example" : "aaaa-bbbb-9f9f9f9f-9f9f9f9f"
           },
           "visitTypeCode" : {
-            "type" : "string",
+            "$ref" : "#/components/schemas/VisitType",
             "description" : "The visit type code (VIDEO, IN_PERSON, TELEPHONE)",
-            "example" : "IN_PERSON",
-            "minLength" : 1
+            "example" : "IN_PERSON"
           },
           "staffNotes" : {
             "type" : "string",
@@ -667,16 +666,19 @@
         "type" : "object",
         "properties" : {
           "visitorTypeCode" : {
-            "type" : "string",
-            "description" : "The visitor type code",
-            "example" : "CONTACT",
-            "minLength" : 1
+            "$ref" : "#/components/schemas/VisitorType",
+            "description" : "The visitor type code (CONTACT, OPV, PRISONER)",
+            "example" : "CONTACT"
           },
-          "contactTypeCode" : {
+          "firstName" : {
             "type" : "string",
-            "description" : "The contact type code",
-            "example" : "OFFICIAL",
-            "minLength" : 1
+            "description" : "The first name of the contact",
+            "example" : "Bob"
+          },
+          "lastName" : {
+            "type" : "string",
+            "description" : "The last name of the contact",
+            "example" : "Harris"
           },
           "contactId" : {
             "type" : "integer",
@@ -690,15 +692,16 @@
             "description" : "The prisoner contact ID for the visitor",
             "example" : 123456
           },
-          "firstName" : {
-            "type" : "string",
-            "description" : "The first name of the contact",
-            "example" : "Bob"
+          "relationshipTypeCode" : {
+            "$ref" : "#/components/schemas/RelationshipType",
+            "description" : "The relationship type code (SOCIAL or OFFICIAL)",
+            "example" : "OFFICIAL"
           },
-          "lastName" : {
+          "relationshipCode" : {
             "type" : "string",
-            "description" : "The last name of the contact",
-            "example" : "Harris"
+            "description" : "The relationship code",
+            "example" : "POM",
+            "minLength" : 1
           },
           "leadVisitor" : {
             "type" : "boolean",
@@ -716,7 +719,19 @@
             "example" : "notes"
           }
         },
-        "required" : [ "contactTypeCode", "visitorTypeCode" ]
+        "required" : [ "relationshipCode", "relationshipTypeCode", "visitorTypeCode" ]
+      },
+      "RelationshipType" : {
+        "type" : "string",
+        "enum" : [ "OFFICIAL", "SOCIAL" ]
+      },
+      "VisitType" : {
+        "type" : "string",
+        "enum" : [ "IN_PERSON", "TELEPHONE", "VIDEO", "UNKNOWN" ]
+      },
+      "VisitorType" : {
+        "type" : "string",
+        "enum" : [ "CONTACT", "OPV", "PRISONER" ]
       },
       "CreateOfficialVisitResponse" : {
         "type" : "object",
@@ -750,22 +765,9 @@
         },
         "required" : [ "status" ]
       },
-      "CodedValue" : {
-        "type" : "object",
-        "properties" : {
-          "code" : {
-            "type" : "string",
-            "description" : "A coded value from NOMIS reference data",
-            "example" : "CODE",
-            "maxLength" : 12,
-            "minLength" : 0
-          },
-          "description" : {
-            "type" : "string",
-            "description" : "The description for this coded value in NOMIS",
-            "example" : "Description"
-          }
-        }
+      "AttendanceType" : {
+        "type" : "string",
+        "enum" : [ "ATTENDED", "ABSENT" ]
       },
       "MigrateVisitRequest" : {
         "type" : "object",
@@ -791,7 +793,7 @@
           "offenderBookId" : {
             "type" : "integer",
             "format" : "int64",
-            "description" : "The offender book ID to echo back",
+            "description" : "The offender book ID to echo back. It will be stored in DPS against the visit.",
             "example" : 74748
           },
           "prisonerNumber" : {
@@ -803,7 +805,7 @@
           },
           "currentTerm" : {
             "type" : "boolean",
-            "description" : "If this visits relates to the current term (booking) in prison true, else false.",
+            "description" : "If this visits relates to the current or latest term (booking) in prison true, else false.",
             "example" : true
           },
           "visitDate" : {
@@ -825,41 +827,49 @@
           "dpsLocationId" : {
             "type" : "string",
             "format" : "uuid",
-            "description" : "The DPS location where the visit takes place",
+            "description" : "The DPS location where the visit takes place.",
             "example" : "aaaa-bbbb-xxxxxxxx-yyyyyyyy"
           },
           "visitStatusCode" : {
-            "$ref" : "#/components/schemas/CodedValue",
-            "description" : "The visit status code from NOMIS",
-            "example" : "SCH"
+            "$ref" : "#/components/schemas/VisitStatusType",
+            "description" : "The DPS visit status code. The Syscon migration service will map the NOMIS state to a value in this enumerated type.",
+            "example" : "SCHEDULED"
+          },
+          "visitTypeCode" : {
+            "$ref" : "#/components/schemas/VisitType",
+            "description" : "The DPS visit type code. For migrated NOMIS visits this will default to type UNKNOWN. Other values are IN_PERSON, VIDEO, or TELEPHONE.",
+            "example" : "UNKNOWN"
           },
           "commentText" : {
             "type" : "string",
-            "description" : "The comment text from NOMIS",
+            "description" : "The visit comment text",
             "example" : "This is a comment"
           },
           "searchTypeCode" : {
-            "$ref" : "#/components/schemas/CodedValue",
-            "description" : "The search type code from NOMIS",
+            "$ref" : "#/components/schemas/SearchLevelType",
+            "description" : "The prisoner search type code. Maps to the same reference code values in both NOMIS and DPS.",
             "example" : "RUB_A"
           },
-          "eventOutcomeCode" : {
-            "$ref" : "#/components/schemas/CodedValue",
-            "description" : "The event outcome code NOMIS"
-          },
-          "outcomeReasonCode" : {
-            "$ref" : "#/components/schemas/CodedValue",
-            "description" : "The outcome reason code NOMIS"
+          "visitCompletionCode" : {
+            "$ref" : "#/components/schemas/VisitCompletionType",
+            "description" : "The DPS visit completion code. Default is NORMAL if not supplied.",
+            "example" : "NORMAL"
           },
           "visitorConcernText" : {
             "type" : "string",
-            "description" : "Concerns raised by the visitor",
-            "example" : "Visitor concern notes"
+            "description" : "Visit concern text from NOMIS",
+            "example" : "I am concerned"
           },
           "overrideBanStaffUsername" : {
             "type" : "string",
-            "description" : "The staff username who authorised an override for a ban",
+            "description" : "The staff username who authorised an override for a ban for this visit",
             "example" : "X3243H"
+          },
+          "visitOrderNumber" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The visit order number (if present) for the official visit",
+            "example" : 12344
           },
           "createDateTime" : {
             "type" : "string",
@@ -924,9 +934,15 @@
             "description" : "The visitors date of birth",
             "example" : "2011-01-03"
           },
+          "relationshipTypeCode" : {
+            "$ref" : "#/components/schemas/RelationshipType",
+            "description" : "The relationship type OFFICIAL or SOCIAL. Default is null if not known.",
+            "example" : "OFFICIAL"
+          },
           "relationshipToPrisoner" : {
-            "$ref" : "#/components/schemas/CodedValue",
-            "description" : "The coded relationships between this visitor and the prisoner"
+            "type" : "string",
+            "description" : "The relationship code between visitor and prisoner, from NOMIS reference data. A null value will indicate no relationship.",
+            "example" : "POL"
           },
           "groupLeaderFlag" : {
             "type" : "boolean",
@@ -940,16 +956,13 @@
           },
           "commentText" : {
             "type" : "string",
-            "description" : "The comment text from NOMIS",
-            "example" : "Comment text"
+            "description" : "The visitor comment text from NOMIS",
+            "example" : "Some comments"
           },
-          "eventOutcomeCode" : {
-            "$ref" : "#/components/schemas/CodedValue",
-            "description" : "The visitor event outcome code from NOMIS"
-          },
-          "outcomeReasonCode" : {
-            "$ref" : "#/components/schemas/CodedValue",
-            "description" : "The visitor outcome reason code from NOMIS"
+          "attendanceCode" : {
+            "$ref" : "#/components/schemas/AttendanceType",
+            "description" : "The visitor attendance code (ATTENDED or ABSENT). A null indicates no attendance was added.",
+            "example" : "ATTENDED"
           },
           "createDateTime" : {
             "type" : "string",
@@ -975,6 +988,18 @@
           }
         },
         "required" : [ "createDateTime", "createUsername", "offenderVisitVisitorId", "personId" ]
+      },
+      "SearchLevelType" : {
+        "type" : "string",
+        "enum" : [ "FULL", "PAT", "RUB", "RUB_A", "RUB_B", "STR" ]
+      },
+      "VisitCompletionType" : {
+        "type" : "string",
+        "enum" : [ "NORMAL", "STAFF_CANCELLED", "VISITOR_CANCELLED", "VISITOR_DENIED", "PRISONER_EARLY", "VISITOR_EARLY", "PRISONER_REFUSED" ]
+      },
+      "VisitStatusType" : {
+        "type" : "string",
+        "enum" : [ "SCHEDULED", "CANCELLED", "COMPLETED", "EXPIRED" ]
       },
       "IdPair" : {
         "type" : "object",
@@ -1251,7 +1276,7 @@
           "visitorTypeCode" : {
             "type" : "string"
           },
-          "contactTypeCode" : {
+          "relationshipTypeCode" : {
             "type" : "string"
           },
           "relationshipCode" : {
@@ -1272,7 +1297,7 @@
       },
       "ReferenceDataGroup" : {
         "type" : "string",
-        "enum" : [ "ATTENDANCE", "DAY", "CONTACT_TYPE", "SEARCH_LEVEL", "TEST_TYPE", "VIS_COMPLETION", "VIS_STATUS", "VIS_TYPE", "VISITOR_TYPE" ]
+        "enum" : [ "ATTENDANCE", "DAY", "RELATIONSHIP_TYPE", "SEARCH_LEVEL", "TEST_TYPE", "VIS_COMPLETION", "VIS_STATUS", "VIS_TYPE", "VISITOR_TYPE" ]
       },
       "ReferenceDataItem" : {
         "type" : "object",
@@ -1287,12 +1312,12 @@
           "groupCode" : {
             "$ref" : "#/components/schemas/ReferenceDataGroup",
             "description" : "The group name for related reference codes.",
-            "example" : "VIS_STS"
+            "example" : "VIS_STATUS"
           },
           "code" : {
             "type" : "string",
             "description" : "The code for this reference data",
-            "example" : "SCH"
+            "example" : "SCHEDULED"
           },
           "description" : {
             "type" : "string",

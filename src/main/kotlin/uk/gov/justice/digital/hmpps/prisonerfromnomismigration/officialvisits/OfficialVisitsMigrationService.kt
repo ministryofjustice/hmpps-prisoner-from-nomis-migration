@@ -11,12 +11,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitorMigrationMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OfficialVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.CodedValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitor
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SearchLevelType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import java.time.format.DateTimeFormatter
@@ -152,7 +153,13 @@ class OfficialVisitsMigrationService(
     startTime = startDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
     endTime = endDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
     dpsLocationId = internalLocationId.lookUpDpsLocationId(),
-    visitStatusCode = visitStatus.toCodeValue(),
+    // TODO - map correctly
+    visitStatusCode = VisitStatusType.SCHEDULED,
+    visitTypeCode = VisitType.UNKNOWN,
+    // TODO - map correctly
+    visitCompletionCode = null,
+    // TODO - map correctly
+    visitOrderNumber = null,
     createDateTime = audit.createDatetime,
     createUsername = audit.createUsername,
     visitors = visitors.map { visitor ->
@@ -164,20 +171,21 @@ class OfficialVisitsMigrationService(
         firstName = visitor.firstName,
         lastName = visitor.lastName,
         dateOfBirth = visitor.dateOfBirth,
-        relationshipToPrisoner = visitor.relationships.firstOrNull()?.relationshipType?.toCodeValue(),
+        relationshipToPrisoner = visitor.relationships.firstOrNull()?.relationshipType?.code,
+        // TODO - map correctly
+        relationshipTypeCode = null,
+        // TODO - map correctly
+        attendanceCode = null,
         groupLeaderFlag = visitor.leadVisitor,
         assistedVisitFlag = visitor.assistedVisit,
         commentText = visitor.commentText,
-        eventOutcomeCode = visitor.visitorAttendanceOutcome?.toCodeValue(),
-        outcomeReasonCode = visitor.cancellationReason?.toCodeValue(),
         modifyDateTime = visitor.audit.modifyDatetime,
         modifyUsername = visitor.audit.modifyUserId,
       )
     },
     commentText = commentText,
-    searchTypeCode = prisonerSearchType?.toCodeValue(),
-    eventOutcomeCode = prisonerAttendanceOutcome?.toCodeValue(),
-    outcomeReasonCode = cancellationReason?.toCodeValue(),
+    // TODO - map correctly
+    searchTypeCode = SearchLevelType.FULL,
     visitorConcernText = visitorConcernText,
     overrideBanStaffUsername = overrideBanStaffUsername,
     modifyDateTime = audit.modifyDatetime,
@@ -187,4 +195,3 @@ class OfficialVisitsMigrationService(
   private suspend fun Long.lookUpDpsLocationId(): UUID = officialVisitsMappingService.getInternalLocationByNomisId(this).dpsLocationId.let { UUID.fromString(it) }
   private suspend fun Long.lookUpDpsVisitSlotId(): Long = visitSlotsMappingService.getVisitSlotByNomisId(this).dpsId.toLong()
 }
-private fun CodeDescription.toCodeValue(): CodedValue = CodedValue(code = code, description = description)
