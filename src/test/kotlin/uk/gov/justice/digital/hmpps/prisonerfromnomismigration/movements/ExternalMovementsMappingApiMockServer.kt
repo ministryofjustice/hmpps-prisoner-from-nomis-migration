@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.FindScheduledMovementsForAddressResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceAddressMappingResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceBookingMappingDto
@@ -493,6 +494,37 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
   fun stubFindScheduledMovementsForAddressError(nomisAddressId: Long = 123L, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/temporary-absence/scheduled-movements/nomis-address-id/$nomisAddressId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubFindAddressMappings(
+    offenderNo: String = "A1234BC",
+    ownerClass: String = "OFF",
+    addressId: Long = 65432L,
+    dpsUprn: Long? = 23456L,
+    dpsAddressText: String = "some address",
+  ) {
+    mappingApi.stubFor(
+      post(urlPathMatching("/mapping/temporary-absence/addresses/by-nomis-id")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            objectMapper.writeValueAsString(
+              TemporaryAbsenceAddressMappingResponse(ownerClass, addressId, dpsAddressText, offenderNo, dpsUprn),
+            ),
+          ),
+      ),
+    )
+  }
+
+  fun stubFindAddressMappings(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      post(urlPathMatching("/mapping/temporary-absence/addresses/by-nomis-id")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())

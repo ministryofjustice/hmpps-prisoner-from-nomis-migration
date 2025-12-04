@@ -221,6 +221,7 @@ class ExternalMovementsSyncService(
       ?.also { telemetryClient.trackEvent("$TELEMETRY_PREFIX-scheduled-movement-inserted-ignored", telemetry) }
       ?: run {
         track("$TELEMETRY_PREFIX-scheduled-movement-inserted", telemetry) {
+          // TODO find address mapping and use that, otherwise take nomis full address as now
           syncScheduledMovementTapOut(prisonerNumber, eventId, telemetry)
             ?.also { tryToCreateScheduledMovementMapping(it, telemetry) }
         }
@@ -323,6 +324,7 @@ class ExternalMovementsSyncService(
     track("$TELEMETRY_PREFIX-scheduled-movement-updated", telemetry) {
       val mapping = mappingApiService.getScheduledMovementMapping(eventId)!!
         .also { telemetry["dpsOccurrenceId"] = it.dpsOccurrenceId }
+      // TODO if mapping address ID or class different to NOMIS, find address mapping and use that, otherwise take from NOMIS
       val newMapping = syncScheduledMovementTapOut(prisonerNumber, eventId, telemetry, mapping.dpsOccurrenceId)!!
       if (newMapping.hasChanged(mapping)) {
         tryToUpdateScheduledMovementMapping(newMapping, telemetry)
@@ -528,6 +530,7 @@ class ExternalMovementsSyncService(
       }
       ?: run {
         track("$TELEMETRY_PREFIX-external-movement-inserted", telemetry) {
+          // TODO if there's an address id find the address mapping and use that, otherwise take NOMIS details as now
           val mapping = when (directionCode) {
             DirectionCode.OUT -> syncExternalMovementTapOut(prisonerNumber, bookingId, movementSeq, telemetry)
             DirectionCode.IN -> syncExternalMovementTapIn(prisonerNumber, bookingId, movementSeq, telemetry)
@@ -617,6 +620,7 @@ class ExternalMovementsSyncService(
     track("$TELEMETRY_PREFIX-external-movement-updated", telemetry) {
       val mapping = mappingApiService.getExternalMovementMapping(bookingId, movementSeq)!!
         .also { telemetry["dpsMovementId"] = it.dpsMovementId }
+      // TODO if mapping address ID or class different to NOMIS, find address mapping and use that, otherwise take from NOMIS
       val newMapping = when (directionCode) {
         DirectionCode.OUT -> syncExternalMovementTapOut(prisonerNumber, bookingId, movementSeq, telemetry, mapping.dpsMovementId)
         DirectionCode.IN -> syncExternalMovementTapIn(prisonerNumber, bookingId, movementSeq, telemetry, mapping.dpsMovementId)
@@ -710,13 +714,13 @@ class ExternalMovementsSyncService(
     }
   }
 
-  suspend fun offenderAddressUpdated(offenderAddressUpdatedEvent: OffenderAddressUpdatedEvent) = addressUpdated(offenderAddressUpdatedEvent.addressId, "OFF")
+  suspend fun offenderAddressUpdated(offenderAddressUpdatedEvent: OffenderAddressUpdatedEvent) = addressDetailsUpdated(offenderAddressUpdatedEvent.addressId, "OFF")
 
-  suspend fun corporateAddressUpdated(corporateAddressUpdatedEvent: CorporateAddressUpdatedEvent) = addressUpdated(corporateAddressUpdatedEvent.addressId, "CORP")
+  suspend fun corporateAddressUpdated(corporateAddressUpdatedEvent: CorporateAddressUpdatedEvent) = addressDetailsUpdated(corporateAddressUpdatedEvent.addressId, "CORP")
 
-  suspend fun agencyAddressUpdated(agencyAddressUpdatedEvent: AgencyAddressUpdatedEvent) = addressUpdated(agencyAddressUpdatedEvent.addressId, "AGY")
+  suspend fun agencyAddressUpdated(agencyAddressUpdatedEvent: AgencyAddressUpdatedEvent) = addressDetailsUpdated(agencyAddressUpdatedEvent.addressId, "AGY")
 
-  private suspend fun addressUpdated(addressId: Long, addressOwnerClass: String) {
+  private suspend fun addressDetailsUpdated(addressId: Long, addressOwnerClass: String) {
     val addressUpdateTelemetry = mutableMapOf<String, Any>("nomisAddressId" to "$addressId", "nomisAddressOwnerClass" to addressOwnerClass)
 
     track("$TELEMETRY_PREFIX-address-updated", addressUpdateTelemetry) {
