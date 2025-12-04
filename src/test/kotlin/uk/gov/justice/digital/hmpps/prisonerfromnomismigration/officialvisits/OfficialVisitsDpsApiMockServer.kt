@@ -12,7 +12,6 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.objectMapper
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.CodedValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigResponse
@@ -20,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitSlot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitor
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -95,7 +95,7 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       startTime = "10:00",
       endTime = "11:00",
       dpsLocationId = UUID.fromString("d0cc8fcd-22db-46a7-bdb3-ada7ac1828f5"),
-      visitStatusCode = CodedValue(code = "NORM", description = "Normal Completion"),
+      visitStatusCode = VisitStatusType.SCHEDULED,
       createDateTime = LocalDateTime.parse("2020-01-01T08:00"),
       createUsername = "T.SMITH",
       visitors = listOf(

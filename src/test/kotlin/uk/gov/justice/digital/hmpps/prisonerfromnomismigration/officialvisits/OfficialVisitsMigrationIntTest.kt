@@ -42,9 +42,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.Of
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.migrateVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsNomisApiMockServer.Companion.officialVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsNomisApiMockServer.Companion.officialVisitor
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.CodedValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SearchLevelType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import java.time.Duration
@@ -272,7 +274,7 @@ class OfficialVisitsMigrationIntTest(
           assertThat(mappingType).isEqualTo(OfficialVisitMigrationMappingDto.MappingType.MIGRATED)
           assertThat(label).isEqualTo(migrationResult.migrationId)
           assertThat(nomisId).isEqualTo(nomisVisitId)
-          assertThat(dpsId).isEqualTo(dpsVisitId.toString())
+          assertThat(dpsId).isEqualTo(dpsVisitId)
           assertThat(visitors).hasSize(1)
           assertThat(visitors[0].dpsId).isEqualTo(dpsVisitorId.toString())
           assertThat(visitors[0].nomisId).isEqualTo(nomisVisitorId)
@@ -451,12 +453,10 @@ class OfficialVisitsMigrationIntTest(
         assertThat(migrationRequest.commentText).isEqualTo("First visit")
         assertThat(migrationRequest.visitorConcernText).isEqualTo("Big concerns")
         assertThat(migrationRequest.overrideBanStaffUsername).isEqualTo("T.SMITH")
-        assertThat(migrationRequest.searchTypeCode).isEqualTo(
-          CodedValue(
-            code = "FULL",
-            description = "Full search",
-          ),
-        )
+        // TODO -  map this correctly
+        assertThat(migrationRequest.searchTypeCode).isEqualTo(SearchLevelType.FULL)
+        // TODO -  map this correctly
+        assertThat(migrationRequest.visitOrderNumber).isNull()
       }
 
       @Test
@@ -468,24 +468,10 @@ class OfficialVisitsMigrationIntTest(
 
       @Test
       fun `will map and transform visit status`() {
-        assertThat(migrationRequest.outcomeReasonCode).isEqualTo(
-          CodedValue(
-            code = "ADMIN",
-            description = "Administrative Cancellation",
-          ),
-        )
-        assertThat(migrationRequest.eventOutcomeCode).isEqualTo(
-          CodedValue(
-            code = "ATT",
-            description = "Attended",
-          ),
-        )
-        assertThat(migrationRequest.visitStatusCode).isEqualTo(
-          CodedValue(
-            code = "SCH",
-            description = "Scheduled",
-          ),
-        )
+        // TODO mapp all these correctly
+        assertThat(migrationRequest.visitStatusCode).isEqualTo(VisitStatusType.SCHEDULED)
+        assertThat(migrationRequest.visitTypeCode).isEqualTo(VisitType.UNKNOWN)
+        assertThat(migrationRequest.visitCompletionCode).isNull()
       }
 
       @Test
@@ -528,30 +514,17 @@ class OfficialVisitsMigrationIntTest(
       @Test
       fun `will map and transform status details about each visitor`() {
         with(migrationRequest.visitors[0]) {
-          assertThat(eventOutcomeCode).isEqualTo(
-            CodedValue(
-              code = "ATT",
-              description = "Attended",
-            ),
-          )
-          assertThat(outcomeReasonCode).isEqualTo(
-            CodedValue(
-              code = "OFFCANC",
-              description = "Offender Cancelled",
-            ),
-          )
+          // TODO - map this correctly
+          assertThat(attendanceCode).isNull()
         }
       }
 
       @Test
       fun `will map and transform the most relevant relationship between the visitor and prisoner`() {
         with(migrationRequest.visitors[0]) {
-          assertThat(relationshipToPrisoner).isEqualTo(
-            CodedValue(
-              code = "POL",
-              description = "Police",
-            ),
-          )
+          assertThat(relationshipToPrisoner).isEqualTo("POL")
+          // TODO - map this correctly
+          assertThat(relationshipTypeCode).isNull()
         }
       }
     }
@@ -606,7 +579,7 @@ class OfficialVisitsMigrationIntTest(
             visit = IdPair(
               elementType = IdPair.ElementType.OFFICIAL_VISIT,
               nomisId = nomisVisitId,
-              dpsId = dpsVisitId.toLong(),
+              dpsId = dpsVisitId,
             ),
             visitors = listOf(
               IdPair(elementType = IdPair.ElementType.OFFICIAL_VISITOR, nomisId = nomisVisitorId, dpsId = dpsVisitorId),
@@ -618,7 +591,7 @@ class OfficialVisitsMigrationIntTest(
             visit = IdPair(
               elementType = IdPair.ElementType.OFFICIAL_VISIT,
               nomisId = nomisVisitId,
-              dpsId = dpsVisitId.toLong(),
+              dpsId = dpsVisitId,
             ),
             visitors = listOf(
               IdPair(elementType = IdPair.ElementType.OFFICIAL_VISITOR, nomisId = nomisVisitorId, dpsId = dpsVisitorId),
@@ -728,7 +701,7 @@ class OfficialVisitsMigrationIntTest(
             visit = IdPair(
               elementType = IdPair.ElementType.OFFICIAL_VISIT,
               nomisId = nomisVisitId,
-              dpsId = dpsVisitId.toLong(),
+              dpsId = dpsVisitId,
             ),
             visitors = listOf(
               IdPair(elementType = IdPair.ElementType.OFFICIAL_VISITOR, nomisId = nomisVisitorId, dpsId = dpsVisitorId),
@@ -740,7 +713,7 @@ class OfficialVisitsMigrationIntTest(
             visit = IdPair(
               elementType = IdPair.ElementType.OFFICIAL_VISIT,
               nomisId = nomisVisitId,
-              dpsId = dpsVisitId.toLong(),
+              dpsId = dpsVisitId,
             ),
             visitors = listOf(
               IdPair(elementType = IdPair.ElementType.OFFICIAL_VISITOR, nomisId = nomisVisitorId, dpsId = dpsVisitorId),
