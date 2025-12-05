@@ -1413,7 +1413,7 @@ class ExternalMovementsSyncIntTest(
           assertThat(id).isNull()
           assertThat(location.description).isEqualTo("Some description")
           assertThat(location.address).isEqualTo("to full address")
-          assertThat(location.uprn).isEqualTo("987")
+          assertThat(location.uprn).isEqualTo(987)
           assertThat(location.postcode).isEqualTo("S1 1AB")
         }
       }
@@ -2407,7 +2407,7 @@ class ExternalMovementsSyncIntTest(
           assertThat(location.description).isEqualTo("Some description")
           assertThat(location.address).isEqualTo("full address")
           assertThat(location.postcode).isEqualTo("S1 1AB")
-          assertThat(location.uprn).isEqualTo("987")
+          assertThat(location.uprn).isEqualTo(987)
           assertThat(accompaniedByCode).isEqualTo("P")
           assertThat(accompaniedByNotes).isEqualTo("Absence escort text")
           assertThat(notes).isEqualTo("Absence comment text")
