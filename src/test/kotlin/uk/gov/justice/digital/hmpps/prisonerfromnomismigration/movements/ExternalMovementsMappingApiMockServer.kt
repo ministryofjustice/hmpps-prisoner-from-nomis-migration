@@ -403,6 +403,7 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
     bookingId: Long = 12345L,
     movementSeq: Int = 1,
     dpsMovementId: UUID = UUID.randomUUID(),
+    city: String? = null,
   ) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/temporary-absence/external-movement/nomis-movement-id/$bookingId/$movementSeq")).willReturn(
@@ -411,9 +412,10 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
           .withBody(
             objectMapper.writeValueAsString(
               temporaryAbsenceExternalMovementMapping(
-                bookingId,
-                movementSeq,
+                bookingId = bookingId,
+                movementSeq = movementSeq,
                 dpsMovementId = dpsMovementId,
+                city = city,
               ),
             ),
           ),
@@ -653,13 +655,14 @@ fun temporaryAbsenceExternalMovementMapping(
   movementSeq: Int = 1,
   prisonerNumber: String = "A1234BC",
   dpsMovementId: UUID = UUID.randomUUID(),
+  city: String? = null,
 ) = ExternalMovementSyncMappingDto(
   prisonerNumber = prisonerNumber,
   bookingId = bookingId,
   nomisMovementSeq = movementSeq,
   dpsMovementId = dpsMovementId,
   mappingType = ExternalMovementSyncMappingDto.MappingType.MIGRATED,
-  nomisAddressId = 321,
-  nomisAddressOwnerClass = "OFF",
-  dpsAddressText = "full address",
+  nomisAddressId = if (city == null) 321 else null,
+  nomisAddressOwnerClass = if (city == null) "OFF" else null,
+  dpsAddressText = city ?: "full address",
 )
