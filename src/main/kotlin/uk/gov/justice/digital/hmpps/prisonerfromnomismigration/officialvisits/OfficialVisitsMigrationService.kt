@@ -11,10 +11,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitorMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OfficialVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.AttendanceType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitor
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.RelationshipType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SearchLevelType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
@@ -158,8 +161,7 @@ class OfficialVisitsMigrationService(
     visitTypeCode = VisitType.UNKNOWN,
     // TODO - map correctly
     visitCompletionCode = null,
-    // TODO - map correctly
-    visitOrderNumber = null,
+    visitOrderNumber = visitOrder?.number,
     createDateTime = audit.createDatetime,
     createUsername = audit.createUsername,
     visitors = visitors.map { visitor ->
@@ -172,10 +174,8 @@ class OfficialVisitsMigrationService(
         lastName = visitor.lastName,
         dateOfBirth = visitor.dateOfBirth,
         relationshipToPrisoner = visitor.relationships.firstOrNull()?.relationshipType?.code,
-        // TODO - map correctly
-        relationshipTypeCode = null,
-        // TODO - map correctly
-        attendanceCode = null,
+        relationshipTypeCode = visitor.relationships.firstOrNull()?.contactType?.toDpsRelationshipType(),
+        attendanceCode = visitor.visitorAttendanceOutcome?.toDpsAttendanceType(),
         groupLeaderFlag = visitor.leadVisitor,
         assistedVisitFlag = visitor.assistedVisit,
         commentText = visitor.commentText,
@@ -184,8 +184,7 @@ class OfficialVisitsMigrationService(
       )
     },
     commentText = commentText,
-    // TODO - map correctly
-    searchTypeCode = SearchLevelType.FULL,
+    searchTypeCode = prisonerSearchType?.toDpsSearchLevelType(),
     visitorConcernText = visitorConcernText,
     overrideBanStaffUsername = overrideBanStaffUsername,
     modifyDateTime = audit.modifyDatetime,
@@ -194,4 +193,24 @@ class OfficialVisitsMigrationService(
 
   private suspend fun Long.lookUpDpsLocationId(): UUID = officialVisitsMappingService.getInternalLocationByNomisId(this).dpsLocationId.let { UUID.fromString(it) }
   private suspend fun Long.lookUpDpsVisitSlotId(): Long = visitSlotsMappingService.getVisitSlotByNomisId(this).dpsId.toLong()
+}
+
+private fun CodeDescription.toDpsAttendanceType(): AttendanceType = when (code) {
+  "ATT" -> AttendanceType.ATTENDED
+  "ABS" -> AttendanceType.ABSENT
+  else -> throw IllegalArgumentException("Unknown attendance type code: $code")
+}
+private fun CodeDescription.toDpsRelationshipType(): RelationshipType = when (code) {
+  "O" -> RelationshipType.OFFICIAL
+  "S" -> RelationshipType.SOCIAL
+  else -> throw IllegalArgumentException("Unknown relationship type code: $code")
+}
+private fun CodeDescription.toDpsSearchLevelType(): SearchLevelType = when (code) {
+  "FULL" -> SearchLevelType.FULL
+  "PAT" -> SearchLevelType.PAT
+  "RUB" -> SearchLevelType.RUB
+  "RUB_A" -> SearchLevelType.RUB_A
+  "RUB_B" -> SearchLevelType.RUB_B
+  "STR" -> SearchLevelType.STR
+  else -> throw IllegalArgumentException("Unknown search type code: $code")
 }

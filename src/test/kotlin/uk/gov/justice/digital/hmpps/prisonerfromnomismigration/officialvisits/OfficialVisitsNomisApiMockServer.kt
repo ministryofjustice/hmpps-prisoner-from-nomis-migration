@@ -62,7 +62,8 @@ class OfficialVisitsNomisApiMockServer(private val objectMapper: ObjectMapper) {
       assistedVisit = true,
       relationships = listOf(
         ContactRelationship(
-          relationshipType = CodeDescription("POL", "Police"),
+          relationshipType = CodeDescription(code = "POL", description = "Police"),
+          contactType = CodeDescription(code = "O", description = "Official"),
         ),
       ),
     )

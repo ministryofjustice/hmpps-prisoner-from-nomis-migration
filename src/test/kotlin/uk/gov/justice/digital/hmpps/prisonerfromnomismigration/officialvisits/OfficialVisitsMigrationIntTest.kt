@@ -38,12 +38,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactRelationship
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitOrder
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.migrateVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsNomisApiMockServer.Companion.officialVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsNomisApiMockServer.Companion.officialVisitor
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.AttendanceType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.RelationshipType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SearchLevelType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
@@ -350,7 +353,8 @@ class OfficialVisitsMigrationIntTest(
             commentText = "First visit",
             visitorConcernText = "Big concerns",
             overrideBanStaffUsername = "T.SMITH",
-            prisonerSearchType = CodeDescription(code = "FULL", description = "Full search"),
+            visitOrder = VisitOrder(654321),
+            prisonerSearchType = CodeDescription(code = "PAT", description = "Pat Down Search"),
             visitStatus = CodeDescription(code = "SCH", description = "Scheduled"),
             visitOutcome = CodeDescription(code = "CANC", description = "Cancelled"),
             prisonerAttendanceOutcome = CodeDescription(code = "ATT", description = "Attended"),
@@ -380,11 +384,19 @@ class OfficialVisitsMigrationIntTest(
                       code = "POL",
                       description = "Police",
                     ),
+                    contactType = CodeDescription(
+                      code = "O",
+                      description = "Official",
+                    ),
                   ),
                   ContactRelationship(
                     relationshipType = CodeDescription(
                       code = "DR",
                       description = "Doctor",
+                    ),
+                    contactType = CodeDescription(
+                      code = "O",
+                      description = "Official",
                     ),
                   ),
                 ),
@@ -453,10 +465,8 @@ class OfficialVisitsMigrationIntTest(
         assertThat(migrationRequest.commentText).isEqualTo("First visit")
         assertThat(migrationRequest.visitorConcernText).isEqualTo("Big concerns")
         assertThat(migrationRequest.overrideBanStaffUsername).isEqualTo("T.SMITH")
-        // TODO -  map this correctly
-        assertThat(migrationRequest.searchTypeCode).isEqualTo(SearchLevelType.FULL)
-        // TODO -  map this correctly
-        assertThat(migrationRequest.visitOrderNumber).isNull()
+        assertThat(migrationRequest.searchTypeCode).isEqualTo(SearchLevelType.PAT)
+        assertThat(migrationRequest.visitOrderNumber).isEqualTo(654321)
       }
 
       @Test
@@ -514,8 +524,7 @@ class OfficialVisitsMigrationIntTest(
       @Test
       fun `will map and transform status details about each visitor`() {
         with(migrationRequest.visitors[0]) {
-          // TODO - map this correctly
-          assertThat(attendanceCode).isNull()
+          assertThat(attendanceCode).isEqualTo(AttendanceType.ATTENDED)
         }
       }
 
@@ -523,8 +532,7 @@ class OfficialVisitsMigrationIntTest(
       fun `will map and transform the most relevant relationship between the visitor and prisoner`() {
         with(migrationRequest.visitors[0]) {
           assertThat(relationshipToPrisoner).isEqualTo("POL")
-          // TODO - map this correctly
-          assertThat(relationshipTypeCode).isNull()
+          assertThat(relationshipTypeCode).isEqualTo(RelationshipType.OFFICIAL)
         }
       }
     }
