@@ -223,7 +223,6 @@ class ExternalMovementsSyncService(
       ?.also { telemetryClient.trackEvent("$TELEMETRY_PREFIX-scheduled-movement-inserted-ignored", telemetry) }
       ?: run {
         track("$TELEMETRY_PREFIX-scheduled-movement-inserted", telemetry) {
-          // TODO find address mapping and use that, otherwise take nomis full address as now
           syncScheduledMovementTapOut(prisonerNumber, eventId, telemetry)
             ?.also { tryToCreateScheduledMovementMapping(it, telemetry) }
         }
@@ -234,7 +233,7 @@ class ExternalMovementsSyncService(
     prisonerNumber: String,
     eventId: Long,
     telemetry: MutableMap<String, Any>,
-    dpsOccurrenceId: UUID? = null,
+    existingMapping: ScheduledMovementSyncMappingDto? = null,
     onlyIfScheduled: Boolean = false,
   ): ScheduledMovementSyncMappingDto? = nomisApiService.getTemporaryAbsenceScheduledMovement(prisonerNumber, eventId)
     .takeIf { !onlyIfScheduled || it.eventStatus == "SCH" }
@@ -242,8 +241,13 @@ class ExternalMovementsSyncService(
     ?.let { nomisSchedule ->
       val dpsAuthorisationId = requireParentApplicationExists(nomisSchedule.movementApplicationId)
         .also { telemetry["dpsAuthorisationId"] = it }
-      val dpsOccurrenceId = dpsApiService.syncTapOccurrence(dpsAuthorisationId, nomisSchedule.toDpsRequest(dpsOccurrenceId)).id
+
+      val (address, uprn) = deriveDpsAddress(prisonerNumber, existingMapping, nomisSchedule)
+      uprn?.also { telemetry["dpsUprn"] = it }
+      val dpsOccurrence = nomisSchedule.toDpsRequest(existingMapping?.dpsOccurrenceId, address, uprn)
+      val dpsOccurrenceId = dpsApiService.syncTapOccurrence(dpsAuthorisationId, dpsOccurrence).id
         .also { telemetry["dpsOccurrenceId"] = it }
+
       ScheduledMovementSyncMappingDto(
         prisonerNumber = prisonerNumber,
         bookingId = nomisSchedule.bookingId,
@@ -252,7 +256,8 @@ class ExternalMovementsSyncService(
         mappingType = SCHEDULED_MOVEMENT_NOMIS_CREATED,
         nomisAddressId = nomisSchedule.toAddressId ?: 0,
         nomisAddressOwnerClass = nomisSchedule.toAddressOwnerClass ?: "",
-        dpsAddressText = nomisSchedule.toFullAddress ?: "",
+        dpsAddressText = address,
+        dpsUprn = uprn,
         eventTime = "${nomisSchedule.startTime}",
       )
         .also {
@@ -260,6 +265,25 @@ class ExternalMovementsSyncService(
           telemetry["nomisAddressOwnerClass"] = nomisSchedule.toAddressOwnerClass ?: ""
         }
     }
+
+  private suspend fun deriveDpsAddress(
+    prisonerNumber: String,
+    existingScheduleMapping: ScheduledMovementSyncMappingDto?,
+    nomisSchedule: ScheduledTemporaryAbsenceResponse,
+  ): Pair<String, Long?> {
+    val hasNomisAddress = nomisSchedule.toAddressId != null && nomisSchedule.toAddressOwnerClass != null
+    val newAddress = (existingScheduleMapping == null || (hasNomisAddress && existingScheduleMapping.nomisAddressId != nomisSchedule.toAddressId))
+
+    return if (newAddress) {
+      // NOMIS address is new/changed, look for address mapping or just default from NOMIS
+      mappingApiService.findAddressMapping(prisonerNumber, nomisSchedule.toAddressOwnerClass!!, nomisSchedule.toAddressId!!)
+        ?.let { it.dpsAddressText to it.dpsUprn }
+        ?: ((nomisSchedule.toFullAddress ?: "") to null)
+    } else {
+      // NOMIS address is unchanged, use DPS address as saved on scheduled mapping
+      existingScheduleMapping.dpsAddressText to existingScheduleMapping.dpsUprn
+    }
+  }
 
   suspend fun syncScheduledMovementTapInInserted(event: ScheduledMovementEvent) {
     val (eventId, bookingId, prisonerNumber, _, directionCode) = event
@@ -324,13 +348,13 @@ class ExternalMovementsSyncService(
 
   suspend fun scheduledMovementTapOutUpdated(eventId: Long, prisonerNumber: String, telemetry: MutableMap<String, Any>) {
     track("$TELEMETRY_PREFIX-scheduled-movement-updated", telemetry) {
-      val mapping = mappingApiService.getScheduledMovementMapping(eventId)
+      val existingScheduleMapping = mappingApiService.getScheduledMovementMapping(eventId)
         ?.also { telemetry["dpsOccurrenceId"] = it.dpsOccurrenceId }
         ?: throw IllegalStateException("No mapping found when handling an update event for scheduled movement $eventId - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
-      // TODO if mapping address ID or class different to NOMIS, find address mapping and use that, otherwise take from NOMIS
-      val newMapping = syncScheduledMovementTapOut(prisonerNumber, eventId, telemetry, mapping.dpsOccurrenceId)
+
+      val newMapping = syncScheduledMovementTapOut(prisonerNumber, eventId, telemetry, existingScheduleMapping)
         ?: throw IllegalStateException("Could not find NOMIS scheduled movement when handling an update event for scheduled movement $eventId. Check if the schedule was deleted before this event was processed (by setting the TAP application back to pending), in which we can ignore the error.")
-      if (newMapping.hasChanged(mapping)) {
+      if (newMapping.hasChanged(existingScheduleMapping)) {
         tryToUpdateScheduledMovementMapping(newMapping, telemetry)
       }
     }
@@ -733,15 +757,15 @@ class ExternalMovementsSyncService(
         .also { addressUpdateTelemetry["nomisEventIds"] = it.scheduleMappings.map { it.nomisEventId }.toString() }
         .also { addressUpdateTelemetry["dpsOccurrenceIds"] = it.scheduleMappings.map { it.dpsOccurrenceId }.toString() }
 
-      affectedSchedules.scheduleMappings.forEach {
+      affectedSchedules.scheduleMappings.forEach { scheduleMapping ->
         val syncTelemetry = mutableMapOf<String, Any>(
-          "offenderNo" to it.prisonerNumber,
-          "bookingId" to it.bookingId,
-          "nomisEventId" to it.nomisEventId,
+          "offenderNo" to scheduleMapping.prisonerNumber,
+          "bookingId" to scheduleMapping.bookingId,
+          "nomisEventId" to scheduleMapping.nomisEventId,
           "directionCode" to "OUT",
         )
         track("$TELEMETRY_PREFIX-scheduled-movement-updated", syncTelemetry) {
-          syncScheduledMovementTapOut(it.prisonerNumber, it.nomisEventId, syncTelemetry, it.dpsOccurrenceId, onlyIfScheduled = true)
+          syncScheduledMovementTapOut(scheduleMapping.prisonerNumber, scheduleMapping.nomisEventId, syncTelemetry, scheduleMapping, onlyIfScheduled = true)
             ?.also { tryToUpdateScheduledMovementMapping(it, syncTelemetry) }
             ?: also { syncTelemetry["ignored"] = true }
         }
@@ -780,15 +804,15 @@ private fun String.toDpsAuthorisationStatusCode() = when (this) {
   else -> throw IllegalArgumentException("Unknown temporary absence status code: $this")
 }
 
-fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null) = SyncWriteTapOccurrence(
+fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, address: String, uprn: Long? = null) = SyncWriteTapOccurrence(
   id = id,
   releaseAt = startTime,
   returnBy = returnTime,
   location = Location(
     description = toAddressDescription,
-    address = toFullAddress,
+    address = address,
     postcode = toAddressPostcode,
-//    uprn = TODO get this from the mapping if we've mapped the DPS address ID???
+    uprn = uprn.toString(),
   ),
   absenceTypeCode = temporaryAbsenceType,
   absenceSubTypeCode = temporaryAbsenceSubType,
