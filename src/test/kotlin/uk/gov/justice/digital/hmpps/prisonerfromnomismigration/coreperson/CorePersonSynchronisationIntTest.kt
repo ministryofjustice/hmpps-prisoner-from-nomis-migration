@@ -21,7 +21,6 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSexualOrientation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingProfileDetailsResponse
@@ -61,7 +60,7 @@ class CorePersonSynchronisationIntTest(
             ),
           ),
         )
-        cprApi.stubSyncCreateSexualOrientation()
+        cprApi.stubSyncCreateSexualOrientation("A1234AA")
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SEXO")
           .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-success") }
@@ -71,15 +70,11 @@ class CorePersonSynchronisationIntTest(
           bookingId = null,
           profileType = "SEXO",
         )
-        verifyCpr(
-          "sexual-orientation",
-          requestBody = PrisonSexualOrientation(
-            "A1234AA",
-            "M",
-            current = true,
-            createUserId = "A_USER",
-            createDateTime = LocalDateTime.parse("2024-09-04T12:34:56"),
-          ),
+        cprApi.verify(
+          postRequestedFor(urlPathEqualTo("/syscon-sync/sexual-orientation/A1234AA"))
+            .withRequestBodyJsonPath("sexualOrientationCode", "M")
+            .withRequestBodyJsonPath("modifyUserId", "A_USER")
+            .withRequestBodyJsonPath("modifyDateTime", "2024-09-04T12:34:56"),
         )
         verifyTelemetry(
           "coreperson-profiledetails-synchronisation-success",
@@ -111,7 +106,7 @@ class CorePersonSynchronisationIntTest(
             ),
           ),
         )
-        cprApi.stubSyncCreateSexualOrientation()
+        cprApi.stubSyncCreateSexualOrientation("A1234AA")
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 11111, profileType = "SEXO")
           .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-ignored-booking") }
@@ -160,7 +155,7 @@ class CorePersonSynchronisationIntTest(
             ),
           ),
         )
-        cprApi.stubSyncCreateSexualOrientation()
+        cprApi.stubSyncCreateSexualOrientation("A1234AA")
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SEXO")
           .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-ignored-duplicate") }
@@ -202,7 +197,7 @@ class CorePersonSynchronisationIntTest(
             ),
           ),
         )
-        cprApi.stubSyncCreateSexualOrientation()
+        cprApi.stubSyncCreateSexualOrientation("A1234AA")
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "SEXO")
           .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-error", 2) }
@@ -220,19 +215,6 @@ class CorePersonSynchronisationIntTest(
           count = 2,
         )
       }
-    }
-
-    private fun verifyCpr(
-      profileType: String,
-      requestBody: PrisonSexualOrientation,
-    ) {
-      cprApi.verify(
-        postRequestedFor(urlPathEqualTo("/syscon-sync/$profileType"))
-          .withRequestBodyJsonPath("prisonNumber", requestBody.prisonNumber)
-          .withRequestBodyJsonPath("sexualOrientationCode", requestBody.sexualOrientationCode)
-          .withRequestBodyJsonPath("createUserId", requestBody.createUserId!!)
-          .withRequestBodyJsonPath("createDateTime", requestBody.createDateTime.toString()),
-      )
     }
   }
 
@@ -366,7 +348,7 @@ class CorePersonSynchronisationIntTest(
             ),
           ),
         )
-        cprApi.stubSyncCreateNationality()
+        cprApi.stubSyncCreateNationality("A1234AA")
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "NAT")
           .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-success") }
@@ -376,11 +358,10 @@ class CorePersonSynchronisationIntTest(
             .withQueryParam("profileTypes", havingExactly("NAT", "NATIO")),
         )
         cprApi.verify(
-          postRequestedFor(urlPathEqualTo("/syscon-sync/nationality"))
-            .withRequestBodyJsonPath("prisonNumber", "A1234AA")
+          postRequestedFor(urlPathEqualTo("/syscon-sync/nationality/A1234AA"))
             .withRequestBodyJsonPath("nationalityCode", "BRI")
-            .withRequestBodyJsonPath("createUserId", "A_USER")
-            .withRequestBodyJsonPath("createDateTime", "2024-09-04T12:34:56"),
+            .withRequestBodyJsonPath("modifyUserId", "A_USER")
+            .withRequestBodyJsonPath("modifyDateTime", "2024-09-04T12:34:56"),
         )
         verifyTelemetry(
           "coreperson-profiledetails-synchronisation-success",
@@ -410,7 +391,7 @@ class CorePersonSynchronisationIntTest(
             ),
           ),
         )
-        cprApi.stubSyncCreateNationality()
+        cprApi.stubSyncCreateNationality("A1234AA")
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "NATIO")
           .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-success") }
@@ -420,11 +401,10 @@ class CorePersonSynchronisationIntTest(
             .withQueryParam("profileTypes", havingExactly("NAT", "NATIO")),
         )
         cprApi.verify(
-          postRequestedFor(urlPathEqualTo("/syscon-sync/nationality"))
-            .withRequestBodyJsonPath("prisonNumber", "A1234AA")
+          postRequestedFor(urlPathEqualTo("/syscon-sync/nationality/A1234AA"))
             .withRequestBodyJsonPath("nationalityCode", "BRI")
-            .withRequestBodyJsonPath("createUserId", "A_USER")
-            .withRequestBodyJsonPath("createDateTime", "2024-09-04T12:34:56")
+            .withRequestBodyJsonPath("modifyUserId", "A_USER")
+            .withRequestBodyJsonPath("modifyDateTime", "2024-09-04T12:34:56")
             .withRequestBodyJsonPath("notes", "details"),
         )
         verifyTelemetry(

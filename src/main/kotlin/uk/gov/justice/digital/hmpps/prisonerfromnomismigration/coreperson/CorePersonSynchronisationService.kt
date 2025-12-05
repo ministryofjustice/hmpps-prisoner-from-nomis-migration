@@ -301,12 +301,15 @@ class CorePersonSynchronisationService(
           when (profileType) {
             "SEXO" -> {
               corePersonCprApiService.syncCreateSexualOrientation(
+                offenderIdDisplay,
                 PrisonSexualOrientation(
                   prisonNumber = offenderIdDisplay,
                   sexualOrientationCode = code ?: "",
                   current = true, // TBC - redundant?
                   createUserId = modifiedBy ?: createdBy,
                   createDateTime = modifiedDateTime ?: createDateTime,
+                  modifyUserId = modifiedBy ?: createdBy,
+                  modifyDateTime = modifiedDateTime ?: createDateTime,
                 ),
               )
             }
@@ -340,12 +343,11 @@ class CorePersonSynchronisationService(
               val nat = latestBooking.profileDetails.find { it.type == "NAT" }
               val natio = latestBooking.profileDetails.find { it.type == "NATIO" }
               corePersonCprApiService.syncCreateNationality(
+                offenderIdDisplay,
                 PrisonNationality(
-                  prisonNumber = offenderIdDisplay,
-                  nationalityCode = nat?.code ?: "",
-                  current = true,
-                  createUserId = modifiedBy ?: createdBy,
-                  createDateTime = modifiedDateTime ?: createDateTime,
+                  nationalityCode = nat?.code,
+                  modifyUserId = modifiedBy ?: createdBy,
+                  modifyDateTime = modifiedDateTime ?: createDateTime,
                   notes = natio?.code,
                 ),
               )
