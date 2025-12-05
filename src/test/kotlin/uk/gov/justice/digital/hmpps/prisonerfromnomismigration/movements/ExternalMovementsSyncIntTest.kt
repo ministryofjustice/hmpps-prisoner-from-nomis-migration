@@ -39,6 +39,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.S
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.FindTemporaryAbsenceAddressByNomisIdRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto
@@ -1286,6 +1287,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsApplicationId = dpsAuthorisationId)
         nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678, eventTime = eventTime)
+        mappingApi.stubFindAddressMappings(status = NOT_FOUND)
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
         mappingApi.stubCreateScheduledMovementMapping()
 
@@ -1306,6 +1308,17 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should get NOMIS scheduled movement`() {
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence/45678")))
+      }
+
+      @Test
+      fun `should attempt to find address mappings`() {
+        ExternalMovementsMappingApiMockServer.getRequestBody<FindTemporaryAbsenceAddressByNomisIdRequest>(
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/addresses/by-nomis-id")),
+        ).apply {
+          assertThat(offenderNo).isEqualTo("A1234BC")
+          assertThat(ownerClass).isEqualTo("OFF")
+          assertThat(nomisAddressId).isEqualTo(321)
+        }
       }
 
       @Test
@@ -1360,6 +1373,70 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["dpsOccurrenceId"]).isEqualTo("$dpsOccurrenceId")
             assertThat(it["nomisAddressId"]).isEqualTo("321")
             assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class AddressMappingAlreadyExists {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsApplicationId = dpsAuthorisationId)
+        nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678, eventTime = eventTime)
+        mappingApi.stubFindAddressMappings(addressId = 654, dpsAddressText = "to full address", dpsUprn = 987)
+        dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
+        mappingApi.stubCreateScheduledMovementMapping()
+
+        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should attempt to find address mappings`() {
+        ExternalMovementsMappingApiMockServer.getRequestBody<FindTemporaryAbsenceAddressByNomisIdRequest>(
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/addresses/by-nomis-id")),
+        ).apply {
+          assertThat(offenderNo).isEqualTo("A1234BC")
+          assertThat(ownerClass).isEqualTo("OFF")
+          assertThat(nomisAddressId).isEqualTo(321)
+        }
+      }
+
+      @Test
+      fun `should create DPS scheduled movement with address mapping`() {
+        ExternalMovementsDpsApiMockServer.getRequestBody<SyncWriteTapOccurrence>(
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId/occurrences")),
+        ).apply {
+          assertThat(id).isNull()
+          assertThat(location.description).isEqualTo("Some description")
+          assertThat(location.address).isEqualTo("to full address")
+          assertThat(location.uprn).isEqualTo("987")
+          assertThat(location.postcode).isEqualTo("S1 1AB")
+        }
+      }
+
+      @Test
+      fun `should create scheduled mapping with new address`() {
+        mappingApi.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+            .withRequestBodyJsonPath("nomisAddressId", 321)
+            .withRequestBodyJsonPath("nomisAddressOwnerClass", "OFF")
+            .withRequestBodyJsonPath("dpsAddressText", "to full address")
+            .withRequestBodyJsonPath("dpsUprn", 987),
+        )
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-inserted-success"),
+          check {
+            assertThat(it["nomisAddressId"]).isEqualTo("321")
+            assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
+            assertThat(it["dpsUprn"]).isEqualTo("987")
           },
           isNull(),
         )
@@ -1951,6 +2028,65 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["directionCode"]).isEqualTo("OUT")
             assertThat(it["dpsOccurrenceId"]).isEqualTo("$dpsOccurrenceId")
             assertThat(it["nomisAddressId"]).isEqualTo("321")
+            assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenAddressChanges {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
+        nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678, toAddress = "new address", toAddressId = 654)
+        mappingApi.stubFindAddressMappings(addressId = 654, dpsAddressText = "new address", dpsUprn = 987)
+        mappingApi.stubUpdateScheduledMovementMapping()
+        dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
+
+        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-UPDATED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should attempt to find address mappings`() {
+        ExternalMovementsMappingApiMockServer.getRequestBody<FindTemporaryAbsenceAddressByNomisIdRequest>(
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/addresses/by-nomis-id")),
+        ).apply {
+          assertThat(offenderNo).isEqualTo("A1234BC")
+          assertThat(ownerClass).isEqualTo("OFF")
+          assertThat(nomisAddressId).isEqualTo(654)
+        }
+      }
+
+      @Test
+      fun `should update DPS scheduled movement`() {
+        dpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId/occurrences"))
+            .withRequestBodyJsonPath("id", "$dpsOccurrenceId")
+            .withRequestBodyJsonPath("location.address", "new address")
+            .withRequestBodyJsonPath("location.uprn", 987),
+        )
+      }
+
+      @Test
+      fun `should update mapping`() {
+        mappingApi.verify(
+          putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+            .withRequestBodyJsonPath("dpsAddressText", "new address")
+            .withRequestBodyJsonPath("nomisAddressId", 654)
+            .withRequestBodyJsonPath("dpsUprn", 987),
+        )
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-updated-success"),
+          check {
+            assertThat(it["nomisAddressId"]).isEqualTo("654")
             assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
           },
           isNull(),

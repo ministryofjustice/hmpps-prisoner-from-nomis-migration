@@ -9,8 +9,6 @@ import java.time.LocalDateTime
 
 class ExternalMovementsSyncServiceTest {
   private val now = LocalDateTime.now()
-  private val yesterday = now.minusDays(1)
-  private val tomorrow = now.plusDays(1)
 
   @Nested
   @DisplayName("Transform scheduled movement to DPS Occurrence")
@@ -22,7 +20,7 @@ class ExternalMovementsSyncServiceTest {
         escort = null,
       )
 
-      with(nomis.toDpsRequest()) {
+      with(nomis.toDpsRequest(address = "any")) {
         assertThat(accompaniedByCode).isEqualTo("U")
       }
     }
@@ -33,7 +31,7 @@ class ExternalMovementsSyncServiceTest {
         transportType = null,
       )
 
-      with(nomis.toDpsRequest()) {
+      with(nomis.toDpsRequest(address = "any")) {
         assertThat(transportCode).isEqualTo("TNR")
       }
     }
@@ -45,7 +43,7 @@ class ExternalMovementsSyncServiceTest {
       eventStatus = "CANC",
     )
 
-    with(nomis.toDpsRequest()) {
+    with(nomis.toDpsRequest(address = "any")) {
       assertThat(isCancelled).isTrue
     }
   }

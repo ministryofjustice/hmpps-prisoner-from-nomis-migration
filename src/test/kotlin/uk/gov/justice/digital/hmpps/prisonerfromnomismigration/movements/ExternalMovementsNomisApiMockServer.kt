@@ -334,12 +334,16 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     applicationId: Long = 111L,
     addressOwnerClass: String = "OFF",
     eventStatus: String = "COMP",
+    toAddress: String = "to full address",
+    toAddressId: Long = 321,
     response: ScheduledTemporaryAbsenceResponse = scheduledTemporaryAbsenceResponse(
       startTime = eventTime,
       applicationId = applicationId,
       eventId = eventId,
       addressOwnerClass = addressOwnerClass,
       eventStatus = eventStatus,
+      toAddress = toAddress,
+      toAddressId = toAddressId,
     ),
   ) {
     nomisApi.stubFor(
@@ -539,7 +543,15 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     private val yesterday = now.minusDays(1)
     private val tomorrow = now.plusDays(1)
 
-    fun scheduledTemporaryAbsenceResponse(startTime: LocalDateTime = now, applicationId: Long = 111, eventId: Long = 1, addressOwnerClass: String = "OFF", eventStatus: String = "COMP") = ScheduledTemporaryAbsenceResponse(
+    fun scheduledTemporaryAbsenceResponse(
+      startTime: LocalDateTime = now,
+      applicationId: Long = 111,
+      eventId: Long = 1,
+      addressOwnerClass: String = "OFF",
+      eventStatus: String = "COMP",
+      toAddress: String = "to full address",
+      toAddressId: Long = 321,
+    ) = ScheduledTemporaryAbsenceResponse(
       bookingId = 12345,
       movementApplicationId = applicationId,
       eventId = eventId,
@@ -558,9 +570,9 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
       transportType = "VAN",
       temporaryAbsenceType = "RDR",
       temporaryAbsenceSubType = "RR",
-      toAddressId = 321,
+      toAddressId = toAddressId,
       toAddressOwnerClass = addressOwnerClass,
-      toFullAddress = "to full address",
+      toFullAddress = toAddress,
       toAddressDescription = "Some description",
       toAddressPostcode = "S1 1AB",
       applicationTime = now,
