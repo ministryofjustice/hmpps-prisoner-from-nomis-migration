@@ -2356,6 +2356,7 @@ class ExternalMovementsSyncIntTest(
         nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, movementApplicationId = 111, scheduledTemporaryAbsenceId = 45678)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
+        mappingApi.stubFindAddressMappings(addressId = 321, dpsAddressText = "full address", dpsUprn = 987)
         mappingApi.stubCreateExternalMovementMapping()
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
@@ -2384,6 +2385,17 @@ class ExternalMovementsSyncIntTest(
       }
 
       @Test
+      fun `should attempt to find address mappings`() {
+        ExternalMovementsMappingApiMockServer.getRequestBody<FindTemporaryAbsenceAddressByNomisIdRequest>(
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/addresses/by-nomis-id")),
+        ).apply {
+          assertThat(offenderNo).isEqualTo("A1234BC")
+          assertThat(ownerClass).isEqualTo("OFF")
+          assertThat(nomisAddressId).isEqualTo(321)
+        }
+      }
+
+      @Test
       fun `should create DPS external movement`() {
         ExternalMovementsDpsApiMockServer.getRequestBody<SyncWriteTapMovement>(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC")),
@@ -2395,6 +2407,7 @@ class ExternalMovementsSyncIntTest(
           assertThat(location.description).isEqualTo("Some description")
           assertThat(location.address).isEqualTo("full address")
           assertThat(location.postcode).isEqualTo("S1 1AB")
+          assertThat(location.uprn).isEqualTo("987")
           assertThat(accompaniedByCode).isEqualTo("P")
           assertThat(accompaniedByNotes).isEqualTo("Absence escort text")
           assertThat(notes).isEqualTo("Absence comment text")
@@ -2411,7 +2424,11 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisMovementSeq", 154)
+            .withRequestBodyJsonPath("nomisAddressId", 321)
+            .withRequestBodyJsonPath("nomisAddressOwnerClass", "OFF")
             .withRequestBodyJsonPath("dpsMovementId", "$dpsMovementId")
+            .withRequestBodyJsonPath("dpsAddressText", "full address")
+            .withRequestBodyJsonPath("dpsUprn", 987)
             .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
         )
       }
@@ -2428,6 +2445,9 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
             assertThat(it["directionCode"]).isEqualTo("OUT")
             assertThat(it["dpsMovementId"]).isEqualTo("$dpsMovementId")
+            assertThat(it["nomisAddressId"]).isEqualTo("321")
+            assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
+            assertThat(it["dpsUprn"]).isEqualTo("987")
           },
           isNull(),
         )
@@ -2443,6 +2463,7 @@ class ExternalMovementsSyncIntTest(
         nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, movementApplicationId = 111, scheduledTemporaryAbsenceReturnId = 45678, scheduledTemporaryAbsenceId = 23456)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(23456)
+        mappingApi.stubFindAddressMappings(addressId = 321, dpsAddressText = "full address", dpsUprn = 987)
         mappingApi.stubCreateExternalMovementMapping()
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
@@ -2466,6 +2487,17 @@ class ExternalMovementsSyncIntTest(
       }
 
       @Test
+      fun `should attempt to find address mappings`() {
+        ExternalMovementsMappingApiMockServer.getRequestBody<FindTemporaryAbsenceAddressByNomisIdRequest>(
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/addresses/by-nomis-id")),
+        ).apply {
+          assertThat(offenderNo).isEqualTo("A1234BC")
+          assertThat(ownerClass).isEqualTo("OFF")
+          assertThat(nomisAddressId).isEqualTo(321)
+        }
+      }
+
+      @Test
       fun `should create DPS external movement`() {
         dpsApi.verify(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
@@ -2473,7 +2505,8 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
             .withRequestBodyJsonPath("location.postcode", "S1 1AB")
-            .withRequestBodyJsonPath("location.address", "full address"),
+            .withRequestBodyJsonPath("location.address", "full address")
+            .withRequestBodyJsonPath("location.uprn", 987),
         )
       }
 
@@ -2484,7 +2517,11 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisMovementSeq", 154)
+            .withRequestBodyJsonPath("nomisAddressId", 321)
+            .withRequestBodyJsonPath("nomisAddressOwnerClass", "OFF")
             .withRequestBodyJsonPath("dpsMovementId", "$dpsMovementId")
+            .withRequestBodyJsonPath("dpsAddressText", "full address")
+            .withRequestBodyJsonPath("dpsUprn", 987)
             .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
         )
       }
@@ -2502,6 +2539,9 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
             assertThat(it["directionCode"]).isEqualTo("IN")
             assertThat(it["dpsMovementId"]).isEqualTo("$dpsMovementId")
+            assertThat(it["nomisAddressId"]).isEqualTo("321")
+            assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
+            assertThat(it["dpsUprn"]).isEqualTo("987")
           },
           isNull(),
         )
@@ -2774,164 +2814,177 @@ class ExternalMovementsSyncIntTest(
         }
       }
     }
+  }
+
+  @Nested
+  @DisplayName("EXTERNAL_MOVEMENT-CHANGED (inserted, unscheduled)")
+  inner class TemporaryAbsenceUnscheduledExternalMovementCreated {
+    private val dpsMovementId = UUID.randomUUID()
 
     @Nested
-    @DisplayName("EXTERNAL_MOVEMENT-CHANGED (inserted, unscheduled)")
-    inner class TemporaryAbsenceUnscheduledExternalMovementCreated {
+    @DisplayName("Happy path - unscheduled outbound movement")
+    inner class HappyPathUnscheduledOutboundMovement {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
+        nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceId = null, city = "Sheffield")
+        mappingApi.stubCreateExternalMovementMapping()
+        dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
-      @Nested
-      @DisplayName("Happy path - unscheduled outbound movement")
-      inner class HappyPathUnscheduledOutboundMovement {
-        @BeforeEach
-        fun setUp() {
-          mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
-          nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceId = null)
-          mappingApi.stubCreateExternalMovementMapping()
-          dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
-
-          sendMessage(externalMovementEvent(inserted = true, direction = "OUT"))
-            .also { waitForAnyProcessingToComplete() }
-        }
-
-        @Test
-        fun `should check mapping`() {
-          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
-        }
-
-        @Test
-        fun `should NOT check application mapping`() {
-          mappingApi.verify(
-            count = 0,
-            getRequestedFor(urlPathMatching("/mapping/temporary-absence/application/nomis-application-id/.*")),
-          )
-        }
-
-        @Test
-        fun `should NOT check scheduled movement mapping`() {
-          mappingApi.verify(
-            count = 0,
-            getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/.*")),
-          )
-        }
-
-        @Test
-        fun `should create DPS external movement`() {
-          dpsApi.verify(
-            putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
-              .withRequestBodyJsonPath("id", absent())
-              .withRequestBodyJsonPath("legacyId", "12345_154")
-              .withRequestBodyJsonPath("direction", "OUT")
-              .withRequestBodyJsonPath("location.postcode", "S1 1AB")
-              .withRequestBodyJsonPath("location.address", "full address"),
-          )
-        }
-
-        @Test
-        fun `should create mapping`() {
-          mappingApi.verify(
-            postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
-              .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
-              .withRequestBodyJsonPath("bookingId", 12345)
-              .withRequestBodyJsonPath("nomisMovementSeq", 154)
-              .withRequestBodyJsonPath("dpsMovementId", "$dpsMovementId")
-              .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
-          )
-        }
-
-        @Test
-        fun `should create success telemetry`() {
-          verify(telemetryClient).trackEvent(
-            eq("temporary-absence-sync-external-movement-inserted-success"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-              assertThat(it["bookingId"]).isEqualTo("12345")
-              assertThat(it["movementSeq"]).isEqualTo("154")
-              assertThat(it["nomisScheduledEventId"]).isNull()
-              assertThat(it["nomisApplicationId"]).isNull()
-              assertThat(it["directionCode"]).isEqualTo("OUT")
-              assertThat(it["dpsMovementId"]).isEqualTo("$dpsMovementId")
-            },
-            isNull(),
-          )
-        }
+        sendMessage(externalMovementEvent(inserted = true, direction = "OUT"))
+          .also { waitForAnyProcessingToComplete() }
       }
 
-      @Nested
-      @DisplayName("Happy path - unscheduled inbound movement")
-      inner class HappyPathInbound {
-        @BeforeEach
-        fun setUp() {
-          mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
-          nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceReturnId = null, scheduledTemporaryAbsenceId = null)
-          mappingApi.stubCreateExternalMovementMapping()
-          dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
+      @Test
+      fun `should check mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+      }
 
-          sendMessage(externalMovementEvent(inserted = true, direction = "IN"))
-            .also { waitForAnyProcessingToComplete() }
-        }
+      @Test
+      fun `should NOT check application mapping`() {
+        mappingApi.verify(
+          count = 0,
+          getRequestedFor(urlPathMatching("/mapping/temporary-absence/application/nomis-application-id/.*")),
+        )
+      }
 
-        @Test
-        fun `should check mapping`() {
-          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
-        }
+      @Test
+      fun `should NOT check scheduled movement mapping`() {
+        mappingApi.verify(
+          count = 0,
+          getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/.*")),
+        )
+      }
 
-        @Test
-        fun `should NOT check application mapping`() {
-          mappingApi.verify(
-            count = 0,
-            getRequestedFor(urlPathMatching("/mapping/temporary-absence/application/nomis-application-id/.*")),
-          )
-        }
+      @Test
+      fun `should create DPS external movement`() {
+        dpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
+            .withRequestBodyJsonPath("id", absent())
+            .withRequestBodyJsonPath("legacyId", "12345_154")
+            .withRequestBodyJsonPath("direction", "OUT")
+            .withRequestBodyJsonPath("location.description", absent())
+            .withRequestBodyJsonPath("location.postcode", absent())
+            .withRequestBodyJsonPath("location.address", "Sheffield")
+            .withRequestBodyJsonPath("location.uprn", absent()),
+        )
+      }
 
-        @Test
-        fun `should NOT check scheduled movement mapping`() {
-          mappingApi.verify(
-            count = 0,
-            getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/.*")),
-          )
-        }
+      @Test
+      fun `should create mapping`() {
+        mappingApi.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
+            .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
+            .withRequestBodyJsonPath("bookingId", 12345)
+            .withRequestBodyJsonPath("nomisMovementSeq", 154)
+            .withRequestBodyJsonPath("dpsMovementId", "$dpsMovementId")
+            .withRequestBodyJsonPath("nomisAddressId", absent())
+            .withRequestBodyJsonPath("nomisAddressOwnerClass", absent())
+            .withRequestBodyJsonPath("dpsUprn", absent())
+            .withRequestBodyJsonPath("dpsAddressText", "Sheffield")
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
 
-        @Test
-        fun `should create DPS external movement`() {
-          dpsApi.verify(
-            putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
-              .withRequestBodyJsonPath("id", absent())
-              .withRequestBodyJsonPath("legacyId", "12345_154")
-              .withRequestBodyJsonPath("direction", "IN")
-              .withRequestBodyJsonPath("location.postcode", "S1 1AB")
-              .withRequestBodyJsonPath("location.address", "full address"),
-          )
-        }
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-external-movement-inserted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("154")
+            assertThat(it["nomisScheduledEventId"]).isNull()
+            assertThat(it["nomisApplicationId"]).isNull()
+            assertThat(it["directionCode"]).isEqualTo("OUT")
+            assertThat(it["dpsMovementId"]).isEqualTo("$dpsMovementId")
+          },
+          isNull(),
+        )
+      }
+    }
 
-        @Test
-        fun `should create mapping`() {
-          mappingApi.verify(
-            postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
-              .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
-              .withRequestBodyJsonPath("bookingId", 12345)
-              .withRequestBodyJsonPath("nomisMovementSeq", 154)
-              .withRequestBodyJsonPath("dpsMovementId", "$dpsMovementId")
-              .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
-          )
-        }
+    @Nested
+    @DisplayName("Happy path - unscheduled inbound movement")
+    inner class HappyPathInbound {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
+        nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceReturnId = null, scheduledTemporaryAbsenceId = null, city = "Sheffield")
+        mappingApi.stubCreateExternalMovementMapping()
+        dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
-        @Test
-        fun `should create success telemetry`() {
-          verify(telemetryClient).trackEvent(
-            eq("temporary-absence-sync-external-movement-inserted-success"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-              assertThat(it["bookingId"]).isEqualTo("12345")
-              assertThat(it["movementSeq"]).isEqualTo("154")
-              assertThat(it["nomisScheduledParentEventId"]).isNull()
-              assertThat(it["nomisScheduledEventId"]).isNull()
-              assertThat(it["nomisApplicationId"]).isNull()
-              assertThat(it["directionCode"]).isEqualTo("IN")
-              assertThat(it["dpsMovementId"]).isEqualTo("$dpsMovementId")
-            },
-            isNull(),
-          )
-        }
+        sendMessage(externalMovementEvent(inserted = true, direction = "IN"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should check mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+      }
+
+      @Test
+      fun `should NOT check application mapping`() {
+        mappingApi.verify(
+          count = 0,
+          getRequestedFor(urlPathMatching("/mapping/temporary-absence/application/nomis-application-id/.*")),
+        )
+      }
+
+      @Test
+      fun `should NOT check scheduled movement mapping`() {
+        mappingApi.verify(
+          count = 0,
+          getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/.*")),
+        )
+      }
+
+      @Test
+      fun `should create DPS external movement`() {
+        dpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
+            .withRequestBodyJsonPath("id", absent())
+            .withRequestBodyJsonPath("legacyId", "12345_154")
+            .withRequestBodyJsonPath("direction", "IN")
+            .withRequestBodyJsonPath("location.description", absent())
+            .withRequestBodyJsonPath("location.postcode", absent())
+            .withRequestBodyJsonPath("location.uprn", absent())
+            .withRequestBodyJsonPath("location.address", "Sheffield"),
+        )
+      }
+
+      @Test
+      fun `should create mapping`() {
+        mappingApi.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
+            .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
+            .withRequestBodyJsonPath("bookingId", 12345)
+            .withRequestBodyJsonPath("nomisMovementSeq", 154)
+            .withRequestBodyJsonPath("dpsMovementId", "$dpsMovementId")
+            .withRequestBodyJsonPath("nomisAddressId", absent())
+            .withRequestBodyJsonPath("nomisAddressOwnerClass", absent())
+            .withRequestBodyJsonPath("dpsUprn", absent())
+            .withRequestBodyJsonPath("dpsAddressText", "Sheffield")
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-external-movement-inserted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("154")
+            assertThat(it["nomisScheduledParentEventId"]).isNull()
+            assertThat(it["nomisScheduledEventId"]).isNull()
+            assertThat(it["nomisApplicationId"]).isNull()
+            assertThat(it["directionCode"]).isEqualTo("IN")
+            assertThat(it["dpsMovementId"]).isEqualTo("$dpsMovementId")
+          },
+          isNull(),
+        )
       }
     }
 
@@ -3149,7 +3202,8 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
             .withRequestBodyJsonPath("location.postcode", "S1 1AB")
-            .withRequestBodyJsonPath("location.address", "full address"),
+            .withRequestBodyJsonPath("location.address", "full address")
+            .withRequestBodyJsonPath("location.uprn", absent()),
         )
       }
 
@@ -3165,6 +3219,8 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["nomisScheduledEventId"]).isEqualTo("45678")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
             assertThat(it["dpsMovementId"]).isEqualTo("$dpsMovementId")
+            assertThat(it["nomisAddressId"]).isEqualTo("321")
+            assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
           },
           isNull(),
         )
@@ -3172,15 +3228,17 @@ class ExternalMovementsSyncIntTest(
     }
 
     @Nested
-    inner class WhenMappingChanged {
+    inner class WhenAddressChangedForScheduledOutbound {
       val newAddress = "new address"
+      val newAddressId = 123L
 
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
-        nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, scheduledTemporaryAbsenceId = 45678, address = newAddress)
+        nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, scheduledTemporaryAbsenceId = 45678, address = newAddress, addressId = newAddressId)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
+        mappingApi.stubFindAddressMappings(status = NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMapping()
 
@@ -3202,11 +3260,23 @@ class ExternalMovementsSyncIntTest(
       }
 
       @Test
+      fun `should attempt to find new address mappings`() {
+        ExternalMovementsMappingApiMockServer.getRequestBody<FindTemporaryAbsenceAddressByNomisIdRequest>(
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/addresses/by-nomis-id")),
+        ).apply {
+          assertThat(offenderNo).isEqualTo("A1234BC")
+          assertThat(ownerClass).isEqualTo("OFF")
+          assertThat(nomisAddressId).isEqualTo(newAddressId)
+        }
+      }
+
+      @Test
       fun `should update mapping`() {
         mappingApi.verify(
           putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
             .withRequestBodyJsonPath("dpsMovementId", dpsMovementId)
-            .withRequestBodyJsonPath("dpsAddressText", newAddress),
+            .withRequestBodyJsonPath("dpsAddressText", newAddress)
+            .withRequestBodyJsonPath("nomisAddressId", newAddressId),
         )
       }
 
@@ -3221,6 +3291,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["directionCode"]).isEqualTo("OUT")
             assertThat(it["nomisScheduledEventId"]).isEqualTo("45678")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            assertThat(it["nomisAddressId"]).isEqualTo("$newAddressId")
             assertThat(it["dpsMovementId"]).isEqualTo("$dpsMovementId")
           },
           isNull(),
@@ -3231,13 +3302,15 @@ class ExternalMovementsSyncIntTest(
     @Nested
     inner class WhenMappingUpdateFailsOnce {
       val newAddress = "new address"
+      val newAddressId = 123L
 
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
-        nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, scheduledTemporaryAbsenceId = 45678, address = newAddress)
+        nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, scheduledTemporaryAbsenceId = 45678, address = newAddress, addressId = newAddressId)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
+        mappingApi.stubFindAddressMappings(status = NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMappingFailureFollowedBySuccess()
 
@@ -3261,7 +3334,8 @@ class ExternalMovementsSyncIntTest(
           count = 2,
           putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
             .withRequestBodyJsonPath("dpsMovementId", dpsMovementId)
-            .withRequestBodyJsonPath("dpsAddressText", newAddress),
+            .withRequestBodyJsonPath("dpsAddressText", newAddress)
+            .withRequestBodyJsonPath("nomisAddressId", newAddressId),
         )
       }
 
@@ -3276,6 +3350,7 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["directionCode"]).isEqualTo("OUT")
             assertThat(it["nomisScheduledEventId"]).isEqualTo("45678")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            assertThat(it["nomisAddressId"]).isEqualTo("123")
             assertThat(it["dpsMovementId"]).isEqualTo("$dpsMovementId")
           },
           isNull(),
@@ -3288,8 +3363,8 @@ class ExternalMovementsSyncIntTest(
     inner class HappyPathUnscheduledOutboundMovement {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
-        nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceId = null)
+        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
+        nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceId = null, city = "Sheffield")
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
@@ -3316,8 +3391,10 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("occurrenceId", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "OUT")
-            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
-            .withRequestBodyJsonPath("location.address", "full address"),
+            .withRequestBodyJsonPath("location.postcode", absent())
+            .withRequestBodyJsonPath("location.address", "Sheffield")
+            .withRequestBodyJsonPath("location.description", absent())
+            .withRequestBodyJsonPath("location.uprn", absent()),
         )
       }
 
@@ -3396,12 +3473,85 @@ class ExternalMovementsSyncIntTest(
     }
 
     @Nested
+    inner class WhenAddressChangedForScheduledInboundMovement {
+      val newAddress = "new address"
+      val newAddressId = 123L
+
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
+        nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, scheduledTemporaryAbsenceReturnId = 45678, scheduledTemporaryAbsenceId = 23456, address = newAddress, addressId = newAddressId)
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        mappingApi.stubGetScheduledMovementMapping(23456, dpsOccurrenceId)
+        mappingApi.stubFindAddressMappings(status = NOT_FOUND)
+        dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
+        mappingApi.stubUpdateExternalMovementMapping()
+
+        sendMessage(externalMovementEvent(direction = "IN"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should update DPS external movement`() {
+        dpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/A1234BC"))
+            .withRequestBodyJsonPath("id", dpsMovementId)
+            .withRequestBodyJsonPath("occurrenceId", dpsOccurrenceId)
+            .withRequestBodyJsonPath("legacyId", "12345_154")
+            .withRequestBodyJsonPath("direction", "IN")
+            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
+            .withRequestBodyJsonPath("location.address", "new address"),
+        )
+      }
+
+      @Test
+      fun `should attempt to find new address mappings`() {
+        ExternalMovementsMappingApiMockServer.getRequestBody<FindTemporaryAbsenceAddressByNomisIdRequest>(
+          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/addresses/by-nomis-id")),
+        ).apply {
+          assertThat(offenderNo).isEqualTo("A1234BC")
+          assertThat(ownerClass).isEqualTo("OFF")
+          assertThat(nomisAddressId).isEqualTo(newAddressId)
+        }
+      }
+
+      @Test
+      fun `should update mapping`() {
+        mappingApi.verify(
+          putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
+            .withRequestBodyJsonPath("dpsMovementId", dpsMovementId)
+            .withRequestBodyJsonPath("dpsAddressText", newAddress)
+            .withRequestBodyJsonPath("nomisAddressId", newAddressId),
+        )
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-external-movement-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("154")
+            assertThat(it["directionCode"]).isEqualTo("IN")
+            assertThat(it["nomisScheduledParentEventId"]).isEqualTo("23456")
+            assertThat(it["nomisScheduledEventId"]).isEqualTo("45678")
+            assertThat(it["nomisApplicationId"]).isEqualTo("111")
+            assertThat(it["nomisAddressId"]).isEqualTo("$newAddressId")
+            assertThat(it["dpsMovementId"]).isEqualTo("$dpsMovementId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
     @DisplayName("Happy path inbound movement - unscheduled")
     inner class HappyPathUnscheduledInboundMovement {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
-        nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceReturnId = null, scheduledTemporaryAbsenceId = null)
+        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
+        nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceReturnId = null, scheduledTemporaryAbsenceId = null, city = "Sheffield")
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
@@ -3428,8 +3578,10 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("occurrenceId", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
-            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
-            .withRequestBodyJsonPath("location.address", "full address"),
+            .withRequestBodyJsonPath("location.postcode", absent())
+            .withRequestBodyJsonPath("location.address", "Sheffield")
+            .withRequestBodyJsonPath("location.description", absent())
+            .withRequestBodyJsonPath("location.uprn", absent()),
         )
       }
 
@@ -3455,12 +3607,12 @@ class ExternalMovementsSyncIntTest(
     @Nested
     @DisplayName("Happy path inbound movement - unscheduled - mapping changed")
     inner class WhenUnscheduledMovementMappingChanged {
-      val newAddress = "new address"
+      val newCity = "Leeds"
 
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
-        nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceReturnId = null, scheduledTemporaryAbsenceId = null, address = newAddress)
+        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
+        nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceReturnId = null, scheduledTemporaryAbsenceId = null, city = newCity)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
@@ -3478,8 +3630,10 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("occurrenceId", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
-            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
-            .withRequestBodyJsonPath("location.address", "new address"),
+            .withRequestBodyJsonPath("location.postcode", absent())
+            .withRequestBodyJsonPath("location.address", newCity)
+            .withRequestBodyJsonPath("location.description", absent())
+            .withRequestBodyJsonPath("location.uprn", absent()),
         )
       }
 
@@ -3489,7 +3643,7 @@ class ExternalMovementsSyncIntTest(
           putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
             .withRequestBodyJsonPath("dpsMovementId", dpsMovementId)
             .withRequestBodyJsonPath("dpsOccurrenceId", absent())
-            .withRequestBodyJsonPath("dpsAddressText", "new address"),
+            .withRequestBodyJsonPath("dpsAddressText", newCity),
         )
       }
 
@@ -3515,12 +3669,12 @@ class ExternalMovementsSyncIntTest(
     @Nested
     @DisplayName("Happy path inbound movement - unscheduled - mapping changed")
     inner class WhenUnscheduledMovementMappingFailsOnce {
-      val newAddress = "new address"
+      val newCity = "Leeds"
 
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
-        nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceReturnId = null, scheduledTemporaryAbsenceId = null, address = newAddress)
+        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
+        nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, movementApplicationId = null, scheduledTemporaryAbsenceReturnId = null, scheduledTemporaryAbsenceId = null, city = newCity)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
@@ -3538,8 +3692,10 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("occurrenceId", absent())
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
-            .withRequestBodyJsonPath("location.postcode", "S1 1AB")
-            .withRequestBodyJsonPath("location.address", "new address"),
+            .withRequestBodyJsonPath("location.postcode", absent())
+            .withRequestBodyJsonPath("location.address", newCity)
+            .withRequestBodyJsonPath("location.description", absent())
+            .withRequestBodyJsonPath("location.uprn", absent()),
         )
       }
 
@@ -3550,7 +3706,7 @@ class ExternalMovementsSyncIntTest(
           putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
             .withRequestBodyJsonPath("dpsMovementId", dpsMovementId)
             .withRequestBodyJsonPath("dpsOccurrenceId", absent())
-            .withRequestBodyJsonPath("dpsAddressText", "new address"),
+            .withRequestBodyJsonPath("dpsAddressText", newCity),
         )
       }
 

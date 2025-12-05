@@ -420,7 +420,9 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     movementApplicationId: Long? = 111,
     scheduledTemporaryAbsenceId: Long? = 1,
     address: String = "full address",
-    response: TemporaryAbsenceResponse = temporaryAbsenceResponse(movementApplicationId, scheduledTemporaryAbsenceId, movementSeq, address),
+    addressId: Long = 321,
+    city: String? = null,
+    response: TemporaryAbsenceResponse = temporaryAbsenceResponse(movementApplicationId, scheduledTemporaryAbsenceId, movementSeq, address, addressId, city),
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/movements/$offenderNo/temporary-absences/temporary-absence/$bookingId/$movementSeq")).willReturn(
@@ -448,6 +450,8 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     scheduledTemporaryAbsenceId: Long? = 1,
     sequence: Int = 1,
     address: String = "full address",
+    addressId: Long = 321,
+    city: String? = null,
   ) = TemporaryAbsenceResponse(
     bookingId = 12345,
     sequence = sequence,
@@ -466,11 +470,11 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     fromPrison = "LEI",
     toAgency = "COURT1",
     commentText = "Absence comment text",
-    toAddressId = 321L,
-    toAddressOwnerClass = "OFF",
-    toAddressDescription = "Some description",
-    toFullAddress = address,
-    toAddressPostcode = "S1 1AB",
+    toAddressId = if (city == null) addressId else null,
+    toAddressOwnerClass = if (city == null) "OFF" else null,
+    toAddressDescription = if (city == null) "Some description" else null,
+    toFullAddress = city ?: address,
+    toAddressPostcode = if (city == null) "S1 1AB" else null,
   )
 
   fun stubGetTemporaryAbsenceReturnMovement(
@@ -481,7 +485,9 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     scheduledTemporaryAbsenceReturnId: Long? = 2,
     scheduledTemporaryAbsenceId: Long? = 1,
     address: String = "full address",
-    response: TemporaryAbsenceReturnResponse = temporaryAbsenceReturnResponse(movementApplicationId, scheduledTemporaryAbsenceReturnId, movementSeq, scheduledTemporaryAbsenceId, address),
+    addressId: Long = 321L,
+    city: String? = null,
+    response: TemporaryAbsenceReturnResponse = temporaryAbsenceReturnResponse(movementApplicationId, scheduledTemporaryAbsenceReturnId, movementSeq, scheduledTemporaryAbsenceId, address, addressId, city),
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/movements/$offenderNo/temporary-absences/temporary-absence-return/$bookingId/$movementSeq")).willReturn(
@@ -510,6 +516,8 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     sequence: Int = 1,
     scheduledTemporaryAbsenceId: Long? = 1,
     address: String = "full address",
+    addressId: Long = 321L,
+    city: String? = null,
   ) = TemporaryAbsenceReturnResponse(
     bookingId = 12345,
     sequence = sequence,
@@ -528,11 +536,11 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     fromAgency = "COURT1",
     toPrison = "LEI",
     commentText = "Return comment text",
-    fromAddressId = 321L,
-    fromAddressOwnerClass = "OFF",
-    fromAddressDescription = "Some description",
-    fromFullAddress = address,
-    fromAddressPostcode = "S1 1AB",
+    fromAddressId = if (city == null) addressId else null,
+    fromAddressOwnerClass = if (city == null) "OFF" else null,
+    fromAddressDescription = if (city == null) "Some description" else null,
+    fromFullAddress = city ?: address,
+    fromAddressPostcode = if (city == null) "S1 1AB" else null,
   )
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
