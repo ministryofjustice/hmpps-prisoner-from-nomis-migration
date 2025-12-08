@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-12-04.132.4db93c2"
+    "version" : "2025-12-05.142.5446799"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -640,7 +640,7 @@
           },
           "visitTypeCode" : {
             "$ref" : "#/components/schemas/VisitType",
-            "description" : "The visit type code (VIDEO, IN_PERSON, TELEPHONE)",
+            "description" : "The visit type code",
             "example" : "IN_PERSON"
           },
           "staffNotes" : {
