@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-12-05.142.5446799"
+    "version" : "2025-12-08.150.37647f9"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -670,16 +670,6 @@
             "description" : "The visitor type code (CONTACT, OPV, PRISONER)",
             "example" : "CONTACT"
           },
-          "firstName" : {
-            "type" : "string",
-            "description" : "The first name of the contact",
-            "example" : "Bob"
-          },
-          "lastName" : {
-            "type" : "string",
-            "description" : "The last name of the contact",
-            "example" : "Harris"
-          },
           "contactId" : {
             "type" : "integer",
             "format" : "int64",
@@ -691,11 +681,6 @@
             "format" : "int64",
             "description" : "The prisoner contact ID for the visitor",
             "example" : 123456
-          },
-          "relationshipTypeCode" : {
-            "$ref" : "#/components/schemas/RelationshipType",
-            "description" : "The relationship type code (SOCIAL or OFFICIAL)",
-            "example" : "OFFICIAL"
           },
           "relationshipCode" : {
             "type" : "string",
@@ -719,11 +704,7 @@
             "example" : "notes"
           }
         },
-        "required" : [ "relationshipCode", "relationshipTypeCode", "visitorTypeCode" ]
-      },
-      "RelationshipType" : {
-        "type" : "string",
-        "enum" : [ "OFFICIAL", "SOCIAL" ]
+        "required" : [ "relationshipCode", "visitorTypeCode" ]
       },
       "VisitType" : {
         "type" : "string",
@@ -989,13 +970,17 @@
         },
         "required" : [ "createDateTime", "createUsername", "offenderVisitVisitorId", "personId" ]
       },
+      "RelationshipType" : {
+        "type" : "string",
+        "enum" : [ "OFFICIAL", "SOCIAL" ]
+      },
       "SearchLevelType" : {
         "type" : "string",
         "enum" : [ "FULL", "PAT", "RUB", "RUB_A", "RUB_B", "STR" ]
       },
       "VisitCompletionType" : {
         "type" : "string",
-        "enum" : [ "NORMAL", "STAFF_CANCELLED", "VISITOR_CANCELLED", "VISITOR_DENIED", "PRISONER_EARLY", "VISITOR_EARLY", "PRISONER_REFUSED" ]
+        "enum" : [ "NORMAL", "STAFF_CANCELLED", "VISITOR_CANCELLED", "VISITOR_DENIED", "PRISONER_EARLY", "VISITOR_EARLY", "PRISONER_REFUSED", "STAFF_EARLY", "PRISONER_CANCELLED", "VISITOR_NO_SHOW" ]
       },
       "VisitStatusType" : {
         "type" : "string",

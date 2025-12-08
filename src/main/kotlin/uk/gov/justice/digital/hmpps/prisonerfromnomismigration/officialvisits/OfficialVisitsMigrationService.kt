@@ -146,53 +146,55 @@ class OfficialVisitsMigrationService(
     throw it
   }
 
-  private suspend fun OfficialVisitResponse.toMigrateVisitRequest(): MigrateVisitRequest = MigrateVisitRequest(
-    offenderVisitId = visitId,
-    prisonVisitSlotId = visitSlotId.lookUpDpsVisitSlotId(),
-    prisonCode = prisonId,
-    offenderBookId = bookingId,
-    prisonerNumber = offenderNo,
-    currentTerm = currentTerm,
-    visitDate = startDateTime.toLocalDate(),
-    startTime = startDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
-    endTime = endDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
-    dpsLocationId = internalLocationId.lookUpDpsLocationId(),
-    visitStatusCode = visitStatus.toDpsVisitStatusType(),
-    visitTypeCode = VisitType.UNKNOWN,
-    visitCompletionCode = cancellationReason.toDpsVisitCompletionType(visitStatus),
-    visitOrderNumber = visitOrder?.number,
-    createDateTime = audit.createDatetime,
-    createUsername = audit.createUsername,
-    visitors = visitors.map { visitor ->
-      MigrateVisitor(
-        offenderVisitVisitorId = visitor.id,
-        personId = visitor.personId,
-        createDateTime = visitor.audit.createDatetime,
-        createUsername = visitor.audit.createUsername,
-        firstName = visitor.firstName,
-        lastName = visitor.lastName,
-        dateOfBirth = visitor.dateOfBirth,
-        relationshipToPrisoner = visitor.relationships.firstOrNull()?.relationshipType?.code,
-        relationshipTypeCode = visitor.relationships.firstOrNull()?.contactType?.toDpsRelationshipType(),
-        attendanceCode = visitor.visitorAttendanceOutcome?.toDpsAttendanceType(),
-        groupLeaderFlag = visitor.leadVisitor,
-        assistedVisitFlag = visitor.assistedVisit,
-        commentText = visitor.commentText,
-        modifyDateTime = visitor.audit.modifyDatetime,
-        modifyUsername = visitor.audit.modifyUserId,
-      )
-    },
-    commentText = commentText,
-    searchTypeCode = prisonerSearchType?.toDpsSearchLevelType(),
-    visitorConcernText = visitorConcernText,
-    overrideBanStaffUsername = overrideBanStaffUsername,
-    modifyDateTime = audit.modifyDatetime,
-    modifyUsername = audit.modifyUserId,
-  )
+  suspend fun OfficialVisitResponse.toMigrateVisitRequest() = this.toMigrateVisitRequest(prisonVisitSlotLookup = { it.lookUpDpsVisitSlotId() }, dpsLocationLookup = { it.lookUpDpsLocationId() })
 
   private suspend fun Long.lookUpDpsLocationId(): UUID = officialVisitsMappingService.getInternalLocationByNomisId(this).dpsLocationId.let { UUID.fromString(it) }
   private suspend fun Long.lookUpDpsVisitSlotId(): Long = visitSlotsMappingService.getVisitSlotByNomisId(this).dpsId.toLong()
 }
+
+internal suspend fun OfficialVisitResponse.toMigrateVisitRequest(prisonVisitSlotLookup: suspend (Long) -> Long, dpsLocationLookup: suspend (Long) -> UUID): MigrateVisitRequest = MigrateVisitRequest(
+  offenderVisitId = visitId,
+  prisonVisitSlotId = prisonVisitSlotLookup(visitSlotId),
+  prisonCode = prisonId,
+  offenderBookId = bookingId,
+  prisonerNumber = offenderNo,
+  currentTerm = currentTerm,
+  visitDate = startDateTime.toLocalDate(),
+  startTime = startDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
+  endTime = endDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
+  dpsLocationId = dpsLocationLookup(internalLocationId),
+  visitStatusCode = visitStatus.toDpsVisitStatusType(),
+  visitTypeCode = VisitType.UNKNOWN,
+  visitCompletionCode = cancellationReason.toDpsVisitCompletionType(visitStatus),
+  visitOrderNumber = visitOrder?.number,
+  createDateTime = audit.createDatetime,
+  createUsername = audit.createUsername,
+  visitors = visitors.map { visitor ->
+    MigrateVisitor(
+      offenderVisitVisitorId = visitor.id,
+      personId = visitor.personId,
+      createDateTime = visitor.audit.createDatetime,
+      createUsername = visitor.audit.createUsername,
+      firstName = visitor.firstName,
+      lastName = visitor.lastName,
+      dateOfBirth = visitor.dateOfBirth,
+      relationshipToPrisoner = visitor.relationships.firstOrNull()?.relationshipType?.code,
+      relationshipTypeCode = visitor.relationships.firstOrNull()?.contactType?.toDpsRelationshipType(),
+      attendanceCode = visitor.visitorAttendanceOutcome?.toDpsAttendanceType(),
+      groupLeaderFlag = visitor.leadVisitor,
+      assistedVisitFlag = visitor.assistedVisit,
+      commentText = visitor.commentText,
+      modifyDateTime = visitor.audit.modifyDatetime,
+      modifyUsername = visitor.audit.modifyUserId,
+    )
+  },
+  commentText = commentText,
+  searchTypeCode = prisonerSearchType?.toDpsSearchLevelType(),
+  visitorConcernText = visitorConcernText,
+  overrideBanStaffUsername = overrideBanStaffUsername,
+  modifyDateTime = audit.modifyDatetime,
+  modifyUsername = audit.modifyUserId,
+)
 
 private fun CodeDescription.toDpsAttendanceType(): AttendanceType = when (code) {
   "ATT" -> AttendanceType.ATTENDED
@@ -227,50 +229,36 @@ private fun CodeDescription.toDpsVisitStatusType(): VisitStatusType = when (code
 }
 
 private fun CodeDescription?.toDpsVisitCompletionType(visitStatus: CodeDescription): VisitCompletionType? = when (this?.code) {
-  // No Visiting Order (153)
   "NO_VO" -> VisitCompletionType.STAFF_CANCELLED
 
-  // Visit Order Cancelled (949)
   "VO_CANCEL" -> VisitCompletionType.STAFF_CANCELLED
 
   "REFUSED" -> VisitCompletionType.PRISONER_REFUSED
 
-  // TODO - should be PRISONER_CANCELLED ?
-  "OFFCANC" -> VisitCompletionType.STAFF_CANCELLED
+  "OFFCANC" -> VisitCompletionType.PRISONER_CANCELLED
 
   "VISCANC" -> VisitCompletionType.VISITOR_CANCELLED
 
-  // TODO - should be VISITOR_NOSHOW (11,822) ?
-  "NSHOW" -> VisitCompletionType.VISITOR_CANCELLED
+  "NSHOW" -> VisitCompletionType.VISITOR_NO_SHOW
 
-  // Administrative Cancellation
   "ADMIN" -> VisitCompletionType.STAFF_CANCELLED
 
-  // Operational Reasons-All Visits Cancelled
+  "ADMIN_CANCEL" -> VisitCompletionType.STAFF_CANCELLED
+
   "HMP" -> VisitCompletionType.STAFF_CANCELLED
 
-  // o Identification - Refused Entry (228)
   "NO_ID" -> VisitCompletionType.VISITOR_DENIED
 
-  // cancelled from batch NOMIS screen
   "BATCH_CANC" -> VisitCompletionType.STAFF_CANCELLED
 
   null -> when (visitStatus.code) {
     "VDE" -> VisitCompletionType.VISITOR_DENIED
-
-    // TOD - should be STAFF_EARLY ?
-    "HMPOP" -> VisitCompletionType.STAFF_CANCELLED
-
+    "HMPOP" -> VisitCompletionType.STAFF_EARLY
     "OFFEND" -> VisitCompletionType.PRISONER_EARLY
-
     "VISITOR" -> VisitCompletionType.VISITOR_EARLY
-
     "NORM" -> null
-
     "SCH" -> null
-
     "EXP" -> null
-
     else -> null
   }
 
