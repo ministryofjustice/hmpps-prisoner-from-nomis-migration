@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-12-04.972.d8dfb8a"
+    "version" : "2025-12-08.988.491a55d"
   },
   "servers" : [ {
     "url" : "https://remand-and-sentencing-api.hmpps.service.justice.gov.uk",
@@ -5447,7 +5447,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:24:12.053190188"
+            "example" : "07:05:13.010268466"
           },
           "outcomeDispositionCode" : {
             "type" : "string"
@@ -5595,7 +5595,7 @@
           },
           "immigrationDetentionRecordType" : {
             "type" : "string",
-            "enum" : [ "IS91", "DEPORTATION_ORDER", "NO_LONGER_OF_INTEREST" ]
+            "enum" : [ "IS91", "DEPORTATION_ORDER", "NO_LONGER_OF_INTEREST", "UNKNOWN" ]
           },
           "recordDate" : {
             "type" : "string",
@@ -5657,6 +5657,12 @@
             "format" : "uuid"
           },
           "terrorRelated" : {
+            "type" : "boolean"
+          },
+          "foreignPowerRelated" : {
+            "type" : "boolean"
+          },
+          "domesticViolenceRelated" : {
             "type" : "boolean"
           },
           "sentence" : {
@@ -5772,7 +5778,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:24:12.053190188"
+            "example" : "07:05:13.010268466"
           },
           "courtCode" : {
             "type" : "string"
@@ -7961,7 +7967,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:24:12.053190188"
+            "example" : "07:05:13.010268466"
           },
           "courtCode" : {
             "type" : "string"
@@ -8592,7 +8598,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:24:12.053190188"
+            "example" : "07:05:13.010268466"
           },
           "nomisOutcomeCode" : {
             "type" : "string"
@@ -8652,7 +8658,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:24:12.053190188"
+            "example" : "07:05:13.010268466"
           },
           "courtId" : {
             "type" : "string"
@@ -8792,7 +8798,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:24:12.053190188"
+            "example" : "07:05:13.010268466"
           },
           "charges" : {
             "type" : "array",
@@ -8819,7 +8825,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:24:12.053190188"
+            "example" : "07:05:13.010268466"
           },
           "courtId" : {
             "type" : "string"
@@ -8839,7 +8845,7 @@
           },
           "immigrationDetentionRecordType" : {
             "type" : "string",
-            "enum" : [ "IS91", "DEPORTATION_ORDER", "NO_LONGER_OF_INTEREST" ]
+            "enum" : [ "IS91", "DEPORTATION_ORDER", "NO_LONGER_OF_INTEREST", "UNKNOWN" ]
           },
           "recordDate" : {
             "type" : "string",
@@ -9407,7 +9413,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:24:12.053190188"
+            "example" : "07:05:13.010268466"
           },
           "courtCode" : {
             "type" : "string"
