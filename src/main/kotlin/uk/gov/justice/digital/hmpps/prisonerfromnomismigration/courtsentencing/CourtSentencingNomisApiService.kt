@@ -95,6 +95,20 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     .retrieve()
     .awaitBody()
 
+  suspend fun getCourtEventChargeOrNull(
+    eventId: Long,
+    offenderNo: String,
+    offenderChargeId: Long,
+  ): CourtEventChargeResponse? = webClient.get()
+    .uri(
+      "/prisoners/{offenderNo}/sentencing/court-appearances/{eventId}/charges/{offenderChargeId}",
+      offenderNo,
+      eventId,
+      offenderChargeId,
+    )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
   suspend fun getOffenderChargeOrNull(offenderNo: String, offenderChargeId: Long): OffenderChargeResponse? = webClient.get()
     .uri(
       "/prisoners/{offenderNo}/sentencing/offender-charges/{offenderChargeId}",
