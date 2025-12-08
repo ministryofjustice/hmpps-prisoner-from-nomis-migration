@@ -4139,6 +4139,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           courtCasesDeactivated = listOf(
             courtCaseResponse().copy(
               id = 10001,
+              caseStatus = CodeDescription("I", "Inactive"),
               courtEvents = listOf(
                 courtEventResponse(eventId = 201).copy(
                   courtEventCharges = listOf(
@@ -4299,7 +4300,10 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will call DPS to synchronise any cases`() {
-          dpsCourtSentencingServer.verify(postRequestedFor(urlPathEqualTo("/legacy/court-case/merge/person/$offenderNumberRetained")))
+          dpsCourtSentencingServer.verify(
+            postRequestedFor(urlPathEqualTo("/legacy/court-case/merge/person/$offenderNumberRetained"))
+              .withRequestBody(matchingJsonPath("casesDeactivated[0].active", equalTo("false"))),
+          )
         }
 
         @Test

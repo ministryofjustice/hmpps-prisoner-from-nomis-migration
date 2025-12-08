@@ -795,11 +795,11 @@ class CourtSentencingSynchronisationService(
       mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)
         ?.let { courtAppearanceMapping ->
           mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { chargeMapping ->
-            nomisApiService.getCourtEventCharge(
+            nomisApiService.getCourtEventChargeOrNull(
               offenderNo = event.offenderIdDisplay,
               eventId = event.eventId,
               offenderChargeId = event.chargeId,
-            ).let { nomisCourtAppearanceCharge ->
+            )?.let { nomisCourtAppearanceCharge ->
               track(
                 name = "court-charge-synchronisation-updated",
                 telemetry = (telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("dpsCourtAppearanceId" to courtAppearanceMapping.dpsCourtAppearanceId)).toMutableMap(),
@@ -810,6 +810,11 @@ class CourtSentencingSynchronisationService(
                   charge = nomisCourtAppearanceCharge.toDpsCharge(),
                 )
               }
+            } ?: let {
+              telemetryClient.trackEvent(
+                "court-charge-synchronisation-updated-ignored",
+                telemetry + ("reason" to "charge no longer exists in nomis"),
+              )
             }
           } ?: let {
             telemetryClient.trackEvent(
@@ -1260,17 +1265,18 @@ class CourtSentencingSynchronisationService(
     )
     if (mapping == null) {
       // check for existence as sentence could have been deleted in nomis
-      nomisApiService.getOffenderSentenceNullable(
-        offenderNo = offenderNo,
-        caseId = nomisCaseId,
-        sentenceSequence = nomisSentenceSequence,
-      )?.let {
+      if (nomisApiService.getOffenderSentenceNullable(
+          offenderNo = offenderNo,
+          caseId = nomisCaseId,
+          sentenceSequence = nomisSentenceSequence,
+        ) != null
+      ) {
         telemetryClient.trackEvent(
           "sentence-synchronisation-updated-failed",
           telemetry,
         )
         throw ParentEntityNotFoundRetry("Received OFFENDER_SENTENCES-UPDATED or sync request for sentence (sequence $nomisSentenceSequence booking $nomisBookingId) that exists in nomis without sync mapping")
-      } ?: run {
+      } else {
         telemetryClient.trackEvent(
           "sentence-synchronisation-updated-skipped",
           telemetry + ("reason" to "sentence does not exist in nomis, no update required"),
@@ -1314,7 +1320,6 @@ class CourtSentencingSynchronisationService(
 
   suspend fun nomisSentenceChargeDeleted(event: OffenderSentenceChargeEvent) {
     val bookingId = event.bookingId
-    val offenderNo = event.offenderIdDisplay
     val nomisSentenceSequence = event.sentenceSeq
     val telemetry =
       mapOf(
@@ -1508,18 +1513,19 @@ class CourtSentencingSynchronisationService(
       )
       if (mapping == null) {
         // check for existence as sentence could have been deleted in nomis
-        nomisApiService.getOffenderSentenceTermNullable(
-          offenderNo = event.offenderIdDisplay,
-          sentenceSequence = event.sentenceSeq,
-          termSequence = event.termSequence,
-          bookingId = event.bookingId,
-        )?.let {
+        if (nomisApiService.getOffenderSentenceTermNullable(
+            offenderNo = event.offenderIdDisplay,
+            sentenceSequence = event.sentenceSeq,
+            termSequence = event.termSequence,
+            bookingId = event.bookingId,
+          ) != null
+        ) {
           telemetryClient.trackEvent(
             "sentence-term-synchronisation-updated-failed",
             telemetry,
           )
           throw IllegalStateException("Received OFFENDER_SENTENCE_TERMS-UPDATED for sentence term (term ${event.termSequence}, sequence ${event.sentenceSeq} booking ${event.bookingId}) that exists in nomis without sync mapping")
-        } ?: run {
+        } else {
           telemetryClient.trackEvent(
             "sentence-term-synchronisation-updated-skipped",
             telemetry + ("reason" to "sentence term does not exist in nomis, no update required"),
