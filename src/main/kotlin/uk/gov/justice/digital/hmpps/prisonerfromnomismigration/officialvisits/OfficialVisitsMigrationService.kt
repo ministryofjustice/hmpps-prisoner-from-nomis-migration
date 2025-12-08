@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.RelationshipType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SearchLevelType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitCompletionType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
@@ -156,11 +157,9 @@ class OfficialVisitsMigrationService(
     startTime = startDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
     endTime = endDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
     dpsLocationId = internalLocationId.lookUpDpsLocationId(),
-    // TODO - map correctly
-    visitStatusCode = VisitStatusType.SCHEDULED,
+    visitStatusCode = visitStatus.toDpsVisitStatusType(),
     visitTypeCode = VisitType.UNKNOWN,
-    // TODO - map correctly
-    visitCompletionCode = null,
+    visitCompletionCode = cancellationReason.toDpsVisitCompletionType(visitStatus),
     visitOrderNumber = visitOrder?.number,
     createDateTime = audit.createDatetime,
     createUsername = audit.createUsername,
@@ -213,4 +212,67 @@ private fun CodeDescription.toDpsSearchLevelType(): SearchLevelType = when (code
   "RUB_B" -> SearchLevelType.RUB_B
   "STR" -> SearchLevelType.STR
   else -> throw IllegalArgumentException("Unknown search type code: $code")
+}
+
+private fun CodeDescription.toDpsVisitStatusType(): VisitStatusType = when (code) {
+  "CANC" -> VisitStatusType.CANCELLED
+  "VDE" -> VisitStatusType.COMPLETED
+  "HMPOP" -> VisitStatusType.COMPLETED
+  "OFFEND" -> VisitStatusType.COMPLETED
+  "VISITOR" -> VisitStatusType.COMPLETED
+  "NORM" -> VisitStatusType.COMPLETED
+  "SCH" -> VisitStatusType.SCHEDULED
+  "EXP" -> VisitStatusType.EXPIRED
+  else -> throw IllegalArgumentException("Unknown visit status code: $code")
+}
+
+private fun CodeDescription?.toDpsVisitCompletionType(visitStatus: CodeDescription): VisitCompletionType? = when (this?.code) {
+  // No Visiting Order (153)
+  "NO_VO" -> VisitCompletionType.STAFF_CANCELLED
+
+  // Visit Order Cancelled (949)
+  "VO_CANCEL" -> VisitCompletionType.STAFF_CANCELLED
+
+  "REFUSED" -> VisitCompletionType.PRISONER_REFUSED
+
+  // TODO - should be PRISONER_CANCELLED ?
+  "OFFCANC" -> VisitCompletionType.STAFF_CANCELLED
+
+  "VISCANC" -> VisitCompletionType.VISITOR_CANCELLED
+
+  // TODO - should be VISITOR_NOSHOW (11,822) ?
+  "NSHOW" -> VisitCompletionType.VISITOR_CANCELLED
+
+  // Administrative Cancellation
+  "ADMIN" -> VisitCompletionType.STAFF_CANCELLED
+
+  // Operational Reasons-All Visits Cancelled
+  "HMP" -> VisitCompletionType.STAFF_CANCELLED
+
+  // o Identification - Refused Entry (228)
+  "NO_ID" -> VisitCompletionType.VISITOR_DENIED
+
+  // cancelled from batch NOMIS screen
+  "BATCH_CANC" -> VisitCompletionType.STAFF_CANCELLED
+
+  null -> when (visitStatus.code) {
+    "VDE" -> VisitCompletionType.VISITOR_DENIED
+
+    // TOD - should be STAFF_EARLY ?
+    "HMPOP" -> VisitCompletionType.STAFF_CANCELLED
+
+    "OFFEND" -> VisitCompletionType.PRISONER_EARLY
+
+    "VISITOR" -> VisitCompletionType.VISITOR_EARLY
+
+    "NORM" -> null
+
+    "SCH" -> null
+
+    "EXP" -> null
+
+    else -> null
+  }
+
+  else -> null
 }

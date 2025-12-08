@@ -48,6 +48,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.RelationshipType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SearchLevelType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitCompletionType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
@@ -355,10 +356,10 @@ class OfficialVisitsMigrationIntTest(
             overrideBanStaffUsername = "T.SMITH",
             visitOrder = VisitOrder(654321),
             prisonerSearchType = CodeDescription(code = "PAT", description = "Pat Down Search"),
-            visitStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+            visitStatus = CodeDescription(code = "VISITOR", description = "Visitor Completed Early"),
             visitOutcome = CodeDescription(code = "CANC", description = "Cancelled"),
             prisonerAttendanceOutcome = CodeDescription(code = "ATT", description = "Attended"),
-            cancellationReason = CodeDescription(code = "ADMIN", description = "Administrative Cancellation"),
+            cancellationReason = null,
             audit = NomisAudit(
               createDatetime = LocalDateTime.parse("2020-01-01T10:10:10"),
               createUsername = "J.JOHN",
@@ -478,10 +479,9 @@ class OfficialVisitsMigrationIntTest(
 
       @Test
       fun `will map and transform visit status`() {
-        // TODO mapp all these correctly
-        assertThat(migrationRequest.visitStatusCode).isEqualTo(VisitStatusType.SCHEDULED)
+        assertThat(migrationRequest.visitStatusCode).isEqualTo(VisitStatusType.COMPLETED)
         assertThat(migrationRequest.visitTypeCode).isEqualTo(VisitType.UNKNOWN)
-        assertThat(migrationRequest.visitCompletionCode).isNull()
+        assertThat(migrationRequest.visitCompletionCode).isEqualTo(VisitCompletionType.VISITOR_EARLY)
       }
 
       @Test
