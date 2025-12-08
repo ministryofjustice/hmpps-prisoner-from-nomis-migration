@@ -45,7 +45,7 @@ class OfficialVisitsNomisApiMockServer(private val objectMapper: ObjectMapper) {
       startDateTime = LocalDateTime.parse("2020-01-01T10:00"),
       endDateTime = LocalDateTime.parse("2020-01-01T11:00"),
       internalLocationId = 40,
-      visitStatus = CodeDescription("COMP", "Completed Normally"),
+      visitStatus = CodeDescription("NORM", "Normal Completion"),
       visitors = listOf(officialVisitor()),
     )
 

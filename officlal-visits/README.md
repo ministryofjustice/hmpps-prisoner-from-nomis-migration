@@ -15,7 +15,7 @@
 | Location                     | OFFENDER_VISITS         | VISIT_INTERNAL_LOCATION_ID                                | internalLocationId            | dpsLocationId via location mapping |                       |
 | Start                        | OFFENDER_VISITS         | START_TIME                                                | startDateTime                 | startTime                          |                       |
 | End                          | OFFENDER_VISITS         | END_TIME                                                  | endDateTime                   | endTime                            |                       |
-| Cancel Reason                | OFFENDER_VISIT_VISITORS | OUTCOME_REASON_CODE (REF: MOV_CANC_RS)                    | cancellationReason            | outcomeReasonCode                  |                       |
+| Cancel Reason                | OFFENDER_VISIT_VISITORS | OUTCOME_REASON_CODE (REF: MOVE_CANC_RS)                   | cancellationReason            | outcomeReasonCode                  |                       |
 | Completion                   | OFFENDER_VISITS         | VISIT_STATUS (REF: VIS_COMPLETE)                          | visitStatus                   | visitStatusCode                    | SCH before completion |
 | Attended                     | OFFENDER_VISIT_VISITORS | EVENT_OUTCOME (REF: OUTCOMES)                             | prisonerAttendanceOutcome     | eventOutcomeCode                   |                       |
 | n/a                          | OFFENDER_VISIT_VISITORS | EVENT_STATUS (REF: EVENT_STS)                             | eventStatus                   | n/a                                |                       |
