@@ -102,6 +102,8 @@ generic-prometheus-alerts:
     coreperson:
       - "syscon-devs-dev-migration_coreperson_queue"
       - "syscon-devs-dev-migration_coreperson_dlq"
+      - "syscon-devs-dev-prisoner_from_nomis_coreperson_queue"
+      - "syscon-devs-dev-prisoner_from_nomis_coreperson_dl_queue"
     prisonbalance:
       - "syscon-devs-dev-migration_prisonbalance_queue"
       - "syscon-devs-dev-migration_prisonbalance_dlq"
