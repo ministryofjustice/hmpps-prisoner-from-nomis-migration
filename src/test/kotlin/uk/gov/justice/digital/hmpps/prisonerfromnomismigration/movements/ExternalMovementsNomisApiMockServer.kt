@@ -538,7 +538,7 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     commentText = "Return comment text",
     fromAddressId = if (city == null) addressId else null,
     fromAddressOwnerClass = if (city == null) "OFF" else null,
-    fromAddressDescription = if (city == null) "Some description" else null,
+    fromAddressDescription = if (city == null) "some description" else null,
     fromFullAddress = city ?: address,
     fromAddressPostcode = if (city == null) "S1 1AB" else null,
   )

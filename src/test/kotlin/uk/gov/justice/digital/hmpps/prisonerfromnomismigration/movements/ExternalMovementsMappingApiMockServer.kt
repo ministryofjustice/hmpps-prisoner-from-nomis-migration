@@ -510,6 +510,8 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
     addressId: Long = 65432L,
     dpsUprn: Long? = 23456L,
     dpsAddressText: String = "some address",
+    dpsDescription: String? = null,
+    dpsPostcode: String? = "S1 1AA",
   ) {
     mappingApi.stubFor(
       post(urlPathMatching("/mapping/temporary-absence/addresses/by-nomis-id")).willReturn(
@@ -517,7 +519,7 @@ class ExternalMovementsMappingApiMockServer(private val objectMapper: ObjectMapp
           .withHeader("Content-Type", "application/json")
           .withBody(
             objectMapper.writeValueAsString(
-              TemporaryAbsenceAddressMappingResponse(ownerClass, addressId, dpsAddressText, offenderNo, dpsUprn),
+              TemporaryAbsenceAddressMappingResponse(ownerClass, addressId, dpsAddressText, offenderNo, dpsUprn, dpsDescription, dpsPostcode),
             ),
           ),
       ),
@@ -647,6 +649,8 @@ fun temporaryAbsenceScheduledMovementMapping(
   nomisAddressId = 321,
   nomisAddressOwnerClass = nomisAddressOwnerClass,
   dpsAddressText = "to full address",
+  dpsDescription = "some description",
+  dpsPostcode = "S1 1AB",
   eventTime = "$eventTime",
 )
 
@@ -665,4 +669,6 @@ fun temporaryAbsenceExternalMovementMapping(
   nomisAddressId = if (city == null) 321 else null,
   nomisAddressOwnerClass = if (city == null) "OFF" else null,
   dpsAddressText = city ?: "full address",
+  dpsDescription = if (city == null) "some description" else null,
+  dpsPostcode = if (city == null) "S1 1AB" else null,
 )
