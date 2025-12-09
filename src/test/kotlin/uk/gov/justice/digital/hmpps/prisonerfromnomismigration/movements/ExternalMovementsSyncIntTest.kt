@@ -1386,7 +1386,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsApplicationId = dpsAuthorisationId)
         nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678, eventTime = eventTime)
-        mappingApi.stubFindAddressMappings(addressId = 654, dpsAddressText = "to full address", dpsUprn = 987)
+        mappingApi.stubFindAddressMappings(addressId = 654, dpsAddressText = "to full address", dpsUprn = 987, dpsDescription = null, dpsPostcode = "S9 9AA")
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
         mappingApi.stubCreateScheduledMovementMapping()
 
@@ -1411,10 +1411,10 @@ class ExternalMovementsSyncIntTest(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId/occurrences")),
         ).apply {
           assertThat(id).isNull()
-          assertThat(location.description).isEqualTo("Some description")
           assertThat(location.address).isEqualTo("to full address")
           assertThat(location.uprn).isEqualTo(987)
-          assertThat(location.postcode).isEqualTo("S1 1AB")
+          assertThat(location.postcode).isEqualTo("S9 9AA")
+          assertThat(location.description).isNull()
         }
       }
 
@@ -1481,7 +1481,7 @@ class ExternalMovementsSyncIntTest(
           assertThat(id).isEqualTo(dpsOccurrenceId)
           assertThat(releaseAt).isCloseTo(now, within(1, ChronoUnit.MINUTES))
           assertThat(returnBy).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
-          assertThat(location.description).isEqualTo("Some description")
+          assertThat(location.description).isEqualTo("some description")
           assertThat(location.address).isEqualTo("to full address")
           assertThat(location.postcode).isEqualTo("S1 1AB")
           assertThat(absenceTypeCode).isEqualTo("RDR")
@@ -1865,7 +1865,7 @@ class ExternalMovementsSyncIntTest(
           assertThat(id).isEqualTo(dpsOccurrenceId)
           assertThat(releaseAt).isCloseTo(yesterday, within(1, ChronoUnit.MINUTES))
           assertThat(returnBy).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
-          assertThat(location.description).isEqualTo("Some description")
+          assertThat(location.description).isEqualTo("some description")
           assertThat(location.address).isEqualTo("to full address")
           assertThat(location.postcode).isEqualTo("S1 1AB")
           assertThat(absenceTypeCode).isEqualTo("RDR")
@@ -1937,7 +1937,7 @@ class ExternalMovementsSyncIntTest(
           assertThat(id).isEqualTo(dpsOccurrenceId)
           assertThat(releaseAt).isCloseTo(yesterday, within(1, ChronoUnit.MINUTES))
           assertThat(returnBy).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
-          assertThat(location.description).isEqualTo("Some description")
+          assertThat(location.description).isEqualTo("some description")
           assertThat(location.address).isEqualTo("to full address")
           assertThat(location.postcode).isEqualTo("S1 1AB")
           assertThat(absenceTypeCode).isEqualTo("RDR")
@@ -2042,7 +2042,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678, toAddress = "new address", toAddressId = 654)
-        mappingApi.stubFindAddressMappings(addressId = 654, dpsAddressText = "new address", dpsUprn = 987)
+        mappingApi.stubFindAddressMappings(addressId = 654, dpsAddressText = "new address", dpsUprn = 987, dpsDescription = "new description", dpsPostcode = "S9 9AA")
         mappingApi.stubUpdateScheduledMovementMapping()
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
 
@@ -2067,7 +2067,9 @@ class ExternalMovementsSyncIntTest(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId/occurrences"))
             .withRequestBodyJsonPath("id", "$dpsOccurrenceId")
             .withRequestBodyJsonPath("location.address", "new address")
-            .withRequestBodyJsonPath("location.uprn", 987),
+            .withRequestBodyJsonPath("location.uprn", 987)
+            .withRequestBodyJsonPath("location.description", "new description")
+            .withRequestBodyJsonPath("location.postcode", "S9 9AA"),
         )
       }
 
@@ -2356,7 +2358,7 @@ class ExternalMovementsSyncIntTest(
         nomisApi.stubGetTemporaryAbsenceMovement(movementSeq = 154, movementApplicationId = 111, scheduledTemporaryAbsenceId = 45678)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
-        mappingApi.stubFindAddressMappings(addressId = 321, dpsAddressText = "full address", dpsUprn = 987)
+        mappingApi.stubFindAddressMappings(addressId = 321, dpsAddressText = "full address", dpsUprn = 987, dpsDescription = "Some description", dpsPostcode = "S1 1AB")
         mappingApi.stubCreateExternalMovementMapping()
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
@@ -2463,7 +2465,7 @@ class ExternalMovementsSyncIntTest(
         nomisApi.stubGetTemporaryAbsenceReturnMovement(movementSeq = 154, movementApplicationId = 111, scheduledTemporaryAbsenceReturnId = 45678, scheduledTemporaryAbsenceId = 23456)
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(23456)
-        mappingApi.stubFindAddressMappings(addressId = 321, dpsAddressText = "full address", dpsUprn = 987)
+        mappingApi.stubFindAddressMappings(addressId = 321, dpsAddressText = "full address", dpsUprn = 987, dpsPostcode = "S1 1AB")
         mappingApi.stubCreateExternalMovementMapping()
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
@@ -3203,6 +3205,7 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("direction", "OUT")
             .withRequestBodyJsonPath("location.postcode", "S1 1AB")
             .withRequestBodyJsonPath("location.address", "full address")
+            .withRequestBodyJsonPath("location.description", "some description")
             .withRequestBodyJsonPath("location.uprn", absent()),
         )
       }
@@ -3449,7 +3452,8 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
             .withRequestBodyJsonPath("location.postcode", "S1 1AB")
-            .withRequestBodyJsonPath("location.address", "full address"),
+            .withRequestBodyJsonPath("location.address", "full address")
+            .withRequestBodyJsonPath("location.description ", "some description"),
         )
       }
 
@@ -3500,7 +3504,8 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("legacyId", "12345_154")
             .withRequestBodyJsonPath("direction", "IN")
             .withRequestBodyJsonPath("location.postcode", "S1 1AB")
-            .withRequestBodyJsonPath("location.address", "new address"),
+            .withRequestBodyJsonPath("location.address", "new address")
+            .withRequestBodyJsonPath("location.description", "some description"),
         )
       }
 

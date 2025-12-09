@@ -5,10 +5,9 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.scheduledTemporaryAbsenceResponse
-import java.time.LocalDateTime
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
 
 class ExternalMovementsSyncServiceTest {
-  private val now = LocalDateTime.now()
 
   @Nested
   @DisplayName("Transform scheduled movement to DPS Occurrence")
@@ -20,7 +19,7 @@ class ExternalMovementsSyncServiceTest {
         escort = null,
       )
 
-      with(nomis.toDpsRequest(address = "any")) {
+      with(nomis.toDpsRequest(dpsLocation = Location(address = "any"))) {
         assertThat(accompaniedByCode).isEqualTo("U")
       }
     }
@@ -31,7 +30,7 @@ class ExternalMovementsSyncServiceTest {
         transportType = null,
       )
 
-      with(nomis.toDpsRequest(address = "any")) {
+      with(nomis.toDpsRequest(dpsLocation = Location(address = "any"))) {
         assertThat(transportCode).isEqualTo("TNR")
       }
     }
@@ -43,7 +42,7 @@ class ExternalMovementsSyncServiceTest {
       eventStatus = "CANC",
     )
 
-    with(nomis.toDpsRequest(address = "any")) {
+    with(nomis.toDpsRequest(dpsLocation = Location(address = "any"))) {
       assertThat(isCancelled).isTrue
     }
   }

@@ -242,9 +242,9 @@ class ExternalMovementsSyncService(
       val dpsAuthorisationId = requireParentApplicationExists(nomisSchedule.movementApplicationId)
         .also { telemetry["dpsAuthorisationId"] = it }
 
-      val (address, uprn) = deriveDpsAddress(prisonerNumber, existingMapping, nomisSchedule)
-      uprn?.also { telemetry["dpsUprn"] = it }
-      val dpsOccurrence = nomisSchedule.toDpsRequest(existingMapping?.dpsOccurrenceId, address, uprn)
+      val dpsLocation = deriveDpsAddress(prisonerNumber, existingMapping, nomisSchedule)
+      dpsLocation.uprn?.also { telemetry["dpsUprn"] = it }
+      val dpsOccurrence = nomisSchedule.toDpsRequest(existingMapping?.dpsOccurrenceId, dpsLocation)
       val dpsOccurrenceId = dpsApiService.syncTapOccurrence(dpsAuthorisationId, dpsOccurrence).id
         .also { telemetry["dpsOccurrenceId"] = it }
 
@@ -256,8 +256,10 @@ class ExternalMovementsSyncService(
         mappingType = SCHEDULED_MOVEMENT_NOMIS_CREATED,
         nomisAddressId = nomisSchedule.toAddressId ?: 0,
         nomisAddressOwnerClass = nomisSchedule.toAddressOwnerClass ?: "",
-        dpsAddressText = address,
-        dpsUprn = uprn,
+        dpsAddressText = dpsLocation.address ?: "",
+        dpsUprn = dpsLocation.uprn,
+        dpsDescription = dpsLocation.description,
+        dpsPostcode = dpsLocation.postcode,
         eventTime = "${nomisSchedule.startTime}",
       )
         .also {
@@ -270,18 +272,18 @@ class ExternalMovementsSyncService(
     prisonerNumber: String,
     existingScheduleMapping: ScheduledMovementSyncMappingDto?,
     nomisSchedule: ScheduledTemporaryAbsenceResponse,
-  ): Pair<String, Long?> {
+  ): Location {
     val hasNomisAddress = nomisSchedule.toAddressId != null && nomisSchedule.toAddressOwnerClass != null
     val newAddress = (existingScheduleMapping == null || (hasNomisAddress && existingScheduleMapping.nomisAddressId != nomisSchedule.toAddressId))
 
     return if (newAddress) {
       // NOMIS address is new/changed, look for address mapping or just default from NOMIS
       mappingApiService.findAddressMapping(prisonerNumber, nomisSchedule.toAddressOwnerClass!!, nomisSchedule.toAddressId!!)
-        ?.let { it.dpsAddressText to it.dpsUprn }
-        ?: ((nomisSchedule.toFullAddress ?: "") to null)
+        ?.let { Location(it.dpsDescription, it.dpsAddressText, it.dpsPostcode, it.dpsUprn) }
+        ?: Location(nomisSchedule.toAddressDescription, nomisSchedule.toFullAddress ?: "", nomisSchedule.toAddressPostcode, null)
     } else {
       // NOMIS address is unchanged, use DPS address as saved on scheduled mapping
-      existingScheduleMapping.dpsAddressText to existingScheduleMapping.dpsUprn
+      Location(existingScheduleMapping.dpsDescription, existingScheduleMapping.dpsAddressText, existingScheduleMapping.dpsPostcode, existingScheduleMapping.dpsUprn)
     }
   }
 
@@ -584,9 +586,9 @@ class ExternalMovementsSyncService(
       val dpsOccurrenceId = nomisMovement.scheduledTemporaryAbsenceId?.let { requireParentScheduleExists(it) }
         ?.also { telemetry["dpsOccurrenceId"] = it }
 
-      val (address, uprn) = deriveDpsAddress(prisonerNumber, existingMapping, nomisMovement.toAddressId, nomisMovement.toAddressOwnerClass, nomisMovement.toFullAddress)
-      uprn?.also { telemetry["dpsUprn"] = it }
-      val dpsMovement = nomisMovement.toDpsRequest(existingMapping?.dpsMovementId, dpsOccurrenceId, address, uprn)
+      val dpsLocation = deriveDpsAddress(prisonerNumber, existingMapping, nomisMovement.toAddressId, nomisMovement.toAddressOwnerClass, nomisMovement.toFullAddress, nomisMovement.toAddressDescription, nomisMovement.toAddressPostcode)
+      dpsLocation.uprn?.also { telemetry["dpsUprn"] = it }
+      val dpsMovement = nomisMovement.toDpsRequest(existingMapping?.dpsMovementId, dpsOccurrenceId, dpsLocation)
       val dpsMovementId = dpsApiService.syncTapMovement(prisonerNumber, dpsMovement).id
         .also { telemetry["dpsMovementId"] = it }
 
@@ -596,8 +598,10 @@ class ExternalMovementsSyncService(
         nomisMovementSeq = movementSeq,
         dpsMovementId = dpsMovementId,
         mappingType = ExternalMovementSyncMappingDto.MappingType.NOMIS_CREATED,
-        dpsAddressText = address,
-        dpsUprn = uprn,
+        dpsAddressText = dpsLocation.address ?: "",
+        dpsUprn = dpsLocation.uprn,
+        dpsDescription = dpsLocation.description,
+        dpsPostcode = dpsLocation.postcode,
         nomisAddressId = nomisMovement.toAddressId,
         nomisAddressOwnerClass = nomisMovement.toAddressOwnerClass,
       )
@@ -624,9 +628,9 @@ class ExternalMovementsSyncService(
       val dpsOccurrenceId = nomisMovement.scheduledTemporaryAbsenceId?.let { requireParentScheduleExists(it) }
         ?.also { telemetry["dpsOccurrenceId"] = it }
 
-      val (address, uprn) = deriveDpsAddress(prisonerNumber, existingMapping, nomisMovement.fromAddressId, nomisMovement.fromAddressOwnerClass, nomisMovement.fromFullAddress)
-      uprn?.also { telemetry["dpsUprn"] = it }
-      val dpsMovement = nomisMovement.toDpsRequest(existingMapping?.dpsMovementId, dpsOccurrenceId, address, uprn)
+      val dpsLocation = deriveDpsAddress(prisonerNumber, existingMapping, nomisMovement.fromAddressId, nomisMovement.fromAddressOwnerClass, nomisMovement.fromFullAddress, nomisMovement.fromAddressDescription, nomisMovement.fromAddressPostcode)
+      dpsLocation.uprn?.also { telemetry["dpsUprn"] = it }
+      val dpsMovement = nomisMovement.toDpsRequest(existingMapping?.dpsMovementId, dpsOccurrenceId, dpsLocation)
       val dpsMovementId = dpsApiService.syncTapMovement(prisonerNumber, dpsMovement).id
         .also { telemetry["dpsMovementId"] = it }
 
@@ -636,8 +640,10 @@ class ExternalMovementsSyncService(
         nomisMovementSeq = movementSeq,
         dpsMovementId = dpsMovementId,
         mappingType = ExternalMovementSyncMappingDto.MappingType.NOMIS_CREATED,
-        dpsAddressText = address,
-        dpsUprn = uprn,
+        dpsAddressText = dpsLocation.address ?: "",
+        dpsUprn = dpsLocation.uprn,
+        dpsDescription = dpsLocation.description,
+        dpsPostcode = dpsLocation.postcode,
         nomisAddressId = nomisMovement.fromAddressId,
         nomisAddressOwnerClass = nomisMovement.fromAddressOwnerClass,
       )
@@ -683,7 +689,9 @@ class ExternalMovementsSyncService(
     nomisAddressId: Long?,
     nomisAddressOwnerClass: String?,
     nomisAddress: String?,
-  ): Pair<String, Long?> {
+    nomisAddressDescription: String? = null,
+    nomisAddressPostcode: String? = null,
+  ): Location {
     val hasNomisAddress = nomisAddressId != null && nomisAddressOwnerClass != null
     val addressHasChanged = existingMovementMapping == null ||
       (hasNomisAddress && existingMovementMapping.nomisAddressId != nomisAddressId) ||
@@ -692,14 +700,14 @@ class ExternalMovementsSyncService(
     return if (addressHasChanged && hasNomisAddress) {
       // NOMIS address is new/changed, look for address mapping or just default from NOMIS
       mappingApiService.findAddressMapping(prisonerNumber, nomisAddressOwnerClass, nomisAddressId)
-        ?.let { it.dpsAddressText to it.dpsUprn }
-        ?: ((nomisAddress ?: "") to null)
+        ?.let { Location(it.dpsDescription, it.dpsAddressText, it.dpsPostcode, it.dpsUprn) }
+        ?: Location(nomisAddressDescription, nomisAddress ?: "", nomisAddressPostcode, null)
     } else if (addressHasChanged) {
       // There is no address in NOMIS so this must be a City and all we have is the NOMIS address text
-      nomisAddress!! to null
+      Location(null, nomisAddress, null, null)
     } else {
       // NOMIS address is unchanged, use DPS address as saved on the movement mapping
-      existingMovementMapping.dpsAddressText to existingMovementMapping.dpsUprn
+      Location(existingMovementMapping.dpsDescription, existingMovementMapping.dpsAddressText, existingMovementMapping.dpsPostcode, existingMovementMapping.dpsUprn)
     }
   }
 
@@ -847,16 +855,11 @@ private fun String.toDpsAuthorisationStatusCode() = when (this) {
   else -> throw IllegalArgumentException("Unknown temporary absence status code: $this")
 }
 
-fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, address: String, uprn: Long? = null) = SyncWriteTapOccurrence(
+fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, dpsLocation: Location) = SyncWriteTapOccurrence(
   id = id,
   releaseAt = startTime,
   returnBy = returnTime,
-  location = Location(
-    description = toAddressDescription,
-    address = address,
-    postcode = toAddressPostcode,
-    uprn = uprn,
-  ),
+  location = dpsLocation,
   absenceTypeCode = temporaryAbsenceType,
   absenceSubTypeCode = temporaryAbsenceSubType,
   absenceReasonCode = eventSubType,
@@ -869,18 +872,13 @@ fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, address: St
   legacyId = eventId,
 )
 
-private fun TemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, occurrenceId: UUID? = null, address: String, uprn: Long?) = SyncWriteTapMovement(
+private fun TemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, occurrenceId: UUID? = null, dpsLocation: Location) = SyncWriteTapMovement(
   id = id,
   occurrenceId = occurrenceId,
   occurredAt = movementTime,
   direction = SyncWriteTapMovement.Direction.OUT,
   absenceReasonCode = movementReason,
-  location = Location(
-    description = toAddressDescription,
-    address = address,
-    postcode = toAddressPostcode,
-    uprn = uprn,
-  ),
+  location = dpsLocation,
   accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
   accompaniedByNotes = escortText,
   notes = commentText,
@@ -889,18 +887,13 @@ private fun TemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, occurrenceId
   legacyId = "${bookingId}_$sequence",
 )
 
-private fun TemporaryAbsenceReturnResponse.toDpsRequest(id: UUID? = null, occurrenceId: UUID? = null, address: String, uprn: Long?) = SyncWriteTapMovement(
+private fun TemporaryAbsenceReturnResponse.toDpsRequest(id: UUID? = null, occurrenceId: UUID? = null, dpsLocation: Location) = SyncWriteTapMovement(
   id = id,
   occurrenceId = occurrenceId,
   occurredAt = movementTime,
   direction = SyncWriteTapMovement.Direction.IN,
   absenceReasonCode = movementReason,
-  location = Location(
-    description = fromAddressDescription,
-    address = address,
-    postcode = fromAddressPostcode,
-    uprn = uprn,
-  ),
+  location = dpsLocation,
   accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
   accompaniedByNotes = escortText,
   notes = commentText,
