@@ -303,11 +303,7 @@ class CorePersonSynchronisationService(
               corePersonCprApiService.syncCreateSexualOrientation(
                 offenderIdDisplay,
                 PrisonSexualOrientation(
-                  prisonNumber = offenderIdDisplay,
-                  sexualOrientationCode = code ?: "",
-                  current = true, // TBC - redundant?
-                  createUserId = modifiedBy ?: createdBy,
-                  createDateTime = modifiedDateTime ?: createDateTime,
+                  sexualOrientationCode = code,
                   modifyUserId = modifiedBy ?: createdBy,
                   modifyDateTime = modifiedDateTime ?: createDateTime,
                 ),
