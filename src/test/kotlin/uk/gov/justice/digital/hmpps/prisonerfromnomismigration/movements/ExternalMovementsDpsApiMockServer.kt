@@ -15,6 +15,14 @@ import org.springframework.stereotype.Component
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapAuthorisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapOccurrence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigratedAuthorisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigratedMovement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigratedOccurrence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndByWithPrison
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
@@ -58,6 +66,7 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     private const val WIREMOCK_PORT = 8103
     private val today = LocalDateTime.now()
     private val tomorrow = today.plusDays(1)
+    private val yesterday = today.minusDays(1)
 
     @Suppress("unused")
     inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsExtMovementsServer.getRequestBody(pattern, ExternalMovementsDpsApiExtension.Companion.objectMapper)
@@ -121,6 +130,157 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
 
     fun syncResponse() = SyncResponse(UUID.randomUUID())
+
+    fun migratePrisonerTaps() = MigrateTapRequest(
+      temporaryAbsences = listOf(
+        MigrateTapAuthorisation(
+          prisonCode = "LEI",
+          statusCode = "APPROVED",
+          absenceReasonCode = "C5",
+          accompaniedByCode = "P",
+          transportCode = "VAN",
+          repeat = false,
+          fromDate = yesterday.toLocalDate(),
+          toDate = today.toLocalDate(),
+          created = SyncAtAndBy(yesterday, "AAA11A"),
+          legacyId = 1234,
+          absenceTypeCode = "RDR",
+          absenceSubTypeCode = "RR",
+          notes = "Authorisation comment",
+          updated = SyncAtAndBy(today, "AAA11A"),
+          occurrences = listOf(
+            MigrateTapOccurrence(
+              isCancelled = false,
+              releaseAt = yesterday,
+              returnBy = today,
+              location = Location(
+                description = "Boots",
+                address = "High Street, Sheffield",
+                postcode = "S1 1AA",
+                uprn = 987L,
+              ),
+              absenceReasonCode = "C6",
+              accompaniedByCode = "R",
+              transportCode = "TAXI",
+              created = SyncAtAndBy(yesterday, "AAA11A"),
+              legacyId = 5678,
+              absenceTypeCode = "ROR",
+              absenceSubTypeCode = "RRR",
+              contactInformation = "contact info",
+              notes = "Occurrence comment",
+              updated = SyncAtAndBy(today, "AAA11A"),
+              movements = listOf(
+                MigrateTapMovement(
+                  occurredAt = yesterday,
+                  direction = MigrateTapMovement.Direction.OUT,
+                  absenceReasonCode = "C7",
+                  location = Location(
+                    description = "Allied",
+                    address = "Big Street, Sheffield",
+                    postcode = "S1 1BB",
+                    uprn = 876L,
+                  ),
+                  accompaniedByCode = "S",
+                  created = SyncAtAndByWithPrison(yesterday, "AAA11A", "LEI"),
+                  legacyId = "12345_2",
+                  accompaniedByNotes = "accompanied notes",
+                  notes = "movement notes",
+                  updated = SyncAtAndBy(today, "AAA11A"),
+                ),
+                MigrateTapMovement(
+                  occurredAt = today,
+                  direction = MigrateTapMovement.Direction.IN,
+                  absenceReasonCode = "C8",
+                  location = Location(
+                    description = "Allied",
+                    address = "Big Street, Sheffield",
+                    postcode = "S1 1BB",
+                    uprn = 876L,
+                  ),
+                  accompaniedByCode = "T",
+                  created = SyncAtAndByWithPrison(today, "AAA11A", "LEI"),
+                  legacyId = "12345_3",
+                  accompaniedByNotes = "accompanied IN notes",
+                  notes = "movement IN notes",
+                  updated = null,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      unscheduledMovements = listOf(
+        MigrateTapMovement(
+          occurredAt = yesterday,
+          direction = MigrateTapMovement.Direction.OUT,
+          absenceReasonCode = "C7",
+          location = Location(
+            description = "Allied",
+            address = "Big Street, Sheffield",
+            postcode = "S1 1BB",
+            uprn = 876L,
+          ),
+          accompaniedByCode = "S",
+          created = SyncAtAndByWithPrison(yesterday, "AAA11A", "LEI"),
+          legacyId = "12345_4",
+          accompaniedByNotes = "accompanied notes",
+          notes = "movement notes",
+          updated = SyncAtAndBy(today, "AAA11A"),
+        ),
+        MigrateTapMovement(
+          occurredAt = today,
+          direction = MigrateTapMovement.Direction.IN,
+          absenceReasonCode = "C8",
+          location = Location(
+            description = "Allied",
+            address = "Big Street, Sheffield",
+            postcode = "S1 1BB",
+            uprn = 876L,
+          ),
+          accompaniedByCode = "T",
+          created = SyncAtAndByWithPrison(today, "AAA11A", "LEI"),
+          legacyId = "12345_5",
+          accompaniedByNotes = "accompanied IN notes",
+          notes = "movement IN notes",
+          updated = null,
+        ),
+      ),
+    )
+
+    fun migrateResponse() = MigrateTapResponse(
+      temporaryAbsences = listOf(
+        MigratedAuthorisation(
+          legacyId = 1234,
+          id = UUID.randomUUID(),
+          occurrences = listOf(
+            MigratedOccurrence(
+              legacyId = 5678,
+              id = UUID.randomUUID(),
+              movements = listOf(
+                MigratedMovement(
+                  legacyId = "12345_2",
+                  id = UUID.randomUUID(),
+                ),
+                MigratedMovement(
+                  legacyId = "12345_3",
+                  id = UUID.randomUUID(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      unscheduledMovements = listOf(
+        MigratedMovement(
+          legacyId = "12345_4",
+          id = UUID.randomUUID(),
+        ),
+        MigratedMovement(
+          legacyId = "12345_5",
+          id = UUID.randomUUID(),
+        ),
+      ),
+    )
   }
 
   fun stubHealthPing(status: Int) {
@@ -287,6 +447,34 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     dpsExtMovementsServer.stubFor(
       delete("/sync/temporary-absence-movements/$movementId")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubMigratePrisonerTaps(personIdentifier: String = "A1234BC", response: MigrateTapResponse = migrateResponse()) {
+    dpsExtMovementsServer.stubFor(
+      put("/migrate/temporary-absences/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubMigratePrisonerTapsError(
+    personIdentifier: String = "A1234BC",
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsExtMovementsServer.stubFor(
+      put("/migrate/temporary-absences/$personIdentifier")
         .willReturn(
           aResponse()
             .withStatus(status)
