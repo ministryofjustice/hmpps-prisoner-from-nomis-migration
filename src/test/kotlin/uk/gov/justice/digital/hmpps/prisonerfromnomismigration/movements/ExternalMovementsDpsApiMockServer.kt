@@ -247,23 +247,30 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
 
-    fun migrateResponse() = MigrateTapResponse(
+    fun migrateResponse(
+      dpsAuthorisationId: UUID = UUID.randomUUID(),
+      dpsOccurrenceId: UUID = UUID.randomUUID(),
+      dpsScheduledMovementOutId: UUID = UUID.randomUUID(),
+      dpsScheduledMovementInId: UUID = UUID.randomUUID(),
+      dpsUnscheduledMovementOutId: UUID = UUID.randomUUID(),
+      dpsUnscheduledMovementInId: UUID = UUID.randomUUID(),
+    ) = MigrateTapResponse(
       temporaryAbsences = listOf(
         MigratedAuthorisation(
-          legacyId = 1234,
-          id = UUID.randomUUID(),
+          legacyId = 1,
+          id = dpsAuthorisationId,
           occurrences = listOf(
             MigratedOccurrence(
-              legacyId = 5678,
-              id = UUID.randomUUID(),
+              legacyId = 1,
+              id = dpsOccurrenceId,
               movements = listOf(
                 MigratedMovement(
-                  legacyId = "12345_2",
-                  id = UUID.randomUUID(),
+                  legacyId = "12345_3",
+                  id = dpsScheduledMovementOutId,
                 ),
                 MigratedMovement(
-                  legacyId = "12345_3",
-                  id = UUID.randomUUID(),
+                  legacyId = "12345_4",
+                  id = dpsScheduledMovementInId,
                 ),
               ),
             ),
@@ -272,12 +279,12 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
       unscheduledMovements = listOf(
         MigratedMovement(
-          legacyId = "12345_4",
-          id = UUID.randomUUID(),
+          legacyId = "12345_1",
+          id = dpsUnscheduledMovementOutId,
         ),
         MigratedMovement(
-          legacyId = "12345_5",
-          id = UUID.randomUUID(),
+          legacyId = "12345_2",
+          id = dpsUnscheduledMovementInId,
         ),
       ),
     )
