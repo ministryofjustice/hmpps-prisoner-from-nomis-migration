@@ -332,10 +332,10 @@ class ExternalMovementsDpsApiServiceTest {
       apiService.migratePrisonerTaps(prisonerNumber, migratePrisonerTaps())
         .apply {
           assertThat(temporaryAbsences.size).isEqualTo(1)
-          assertThat(temporaryAbsences[0].legacyId).isEqualTo(1234)
+          assertThat(temporaryAbsences[0].legacyId).isEqualTo(1)
           assertThat(temporaryAbsences[0].occurrences.size).isEqualTo(1)
           assertThat(temporaryAbsences[0].occurrences[0].movements.size).isEqualTo(2)
-          assertThat(temporaryAbsences[0].occurrences[0].movements[0].legacyId).isEqualTo("12345_2")
+          assertThat(temporaryAbsences[0].occurrences[0].movements[0].legacyId).isEqualTo("12345_3")
         }
     }
 

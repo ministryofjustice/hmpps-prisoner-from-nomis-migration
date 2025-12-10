@@ -25,6 +25,7 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.migrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
@@ -34,6 +35,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequ
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.util.*
 
 class ExternalMovementsMigrationIntTest(
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
@@ -46,6 +48,13 @@ class ExternalMovementsMigrationIntTest(
   private val now = LocalDateTime.now()
   private val today = LocalDate.now()
   private val tomorrow = today.plusDays(1)
+
+  private val dpsAuthorisationId = UUID.randomUUID()
+  private val dpsOccurrenceId = UUID.randomUUID()
+  private val dpsScheduledMovementOutId = UUID.randomUUID()
+  private val dpsScheduledMovementInId = UUID.randomUUID()
+  private val dpsUnscheduledMovementOutId = UUID.randomUUID()
+  private val dpsUnscheduledMovementInId = UUID.randomUUID()
 
   @BeforeEach
   fun deleteHistoryRecords() = runTest {
@@ -92,7 +101,10 @@ class ExternalMovementsMigrationIntTest(
       .forEach { prisonerNumber ->
         mappingApi.stubGetTemporaryAbsenceMappings(prisonerNumber, NOT_FOUND)
         externalMovementsNomisApi.stubGetTemporaryAbsences(prisonerNumber)
-        dpsApi.stubMigratePrisonerTaps(prisonerNumber)
+        dpsApi.stubMigratePrisonerTaps(
+          personIdentifier = prisonerNumber,
+          response = migrateResponse(dpsAuthorisationId, dpsOccurrenceId, dpsScheduledMovementOutId, dpsScheduledMovementInId, dpsUnscheduledMovementOutId, dpsUnscheduledMovementInId),
+        )
       }
   }
 
@@ -298,11 +310,11 @@ class ExternalMovementsMigrationIntTest(
           assertThat(bookings[0].bookingId).isEqualTo(12345)
 
           assertThat(bookings[0].applications[0].nomisMovementApplicationId).isEqualTo(1)
-          // TODO check DPS application ID "bookings[0].applications[0].dpsApplicationId"
+          assertThat(bookings[0].applications[0].dpsMovementApplicationId).isEqualTo(dpsAuthorisationId)
 
           with(bookings[0].applications[0].schedules[0]) {
             assertThat(nomisEventId).isEqualTo(1)
-            // TODO check DPS occurrence ID
+            assertThat(dpsOccurrenceId).isEqualTo(dpsOccurrenceId)
             assertThat(nomisAddressId).isEqualTo(543)
             assertThat(nomisAddressOwnerClass).isEqualTo("OFF")
             assertThat(dpsAddressText).isEqualTo("Schedule full address")
@@ -314,15 +326,15 @@ class ExternalMovementsMigrationIntTest(
 
           with(bookings[0].applications[0].movements[0]) {
             assertThat(nomisMovementSeq).isEqualTo(3)
-            // TODO check DPS movement ID
+            assertThat(dpsMovementId).isEqualTo(dpsScheduledMovementOutId)
             assertThat(nomisAddressId).isEqualTo(432)
             assertThat(nomisAddressOwnerClass).isEqualTo("AGY")
             assertThat(dpsAddressText).isEqualTo("Absence full address")
           }
 
           with(bookings[0].applications[0].movements[1]) {
-            // TODO check DPS movement ID
             assertThat(nomisMovementSeq).isEqualTo(4)
+            assertThat(dpsMovementId).isEqualTo(dpsScheduledMovementInId)
             assertThat(nomisAddressId).isEqualTo(321)
             assertThat(nomisAddressOwnerClass).isEqualTo("CORP")
             assertThat(dpsAddressText).isEqualTo("Absence return full address")
@@ -330,7 +342,7 @@ class ExternalMovementsMigrationIntTest(
 
           with(bookings[0].unscheduledMovements[0]) {
             assertThat(nomisMovementSeq).isEqualTo(1)
-            // TODO check DPS movement ID
+            assertThat(dpsMovementId).isEqualTo(dpsUnscheduledMovementOutId)
             assertThat(nomisAddressId).isEqualTo(432)
             assertThat(nomisAddressOwnerClass).isEqualTo("AGY")
             assertThat(dpsAddressText).isEqualTo("Absence full address")
@@ -338,7 +350,7 @@ class ExternalMovementsMigrationIntTest(
 
           with(bookings[0].unscheduledMovements[1]) {
             assertThat(nomisMovementSeq).isEqualTo(2)
-            // TODO check DPS movement ID
+            assertThat(dpsMovementId).isEqualTo(dpsUnscheduledMovementInId)
             assertThat(nomisAddressId).isEqualTo(321)
             assertThat(nomisAddressOwnerClass).isEqualTo("CORP")
             assertThat(dpsAddressText).isEqualTo("Absence return full address")

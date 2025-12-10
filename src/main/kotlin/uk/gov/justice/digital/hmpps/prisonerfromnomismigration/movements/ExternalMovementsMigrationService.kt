@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.M
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapOccurrence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndByWithPrison
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementMappingDto
@@ -87,10 +88,8 @@ class ExternalMovementsMigrationService(
       ?.run { publishTelemetry("ignored", telemetry.apply { this["reason"] = "Already migrated" }) }
       ?: run {
         val temporaryAbsences = nomisApiService.getTemporaryAbsences(offenderNo)
-
-        val response = dpsApiService.migratePrisonerTaps(offenderNo, temporaryAbsences.toDpsRequest())
-        // TODO SDIT-2846 call the DPS endpoint to migrate and use the returned IDs in the mappings
-        val mappings = temporaryAbsences.buildMappings(offenderNo, migrationId)
+        val dpsResponse = dpsApiService.migratePrisonerTaps(offenderNo, temporaryAbsences.toDpsRequest())
+        val mappings = temporaryAbsences.buildMappings(offenderNo, migrationId, dpsResponse)
 
         createMappingOrOnFailureDo(mappings) {
           requeueCreateMapping(mappings, context)
@@ -149,7 +148,7 @@ class ExternalMovementsMigrationService(
     )
   }
 
-  private fun OffenderTemporaryAbsencesResponse.buildMappings(prisonerNumber: String, migrationId: String) = TemporaryAbsencesPrisonerMappingDto(
+  private fun OffenderTemporaryAbsencesResponse.buildMappings(prisonerNumber: String, migrationId: String, dpsResponse: MigrateTapResponse) = TemporaryAbsencesPrisonerMappingDto(
     prisonerNumber = prisonerNumber,
     migrationId = migrationId,
     bookings = bookings.map { booking ->
@@ -158,48 +157,73 @@ class ExternalMovementsMigrationService(
         applications = booking.temporaryAbsenceApplications.map { application ->
           TemporaryAbsenceApplicationMappingDto(
             nomisMovementApplicationId = application.movementApplicationId,
-            dpsMovementApplicationId = UUID.randomUUID(),
+            dpsMovementApplicationId = dpsResponse.findDpsAuthorisationId(application.movementApplicationId),
             outsideMovements = application.outsideMovements.map { outside ->
               TemporaryAbsencesOutsideMovementMappingDto(
                 nomisMovementApplicationMultiId = outside.outsideMovementId,
                 dpsOutsideMovementId = UUID.randomUUID(),
               )
             },
-            schedules = application.absences.mapNotNull { it.scheduledTemporaryAbsence }.map { it.toMappingDto() },
-            movements = application.absences.mapNotNull { it.temporaryAbsence }.map { it.toMappingDto() } +
-              application.absences.mapNotNull { it.temporaryAbsenceReturn }.map { it.toMappingDto() },
+            schedules = application.absences.mapNotNull { it.scheduledTemporaryAbsence }.map { it.toMappingDto(dpsResponse) },
+            movements = application.absences.mapNotNull { it.temporaryAbsence }.map { it.toMappingDto(booking.bookingId, dpsResponse) } +
+              application.absences.mapNotNull { it.temporaryAbsenceReturn }.map { it.toMappingDto(booking.bookingId, dpsResponse) },
           )
         },
-        unscheduledMovements = booking.unscheduledTemporaryAbsences.map { it.toMappingDto() } +
-          booking.unscheduledTemporaryAbsenceReturns.map { it.toMappingDto() },
+        unscheduledMovements = booking.unscheduledTemporaryAbsences.map { it.toMappingDto(booking.bookingId, dpsResponse) } +
+          booking.unscheduledTemporaryAbsenceReturns.map { it.toMappingDto(booking.bookingId, dpsResponse) },
       )
     },
   )
 
-  private fun ScheduledTemporaryAbsence.toMappingDto(): ScheduledMovementMappingDto = ScheduledMovementMappingDto(
+  private fun ScheduledTemporaryAbsence.toMappingDto(dpsResponse: MigrateTapResponse): ScheduledMovementMappingDto = ScheduledMovementMappingDto(
     nomisEventId = this.eventId,
-    dpsOccurrenceId = UUID.randomUUID(),
+    dpsOccurrenceId = dpsResponse.findDpsScheduleId(this.eventId),
     nomisAddressId = this.toAddressId,
     nomisAddressOwnerClass = this.toAddressOwnerClass,
     dpsAddressText = this.toFullAddress ?: "",
     eventTime = "${LocalDateTime.now()}",
   )
 
-  private fun TemporaryAbsence.toMappingDto(): ExternalMovementMappingDto = ExternalMovementMappingDto(
+  private fun TemporaryAbsence.toMappingDto(bookingId: Long, dpsResponse: MigrateTapResponse): ExternalMovementMappingDto = ExternalMovementMappingDto(
     nomisMovementSeq = this.sequence,
-    dpsMovementId = UUID.randomUUID(),
+    dpsMovementId = dpsResponse.findDpsMovementId(bookingId, this.sequence),
     nomisAddressId = this.toAddressId,
     nomisAddressOwnerClass = this.toAddressOwnerClass,
     dpsAddressText = this.toFullAddress ?: "",
   )
 
-  private fun TemporaryAbsenceReturn.toMappingDto(): ExternalMovementMappingDto = ExternalMovementMappingDto(
+  private fun TemporaryAbsenceReturn.toMappingDto(bookingId: Long, dpsResponse: MigrateTapResponse): ExternalMovementMappingDto = ExternalMovementMappingDto(
     nomisMovementSeq = this.sequence,
-    dpsMovementId = UUID.randomUUID(),
+    dpsMovementId = dpsResponse.findDpsMovementId(bookingId, this.sequence),
     nomisAddressId = this.fromAddressId,
     nomisAddressOwnerClass = this.fromAddressOwnerClass,
     dpsAddressText = this.fromFullAddress ?: "",
   )
+
+  private fun MigrateTapResponse.findDpsAuthorisationId(nomisApplicationId: Long) = temporaryAbsences.firstOrNull { it.legacyId == nomisApplicationId }
+    ?.id
+    ?: throw ExternalMovementMigrationException("No matching DPS authorisation found for nomis application id $nomisApplicationId, we found only ${temporaryAbsences.map { it.legacyId to it.id }}")
+
+  private fun MigrateTapResponse.findDpsScheduleId(nomisEventId: Long): UUID {
+    val occurrenceResponses = temporaryAbsences.flatMap { it.occurrences }
+    return occurrenceResponses
+      .firstOrNull { it.legacyId == nomisEventId }
+      ?.id
+      ?: throw ExternalMovementMigrationException("No matching DPS occurrence found for nomis event id $nomisEventId, we found only ${occurrenceResponses.map { it.legacyId to it.id }}")
+  }
+
+  private fun MigrateTapResponse.findDpsMovementId(nomisBookingId: Long, nomisMovementSeq: Int): UUID {
+    val movementResponses = (temporaryAbsences.flatMap { it.occurrences.flatMap { it.movements } } + unscheduledMovements)
+    return movementResponses
+      .firstOrNull { it ->
+        val (bookingId, sequence) = it.legacyId.parseNomisMovementId()
+        bookingId == nomisBookingId && sequence == nomisMovementSeq
+      }
+      ?.id
+      ?: throw ExternalMovementMigrationException("No matching DPS movement found for nomis booking with sequence $nomisBookingId / $nomisMovementSeq, we found only ${movementResponses.map { it.legacyId to it.id }}")
+  }
+
+  private fun String.parseNomisMovementId() = split("_").let { it[0].toLong() to it[1].toInt() }
 
   private fun OffenderTemporaryAbsencesResponse.toDpsRequest() = MigrateTapRequest(
     temporaryAbsences = this.bookings.flatMap { booking ->
@@ -303,3 +327,5 @@ class ExternalMovementsMigrationService(
     updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId ?: "") },
   )
 }
+
+class ExternalMovementMigrationException(message: String) : RuntimeException(message)
