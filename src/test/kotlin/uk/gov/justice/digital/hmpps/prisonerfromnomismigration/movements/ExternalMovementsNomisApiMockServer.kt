@@ -197,6 +197,7 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     toAddressDescription = null,
     toFullAddress = "Schedule full address",
     toAddressPostcode = "S1 1AA",
+    contactPersonName = "Derek",
     audit = NomisAudit(
       createDatetime = now,
       createUsername = "USER",

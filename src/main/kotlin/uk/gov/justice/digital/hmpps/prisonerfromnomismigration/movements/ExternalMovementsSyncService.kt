@@ -39,8 +39,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto.MappingType.NOMIS_CREATED as OUTSIDE_MOVEMENT_NOMIS_CREATED
 
 private const val TELEMETRY_PREFIX: String = "temporary-absence-sync"
-private const val DEFAULT_ESCORT_CODE = "U"
-private const val DEFAULT_TRANSPORT_TYPE = "TNR"
+const val DEFAULT_ESCORT_CODE = "U"
+const val DEFAULT_TRANSPORT_TYPE = "TNR"
 
 @Service
 class ExternalMovementsSyncService(
@@ -847,7 +847,7 @@ private fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) =
   transportCode = transportType ?: DEFAULT_TRANSPORT_TYPE,
 )
 
-private fun String.toDpsAuthorisationStatusCode() = when (this) {
+fun String.toDpsAuthorisationStatusCode() = when (this) {
   "PEN" -> "PENDING"
   "APP-SCH", "APP-UNSCH" -> "APPROVED"
   "DEN" -> "DENIED"

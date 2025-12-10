@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.within
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
@@ -24,20 +25,27 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 class ExternalMovementsMigrationIntTest(
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
   @Autowired private val externalMovementsNomisApi: ExternalMovementsNomisApiMockServer,
   @Autowired private val mappingApi: ExternalMovementsMappingApiMockServer,
+  @Autowired private val dpsApi: ExternalMovementsDpsApiMockServer,
 ) : SqsIntegrationTestBase() {
 
   private lateinit var migrationId: String
+  private val now = LocalDateTime.now()
+  private val today = LocalDate.now()
+  private val tomorrow = today.plusDays(1)
 
   @BeforeEach
   fun deleteHistoryRecords() = runTest {
@@ -84,6 +92,7 @@ class ExternalMovementsMigrationIntTest(
       .forEach { prisonerNumber ->
         mappingApi.stubGetTemporaryAbsenceMappings(prisonerNumber, NOT_FOUND)
         externalMovementsNomisApi.stubGetTemporaryAbsences(prisonerNumber)
+        dpsApi.stubMigratePrisonerTaps(prisonerNumber)
       }
   }
 
@@ -128,6 +137,156 @@ class ExternalMovementsMigrationIntTest(
           .withRequestBodyJsonPath("prisonerNumber", "A0002KT")
           .withRequestBodyJsonPath("migrationId", migrationId),
       )
+    }
+
+    @Test
+    fun `will populate DPS TAP authorisation`() {
+      ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
+        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+      ).apply {
+        with(temporaryAbsences[0]) {
+          assertThat(prisonCode).isEqualTo("LEI")
+          assertThat(statusCode).isEqualTo("APPROVED")
+          assertThat(absenceTypeCode).isEqualTo("RR")
+          assertThat(absenceSubTypeCode).isEqualTo("SPL")
+          assertThat(accompaniedByCode).isEqualTo("U")
+          assertThat(transportCode).isEqualTo("VAN")
+          assertThat(repeat).isEqualTo(false)
+          assertThat(fromDate).isEqualTo(today)
+          assertThat(toDate).isEqualTo(tomorrow)
+          assertThat(notes).isEqualTo("application comment")
+          assertThat(created.at.toLocalDate()).isEqualTo(today)
+          assertThat(created.by).isEqualTo("USER")
+          assertThat(updated).isNull()
+          assertThat(legacyId).isEqualTo(1)
+          assertThat(occurrences.size).isEqualTo(1)
+        }
+      }
+    }
+
+    @Test
+    fun `will populate DPS TAP occurrence`() {
+      ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
+        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+      ).apply {
+        with(temporaryAbsences[0].occurrences[0]) {
+          assertThat(isCancelled).isFalse
+          assertThat(releaseAt).isCloseTo(now, within(Duration.ofMinutes(5)))
+          assertThat(returnBy).isCloseTo(now.plusDays(1), within(Duration.ofMinutes(5)))
+          assertThat(location.address).isEqualTo("Schedule full address")
+          assertThat(location.description).isNull()
+          assertThat(location.postcode).isEqualTo("S1 1AA")
+          assertThat(location.uprn).isNull()
+          assertThat(absenceTypeCode).isEqualTo("RR")
+          assertThat(absenceSubTypeCode).isEqualTo("SPL")
+          assertThat(absenceReasonCode).isEqualTo("C5")
+          assertThat(accompaniedByCode).isEqualTo("PECS")
+          assertThat(transportCode).isEqualTo("VAN")
+          assertThat(contactInformation).isEqualTo("Derek")
+          assertThat(notes).isEqualTo("scheduled absence comment")
+          assertThat(created.at.toLocalDate()).isEqualTo(today)
+          assertThat(created.by).isEqualTo("USER")
+          assertThat(updated).isNull()
+          assertThat(legacyId).isEqualTo(1)
+          assertThat(movements.size).isEqualTo(2)
+        }
+      }
+    }
+
+    @Test
+    fun `will populate DPS TAP OUT movement`() {
+      ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
+        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+      ).apply {
+        with(temporaryAbsences[0].occurrences[0].movements[0]) {
+          assertThat(occurredAt).isCloseTo(now, within(Duration.ofMinutes(5)))
+          assertThat(direction).isEqualTo(MigrateTapMovement.Direction.OUT)
+          assertThat(absenceReasonCode).isEqualTo("C6")
+          assertThat(location.address).isEqualTo("Absence full address")
+          assertThat(location.description).isNull()
+          assertThat(location.postcode).isEqualTo("S1 1AA")
+          assertThat(location.uprn).isNull()
+          assertThat(accompaniedByCode).isEqualTo("U")
+          assertThat(created.at.toLocalDate()).isEqualTo(today)
+          assertThat(created.by).isEqualTo("USER")
+          assertThat(legacyId).isEqualTo("12345_3")
+          assertThat(accompaniedByNotes).isEqualTo("Absence escort text")
+          assertThat(notes).isEqualTo("Absence comment text")
+          assertThat(updated).isNull()
+        }
+      }
+    }
+
+    @Test
+    fun `will populate DPS TAP IN movement`() {
+      ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
+        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+      ).apply {
+        with(temporaryAbsences[0].occurrences[0].movements[1]) {
+          assertThat(occurredAt).isCloseTo(now, within(Duration.ofMinutes(5)))
+          assertThat(direction).isEqualTo(MigrateTapMovement.Direction.IN)
+          assertThat(absenceReasonCode).isEqualTo("C5")
+          assertThat(location.address).isEqualTo("Absence return full address")
+          assertThat(location.description).isNull()
+          assertThat(location.postcode).isEqualTo("S1 1AA")
+          assertThat(location.uprn).isNull()
+          assertThat(accompaniedByCode).isEqualTo("PECS")
+          assertThat(created.at.toLocalDate()).isEqualTo(today)
+          assertThat(created.by).isEqualTo("USER")
+          assertThat(legacyId).isEqualTo("12345_4")
+          assertThat(accompaniedByNotes).isEqualTo("Return escort text")
+          assertThat(notes).isEqualTo("Return comment text")
+          assertThat(updated).isNull()
+        }
+      }
+    }
+
+    @Test
+    fun `will populate unscheduled DPS TAP OUT movement`() {
+      ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
+        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+      ).apply {
+        with(unscheduledMovements[0]) {
+          assertThat(occurredAt).isCloseTo(now.minusDays(1), within(Duration.ofMinutes(5)))
+          assertThat(direction).isEqualTo(MigrateTapMovement.Direction.OUT)
+          assertThat(absenceReasonCode).isEqualTo("C6")
+          assertThat(location.address).isEqualTo("Absence full address")
+          assertThat(location.description).isNull()
+          assertThat(location.postcode).isEqualTo("S1 1AA")
+          assertThat(location.uprn).isNull()
+          assertThat(accompaniedByCode).isEqualTo("U")
+          assertThat(created.at.toLocalDate()).isEqualTo(today)
+          assertThat(created.by).isEqualTo("USER")
+          assertThat(legacyId).isEqualTo("12345_1")
+          assertThat(accompaniedByNotes).isEqualTo("Absence escort text")
+          assertThat(notes).isEqualTo("Absence comment text")
+          assertThat(updated).isNull()
+        }
+      }
+    }
+
+    @Test
+    fun `will populate unscheduled DPS TAP IN movement`() {
+      ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
+        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+      ).apply {
+        with(unscheduledMovements[1]) {
+          assertThat(occurredAt).isCloseTo(now.minusDays(1), within(Duration.ofMinutes(5)))
+          assertThat(direction).isEqualTo(MigrateTapMovement.Direction.IN)
+          assertThat(absenceReasonCode).isEqualTo("C5")
+          assertThat(location.address).isEqualTo("Absence return full address")
+          assertThat(location.description).isNull()
+          assertThat(location.postcode).isEqualTo("S1 1AA")
+          assertThat(location.uprn).isNull()
+          assertThat(accompaniedByCode).isEqualTo("PECS")
+          assertThat(created.at.toLocalDate()).isEqualTo(today)
+          assertThat(created.by).isEqualTo("USER")
+          assertThat(legacyId).isEqualTo("12345_2")
+          assertThat(accompaniedByNotes).isEqualTo("Return escort text")
+          assertThat(notes).isEqualTo("Return comment text")
+          assertThat(updated).isNull()
+        }
+      }
     }
 
     @Test
