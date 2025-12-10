@@ -101,9 +101,9 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("accompaniedByCode", equalTo = "P")
             .withRequestBodyJsonPath("transportCode", equalTo = "VAN")
             .withRequestBodyJsonPath("repeat", equalTo = false)
-            .withRequestBodyJsonPath("fromDate", equalTo = "$today")
-            .withRequestBodyJsonPath("toDate", equalTo = "${tomorrow.toLocalDate()}")
-            .withRequestBodyJsonPath("notes", equalTo = "application comment")
+            .withRequestBodyJsonPath("start", equalTo = "$today")
+            .withRequestBodyJsonPath("end", equalTo = "${tomorrow.toLocalDate()}")
+            .withRequestBodyJsonPath("comments", equalTo = "application comment")
             .withRequestBodyJsonPath("legacyId", equalTo = 111),
         )
       }
@@ -430,9 +430,9 @@ class ExternalMovementsSyncIntTest(
             .withRequestBodyJsonPath("absenceReasonCode", equalTo = "C5")
             .withRequestBodyJsonPath("accompaniedByCode", equalTo = "P")
             .withRequestBodyJsonPath("repeat", equalTo = false)
-            .withRequestBodyJsonPath("fromDate", equalTo = "$today")
-            .withRequestBodyJsonPath("toDate", equalTo = "${tomorrow.toLocalDate()}")
-            .withRequestBodyJsonPath("notes", equalTo = "application comment")
+            .withRequestBodyJsonPath("start", equalTo = "$today")
+            .withRequestBodyJsonPath("end", equalTo = "${tomorrow.toLocalDate()}")
+            .withRequestBodyJsonPath("comments", equalTo = "application comment")
             .withRequestBodyJsonPath("legacyId", equalTo = 111),
         )
       }
@@ -690,8 +690,8 @@ class ExternalMovementsSyncIntTest(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId/occurrences")),
         ).apply {
           assertThat(id).isNull()
-          assertThat(releaseAt).isCloseTo(now, within(1, ChronoUnit.MINUTES))
-          assertThat(returnBy).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
+          assertThat(start).isCloseTo(now, within(1, ChronoUnit.MINUTES))
+          assertThat(end).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
           assertThat(location.description).isEqualTo("Some description")
           assertThat(location.address).isEqualTo("to full address")
           assertThat(location.postcode).isEqualTo("S1 1AB")
@@ -699,7 +699,7 @@ class ExternalMovementsSyncIntTest(
           assertThat(absenceSubTypeCode).isEqualTo("RR")
           assertThat(absenceReasonCode).isEqualTo("C5")
           assertThat(transportCode).isEqualTo("VAN")
-          assertThat(notes).isEqualTo("scheduled absence comment")
+          assertThat(comments).isEqualTo("scheduled absence comment")
           assertThat(created.by).isEqualTo("USER")
           assertThat(updated).isNull()
           assertThat(isCancelled).isFalse
@@ -842,8 +842,8 @@ class ExternalMovementsSyncIntTest(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId/occurrences")),
         ).apply {
           assertThat(id).isEqualTo(dpsOccurrenceId)
-          assertThat(releaseAt).isCloseTo(now, within(1, ChronoUnit.MINUTES))
-          assertThat(returnBy).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
+          assertThat(start).isCloseTo(now, within(1, ChronoUnit.MINUTES))
+          assertThat(end).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
           assertThat(location.description).isEqualTo("some description")
           assertThat(location.address).isEqualTo("to full address")
           assertThat(location.postcode).isEqualTo("S1 1AB")
@@ -851,7 +851,7 @@ class ExternalMovementsSyncIntTest(
           assertThat(absenceSubTypeCode).isEqualTo("RR")
           assertThat(absenceReasonCode).isEqualTo("C5")
           assertThat(transportCode).isEqualTo("VAN")
-          assertThat(notes).isEqualTo("scheduled absence comment")
+          assertThat(comments).isEqualTo("scheduled absence comment")
           assertThat(created.by).isEqualTo("USER")
           assertThat(updated).isNull()
           assertThat(isCancelled).isFalse
@@ -1226,8 +1226,8 @@ class ExternalMovementsSyncIntTest(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId/occurrences")),
         ).apply {
           assertThat(id).isEqualTo(dpsOccurrenceId)
-          assertThat(releaseAt).isCloseTo(yesterday, within(1, ChronoUnit.MINUTES))
-          assertThat(returnBy).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
+          assertThat(start).isCloseTo(yesterday, within(1, ChronoUnit.MINUTES))
+          assertThat(end).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
           assertThat(location.description).isEqualTo("some description")
           assertThat(location.address).isEqualTo("to full address")
           assertThat(location.postcode).isEqualTo("S1 1AB")
@@ -1235,7 +1235,7 @@ class ExternalMovementsSyncIntTest(
           assertThat(absenceSubTypeCode).isEqualTo("RR")
           assertThat(absenceReasonCode).isEqualTo("C5")
           assertThat(transportCode).isEqualTo("VAN")
-          assertThat(notes).isEqualTo("scheduled absence comment")
+          assertThat(comments).isEqualTo("scheduled absence comment")
           assertThat(created.by).isEqualTo("USER")
           assertThat(updated).isNull()
           assertThat(isCancelled).isFalse
@@ -1298,8 +1298,8 @@ class ExternalMovementsSyncIntTest(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId/occurrences")),
         ).apply {
           assertThat(id).isEqualTo(dpsOccurrenceId)
-          assertThat(releaseAt).isCloseTo(yesterday, within(1, ChronoUnit.MINUTES))
-          assertThat(returnBy).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
+          assertThat(start).isCloseTo(yesterday, within(1, ChronoUnit.MINUTES))
+          assertThat(end).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
           assertThat(location.description).isEqualTo("some description")
           assertThat(location.address).isEqualTo("to full address")
           assertThat(location.postcode).isEqualTo("S1 1AB")
@@ -1307,7 +1307,7 @@ class ExternalMovementsSyncIntTest(
           assertThat(absenceSubTypeCode).isEqualTo("RR")
           assertThat(absenceReasonCode).isEqualTo("C5")
           assertThat(transportCode).isEqualTo("VAN")
-          assertThat(notes).isEqualTo("scheduled absence comment")
+          assertThat(comments).isEqualTo("scheduled absence comment")
           assertThat(created.by).isEqualTo("USER")
           assertThat(updated).isNull()
           assertThat(isCancelled).isFalse
@@ -1774,8 +1774,8 @@ class ExternalMovementsSyncIntTest(
           assertThat(location.postcode).isEqualTo("S1 1AB")
           assertThat(location.uprn).isEqualTo(987)
           assertThat(accompaniedByCode).isEqualTo("P")
-          assertThat(accompaniedByNotes).isEqualTo("Absence escort text")
-          assertThat(notes).isEqualTo("Absence comment text")
+          assertThat(accompaniedByComments).isEqualTo("Absence escort text")
+          assertThat(comments).isEqualTo("Absence comment text")
           assertThat(created.by).isEqualTo("USER")
           assertThat(created.prisonCode).isEqualTo("LEI")
           assertThat(legacyId).isEqualTo("12345_154")

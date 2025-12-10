@@ -272,8 +272,8 @@ class ExternalMovementsMigrationService(
     movementIn: TemporaryAbsenceReturn?,
   ): MigrateTapOccurrence = MigrateTapOccurrence(
     isCancelled = eventStatus == "CANC",
-    releaseAt = startTime,
-    returnBy = returnTime,
+    start = startTime,
+    end = returnTime,
     location = Location(description = toAddressDescription, address = toFullAddress, postcode = toAddressPostcode),
     absenceTypeCode = temporaryAbsenceType,
     absenceSubTypeCode = temporaryAbsenceSubType,
@@ -281,7 +281,7 @@ class ExternalMovementsMigrationService(
     accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
     transportCode = transportType ?: DEFAULT_TRANSPORT_TYPE,
     contactInformation = contactPersonName,
-    notes = comment,
+    comments = comment,
     created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
     updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId ?: "") },
     legacyId = eventId,
@@ -299,8 +299,8 @@ class ExternalMovementsMigrationService(
     accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
     created = SyncAtAndByWithPrison(audit.createDatetime, audit.createUsername, prison),
     legacyId = "${bookingId}_$sequence",
-    accompaniedByNotes = escortText,
-    notes = commentText,
+    accompaniedByComments = escortText,
+    comments = commentText,
     updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId ?: "") },
   )
 
@@ -315,8 +315,8 @@ class ExternalMovementsMigrationService(
     accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
     created = SyncAtAndByWithPrison(audit.createDatetime, audit.createUsername, prison),
     legacyId = "${bookingId}_$sequence",
-    accompaniedByNotes = escortText,
-    notes = commentText,
+    accompaniedByComments = escortText,
+    comments = commentText,
     updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId ?: "") },
   )
 }
