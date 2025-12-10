@@ -9,6 +9,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapAuthorisation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapOccurrence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndByWithPrison
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationMappingDto
@@ -30,7 +37,8 @@ import java.util.*
 class ExternalMovementsMigrationService(
   val migrationMappingService: ExternalMovementsMappingApiService,
   val nomisIdsApiService: NomisApiService,
-  val externalMovementsNomisApiService: ExternalMovementsNomisApiService,
+  val nomisApiService: ExternalMovementsNomisApiService,
+  val dpsApiService: ExternalMovementsDpsApiService,
   @Value($$"${externalmovements.page.size:1000}") pageSize: Long,
   @Value($$"${externalmovements.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value($$"${externalmovements.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
@@ -78,8 +86,9 @@ class ExternalMovementsMigrationService(
     migrationMappingService.getPrisonerTemporaryAbsenceMappings(offenderNo)
       ?.run { publishTelemetry("ignored", telemetry.apply { this["reason"] = "Already migrated" }) }
       ?: run {
-        val temporaryAbsences = externalMovementsNomisApiService.getTemporaryAbsences(offenderNo)
+        val temporaryAbsences = nomisApiService.getTemporaryAbsences(offenderNo)
 
+        val response = dpsApiService.migratePrisonerTaps(offenderNo, temporaryAbsences.toDpsRequest())
         // TODO SDIT-2846 call the DPS endpoint to migrate and use the returned IDs in the mappings
         val mappings = temporaryAbsences.buildMappings(offenderNo, migrationId)
 
@@ -190,5 +199,107 @@ class ExternalMovementsMigrationService(
     nomisAddressId = this.fromAddressId,
     nomisAddressOwnerClass = this.fromAddressOwnerClass,
     dpsAddressText = this.fromFullAddress ?: "",
+  )
+
+  private fun OffenderTemporaryAbsencesResponse.toDpsRequest() = MigrateTapRequest(
+    temporaryAbsences = this.bookings.flatMap { booking ->
+      booking.temporaryAbsenceApplications.map { application ->
+        MigrateTapAuthorisation(
+          prisonCode = application.prisonId,
+          statusCode = application.applicationStatus.toDpsAuthorisationStatusCode(),
+          absenceTypeCode = application.temporaryAbsenceType,
+          absenceSubTypeCode = application.temporaryAbsenceSubType,
+          absenceReasonCode = application.eventSubType,
+          accompaniedByCode = application.escortCode ?: DEFAULT_ESCORT_CODE,
+          transportCode = application.transportType ?: DEFAULT_TRANSPORT_TYPE,
+          repeat = application.applicationType == "REPEATING",
+          fromDate = application.fromDate,
+          toDate = application.toDate,
+          notes = application.comment,
+          created = SyncAtAndBy(application.audit.createDatetime, application.audit.createUsername),
+          updated = application.audit.modifyDatetime?.let { SyncAtAndBy(application.audit.modifyDatetime, application.audit.modifyUserId ?: "") },
+          legacyId = application.movementApplicationId,
+          occurrences = application.absences.mapNotNull { absence ->
+            absence.scheduledTemporaryAbsence?.let { scheduleOut ->
+              scheduleOut.toDpsRequest(
+                returnTime = absence.scheduledTemporaryAbsenceReturn?.startTime ?: scheduleOut.returnTime,
+                prison = scheduleOut.fromPrison ?: application.prisonId,
+                bookingId = booking.bookingId,
+                movementOut = absence.temporaryAbsence,
+                movementIn = absence.temporaryAbsenceReturn,
+                temporaryAbsenceType = application.temporaryAbsenceType ?: "",
+                temporaryAbsenceSubType = application.temporaryAbsenceSubType ?: "",
+              )
+            }
+          },
+        )
+      }
+    },
+    unscheduledMovements = this.bookings.flatMap { booking ->
+      booking.unscheduledTemporaryAbsences.map { movementOut ->
+        movementOut.toDpsRequest(booking.bookingId, movementOut.fromPrison ?: "")
+      } +
+        booking.unscheduledTemporaryAbsenceReturns.map { movementIn ->
+          movementIn.toDpsRequest(booking.bookingId, movementIn.toPrison ?: "")
+        }
+    },
+  )
+
+  private fun ScheduledTemporaryAbsence.toDpsRequest(
+    temporaryAbsenceType: String,
+    temporaryAbsenceSubType: String,
+    returnTime: LocalDateTime,
+    prison: String,
+    bookingId: Long,
+    movementOut: TemporaryAbsence?,
+    movementIn: TemporaryAbsenceReturn?,
+  ): MigrateTapOccurrence = MigrateTapOccurrence(
+    isCancelled = eventStatus == "CANC",
+    releaseAt = startTime,
+    returnBy = returnTime,
+    location = Location(description = toAddressDescription, address = toFullAddress, postcode = toAddressPostcode),
+    absenceTypeCode = temporaryAbsenceType,
+    absenceSubTypeCode = temporaryAbsenceSubType,
+    absenceReasonCode = eventSubType,
+    accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
+    transportCode = transportType ?: DEFAULT_TRANSPORT_TYPE,
+    contactInformation = contactPersonName,
+    notes = comment,
+    created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
+    updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId ?: "") },
+    legacyId = eventId,
+    movements = listOfNotNull(movementOut?.toDpsRequest(bookingId, prison), movementIn?.toDpsRequest(bookingId, prison)),
+  )
+
+  private fun TemporaryAbsenceReturn.toDpsRequest(
+    bookingId: Long,
+    prison: String,
+  ): MigrateTapMovement = MigrateTapMovement(
+    occurredAt = movementTime,
+    direction = MigrateTapMovement.Direction.IN,
+    absenceReasonCode = movementReason,
+    location = Location(description = fromAddressDescription, address = fromFullAddress, postcode = fromAddressPostcode),
+    accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
+    created = SyncAtAndByWithPrison(audit.createDatetime, audit.createUsername, prison),
+    legacyId = "${bookingId}_$sequence",
+    accompaniedByNotes = escortText,
+    notes = commentText,
+    updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId ?: "") },
+  )
+
+  private fun TemporaryAbsence.toDpsRequest(
+    bookingId: Long,
+    prison: String,
+  ): MigrateTapMovement = MigrateTapMovement(
+    occurredAt = movementTime,
+    direction = MigrateTapMovement.Direction.OUT,
+    absenceReasonCode = movementReason,
+    location = Location(description = toAddressDescription, address = toFullAddress, postcode = toAddressPostcode),
+    accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
+    created = SyncAtAndByWithPrison(audit.createDatetime, audit.createUsername, prison),
+    legacyId = "${bookingId}_$sequence",
+    accompaniedByNotes = escortText,
+    notes = commentText,
+    updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId ?: "") },
   )
 }
