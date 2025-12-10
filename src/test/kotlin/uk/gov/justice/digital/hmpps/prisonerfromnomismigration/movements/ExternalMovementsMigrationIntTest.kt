@@ -183,8 +183,8 @@ class ExternalMovementsMigrationIntTest(
       ).apply {
         with(temporaryAbsences[0].occurrences[0]) {
           assertThat(isCancelled).isFalse
-          assertThat(releaseAt).isCloseTo(now, within(Duration.ofMinutes(5)))
-          assertThat(returnBy).isCloseTo(now.plusDays(1), within(Duration.ofMinutes(5)))
+          assertThat(start).isCloseTo(now, within(Duration.ofMinutes(5)))
+          assertThat(end).isCloseTo(now.plusDays(1), within(Duration.ofMinutes(5)))
           assertThat(location.address).isEqualTo("Schedule full address")
           assertThat(location.description).isNull()
           assertThat(location.postcode).isEqualTo("S1 1AA")
@@ -195,7 +195,7 @@ class ExternalMovementsMigrationIntTest(
           assertThat(accompaniedByCode).isEqualTo("PECS")
           assertThat(transportCode).isEqualTo("VAN")
           assertThat(contactInformation).isEqualTo("Derek")
-          assertThat(notes).isEqualTo("scheduled absence comment")
+          assertThat(comments).isEqualTo("scheduled absence comment")
           assertThat(created.at.toLocalDate()).isEqualTo(today)
           assertThat(created.by).isEqualTo("USER")
           assertThat(updated).isNull()
@@ -222,8 +222,8 @@ class ExternalMovementsMigrationIntTest(
           assertThat(created.at.toLocalDate()).isEqualTo(today)
           assertThat(created.by).isEqualTo("USER")
           assertThat(legacyId).isEqualTo("12345_3")
-          assertThat(accompaniedByNotes).isEqualTo("Absence escort text")
-          assertThat(notes).isEqualTo("Absence comment text")
+          assertThat(accompaniedByComments).isEqualTo("Absence escort text")
+          assertThat(comments).isEqualTo("Absence comment text")
           assertThat(updated).isNull()
         }
       }
@@ -246,8 +246,8 @@ class ExternalMovementsMigrationIntTest(
           assertThat(created.at.toLocalDate()).isEqualTo(today)
           assertThat(created.by).isEqualTo("USER")
           assertThat(legacyId).isEqualTo("12345_4")
-          assertThat(accompaniedByNotes).isEqualTo("Return escort text")
-          assertThat(notes).isEqualTo("Return comment text")
+          assertThat(accompaniedByComments).isEqualTo("Return escort text")
+          assertThat(comments).isEqualTo("Return comment text")
           assertThat(updated).isNull()
         }
       }
@@ -270,8 +270,8 @@ class ExternalMovementsMigrationIntTest(
           assertThat(created.at.toLocalDate()).isEqualTo(today)
           assertThat(created.by).isEqualTo("USER")
           assertThat(legacyId).isEqualTo("12345_1")
-          assertThat(accompaniedByNotes).isEqualTo("Absence escort text")
-          assertThat(notes).isEqualTo("Absence comment text")
+          assertThat(accompaniedByComments).isEqualTo("Absence escort text")
+          assertThat(comments).isEqualTo("Absence comment text")
           assertThat(updated).isNull()
         }
       }
@@ -294,8 +294,8 @@ class ExternalMovementsMigrationIntTest(
           assertThat(created.at.toLocalDate()).isEqualTo(today)
           assertThat(created.by).isEqualTo("USER")
           assertThat(legacyId).isEqualTo("12345_2")
-          assertThat(accompaniedByNotes).isEqualTo("Return escort text")
-          assertThat(notes).isEqualTo("Return comment text")
+          assertThat(accompaniedByComments).isEqualTo("Return escort text")
+          assertThat(comments).isEqualTo("Return comment text")
           assertThat(updated).isNull()
         }
       }
