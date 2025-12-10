@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-12-09.281.5bb308e"
+    "version" : "2025-12-10.287.f397165"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -18942,7 +18942,7 @@
             }
           }
         },
-        "required" : [ "dpsMovementApplicationId", "movements", "nomisMovementApplicationId", "outsideMovements", "schedules" ]
+        "required" : [ "dpsMovementApplicationId", "movements", "nomisMovementApplicationId", "schedules" ]
       },
       "TemporaryAbsenceBookingMappingDto" : {
         "type" : "object",

@@ -153,66 +153,6 @@ class ExternalMovementsNomisApiServiceTest {
   }
 
   @Nested
-  inner class GetTemporaryAbsenceApplicationOutsideMovement {
-    @Test
-    internal fun `will pass oath2 token to service`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceApplicationOutsideMovement(offenderNo = "A1234BC", appMultiId = 222)
-
-      apiService.getTemporaryAbsenceApplicationOutsideMovement(offenderNo = "A1234BC", appMultiId = 222)
-
-      externalMovementsNomisApiMockServer.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `will pass offender number and appMultiId to service`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceApplicationOutsideMovement(offenderNo = "A1234BC", appMultiId = 222)
-
-      apiService.getTemporaryAbsenceApplicationOutsideMovement(offenderNo = "A1234BC", appMultiId = 222)
-
-      externalMovementsNomisApiMockServer.verify(
-        getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/outside-movement/222")),
-      )
-    }
-
-    @Test
-    fun `will return temporary absence application outside movement`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceApplicationOutsideMovement(offenderNo = "A1234BC", appMultiId = 222)
-
-      apiService.getTemporaryAbsenceApplicationOutsideMovement(offenderNo = "A1234BC", appMultiId = 222)
-        .apply {
-          assertThat(bookingId).isEqualTo(12345)
-          assertThat(movementApplicationId).isEqualTo(111)
-          assertThat(outsideMovementId).isEqualTo(222)
-          assertThat(eventSubType).isEqualTo("C5")
-          assertThat(fromDate).isEqualTo(today)
-          assertThat(releaseTime).isCloseTo(now, within(5, ChronoUnit.MINUTES))
-          assertThat(toAddressId).isEqualTo(321)
-          assertThat(audit.createUsername).isEqualTo("USER")
-        }
-    }
-
-    @Test
-    fun `will throw error when offender does not exist`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceApplicationOutsideMovement(NOT_FOUND)
-
-      assertThrows<WebClientResponseException.NotFound> {
-        apiService.getTemporaryAbsenceApplicationOutsideMovement(offenderNo = "A1234BC", appMultiId = 222)
-      }
-    }
-
-    @Test
-    fun `will throw error when API returns an error`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceApplicationOutsideMovement(INTERNAL_SERVER_ERROR)
-
-      assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.getTemporaryAbsenceApplicationOutsideMovement(offenderNo = "A1234BC", appMultiId = 222)
-      }
-    }
-  }
-
-  @Nested
   inner class GetTemporaryAbsenceScheduledMovement {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
