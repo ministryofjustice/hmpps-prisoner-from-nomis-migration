@@ -7,7 +7,6 @@ import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsenceReturnResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceApplicationOutsideMovementResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceApplicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceReturnResponse
@@ -29,14 +28,6 @@ class ExternalMovementsNomisApiService(@Qualifier("nomisApiWebClient") private v
     }
     .retrieve()
     .awaitBody<TemporaryAbsenceApplicationResponse>()
-
-  suspend fun getTemporaryAbsenceApplicationOutsideMovement(offenderNo: String, appMultiId: Long) = webClient.get()
-    .uri {
-      it.path("/movements/{offenderNo}/temporary-absences/outside-movement/{appMultiId}")
-        .build(offenderNo, appMultiId)
-    }
-    .retrieve()
-    .awaitBody<TemporaryAbsenceApplicationOutsideMovementResponse>()
 
   suspend fun getTemporaryAbsenceScheduledMovement(offenderNo: String, eventId: Long) = webClient.get()
     .uri {

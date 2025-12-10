@@ -21,7 +21,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceBookingMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesOutsideMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
@@ -158,12 +157,6 @@ class ExternalMovementsMigrationService(
           TemporaryAbsenceApplicationMappingDto(
             nomisMovementApplicationId = application.movementApplicationId,
             dpsMovementApplicationId = dpsResponse.findDpsAuthorisationId(application.movementApplicationId),
-            outsideMovements = application.outsideMovements.map { outside ->
-              TemporaryAbsencesOutsideMovementMappingDto(
-                nomisMovementApplicationMultiId = outside.outsideMovementId,
-                dpsOutsideMovementId = UUID.randomUUID(),
-              )
-            },
             schedules = application.absences.mapNotNull { it.scheduledTemporaryAbsence }.map { it.toMappingDto(dpsResponse) },
             movements = application.absences.mapNotNull { it.temporaryAbsence }.map { it.toMappingDto(booking.bookingId, dpsResponse) } +
               application.absences.mapNotNull { it.temporaryAbsenceReturn }.map { it.toMappingDto(booking.bookingId, dpsResponse) },

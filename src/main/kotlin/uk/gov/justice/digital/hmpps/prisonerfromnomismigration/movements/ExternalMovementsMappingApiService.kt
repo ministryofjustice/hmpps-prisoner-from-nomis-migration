@@ -18,7 +18,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceAddressMappingResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceOutsideMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 
 @Service
@@ -53,18 +52,6 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
 
   suspend fun deleteApplicationMapping(nomisApplicationId: Long) = webClient.delete()
     .uri("$domainUrl/application/nomis-application-id/{nomisApplicationId}", nomisApplicationId)
-    .retrieve()
-    .awaitBodyOrNullWhenNotFound<Unit>()
-
-  suspend fun createOutsideMovementMapping(mapping: TemporaryAbsenceOutsideMovementSyncMappingDto) = webClient.createMapping("$domainUrl/outside-movement", mapping)
-
-  suspend fun getOutsideMovementMapping(nomisApplicationMultiId: Long): TemporaryAbsenceOutsideMovementSyncMappingDto? = webClient.get()
-    .uri("$domainUrl/outside-movement/nomis-application-multi-id/{nomisApplicationMultiId}", nomisApplicationMultiId)
-    .retrieve()
-    .awaitBodyOrNullWhenNotFound()
-
-  suspend fun deleteOutsideMovementMapping(nomisApplicationMultiId: Long) = webClient.delete()
-    .uri("$domainUrl/outside-movement/nomis-application-multi-id/{nomisApplicationMultiId}", nomisApplicationMultiId)
     .retrieve()
     .awaitBodyOrNullWhenNotFound<Unit>()
 
