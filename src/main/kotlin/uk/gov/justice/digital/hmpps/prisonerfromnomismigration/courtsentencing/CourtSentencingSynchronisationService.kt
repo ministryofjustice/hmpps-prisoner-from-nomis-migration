@@ -1292,7 +1292,14 @@ class CourtSentencingSynchronisationService(
 
       val eventId = nomisSentence.courtOrder!!.eventId
       mappingApiService.getCourtAppearanceOrNullByNomisId(eventId)?.let { courtAppearanceMapping ->
-        track("sentence-synchronisation-updated", telemetry = (telemetry + ("dpsSentenceId" to mapping.dpsSentenceId)).toMutableMap()) {
+        track(
+          "sentence-synchronisation-updated",
+          telemetry = (
+            telemetry + ("dpsSentenceId" to mapping.dpsSentenceId) +
+              ("nomisCourtAppearanceId" to eventId) + ("dpsCourtAppearanceId" to courtAppearanceMapping.dpsCourtAppearanceId) +
+              ("dpsChargeIds" to getDpsChargeMappings(nomisSentence).joinToString()) + ("nomisChargeIds" to nomisSentence.offenderCharges.joinToString { it.id.toString() })
+            ).toMutableMap(),
+        ) {
           dpsApiService.updateSentence(
             sentenceId = mapping.dpsSentenceId,
             nomisSentence.toDpsSentence(
