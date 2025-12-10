@@ -256,9 +256,9 @@ private fun CodeDescription?.toDpsVisitCompletionType(visitStatus: CodeDescripti
     "HMPOP" -> VisitCompletionType.STAFF_EARLY
     "OFFEND" -> VisitCompletionType.PRISONER_EARLY
     "VISITOR" -> VisitCompletionType.VISITOR_EARLY
-    "NORM" -> null
+    "NORM" -> VisitCompletionType.NORMAL
     "SCH" -> null
-    "EXP" -> null
+    "EXP" -> VisitCompletionType.NORMAL
     else -> null
   }
 
