@@ -1296,7 +1296,7 @@ class CourtSentencingSynchronisationService(
           "sentence-synchronisation-updated",
           telemetry = (
             telemetry + ("dpsSentenceId" to mapping.dpsSentenceId) +
-              ("nomisCourtAppearanceId" to eventId) + ("dpsCourtAppearanceId" to courtAppearanceMapping.dpsCourtAppearanceId) +
+              ("nomisCourtAppearanceId" to eventId) + ("dpsCourtAppearanceId" to courtAppearanceMapping.dpsCourtAppearanceId) + ("nomisOrderId" to nomisSentence.courtOrder.id) +
               ("dpsChargeIds" to getDpsChargeMappings(nomisSentence).joinToString()) + ("nomisChargeIds" to nomisSentence.offenderCharges.joinToString { it.id.toString() })
             ).toMutableMap(),
         ) {
