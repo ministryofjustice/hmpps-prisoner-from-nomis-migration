@@ -182,3 +182,4 @@ hmpps.sqs:
       errorVisibilityTimeout: 0
     migrationexternalmovements:
       errorVisibilityTimeout: 0
+      dlqMaxReceiveCount: 1

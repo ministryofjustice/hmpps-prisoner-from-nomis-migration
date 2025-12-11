@@ -140,13 +140,13 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           accompaniedByCode = "P",
           transportCode = "VAN",
           repeat = false,
-          fromDate = yesterday.toLocalDate(),
-          toDate = today.toLocalDate(),
+          start = yesterday.toLocalDate(),
+          end = today.toLocalDate(),
           created = SyncAtAndBy(yesterday, "AAA11A"),
           legacyId = 1234,
           absenceTypeCode = "RDR",
           absenceSubTypeCode = "RR",
-          notes = "Authorisation comment",
+          comments = "Authorisation comment",
           updated = SyncAtAndBy(today, "AAA11A"),
           occurrences = listOf(
             MigrateTapOccurrence(

@@ -85,7 +85,7 @@ class ExternalMovementsMigrationService(
 
     migrationMappingService.getPrisonerTemporaryAbsenceMappings(offenderNo)
       ?.run { publishTelemetry("ignored", telemetry.apply { this["reason"] = "Already migrated" }) }
-      ?: run {
+      ?: runCatching {
         val temporaryAbsences = nomisApiService.getTemporaryAbsences(offenderNo)
         val dpsResponse = dpsApiService.migratePrisonerTaps(offenderNo, temporaryAbsences.toDpsRequest())
         val mappings = temporaryAbsences.buildMappings(offenderNo, migrationId, dpsResponse)
@@ -94,6 +94,10 @@ class ExternalMovementsMigrationService(
           requeueCreateMapping(mappings, context)
         }
       }
+        .onFailure {
+          publishTelemetry("failed", telemetry.apply { this["reason"] = it.message ?: "Unknown error" })
+          throw it
+        }
   }
 
   override suspend fun retryCreateMapping(context: MigrationContext<TemporaryAbsencesPrisonerMappingDto>) {
@@ -230,9 +234,9 @@ class ExternalMovementsMigrationService(
           accompaniedByCode = application.escortCode ?: DEFAULT_ESCORT_CODE,
           transportCode = application.transportType ?: DEFAULT_TRANSPORT_TYPE,
           repeat = application.applicationType == "REPEATING",
-          fromDate = application.fromDate,
-          toDate = application.toDate,
-          notes = application.comment,
+          start = application.fromDate,
+          end = application.toDate,
+          comments = application.comment,
           created = SyncAtAndBy(application.audit.createDatetime, application.audit.createUsername),
           updated = application.audit.modifyDatetime?.let { SyncAtAndBy(application.audit.modifyDatetime, application.audit.modifyUserId ?: "") },
           legacyId = application.movementApplicationId,

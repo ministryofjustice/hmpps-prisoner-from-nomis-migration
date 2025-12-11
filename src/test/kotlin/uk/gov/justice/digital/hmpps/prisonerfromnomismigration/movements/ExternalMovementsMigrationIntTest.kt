@@ -164,9 +164,9 @@ class ExternalMovementsMigrationIntTest(
           assertThat(accompaniedByCode).isEqualTo("U")
           assertThat(transportCode).isEqualTo("VAN")
           assertThat(repeat).isEqualTo(false)
-          assertThat(fromDate).isEqualTo(today)
-          assertThat(toDate).isEqualTo(tomorrow)
-          assertThat(notes).isEqualTo("application comment")
+          assertThat(start).isEqualTo(today)
+          assertThat(end).isEqualTo(tomorrow)
+          assertThat(comments).isEqualTo("application comment")
           assertThat(created.at.toLocalDate()).isEqualTo(today)
           assertThat(created.by).isEqualTo("USER")
           assertThat(updated).isNull()
@@ -373,6 +373,29 @@ class ExternalMovementsMigrationIntTest(
         check {
           assertThat(it["offenderNo"]).isEqualTo("A0002KT")
           assertThat(it["migrationId"]).isEqualTo(migrationId)
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  inner class MigrateEntityFailure {
+    @BeforeEach
+    fun setUp() = runTest {
+      stubMigrationDependencies(entities = 1)
+      dpsApi.stubMigratePrisonerTapsError("A0001KT", 400)
+      migrationId = performMigration()
+    }
+
+    @Test
+    fun `will publish error telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("temporary-absences-migration-entity-failed"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+          assertThat(it["reason"]).isEqualTo("400 Bad Request from PUT http://localhost:8103/migrate/temporary-absences/A0001KT")
         },
         isNull(),
       )
