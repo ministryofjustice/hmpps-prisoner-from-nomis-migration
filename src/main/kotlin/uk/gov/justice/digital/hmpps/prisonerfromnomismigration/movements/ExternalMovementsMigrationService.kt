@@ -85,7 +85,7 @@ class ExternalMovementsMigrationService(
 
     migrationMappingService.getPrisonerTemporaryAbsenceMappings(offenderNo)
       ?.run { publishTelemetry("ignored", telemetry.apply { this["reason"] = "Already migrated" }) }
-      ?: run {
+      ?: runCatching {
         val temporaryAbsences = nomisApiService.getTemporaryAbsences(offenderNo)
         val dpsResponse = dpsApiService.migratePrisonerTaps(offenderNo, temporaryAbsences.toDpsRequest())
         val mappings = temporaryAbsences.buildMappings(offenderNo, migrationId, dpsResponse)
@@ -94,6 +94,10 @@ class ExternalMovementsMigrationService(
           requeueCreateMapping(mappings, context)
         }
       }
+        .onFailure {
+          publishTelemetry("failed", telemetry.apply { this["reason"] = it.message ?: "Unknown error" })
+          throw it
+        }
   }
 
   override suspend fun retryCreateMapping(context: MigrationContext<TemporaryAbsencesPrisonerMappingDto>) {

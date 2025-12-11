@@ -380,6 +380,29 @@ class ExternalMovementsMigrationIntTest(
   }
 
   @Nested
+  inner class MigrateEntityFailure {
+    @BeforeEach
+    fun setUp() = runTest {
+      stubMigrationDependencies(entities = 1)
+      dpsApi.stubMigratePrisonerTapsError("A0001KT", 400)
+      migrationId = performMigration()
+    }
+
+    @Test
+    fun `will publish error telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("temporary-absences-migration-entity-failed"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+          assertThat(it["reason"]).isEqualTo("400 Bad Request from PUT http://localhost:8103/migrate/temporary-absences/A0001KT")
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
   inner class MappingErrorRecovery {
     @BeforeEach
     fun setUp() = runTest {
