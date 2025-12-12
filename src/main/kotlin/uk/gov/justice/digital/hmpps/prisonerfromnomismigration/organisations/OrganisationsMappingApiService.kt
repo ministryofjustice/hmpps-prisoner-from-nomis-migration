@@ -12,12 +12,10 @@ import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorporateMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OrganisationsMappingDto
 
 @Service
-class OrganisationsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorporateMappingsDto>(domainUrl = "/mapping/corporate/organisation", webClient) {
+class OrganisationsMappingApiService(@Qualifier("mappingApiWebClient") val webClient: WebClient) {
   suspend fun createOrganisationMapping(mapping: OrganisationsMappingDto): CreateMappingResult<OrganisationsMappingDto> = createMapping("/mapping/corporate/organisation", mapping)
 
   suspend fun getByNomisCorporateIdOrNull(nomisCorporateId: Long): OrganisationsMappingDto? = webClient.get()
