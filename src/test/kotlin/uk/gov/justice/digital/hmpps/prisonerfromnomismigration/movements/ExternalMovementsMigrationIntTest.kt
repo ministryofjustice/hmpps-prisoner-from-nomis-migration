@@ -183,7 +183,7 @@ class ExternalMovementsMigrationIntTest(
       ).apply {
         with(temporaryAbsences[0].occurrences[0]) {
           assertThat(isCancelled).isFalse
-          assertThat(start).isCloseTo(now, within(Duration.ofMinutes(5)))
+          assertThat(start).isCloseTo(now.minusDays(1), within(Duration.ofMinutes(5)))
           assertThat(end).isCloseTo(now.plusDays(1), within(Duration.ofMinutes(5)))
           assertThat(location.address).isEqualTo("Schedule full address")
           assertThat(location.description).isNull()
@@ -211,7 +211,7 @@ class ExternalMovementsMigrationIntTest(
         putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
       ).apply {
         with(temporaryAbsences[0].occurrences[0].movements[0]) {
-          assertThat(occurredAt).isCloseTo(now, within(Duration.ofMinutes(5)))
+          assertThat(occurredAt).isCloseTo(now.minusDays(1), within(Duration.ofMinutes(5)))
           assertThat(direction).isEqualTo(MigrateTapMovement.Direction.OUT)
           assertThat(absenceReasonCode).isEqualTo("C6")
           assertThat(location.address).isEqualTo("Absence full address")
@@ -318,7 +318,7 @@ class ExternalMovementsMigrationIntTest(
             assertThat(nomisAddressId).isEqualTo(543)
             assertThat(nomisAddressOwnerClass).isEqualTo("OFF")
             assertThat(dpsAddressText).isEqualTo("Schedule full address")
-            assertThat(eventTime).contains("${LocalDate.now()}")
+            assertThat(eventTime).contains("${today.minusDays(1)}")
           }
 
           // We don't map the scheduled return because they don't exist in DPS
