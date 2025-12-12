@@ -14,7 +14,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDisabilityStatusResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatusResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.objectMapper
@@ -122,30 +122,24 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
 //    )
 //  }
 
-  fun stubSyncCreateOffenderBelief(syncResponse: PrisonReligionResponse = prisonReligionResponse()) {
+  fun stubSyncCreateOffenderBelief(
+    prisonNumber: String = "A1234BC",
+    syncResponse: PrisonReligion = prisonReligionResponse(),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
     stubFor(
-      post("/syscon-sync/religion")
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(objectMapper.writeValueAsString(syncResponse)),
-        ),
-    )
-  }
-  fun stubSyncCreateOffenderBelief(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    stubFor(
-      post("/syscon-sync/religion")
+      post("/syscon-sync/religion/$prisonNumber")
         .willReturn(
           aResponse()
             .withStatus(status.value())
             .withHeader("Content-Type", "application/json")
-            .withBody(objectMapper.writeValueAsString(error)),
+            .withBody(objectMapper.writeValueAsString(if (status == HttpStatus.OK) syncResponse else error)),
         ),
     )
   }
 
-  fun prisonReligionResponse() = PrisonReligionResponse(UUID.randomUUID())
+  fun prisonReligionResponse() = PrisonReligion(current = true)
 
   fun stubSyncCreateSexualOrientation(prisonNumber: String, status: Int = 201) {
     stubFor(
