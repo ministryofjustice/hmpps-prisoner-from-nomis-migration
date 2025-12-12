@@ -91,7 +91,7 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
               Absence(
                 scheduledTemporaryAbsence = scheduledAbsence(),
                 scheduledTemporaryAbsenceReturn = scheduledAbsenceReturn(),
-                temporaryAbsence = absence().copy(sequence = 3, movementDate = now.toLocalDate(), movementTime = now),
+                temporaryAbsence = absence().copy(sequence = 3, movementDate = yesterday.toLocalDate(), movementTime = yesterday),
                 temporaryAbsenceReturn = absenceReturn().copy(
                   sequence = 4,
                   movementDate = now.toLocalDate(),
@@ -181,8 +181,8 @@ class ExternalMovementsNomisApiMockServer(private val objectMapper: ObjectMapper
     escort = "PECS",
     applicationTime = now,
     applicationDate = now,
-    eventDate = now.toLocalDate(),
-    startTime = now,
+    eventDate = yesterday.toLocalDate(),
+    startTime = yesterday,
     returnDate = tomorrow.toLocalDate(),
     returnTime = tomorrow,
     comment = "scheduled absence comment",

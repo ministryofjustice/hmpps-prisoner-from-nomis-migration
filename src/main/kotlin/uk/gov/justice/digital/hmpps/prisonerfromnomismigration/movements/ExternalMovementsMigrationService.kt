@@ -178,7 +178,7 @@ class ExternalMovementsMigrationService(
     nomisAddressId = this.toAddressId,
     nomisAddressOwnerClass = this.toAddressOwnerClass,
     dpsAddressText = this.toFullAddress ?: "",
-    eventTime = "${LocalDateTime.now()}",
+    eventTime = "${this.startTime}",
   )
 
   private fun TemporaryAbsence.toMappingDto(bookingId: Long, dpsResponse: MigrateTapResponse): ExternalMovementMappingDto = ExternalMovementMappingDto(
