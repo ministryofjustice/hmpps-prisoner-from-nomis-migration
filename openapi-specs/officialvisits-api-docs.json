@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-12-08.150.37647f9"
+    "version" : "2025-12-11.169.f539abe"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -1620,6 +1620,11 @@
             "type" : "integer",
             "format" : "int32",
             "description" : "The available groups for official visit slot"
+          },
+          "locationDescription" : {
+            "type" : "string",
+            "description" : "The description of the location where this slot exists",
+            "example" : "Legal visits room 8"
           }
         },
         "required" : [ "availableAdults", "availableGroups", "availableVideoSessions", "dayCode", "dayDescription", "dpsLocationId", "endTime", "prisonCode", "startTime", "timeSlotId", "visitDate", "visitSlotId" ]
