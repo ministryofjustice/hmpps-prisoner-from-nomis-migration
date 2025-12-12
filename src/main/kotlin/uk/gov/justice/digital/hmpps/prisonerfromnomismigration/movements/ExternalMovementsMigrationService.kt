@@ -248,8 +248,8 @@ class ExternalMovementsMigrationService(
                 bookingId = booking.bookingId,
                 movementOut = absence.temporaryAbsence,
                 movementIn = absence.temporaryAbsenceReturn,
-                temporaryAbsenceType = application.temporaryAbsenceType ?: "",
-                temporaryAbsenceSubType = application.temporaryAbsenceSubType ?: "",
+                temporaryAbsenceType = application.temporaryAbsenceType,
+                temporaryAbsenceSubType = application.temporaryAbsenceSubType,
               )
             }
           },
@@ -267,8 +267,8 @@ class ExternalMovementsMigrationService(
   )
 
   private fun ScheduledTemporaryAbsence.toDpsRequest(
-    temporaryAbsenceType: String,
-    temporaryAbsenceSubType: String,
+    temporaryAbsenceType: String?,
+    temporaryAbsenceSubType: String?,
     returnTime: LocalDateTime,
     prison: String,
     bookingId: Long,
