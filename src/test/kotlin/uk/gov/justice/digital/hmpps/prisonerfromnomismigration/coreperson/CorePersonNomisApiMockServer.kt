@@ -31,22 +31,7 @@ class CorePersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetCorePerson(
     prisonNumber: String = "A1234BC",
     corePerson: CorePerson = corePerson(prisonNumber = prisonNumber),
-  ) {
-    nomisApi.stubFor(
-      get(urlEqualTo("/core-person/$prisonNumber")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(
-            objectMapper.writeValueAsString(corePerson),
-          ),
-      ),
-    )
-  }
-
-  fun stubGetCorePerson(
-    prisonNumber: String = "A1234BC",
-    status: HttpStatus,
+    status: HttpStatus = HttpStatus.OK,
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     nomisApi.stubFor(
@@ -54,7 +39,26 @@ class CorePersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(
+            objectMapper.writeValueAsString(if (status == HttpStatus.OK) corePerson else error),
+          ),
+      ),
+    )
+  }
+  fun stubGetOffenderReligions(
+    prisonNumber: String = "A1234BC",
+    religions: List<OffenderBelief> = beliefs(),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/core-person/$prisonNumber/religions")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(
+            objectMapper.writeValueAsString(if (status == HttpStatus.OK) religions else error),
+          ),
       ),
     )
   }
@@ -171,19 +175,21 @@ fun corePerson(prisonNumber: String = "A1234BC"): CorePerson = CorePerson(
       latestBooking = true,
     ),
   ),
-  beliefs = listOf(
-    OffenderBelief(
-      beliefId = 2,
-      belief = CodeDescription("DRU", "Druid"),
-      startDate = LocalDate.parse("2016-08-02"),
-      verified = true,
-      audit = NomisAudit(
-        createDatetime = LocalDateTime.parse("2016-08-01T10:55:00"),
-        createUsername = "KOFEADDY",
-        createDisplayName = "KOFE ADDY",
-      ),
-      changeReason = true,
-      comments = "No longer believes in Zoroastrianism",
+  beliefs = beliefs(),
+)
+
+fun beliefs() = listOf(
+  OffenderBelief(
+    beliefId = 2,
+    belief = CodeDescription("DRU", "Druid"),
+    startDate = LocalDate.parse("2016-08-02"),
+    verified = true,
+    audit = NomisAudit(
+      createDatetime = LocalDateTime.parse("2016-08-01T10:55:00"),
+      createUsername = "KOFEADDY",
+      createDisplayName = "KOFE ADDY",
     ),
+    changeReason = true,
+    comments = "No longer believes in Zoroastrianism",
   ),
 )

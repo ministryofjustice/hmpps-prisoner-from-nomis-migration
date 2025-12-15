@@ -16,6 +16,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 
+private const val TELEMETRY_PREFIX = "coreperson-profiledetails-synchronisation"
+
 @Service
 class CorePersonSynchronisationProfileDetailsService(
   override val telemetryClient: TelemetryClient,
@@ -40,7 +42,7 @@ class CorePersonSynchronisationProfileDetailsService(
         listOf(profileType)
       }
 
-      track("coreperson-profiledetails-synchronisation", telemetry) {
+      track(TELEMETRY_PREFIX, telemetry) {
         val nomisResponse = nomisApiService.getProfileDetails(event.offenderIdDisplay, profileTypes)
 
         val typeHistory = nomisResponse.bookings
@@ -55,11 +57,11 @@ class CorePersonSynchronisationProfileDetailsService(
           throw BookingException("Could not find latest booking")
         }
         if (typeHistory[0].first.bookingId != bookingId) {
-          telemetryClient.trackEvent("coreperson-profiledetails-synchronisation-ignored-booking", telemetry)
+          telemetryClient.trackEvent("$TELEMETRY_PREFIX-ignored-booking", telemetry)
           return
         }
         if (firstIsADuplicate(typeHistory)) {
-          telemetryClient.trackEvent("coreperson-profiledetails-synchronisation-ignored-duplicate", telemetry)
+          telemetryClient.trackEvent("$TELEMETRY_PREFIX-ignored-duplicate", telemetry)
           return
         }
 
@@ -123,7 +125,7 @@ class CorePersonSynchronisationProfileDetailsService(
         }
       }
     } else {
-      telemetryClient.trackEvent("coreperson-profiledetails-synchronisation-ignored-type", telemetry)
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-ignored-type", telemetry)
     }
   }
 }
