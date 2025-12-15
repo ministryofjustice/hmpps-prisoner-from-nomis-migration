@@ -16,6 +16,8 @@ import java.util.concurrent.CompletableFuture
 @Service
 class CorePersonEventListener(
   private val service: CorePersonSynchronisationService,
+  private val profileDetailsService: CorePersonSynchronisationProfileDetailsService,
+  private val beliefsService: CorePersonSynchronisationBeliefsService,
   private val objectMapper: ObjectMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -66,9 +68,9 @@ class CorePersonEventListener(
               "OFFENDER_EMAIL-UPDATED" -> service.offenderEmailUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_EMAIL-DELETED" -> service.offenderEmailDeleted(sqsMessage.Message.fromJson())
 
-              "OFFENDER_BELIEF-INSERTED" -> service.offenderBeliefAdded(sqsMessage.Message.fromJson())
-              "OFFENDER_BELIEF-UPDATED" -> service.offenderBeliefUpdated(sqsMessage.Message.fromJson())
-              "OFFENDER_BELIEF-DELETED" -> service.offenderBeliefDeleted(sqsMessage.Message.fromJson())
+              "OFFENDER_BELIEF-INSERTED" -> beliefsService.offenderBeliefAdded(sqsMessage.Message.fromJson())
+              "OFFENDER_BELIEF-UPDATED" -> beliefsService.offenderBeliefUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_BELIEF-DELETED" -> beliefsService.offenderBeliefDeleted(sqsMessage.Message.fromJson())
 
               // TODO: Ignore for now - core person haven't mapped address usage
               // If needed then a JIRA is required to add in audit module name - maybe new trigger
@@ -76,7 +78,7 @@ class CorePersonEventListener(
 //              "ADDRESS_USAGE-UPDATED" -> service.addressUsageUpdated(sqsMessage.Message.fromJson())
 //              "ADDRESS_USAGE-DELETED" -> service.addressUsageDeleted(sqsMessage.Message.fromJson())
 
-              "OFFENDER_PHYSICAL_DETAILS-CHANGED" -> service.offenderProfileDetailsChanged(sqsMessage.Message.fromJson())
+              "OFFENDER_PHYSICAL_DETAILS-CHANGED" -> profileDetailsService.offenderProfileDetailsChanged(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
