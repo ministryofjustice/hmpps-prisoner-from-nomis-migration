@@ -20,6 +20,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.Appo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityAsTrueNotFoundAsFalse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.ProfileDetailsResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.ServiceAgencySwitchesResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.EndActivitiesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.FindActiveActivityIdsResponse
@@ -38,6 +40,9 @@ import java.time.LocalDateTime
 
 @Service
 class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
+  private val profileDetailsResourceApi = ProfileDetailsResourceApi(webClient)
+  private val serviceAgencySwitchesResourceApi = ServiceAgencySwitchesResourceApi(webClient)
+
   suspend fun getVisits(
     prisonIds: List<String>,
     visitTypes: List<String>,
@@ -206,23 +211,17 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-  suspend fun getProfileDetails(offenderNo: String, profileTypes: List<String> = emptyList(), bookingId: Long? = null): PrisonerProfileDetailsResponse = webClient.get()
-    .uri {
-      it.path("/prisoners/{offenderNo}/profile-details")
-        .queryParam("profileTypes", profileTypes)
-        .apply { bookingId?.run { queryParam("bookingId", "$bookingId") } }
-        .build(offenderNo)
-    }
-    .retrieve()
-    .awaitBody()
+  suspend fun getProfileDetails(offenderNo: String, profileTypes: List<String> = emptyList(), bookingId: Long? = null): PrisonerProfileDetailsResponse = profileDetailsResourceApi
+    .getProfileDetails(offenderNo, profileTypes, bookingId)
+    .awaitSingle()
 
-  suspend fun isServiceAgencyOnForPrisoner(serviceCode: String, prisonNumber: String) = webClient.get()
-    .uri("/agency-switches/{serviceCode}/prisoner/{prisonerId}", serviceCode, prisonNumber)
+  suspend fun isServiceAgencyOnForPrisoner(serviceCode: String, prisonNumber: String) = serviceAgencySwitchesResourceApi
+    .prepare(serviceAgencySwitchesResourceApi.checkServicePrisonForPrisonerRequestConfig(serviceCode, prisonNumber))
     .retrieve()
     .awaitBodilessEntityAsTrueNotFoundAsFalse()
 
-  suspend fun isAgencySwitchOnForAgency(serviceCode: String, agencyId: String) = webClient.get()
-    .uri("/agency-switches/{serviceCode}/agency/{agencyId}", serviceCode, agencyId)
+  suspend fun isAgencySwitchOnForAgency(serviceCode: String, agencyId: String) = serviceAgencySwitchesResourceApi
+    .prepare(serviceAgencySwitchesResourceApi.checkServiceAgencyRequestConfig(serviceCode, agencyId))
     .retrieve()
     .awaitBodilessEntityAsTrueNotFoundAsFalse()
 }

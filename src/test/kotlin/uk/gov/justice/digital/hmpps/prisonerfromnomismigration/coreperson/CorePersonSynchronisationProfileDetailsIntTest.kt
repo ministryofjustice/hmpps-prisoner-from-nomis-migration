@@ -8,8 +8,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
-import org.awaitility.kotlin.await
-import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -28,11 +26,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ProfileDetailsNomisApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
-import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDateTime
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class CorePersonSynchronisationIntTest(
+class CorePersonSynchronisationProfileDetailsIntTest(
   @Autowired private val nomisApi: ProfileDetailsNomisApiMockServer,
 ) : SqsIntegrationTestBase() {
 
@@ -516,10 +513,4 @@ class CorePersonSynchronisationIntTest(
     corePersonQueueOffenderEventsUrl,
     profileDetailsChangedEvent(prisonerNumber, bookingId, profileType),
   )
-
-  private fun waitForDlqMessage() = await untilAsserted {
-    assertThat(
-      awsSqsPersonalRelationshipsOffenderEventsDlqClient.countAllMessagesOnQueue(personalRelationshipsQueueOffenderEventsDlqUrl).get(),
-    ).isEqualTo(1)
-  }
 }
