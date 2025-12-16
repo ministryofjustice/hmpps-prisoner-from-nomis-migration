@@ -9,7 +9,8 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -34,12 +35,13 @@ class CorePersonSynchronisationBeliefsIntTest(
   private val cprApi = CorePersonCprApiExtension.cprCorePersonServer
 
   @Nested
-  @DisplayName("OFFENDER_BELIEF-INSERTED")
-  inner class OffenderBeliefInserted {
+  @DisplayName("OFFENDER_BELIEFS")
+  inner class OffenderBeliefs {
     @Nested
     inner class HappyPath {
-      @Test
-      fun `should sync new belief to CPR`() = runTest {
+      @ParameterizedTest
+      @ValueSource(strings = ["INSERTED", "UPDATED", "DELETED"])
+      fun `should sync new belief to CPR`(eventType: String) = runTest {
         nomisApi.stubGetOffenderReligions(
           prisonNumber = "A1234AA",
           religions = listOf(
@@ -73,7 +75,7 @@ class CorePersonSynchronisationBeliefsIntTest(
         )
         cprApi.stubSyncCreateOffenderBelief("A1234AA")
 
-        sendBeliefsInsertedEvent(prisonerNumber = "A1234AA")
+        sendBeliefsEvent(prisonerNumber = "A1234AA", eventType = eventType)
           .also { waitForAnyProcessingToComplete("coreperson-beliefs-synchronisation-success") }
 
         verifyNomis(
@@ -130,14 +132,15 @@ class CorePersonSynchronisationBeliefsIntTest(
     isNull(),
   )
 
-  private fun beliefsInsertedEvent(
+  private fun beliefsEvent(
     prisonerNumber: String = "A1234AA",
+    eventType: String,
   ) = """
    {
       "Type" : "Notification",
       "MessageId" : "298a61d6-e078-51f2-9c60-3f348f8bde68",
       "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
-      "Message" : "{\"eventType\":\"OFFENDER_BELIEFS-INSERTED\",\"eventDatetime\":\"2024-06-11T16:30:59\",\"offenderIdDisplay\":\"$prisonerNumber\",\"bookingId\":12345,\"auditModuleName\":\"OIDBELIF\"}",
+      "Message" : "{\"eventType\":\"OFFENDER_BELIEFS-$eventType\",\"eventDatetime\":\"2024-06-11T16:30:59\",\"offenderIdDisplay\":\"$prisonerNumber\",\"bookingId\":12345,\"auditModuleName\":\"OIDBELIF\"}",
       "Timestamp" : "2024-06-11T15:30:59.048Z",
       "SignatureVersion" : "1",
       "Signature" : "kyuV8tDWmRoixtnyXauR/mzBdkO4yWXEFLZU6256JRIRfcGBNdn7+TPcRnM7afa6N6DwUs3TDKQ17U7W8hkB86r/J1PsfEpF8qOr8bZd4J/RDNAHJxmNnuTzy351ISDYjdxccREF57pLXtaMcu0Z6nJTTnv9pn7qOVasuxUIGANaD214P6iXkWvsFj0AgR1TVITHW5jMFTE+ln2PTLQ9N6dwx4/foIlFsQu7rWnx3hy9+x7gtInnDIaQSvI2gHQQI51TpQrES0YKjn5Tb25ANS8bZooK7knt9F+Hv3bejDyXWgR3fyC4SJbUvbVhfVI/aRhOv/qLwFGSOFKt6I0KAA==",
@@ -145,15 +148,16 @@ class CorePersonSynchronisationBeliefsIntTest(
       "UnsubscribeURL" : "https://sns.eu-west-2.amazonaws.com/?Action=Unsubscribe&SubscriptionArn=arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7:e5c3f313-ccda-4a2f-9667-e2519fd01a19",
       "MessageAttributes" : {
         "publishedAt" : {"Type":"String","Value":"2024-06-11T16:30:59.023769832+01:00"},
-        "eventType" : {"Type":"String","Value":"OFFENDER_BELIEFS-INSERTED"}
+        "eventType" : {"Type":"String","Value":"OFFENDER_BELIEFS-$eventType"}
       }
    }
   """.trimIndent()
 
-  private fun sendBeliefsInsertedEvent(
+  private fun sendBeliefsEvent(
     prisonerNumber: String,
+    eventType: String,
   ) = awsSqsCorePersonOffenderEventsClient.sendMessage(
     corePersonQueueOffenderEventsUrl,
-    beliefsInsertedEvent(prisonerNumber),
+    beliefsEvent(prisonerNumber, eventType),
   )
 }
