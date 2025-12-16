@@ -18,7 +18,7 @@ class CorePersonSynchronisationBeliefsService(
   private val corePersonCprApiService: CorePersonCprApiService,
 ) : TelemetryEnabled {
 
-  suspend fun offenderBeliefAdded(event: OffenderBeliefEvent) {
+  suspend fun offenderBeliefChanged(event: OffenderBeliefEvent) {
     val (offenderIdDisplay) = event
     val telemetry = telemetryOf(
       "offenderNo" to offenderIdDisplay,

@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
+import java.time.LocalDateTime
 import java.util.UUID
 
 class CorePersonCprApiExtension :
@@ -138,7 +139,11 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun prisonReligionResponse() = PrisonReligion(current = true)
+  fun prisonReligionResponse() = PrisonReligion(
+    current = true,
+    modifyDateTime = LocalDateTime.parse("2020-11-01T11:10:00"),
+    modifyUserId = "ME",
+  )
 
   fun stubSyncCreateSexualOrientation(prisonNumber: String, status: Int = 201) {
     stubFor(
