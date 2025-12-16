@@ -107,6 +107,63 @@ class OfficialVisitsNomisApiServiceTest {
   }
 
   @Nested
+  inner class GetOfficialVisitIdsByLastId {
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      mockServer.stubGetOfficialVisitIdsByLastId(
+        content = listOf(
+          VisitIdResponse(
+            visitId = 1234,
+          ),
+        ),
+      )
+
+      apiService.getOfficialVisitIdsByLastId(
+        lastVisitId = 0,
+        pageSize = 20,
+        prisonIds = emptyList(),
+        fromDate = null,
+        toDate = null,
+      )
+
+      mockServer.verify(
+        getRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the get IDs endpoint`() = runTest {
+      mockServer.stubGetOfficialVisitIdsByLastId(
+        visitId = 99,
+        content = listOf(
+          VisitIdResponse(
+            visitId = 1234,
+          ),
+        ),
+      )
+
+      apiService.getOfficialVisitIdsByLastId(
+        lastVisitId = 99,
+        pageSize = 30,
+        prisonIds = listOf("MDI", "BXI"),
+        fromDate = LocalDate.parse("2020-01-01"),
+        toDate = LocalDate.parse("2024-01-01"),
+      )
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/official-visits/ids/all-from-id"))
+          .withQueryParam("visitId", equalTo("99"))
+          .withQueryParam("size", equalTo("30"))
+          .withQueryParam("prisonIds", equalTo("MDI"))
+          .withQueryParam("prisonIds", equalTo("BXI"))
+          .withQueryParam("fromDate", equalTo("2020-01-01"))
+          .withQueryParam("toDate", equalTo("2024-01-01")),
+      )
+    }
+  }
+
+  @Nested
   inner class GetOfficialVisit {
     @Test
     internal fun `will pass oath2 token to endpoint`() = runTest {

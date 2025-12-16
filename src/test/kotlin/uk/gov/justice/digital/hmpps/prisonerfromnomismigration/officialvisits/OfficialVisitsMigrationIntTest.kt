@@ -127,6 +127,18 @@ class OfficialVisitsMigrationIntTest(
             ),
           ),
         )
+        nomisApiMock.stubGetOfficialVisitIdsByLastId(
+          visitId = 0,
+          content = listOf(
+            VisitIdResponse(
+              visitId = 2,
+            ),
+          ),
+        )
+        nomisApiMock.stubGetOfficialVisitIdsByLastId(
+          visitId = 2,
+          content = emptyList(),
+        )
         mappingApiMock.stubGetByNomisIdsOrNull(
           nomisVisitId = 2,
           mapping = OfficialVisitMappingDto(
@@ -158,8 +170,8 @@ class OfficialVisitsMigrationIntTest(
             .withQueryParam("toDate", equalTo("2023-01-01")),
         )
         nomisApiMock.verify(
-          getRequestedFor(urlPathEqualTo("/official-visits/ids"))
-            .withQueryParam("page", equalTo("0"))
+          getRequestedFor(urlPathEqualTo("/official-visits/ids/all-from-id"))
+            .withQueryParam("visitId", equalTo("0"))
             .withQueryParam("size", equalTo("10"))
             .withQueryParam("prisonIds", equalTo("MDI"))
             .withQueryParam("prisonIds", equalTo("BXI"))
@@ -207,6 +219,18 @@ class OfficialVisitsMigrationIntTest(
             ),
           ),
         )
+        nomisApiMock.stubGetOfficialVisitIdsByLastId(
+          content = listOf(
+            VisitIdResponse(
+              visitId = nomisVisitId,
+            ),
+          ),
+        )
+        nomisApiMock.stubGetOfficialVisitIdsByLastId(
+          visitId = nomisVisitId,
+          content = emptyList(),
+        )
+
         mappingApiMock.stubGetByNomisIdsOrNull(
           nomisVisitId = nomisVisitId,
           mapping = null,
@@ -334,6 +358,17 @@ class OfficialVisitsMigrationIntTest(
               visitId = nomisVisitId,
             ),
           ),
+        )
+        nomisApiMock.stubGetOfficialVisitIdsByLastId(
+          content = listOf(
+            VisitIdResponse(
+              visitId = nomisVisitId,
+            ),
+          ),
+        )
+        nomisApiMock.stubGetOfficialVisitIdsByLastId(
+          visitId = nomisVisitId,
+          content = emptyList(),
         )
         mappingApiMock.stubGetByNomisIdsOrNull(
           nomisVisitId = nomisVisitId,
@@ -558,6 +593,17 @@ class OfficialVisitsMigrationIntTest(
             ),
           ),
         )
+        nomisApiMock.stubGetOfficialVisitIdsByLastId(
+          content = listOf(
+            VisitIdResponse(
+              visitId = nomisVisitId,
+            ),
+          ),
+        )
+        nomisApiMock.stubGetOfficialVisitIdsByLastId(
+          visitId = nomisVisitId,
+          content = emptyList(),
+        )
         mappingApiMock.stubGetByNomisIdsOrNull(
           nomisVisitId = nomisVisitId,
           mapping = null,
@@ -680,6 +726,19 @@ class OfficialVisitsMigrationIntTest(
             ),
           ),
         )
+
+        nomisApiMock.stubGetOfficialVisitIdsByLastId(
+          content = listOf(
+            VisitIdResponse(
+              visitId = nomisVisitId,
+            ),
+          ),
+        )
+        nomisApiMock.stubGetOfficialVisitIdsByLastId(
+          visitId = nomisVisitId,
+          content = emptyList(),
+        )
+
         mappingApiMock.stubGetByNomisIdsOrNull(
           nomisVisitId = nomisVisitId,
           mapping = null,

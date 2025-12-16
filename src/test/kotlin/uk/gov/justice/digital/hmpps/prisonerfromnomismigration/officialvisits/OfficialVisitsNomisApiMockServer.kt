@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -15,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageMetadata
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PagedModelVisitIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitIdsPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDateTime
 
@@ -83,6 +85,20 @@ class OfficialVisitsNomisApiMockServer(private val objectMapper: ObjectMapper) {
       ),
     )
   }
+  fun stubGetOfficialVisitIdsByLastId(
+    content: List<VisitIdResponse>,
+    visitId: Long = 0,
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/official-visits/ids/all-from-id")).withQueryParam("visitId", WireMock.equalTo(visitId.toString())).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(objectMapper.writeValueAsString(VisitIdsPage(content))),
+      ),
+    )
+  }
+
   fun stubGetOfficialVisit(
     visitId: Long = 1234,
     response: OfficialVisitResponse = officialVisitResponse(),
