@@ -63,7 +63,7 @@ jobs:
     with:
       gradle-command: ./gradlew ${{ matrix.tests }}
       localstack-tag: "4"
-      postgres-tag: "17"
+      postgres-tag: "18"
       postgres-username: "migration"
       postgres-password: "migration"
       postgres-db: 'migration'
