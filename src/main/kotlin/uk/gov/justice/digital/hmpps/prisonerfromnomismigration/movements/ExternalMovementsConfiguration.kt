@@ -16,7 +16,7 @@ import java.time.Duration
 class ExternalMovementsConfiguration(
   @Value("\${api.base.url.ext.movements}") val apiBaseUri: String,
   @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
-  @Value("\${api.timeout:30s}") val timeout: Duration,
+  @Value("\${api.timeout:90s}") val timeout: Duration,
 ) {
 
   @Bean
