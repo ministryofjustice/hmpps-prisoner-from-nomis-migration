@@ -84,7 +84,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
     }
   }
 
-  suspend fun divideEntitiesByPage(context: MigrationContext<FILTER>) {
+  open suspend fun divideEntitiesByPage(context: MigrationContext<FILTER>) {
     (1..context.estimatedCount step pageSize).asSequence()
       .map {
         MigrationContext(
@@ -95,6 +95,10 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
       .forEach {
         queueService.sendMessage(MigrationMessageType.MIGRATE_BY_PAGE, it)
       }
+    startStatusCheck(context)
+  }
+
+  suspend fun startStatusCheck(context: MigrationContext<FILTER>) {
     queueService.sendMessage(
       MigrationMessageType.MIGRATE_STATUS_CHECK,
       MigrationContext(

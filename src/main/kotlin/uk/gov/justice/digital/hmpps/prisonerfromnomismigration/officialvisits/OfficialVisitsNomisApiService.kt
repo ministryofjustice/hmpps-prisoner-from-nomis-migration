@@ -7,6 +7,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.OfficialVisitsResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OfficialVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PagedModelVisitIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitIdsPage
 import java.time.LocalDate
 
 @Service
@@ -21,6 +22,20 @@ class OfficialVisitsNomisApiService(@Qualifier("nomisApiWebClient") private val 
     toDate: LocalDate?,
   ): PagedModelVisitIdResponse = api.getOfficialVisitIds(
     page = pageNumber.toInt(),
+    size = pageSize.toInt(),
+    prisonIds = prisonIds,
+    fromDate = fromDate,
+    toDate = toDate,
+  ).awaitSingle()
+
+  suspend fun getOfficialVisitIdsByLastId(
+    lastVisitId: Long = 0,
+    pageSize: Long,
+    prisonIds: List<String>,
+    fromDate: LocalDate?,
+    toDate: LocalDate?,
+  ): VisitIdsPage = api.getOfficialVisitIdsFromIds(
+    visitId = lastVisitId,
     size = pageSize.toInt(),
     prisonIds = prisonIds,
     fromDate = fromDate,

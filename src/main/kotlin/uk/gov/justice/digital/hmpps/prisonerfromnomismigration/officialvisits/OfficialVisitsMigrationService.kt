@@ -22,7 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitCompletionType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastIdMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -38,7 +38,7 @@ class OfficialVisitsMigrationService(
   @Value($$"${officialvisits.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value($$"${officialvisits.complete-check.count}") completeCheckCount: Int,
   @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
-) : MigrationService<OfficialVisitsMigrationFilter, VisitIdResponse, OfficialVisitMigrationMappingDto>(
+) : ByLastIdMigrationService<OfficialVisitsMigrationFilter, VisitIdResponse, OfficialVisitMigrationMappingDto>(
   officialVisitsMappingService,
   MigrationType.OFFICIAL_VISITS,
   pageSize = pageSize,
@@ -52,17 +52,17 @@ class OfficialVisitsMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  override suspend fun getPageOfIds(
+  override suspend fun getPageOfIdsFromId(
+    lastId: VisitIdResponse?,
     migrationFilter: OfficialVisitsMigrationFilter,
     pageSize: Long,
-    pageNumber: Long,
-  ): List<VisitIdResponse> = nomisApiService.getOfficialVisitIds(
-    pageNumber = pageNumber,
+  ): List<VisitIdResponse> = nomisApiService.getOfficialVisitIdsByLastId(
+    lastVisitId = lastId?.visitId ?: 0,
     pageSize = pageSize,
     prisonIds = migrationFilter.prisonIds,
     fromDate = migrationFilter.fromDate,
     toDate = migrationFilter.toDate,
-  ).content!!
+  ).ids
 
   override suspend fun getTotalNumberOfIds(migrationFilter: OfficialVisitsMigrationFilter): Long = nomisApiService.getOfficialVisitIds(
     pageNumber = 0,
