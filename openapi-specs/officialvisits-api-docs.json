@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-12-12.183.bf40d2b"
+    "version" : "2025-12-15.190.eb3053f"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -1821,6 +1821,10 @@
           "relationshipCode" : {
             "type" : "string",
             "description" : "The Official visitor relationship code"
+          },
+          "relationshipDescription" : {
+            "type" : "string",
+            "description" : "The Official visitor relationship description"
           },
           "leadVisitor" : {
             "type" : "boolean",
