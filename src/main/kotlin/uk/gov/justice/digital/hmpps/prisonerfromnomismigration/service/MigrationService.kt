@@ -91,7 +91,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
       .map {
         MigrationContext(
           context = context,
-          body = MigrationPage(filter = context.body, ByPageNumber(pageNumber = it / pageSize), pageSize = pageSize),
+          body = MigrationPage(filter = context.body, ByPageNumber<NOMIS_ID>(pageNumber = it / pageSize), pageSize = pageSize),
         )
       }
       .forEach {
@@ -116,7 +116,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
     )
   }
 
-  open suspend fun migrateEntitiesForPage(context: MigrationContext<MigrationPage<FILTER>>) = getPageOfIds(context.body.filter, context.body.pageSize, (context.body.pageKey as ByPageNumber).pageNumber).takeUnless {
+  open suspend fun migrateEntitiesForPage(context: MigrationContext<MigrationPage<FILTER, NOMIS_ID>>) = getPageOfIds(context.body.filter, context.body.pageSize, (context.body.pageKey as ByPageNumber).pageNumber).takeUnless {
     migrationHistoryService.isCancelling(context.migrationId)
   }?.map {
     MigrationContext(
@@ -261,15 +261,15 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
 
 fun <T> MigrationContext<T>.durationMinutes(): Long = Duration.between(LocalDateTime.parse(this.migrationId), LocalDateTime.now()).toMinutes()
 
-class MigrationPage<FILTER>(val filter: FILTER, val pageKey: PageKey, val pageSize: Long)
+class MigrationPage<FILTER, NOMIS_ID>(val filter: FILTER, val pageKey: PageKey<NOMIS_ID>, val pageSize: Long)
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY)
 @JsonSubTypes(value = [JsonSubTypes.Type(ByPageNumber::class), JsonSubTypes.Type(ByLastId::class)])
-sealed class PageKey
-class ByPageNumber(val pageNumber: Long) : PageKey()
-class ByLastId<NOMIS_ID>(val lastId: NOMIS_ID?) : PageKey()
+sealed class PageKey<NOMIS_ID>
+class ByPageNumber<NOMIS_ID>(val pageNumber: Long) : PageKey<NOMIS_ID>()
+class ByLastId<NOMIS_ID>(val lastId: NOMIS_ID?) : PageKey<NOMIS_ID>()
 
-fun <FILTER> MigrationPage<FILTER>.pageNumber() = when (pageKey) {
+fun <FILTER, NOMIS_ID> MigrationPage<FILTER, NOMIS_ID>.pageNumber() = when (pageKey) {
   is ByLastId<*> -> throw IllegalStateException("Should not be called for this migration type")
   is ByPageNumber -> this.pageKey.pageNumber
 }

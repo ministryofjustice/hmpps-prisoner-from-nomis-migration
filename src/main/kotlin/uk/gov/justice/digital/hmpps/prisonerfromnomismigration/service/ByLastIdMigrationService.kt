@@ -26,7 +26,7 @@ abstract class ByLastIdMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : 
     // start by getting the first page of results
     queueService.sendMessage(
       MigrationMessageType.MIGRATE_BY_PAGE,
-      MigrationContext<MigrationPage<FILTER>>(
+      MigrationContext<MigrationPage<FILTER, NOMIS_ID>>(
         context = context,
         body = MigrationPage(
           filter = context.body,
@@ -37,14 +37,11 @@ abstract class ByLastIdMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : 
     )
   }
 
-  override suspend fun migrateEntitiesForPage(context: MigrationContext<MigrationPage<FILTER>>) {
+  override suspend fun migrateEntitiesForPage(context: MigrationContext<MigrationPage<FILTER, NOMIS_ID>>) {
     if (migrationHistoryService.isCancelling(context.migrationId)) return
 
     when (context.body.pageKey) {
       is ByLastId<*> -> {
-        // not sure how to avoid this cast without the PageKey being typed with NOMIS_ID that makes no sense so for now we
-        // know this must work and cannot get a case class exception
-        @Suppress("UNCHECKED_CAST")
         val pageKey = context.body.pageKey as ByLastId<NOMIS_ID>
 
         val pageOfIds = getPageOfIdsFromId(pageKey.lastId, context.body.filter, pageSize)

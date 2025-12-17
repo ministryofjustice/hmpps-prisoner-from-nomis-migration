@@ -278,7 +278,7 @@ class AllocationsMigrationServiceTest {
 
       verify(queueService, times(3)).sendMessage(
         message = eq(MigrationMessageType.MIGRATE_BY_PAGE),
-        context = check<MigrationContext<MigrationPage<AllocationsMigrationFilter>>> {
+        context = check<MigrationContext<MigrationPage<AllocationsMigrationFilter, *>>> {
           assertThat(it.estimatedCount).isEqualTo(7)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
           assertThat(it.body.filter.prisonId).isEqualTo("BXI")
@@ -289,7 +289,7 @@ class AllocationsMigrationServiceTest {
 
     @Test
     internal fun `each page will contain page number and page size`(): Unit = runBlocking {
-      val context: KArgumentCaptor<MigrationContext<MigrationPage<AllocationsMigrationFilter>>> = argumentCaptor()
+      val context: KArgumentCaptor<MigrationContext<MigrationPage<AllocationsMigrationFilter, *>>> = argumentCaptor()
 
       service.divideEntitiesByPage(
         MigrationContext(
@@ -305,7 +305,7 @@ class AllocationsMigrationServiceTest {
         context.capture(),
         delaySeconds = eq(0),
       )
-      val allContexts: List<MigrationContext<MigrationPage<AllocationsMigrationFilter>>> = context.allValues
+      val allContexts: List<MigrationContext<MigrationPage<AllocationsMigrationFilter, *>>> = context.allValues
 
       val (firstPage, secondPage) = allContexts
       val lastPage = allContexts.last()

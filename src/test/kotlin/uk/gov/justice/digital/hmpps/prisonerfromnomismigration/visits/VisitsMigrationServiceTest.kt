@@ -359,7 +359,7 @@ internal class VisitsMigrationServiceTest {
 
       verify(queueService, times(100_200 / 200)).sendMessage(
         message = eq(MIGRATE_BY_PAGE),
-        context = check<MigrationContext<MigrationPage<VisitsMigrationFilter>>> {
+        context = check<MigrationContext<MigrationPage<VisitsMigrationFilter, *>>> {
           assertThat(it.estimatedCount).isEqualTo(100_200)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
           assertThat(it.body.filter.prisonIds).containsExactly("LEI", "BXI")
@@ -373,7 +373,7 @@ internal class VisitsMigrationServiceTest {
 
     @Test
     internal fun `each page will contain page number and page size`(): Unit = runBlocking {
-      val context: KArgumentCaptor<MigrationContext<MigrationPage<VisitsMigrationFilter>>> = argumentCaptor()
+      val context: KArgumentCaptor<MigrationContext<MigrationPage<VisitsMigrationFilter, *>>> = argumentCaptor()
 
       service.divideEntitiesByPage(
         MigrationContext(
@@ -394,7 +394,7 @@ internal class VisitsMigrationServiceTest {
         context.capture(),
         delaySeconds = eq(0),
       )
-      val allContexts: List<MigrationContext<MigrationPage<VisitsMigrationFilter>>> = context.allValues
+      val allContexts: List<MigrationContext<MigrationPage<VisitsMigrationFilter, *>>> = context.allValues
 
       val (firstPage, secondPage, thirdPage) = allContexts
       val lastPage = allContexts.last()

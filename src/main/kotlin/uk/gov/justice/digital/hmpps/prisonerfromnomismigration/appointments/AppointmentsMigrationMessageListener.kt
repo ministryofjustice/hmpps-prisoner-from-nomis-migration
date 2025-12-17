@@ -28,7 +28,7 @@ class AppointmentsMigrationMessageListener(
 
   override fun parseContextFilter(json: String): MigrationMessage<*, AppointmentsMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<AppointmentsMigrationFilter>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<AppointmentsMigrationFilter, AppointmentIdResponse>> = objectMapper.readValue(json)
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, AppointmentIdResponse> = objectMapper.readValue(json)
 
