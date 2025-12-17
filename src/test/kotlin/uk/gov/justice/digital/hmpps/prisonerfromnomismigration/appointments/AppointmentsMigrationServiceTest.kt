@@ -43,6 +43,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NomisDpsLocationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
@@ -50,6 +51,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatusCheck
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.APPOINTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.pageNumber
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -373,16 +375,16 @@ internal class AppointmentsMigrationServiceTest {
       val (firstPage, secondPage, thirdPage) = allContexts
       val lastPage = allContexts.last()
 
-      assertThat(firstPage.body.pageNumber).isEqualTo(0)
+      assertThat(firstPage.body.pageNumber()).isEqualTo(0)
       assertThat(firstPage.body.pageSize).isEqualTo(200)
 
-      assertThat(secondPage.body.pageNumber).isEqualTo(1)
+      assertThat(secondPage.body.pageNumber()).isEqualTo(1)
       assertThat(secondPage.body.pageSize).isEqualTo(200)
 
-      assertThat(thirdPage.body.pageNumber).isEqualTo(2)
+      assertThat(thirdPage.body.pageNumber()).isEqualTo(2)
       assertThat(thirdPage.body.pageSize).isEqualTo(200)
 
-      assertThat(lastPage.body.pageNumber).isEqualTo((100_200 / 200) - 1)
+      assertThat(lastPage.body.pageNumber()).isEqualTo((100_200 / 200) - 1)
       assertThat(lastPage.body.pageSize).isEqualTo(200)
     }
   }
@@ -704,7 +706,7 @@ internal class AppointmentsMigrationServiceTest {
               toDate = LocalDate.parse("2020-01-02"),
               prisonIds = listOf("MDI"),
             ),
-            pageNumber = 13,
+            pageKey = ByPageNumber(13),
             pageSize = 15,
           ),
         ),
@@ -732,7 +734,7 @@ internal class AppointmentsMigrationServiceTest {
               toDate = LocalDate.parse("2020-01-02"),
               prisonIds = listOf("MDI"),
             ),
-            pageNumber = 13,
+            pageKey = ByPageNumber(13),
             pageSize = 15,
           ),
         ),
@@ -770,7 +772,7 @@ internal class AppointmentsMigrationServiceTest {
               toDate = LocalDate.parse("2020-01-02"),
               prisonIds = listOf("MDI"),
             ),
-            pageNumber = 13,
+            pageKey = ByPageNumber(13),
             pageSize = 15,
           ),
         ),
@@ -814,7 +816,7 @@ internal class AppointmentsMigrationServiceTest {
               toDate = LocalDate.parse("2020-01-02"),
               prisonIds = listOf("MDI"),
             ),
-            pageNumber = 13,
+            pageKey = ByPageNumber(13),
             pageSize = 15,
           ),
         ),
