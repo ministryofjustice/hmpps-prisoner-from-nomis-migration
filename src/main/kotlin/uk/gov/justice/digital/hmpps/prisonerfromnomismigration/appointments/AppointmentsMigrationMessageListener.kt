@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.APPOINTMENTS_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import java.util.concurrent.CompletableFuture
@@ -17,7 +18,7 @@ import java.util.concurrent.CompletableFuture
 class AppointmentsMigrationMessageListener(
   objectMapper: ObjectMapper,
   appointmentsMigrationService: AppointmentsMigrationService,
-) : MigrationMessageListener<AppointmentsMigrationFilter, AppointmentIdResponse, AppointmentResponse, AppointmentMapping>(
+) : MigrationMessageListener<AppointmentsMigrationFilter, AppointmentIdResponse, AppointmentResponse, AppointmentMapping, ByPageNumber>(
   objectMapper,
   appointmentsMigrationService,
 ) {
@@ -28,7 +29,7 @@ class AppointmentsMigrationMessageListener(
 
   override fun parseContextFilter(json: String): MigrationMessage<*, AppointmentsMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<AppointmentsMigrationFilter, AppointmentIdResponse>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<AppointmentsMigrationFilter, ByPageNumber>> = objectMapper.readValue(json)
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, AppointmentIdResponse> = objectMapper.readValue(json)
 

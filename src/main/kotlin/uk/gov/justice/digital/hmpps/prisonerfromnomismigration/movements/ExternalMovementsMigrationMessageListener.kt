@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.EXTERNAL_MOVEMENTS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
@@ -20,7 +21,7 @@ import java.util.concurrent.CompletableFuture
 class ExternalMovementsMigrationMessageListener(
   objectMapper: ObjectMapper,
   migrationService: ExternalMovementsMigrationService,
-) : MigrationMessageListener<ExternalMovementsMigrationFilter, PrisonerId, OffenderTemporaryAbsencesResponse, TemporaryAbsencesPrisonerMappingDto>(
+) : MigrationMessageListener<ExternalMovementsMigrationFilter, PrisonerId, OffenderTemporaryAbsencesResponse, TemporaryAbsencesPrisonerMappingDto, ByPageNumber>(
   objectMapper,
   migrationService,
 ) {
@@ -36,7 +37,7 @@ class ExternalMovementsMigrationMessageListener(
 
   override fun parseContextFilter(json: String): MigrationMessage<*, ExternalMovementsMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<ExternalMovementsMigrationFilter, PrisonerId>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<ExternalMovementsMigrationFilter, ByPageNumber>> = objectMapper.readValue(json)
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = objectMapper.readValue(json)
 
