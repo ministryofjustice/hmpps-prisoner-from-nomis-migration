@@ -16,11 +16,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.LocalMess
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.PageKey
 import java.util.concurrent.CompletableFuture
 
-abstract class MigrationMessageListener<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any, MAPPING : Any>(
+abstract class MigrationMessageListener<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any, MAPPING : Any, PAGE_KEY : PageKey>(
   internal val objectMapper: ObjectMapper,
-  private val migrationService: MigrationService<FILTER, NOMIS_ID, MAPPING>,
+  private val migrationService: MigrationService<FILTER, NOMIS_ID, MAPPING, PAGE_KEY>,
 ) {
 
   private companion object {
@@ -63,7 +64,7 @@ abstract class MigrationMessageListener<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTI
   private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this, object : TypeReference<T>() {})
 
   abstract fun parseContextFilter(json: String): MigrationMessage<*, FILTER>
-  abstract fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<FILTER, NOMIS_ID>>
+  abstract fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<FILTER, PAGE_KEY>>
   abstract fun parseContextNomisId(json: String): MigrationMessage<*, NOMIS_ID>
   abstract fun parseContextMapping(json: String): MigrationMessage<*, MAPPING>
 }

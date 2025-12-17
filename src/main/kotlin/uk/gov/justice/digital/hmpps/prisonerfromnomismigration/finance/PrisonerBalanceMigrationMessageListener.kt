@@ -10,6 +10,7 @@ import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerBalanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBalanceDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.PRISONER_BALANCE_QUEUE_ID
@@ -19,7 +20,7 @@ import java.util.concurrent.CompletableFuture
 class PrisonerBalanceMigrationMessageListener(
   objectMapper: ObjectMapper,
   migrationService: PrisonerBalanceMigrationService,
-) : MigrationMessageListener<PrisonerBalanceMigrationFilter, Long, PrisonerBalanceDto, PrisonerBalanceMappingDto>(
+) : MigrationMessageListener<PrisonerBalanceMigrationFilter, Long, PrisonerBalanceDto, PrisonerBalanceMappingDto, ByPageNumber>(
   objectMapper,
   migrationService,
 ) {
@@ -35,7 +36,7 @@ class PrisonerBalanceMigrationMessageListener(
 
   override fun parseContextFilter(json: String): MigrationMessage<*, PrisonerBalanceMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<PrisonerBalanceMigrationFilter, Long>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<PrisonerBalanceMigrationFilter, ByPageNumber>> = objectMapper.readValue(json)
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, Long> = objectMapper.readValue(json)
 

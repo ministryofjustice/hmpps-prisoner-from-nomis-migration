@@ -8,6 +8,7 @@ import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
@@ -19,7 +20,7 @@ import java.util.concurrent.CompletableFuture
 class MigrationVisitsMessageListener(
   objectMapper: ObjectMapper,
   visitsMigrationService: VisitsMigrationService,
-) : MigrationMessageListener<VisitsMigrationFilter, VisitId, NomisVisit, VisitNomisMapping>(
+) : MigrationMessageListener<VisitsMigrationFilter, VisitId, NomisVisit, VisitNomisMapping, ByPageNumber>(
   objectMapper,
   visitsMigrationService,
 ) {
@@ -30,7 +31,7 @@ class MigrationVisitsMessageListener(
 
   override fun parseContextFilter(json: String): MigrationMessage<*, VisitsMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<VisitsMigrationFilter, VisitId>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<VisitsMigrationFilter, ByPageNumber>> = objectMapper.readValue(json)
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, VisitId> = objectMapper.readValue(json)
 
