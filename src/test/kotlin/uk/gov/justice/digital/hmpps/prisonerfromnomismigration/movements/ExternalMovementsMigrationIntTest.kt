@@ -25,10 +25,12 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.migrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
@@ -41,8 +43,9 @@ class ExternalMovementsMigrationIntTest(
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
   @Autowired private val externalMovementsNomisApi: ExternalMovementsNomisApiMockServer,
   @Autowired private val mappingApi: ExternalMovementsMappingApiMockServer,
-  @Autowired private val dpsApi: ExternalMovementsDpsApiMockServer,
 ) : SqsIntegrationTestBase() {
+
+  private val dpsApi = dpsExtMovementsServer
 
   private lateinit var migrationId: String
   private val now = LocalDateTime.now()
@@ -128,16 +131,6 @@ class ExternalMovementsMigrationIntTest(
     }
 
     @Test
-    fun `will check mappings`() {
-      mappingApi.verify(
-        getRequestedFor(urlEqualTo("/mapping/temporary-absence/nomis-prisoner-number/A0001KT")),
-      )
-      mappingApi.verify(
-        getRequestedFor(urlEqualTo("/mapping/temporary-absence/nomis-prisoner-number/A0002KT")),
-      )
-    }
-
-    @Test
     fun `will create mappings`() {
       mappingApi.verify(
         putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
@@ -148,6 +141,16 @@ class ExternalMovementsMigrationIntTest(
         putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
           .withRequestBodyJsonPath("prisonerNumber", "A0002KT")
           .withRequestBodyJsonPath("migrationId", migrationId),
+      )
+    }
+
+    @Test
+    fun `will call DPS for each offender`() {
+      dpsApi.verify(
+        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+      )
+      dpsApi.verify(
+        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0002KT")),
       )
     }
 
@@ -433,6 +436,39 @@ class ExternalMovementsMigrationIntTest(
         check {
           assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           assertThat(it["migrationId"]).isEqualTo(migrationId)
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  inner class IgnoreOffendersWithNoBookings {
+    @BeforeEach
+    fun setUp() = runTest {
+      nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
+      mappingApi.stubGetTemporaryAbsenceMappings("A0001KT", NOT_FOUND)
+      externalMovementsNomisApi.stubGetTemporaryAbsences("A0001KT", response = OffenderTemporaryAbsencesResponse(bookings = listOf()))
+
+      migrationId = performMigration()
+    }
+
+    @Test
+    fun `will not migrate to DPS`() {
+      dpsApi.verify(
+        0,
+        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+      )
+    }
+
+    @Test
+    fun `will publish ignore telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("temporary-absences-migration-entity-ignored"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+          assertThat(it["reason"]).isEqualTo("The offender has no bookings")
         },
         isNull(),
       )

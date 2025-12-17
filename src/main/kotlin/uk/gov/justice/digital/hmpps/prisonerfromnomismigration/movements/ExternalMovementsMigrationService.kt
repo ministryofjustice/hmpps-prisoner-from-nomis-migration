@@ -83,21 +83,23 @@ class ExternalMovementsMigrationService(
       "migrationId" to migrationId,
     )
 
-    migrationMappingService.getPrisonerTemporaryAbsenceMappings(offenderNo)
-      ?.run { publishTelemetry("ignored", telemetry.apply { this["reason"] = "Already migrated" }) }
-      ?: runCatching {
-        val temporaryAbsences = nomisApiService.getTemporaryAbsences(offenderNo)
-        val dpsResponse = dpsApiService.migratePrisonerTaps(offenderNo, temporaryAbsences.toDpsRequest())
-        val mappings = temporaryAbsences.buildMappings(offenderNo, migrationId, dpsResponse)
-
-        createMappingOrOnFailureDo(mappings) {
-          requeueCreateMapping(mappings, context)
-        }
+    runCatching {
+      val temporaryAbsences = nomisApiService.getTemporaryAbsences(offenderNo)
+      if (temporaryAbsences.bookings.isEmpty()) {
+        publishTelemetry("ignored", telemetry.apply { this["reason"] = "The offender has no bookings" })
+        return
       }
-        .onFailure {
-          publishTelemetry("failed", telemetry.apply { this["reason"] = it.message ?: "Unknown error" })
-          throw it
-        }
+      val dpsResponse = dpsApiService.migratePrisonerTaps(offenderNo, temporaryAbsences.toDpsRequest())
+      val mappings = temporaryAbsences.buildMappings(offenderNo, migrationId, dpsResponse)
+
+      createMappingOrOnFailureDo(mappings) {
+        requeueCreateMapping(mappings, context)
+      }
+    }
+      .onFailure {
+        publishTelemetry("failed", telemetry.apply { this["reason"] = it.message ?: "Unknown error" })
+        throw it
+      }
   }
 
   override suspend fun retryCreateMapping(context: MigrationContext<TemporaryAbsencesPrisonerMappingDto>) {

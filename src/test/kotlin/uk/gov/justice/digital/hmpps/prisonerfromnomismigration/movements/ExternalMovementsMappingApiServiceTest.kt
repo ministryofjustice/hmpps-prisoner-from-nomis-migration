@@ -88,37 +88,6 @@ class ExternalMovementsMappingApiServiceTest {
   }
 
   @Nested
-  inner class GetMappings {
-    @Test
-    internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubGetTemporaryAbsenceMappings()
-
-      apiService.getPrisonerTemporaryAbsenceMappings("A1234BC")
-
-      mappingApi.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `should return null if not found`() = runTest {
-      mappingApi.stubGetTemporaryAbsenceMappings(status = NOT_FOUND)
-
-      apiService.getPrisonerTemporaryAbsenceMappings("A1234BC")
-        .also { assertThat(it).isNull() }
-    }
-
-    @Test
-    fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubGetTemporaryAbsenceMappings(status = INTERNAL_SERVER_ERROR)
-
-      assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.getPrisonerTemporaryAbsenceMappings("A1234BC")
-      }
-    }
-  }
-
-  @Nested
   inner class CreateApplicationMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
