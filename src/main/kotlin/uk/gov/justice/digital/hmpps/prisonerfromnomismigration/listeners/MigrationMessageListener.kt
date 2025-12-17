@@ -34,12 +34,17 @@ abstract class MigrationMessageListener<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTI
       runCatching {
         when (migrationMessage.type) {
           MIGRATE_ENTITIES -> migrationService.divideEntitiesByPage(migrationContextFilter(parseContextFilter(message)))
+
           MIGRATE_BY_PAGE -> migrationService.migrateEntitiesForPage(
             migrationContextFilter(parseContextPageFilter(message)),
           )
+
           MIGRATE_ENTITY -> migrationService.migrateNomisEntity(migrationContextFilter(parseContextNomisId(message)))
+
           MIGRATE_STATUS_CHECK -> migrationService.migrateStatusCheck(migrationContext(message.fromJson()))
+
           CANCEL_MIGRATION -> migrationService.cancelMigrateStatusCheck(migrationContext(message.fromJson()))
+
           RETRY_MIGRATION_MAPPING -> migrationService.retryCreateMapping(
             migrationContextFilter(
               parseContextMapping(message),
@@ -58,7 +63,7 @@ abstract class MigrationMessageListener<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTI
   private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this, object : TypeReference<T>() {})
 
   abstract fun parseContextFilter(json: String): MigrationMessage<*, FILTER>
-  abstract fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<FILTER>>
+  abstract fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<FILTER, NOMIS_ID>>
   abstract fun parseContextNomisId(json: String): MigrationMessage<*, NOMIS_ID>
   abstract fun parseContextMapping(json: String): MigrationMessage<*, MAPPING>
 }

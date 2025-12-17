@@ -35,7 +35,7 @@ class PrisonBalanceMigrationMessageListener(
 
   override fun parseContextFilter(json: String): MigrationMessage<*, PrisonBalanceMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<PrisonBalanceMigrationFilter>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<PrisonBalanceMigrationFilter, String>> = objectMapper.readValue(json)
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, String> = objectMapper.readValue(json)
 

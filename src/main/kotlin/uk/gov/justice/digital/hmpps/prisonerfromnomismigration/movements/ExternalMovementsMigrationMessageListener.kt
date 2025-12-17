@@ -36,7 +36,7 @@ class ExternalMovementsMigrationMessageListener(
 
   override fun parseContextFilter(json: String): MigrationMessage<*, ExternalMovementsMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<ExternalMovementsMigrationFilter>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<ExternalMovementsMigrationFilter, PrisonerId>> = objectMapper.readValue(json)
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = objectMapper.readValue(json)
 

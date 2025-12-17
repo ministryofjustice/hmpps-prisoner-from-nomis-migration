@@ -57,12 +57,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GetAllocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduleRulesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatusCheck
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.pageNumber
 import java.time.LocalDate
 
 class AllocationsMigrationServiceTest {
@@ -276,7 +278,7 @@ class AllocationsMigrationServiceTest {
 
       verify(queueService, times(3)).sendMessage(
         message = eq(MigrationMessageType.MIGRATE_BY_PAGE),
-        context = check<MigrationContext<MigrationPage<AllocationsMigrationFilter>>> {
+        context = check<MigrationContext<MigrationPage<AllocationsMigrationFilter, *>>> {
           assertThat(it.estimatedCount).isEqualTo(7)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
           assertThat(it.body.filter.prisonId).isEqualTo("BXI")
@@ -287,7 +289,7 @@ class AllocationsMigrationServiceTest {
 
     @Test
     internal fun `each page will contain page number and page size`(): Unit = runBlocking {
-      val context: KArgumentCaptor<MigrationContext<MigrationPage<AllocationsMigrationFilter>>> = argumentCaptor()
+      val context: KArgumentCaptor<MigrationContext<MigrationPage<AllocationsMigrationFilter, *>>> = argumentCaptor()
 
       service.divideEntitiesByPage(
         MigrationContext(
@@ -303,18 +305,18 @@ class AllocationsMigrationServiceTest {
         context.capture(),
         delaySeconds = eq(0),
       )
-      val allContexts: List<MigrationContext<MigrationPage<AllocationsMigrationFilter>>> = context.allValues
+      val allContexts: List<MigrationContext<MigrationPage<AllocationsMigrationFilter, *>>> = context.allValues
 
       val (firstPage, secondPage) = allContexts
       val lastPage = allContexts.last()
 
-      assertThat(firstPage.body.pageNumber).isEqualTo(0)
+      assertThat(firstPage.body.pageNumber()).isEqualTo(0)
       assertThat(firstPage.body.pageSize).isEqualTo(3)
 
-      assertThat(secondPage.body.pageNumber).isEqualTo(1)
+      assertThat(secondPage.body.pageNumber()).isEqualTo(1)
       assertThat(secondPage.body.pageSize).isEqualTo(3)
 
-      assertThat(lastPage.body.pageNumber).isEqualTo(2)
+      assertThat(lastPage.body.pageNumber()).isEqualTo(2)
       assertThat(lastPage.body.pageSize).isEqualTo(3)
     }
   }
@@ -338,7 +340,7 @@ class AllocationsMigrationServiceTest {
           estimatedCount = 7,
           body = MigrationPage(
             filter = AllocationsMigrationFilter(prisonId = "BXI", activityStartDate = LocalDate.now().plusDays(2)),
-            pageNumber = 1,
+            pageKey = ByPageNumber(1),
             pageSize = 3,
           ),
         ),
@@ -361,7 +363,7 @@ class AllocationsMigrationServiceTest {
           estimatedCount = 7,
           body = MigrationPage(
             filter = AllocationsMigrationFilter(prisonId = "BXI"),
-            pageNumber = 1,
+            pageKey = ByPageNumber(1),
             pageSize = 3,
           ),
         ),
@@ -394,7 +396,7 @@ class AllocationsMigrationServiceTest {
             filter = AllocationsMigrationFilter(
               prisonId = "BXI",
             ),
-            pageNumber = 2,
+            pageKey = ByPageNumber(2),
             pageSize = 3,
           ),
         ),
@@ -432,7 +434,7 @@ class AllocationsMigrationServiceTest {
             filter = AllocationsMigrationFilter(
               prisonId = "BXI",
             ),
-            pageNumber = 2,
+            pageKey = ByPageNumber(2),
             pageSize = 3,
           ),
         ),

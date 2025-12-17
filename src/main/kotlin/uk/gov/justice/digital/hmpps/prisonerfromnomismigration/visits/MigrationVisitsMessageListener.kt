@@ -30,7 +30,7 @@ class MigrationVisitsMessageListener(
 
   override fun parseContextFilter(json: String): MigrationMessage<*, VisitsMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<VisitsMigrationFilter>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<VisitsMigrationFilter, VisitId>> = objectMapper.readValue(json)
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, VisitId> = objectMapper.readValue(json)
 

@@ -41,6 +41,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
@@ -53,6 +54,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisLead
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.VisitId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.pageNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsService.VisitCreated
 import java.time.LocalDateTime
 
@@ -357,7 +359,7 @@ internal class VisitsMigrationServiceTest {
 
       verify(queueService, times(100_200 / 200)).sendMessage(
         message = eq(MIGRATE_BY_PAGE),
-        context = check<MigrationContext<MigrationPage<VisitsMigrationFilter>>> {
+        context = check<MigrationContext<MigrationPage<VisitsMigrationFilter, *>>> {
           assertThat(it.estimatedCount).isEqualTo(100_200)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
           assertThat(it.body.filter.prisonIds).containsExactly("LEI", "BXI")
@@ -371,7 +373,7 @@ internal class VisitsMigrationServiceTest {
 
     @Test
     internal fun `each page will contain page number and page size`(): Unit = runBlocking {
-      val context: KArgumentCaptor<MigrationContext<MigrationPage<VisitsMigrationFilter>>> = argumentCaptor()
+      val context: KArgumentCaptor<MigrationContext<MigrationPage<VisitsMigrationFilter, *>>> = argumentCaptor()
 
       service.divideEntitiesByPage(
         MigrationContext(
@@ -392,21 +394,21 @@ internal class VisitsMigrationServiceTest {
         context.capture(),
         delaySeconds = eq(0),
       )
-      val allContexts: List<MigrationContext<MigrationPage<VisitsMigrationFilter>>> = context.allValues
+      val allContexts: List<MigrationContext<MigrationPage<VisitsMigrationFilter, *>>> = context.allValues
 
       val (firstPage, secondPage, thirdPage) = allContexts
       val lastPage = allContexts.last()
 
-      assertThat(firstPage.body.pageNumber).isEqualTo(0)
+      assertThat(firstPage.body.pageNumber()).isEqualTo(0)
       assertThat(firstPage.body.pageSize).isEqualTo(200)
 
-      assertThat(secondPage.body.pageNumber).isEqualTo(1)
+      assertThat(secondPage.body.pageNumber()).isEqualTo(1)
       assertThat(secondPage.body.pageSize).isEqualTo(200)
 
-      assertThat(thirdPage.body.pageNumber).isEqualTo(2)
+      assertThat(thirdPage.body.pageNumber()).isEqualTo(2)
       assertThat(thirdPage.body.pageSize).isEqualTo(200)
 
-      assertThat(lastPage.body.pageNumber).isEqualTo((100_200 / 200) - 1)
+      assertThat(lastPage.body.pageNumber()).isEqualTo((100_200 / 200) - 1)
       assertThat(lastPage.body.pageSize).isEqualTo(200)
     }
   }
@@ -733,7 +735,7 @@ internal class VisitsMigrationServiceTest {
               fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
               toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
             ),
-            pageNumber = 13,
+            pageKey = ByPageNumber(13),
             pageSize = 15,
           ),
         ),
@@ -764,7 +766,7 @@ internal class VisitsMigrationServiceTest {
               fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
               toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
             ),
-            pageNumber = 13,
+            pageKey = ByPageNumber(13),
             pageSize = 15,
           ),
         ),
@@ -803,7 +805,7 @@ internal class VisitsMigrationServiceTest {
               fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
               toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
             ),
-            pageNumber = 13,
+            pageKey = ByPageNumber(13),
             pageSize = 15,
           ),
         ),
@@ -848,7 +850,7 @@ internal class VisitsMigrationServiceTest {
               fromDateTime = LocalDateTime.parse("2020-01-01T00:00:00"),
               toDateTime = LocalDateTime.parse("2020-01-02T23:00:00"),
             ),
-            pageNumber = 13,
+            pageKey = ByPageNumber(13),
             pageSize = 15,
           ),
         ),

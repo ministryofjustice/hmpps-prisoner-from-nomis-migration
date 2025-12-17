@@ -36,7 +36,7 @@ class CourtSentencingMigrationMessageListener(
 
   override fun parseContextFilter(json: String): MigrationMessage<*, CourtSentencingMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<CourtSentencingMigrationFilter>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<CourtSentencingMigrationFilter, PrisonerId>> = objectMapper.readValue(json)
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = objectMapper.readValue(json)
 

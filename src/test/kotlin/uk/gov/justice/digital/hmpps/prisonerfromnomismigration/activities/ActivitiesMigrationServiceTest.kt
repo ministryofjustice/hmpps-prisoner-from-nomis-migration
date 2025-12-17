@@ -46,12 +46,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PayRatesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduleRulesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatusCheck
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.pageNumber
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
@@ -269,7 +271,7 @@ class ActivitiesMigrationServiceTest {
 
       verify(queueService, times(3)).sendMessage(
         message = eq(MigrationMessageType.MIGRATE_BY_PAGE),
-        context = check<MigrationContext<MigrationPage<ActivitiesMigrationFilter>>> {
+        context = check<MigrationContext<MigrationPage<ActivitiesMigrationFilter, *>>> {
           assertThat(it.estimatedCount).isEqualTo(7)
           assertThat(it.migrationId).isEqualTo("2020-05-23T11:30:00")
           assertThat(it.body.filter.prisonId).isEqualTo("BXI")
@@ -281,7 +283,7 @@ class ActivitiesMigrationServiceTest {
 
     @Test
     internal fun `each page will contain page number and page size`(): Unit = runBlocking {
-      val context: KArgumentCaptor<MigrationContext<MigrationPage<ActivitiesMigrationFilter>>> = argumentCaptor()
+      val context: KArgumentCaptor<MigrationContext<MigrationPage<ActivitiesMigrationFilter, *>>> = argumentCaptor()
 
       service.divideEntitiesByPage(
         MigrationContext(
@@ -297,18 +299,18 @@ class ActivitiesMigrationServiceTest {
         context.capture(),
         delaySeconds = eq(0),
       )
-      val allContexts: List<MigrationContext<MigrationPage<ActivitiesMigrationFilter>>> = context.allValues
+      val allContexts: List<MigrationContext<MigrationPage<ActivitiesMigrationFilter, *>>> = context.allValues
 
       val (firstPage, secondPage) = allContexts
       val lastPage = allContexts.last()
 
-      assertThat(firstPage.body.pageNumber).isEqualTo(0)
+      assertThat(firstPage.body.pageNumber()).isEqualTo(0)
       assertThat(firstPage.body.pageSize).isEqualTo(3)
 
-      assertThat(secondPage.body.pageNumber).isEqualTo(1)
+      assertThat(secondPage.body.pageNumber()).isEqualTo(1)
       assertThat(secondPage.body.pageSize).isEqualTo(3)
 
-      assertThat(lastPage.body.pageNumber).isEqualTo(2)
+      assertThat(lastPage.body.pageNumber()).isEqualTo(2)
       assertThat(lastPage.body.pageSize).isEqualTo(3)
     }
   }
@@ -334,7 +336,7 @@ class ActivitiesMigrationServiceTest {
           estimatedCount = 7,
           body = MigrationPage(
             filter = ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = startDate),
-            pageNumber = 1,
+            pageKey = ByPageNumber(1),
             pageSize = 3,
           ),
         ),
@@ -356,7 +358,7 @@ class ActivitiesMigrationServiceTest {
           estimatedCount = 7,
           body = MigrationPage(
             filter = ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = startDate),
-            pageNumber = 1,
+            pageKey = ByPageNumber(1),
             pageSize = 3,
           ),
         ),
@@ -387,7 +389,7 @@ class ActivitiesMigrationServiceTest {
           estimatedCount = 7,
           body = MigrationPage(
             filter = ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = startDate),
-            pageNumber = 2,
+            pageKey = ByPageNumber(2),
             pageSize = 3,
           ),
         ),
@@ -427,7 +429,7 @@ class ActivitiesMigrationServiceTest {
           estimatedCount = 7,
           body = MigrationPage(
             filter = ActivitiesMigrationFilter(prisonId = "BXI", activityStartDate = startDate),
-            pageNumber = 2,
+            pageKey = ByPageNumber(2),
             pageSize = 3,
           ),
         ),

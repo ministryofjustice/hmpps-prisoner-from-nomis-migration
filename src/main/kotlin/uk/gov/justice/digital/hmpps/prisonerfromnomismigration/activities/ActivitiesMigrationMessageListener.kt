@@ -30,7 +30,7 @@ class ActivitiesMigrationMessageListener(
 
   override fun parseContextFilter(json: String): MigrationMessage<*, ActivitiesMigrationFilter> = objectMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<ActivitiesMigrationFilter>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<ActivitiesMigrationFilter, ActivitiesMigrationRequest>> = objectMapper.readValue(json)
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, ActivitiesMigrationRequest> = objectMapper.readValue(json)
 
