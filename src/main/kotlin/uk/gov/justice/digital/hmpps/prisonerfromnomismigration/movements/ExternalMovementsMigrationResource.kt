@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
 
+import com.microsoft.applicationinsights.TelemetryClient
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -9,12 +10,18 @@ import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 
 @RestController
 @RequestMapping("/migrate/external-movements", produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -22,6 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
 class ExternalMovementsMigrationResource(
   private val migrationService: ExternalMovementsMigrationService,
+  private val telemetryClient: TelemetryClient,
 ) {
   @PostMapping
   @ResponseStatus(value = HttpStatus.ACCEPTED)
@@ -48,4 +56,52 @@ class ExternalMovementsMigrationResource(
   suspend fun migrateExternalMovements(
     @RequestBody @Valid migrationFilter: ExternalMovementsMigrationFilter,
   ) = migrationService.startMigration(migrationFilter)
+
+  @PreAuthorize("hasAnyRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW','ROLE_PRISONER_FROM_NOMIS__REPAIR_MOVEMENTS__RW')")
+  @PutMapping("/repair/{prisonerNumber}")
+  @Operation(
+    summary = "Repair all TAP applications, schedules and movements for a single prisoner",
+    description = "Migrates a single prisoner to DPS. For prisoners with lots of movements this could be a lengthy process - maybe up to 2 minutes.",
+    responses = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Prisoner migrated",
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Incorrect permissions to start migration",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "404",
+        description = "Prisoner not found in NOMIS",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
+  )
+  suspend fun repairPrisoner(
+    @Schema(description = "The prisoner to migrate")
+    @PathVariable prisonerNumber: String,
+  ) {
+    val migrationId = generateBatchId()
+    telemetryClient.trackEvent(
+      "temporary-absences-migration-entity-repair-requested",
+      mapOf("offenderNo" to prisonerNumber, "migrationId" to migrationId),
+      null,
+    )
+
+    migrationService.migrateNomisEntity(
+      MigrationContext(
+        MigrationType.EXTERNAL_MOVEMENTS,
+        migrationId,
+        1,
+        PrisonerId(prisonerNumber),
+      ),
+    )
+  }
 }

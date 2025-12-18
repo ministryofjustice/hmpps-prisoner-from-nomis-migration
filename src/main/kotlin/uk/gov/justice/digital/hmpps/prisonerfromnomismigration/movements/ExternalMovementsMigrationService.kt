@@ -31,6 +31,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNum
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import java.time.LocalDateTime
 import java.util.*
 
@@ -86,6 +87,7 @@ class ExternalMovementsMigrationService(
 
     runCatching {
       val temporaryAbsences = nomisApiService.getTemporaryAbsences(offenderNo)
+        ?: throw NotFoundException("Prisoner $offenderNo not found")
       if (temporaryAbsences.bookings.isEmpty()) {
         publishTelemetry("ignored", telemetry.apply { this["reason"] = "The offender has no bookings" })
         return

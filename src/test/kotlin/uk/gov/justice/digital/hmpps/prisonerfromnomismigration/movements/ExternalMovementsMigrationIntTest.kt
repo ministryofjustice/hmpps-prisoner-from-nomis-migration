@@ -475,6 +475,125 @@ class ExternalMovementsMigrationIntTest(
     }
   }
 
+  @Nested
+  inner class RepairEndpoint {
+    private val prisonerNumber = "A0001KT"
+
+    @BeforeEach
+    fun setUp() = runTest {
+      stubMigrationDependencies(entities = 1)
+    }
+
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() = runTest {
+        repairPrisonerOk(prisonerNumber)
+      }
+
+      @Test
+      fun `will request temporary absences from NOMIS`() {
+        externalMovementsNomisApi.verifyGetTemporaryAbsences(offenderNo = "A0001KT")
+      }
+
+      @Test
+      fun `will create mappings`() {
+        mappingApi.verify(
+          putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
+            .withRequestBodyJsonPath("prisonerNumber", "A0001KT"),
+        )
+      }
+
+      @Test
+      fun `will migrate to DPS`() {
+        dpsApi.verify(putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")))
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absences-migration-entity-repair-requested"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absences-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class Validation {
+      @Test
+      fun `will return not found if prisoner unknown`() {
+        externalMovementsNomisApi.stubGetTemporaryAbsences(NOT_FOUND)
+
+        repairPrisoner("UNKNOWN")
+          .expectStatus().isNotFound
+      }
+    }
+
+    @Nested
+    inner class Security {
+
+      @Test
+      fun `access forbidden when no role`() {
+        webTestClient.put().uri("/migrate/external-movements/repair/$prisonerNumber")
+          .headers(setAuthorisation(roles = listOf()))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(ExternalMovementsMigrationFilter())
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access forbidden with wrong role`() {
+        webTestClient.put().uri("/migrate/external-movements/repair/$prisonerNumber")
+          .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(ExternalMovementsMigrationFilter())
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access unauthorised with no auth token`() {
+        webTestClient.put().uri("/migrate/external-movements/repair/$prisonerNumber")
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(ExternalMovementsMigrationFilter())
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      fun `access allowed with temporary role`() {
+        webTestClient.put().uri("/migrate/external-movements/repair/$prisonerNumber")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__REPAIR_MOVEMENTS__RW")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(ExternalMovementsMigrationFilter())
+          .exchange()
+          .expectStatus().isOk
+      }
+    }
+
+    private fun repairPrisoner(prisonerNumber: String) = webTestClient.put()
+      .uri {
+        it.path("/migrate/external-movements/repair/$prisonerNumber")
+          .build(prisonerNumber)
+      }
+      .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+      .contentType(MediaType.APPLICATION_JSON)
+      .exchange()
+
+    private fun repairPrisonerOk(prisonerNumber: String) = repairPrisoner(prisonerNumber).expectStatus().isOk
+  }
+
   private fun performMigration(prisonerNumber: String? = null): String = webTestClient.post()
     .uri("/migrate/external-movements")
     .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))

@@ -61,7 +61,7 @@ class ExternalMovementsNomisApiServiceTest {
     fun `will return temporary absences`() = runTest {
       externalMovementsNomisApiMockServer.stubGetTemporaryAbsences(offenderNo = "A1234BC")
 
-      val result = apiService.getTemporaryAbsences(offenderNo = "A1234BC")
+      val result = apiService.getTemporaryAbsences(offenderNo = "A1234BC")!!
 
       assertThat(result.bookings).hasSize(1)
       assertThat(result.bookings[0].bookingId).isEqualTo(12345)
