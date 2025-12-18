@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsenceReturnResponse
@@ -13,13 +14,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 
 @Service
 class ExternalMovementsNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
-  suspend fun getTemporaryAbsences(offenderNo: String): OffenderTemporaryAbsencesResponse = webClient.get()
+  suspend fun getTemporaryAbsencesOrNull(offenderNo: String): OffenderTemporaryAbsencesResponse? = webClient.get()
     .uri {
       it.path("/movements/{offenderNo}/temporary-absences")
         .build(offenderNo)
     }
     .retrieve()
-    .awaitBody()
+    .awaitBodyOrNullWhenNotFound()
 
   suspend fun getTemporaryAbsenceApplication(offenderNo: String, applicationId: Long) = webClient.get()
     .uri {

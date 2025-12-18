@@ -41,7 +41,7 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
 
   suspend fun createApplicationMapping(mapping: TemporaryAbsenceApplicationSyncMappingDto) = webClient.createMapping("$domainUrl/application", mapping)
 
-  suspend fun getApplicationMapping(nomisApplicationId: Long): TemporaryAbsenceApplicationSyncMappingDto? = webClient.get()
+  suspend fun getApplicationMappingOrNull(nomisApplicationId: Long): TemporaryAbsenceApplicationSyncMappingDto? = webClient.get()
     .uri("$domainUrl/application/nomis-application-id/{nomisApplicationId}", nomisApplicationId)
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
@@ -55,7 +55,7 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
 
   suspend fun updateScheduledMovementMapping(mapping: ScheduledMovementSyncMappingDto) = webClient.updateMapping("$domainUrl/scheduled-movement", mapping)
 
-  suspend fun getScheduledMovementMapping(nomisEventId: Long): ScheduledMovementSyncMappingDto? = webClient.get()
+  suspend fun getScheduledMovementMappingOrNull(nomisEventId: Long): ScheduledMovementSyncMappingDto? = webClient.get()
     .uri("$domainUrl/scheduled-movement/nomis-event-id/{nomisEventId}", nomisEventId)
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
@@ -69,7 +69,7 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
 
   suspend fun updateExternalMovementMapping(mapping: ExternalMovementSyncMappingDto) = webClient.updateMapping("$domainUrl/external-movement", mapping)
 
-  suspend fun getExternalMovementMapping(bookingId: Long, movementSeq: Int): ExternalMovementSyncMappingDto? = webClient.get()
+  suspend fun getExternalMovementMappingOrNull(bookingId: Long, movementSeq: Int): ExternalMovementSyncMappingDto? = webClient.get()
     .uri("$domainUrl/external-movement/nomis-movement-id/{bookingId}/{movementSeq}", bookingId, movementSeq)
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
@@ -84,7 +84,7 @@ class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webCl
     .retrieve()
     .awaitBody()
 
-  suspend fun findAddressMapping(offenderNo: String, addressOwnerClass: String, addressId: Long) = webClient.post()
+  suspend fun findAddressMappingOrNull(offenderNo: String, addressOwnerClass: String, addressId: Long) = webClient.post()
     .uri("$domainUrl/addresses/by-nomis-id")
     .bodyValue(FindTemporaryAbsenceAddressByNomisIdRequest(offenderNo, addressOwnerClass, addressId))
     .retrieve()

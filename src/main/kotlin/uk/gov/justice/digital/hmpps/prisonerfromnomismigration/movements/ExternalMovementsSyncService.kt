@@ -60,7 +60,7 @@ class ExternalMovementsSyncService(
       return
     }
 
-    mappingApiService.getApplicationMapping(nomisApplicationId)
+    mappingApiService.getApplicationMappingOrNull(nomisApplicationId)
       ?.also { telemetryClient.trackEvent("$TELEMETRY_PREFIX-application-inserted-ignored", telemetry) }
       ?: run {
         track("$TELEMETRY_PREFIX-application-inserted", telemetry) {
@@ -90,7 +90,7 @@ class ExternalMovementsSyncService(
     }
 
     track("$TELEMETRY_PREFIX-application-updated", telemetry) {
-      val dpsApplicationId = mappingApiService.getApplicationMapping(nomisApplicationId)?.dpsMovementApplicationId
+      val dpsApplicationId = mappingApiService.getApplicationMappingOrNull(nomisApplicationId)?.dpsMovementApplicationId
         ?.also { telemetry["dpsAuthorisationId"] = it }
         ?: throw IllegalStateException("No mapping found when handling an update event for TAP application $nomisApplicationId - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
 
@@ -106,7 +106,7 @@ class ExternalMovementsSyncService(
       "bookingId" to bookingId,
       "nomisApplicationId" to nomisApplicationId,
     )
-    mappingApiService.getApplicationMapping(nomisApplicationId)?.also {
+    mappingApiService.getApplicationMappingOrNull(nomisApplicationId)?.also {
       track("$TELEMETRY_PREFIX-application-deleted", telemetry) {
         telemetry["dpsAuthorisationId"] = it.dpsMovementApplicationId
         mappingApiService.deleteApplicationMapping(nomisApplicationId)
@@ -118,13 +118,13 @@ class ExternalMovementsSyncService(
   private suspend fun requireParentApplicationExists(nomisApplicationId: Long): UUID = getParentApplicationId(nomisApplicationId)
     ?: throw ParentEntityNotFoundRetry("Application $nomisApplicationId not created yet so children cannot be processed")
 
-  private suspend fun getParentApplicationId(nomisApplicationId: Long): UUID? = mappingApiService.getApplicationMapping(nomisApplicationId)
+  private suspend fun getParentApplicationId(nomisApplicationId: Long): UUID? = mappingApiService.getApplicationMappingOrNull(nomisApplicationId)
     ?.dpsMovementApplicationId
 
   private suspend fun requireParentScheduleExists(nomisEventId: Long) = getParentScheduledId(nomisEventId)
     ?: throw ParentEntityNotFoundRetry("Scheduled event ID $nomisEventId not created yet so children cannot be processed")
 
-  private suspend fun getParentScheduledId(nomisEventId: Long): UUID? = mappingApiService.getScheduledMovementMapping(nomisEventId)
+  private suspend fun getParentScheduledId(nomisEventId: Long): UUID? = mappingApiService.getScheduledMovementMappingOrNull(nomisEventId)
     ?.dpsOccurrenceId
 
   suspend fun scheduledMovementInserted(event: ScheduledMovementEvent) = when (event.eventMovementType) {
@@ -147,7 +147,7 @@ class ExternalMovementsSyncService(
       return
     }
 
-    mappingApiService.getScheduledMovementMapping(eventId)
+    mappingApiService.getScheduledMovementMappingOrNull(eventId)
       ?.also { telemetryClient.trackEvent("$TELEMETRY_PREFIX-scheduled-movement-inserted-ignored", telemetry) }
       ?: run {
         track("$TELEMETRY_PREFIX-scheduled-movement-inserted", telemetry) {
@@ -206,7 +206,7 @@ class ExternalMovementsSyncService(
 
     return if (newAddress) {
       // NOMIS address is new/changed, look for address mapping or just default from NOMIS
-      mappingApiService.findAddressMapping(prisonerNumber, nomisSchedule.toAddressOwnerClass!!, nomisSchedule.toAddressId!!)
+      mappingApiService.findAddressMappingOrNull(prisonerNumber, nomisSchedule.toAddressOwnerClass!!, nomisSchedule.toAddressId!!)
         ?.let { Location(it.dpsDescription, it.dpsAddressText, it.dpsPostcode, it.dpsUprn) }
         ?: Location(nomisSchedule.toAddressDescription, nomisSchedule.toFullAddress ?: "", nomisSchedule.toAddressPostcode, null)
     } else {
@@ -278,7 +278,7 @@ class ExternalMovementsSyncService(
 
   suspend fun scheduledMovementTapOutUpdated(eventId: Long, prisonerNumber: String, telemetry: MutableMap<String, Any>) {
     track("$TELEMETRY_PREFIX-scheduled-movement-updated", telemetry) {
-      val existingScheduleMapping = mappingApiService.getScheduledMovementMapping(eventId)
+      val existingScheduleMapping = mappingApiService.getScheduledMovementMappingOrNull(eventId)
         ?.also { telemetry["dpsOccurrenceId"] = it.dpsOccurrenceId }
         ?: throw IllegalStateException("No mapping found when handling an update event for scheduled movement $eventId - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
 
@@ -303,7 +303,7 @@ class ExternalMovementsSyncService(
       "nomisEventId" to eventId,
       "directionCode" to directionCode,
     )
-    mappingApiService.getScheduledMovementMapping(eventId)?.also {
+    mappingApiService.getScheduledMovementMappingOrNull(eventId)?.also {
       track("$TELEMETRY_PREFIX-scheduled-movement-deleted", telemetry) {
         telemetry["dpsOccurrenceId"] = it.dpsOccurrenceId
         mappingApiService.deleteScheduledMovementMapping(eventId)
@@ -440,7 +440,7 @@ class ExternalMovementsSyncService(
       return
     }
 
-    mappingApiService.getExternalMovementMapping(bookingId, movementSeq)
+    mappingApiService.getExternalMovementMappingOrNull(bookingId, movementSeq)
       ?.also {
         telemetry["dpsMovementId"] = it.dpsMovementId
         telemetryClient.trackEvent("$TELEMETRY_PREFIX-external-movement-inserted-ignored", telemetry)
@@ -555,7 +555,7 @@ class ExternalMovementsSyncService(
     }
 
     track("$TELEMETRY_PREFIX-external-movement-updated", telemetry) {
-      val existingMapping = mappingApiService.getExternalMovementMapping(bookingId, movementSeq)
+      val existingMapping = mappingApiService.getExternalMovementMappingOrNull(bookingId, movementSeq)
         ?.also { telemetry["dpsMovementId"] = it.dpsMovementId }
         ?: throw IllegalStateException("No mapping found when handling an update event for movement $bookingId/$movementSeq - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
 
@@ -586,7 +586,7 @@ class ExternalMovementsSyncService(
 
     return if (addressHasChanged && hasNomisAddress) {
       // NOMIS address is new/changed, look for address mapping or just default from NOMIS
-      mappingApiService.findAddressMapping(prisonerNumber, nomisAddressOwnerClass, nomisAddressId)
+      mappingApiService.findAddressMappingOrNull(prisonerNumber, nomisAddressOwnerClass, nomisAddressId)
         ?.let { Location(it.dpsDescription, it.dpsAddressText, it.dpsPostcode, it.dpsUprn) }
         ?: Location(nomisAddressDescription, nomisAddress ?: "", nomisAddressPostcode, null)
     } else if (addressHasChanged) {
@@ -606,7 +606,7 @@ class ExternalMovementsSyncService(
       "movementSeq" to movementSeq,
       "directionCode" to directionCode,
     )
-    mappingApiService.getExternalMovementMapping(bookingId, movementSeq)?.also {
+    mappingApiService.getExternalMovementMappingOrNull(bookingId, movementSeq)?.also {
       track("$TELEMETRY_PREFIX-external-movement-deleted", telemetry) {
         telemetry["dpsMovementId"] = it.dpsMovementId
         mappingApiService.deleteExternalMovementMapping(bookingId, movementSeq)
