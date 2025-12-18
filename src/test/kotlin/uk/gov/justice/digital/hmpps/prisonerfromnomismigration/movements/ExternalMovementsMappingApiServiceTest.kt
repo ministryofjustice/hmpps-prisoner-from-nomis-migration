@@ -175,7 +175,7 @@ class ExternalMovementsMappingApiServiceTest {
     internal fun `should pass oath2 token to service`() = runTest {
       mappingApi.stubGetTemporaryAbsenceApplicationMapping()
 
-      apiService.getApplicationMapping(1L)
+      apiService.getApplicationMappingOrNull(1L)
 
       mappingApi.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -186,7 +186,7 @@ class ExternalMovementsMappingApiServiceTest {
     fun `should return null if not found`() = runTest {
       mappingApi.stubGetTemporaryAbsenceApplicationMapping(status = NOT_FOUND)
 
-      apiService.getApplicationMapping(1L)
+      apiService.getApplicationMappingOrNull(1L)
         .also { assertThat(it).isNull() }
     }
 
@@ -195,7 +195,7 @@ class ExternalMovementsMappingApiServiceTest {
       mappingApi.stubGetTemporaryAbsenceApplicationMapping(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.getApplicationMapping(1L)
+        apiService.getApplicationMappingOrNull(1L)
       }
     }
   }
@@ -370,7 +370,7 @@ class ExternalMovementsMappingApiServiceTest {
     internal fun `should pass oath2 token to service`() = runTest {
       mappingApi.stubGetScheduledMovementMapping()
 
-      apiService.getScheduledMovementMapping(1L)
+      apiService.getScheduledMovementMappingOrNull(1L)
 
       mappingApi.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -381,7 +381,7 @@ class ExternalMovementsMappingApiServiceTest {
     fun `should return null if not found`() = runTest {
       mappingApi.stubGetScheduledMovementMapping(status = NOT_FOUND)
 
-      apiService.getScheduledMovementMapping(1L)
+      apiService.getScheduledMovementMappingOrNull(1L)
         .also { assertThat(it).isNull() }
     }
 
@@ -390,7 +390,7 @@ class ExternalMovementsMappingApiServiceTest {
       mappingApi.stubGetScheduledMovementMapping(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.getScheduledMovementMapping(1L)
+        apiService.getScheduledMovementMappingOrNull(1L)
       }
     }
   }
@@ -546,7 +546,7 @@ class ExternalMovementsMappingApiServiceTest {
     internal fun `should pass oath2 token to service`() = runTest {
       mappingApi.stubGetExternalMovementMapping()
 
-      apiService.getExternalMovementMapping(12345L, 1)
+      apiService.getExternalMovementMappingOrNull(12345L, 1)
 
       mappingApi.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -557,7 +557,7 @@ class ExternalMovementsMappingApiServiceTest {
     fun `should return null if not found`() = runTest {
       mappingApi.stubGetExternalMovementMapping(status = NOT_FOUND)
 
-      apiService.getExternalMovementMapping(12345L, 1)
+      apiService.getExternalMovementMappingOrNull(12345L, 1)
         .also { assertThat(it).isNull() }
     }
 
@@ -566,7 +566,7 @@ class ExternalMovementsMappingApiServiceTest {
       mappingApi.stubGetExternalMovementMapping(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.getExternalMovementMapping(12345L, 1)
+        apiService.getExternalMovementMappingOrNull(12345L, 1)
       }
     }
   }
@@ -641,7 +641,7 @@ class ExternalMovementsMappingApiServiceTest {
     internal fun `should pass oath2 token to service`() = runTest {
       mappingApi.stubFindAddressMappings()
 
-      apiService.findAddressMapping("A1234BC", "OFF", 65432L)
+      apiService.findAddressMappingOrNull("A1234BC", "OFF", 65432L)
 
       mappingApi.verify(
         postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -652,7 +652,7 @@ class ExternalMovementsMappingApiServiceTest {
     fun `should return list of schedule mappings`() = runTest {
       mappingApi.stubFindAddressMappings()
 
-      with(apiService.findAddressMapping("A1234BC", "OFF", 65432L)!!) {
+      with(apiService.findAddressMappingOrNull("A1234BC", "OFF", 65432L)!!) {
         assertThat(dpsUprn).isEqualTo(23456L)
         assertThat(dpsAddressText).isEqualTo("some address")
       }
@@ -663,7 +663,7 @@ class ExternalMovementsMappingApiServiceTest {
       mappingApi.stubFindAddressMappings(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.findAddressMapping("A1234BC", "OFF", 65432L)
+        apiService.findAddressMappingOrNull("A1234BC", "OFF", 65432L)
       }
     }
 
@@ -671,7 +671,7 @@ class ExternalMovementsMappingApiServiceTest {
     fun `should return null if not found`() = runTest {
       mappingApi.stubFindAddressMappings(status = NOT_FOUND)
 
-      assertThat(apiService.findAddressMapping("A1234BC", "OFF", 65432L)).isNull()
+      assertThat(apiService.findAddressMappingOrNull("A1234BC", "OFF", 65432L)).isNull()
     }
   }
 }

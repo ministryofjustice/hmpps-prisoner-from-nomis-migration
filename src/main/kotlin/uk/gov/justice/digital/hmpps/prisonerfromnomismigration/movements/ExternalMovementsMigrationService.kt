@@ -86,7 +86,7 @@ class ExternalMovementsMigrationService(
     )
 
     runCatching {
-      val temporaryAbsences = nomisApiService.getTemporaryAbsences(offenderNo)
+      val temporaryAbsences = nomisApiService.getTemporaryAbsencesOrNull(offenderNo)
         ?: throw NotFoundException("Prisoner $offenderNo not found")
       if (temporaryAbsences.bookings.isEmpty()) {
         publishTelemetry("ignored", telemetry.apply { this["reason"] = "The offender has no bookings" })

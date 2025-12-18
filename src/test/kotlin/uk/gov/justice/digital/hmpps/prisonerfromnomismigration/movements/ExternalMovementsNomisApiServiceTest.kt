@@ -39,7 +39,7 @@ class ExternalMovementsNomisApiServiceTest {
     internal fun `will pass oath2 token to service`() = runTest {
       externalMovementsNomisApiMockServer.stubGetTemporaryAbsences(offenderNo = "A1234BC")
 
-      apiService.getTemporaryAbsences(offenderNo = "A1234BC")
+      apiService.getTemporaryAbsencesOrNull(offenderNo = "A1234BC")
 
       externalMovementsNomisApiMockServer.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -50,7 +50,7 @@ class ExternalMovementsNomisApiServiceTest {
     internal fun `will pass offender number to service`() = runTest {
       externalMovementsNomisApiMockServer.stubGetTemporaryAbsences(offenderNo = "A1234BC")
 
-      apiService.getTemporaryAbsences(offenderNo = "A1234BC")
+      apiService.getTemporaryAbsencesOrNull(offenderNo = "A1234BC")
 
       externalMovementsNomisApiMockServer.verify(
         getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences")),
@@ -61,7 +61,7 @@ class ExternalMovementsNomisApiServiceTest {
     fun `will return temporary absences`() = runTest {
       externalMovementsNomisApiMockServer.stubGetTemporaryAbsences(offenderNo = "A1234BC")
 
-      val result = apiService.getTemporaryAbsences(offenderNo = "A1234BC")!!
+      val result = apiService.getTemporaryAbsencesOrNull(offenderNo = "A1234BC")!!
 
       assertThat(result.bookings).hasSize(1)
       assertThat(result.bookings[0].bookingId).isEqualTo(12345)
@@ -75,12 +75,10 @@ class ExternalMovementsNomisApiServiceTest {
     }
 
     @Test
-    fun `will throw error when offender does not exist`() = runTest {
+    fun `will return null when offender does not exist`() = runTest {
       externalMovementsNomisApiMockServer.stubGetTemporaryAbsences(NOT_FOUND)
 
-      assertThrows<WebClientResponseException.NotFound> {
-        apiService.getTemporaryAbsences(offenderNo = "A1234BC")
-      }
+      assertThat(apiService.getTemporaryAbsencesOrNull(offenderNo = "A1234BC")).isNull()
     }
 
     @Test
@@ -88,7 +86,7 @@ class ExternalMovementsNomisApiServiceTest {
       externalMovementsNomisApiMockServer.stubGetTemporaryAbsences(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.getTemporaryAbsences(offenderNo = "A1234BC")
+        apiService.getTemporaryAbsencesOrNull(offenderNo = "A1234BC")
       }
     }
   }
