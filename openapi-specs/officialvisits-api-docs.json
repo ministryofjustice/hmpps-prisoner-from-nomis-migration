@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-12-15.190.eb3053f"
+    "version" : "2025-12-17.208.4acf09d"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -368,6 +368,84 @@
                   "type" : "array",
                   "items" : {
                     "$ref" : "#/components/schemas/ReferenceDataItem"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/reconcile/official-visits/identifiers" : {
+      "get" : {
+        "tags" : [ "Official visits Reconciliation" ],
+        "summary" : "Endpoint to return the all the official visit ids for reconciliation",
+        "description" : "\n\nRequires one of the following roles:\n* OFFICIAL_VISITS_MIGRATION\n* OFFICIAL_VISITS_ADMIN",
+        "operationId" : "getAllOfficialVisits",
+        "parameters" : [ {
+          "name" : "currentTerm",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        }, {
+          "name" : "page",
+          "in" : "query",
+          "description" : "Zero-based page index (0..N)",
+          "schema" : {
+            "type" : "integer",
+            "default" : 0
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "description" : "The size of the page to be returned",
+          "schema" : {
+            "type" : "integer",
+            "default" : 20
+          }
+        }, {
+          "name" : "sort",
+          "in" : "query",
+          "description" : "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "List of  paged list of DPS visit IDs for the current term",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SyncOfficialVisitId"
                   }
                 }
               }
@@ -1424,6 +1502,19 @@
           }
         },
         "required" : [ "code", "description", "displaySequence", "enabled", "groupCode", "referenceDataId" ]
+      },
+      "SyncOfficialVisitId" : {
+        "type" : "object",
+        "description" : "Response object for sync reconciliation",
+        "properties" : {
+          "officialVisitId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The ID for an Official visits",
+            "example" : 111111
+          }
+        },
+        "required" : [ "officialVisitId" ]
       },
       "DlqMessage" : {
         "type" : "object",
