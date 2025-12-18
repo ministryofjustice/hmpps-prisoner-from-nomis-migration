@@ -28,6 +28,8 @@ class OfficialVisitsNomisApiServiceTest {
     @Test
     internal fun `will pass oath2 token to endpoint`() = runTest {
       mockServer.stubGetOfficialVisitIds(
+        pageNumber = 0,
+        pageSize = 20,
         content = listOf(
           VisitIdResponse(
             visitId = 1234,
@@ -52,6 +54,8 @@ class OfficialVisitsNomisApiServiceTest {
     @Test
     fun `will call the get IDs endpoint`() = runTest {
       mockServer.stubGetOfficialVisitIds(
+        pageNumber = 10,
+        pageSize = 30,
         content = listOf(
           VisitIdResponse(
             visitId = 1234,

@@ -59,6 +59,7 @@ abstract class ByLastIdMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : 
   private suspend fun calculatePageKeyRanges(context: MigrationContext<FILTER>): List<ByLastId<NOMIS_ID>> {
     if (getIdsParallelCount < 2 || context.estimatedCount <= pageSize) {
       log.info("Get IDs parallel count of {} too small for the number entities {} so single threaded", getIdsParallelCount, context.estimatedCount)
+      // a single open-ended range
       return listOf(ByLastId(null, null))
     }
 
@@ -66,6 +67,7 @@ abstract class ByLastIdMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : 
     val pages = context.estimatedCount / pageSize + 1
     val pageNumbers = (2..getIdsParallelCount).map { page -> (page - 1) * pages / getIdsParallelCount }
 
+    // we will do as many concurrent calls as is set by getIdsParallelCount
     val lastIds = withContext(Dispatchers.Unconfined) {
       pageNumbers
         .map { pageNumber ->
@@ -76,14 +78,15 @@ abstract class ByLastIdMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : 
         .awaitAll()
         .filterNotNull()
     }
-    val firstPageKey = listOf(ByLastId(null, lastIds.firstOrNull()))
-    val pageKeys = firstPageKey + lastIds.mapIndexed { index, id ->
+    val firstPageRange = listOf(ByLastId(null, lastIds.firstOrNull()))
+    val initialPageRanges = firstPageRange + lastIds.mapIndexed { index, startRangeId ->
       ByLastId(
-        lastId = id,
-        endId = lastIds.getOrNull(index + 1),
+        startRangeId = startRangeId,
+        // end range of null represents open-ended until no more results
+        endRangeId = lastIds.getOrNull(index + 1),
       )
     }
-    return pageKeys
+    return initialPageRanges
   }
 
   override suspend fun migrateEntitiesForPage(context: MigrationContext<MigrationPage<FILTER, ByLastId<NOMIS_ID>>>) {
@@ -91,9 +94,10 @@ abstract class ByLastIdMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : 
 
     val pageKey = context.body.pageKey
 
-    val pageOfIds = getPageOfIdsFromId(pageKey.lastId, context.body.filter, pageSize).filter { it <= pageKey.endId }
+    // keep only those IDs within our range - filter out those being handled by other threads
+    val pageOfIds = getPageOfIdsFromId(pageKey.startRangeId, context.body.filter, pageSize).filter { it <= pageKey.endRangeId }
     if (pageOfIds.isEmpty()) {
-      log.info("No more IDs to migrate for page ${pageKey.lastId} so shutting down for ${pageKey.endId}")
+      log.info("No more IDs to migrate for page ${pageKey.startRangeId} so shutting down for ${pageKey.endRangeId}")
     } else {
       queueService.sendMessage(
         MigrationMessageType.MIGRATE_BY_PAGE,
@@ -101,7 +105,7 @@ abstract class ByLastIdMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : 
           context = context,
           body = MigrationPage(
             filter = context.body.filter,
-            pageKey = ByLastId(pageOfIds.last(), pageKey.endId),
+            pageKey = ByLastId(pageOfIds.last(), pageKey.endRangeId),
             pageSize = context.body.pageSize,
           ),
         ),
