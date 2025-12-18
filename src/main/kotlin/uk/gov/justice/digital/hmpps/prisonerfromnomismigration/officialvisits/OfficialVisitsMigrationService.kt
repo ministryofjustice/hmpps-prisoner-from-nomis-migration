@@ -34,6 +34,7 @@ class OfficialVisitsMigrationService(
   private val nomisApiService: OfficialVisitsNomisApiService,
   private val dpsApiService: OfficialVisitsDpsApiService,
   @Value($$"${officialvisits.page.size:1000}") pageSize: Long,
+  @Value($$"${officialvisits.parallel.count:4}") getIdsParallelCount: Int,
   @Value($$"${officialvisits.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value($$"${officialvisits.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value($$"${officialvisits.complete-check.count}") completeCheckCount: Int,
@@ -42,6 +43,7 @@ class OfficialVisitsMigrationService(
   officialVisitsMappingService,
   MigrationType.OFFICIAL_VISITS,
   pageSize = pageSize,
+  getIdsParallelCount = getIdsParallelCount,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckRetrySeconds,
   completeCheckRetrySeconds = completeCheckCount,
@@ -63,6 +65,23 @@ class OfficialVisitsMigrationService(
     fromDate = migrationFilter.fromDate,
     toDate = migrationFilter.toDate,
   ).ids
+
+  override fun compare(
+    first: VisitIdResponse,
+    second: VisitIdResponse?,
+  ): Int = first.visitId.compareTo(second?.visitId ?: Long.MAX_VALUE)
+
+  override suspend fun getPageOfIds(
+    migrationFilter: OfficialVisitsMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): List<VisitIdResponse> = nomisApiService.getOfficialVisitIds(
+    pageNumber = pageNumber,
+    pageSize = pageSize,
+    prisonIds = migrationFilter.prisonIds,
+    fromDate = migrationFilter.fromDate,
+    toDate = migrationFilter.toDate,
+  ).content!!
 
   override suspend fun getTotalNumberOfIds(migrationFilter: OfficialVisitsMigrationFilter): Long = nomisApiService.getOfficialVisitIds(
     pageNumber = 0,

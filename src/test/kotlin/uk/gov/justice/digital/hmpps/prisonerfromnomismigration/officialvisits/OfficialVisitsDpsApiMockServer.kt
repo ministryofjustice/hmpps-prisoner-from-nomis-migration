@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitSlot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -35,6 +36,7 @@ class OfficialVisitsDpsApiExtension :
     lateinit var objectMapper: ObjectMapper
 
     inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsOfficialVisitsServer.getRequestBody(pattern, objectMapper)
+    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsOfficialVisitsServer.getRequestBodies(pattern, objectMapper)
   }
 
   override fun beforeAll(context: ExtensionContext) {
