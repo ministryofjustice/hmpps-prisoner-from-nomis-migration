@@ -267,7 +267,7 @@ class MigrationPage<FILTER, PAGE_KEY : PageKey>(val filter: FILTER, val pageKey:
 @JsonSubTypes(value = [JsonSubTypes.Type(ByPageNumber::class), JsonSubTypes.Type(ByLastId::class)])
 sealed class PageKey
 class ByPageNumber(val pageNumber: Long) : PageKey()
-class ByLastId<NOMIS_ID>(val lastId: NOMIS_ID?) : PageKey()
+data class ByLastId<NOMIS_ID>(val lastId: NOMIS_ID?, val endId: NOMIS_ID? = null) : PageKey()
 
 fun <FILTER, PAGE_KEY : PageKey> MigrationPage<FILTER, PAGE_KEY>.pageNumber() = when (pageKey) {
   is ByLastId<*> -> throw IllegalStateException("Should not be called for this migration type")

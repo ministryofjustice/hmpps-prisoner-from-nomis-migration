@@ -39,6 +39,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitOrder
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.migrateVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsNomisApiMockServer.Companion.officialVisitResponse
@@ -352,6 +353,8 @@ class OfficialVisitsMigrationIntTest(
 
       @BeforeAll
       fun setUp() {
+        dpsApiMock.resetAll()
+
         nomisApiMock.stubGetOfficialVisitIds(
           content = listOf(
             VisitIdResponse(
@@ -569,6 +572,147 @@ class OfficialVisitsMigrationIntTest(
           assertThat(relationshipToPrisoner).isEqualTo("POL")
           assertThat(relationshipTypeCode).isEqualTo(RelationshipType.OFFICIAL)
         }
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathLargeNumberOfVisits {
+      private lateinit var migrationResult: MigrationResult
+      val nomisLocationId = 12345L
+      val dpsLocationId: UUID = UUID.fromString("e7c2a3cc-e5b2-48ff-9e8b-a5038355b36c")
+      val nomisVisitId = 2L
+      val nomisVisitSlotId = 3L
+      val dpsVisitSlotId = 30L
+
+      private lateinit var migrationRequests: List<MigrateVisitRequest>
+
+      @BeforeAll
+      fun setUp() {
+        dpsApiMock.resetAll()
+
+        // estimated count
+        nomisApiMock.stubGetOfficialVisitIds(
+          pageNumber = 0,
+          pageSize = 1,
+          totalElements = 81,
+          content = listOf(
+            VisitIdResponse(
+              visitId = 1,
+            ),
+          ),
+        )
+        nomisApiMock.stubGetOfficialVisitIds(
+          pageNumber = 2,
+          pageSize = 10,
+          totalElements = 81,
+          content = (21L..30L).map {
+            VisitIdResponse(
+              visitId = it,
+            )
+          },
+        )
+        nomisApiMock.stubGetOfficialVisitIds(
+          pageNumber = 4,
+          pageSize = 10,
+          totalElements = 81,
+          content = (41L..50L).map {
+            VisitIdResponse(
+              visitId = it,
+            )
+          },
+        )
+        nomisApiMock.stubGetOfficialVisitIds(
+          pageNumber = 6,
+          pageSize = 10,
+          totalElements = 81,
+          content = (61L..70L).map {
+            VisitIdResponse(
+              visitId = it,
+            )
+          },
+        )
+        nomisApiMock.stubGetOfficialVisitIds(
+          pageNumber = 8,
+          pageSize = 10,
+          totalElements = 81,
+          content = (81L..81L).map {
+            VisitIdResponse(
+              visitId = it,
+            )
+          },
+        )
+
+        // first page
+        nomisApiMock.stubGetOfficialVisitIdsByLastId(
+          visitId = 0,
+          content = (1..10).map {
+            VisitIdResponse(
+              visitId = it.toLong(),
+            )
+          },
+        )
+
+        listOf(11 to 20, 21 to 30, 31 to 40, 41 to 50, 51 to 60, 61 to 70, 71 to 80, 81 to 81).forEach { (startId, endId) ->
+          nomisApiMock.stubGetOfficialVisitIdsByLastId(
+            visitId = startId.toLong() - 1,
+            content = (startId..endId).map {
+              VisitIdResponse(
+                visitId = it.toLong(),
+              )
+            },
+          )
+        }
+
+        // last page
+        nomisApiMock.stubGetOfficialVisitIdsByLastId(
+          visitId = 81,
+          content = emptyList(),
+        )
+
+        (1L..81L).forEach {
+          mappingApiMock.stubGetByNomisIdsOrNull(
+            nomisVisitId = it,
+            mapping = null,
+          )
+        }
+        (1L..81L).forEach {
+          nomisApiMock.stubGetOfficialVisit(
+            visitId = it,
+            response = officialVisitResponse().copy(
+              internalLocationId = nomisLocationId,
+              visitId = it,
+              visitSlotId = nomisVisitSlotId,
+            ),
+          )
+        }
+        mappingApiMock.stubGetInternalLocationByNomisId(
+          nomisLocationId = nomisLocationId,
+          mapping = LocationMappingDto(
+            dpsLocationId = dpsLocationId.toString(),
+            nomisLocationId = nomisLocationId,
+            mappingType = LocationMappingDto.MappingType.LOCATION_CREATED,
+          ),
+        )
+        visitSlotMappingApiMock.stubGetVisitSlotByNomisId(
+          nomisId = nomisVisitSlotId,
+          mapping = VisitSlotMappingDto(
+            dpsId = dpsVisitSlotId.toString(),
+            nomisId = nomisVisitSlotId,
+            mappingType = VisitSlotMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        dpsApiMock.stubMigrateVisit()
+        mappingApiMock.stubCreateMappingsForMigration()
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 81)
+        migrationResult = performMigration()
+        migrationRequests = getRequestBodies(postRequestedFor(urlPathEqualTo("/migrate/visit")))
+      }
+
+      @Test
+      fun `will migrate 81 records exactly once`() {
+        assertThat(migrationRequests).hasSize(81)
+        (1L..81L).forEach { nomisVisitId -> assertThat(migrationRequests.firstOrNull { it.offenderVisitId == nomisVisitId }).isNotNull }
       }
     }
 

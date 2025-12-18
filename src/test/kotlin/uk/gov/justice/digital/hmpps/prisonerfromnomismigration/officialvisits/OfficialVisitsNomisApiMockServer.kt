@@ -1,8 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -72,17 +72,20 @@ class OfficialVisitsNomisApiMockServer(private val objectMapper: ObjectMapper) {
   }
   fun stubGetOfficialVisitIds(
     pageNumber: Int = 0,
-    pageSize: Int = 20,
+    pageSize: Int = 1,
     totalElements: Long = content.size.toLong(),
     content: List<VisitIdResponse>,
   ) {
     nomisApi.stubFor(
-      get(urlPathEqualTo("/official-visits/ids")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(pageVisitIdResponse(content, pageSize = pageSize, pageNumber = pageNumber, totalElements = totalElements))),
-      ),
+      get(urlPathEqualTo("/official-visits/ids"))
+        .withQueryParam("page", equalTo(pageNumber.toString()))
+        .withQueryParam("size", equalTo(pageSize.toString()))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(objectMapper.writeValueAsString(pageVisitIdResponse(content, pageSize = pageSize, pageNumber = pageNumber, totalElements = totalElements))),
+        ),
     )
   }
   fun stubGetOfficialVisitIdsByLastId(
@@ -90,7 +93,7 @@ class OfficialVisitsNomisApiMockServer(private val objectMapper: ObjectMapper) {
     visitId: Long = 0,
   ) {
     nomisApi.stubFor(
-      get(urlPathEqualTo("/official-visits/ids/all-from-id")).withQueryParam("visitId", WireMock.equalTo(visitId.toString())).willReturn(
+      get(urlPathEqualTo("/official-visits/ids/all-from-id")).withQueryParam("visitId", equalTo(visitId.toString())).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
