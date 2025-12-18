@@ -1,18 +1,11 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.withContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
-import kotlin.collections.mapIndexed
 
-@OptIn(ExperimentalCoroutinesApi::class)
 abstract class ByLastIdMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any>(
   mappingService: MigrationMapping<MAPPING>,
   migrationType: MigrationType,
@@ -36,57 +29,50 @@ abstract class ByLastIdMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : 
   }
 
   override suspend fun divideEntitiesByPage(context: MigrationContext<FILTER>) {
-    val pageKeys = calculatePageKeyRanges(context)
-
-    log.info("Get IDs parallelism is {} with ranges of {}", pageKeys.size, pageKeys)
-
-    pageKeys.forEach { pageKey ->
-      queueService.sendMessage(
-        MigrationMessageType.MIGRATE_BY_PAGE,
-        MigrationContext<MigrationPage<FILTER, ByLastId<NOMIS_ID>>>(
-          context = context,
-          body = MigrationPage(
-            filter = context.body,
-            pageKey = pageKey,
-            pageSize = pageSize,
-          ),
-        ),
-      )
-    }
+    submitNextPageRange(
+      pageNumbers = calculatePageNumberRanges(context),
+      currentIndex = 0,
+      context = context,
+      pageSize = pageSize,
+      previousEndRangeId = null,
+    )
     startStatusCheck(MigrationContext(context = context, body = context.body))
   }
 
-  private suspend fun calculatePageKeyRanges(context: MigrationContext<FILTER>): List<ByLastId<NOMIS_ID>> {
+  private fun calculatePageNumberRanges(context: MigrationContext<FILTER>): List<Long> {
     if (getIdsParallelCount < 2 || context.estimatedCount <= pageSize) {
       log.info("Get IDs parallel count of {} too small for the number entities {} so single threaded", getIdsParallelCount, context.estimatedCount)
-      // a single open-ended range
-      return listOf(ByLastId(null, null))
+      return listOf(0)
     }
 
-    // calculate page ranges for each parallel request
     val pages = context.estimatedCount / pageSize + 1
     val pageNumbers = (2..getIdsParallelCount).map { page -> (page - 1) * pages / getIdsParallelCount }
+    return pageNumbers
+  }
 
-    // we will do as many concurrent calls as is set by getIdsParallelCount
-    val lastIds = withContext(Dispatchers.Unconfined) {
-      pageNumbers
-        .map { pageNumber ->
-          async {
-            getPageOfIds(context.body, pageSize, pageNumber).lastOrNull()
-          }
-        }
-        .awaitAll()
-        .filterNotNull()
+  suspend fun submitNextPageRange(pageNumbers: List<Long>, currentIndex: Int, context: MigrationContext<FILTER>, pageSize: Long, previousEndRangeId: NOMIS_ID?) {
+    // when last page this is an open-ended range so no need to find the last range id
+    val currentEndRangeId = if (currentIndex == pageNumbers.lastIndex) {
+      null
+    } else {
+      getPageOfIds(context.body, pageSize, pageNumbers[currentIndex]).lastOrNull()
     }
-    val firstPageRange = listOf(ByLastId(null, lastIds.firstOrNull()))
-    val initialPageRanges = firstPageRange + lastIds.mapIndexed { index, startRangeId ->
-      ByLastId(
-        startRangeId = startRangeId,
-        // end range of null represents open-ended until no more results
-        endRangeId = lastIds.getOrNull(index + 1),
-      )
+    val currentRange = ByLastId(previousEndRangeId, currentEndRangeId)
+    log.info("Sending initial seed range of {}", currentRange)
+    queueService.sendMessage(
+      MigrationMessageType.MIGRATE_BY_PAGE,
+      MigrationContext(
+        context = context,
+        body = MigrationPage(
+          filter = context.body,
+          pageKey = currentRange,
+          pageSize = pageSize,
+        ),
+      ),
+    )
+    if (currentEndRangeId != null) {
+      submitNextPageRange(pageNumbers, currentIndex + 1, context, pageSize, currentEndRangeId)
     }
-    return initialPageRanges
   }
 
   override suspend fun migrateEntitiesForPage(context: MigrationContext<MigrationPage<FILTER, ByLastId<NOMIS_ID>>>) {
