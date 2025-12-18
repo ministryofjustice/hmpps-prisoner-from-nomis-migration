@@ -17,6 +17,8 @@ class ExternalMovementsConfiguration(
   @Value("\${api.base.url.ext.movements}") val apiBaseUri: String,
   @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
   @Value("\${api.timeout:90s}") val timeout: Duration,
+  @Value("\${api.ext-movements-mapping-timeout:30s}") val mappingTimeout: Duration,
+  @Value("\${api.base.url.mapping}") val mappingApiBaseUri: String,
 ) {
 
   @Bean
@@ -27,6 +29,9 @@ class ExternalMovementsConfiguration(
 
   @Bean
   fun extMovementsApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.reactiveHealthWebClient(apiBaseUri, healthTimeout)
+
+  @Bean
+  fun extMovementsMappingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "nomis-mapping-api", url = mappingApiBaseUri, mappingTimeout)
 
   @Component("extMovementsApi")
   class MovementsApiHealth(@Qualifier("extMovementsApiHealthWebClient") webClient: WebClient) : ReactiveHealthPingCheck(webClient)
