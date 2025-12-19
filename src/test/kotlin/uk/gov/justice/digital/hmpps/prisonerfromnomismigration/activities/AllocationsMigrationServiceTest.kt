@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -85,6 +86,7 @@ class AllocationsMigrationServiceTest {
     completeCheckDelaySeconds = 10,
     completeCheckCount = 9,
     completeCheckScheduledRetrySeconds = 10,
+    objectMapper = ObjectMapper(),
   ) {
     init {
       queueService = this@AllocationsMigrationServiceTest.queueService
@@ -111,6 +113,7 @@ class AllocationsMigrationServiceTest {
       completeCheckDelaySeconds = 10,
       completeCheckCount = 9,
       completeCheckScheduledRetrySeconds = 0,
+      objectMapper = ObjectMapper(),
     ) {
       init {
         queueService = this@AllocationsMigrationServiceTest.queueService

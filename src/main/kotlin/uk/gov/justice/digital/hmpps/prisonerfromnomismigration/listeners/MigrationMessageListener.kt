@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.sqs.model.Message
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.CANCEL_MIGRATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_BY_DIVISION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_BY_PAGE
@@ -14,18 +13,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.LocalMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationDivision
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.PageKey
 import java.util.concurrent.CompletableFuture
 
-abstract class MigrationMessageListener<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTITY : Any, MAPPING : Any, PAGE_KEY : PageKey>(
+abstract class MigrationMessageListener(
   internal val objectMapper: ObjectMapper,
-  private val migrationService: MigrationService<FILTER, NOMIS_ID, MAPPING, PAGE_KEY>,
+  private val migrationService: MigrationService<*, *, *, *>,
 ) {
-
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
@@ -36,25 +30,13 @@ abstract class MigrationMessageListener<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTI
     return asCompletableFuture {
       runCatching {
         when (migrationMessage.type) {
-          MIGRATE_ENTITIES -> migrationService.divideEntitiesByPage(migrationContextFilter(parseContextFilter(message)))
-
-          MIGRATE_BY_DIVISION -> migrationService.divideEntitiesByDivision(migrationContextFilter(parseContextDivisionFilter(message)))
-
-          MIGRATE_BY_PAGE -> migrationService.migrateEntitiesForPage(
-            migrationContextFilter(parseContextPageFilter(message)),
-          )
-
-          MIGRATE_ENTITY -> migrationService.migrateNomisEntity(migrationContextFilter(parseContextNomisId(message)))
-
-          MIGRATE_STATUS_CHECK -> migrationService.migrateStatusCheck(migrationContext(message.fromJson()))
-
-          CANCEL_MIGRATION -> migrationService.cancelMigrateStatusCheck(migrationContext(message.fromJson()))
-
-          RETRY_MIGRATION_MAPPING -> migrationService.retryCreateMapping(
-            migrationContextFilter(
-              parseContextMapping(message),
-            ),
-          )
+          MIGRATE_ENTITIES -> migrationService.divideEntitiesByPage(message)
+          MIGRATE_BY_DIVISION -> migrationService.divideEntitiesByDivision(message)
+          MIGRATE_BY_PAGE -> migrationService.migrateEntitiesForPage(message)
+          MIGRATE_ENTITY -> migrationService.migrateNomisEntity(message)
+          MIGRATE_STATUS_CHECK -> migrationService.migrateStatusCheck(message)
+          CANCEL_MIGRATION -> migrationService.cancelMigrateStatusCheck(message)
+          RETRY_MIGRATION_MAPPING -> migrationService.retryCreateMapping(message)
         }
       }.onFailure {
         log.error("MessageID:${rawMessage.messageId()}", it)
@@ -63,13 +45,5 @@ abstract class MigrationMessageListener<FILTER : Any, NOMIS_ID : Any, NOMIS_ENTI
     }
   }
 
-  private fun <T> migrationContextFilter(message: MigrationMessage<*, T>): MigrationContext<T> = message.context
-
   private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this, object : TypeReference<T>() {})
-
-  abstract fun parseContextFilter(json: String): MigrationMessage<*, FILTER>
-  abstract fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<FILTER, PAGE_KEY>>
-  open fun parseContextDivisionFilter(json: String): MigrationMessage<*, MigrationDivision<FILTER, NOMIS_ID>> = throw IllegalStateException("Only valid for ByLastId migrations")
-  abstract fun parseContextNomisId(json: String): MigrationMessage<*, NOMIS_ID>
-  abstract fun parseContextMapping(json: String): MigrationMessage<*, MAPPING>
 }

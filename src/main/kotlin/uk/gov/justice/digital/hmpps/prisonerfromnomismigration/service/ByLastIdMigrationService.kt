@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
@@ -15,6 +16,7 @@ abstract class ByLastIdMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : 
   completeCheckCount: Int,
   completeCheckRetrySeconds: Int = 1,
   completeCheckScheduledRetrySeconds: Int = completeCheckDelaySeconds,
+  objectMapper: ObjectMapper,
 ) : MigrationService<FILTER, NOMIS_ID, MAPPING, ByLastId<NOMIS_ID>>(
   mappingService = mappingService,
   migrationType = migrationType,
@@ -22,6 +24,7 @@ abstract class ByLastIdMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : 
   completeCheckCount = completeCheckCount,
   completeCheckRetrySeconds = completeCheckRetrySeconds,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
+  objectMapper = objectMapper,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)

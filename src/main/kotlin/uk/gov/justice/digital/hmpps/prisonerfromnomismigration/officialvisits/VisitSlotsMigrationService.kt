@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -17,7 +19,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitTimeSlotResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitSlot
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumberMigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import java.util.*
 
@@ -26,6 +31,7 @@ class VisitSlotsMigrationService(
   private val visitSlotsMappingService: VisitSlotsMappingService,
   private val nomisApiService: VisitSlotsNomisApiService,
   private val dpsApiService: OfficialVisitsDpsApiService,
+  objectMapper: ObjectMapper,
   @Value("\${visitslots.page.size:1000}") pageSize: Long,
   @Value("\${visitslots.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${visitslots.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
@@ -39,6 +45,7 @@ class VisitSlotsMigrationService(
   completeCheckCount = completeCheckRetrySeconds,
   completeCheckRetrySeconds = completeCheckCount,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
+  objectMapper = objectMapper,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -176,6 +183,13 @@ class VisitSlotsMigrationService(
   )
 
   private suspend fun VisitInternalLocationResponse.lookUpDpsLocationId(): UUID = visitSlotsMappingService.getInternalLocationByNomisId(id).dpsLocationId.let { UUID.fromString(it) }
+  override fun parseContextFilter(json: String): MigrationMessage<*, Any> = objectMapper.readValue(json)
+
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<Any, ByPageNumber>> = objectMapper.readValue(json)
+
+  override fun parseContextNomisId(json: String): MigrationMessage<*, VisitTimeSlotIdResponse> = objectMapper.readValue(json)
+
+  override fun parseContextMapping(json: String): MigrationMessage<*, VisitTimeSlotMigrationMappingDto> = objectMapper.readValue(json)
 }
 
 private fun VisitTimeSlotIdResponse.DayOfWeek.asNomisApiDayOfWeek(): VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot = when (this) {
