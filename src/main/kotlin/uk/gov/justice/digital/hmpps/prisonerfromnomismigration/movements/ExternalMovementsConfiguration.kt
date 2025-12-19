@@ -17,7 +17,7 @@ class ExternalMovementsConfiguration(
   @Value("\${api.base.url.ext.movements}") val apiBaseUri: String,
   @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
   @Value("\${api.timeout:90s}") val timeout: Duration,
-  @Value("\${api.ext-movements-mapping-timeout:30s}") val mappingTimeout: Duration,
+  @Value("\${api.ext-movements-mapping-timeout:60s}") val mappingTimeout: Duration,
   @Value("\${api.base.url.mapping}") val mappingApiBaseUri: String,
 ) {
 
