@@ -100,6 +100,8 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
     startStatusCheck(context)
   }
 
+  open suspend fun divideEntitiesByDivision(context: MigrationContext<MigrationDivision<FILTER, NOMIS_ID>>) {}
+
   suspend fun startStatusCheck(context: MigrationContext<FILTER>) {
     queueService.sendMessage(
       MigrationMessageType.MIGRATE_STATUS_CHECK,
@@ -262,6 +264,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
 fun <T> MigrationContext<T>.durationMinutes(): Long = Duration.between(LocalDateTime.parse(this.migrationId), LocalDateTime.now()).toMinutes()
 
 class MigrationPage<FILTER, PAGE_KEY : PageKey>(val filter: FILTER, val pageKey: PAGE_KEY, val pageSize: Long)
+class MigrationDivision<FILTER, NOMIS_ID>(val filter: FILTER, val pageNumbers: List<Long>, val currentPageIndex: Int, val pageSize: Long, val previousEndRangeId: NOMIS_ID?)
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY)
 @JsonSubTypes(value = [JsonSubTypes.Type(ByPageNumber::class), JsonSubTypes.Type(ByLastId::class)])

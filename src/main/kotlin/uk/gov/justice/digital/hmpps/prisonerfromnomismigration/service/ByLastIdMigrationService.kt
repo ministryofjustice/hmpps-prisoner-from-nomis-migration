@@ -39,6 +39,19 @@ abstract class ByLastIdMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : 
     startStatusCheck(MigrationContext(context = context, body = context.body))
   }
 
+  override suspend fun divideEntitiesByDivision(context: MigrationContext<MigrationDivision<FILTER, NOMIS_ID>>) {
+    submitNextPageRange(
+      pageNumbers = context.body.pageNumbers,
+      currentIndex = context.body.currentPageIndex,
+      context = MigrationContext(
+        context = context,
+        body = context.body.filter,
+      ),
+      pageSize = context.body.pageSize,
+      previousEndRangeId = context.body.previousEndRangeId,
+    )
+  }
+
   private fun calculatePageNumberRanges(context: MigrationContext<FILTER>): List<Long> {
     if (getIdsParallelCount < 2 || context.estimatedCount <= pageSize) {
       log.info("Get IDs parallel count of {} too small for the number entities {} so single threaded", getIdsParallelCount, context.estimatedCount)
@@ -71,7 +84,19 @@ abstract class ByLastIdMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : 
       ),
     )
     if (currentEndRangeId != null) {
-      submitNextPageRange(pageNumbers, currentIndex + 1, context, pageSize, currentEndRangeId)
+      queueService.sendMessage(
+        MigrationMessageType.MIGRATE_BY_DIVISION,
+        MigrationContext(
+          context = context,
+          body = MigrationDivision(
+            filter = context.body,
+            pageNumbers = pageNumbers,
+            currentPageIndex = currentIndex + 1,
+            pageSize = pageSize,
+            previousEndRangeId = currentEndRangeId,
+          ),
+        ),
+      )
     }
   }
 
