@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -10,7 +12,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumberMigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.APPOINTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
@@ -24,6 +29,7 @@ class AppointmentsMigrationService(
   private val nomisApiService: NomisApiService,
   private val appointmentsService: AppointmentsService,
   private val appointmentsMappingService: AppointmentsMappingService,
+  objectMapper: ObjectMapper,
   @Value("\${appointments.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
@@ -33,6 +39,7 @@ class AppointmentsMigrationService(
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
+  objectMapper = objectMapper,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -166,6 +173,14 @@ class AppointmentsMigrationService(
     updated = modifiedDate?.truncatedTo(ChronoUnit.SECONDS),
     updatedBy = modifiedBy,
   )
+
+  override fun parseContextFilter(json: String): MigrationMessage<*, AppointmentsMigrationFilter> = objectMapper.readValue(json)
+
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<AppointmentsMigrationFilter, ByPageNumber>> = objectMapper.readValue(json)
+
+  override fun parseContextNomisId(json: String): MigrationMessage<*, AppointmentIdResponse> = objectMapper.readValue(json)
+
+  override fun parseContextMapping(json: String): MigrationMessage<*, AppointmentMapping> = objectMapper.readValue(json)
 }
 
 private val simpleTimeFormat = DateTimeFormatter.ofPattern("HH:mm")

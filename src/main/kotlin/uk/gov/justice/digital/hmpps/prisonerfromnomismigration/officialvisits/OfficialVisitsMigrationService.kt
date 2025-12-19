@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -22,7 +24,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitCompletionType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastIdMigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationDivision
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import java.time.format.DateTimeFormatter
 import java.util.*
@@ -33,6 +39,7 @@ class OfficialVisitsMigrationService(
   private val visitSlotsMappingService: VisitSlotsMappingService,
   private val nomisApiService: OfficialVisitsNomisApiService,
   private val dpsApiService: OfficialVisitsDpsApiService,
+  objectMapper: ObjectMapper,
   @Value($$"${officialvisits.page.size:1000}") pageSize: Long,
   @Value($$"${officialvisits.parallel.count:8}") getIdsParallelCount: Int,
   @Value($$"${officialvisits.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
@@ -48,6 +55,7 @@ class OfficialVisitsMigrationService(
   completeCheckCount = completeCheckRetrySeconds,
   completeCheckRetrySeconds = completeCheckCount,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
+  objectMapper = objectMapper,
 ) {
 
   private companion object {
@@ -169,6 +177,15 @@ class OfficialVisitsMigrationService(
 
   private suspend fun Long.lookUpDpsLocationId(): UUID = officialVisitsMappingService.getInternalLocationByNomisId(this).dpsLocationId.let { UUID.fromString(it) }
   private suspend fun Long.lookUpDpsVisitSlotId(): Long = visitSlotsMappingService.getVisitSlotByNomisId(this).dpsId.toLong()
+  override fun parseContextFilter(json: String): MigrationMessage<*, OfficialVisitsMigrationFilter> = objectMapper.readValue(json)
+
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<OfficialVisitsMigrationFilter, ByLastId<VisitIdResponse>>> = objectMapper.readValue(json)
+
+  override fun parseContextNomisId(json: String): MigrationMessage<*, VisitIdResponse> = objectMapper.readValue(json)
+
+  override fun parseContextMapping(json: String): MigrationMessage<*, OfficialVisitMigrationMappingDto> = objectMapper.readValue(json)
+
+  override fun parseContextDivisionFilter(json: String): MigrationMessage<*, MigrationDivision<OfficialVisitsMigrationFilter, VisitIdResponse>> = objectMapper.readValue(json)
 }
 
 internal suspend fun OfficialVisitResponse.toMigrateVisitRequest(prisonVisitSlotLookup: suspend (Long) -> Long, dpsLocationLookup: suspend (Long) -> UUID): MigrateVisitRequest = MigrateVisitRequest(

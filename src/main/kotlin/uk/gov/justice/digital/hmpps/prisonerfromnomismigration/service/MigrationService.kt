@@ -2,6 +2,8 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.core.type.TypeReference
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.ParameterizedTypeReference
@@ -12,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatc
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.migrationContext
 import java.time.Duration
 import java.time.LocalDateTime
 
@@ -22,6 +25,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
   private val completeCheckCount: Int,
   private val completeCheckRetrySeconds: Int = 1,
   private val completeCheckScheduledRetrySeconds: Int = completeCheckDelaySeconds,
+  internal val objectMapper: ObjectMapper,
 ) {
 
   @Autowired
@@ -238,6 +242,24 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
       object : ParameterizedTypeReference<DuplicateErrorResponse<MAPPING>>() {},
     )
   }
+
+  suspend fun divideEntitiesByPage(message: String) = divideEntitiesByPage(migrationContextFilter(parseContextFilter(message)))
+  suspend fun divideEntitiesByDivision(message: String) = divideEntitiesByDivision(migrationContextFilter(parseContextDivisionFilter(message)))
+  suspend fun migrateEntitiesForPage(message: String) = migrateEntitiesForPage(migrationContextFilter(parseContextPageFilter(message)))
+  suspend fun migrateNomisEntity(message: String) = migrateNomisEntity(migrationContextFilter(parseContextNomisId(message)))
+  suspend fun migrateStatusCheck(message: String) = migrateStatusCheck(migrationContext(message.fromJson()))
+  suspend fun cancelMigrateStatusCheck(message: String) = cancelMigrateStatusCheck(migrationContext(message.fromJson()))
+  suspend fun retryCreateMapping(message: String) = retryCreateMapping(migrationContextFilter(parseContextMapping(message)))
+
+  private fun <T> migrationContextFilter(message: MigrationMessage<*, T>): MigrationContext<T> = message.context
+
+  private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this, object : TypeReference<T>() {})
+
+  abstract fun parseContextFilter(json: String): MigrationMessage<*, FILTER>
+  abstract fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<FILTER, PAGE_KEY>>
+  open fun parseContextDivisionFilter(json: String): MigrationMessage<*, MigrationDivision<FILTER, NOMIS_ID>> = throw IllegalStateException("Only valid for ByLastId migrations")
+  abstract fun parseContextNomisId(json: String): MigrationMessage<*, NOMIS_ID>
+  abstract fun parseContextMapping(json: String): MigrationMessage<*, MAPPING>
 }
 
 fun <T> MigrationContext<T>.durationMinutes(): Long = Duration.between(LocalDateTime.parse(this.migrationId), LocalDateTime.now()).toMinutes()

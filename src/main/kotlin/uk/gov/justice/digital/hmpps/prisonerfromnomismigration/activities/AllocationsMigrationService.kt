@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
@@ -28,7 +30,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GetAllocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduleRulesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumberMigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.time.LocalTime
@@ -39,6 +44,7 @@ class AllocationsMigrationService(
   private val activitiesApiService: ActivitiesApiService,
   private val allocationsMappingService: AllocationsMappingService,
   private val activityMappingService: ActivitiesMappingService,
+  objectMapper: ObjectMapper,
   @Value("\${allocations.page.size:50}") pageSize: Long,
   @Value("\${allocations.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${allocations.complete-check.count}") completeCheckCount: Int,
@@ -50,6 +56,7 @@ class AllocationsMigrationService(
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
+  objectMapper = objectMapper,
 ) {
 
   private val log = LoggerFactory.getLogger(this::class.java)
@@ -154,6 +161,13 @@ class AllocationsMigrationService(
         null,
       )
     }
+  override fun parseContextFilter(json: String): MigrationMessage<*, AllocationsMigrationFilter> = objectMapper.readValue(json)
+
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<AllocationsMigrationFilter, ByPageNumber>> = objectMapper.readValue(json)
+
+  override fun parseContextNomisId(json: String): MigrationMessage<*, FindActiveAllocationIdsResponse> = objectMapper.readValue(json)
+
+  override fun parseContextMapping(json: String): MigrationMessage<*, AllocationMigrationMappingDto> = objectMapper.readValue(json)
 }
 
 private fun GetAllocationResponse.toAllocationMigrateRequest(activityId: Long, splitRegimeActivityId: Long?): AllocationMigrateRequest = AllocationMigrateRequest(
