@@ -15,8 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerBalanceMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAccountDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBalanceDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumberMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.math.BigDecimal
@@ -30,7 +29,7 @@ class PrisonerBalanceMigrationService(
   @Value($$"${prisonerbalance.page.size:1000}") pageSize: Long,
   @Value($$"${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value($$"${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<PrisonerBalanceMigrationFilter, Long, PrisonerBalanceMappingDto, ByPageNumber>(
+) : ByPageNumberMigrationService<PrisonerBalanceMigrationFilter, Long, PrisonerBalanceMappingDto>(
   mappingService = prisonerBalanceMappingService,
   migrationType = MigrationType.PRISONER_BALANCE,
   pageSize = pageSize,

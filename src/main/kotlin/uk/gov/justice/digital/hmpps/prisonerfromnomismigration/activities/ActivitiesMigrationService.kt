@@ -20,8 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GetActivityResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PayRatesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduleRulesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumberMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.ACTIVITIES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
@@ -40,7 +39,7 @@ class ActivitiesMigrationService(
   @Value("\${activities.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${activities.complete-check.count}") completeCheckCount: Int,
   @Value("\${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
-) : MigrationService<ActivitiesMigrationFilter, ActivitiesMigrationRequest, ActivityMigrationMappingDto, ByPageNumber>(
+) : ByPageNumberMigrationService<ActivitiesMigrationFilter, ActivitiesMigrationRequest, ActivityMigrationMappingDto>(
   mappingService = activitiesMappingService,
   migrationType = ACTIVITIES,
   pageSize = pageSize,

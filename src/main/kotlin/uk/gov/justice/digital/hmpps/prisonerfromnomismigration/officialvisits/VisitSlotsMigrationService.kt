@@ -17,8 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitTimeSlotResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitSlot
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumberMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import java.util.*
 
@@ -32,7 +31,7 @@ class VisitSlotsMigrationService(
   @Value("\${visitslots.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value("\${visitslots.complete-check.count}") completeCheckCount: Int,
   @Value("\${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
-) : MigrationService<Any, VisitTimeSlotIdResponse, VisitTimeSlotMigrationMappingDto, ByPageNumber>(
+) : ByPageNumberMigrationService<Any, VisitTimeSlotIdResponse, VisitTimeSlotMigrationMappingDto>(
   mappingService = visitSlotsMappingService,
   migrationType = MigrationType.VISIT_SLOTS,
   pageSize = pageSize,

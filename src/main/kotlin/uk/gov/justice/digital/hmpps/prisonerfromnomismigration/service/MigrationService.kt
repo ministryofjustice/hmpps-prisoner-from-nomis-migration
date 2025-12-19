@@ -18,7 +18,6 @@ import java.time.LocalDateTime
 abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAGE_KEY : PageKey>(
   internal val mappingService: MigrationMapping<MAPPING>,
   internal val migrationType: MigrationType,
-  private val pageSize: Long,
   private val completeCheckDelaySeconds: Int,
   private val completeCheckCount: Int,
   private val completeCheckRetrySeconds: Int = 1,
@@ -86,19 +85,8 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
     }
   }
 
-  open suspend fun divideEntitiesByPage(context: MigrationContext<FILTER>) {
-    (1..context.estimatedCount step pageSize).asSequence()
-      .map {
-        MigrationContext(
-          context = context,
-          body = MigrationPage(filter = context.body, ByPageNumber(pageNumber = it / pageSize), pageSize = pageSize),
-        )
-      }
-      .forEach {
-        queueService.sendMessage(MigrationMessageType.MIGRATE_BY_PAGE, it)
-      }
-    startStatusCheck(context)
-  }
+  abstract suspend fun divideEntitiesByPage(context: MigrationContext<FILTER>)
+  abstract suspend fun migrateEntitiesForPage(context: MigrationContext<MigrationPage<FILTER, PAGE_KEY>>)
 
   open suspend fun divideEntitiesByDivision(context: MigrationContext<MigrationDivision<FILTER, NOMIS_ID>>) {}
 
@@ -117,15 +105,6 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
       // complete prematurely - if that happens the delay config will need amending
     )
   }
-
-  open suspend fun migrateEntitiesForPage(context: MigrationContext<MigrationPage<FILTER, PAGE_KEY>>) = getPageOfIds(context.body.filter, context.body.pageSize, (context.body.pageKey as ByPageNumber).pageNumber).takeUnless {
-    migrationHistoryService.isCancelling(context.migrationId)
-  }?.map {
-    MigrationContext(
-      context = context,
-      body = it,
-    )
-  }?.forEach { queueService.sendMessageNoTracing(MigrationMessageType.MIGRATE_ENTITY, it) }
 
   suspend fun migrateStatusCheck(context: MigrationContext<MigrationStatusCheck>) {
     // no need to carry on checking if cancelling
