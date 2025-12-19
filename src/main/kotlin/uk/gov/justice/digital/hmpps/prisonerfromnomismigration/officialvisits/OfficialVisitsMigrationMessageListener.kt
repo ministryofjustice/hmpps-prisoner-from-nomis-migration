@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OfficialVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationDivision
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.OFFICIAL_VISITS_QUEUE_ID
@@ -42,4 +43,6 @@ class OfficialVisitsMigrationMessageListener(
   override fun parseContextNomisId(json: String): MigrationMessage<*, VisitIdResponse> = objectMapper.readValue(json)
 
   override fun parseContextMapping(json: String): MigrationMessage<*, OfficialVisitMigrationMappingDto> = objectMapper.readValue(json)
+
+  override fun parseContextDivisionFilter(json: String): MigrationMessage<*, MigrationDivision<OfficialVisitsMigrationFilter, VisitIdResponse>> = objectMapper.readValue(json)
 }
