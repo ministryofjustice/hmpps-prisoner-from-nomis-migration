@@ -31,7 +31,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import java.util.*
 
 @SpringAPIServiceTest
-@Import(ExternalMovementsMappingApiService::class, ExternalMovementsMappingApiMockServer::class)
+@Import(ExternalMovementsMappingApiService::class, ExternalMovementsMappingApiMockServer::class, ExternalMovementsConfiguration::class)
 class ExternalMovementsMappingApiServiceTest {
   @Autowired
   private lateinit var apiService: ExternalMovementsMappingApiService

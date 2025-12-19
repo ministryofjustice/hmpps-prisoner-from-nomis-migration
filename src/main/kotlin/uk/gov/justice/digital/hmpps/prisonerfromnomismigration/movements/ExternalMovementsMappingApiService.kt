@@ -21,7 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 
 @Service
-class ExternalMovementsMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<TemporaryAbsencesPrisonerMappingDto>(domainUrl = "/mapping/temporary-absence", webClient) {
+class ExternalMovementsMappingApiService(@Qualifier("extMovementsMappingApiWebClient") webClient: WebClient) : MigrationMapping<TemporaryAbsencesPrisonerMappingDto>(domainUrl = "/mapping/temporary-absence", webClient) {
 
   override suspend fun createMapping(
     mapping: TemporaryAbsencesPrisonerMappingDto,
