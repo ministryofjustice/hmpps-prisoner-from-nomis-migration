@@ -27,8 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceReturn
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumberMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
@@ -46,7 +45,7 @@ class ExternalMovementsMigrationService(
   @Value($$"${externalmovements.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value($$"${externalmovements.complete-check.count}") completeCheckCount: Int,
   @Value($$"${complete-check.scheduled-retry-seconds:10}") completeCheckScheduledRetrySeconds: Int,
-) : MigrationService<ExternalMovementsMigrationFilter, PrisonerId, TemporaryAbsencesPrisonerMappingDto, ByPageNumber>(
+) : ByPageNumberMigrationService<ExternalMovementsMigrationFilter, PrisonerId, TemporaryAbsencesPrisonerMappingDto>(
   mappingService = migrationMappingService,
   migrationType = MigrationType.EXTERNAL_MOVEMENTS,
   pageSize = pageSize,

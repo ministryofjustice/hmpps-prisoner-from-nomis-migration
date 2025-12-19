@@ -24,8 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceTermMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumberMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
@@ -39,7 +38,7 @@ class CourtSentencingMigrationService(
   @Value("\${courtsentencing.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<CourtSentencingMigrationFilter, PrisonerId, CourtCaseMigrationMapping, ByPageNumber>(
+) : ByPageNumberMigrationService<CourtSentencingMigrationFilter, PrisonerId, CourtCaseMigrationMapping>(
   mappingService = courtSentencingMappingService,
   migrationType = MigrationType.COURT_SENTENCING,
   pageSize = pageSize,

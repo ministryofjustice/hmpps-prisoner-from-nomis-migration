@@ -15,8 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonBalanceMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonAccountBalanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonBalanceDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumberMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 
@@ -29,7 +28,7 @@ class PrisonBalanceMigrationService(
   @Value($$"${prisonBalance.page.size:1000}") pageSize: Long,
   @Value($$"${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value($$"${complete-check.count}") completeCheckCount: Int,
-) : MigrationService<PrisonBalanceMigrationFilter, String, PrisonBalanceMappingDto, ByPageNumber>(
+) : ByPageNumberMigrationService<PrisonBalanceMigrationFilter, String, PrisonBalanceMappingDto>(
   mappingService = prisonBalanceMappingService,
   migrationType = MigrationType.PRISON_BALANCE,
   pageSize = pageSize,

@@ -34,7 +34,7 @@ class OfficialVisitsMigrationService(
   private val nomisApiService: OfficialVisitsNomisApiService,
   private val dpsApiService: OfficialVisitsDpsApiService,
   @Value($$"${officialvisits.page.size:1000}") pageSize: Long,
-  @Value($$"${officialvisits.parallel.count:4}") getIdsParallelCount: Int,
+  @Value($$"${officialvisits.parallel.count:8}") getIdsParallelCount: Int,
   @Value($$"${officialvisits.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value($$"${officialvisits.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value($$"${officialvisits.complete-check.count}") completeCheckCount: Int,

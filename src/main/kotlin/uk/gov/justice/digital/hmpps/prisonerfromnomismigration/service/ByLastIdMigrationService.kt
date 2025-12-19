@@ -18,7 +18,6 @@ abstract class ByLastIdMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : 
 ) : MigrationService<FILTER, NOMIS_ID, MAPPING, ByLastId<NOMIS_ID>>(
   mappingService = mappingService,
   migrationType = migrationType,
-  pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
   completeCheckRetrySeconds = completeCheckRetrySeconds,
