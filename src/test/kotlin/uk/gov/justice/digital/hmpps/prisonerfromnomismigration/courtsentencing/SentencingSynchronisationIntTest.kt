@@ -404,6 +404,74 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      @DisplayName("Sentences without a charge are invalid and will be rejected")
+      inner class NoChargeExists {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingNomisApiMockServer.stubGetSentence(
+            bookingId = NOMIS_BOOKING_ID,
+            sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            caseId = NOMIS_COURT_CASE_ID,
+            offenderCharges = emptyList(),
+            courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
+            recallCustodyDate = RecallCustodyDate(
+              returnToCustodyDate = LocalDate.parse("2023-01-01"),
+              recallLength = 14,
+            ),
+          )
+
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+          )
+
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+          )
+
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-INSERTED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will reject sentences that do not have charges`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-synchronisation-created-failed"),
+              check {
+                assertThat(it["reason"]).isEqualTo("No charges associated with sentence")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+              },
+              isNull(),
+            )
+            // will not create a sentence in DPS
+            dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+
+            @Test
+            fun `the event is placed on dead letter queue`() {
+              await untilAsserted {
+                assertThat(
+                  awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+                    courtSentencingQueueOffenderEventsDlqUrl,
+                  ).get(),
+                ).isEqualTo(1)
+              }
+            }
+          }
+        }
+      }
+
+      @Nested
       @DisplayName("When mapping already exists")
       inner class MappingExists {
         @BeforeEach

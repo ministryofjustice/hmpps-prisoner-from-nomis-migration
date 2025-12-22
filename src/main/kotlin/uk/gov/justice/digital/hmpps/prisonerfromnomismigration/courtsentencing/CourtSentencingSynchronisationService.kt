@@ -27,6 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergePerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.RefreshCaseReferences
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.MissingChildEntityRetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
@@ -1015,6 +1016,8 @@ class CourtSentencingSynchronisationService(
               caseId = caseId,
               sentenceSequence = event.sentenceSeq,
             )
+          nomisSentence.verifyChargeExists(telemetryClient, telemetry)
+
           val eventId = nomisSentence.courtOrder!!.eventId
           mappingApiService.getCourtAppearanceOrNullByNomisId(eventId)?.let { courtAppearanceMapping ->
             // retrieve offence mappings (created as part of the court appearance flow)
@@ -1874,6 +1877,16 @@ class CourtSentencingSynchronisationService(
         retryMessage.telemetryAttributes,
       )
     }
+  }
+}
+
+private fun SentenceResponse.verifyChargeExists(telemetryClient: TelemetryClient, telemetry: Map<String, String>) {
+  if (this.offenderCharges.isEmpty()) {
+    telemetryClient.trackEvent(
+      "sentence-synchronisation-created-failed",
+      telemetry + ("reason" to "No charges associated with sentence"),
+    )
+    throw MissingChildEntityRetry("Sentence (seq:${this.sentenceSeq}, bookingId: ${this.bookingId}) does not have a charge associated with it")
   }
 }
 
