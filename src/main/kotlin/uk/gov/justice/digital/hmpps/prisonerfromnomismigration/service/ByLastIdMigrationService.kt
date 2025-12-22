@@ -61,7 +61,7 @@ abstract class ByLastIdMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : 
     }
 
     val pages = context.estimatedCount / pageSize + 1
-    val pageNumbers = (2..getIdsParallelCount).map { page -> (page - 1) * pages / getIdsParallelCount }
+    val pageNumbers = (1..getIdsParallelCount).map { page -> page * pages / getIdsParallelCount }
     return pageNumbers
   }
 
