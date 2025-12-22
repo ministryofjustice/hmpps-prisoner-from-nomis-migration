@@ -54,3 +54,5 @@ data class DuplicateErrorContent(
 )
 
 class ParentEntityNotFoundRetry(message: String) : RuntimeException(message)
+
+class MissingChildEntityRetry(message: String) : RuntimeException(message)
