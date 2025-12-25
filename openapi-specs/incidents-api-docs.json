@@ -11,7 +11,7 @@
       "name" : "MIT",
       "identifier" : "MIT"
     },
-    "version" : "2025-12-03.417.a0b9bf3"
+    "version" : "2025-12-19.447.a61d694"
   },
   "servers" : [ {
     "url" : "/",
@@ -7509,17 +7509,17 @@
               "type" : "string"
             }
           },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "Number of elements in this page",
-            "example" : 20
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32",
             "description" : "Total number of pages",
             "example" : 3
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Number of elements in this page",
+            "example" : 20
           }
         },
         "readOnly" : true,
@@ -7921,6 +7921,23 @@
           },
           "columnsAsList" : {
             "type" : "boolean"
+          },
+          "horizontal" : {
+            "type" : "boolean"
+          },
+          "xStacked" : {
+            "type" : "boolean",
+            "writeOnly" : true
+          },
+          "yStacked" : {
+            "type" : "boolean",
+            "writeOnly" : true
+          },
+          "xstacked" : {
+            "type" : "boolean"
+          },
+          "ystacked" : {
+            "type" : "boolean"
           }
         }
       },
@@ -8036,7 +8053,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "equals", "id" ]
+        "required" : [ "id" ]
       },
       "UserTypeConstantDescription" : {
         "type" : "object",
