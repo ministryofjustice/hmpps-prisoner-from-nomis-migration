@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-12-22.225.8f5871c"
+    "version" : "2025-12-23.227.64a0f50"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -699,7 +699,7 @@
         "tags" : [ "Official visits" ],
         "summary" : "Get an official visit by prison code and ID",
         "description" : "Get the full details of an official visit, its visitors and prisoner details\n\nRequires one of the following roles:\n* ROLE_OFFICIAL_VISITS_ADMIN\n* ROLE_OFFICIAL_VISITS__R\n* ROLE_OFFICIAL_VISITS_RW",
-        "operationId" : "getOfficialVisits",
+        "operationId" : "getOfficialVisitByPrisonCodeAndId",
         "parameters" : [ {
           "name" : "prisonCode",
           "in" : "path",
@@ -1063,7 +1063,7 @@
           "visitTypes" : {
             "type" : "array",
             "description" : "The visit types to search for",
-            "examples" : [ "IN_PERSON", "VIDEO" ],
+            "examples" : [ "IN_PERSON", "VIDEO", "TELEPHONE", "UNKNOWN" ],
             "items" : {
               "$ref" : "#/components/schemas/VisitType"
             }
@@ -1071,7 +1071,7 @@
           "visitStatuses" : {
             "type" : "array",
             "description" : "The visit statuses to search for",
-            "examples" : [ "SCHEDULED", "COMPLETED" ],
+            "examples" : [ "SCHEDULED", "COMPLETED", "CANCELLED", "EXPIRED" ],
             "items" : {
               "$ref" : "#/components/schemas/VisitStatusType"
             }
