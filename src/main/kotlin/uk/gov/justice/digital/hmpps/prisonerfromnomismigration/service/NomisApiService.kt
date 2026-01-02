@@ -54,10 +54,12 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   ): PageImpl<VisitId> = webClient.get()
     .uri {
       it.path("/visits/ids")
-        .queryParam("prisonIds", prisonIds)
-        .queryParam("visitTypes", visitTypes)
-        .queryParam("fromDateTime", fromDateTime)
-        .queryParam("toDateTime", toDateTime)
+        .apply {
+          prisonIds.forEach { queryParam("prisonIds", it) }
+          visitTypes.forEach { queryParam("visitTypes", it) }
+          fromDateTime?.run { queryParam("fromDateTime", it) }
+          toDateTime?.run { queryParam("toDateTime", it) }
+        }
         .queryParam("ignoreMissingRoom", ignoreMissingRoom)
         .queryParam("page", pageNumber)
         .queryParam("size", pageSize)
@@ -80,10 +82,12 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   ): List<VisitRoomUsageResponse> = webClient.get()
     .uri {
       it.path("/visits/rooms/usage-count")
-        .queryParam("prisonIds", filter.prisonIds)
-        .queryParam("visitTypes", filter.visitTypes)
-        .queryParam("fromDateTime", filter.fromDateTime)
-        .queryParam("toDateTime", filter.toDateTime)
+        .apply {
+          filter.prisonIds.forEach { queryParam("prisonIds", it) }
+          filter.visitTypes.forEach { queryParam("visitTypes", it) }
+          filter.fromDateTime?.run { queryParam("fromDateTime", it) }
+          filter.toDateTime?.run { queryParam("toDateTime", it) }
+        }
         .build()
     }
     .retrieve()
@@ -105,9 +109,11 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   ): PageImpl<AppointmentIdResponse> = webClient.get()
     .uri {
       it.path("/appointments/ids")
-        .queryParam("prisonIds", prisonIds)
-        .queryParam("fromDate", fromDate)
-        .queryParam("toDate", toDate)
+        .apply {
+          prisonIds.forEach { queryParam("prisonIds", it) }
+          fromDate?.run { queryParam("fromDate", it) }
+          toDate?.run { queryParam("toDate", it) }
+        }
         .queryParam("page", pageNumber)
         .queryParam("size", pageSize)
         .build()
@@ -263,7 +269,7 @@ data class NomisVisit(
   val whenUpdated: LocalDateTime? = null,
 )
 
-class RestResponsePage<T>(
+class RestResponsePage<T : Any>(
   @JsonProperty("content") content: List<T>,
   @JsonProperty("number") number: Int,
   @JsonProperty("size") size: Int,
@@ -279,11 +285,11 @@ data class PageMetadata(
   val totalPages: Int,
 )
 
-class RestResponsePagedModel<T>(
+class RestResponsePagedModel<T : Any>(
   @JsonProperty("content") content: List<T>,
   @JsonProperty("page") page: PageMetadata,
 ) : PagedModel<T>(
   PageImpl(content, PageRequest.of(page.number.toInt(), page.size.toInt()), page.totalElements),
 )
 
-inline fun <reified T> typeReference() = object : ParameterizedTypeReference<T>() {}
+inline fun <reified T : Any> typeReference() = object : ParameterizedTypeReference<T>() {}
