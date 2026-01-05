@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.json.AutoConfigureJson
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
@@ -40,6 +41,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @SpringAPIServiceTest
+@AutoConfigureJson
 @Import(NomisApiService::class, ProfileDetailsNomisApiMockServer::class)
 internal class NomisApiServiceTest {
 

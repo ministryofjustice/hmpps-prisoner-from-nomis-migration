@@ -5,6 +5,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.json.AutoConfigureJson
 import org.springframework.context.annotation.Import
 import org.springframework.core.ParameterizedTypeReference
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.ActivitiesConfiguration
@@ -17,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 private const val APPOINTMENT_INSTANCE_ID = 1234567L
 
 @SpringAPIServiceTest
+@AutoConfigureJson
 @Import(AppointmentsMappingService::class, ActivitiesConfiguration::class)
 class AppointmentsMappingServiceTest {
   @Autowired
