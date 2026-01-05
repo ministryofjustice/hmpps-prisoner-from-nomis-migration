@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.json.AutoConfigureJson
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
@@ -31,6 +32,7 @@ import java.time.LocalDate
 import java.util.*
 
 @SpringAPIServiceTest
+@AutoConfigureJson
 @Import(ActivitiesApiService::class, ActivitiesConfiguration::class)
 internal class ActivitiesApiServiceTest {
   @Autowired
