@@ -164,7 +164,7 @@ internal class VisitsServiceTest {
         post(urlEqualTo("/migrate-visits")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.UNPROCESSABLE_ENTITY.value()),
+            .withStatus(HttpStatus.UNPROCESSABLE_CONTENT.value()),
         ),
       )
 
