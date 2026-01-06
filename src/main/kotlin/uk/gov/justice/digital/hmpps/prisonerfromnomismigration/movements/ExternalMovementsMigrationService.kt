@@ -189,6 +189,8 @@ class ExternalMovementsMigrationService(
     nomisAddressId = this.toAddressId,
     nomisAddressOwnerClass = this.toAddressOwnerClass,
     dpsAddressText = this.toFullAddress ?: "",
+    dpsDescription = this.toAddressDescription,
+    dpsPostcode = this.toAddressPostcode,
     eventTime = "${this.startTime}",
   )
 
@@ -198,6 +200,8 @@ class ExternalMovementsMigrationService(
     nomisAddressId = this.toAddressId,
     nomisAddressOwnerClass = this.toAddressOwnerClass,
     dpsAddressText = this.toFullAddress ?: "",
+    dpsDescription = this.toAddressDescription,
+    dpsPostcode = this.toAddressPostcode,
   )
 
   private fun TemporaryAbsenceReturn.toMappingDto(bookingId: Long, dpsResponse: MigrateTapResponse): ExternalMovementMappingDto = ExternalMovementMappingDto(
@@ -206,6 +210,8 @@ class ExternalMovementsMigrationService(
     nomisAddressId = this.fromAddressId,
     nomisAddressOwnerClass = this.fromAddressOwnerClass,
     dpsAddressText = this.fromFullAddress ?: "",
+    dpsDescription = this.fromAddressDescription,
+    dpsPostcode = this.fromAddressPostcode,
   )
 
   private fun MigrateTapResponse.findDpsAuthorisationId(nomisApplicationId: Long) = temporaryAbsences.firstOrNull { it.legacyId == nomisApplicationId }
