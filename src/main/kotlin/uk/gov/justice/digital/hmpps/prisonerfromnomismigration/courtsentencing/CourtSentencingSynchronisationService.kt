@@ -1328,6 +1328,59 @@ class CourtSentencingSynchronisationService(
     }
   }
 
+  // there is an edge case where a sentence charge is created after the sentence is created - without causing a sentence update event
+  // this handles that scenario by updating the sentence in DPS to ensure all charges are included
+  suspend fun nomisSentenceChargeInserted(event: OffenderSentenceChargeEvent) {
+    val bookingId = event.bookingId
+    val nomisSentenceSequence = event.sentenceSeq
+    val telemetry =
+      mapOf(
+        "nomisBookingId" to bookingId.toString(),
+        "nomisChargeId" to event.chargeId.toString(),
+        "nomisSentenceSequence" to event.sentenceSeq.toString(),
+        "offenderNo" to event.offenderIdDisplay,
+      )
+
+    val mapping = mappingApiService.getSentenceOrNullByNomisId(
+      bookingId = bookingId,
+      sentenceSequence = nomisSentenceSequence,
+    )
+    if (mapping == null) {
+      telemetryClient.trackEvent(
+        "sentence-charge-synchronisation-inserted-skipped",
+        telemetry + ("reason" to "sentence mapping does not exist, no update required"),
+      )
+    } else {
+      nomisApiService.getOffenderSentenceByBooking(
+        bookingId = bookingId,
+        sentenceSequence = nomisSentenceSequence,
+      ).let { nomisSentence ->
+        val eventId = nomisSentence.courtOrder!!.eventId
+        track(
+          "sentence-charge-synchronisation-inserted",
+          telemetry = (telemetry + ("dpsSentenceId" to mapping.dpsSentenceId)).toMutableMap(),
+        ) {
+          mappingApiService.getCourtAppearanceByNomisId(eventId).let { courtAppearanceMapping ->
+            dpsApiService.updateSentence(
+              sentenceId = mapping.dpsSentenceId,
+              nomisSentence.toDpsSentence(
+                dpsAppearanceUuid = courtAppearanceMapping.dpsCourtAppearanceId,
+                dpsConsecUuid = nomisSentence.consecSequence?.let {
+                  getConsecutiveSequenceMappingOrThrow(
+                    sentenceSequence = nomisSentenceSequence,
+                    bookingId = bookingId,
+                    consecSequence = it,
+                  )
+                },
+                sentenceChargeIds = getDpsChargeMappings(nomisSentence),
+              ),
+            )
+          }
+        }
+      }
+    }
+  }
+
   suspend fun nomisSentenceChargeDeleted(event: OffenderSentenceChargeEvent) {
     val bookingId = event.bookingId
     val nomisSentenceSequence = event.sentenceSeq

@@ -151,6 +151,16 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
+  // version without caseId for sentence charge events
+  suspend fun getOffenderSentenceByBooking(bookingId: Long, sentenceSequence: Int): SentenceResponse = webClient.get()
+    .uri(
+      "/prisoners/booking-id/{bookingId}/sentences/{sentenceSequence}",
+      bookingId,
+      sentenceSequence,
+    )
+    .retrieve()
+    .awaitBody()
+
   suspend fun getPrisonerIds(
     fromDate: LocalDate?,
     toDate: LocalDate?,
