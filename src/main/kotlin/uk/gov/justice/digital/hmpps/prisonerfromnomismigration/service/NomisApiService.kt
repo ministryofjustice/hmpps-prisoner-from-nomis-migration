@@ -57,8 +57,8 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
         .apply {
           prisonIds.forEach { queryParam("prisonIds", it) }
           visitTypes.forEach { queryParam("visitTypes", it) }
-          fromDateTime?.run { queryParam("fromDateTime", it) }
-          toDateTime?.run { queryParam("toDateTime", it) }
+          fromDateTime?.let { queryParam("fromDateTime", it) }
+          toDateTime?.let { queryParam("toDateTime", it) }
         }
         .queryParam("ignoreMissingRoom", ignoreMissingRoom)
         .queryParam("page", pageNumber)
@@ -85,8 +85,8 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
         .apply {
           filter.prisonIds.forEach { queryParam("prisonIds", it) }
           filter.visitTypes.forEach { queryParam("visitTypes", it) }
-          filter.fromDateTime?.run { queryParam("fromDateTime", it) }
-          filter.toDateTime?.run { queryParam("toDateTime", it) }
+          filter.fromDateTime?.let { queryParam("fromDateTime", it) }
+          filter.toDateTime?.let { queryParam("toDateTime", it) }
         }
         .build()
     }
@@ -111,8 +111,8 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
       it.path("/appointments/ids")
         .apply {
           prisonIds.forEach { queryParam("prisonIds", it) }
-          fromDate?.run { queryParam("fromDate", it) }
-          toDate?.run { queryParam("toDate", it) }
+          fromDate?.let { queryParam("fromDate", it) }
+          toDate?.let { queryParam("toDate", it) }
         }
         .queryParam("page", pageNumber)
         .queryParam("size", pageSize)
@@ -137,7 +137,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .uri {
       it.path("/activities/ids")
         .queryParam("prisonId", prisonId)
-        .apply { courseActivityId?.run { queryParam("courseActivityId", courseActivityId) } }
+        .apply { courseActivityId?.let { queryParam("courseActivityId", courseActivityId) } }
         .queryParam("page", pageNumber)
         .queryParam("size", pageSize)
         .build()
@@ -178,8 +178,10 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .uri {
       it.path("/allocations/ids")
         .queryParam("prisonId", prisonId)
-        .apply { courseActivityId?.run { queryParam("courseActivityId", courseActivityId) } }
-        .apply { activeOnDate?.run { queryParam("activeOnDate", activeOnDate) } }
+        .apply {
+          courseActivityId?.let { queryParam("courseActivityId", courseActivityId) }
+          activeOnDate?.let { queryParam("activeOnDate", activeOnDate) }
+        }
         .queryParam("page", pageNumber)
         .queryParam("size", pageSize)
         .build()

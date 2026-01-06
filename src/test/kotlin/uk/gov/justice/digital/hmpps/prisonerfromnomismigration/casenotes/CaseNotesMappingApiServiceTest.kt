@@ -9,6 +9,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.json.AutoConfigureJson
 import org.springframework.context.annotation.Import
 import org.springframework.core.ParameterizedTypeReference
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
@@ -22,6 +23,7 @@ import java.util.UUID
 private const val OFFENDER_NUMBER = "G4803UT"
 
 @SpringAPIServiceTest
+@AutoConfigureJson
 @Import(
   CaseNotesByPrisonerMigrationMappingApiService::class,
   CaseNotesConfiguration::class,
