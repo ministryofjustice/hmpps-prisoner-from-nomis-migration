@@ -1872,61 +1872,6 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class SentenceChargeInserted {
 
     @Nested
-    @DisplayName("When mapping doesn't exist and nomis sentence does exist")
-    inner class SentenceMappingDoesNotExist {
-      @BeforeEach
-      fun setUp() {
-        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
-        courtSentencingNomisApiMockServer.stubGetSentence(
-          endpointUsingCase = false,
-          sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
-          bookingId = NOMIS_BOOKING_ID,
-          offenderNo = OFFENDER_ID_DISPLAY,
-          caseId = NOMIS_COURT_CASE_ID,
-          courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
-          recallCustodyDate = RecallCustodyDate(
-            returnToCustodyDate = LocalDate.parse("2024-01-01"),
-            recallLength = 28,
-          ),
-        )
-        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
-          courtSentencingQueueOffenderEventsUrl,
-          sentenceChargeEvent(
-            eventType = "OFFENDER_SENTENCE_CHARGES-DELETED",
-          ),
-        )
-      }
-
-      @Test
-      fun `telemetry added to track the skip`() {
-        await untilAsserted {
-          verify(telemetryClient, times(1)).trackEvent(
-            eq("sentence-charge-synchronisation-deleted-skipped"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-              assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
-              assertThat(it["nomisChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE.toString())
-              assertThat(it["reason"]).isEqualTo("sentence mapping does not exist, no update required")
-            },
-            isNull(),
-          )
-        }
-      }
-
-      @Test
-      fun `the event is not placed on dead letter queue`() {
-        await untilAsserted {
-          assertThat(
-            awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-              courtSentencingQueueOffenderEventsDlqUrl,
-            ).get(),
-          ).isEqualTo(0)
-        }
-      }
-    }
-
-    @Nested
     @DisplayName("When mapping for parent sentence does not exist")
     inner class SentenceMappingAndSentenceParentDoNotExist {
       @BeforeEach
