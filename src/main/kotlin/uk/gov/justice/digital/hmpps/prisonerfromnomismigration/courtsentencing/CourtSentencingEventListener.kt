@@ -69,6 +69,9 @@ class CourtSentencingEventListener(
               "OFFENDER_SENTENCE_TERMS-DELETED" -> courtSentencingSynchronisationService.nomisSentenceTermDeleted(sqsMessage.Message.fromJson())
               "OFFENDER_SENTENCE_TERMS-UPDATED" -> courtSentencingSynchronisationService.nomisSentenceTermUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_SENTENCE_CHARGES-DELETED" -> courtSentencingSynchronisationService.nomisSentenceChargeDeleted(sqsMessage.Message.fromJson())
+              "OFFENDER_SENTENCE_CHARGES-INSERTED" -> courtSentencingSynchronisationService.nomisSentenceChargeInserted(
+                sqsMessage.Message.fromJson(),
+              )
               "OFFENDER_CASE_IDENTIFIERS-DELETED",
               "OFFENDER_CASE_IDENTIFIERS-INSERTED",
               "OFFENDER_CASE_IDENTIFIERS-UPDATED",

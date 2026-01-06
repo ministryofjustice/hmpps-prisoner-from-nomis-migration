@@ -1868,6 +1868,207 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("OFFENDER_SENTENCE_CHARGES-INSERTED")
+  inner class SentenceChargeInserted {
+
+    @Nested
+    @DisplayName("When mapping for parent sentence does not exist")
+    inner class SentenceMappingAndSentenceParentDoNotExist {
+      @BeforeEach
+      fun setUp() {
+        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+          courtSentencingQueueOffenderEventsUrl,
+          sentenceChargeEvent(
+            eventType = "OFFENDER_SENTENCE_CHARGES-INSERTED",
+          ),
+        )
+      }
+
+      @Test
+      fun `telemetry added to track the skip`() {
+        await untilAsserted {
+          verify(telemetryClient, times(1)).trackEvent(
+            eq("sentence-charge-synchronisation-inserted-skipped"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+              assertThat(it["nomisChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE.toString())
+              assertThat(it["reason"]).isEqualTo("sentence mapping does not exist, no update required")
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Test
+      fun `the event is not placed on dead letter queue`() {
+        await untilAsserted {
+          assertThat(
+            awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+              courtSentencingQueueOffenderEventsDlqUrl,
+            ).get(),
+          ).isEqualTo(0)
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("When sentence mapping exists")
+    inner class SentenceMappingExists {
+
+      @BeforeEach
+      fun setUp() {
+        courtSentencingNomisApiMockServer.stubGetSentence(
+          endpointUsingCase = false,
+          sentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+          bookingId = NOMIS_BOOKING_ID,
+          offenderNo = OFFENDER_ID_DISPLAY,
+          caseId = NOMIS_COURT_CASE_ID,
+          courtOrder = buildCourtOrderResponse(eventId = NOMIS_COURT_APPEARANCE_ID),
+          recallCustodyDate = RecallCustodyDate(
+            returnToCustodyDate = LocalDate.parse("2024-01-01"),
+            recallLength = 28,
+          ),
+        )
+
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+        )
+      }
+
+      @Nested
+      @DisplayName("When mapping exists")
+      inner class MappingExists {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+            nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+            nomisBookingId = NOMIS_BOOKING_ID,
+            dpsSentenceId = DPS_SENTENCE_ID,
+          )
+          mockTwoChargeMappingGets()
+
+          // insert of sentence charge should trigger an update to the sentence in DPS
+          dpsCourtSentencingServer.stubPutSentenceForUpdate(sentenceId = DPS_SENTENCE_ID)
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceChargeEvent(
+              eventType = "OFFENDER_SENTENCE_CHARGES-INSERTED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will update DPS with the changes`() {
+          await untilAsserted {
+            dpsCourtSentencingServer.verify(
+              1,
+              putRequestedFor(urlPathEqualTo("/legacy/sentence/$DPS_SENTENCE_ID"))
+                .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1")))
+                .withRequestBody(matchingJsonPath("active", equalTo("false")))
+                .withRequestBody(matchingJsonPath("chargeUuids[0]", equalTo(DPS_CHARGE_ID)))
+                .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
+                .withRequestBody(matchingJsonPath("legacyData.postedDate", isNotNull()))
+                .withRequestBody(matchingJsonPath("legacyData.sentenceCalcType", equalTo("ADIMP_ORA")))
+                .withRequestBody(matchingJsonPath("legacyData.sentenceTypeDesc", equalTo("ADIMP_ORA description")))
+                .withRequestBody(matchingJsonPath("legacyData.sentenceCategory", equalTo("2003")))
+                .withRequestBody(matchingJsonPath("returnToCustodyDate", equalTo("2024-01-01")))
+                .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-charge-synchronisation-inserted-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["nomisChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE.toString())
+                assertThat(it["dpsSentenceId"]).isEqualTo(DPS_SENTENCE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When error from dps updating sentence")
+      inner class FailureFromDps {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+            nomisSentenceSequence = NOMIS_SENTENCE_SEQUENCE,
+            nomisBookingId = NOMIS_BOOKING_ID,
+            dpsSentenceId = DPS_SENTENCE_ID,
+          )
+          mockTwoChargeMappingGets()
+
+          // deletion of sentence charge should trigger an update to the sentence in DPS - return an error
+          dpsCourtSentencingServer.stubPutSentenceForUpdate(
+            sentenceId = DPS_SENTENCE_ID,
+            status = INTERNAL_SERVER_ERROR,
+          )
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceChargeEvent(
+              eventType = "OFFENDER_SENTENCE_CHARGES-DELETED",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `will update DPS with the changes`() {
+          await untilAsserted {
+            dpsCourtSentencingServer.verify(
+              1,
+              putRequestedFor(urlPathEqualTo("/legacy/sentence/$DPS_SENTENCE_ID"))
+                .withRequestBody(matchingJsonPath("fine.fineAmount", equalTo("1.1")))
+                .withRequestBody(matchingJsonPath("active", equalTo("false")))
+                .withRequestBody(matchingJsonPath("chargeUuids[0]", equalTo(DPS_CHARGE_ID)))
+                .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
+                .withRequestBody(matchingJsonPath("legacyData.postedDate", isNotNull()))
+                .withRequestBody(matchingJsonPath("legacyData.sentenceCalcType", equalTo("ADIMP_ORA")))
+                .withRequestBody(matchingJsonPath("legacyData.sentenceTypeDesc", equalTo("ADIMP_ORA description")))
+                .withRequestBody(matchingJsonPath("legacyData.sentenceCategory", equalTo("2003")))
+                .withRequestBody(matchingJsonPath("returnToCustodyDate", equalTo("2024-01-01")))
+                .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for the error`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-charge-synchronisation-deleted-error"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["nomisChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE.toString())
+                assertThat(it["dpsSentenceId"]).isEqualTo(DPS_SENTENCE_ID)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+  }
+
+  @Nested
   @DisplayName("courtsentencing.resync.sentence")
   inner class SentenceResynchronisation {
 
