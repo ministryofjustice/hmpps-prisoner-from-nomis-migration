@@ -693,6 +693,7 @@ class CourtSentencingSynchronisationService(
               offenderChargeId = chargeId,
               eventId = eventId,
             )
+          telemetry["nomisOutcomeCode"] = nomisCourtEventCharge.resultCode1?.code.toString()
           trackIfFailure(name = "court-charge-synchronisation-created", telemetry = telemetry) {
             dpsApiService.associateExistingCourtCharge(
               courtAppearanceMapping.dpsCourtAppearanceId,
@@ -708,6 +709,7 @@ class CourtSentencingSynchronisationService(
             )
           // no mapping means this is a new offender charge to be created and applied to the appearance
           telemetry["existingDpsCharge"] = "false"
+          telemetry["nomisOutcomeCode"] = nomisOffenderCharge.resultCode1?.code.toString()
           trackIfFailure(name = "court-charge-synchronisation-created", telemetry = telemetry) {
             dpsApiService.addNewCourtCharge(
               nomisOffenderCharge.toDpsCharge(courtAppearanceMapping.dpsCourtAppearanceId),
@@ -803,7 +805,7 @@ class CourtSentencingSynchronisationService(
             )?.let { nomisCourtAppearanceCharge ->
               track(
                 name = "court-charge-synchronisation-updated",
-                telemetry = (telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("dpsCourtAppearanceId" to courtAppearanceMapping.dpsCourtAppearanceId)).toMutableMap(),
+                telemetry = (telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("dpsCourtAppearanceId" to courtAppearanceMapping.dpsCourtAppearanceId) + ("nomisOutcomeCode" to nomisCourtAppearanceCharge.resultCode1?.code.toString())).toMutableMap(),
               ) {
                 dpsApiService.updateCourtCharge(
                   chargeId = chargeMapping.dpsCourtChargeId,
