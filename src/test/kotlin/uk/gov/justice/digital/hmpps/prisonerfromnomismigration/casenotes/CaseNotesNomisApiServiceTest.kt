@@ -9,7 +9,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.json.AutoConfigureJson
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse
@@ -20,7 +19,6 @@ import java.time.LocalDateTime
 private const val OFFENDER_NUMBER = "G4803UT"
 
 @SpringAPIServiceTest
-@AutoConfigureJson
 @Import(CaseNotesNomisApiService::class, CaseNotesConfiguration::class, CaseNotesNomisApiMockServer::class)
 class CaseNotesNomisApiServiceTest {
   @Autowired

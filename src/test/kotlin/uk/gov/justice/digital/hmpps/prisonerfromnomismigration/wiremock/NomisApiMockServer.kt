@@ -701,7 +701,8 @@ private fun basicLocationResponse(id: Long = 1234): String =
     "certified": true,
     "active": true,
     "createDatetime": "2023-01-01T11:00:01.234567",
-    "createUsername": "ITAG1"
+    "createUsername": "ITAG1",
+    "tracking": false
   }
   """.trimIndent()
 

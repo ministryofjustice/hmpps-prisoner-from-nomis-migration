@@ -9,13 +9,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.json.AutoConfigureJson
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import java.time.LocalDate
 
 @SpringAPIServiceTest
-@AutoConfigureJson
 @Import(VisitBalanceNomisApiService::class, VisitBalanceNomisApiMockServer::class)
 class VisitBalanceNomisApiServiceTest {
   @Autowired

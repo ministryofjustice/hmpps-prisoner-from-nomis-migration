@@ -64,7 +64,7 @@ dependencies {
   testImplementation("org.testcontainers:localstack:1.21.4")
   testImplementation("com.amazonaws:aws-java-sdk-core:1.12.796")
   testImplementation("org.awaitility:awaitility-kotlin:4.3.0")
-  testImplementation("org.testcontainers:postgresql:1.21.4")
+  testImplementation("org.testcontainers:testcontainers-postgresql:2.0.1")
   testImplementation("io.mockk:mockk:1.14.7")
   testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
 }

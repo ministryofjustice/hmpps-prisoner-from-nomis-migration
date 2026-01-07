@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.json.AutoConfigureJson
 import org.springframework.context.annotation.Import
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus
@@ -34,7 +33,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 import java.util.*
 
 @SpringAPIServiceTest
-@AutoConfigureJson
 @Import(ActivitiesMappingService::class, ActivitiesConfiguration::class)
 class ActivitiesMappingServiceTest {
 
