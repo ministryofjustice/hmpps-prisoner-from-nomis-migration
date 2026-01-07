@@ -33,3 +33,9 @@ spring:
     url: jdbc:postgresql://localhost:5432/migration?sslmode=prefer
     user: migration
     password: migration
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

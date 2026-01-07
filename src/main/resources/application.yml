@@ -259,3 +259,9 @@ hmpps.sqs:
     migrationofficialvisits:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
