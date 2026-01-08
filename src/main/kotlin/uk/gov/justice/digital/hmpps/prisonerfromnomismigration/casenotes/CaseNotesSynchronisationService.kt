@@ -42,6 +42,16 @@ class CaseNotesSynchronisationService(
   suspend fun caseNoteInserted(event: CaseNotesEvent) {
     try {
       val nomisCaseNote = nomisApiService.getCaseNote(event.caseNoteId)
+
+      // We should be able to check this without having to get data from Nomis: this will help verify that:
+      if (nomisCaseNote.originatesInDps() != event.isSourcedFromDPS()) {
+        log.warn(
+          "Detected casenote source discrepancy event {}, casenote {}",
+          event.toString(),
+          nomisCaseNote.toStringSelective(),
+        )
+      }
+
       if (nomisCaseNote.originatesInDps()) {
         telemetryClient.trackEvent("casenotes-synchronisation-created-skipped", event.toTelemetryProperties())
         return
@@ -220,17 +230,13 @@ Also add new mappings for the new booking id for the copied case notes, which po
       val nomisCaseNotes = nomisApiService.getCaseNotesForPrisoner(nomsNumber).caseNotes
       val freshlyMergedNomisCaseNotes = nomisCaseNotes
         .filter { isMergeCaseNoteRecentlyCreated(it, prisonerMergeEvent) }
-        .apply {
-          if (isEmpty()) {
-            throw IllegalStateException("Merge data not ready for $nomsNumber")
-          }
-        }
+      // It is now ok for this list to be empty - it means the 'no longer copy' Nomis fix has been deployed
 
       val existingMappings = caseNotesMappingService.getMappings(nomisCaseNotes.map { it.caseNoteId })
         .associateBy { it.nomisCaseNoteId }
 
       // Skip if mappings already created
-      if (existingMappings.size == nomisCaseNotes.size) {
+      if (freshlyMergedNomisCaseNotes.isNotEmpty() && existingMappings.size == nomisCaseNotes.size) {
         telemetryClient.trackEvent(
           "casenotes-prisoner-merge-skipped",
           mapOf(
@@ -250,54 +256,57 @@ Also add new mappings for the new booking id for the copied case notes, which po
 
       caseNotesMappingService.updateMappingsByNomisId(removedNomsNumber, nomsNumber)
 
-      val newMappings =
-        freshlyMergedNomisCaseNotes.map { newNomisCaseNote ->
-          CaseNoteMappingDto(
-            dpsCaseNoteId = existingMappings[newToOldMap[newNomisCaseNote.caseNoteId]?.caseNoteId]
-              ?.dpsCaseNoteId
-              ?: throw IllegalStateException("synchronisePrisonerMerged(): No mapping found for newNomisCaseNote = $newNomisCaseNote, offender $nomsNumber"),
-            nomisCaseNoteId = newNomisCaseNote.caseNoteId,
-            nomisBookingId = bookingId,
-            offenderNo = nomsNumber,
-            mappingType = NOMIS_CREATED,
+      if (freshlyMergedNomisCaseNotes.isNotEmpty()) {
+        val newMappings =
+          freshlyMergedNomisCaseNotes.map { newNomisCaseNote ->
+            CaseNoteMappingDto(
+              dpsCaseNoteId = existingMappings[newToOldMap[newNomisCaseNote.caseNoteId]?.caseNoteId]
+                ?.dpsCaseNoteId
+                ?: throw IllegalStateException("synchronisePrisonerMerged(): No mapping found for newNomisCaseNote = $newNomisCaseNote, offender $nomsNumber"),
+              nomisCaseNoteId = newNomisCaseNote.caseNoteId,
+              nomisBookingId = bookingId,
+              offenderNo = nomsNumber,
+              mappingType = NOMIS_CREATED,
+            )
+          }
+
+        // Now exclude any mappings that already exist.  This can happen if two merges occur within half an hour of each
+        // other as we find all merged case notes within that time frame
+        val newUniqueMappings = newMappings.filter { it.nomisCaseNoteId !in existingMappings.keys }
+        if (newUniqueMappings.size != newMappings.size) {
+          telemetryClient.trackEvent(
+            "casenotes-prisoner-merge-existing-mappings",
+            mapOf(
+              "offenderNo" to nomsNumber,
+              "removedOffenderNo" to removedNomsNumber,
+              "bookingId" to bookingId,
+              "mappingsCount" to (newMappings.size - newUniqueMappings.size),
+              "mappings" to newMappings.filter { it.nomisCaseNoteId in existingMappings.keys }
+                .joinToString { it.nomisCaseNoteId.toString() },
+            ),
           )
         }
 
-      // Now exclude any mappings that already exist.  This can happen if two merges occur within half an hour of each
-      // other as we find all merged case notes within that time frame
-      val newUniqueMappings = newMappings.filter { it.nomisCaseNoteId !in existingMappings.keys }
-      if (newUniqueMappings.size != newMappings.size) {
-        telemetryClient.trackEvent(
-          "casenotes-prisoner-merge-existing-mappings",
-          mapOf(
-            "offenderNo" to nomsNumber,
-            "removedOffenderNo" to removedNomsNumber,
-            "bookingId" to bookingId,
-            "mappingsCount" to (newMappings.size - newUniqueMappings.size),
-            "mappings" to newMappings.filter { it.nomisCaseNoteId in existingMappings.keys }.joinToString { it.nomisCaseNoteId.toString() },
-          ),
-        )
-      }
-
-      caseNotesByPrisonerMigrationMappingApiService.createMappings(
-        newUniqueMappings,
-        object : ParameterizedTypeReference<DuplicateErrorResponse<CaseNoteMappingDto>>() {},
-      ).also {
-        if (it.isError) {
-          val duplicateErrorDetails = (it.errorResponse!!).moreInfo
-          telemetryClient.trackEvent(
-            "nomis-migration-casenotes-duplicate",
-            mapOf<String, String>(
-              "offenderNo" to nomsNumber,
-              "duplicateDpsCaseNoteId" to duplicateErrorDetails.duplicate.dpsCaseNoteId,
-              "duplicateNomisBookingId" to duplicateErrorDetails.duplicate.nomisBookingId.toString(),
-              "duplicateNomisCaseNoteId" to duplicateErrorDetails.duplicate.nomisCaseNoteId.toString(),
-              "existingDpsCaseNoteId" to duplicateErrorDetails.existing.dpsCaseNoteId,
-              "existingNomisBookingId" to duplicateErrorDetails.existing.nomisBookingId.toString(),
-              "existingNomisCaseNoteId" to duplicateErrorDetails.existing.nomisCaseNoteId.toString(),
-            ),
-            null,
-          )
+        caseNotesByPrisonerMigrationMappingApiService.createMappings(
+          newUniqueMappings,
+          object : ParameterizedTypeReference<DuplicateErrorResponse<CaseNoteMappingDto>>() {},
+        ).also {
+          if (it.isError) {
+            val duplicateErrorDetails = (it.errorResponse!!).moreInfo
+            telemetryClient.trackEvent(
+              "nomis-migration-casenotes-duplicate",
+              mapOf<String, String>(
+                "offenderNo" to nomsNumber,
+                "duplicateDpsCaseNoteId" to duplicateErrorDetails.duplicate.dpsCaseNoteId,
+                "duplicateNomisBookingId" to duplicateErrorDetails.duplicate.nomisBookingId.toString(),
+                "duplicateNomisCaseNoteId" to duplicateErrorDetails.duplicate.nomisCaseNoteId.toString(),
+                "existingDpsCaseNoteId" to duplicateErrorDetails.existing.dpsCaseNoteId,
+                "existingNomisBookingId" to duplicateErrorDetails.existing.nomisBookingId.toString(),
+                "existingNomisCaseNoteId" to duplicateErrorDetails.existing.nomisCaseNoteId.toString(),
+              ),
+              null,
+            )
+          }
         }
       }
 
@@ -307,7 +316,7 @@ Also add new mappings for the new booking id for the copied case notes, which po
           "offenderNo" to nomsNumber,
           "removedOffenderNo" to removedNomsNumber,
           "bookingId" to bookingId,
-          "newMappingsCount" to newUniqueMappings.size,
+          "freshlyMergedNomisCaseNotesCount" to freshlyMergedNomisCaseNotes.size,
         ),
       )
     } catch (e: Exception) {
@@ -443,6 +452,8 @@ private fun CaseNotesEvent.toTelemetryProperties(
 
 private fun CaseNoteResponse.originatesInDps() = auditModuleName.originatesInDps()
 private fun CaseNoteResponse.auditMissing() = auditModuleName == null
+private fun CaseNotesEvent.isSourcedFromDPS() = auditModuleName == "DPS_SYNCHRONISATION"
+private fun CaseNoteResponse.toStringSelective() = "(caseNoteId=$caseNoteId, bookingId=$bookingId, sourceSystem=$sourceSystem)"
 
 private fun isMergeCopy(
   response: CaseNoteResponse,
