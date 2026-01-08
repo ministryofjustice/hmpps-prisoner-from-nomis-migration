@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -101,27 +102,25 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
 //      status = "ACTIVE",
     )
 
-//    fun migrateCorePersonResponse(request: Prisoner = migrateCorePersonRequest()) = CreateResponse(
-//      // TODO fix when lists correctly set up as nullable
-//      addressIds = request.addresses.map { AddressId(prisonAddressId = it.id, cprAddressId = "CPR-" + it.id) },
-//      phoneIds = request.phoneNumbers.map { PhoneId(prisonPhoneId = it.phoneId, cprPhoneId = "CPR-" + it.phoneId) },
-//      emailIds = request.emails.map { EmailId(prisonEmailId = it.id, cprEmailId = "CPR-" + it.id) },
-//      // TODO add additional children
-//      // offenderIds = request.offenders.map { IdPair(nomisId = it.nomisOffenderId, cprId = "CPR-" + it.nomisOffenderId) },
-//    )
+    fun migrateCorePersonResponse(request: Prisoner = migrateCorePersonRequest()) = CreateResponse(
+      // TODO fix when lists correctly set up as nullable
+      addressIds = listOf(),
+      phoneIds = listOf(),
+      emailIds = listOf(),
+    )
   }
 
-//  fun stubMigrateCorePerson(nomisPrisonNumber: String = "A1234BC", response: CreateResponse = migrateCorePersonResponse()) {
-//    stubFor(
-//      put("/syscon-sync/$nomisPrisonNumber")
-//        .willReturn(
-//          aResponse()
-//            .withStatus(201)
-//            .withHeader("Content-Type", "application/json")
-//            .withBody(CorePersonCprApiExtension.objectMapper.writeValueAsString(response)),
-//        ),
-//    )
-//  }
+  fun stubMigrateCorePerson(nomisPrisonNumber: String = "A1234BC", response: CreateResponse = migrateCorePersonResponse()) {
+    stubFor(
+      put("/syscon-sync/$nomisPrisonNumber")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(CorePersonCprApiExtension.objectMapper.writeValueAsString(response)),
+        ),
+    )
+  }
 
   fun stubSyncCreateOffenderBelief(
     prisonNumber: String = "A1234BC",

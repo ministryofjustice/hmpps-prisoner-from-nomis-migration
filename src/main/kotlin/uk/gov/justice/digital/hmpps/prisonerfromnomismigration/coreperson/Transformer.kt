@@ -1,79 +1,90 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Address
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Alias
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.ContactInfo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Identifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Name
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Sentence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
 
-fun CorePerson.toCprPrisoner() = Prisoner(
-  religions = emptyList(), // beliefs?.map { it.toCprReligion() } ?: emptyList(),
-  sentences = sentenceStartDates?.map { Sentence(it) } ?: emptyList(),
-  contactInfo = ContactInfo(
-    emptyList(), // phoneNumbers?.map { it.toCprPhoneNumber() } ?: emptyList(),
-    emptyList(), // emailAddresses?.map { Email(it.emailAddressId, it.email) } ?: emptyList(),
-  ),
-  name = Name(), // offenders?.map { it.toCprNames() }?.firstOrNull()?.let { Name(it) } ?: Name (),
-  aliases = emptyList(),
-  addresses = emptyList(), // addresses?.map { it.toCprAddress() } ?: emptyList(),
-  // nationality = nationalities?.find { it.latestBooking }?.nationality?.code,
-  // secondaryNationality = nationalityDetails?.find { it.latestBooking }?.details,
-  // sexualOrientation = sexualOrientations?.find { it.latestBooking }?.sexualOrientation?.code,
-  // interestToImmigration = interestsToImmigration?.find { it.latestBooking }?.interestToImmigration,
-  // disability = disabilities?.find { it.latestBooking }?.disability,
-  demographicAttributes = DemographicAttributes(),
-  identifiers = emptyList(),
+private val allowedIdentifiers: Set<String> = Identifier.Type.entries.map { it.value }.toSet()
+
+fun CorePerson.toCprPrisoner(): Prisoner {
+  val currentAlias = offenders?.first { it.workingName }!!
+  return Prisoner(
+    name = currentAlias.toCprName(),
+    demographicAttributes = this.toDemographicAttributes(currentAlias),
+    addresses = addresses?.map { it.toCprAddress() } ?: emptyList(),
+    // TODO: religion has disappeared
+    religions = listOf(),
+    // TODO: remap in new structure when we get it
+    contactInfo = ContactInfo(
+      phoneNumbers = emptyList(), // phoneNumbers?.map { it.toCprPhoneNumber() } ?: emptyList(),
+      emails = emptyList(), // emailAddresses?.map { Email(it.emailAddressId, it.email) } ?: emptyList(),
+    ),
+    aliases = offenders.filterNot { it.workingName }.map { it.toCprAlias() },
+    identifiers = offenders.flatMap {
+      it.identifiers
+        // TOOD: confirm only 4 identifier types required
+        .filter { i -> allowedIdentifiers.contains(i.type.code) }
+        .map { i -> Identifier(type = Identifier.Type.valueOf(i.type.code), value = i.identifier) }
+    },
+    sentences = sentenceStartDates?.map { Sentence(it) } ?: emptyList(),
+  )
+}
+
+private fun CoreOffender.toCprName() = Name(
+  titleCode = title?.code,
+  firstName = firstName,
+  middleNames = listOfNotNull(middleName1, middleName2).joinToString(" "),
+  lastName = lastName,
 )
 
-// fun CoreOffender.toCprNames() = Names(
-//  // TODO - this is a long in the model
-//  offenderId = offenderId.toString(),
-//  title = title?.code,
-//  firstName = firstName,
-//  middleName1 = middleName1,
-//  middleName2 = middleName2,
-//  lastName = lastName,
-//  // TODO we should really just pass in the code (like we do for others)
-//  nameType = nameType?.toCprNameType(),
-//  dateOfBirth = dateOfBirth,
-//  birthPlace = birthPlace,
-//  birthCountry = birthCountry?.code,
-//  raceCode = ethnicity?.code,
-//  // TODO we should really just pass in the code (like we do for others)
-//  sex = sex?.toCprSexType(),
-//  workingName = workingName,
-//  created = createDate,
-//  identifiers = identifiers.map { it.toCprIdentifier() },
-// )
-//
-// fun Identifier.toCprIdentifier() = CprIdentifier(
-//  type = type.code,
-//  // TODO cpr value is nullable but nomis identifier is not - CPR to update to non-nullable
-//  value = identifier,
-// )
-//
-// fun OffenderAddress.toCprAddress() = Address(
-//  id = addressId,
-//  // TODO Check - type is always null in NOMIS - not required as part of Cpr Address?
-//  type = null,
-//  flat = flat,
-//  premise = premise,
-//  street = street,
-//  locality = locality,
-//  town = city?.code,
-//  postcode = postcode,
-//  county = county?.code,
-//  country = country?.code,
-//  // TODO this is a boolean - should the CprAddress noFixedAddress field also be a boolean?
-//  noFixedAddress = noFixedAddress?.toString(),
-//  startDate = startDate,
-//  endDate = endDate,
-//  comment = comment,
-//  isPrimary = primaryAddress,
-//  // TODO check - this is non-nullable in NOMIS but nullable in CPR
-//  mail = mailAddress,
-// )
+private fun CoreOffender.toCprAlias() = Alias(
+  titleCode = title?.code,
+  firstName = firstName,
+  middleNames = listOfNotNull(middleName1, middleName2).joinToString(" "),
+  lastName = lastName,
+  dateOfBirth = dateOfBirth,
+  sexCode = sex?.code,
+)
+
+private fun CorePerson.toDemographicAttributes(currentAlias: CoreOffender): DemographicAttributes = DemographicAttributes(
+  dateOfBirth = currentAlias.dateOfBirth,
+  birthPlace = currentAlias.birthPlace,
+  birthCountryCode = currentAlias.birthCountry?.code,
+  ethnicityCode = currentAlias.ethnicity?.code,
+  sexCode = currentAlias.sex?.code,
+)
+
+private fun OffenderAddress.toCprAddress() = Address(
+  // TODO Check - type is always null in NOMIS - not required as part of Cpr Address?
+  type = Address.Type.HOME,
+  isPrimary = primaryAddress,
+  isMail = mailAddress,
+  // TODO: hard coded
+  isActive = true,
+  // TODO: remove
+  id = addressId.toString(),
+  flat = flat,
+  premise = premise,
+  street = street,
+  locality = locality,
+  townCode = city?.code,
+  postcode = postcode,
+  countyCode = county?.code,
+  countryCode = country?.code,
+  // TODO this is a boolean - should the CprAddress noFixedAddress field also be a boolean?
+  noFixedAddress = noFixedAddress,
+  startDate = startDate,
+  endDate = endDate.toString(),
+  comment = comment,
+)
 //
 // fun OffenderPhoneNumber.toCprPhoneNumber() = PhoneNumber(
 //  phoneId = phoneId,
