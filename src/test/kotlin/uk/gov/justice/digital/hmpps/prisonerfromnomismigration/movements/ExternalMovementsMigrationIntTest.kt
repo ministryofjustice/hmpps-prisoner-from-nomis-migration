@@ -189,7 +189,7 @@ class ExternalMovementsMigrationIntTest(
           assertThat(start).isCloseTo(now.minusDays(1), within(Duration.ofMinutes(5)))
           assertThat(end).isCloseTo(now.plusDays(1), within(Duration.ofMinutes(5)))
           assertThat(location.address).isEqualTo("Schedule full address")
-          assertThat(location.description).isNull()
+          assertThat(location.description).isEqualTo("Schedule address description")
           assertThat(location.postcode).isEqualTo("S1 1AA")
           assertThat(location.uprn).isNull()
           assertThat(absenceTypeCode).isEqualTo("RR")
@@ -218,7 +218,7 @@ class ExternalMovementsMigrationIntTest(
           assertThat(direction).isEqualTo(MigrateTapMovement.Direction.OUT)
           assertThat(absenceReasonCode).isEqualTo("C6")
           assertThat(location.address).isEqualTo("Absence full address")
-          assertThat(location.description).isNull()
+          assertThat(location.description).isEqualTo("Absence address description")
           assertThat(location.postcode).isEqualTo("S1 1AA")
           assertThat(location.uprn).isNull()
           assertThat(accompaniedByCode).isEqualTo("U")
@@ -242,8 +242,8 @@ class ExternalMovementsMigrationIntTest(
           assertThat(direction).isEqualTo(MigrateTapMovement.Direction.IN)
           assertThat(absenceReasonCode).isEqualTo("C5")
           assertThat(location.address).isEqualTo("Absence return full address")
-          assertThat(location.description).isNull()
-          assertThat(location.postcode).isEqualTo("S1 1AA")
+          assertThat(location.description).isEqualTo("Absence return address description")
+          assertThat(location.postcode).isEqualTo("S2 2AA")
           assertThat(location.uprn).isNull()
           assertThat(accompaniedByCode).isEqualTo("PECS")
           assertThat(created.at.toLocalDate()).isEqualTo(today)
@@ -266,7 +266,7 @@ class ExternalMovementsMigrationIntTest(
           assertThat(direction).isEqualTo(MigrateTapMovement.Direction.OUT)
           assertThat(absenceReasonCode).isEqualTo("C6")
           assertThat(location.address).isEqualTo("Absence full address")
-          assertThat(location.description).isNull()
+          assertThat(location.description).isEqualTo("Absence address description")
           assertThat(location.postcode).isEqualTo("S1 1AA")
           assertThat(location.uprn).isNull()
           assertThat(accompaniedByCode).isEqualTo("U")
@@ -290,8 +290,8 @@ class ExternalMovementsMigrationIntTest(
           assertThat(direction).isEqualTo(MigrateTapMovement.Direction.IN)
           assertThat(absenceReasonCode).isEqualTo("C5")
           assertThat(location.address).isEqualTo("Absence return full address")
-          assertThat(location.description).isNull()
-          assertThat(location.postcode).isEqualTo("S1 1AA")
+          assertThat(location.description).isEqualTo("Absence return address description")
+          assertThat(location.postcode).isEqualTo("S2 2AA")
           assertThat(location.uprn).isNull()
           assertThat(accompaniedByCode).isEqualTo("PECS")
           assertThat(created.at.toLocalDate()).isEqualTo(today)
@@ -319,8 +319,10 @@ class ExternalMovementsMigrationIntTest(
             assertThat(nomisEventId).isEqualTo(1)
             assertThat(dpsOccurrenceId).isEqualTo(dpsOccurrenceId)
             assertThat(nomisAddressId).isEqualTo(543)
-            assertThat(nomisAddressOwnerClass).isEqualTo("OFF")
+            assertThat(nomisAddressOwnerClass).isEqualTo("CORP")
             assertThat(dpsAddressText).isEqualTo("Schedule full address")
+            assertThat(dpsDescription).isEqualTo("Schedule address description")
+            assertThat(dpsPostcode).isEqualTo("S1 1AA")
             assertThat(eventTime).contains("${today.minusDays(1)}")
           }
 
@@ -333,6 +335,8 @@ class ExternalMovementsMigrationIntTest(
             assertThat(nomisAddressId).isEqualTo(432)
             assertThat(nomisAddressOwnerClass).isEqualTo("AGY")
             assertThat(dpsAddressText).isEqualTo("Absence full address")
+            assertThat(dpsDescription).isEqualTo("Absence address description")
+            assertThat(dpsPostcode).isEqualTo("S1 1AA")
           }
 
           with(bookings[0].applications[0].movements[1]) {
@@ -357,6 +361,8 @@ class ExternalMovementsMigrationIntTest(
             assertThat(nomisAddressId).isEqualTo(321)
             assertThat(nomisAddressOwnerClass).isEqualTo("CORP")
             assertThat(dpsAddressText).isEqualTo("Absence return full address")
+            assertThat(dpsDescription).isEqualTo("Absence return address description")
+            assertThat(dpsPostcode).isEqualTo("S2 2AA")
           }
         }
     }

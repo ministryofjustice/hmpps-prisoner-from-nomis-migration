@@ -302,35 +302,6 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
-    fun `merge data not yet present`() {
-      caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(
-        survivorOffenderNo,
-        listOf(
-          caseNoteTemplate(
-            caseNoteId = 101,
-            bookingId = 1,
-            text = "Just an old case note which happens to be a previous merge",
-            auditModuleName = "MERGE",
-          ),
-        ),
-      )
-      sendMergeMessage()
-
-      await untilAsserted {
-        verify(telemetryClient, times(2)).trackEvent(
-          eq("casenotes-prisoner-merge-failed"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo("A1234BB")
-            assertThat(it["removedOffenderNo"]).isEqualTo("A1234AA")
-            assertThat(it["bookingId"]).isEqualTo("1")
-            assertThat(it["error"]).isEqualTo("Merge data not ready for A1234BB")
-          },
-          isNull(),
-        )
-      }
-    }
-
-    @Test
     fun `merge has already occurred`() {
       caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(
         survivorOffenderNo,
@@ -380,6 +351,167 @@ class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
           isNull(),
         )
       }
+    }
+  }
+
+  @Nested
+  inner class OffenderMergedNoMergeCopies {
+    private val survivorOffenderNo = "A1234BB"
+    private val removedOffenderNo = "A1234AA"
+    private val aMomentAgo = LocalDateTime.now().minusSeconds(1).toString()
+    private val fiveMinutesAgo = LocalDateTime.now().minusMinutes(5).toString()
+
+    @BeforeEach
+    fun setUp() {
+      caseNotesNomisApiMockServer.stubGetCaseNotesForPrisoner(
+        survivorOffenderNo,
+        listOf(
+          caseNoteTemplate(
+            caseNoteId = 101,
+            bookingId = 1,
+            text = "text 1",
+            // an old merge (irrelevant)
+            auditModuleName = "MERGE",
+          ),
+          caseNoteTemplate(
+            caseNoteId = 102,
+            bookingId = 1,
+            // there can be duplicate case notes
+            text = "text 2 dupe",
+          ),
+          caseNoteTemplate(
+            caseNoteId = 192,
+            bookingId = 1,
+            text = "text 2 dupe",
+          ),
+          caseNoteTemplate(
+            caseNoteId = 103,
+            bookingId = 2,
+            text = "text 3",
+          ),
+          caseNoteTemplate(
+            caseNoteId = 193,
+            bookingId = 2,
+            text = "text 3 dupe",
+          ),
+          caseNoteTemplate(
+            caseNoteId = 104,
+            bookingId = 2,
+            text = "text 4",
+          ),
+        ),
+      )
+      caseNotesMappingApiMockServer.stubGetMappings(
+        listOf(
+          CaseNoteMappingDto(
+            dpsCaseNoteId = "00001111-2222-3333-4444-000000001",
+            nomisCaseNoteId = 101,
+            offenderNo = survivorOffenderNo,
+            nomisBookingId = 1,
+            mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
+          ),
+          CaseNoteMappingDto(
+            dpsCaseNoteId = "00001111-2222-3333-4444-000000002",
+            nomisCaseNoteId = 102,
+            offenderNo = survivorOffenderNo,
+            nomisBookingId = 1,
+            mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
+          ),
+          CaseNoteMappingDto(
+            dpsCaseNoteId = "00001111-2222-3333-4444-000000002",
+            nomisCaseNoteId = 192,
+            offenderNo = survivorOffenderNo,
+            nomisBookingId = 1,
+            mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
+          ),
+          CaseNoteMappingDto(
+            dpsCaseNoteId = "00001111-2222-3333-4444-000000003",
+            nomisCaseNoteId = 103,
+            offenderNo = removedOffenderNo,
+            nomisBookingId = 2,
+            mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
+          ),
+          CaseNoteMappingDto(
+            dpsCaseNoteId = "00001111-2222-3333-4444-000000003",
+            nomisCaseNoteId = 193,
+            offenderNo = removedOffenderNo,
+            nomisBookingId = 2,
+            mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
+          ),
+          CaseNoteMappingDto(
+            dpsCaseNoteId = "00001111-2222-3333-4444-000000004",
+            nomisCaseNoteId = 104,
+            offenderNo = removedOffenderNo,
+            nomisBookingId = 2,
+            mappingType = CaseNoteMappingDto.MappingType.MIGRATED,
+          ),
+        ),
+      )
+      caseNotesMappingApiMockServer.stubUpdateMappingsByNomisId()
+      caseNotesMappingApiMockServer.stubPostMappingsBatch()
+    }
+
+    private fun sendMergeMessage() {
+      awsSqsCaseNoteOffenderEventsClient.sendMessage(
+        caseNotesQueueOffenderEventsUrl,
+        mergeDomainEvent(
+          offenderNo = survivorOffenderNo,
+          removedOffenderNo = removedOffenderNo,
+          bookingId = 1,
+          occurredAt = OffsetDateTime.now().toString(),
+        ),
+      )
+    }
+
+    @Test
+    fun `will correct the mappings between the existing DPS and NOMIS casenotes`() {
+      sendMergeMessage()
+      await untilAsserted {
+        caseNotesMappingApiMockServer.verify(
+          putRequestedFor(urlPathEqualTo("/mapping/casenotes/merge/from/A1234AA/to/A1234BB")),
+        )
+      }
+      // ensure the process has finished before the test ends by checking the telemetry
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("casenotes-prisoner-merge"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BB")
+            assertThat(it["removedOffenderNo"]).isEqualTo("A1234AA")
+            assertThat(it["bookingId"]).isEqualTo("1")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Test
+    fun `first update fails`() {
+      caseNotesMappingApiMockServer.stubUpdateMappingsByNomisIdError(HttpStatus.INTERNAL_SERVER_ERROR)
+      sendMergeMessage()
+
+      await untilAsserted {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("casenotes-prisoner-merge-failed"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BB")
+            assertThat(it["removedOffenderNo"]).isEqualTo("A1234AA")
+            assertThat(it["bookingId"]).isEqualTo("1")
+            assertThat(it["error"]).isEqualTo("500 Internal Server Error from PUT http://localhost:8083/mapping/casenotes/merge/from/A1234AA/to/A1234BB")
+          },
+          isNull(),
+        )
+      }
+      await untilAsserted {
+        caseNotesMappingApiMockServer.verify(
+          2,
+          putRequestedFor(urlPathEqualTo("/mapping/casenotes/merge/from/A1234AA/to/A1234BB")),
+        )
+      }
+      caseNotesMappingApiMockServer.verify(
+        0,
+        postRequestedFor(urlPathEqualTo("/mapping/casenotes/batch")),
+      )
     }
   }
 

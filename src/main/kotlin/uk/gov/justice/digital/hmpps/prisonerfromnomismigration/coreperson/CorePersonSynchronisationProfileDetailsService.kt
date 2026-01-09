@@ -83,12 +83,11 @@ class CorePersonSynchronisationProfileDetailsService(
 
             "DISABILITY" -> {
               corePersonCprApiService.syncCreateDisability(
+                offenderIdDisplay,
                 PrisonDisabilityStatus(
-                  prisonNumber = offenderIdDisplay,
-                  disability = code == "Y",
-                  current = true,
-                  createUserId = modifiedBy ?: createdBy,
-                  createDateTime = modifiedDateTime ?: createDateTime,
+                  disability = code == "YES",
+                  modifyUserId = modifiedBy ?: createdBy,
+                  modifyDateTime = modifiedDateTime ?: createDateTime,
                 ),
               )
             }

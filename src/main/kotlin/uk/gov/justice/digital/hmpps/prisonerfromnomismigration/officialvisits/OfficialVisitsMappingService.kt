@@ -18,7 +18,7 @@ class OfficialVisitsMappingService(@Qualifier("mappingApiWebClient") webClient: 
   private val locationApi = LocationMappingResourceApi(webClient)
 
   suspend fun getByNomisIdsOrNull(nomisVisitId: Long): OfficialVisitMappingDto? = api.prepare(
-    api.getVisitMappingByNomisIdsRequestConfig(
+    api.getVisitMappingByNomisIdRequestConfig(
       nomisVisitId = nomisVisitId,
     ),
   )

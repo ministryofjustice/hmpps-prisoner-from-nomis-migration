@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2025-12-23.864.3bc2f67"
+    "version" : "2026-01-07.895.762bce6"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -9162,6 +9162,44 @@
         }
       }
     },
+    "/prisoners/{offenderNo}/csra" : {
+      "post" : {
+        "tags" : [ "csra-resource" ],
+        "summary" : "Creates a CSRA record for a prisoner",
+        "description" : "Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "operationId" : "createCsra",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CsraCreateDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CsraCreateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/{offenderNo}/court-cases/{caseId}/sentences" : {
       "post" : {
         "tags" : [ "court-sentencing-resource" ],
@@ -11396,44 +11434,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/csra/{offenderNo}" : {
-      "post" : {
-        "tags" : [ "csra-resource" ],
-        "summary" : "Creates a CSRA record for a prisoner",
-        "description" : "Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
-        "operationId" : "createCsra",
-        "parameters" : [ {
-          "name" : "offenderNo",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/CsraDto"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/CsraCreateResponse"
                 }
               }
             }
@@ -16062,6 +16062,51 @@
         }
       }
     },
+    "/prisoners/booking-id/{bookingId}/csra/{sequence}" : {
+      "get" : {
+        "tags" : [ "csra-resource" ],
+        "summary" : "Get a CSRA record for a prisoner",
+        "description" : "Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "operationId" : "getCsra",
+        "parameters" : [ {
+          "name" : "bookingId",
+          "in" : "path",
+          "description" : "Booking Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Booking Id",
+            "example" : 2345678
+          },
+          "example" : 2345678
+        }, {
+          "name" : "sequence",
+          "in" : "path",
+          "description" : "Sequence within booking",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Sequence within booking",
+            "example" : 3
+          },
+          "example" : 3
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CsraGetDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/booking-id/{bookingId}/awards/{sanctionSequence}" : {
       "get" : {
         "tags" : [ "adjudication-resource" ],
@@ -16252,6 +16297,77 @@
           },
           "404" : {
             "description" : "Booking does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoner/{offenderNo}/official-visits" : {
+      "get" : {
+        "tags" : [ "official-visits-resource" ],
+        "summary" : "Get official visits for a prisoner optional filtered by scheduled date",
+        "description" : "Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "operationId" : "getOfficialVisitsForPrisoner",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "fromDate",
+          "in" : "query",
+          "description" : "Filter results by visits that are scheduled on or after the given date",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "example" : "2024-11-03"
+        }, {
+          "name" : "toDate",
+          "in" : "query",
+          "description" : "Filter results by visits that are scheduled on or before the given date",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "example" : "2025-11-03"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "List of visits",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/OfficialVisitResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -17193,6 +17309,68 @@
           },
           "404" : {
             "description" : "Offender or temporary absence return not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/movements/{offenderNo}/temporary-absences/summary" : {
+      "get" : {
+        "tags" : [ "movements-resource" ],
+        "summary" : "Get temporary absence applications, schedules and external movement counts for an offender",
+        "description" : "Get temporary absence applications, schedules and external movement counts for an offender. This is used for reconciliation. Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "operationId" : "getTemporaryAbsencesAndMovementCounts",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "description" : "Offender number (NOMS ID)",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Offender number (NOMS ID)",
+            "example" : "A1234BC"
+          },
+          "example" : "A1234BC"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Offender temporary absence counts returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OffenderTemporaryAbsenceSummaryResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Offender not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -18752,51 +18930,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/csra/booking/{bookingId}/sequence/{sequence}" : {
-      "get" : {
-        "tags" : [ "csra-resource" ],
-        "summary" : "Get a CSRA record for a prisoner",
-        "description" : "Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
-        "operationId" : "getCsra",
-        "parameters" : [ {
-          "name" : "bookingId",
-          "in" : "path",
-          "description" : "Booking Id",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Booking Id",
-            "example" : 2345678
-          },
-          "example" : 2345678
-        }, {
-          "name" : "sequence",
-          "in" : "path",
-          "description" : "Sequence within booking",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "Sequence within booking",
-            "example" : 3
-          },
-          "example" : 3
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/CsraDto"
                 }
               }
             }
@@ -21547,8 +21680,7 @@
             "type" : "string",
             "description" : "NOMIS Adjustment type code from SENTENCE_ADJUSTMENTS",
             "enum" : [ "RSR", "UR", "S240A", "RST", "RX" ],
-            "example" : "RX",
-            "minLength" : 1
+            "example" : "RX"
           },
           "adjustmentDate" : {
             "type" : "string",
@@ -21731,8 +21863,7 @@
           "outcome" : {
             "type" : "string",
             "description" : "The cancellation reason",
-            "enum" : [ "VISCANC", "OFFCANC", "ADMIN", "NSHOW" ],
-            "minLength" : 1
+            "enum" : [ "VISCANC", "OFFCANC", "ADMIN", "NSHOW" ]
           }
         },
         "required" : [ "outcome" ]
@@ -21875,9 +22006,15 @@
       },
       "UpdateRecallRequest" : {
         "type" : "object",
-        "description" : "Recall convert request",
+        "description" : "Update Recall request",
         "properties" : {
           "sentences" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/RecallRelatedSentenceDetails"
+            }
+          },
+          "sentencesRemoved" : {
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/RecallRelatedSentenceDetails"
@@ -21899,7 +22036,7 @@
             }
           }
         },
-        "required" : [ "beachCourtEventIds", "recallRevocationDate", "sentences" ]
+        "required" : [ "beachCourtEventIds", "recallRevocationDate", "sentences", "sentencesRemoved" ]
       },
       "RevertRecallRequest" : {
         "type" : "object",
@@ -23001,8 +23138,7 @@
             "type" : "string",
             "description" : "NOMIS Adjustment type code from SENTENCE_ADJUSTMENTS",
             "enum" : [ "LAL", "UAL", "RADA", "ADA", "SREM" ],
-            "example" : "ADA",
-            "minLength" : 1
+            "example" : "ADA"
           },
           "adjustmentDate" : {
             "type" : "string",
@@ -26240,6 +26376,130 @@
         },
         "required" : [ "authorisedStaffUsername", "effectiveDate", "enteredStaffUsername", "typeCode" ]
       },
+      "CsraCreateDto" : {
+        "type" : "object",
+        "properties" : {
+          "assessmentDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Date the CSRA was created",
+            "example" : "2025-11-22"
+          },
+          "type" : {
+            "type" : "string",
+            "description" : "CSRA type as configured in the ASSESSMENTS table:\n    CSRF\t  CSR Full\n    CSRH\t  CSR Health\n    CSRDO\t  CSR Locate\n    CSR\t    CSR Rating\n    CSR1\t  CSR Reception\n    CSRREV\tCSR Review\n  ",
+            "enum" : [ "CSRF", "CSRH", "CSRDO", "CSR", "CSR1", "CSRREV" ]
+          },
+          "calculatedLevel" : {
+            "type" : "string",
+            "description" : "The calculated CSRA level",
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
+            "example" : "STANDARD"
+          },
+          "score" : {
+            "type" : "number",
+            "description" : "Score",
+            "example" : 1000
+          },
+          "status" : {
+            "type" : "string",
+            "description" : "Status, active, inactive or provisional",
+            "enum" : [ "I", "A", "P" ]
+          },
+          "assessmentStaffId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Staff id of user that created the CSRA",
+            "example" : 123456
+          },
+          "committeeCode" : {
+            "type" : "string",
+            "description" : "The assessment committee code (reference code in domain 'ASSESS_COMM')",
+            "enum" : [ "GOV", "MED", "OCA", "RECP", "REVIEW", "SECSTATE", "SECUR" ]
+          },
+          "nextReviewDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Next review date, defaults to current date + 6 months, if not provided"
+          },
+          "comment" : {
+            "type" : "string",
+            "description" : "Comment text"
+          },
+          "placementAgencyId" : {
+            "type" : "string",
+            "description" : "A prison to be transferred to",
+            "example" : "LEI"
+          },
+          "createdDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Timestamp for when the CSRA was created",
+            "example" : "2025-12-06T12:34:56"
+          },
+          "createdBy" : {
+            "type" : "string",
+            "description" : "The user who created the CSRA",
+            "example" : "NQP56Y"
+          },
+          "reviewLevel" : {
+            "type" : "string",
+            "description" : "The review CSRA level",
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ]
+          },
+          "approvedLevel" : {
+            "type" : "string",
+            "description" : "The approval CSRA level",
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ]
+          },
+          "evaluationDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Evaluation or approval date"
+          },
+          "evaluationResultCode" : {
+            "type" : "string",
+            "description" : "Approved or rejected indicator",
+            "enum" : [ "APP", "REJ" ]
+          },
+          "reviewCommitteeCode" : {
+            "type" : "string",
+            "description" : "The review/approval committee code (reference code in domain 'ASSESS_COMM')",
+            "enum" : [ "GOV", "MED", "OCA", "RECP", "REVIEW", "SECSTATE", "SECUR" ]
+          },
+          "reviewCommitteeComment" : {
+            "type" : "string",
+            "description" : "Approval Committee Comment text"
+          },
+          "reviewPlacementAgencyId" : {
+            "type" : "string",
+            "description" : "Approval Comment text"
+          },
+          "reviewComment" : {
+            "type" : "string",
+            "description" : "Approval Comment text"
+          }
+        },
+        "required" : [ "assessmentDate", "assessmentStaffId", "calculatedLevel", "createdBy", "createdDateTime", "score", "status", "type" ]
+      },
+      "CsraCreateResponse" : {
+        "type" : "object",
+        "properties" : {
+          "bookingId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The booking id",
+            "example" : 2345678
+          },
+          "sequence" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The sequence number of the assessment",
+            "example" : 2
+          }
+        },
+        "required" : [ "bookingId", "sequence" ]
+      },
       "CreateSentenceResponse" : {
         "type" : "object",
         "description" : "Create sentence response",
@@ -26778,7 +27038,7 @@
             "type" : "number"
           },
           "consecutiveAward" : {
-            "required" : [ "effectiveDate", "sequence" ]
+            "$ref" : "#/components/schemas/HearingResultAward"
           },
           "chargeSequence" : {
             "type" : "integer",
@@ -27108,8 +27368,7 @@
             "type" : "string",
             "description" : "NOMIS Adjustment type code from SENTENCE_ADJUSTMENTS",
             "enum" : [ "RSR", "UR", "S240A", "RST", "RX" ],
-            "example" : "RX",
-            "minLength" : 1
+            "example" : "RX"
           },
           "adjustmentDate" : {
             "type" : "string",
@@ -27174,8 +27433,7 @@
             "type" : "string",
             "description" : "NOMIS Adjustment type code from SENTENCE_ADJUSTMENTS",
             "enum" : [ "LAL", "UAL", "RADA", "ADA", "SREM" ],
-            "example" : "ADA",
-            "minLength" : 1
+            "example" : "ADA"
           },
           "adjustmentDate" : {
             "type" : "string",
@@ -27913,125 +28171,6 @@
           }
         },
         "required" : [ "codeList" ]
-      },
-      "CsraDto" : {
-        "type" : "object",
-        "properties" : {
-          "assessmentDate" : {
-            "type" : "string",
-            "format" : "date",
-            "description" : "Date the CSRA was created",
-            "example" : "2025-11-22"
-          },
-          "type" : {
-            "type" : "string",
-            "description" : "CSRA type as configured in the ASSESSMENTS table:\n    CSRF\t  CSR Full\n    CSRH\t  CSR Health\n    CSRDO\t  CSR Locate\n    CSR\t    CSR Rating\n    CSR1\t  CSR Reception\n    CSRREV\tCSR Review\n  ",
-            "enum" : [ "CSRF", "CSRH", "CSRDO", "CSR", "CSR1", "CSRREV" ]
-          },
-          "calculatedLevel" : {
-            "type" : "string",
-            "description" : "The calculated CSRA level",
-            "example" : "STANDARD"
-          },
-          "score" : {
-            "type" : "number",
-            "description" : "Score",
-            "example" : 1000
-          },
-          "status" : {
-            "type" : "string",
-            "description" : "Status, active, inactive or provisional",
-            "enum" : [ "I", "A", "P" ]
-          },
-          "assessmentStaffId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Staff id of user that created the CSRA",
-            "example" : 123456
-          },
-          "committeeCode" : {
-            "type" : "string",
-            "description" : "The assessment committee code (reference code in domain 'ASSESS_COMM')"
-          },
-          "nextReviewDate" : {
-            "type" : "string",
-            "format" : "date",
-            "description" : "Next review date, defaults to current date + 6 months, if not provided"
-          },
-          "comment" : {
-            "type" : "string",
-            "description" : "Comment text"
-          },
-          "placementAgencyId" : {
-            "type" : "string",
-            "description" : "A prison to be transferred to",
-            "example" : "LEI"
-          },
-          "createdDateTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Timestamp for when the CSRA was created",
-            "example" : "2025-12-06T12:34:56"
-          },
-          "createdBy" : {
-            "type" : "string",
-            "description" : "The user who created the CSRA, required for CSRA creation",
-            "example" : "NQP56Y"
-          },
-          "reviewLevel" : {
-            "type" : "string",
-            "description" : "The review CSRA level"
-          },
-          "approvedLevel" : {
-            "type" : "string",
-            "description" : "The approval CSRA level"
-          },
-          "evaluationDate" : {
-            "type" : "string",
-            "format" : "date",
-            "description" : "Evaluation or approval date"
-          },
-          "evaluationResultCode" : {
-            "type" : "string",
-            "description" : "Approved or rejected indicator",
-            "enum" : [ "APP", "REJ" ]
-          },
-          "reviewCommitteeCode" : {
-            "type" : "string",
-            "description" : "The review/approval committee code (reference code in domain 'ASSESS_COMM')"
-          },
-          "reviewCommitteeComment" : {
-            "type" : "string",
-            "description" : "Approval Committee Comment text"
-          },
-          "reviewPlacementAgencyId" : {
-            "type" : "string",
-            "description" : "Approval Comment text"
-          },
-          "reviewComment" : {
-            "type" : "string",
-            "description" : "Approval Comment text"
-          }
-        },
-        "required" : [ "assessmentDate", "assessmentStaffId", "score", "status", "type" ]
-      },
-      "CsraCreateResponse" : {
-        "type" : "object",
-        "properties" : {
-          "bookingId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The booking id",
-            "example" : 2345678
-          },
-          "sequence" : {
-            "type" : "integer",
-            "format" : "int32",
-            "description" : "The sequence number of the assessment",
-            "example" : 2
-          }
-        },
-        "required" : [ "bookingId", "sequence" ]
       },
       "CreateCorporateOrganisationRequest" : {
         "type" : "object",
@@ -31202,6 +31341,112 @@
         },
         "required" : [ "keyDateAdjustments", "sentenceAdjustments" ]
       },
+      "CsraGetDto" : {
+        "type" : "object",
+        "properties" : {
+          "assessmentDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Date the CSRA was created",
+            "example" : "2025-11-22"
+          },
+          "type" : {
+            "type" : "string",
+            "description" : "CSRA type as configured in the ASSESSMENTS table:\n    CSRF\t  CSR Full\n    CSRH\t  CSR Health\n    CSRDO\t  CSR Locate\n    CSR\t    CSR Rating\n    CSR1\t  CSR Reception\n    CSRREV\tCSR Review\n  ",
+            "enum" : [ "CSRF", "CSRH", "CSRDO", "CSR", "CSR1", "CSRREV" ]
+          },
+          "calculatedLevel" : {
+            "type" : "string",
+            "description" : "The calculated CSRA level",
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
+            "example" : "STANDARD"
+          },
+          "score" : {
+            "type" : "number",
+            "description" : "Score",
+            "example" : 1000
+          },
+          "status" : {
+            "type" : "string",
+            "description" : "Status, active, inactive or provisional",
+            "enum" : [ "I", "A", "P" ]
+          },
+          "assessmentStaffId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Staff id of user that created the CSRA",
+            "example" : 123456
+          },
+          "committeeCode" : {
+            "type" : "string",
+            "description" : "The assessment committee code (reference code in domain 'ASSESS_COMM')",
+            "enum" : [ "GOV", "MED", "OCA", "RECP", "REVIEW", "SECSTATE", "SECUR" ]
+          },
+          "nextReviewDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Next review date, defaults to current date + 6 months, if not provided"
+          },
+          "comment" : {
+            "type" : "string",
+            "description" : "Comment text"
+          },
+          "placementAgencyId" : {
+            "type" : "string",
+            "description" : "A prison to be transferred to",
+            "example" : "LEI"
+          },
+          "createdDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Timestamp for when the CSRA was created",
+            "example" : "2025-12-06T12:34:56"
+          },
+          "createdBy" : {
+            "type" : "string",
+            "description" : "The user who created the CSRA",
+            "example" : "NQP56Y"
+          },
+          "reviewLevel" : {
+            "type" : "string",
+            "description" : "The review CSRA level",
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ]
+          },
+          "approvedLevel" : {
+            "type" : "string",
+            "description" : "The approval CSRA level",
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ]
+          },
+          "evaluationDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Evaluation or approval date"
+          },
+          "evaluationResultCode" : {
+            "type" : "string",
+            "description" : "Approved or rejected indicator",
+            "enum" : [ "APP", "REJ" ]
+          },
+          "reviewCommitteeCode" : {
+            "type" : "string",
+            "description" : "The review/approval committee code (reference code in domain 'ASSESS_COMM')",
+            "enum" : [ "GOV", "MED", "OCA", "RECP", "REVIEW", "SECSTATE", "SECUR" ]
+          },
+          "reviewCommitteeComment" : {
+            "type" : "string",
+            "description" : "Approval Committee Comment text"
+          },
+          "reviewPlacementAgencyId" : {
+            "type" : "string",
+            "description" : "Approval Comment text"
+          },
+          "reviewComment" : {
+            "type" : "string",
+            "description" : "Approval Comment text"
+          }
+        },
+        "required" : [ "assessmentDate", "assessmentStaffId", "score", "status", "type" ]
+      },
       "ADASummary" : {
         "type" : "object",
         "description" : "ADA summary",
@@ -31268,6 +31513,192 @@
           }
         },
         "required" : [ "alerts" ]
+      },
+      "ContactRelationship" : {
+        "type" : "object",
+        "properties" : {
+          "relationshipType" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The relationship type, e.g. police"
+          },
+          "contactType" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The contact type, e.g. social or official"
+          }
+        },
+        "required" : [ "contactType", "relationshipType" ]
+      },
+      "OfficialVisitResponse" : {
+        "type" : "object",
+        "description" : "Official Visit information",
+        "properties" : {
+          "visitId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The visit id"
+          },
+          "visitSlotId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The visit slot id"
+          },
+          "prisonId" : {
+            "type" : "string",
+            "description" : "Prison where the visit is to occur"
+          },
+          "offenderNo" : {
+            "type" : "string",
+            "description" : "The offender number, aka nomsId, prisonerId"
+          },
+          "bookingId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The offender booking id"
+          },
+          "currentTerm" : {
+            "type" : "boolean",
+            "description" : "true if the related booking is current"
+          },
+          "startDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Visit start date and time"
+          },
+          "endDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Visit end date and time"
+          },
+          "internalLocationId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The room where the visit will take place"
+          },
+          "visitStatus" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The status of the visit; Scheduled, Normal, Cancelled"
+          },
+          "visitOutcome" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The outcome of the visit; Completed, Cancelled, Scheduled, Expired"
+          },
+          "cancellationReason" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The reason of the visit cancellation"
+          },
+          "prisonerAttendanceOutcome" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The status of prisoner, Attended or Absent"
+          },
+          "prisonerSearchType" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The type of search to apply to prisoner"
+          },
+          "visitorConcernText" : {
+            "type" : "string",
+            "description" : "Visitor concerns text"
+          },
+          "commentText" : {
+            "type" : "string",
+            "description" : "Visit comments"
+          },
+          "overrideBanStaffUsername" : {
+            "type" : "string",
+            "description" : "A username associated with the staff user who override ban"
+          },
+          "visitors" : {
+            "type" : "array",
+            "description" : "Visitors",
+            "items" : {
+              "$ref" : "#/components/schemas/OfficialVisitor"
+            }
+          },
+          "visitOrder" : {
+            "$ref" : "#/components/schemas/VisitOrder",
+            "description" : "Details about any related visitor order"
+          },
+          "audit" : {
+            "$ref" : "#/components/schemas/NomisAudit",
+            "description" : "Audit information"
+          }
+        },
+        "required" : [ "audit", "bookingId", "currentTerm", "endDateTime", "internalLocationId", "offenderNo", "prisonId", "startDateTime", "visitId", "visitSlotId", "visitStatus", "visitors" ]
+      },
+      "OfficialVisitor" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "ID of the visitor"
+          },
+          "personId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "visitor NOMIS person Id"
+          },
+          "firstName" : {
+            "type" : "string",
+            "description" : "First name of the person"
+          },
+          "lastName" : {
+            "type" : "string",
+            "description" : "Surname name of the person"
+          },
+          "dateOfBirth" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Date of birth name of the person"
+          },
+          "leadVisitor" : {
+            "type" : "boolean",
+            "description" : "Indicates lead visitor for the visit"
+          },
+          "assistedVisit" : {
+            "type" : "boolean",
+            "description" : "Indicates visitor requires assistance"
+          },
+          "visitorAttendanceOutcome" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The status of visitor, Attended or Absent"
+          },
+          "cancellationReason" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The reason of the visit cancellation - typically matches the overall cancellation reason"
+          },
+          "eventStatus" : {
+            "$ref" : "#/components/schemas/CodeDescription",
+            "description" : "The status of the visit; Scheduled, Normal, Cancelled"
+          },
+          "commentText" : {
+            "type" : "string",
+            "description" : "Visitor comments"
+          },
+          "relationships" : {
+            "type" : "array",
+            "description" : "List of visitor contact relationships",
+            "items" : {
+              "$ref" : "#/components/schemas/ContactRelationship"
+            }
+          },
+          "audit" : {
+            "$ref" : "#/components/schemas/NomisAudit",
+            "description" : "Audit information"
+          }
+        },
+        "required" : [ "assistedVisit", "audit", "firstName", "id", "lastName", "leadVisitor", "personId", "relationships" ]
+      },
+      "VisitOrder" : {
+        "type" : "object",
+        "properties" : {
+          "number" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The visit order number as displayed in NOMIS",
+            "example" : 123456789
+          }
+        },
+        "required" : [ "number" ]
       },
       "ContactForPrisoner" : {
         "type" : "object",
@@ -31763,192 +32194,6 @@
           }
         },
         "required" : [ "lastPersonId", "personIds" ]
-      },
-      "ContactRelationship" : {
-        "type" : "object",
-        "properties" : {
-          "relationshipType" : {
-            "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The relationship type, e.g. police"
-          },
-          "contactType" : {
-            "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The contact type, e.g. social or official"
-          }
-        },
-        "required" : [ "contactType", "relationshipType" ]
-      },
-      "OfficialVisitResponse" : {
-        "type" : "object",
-        "description" : "Official Visit information",
-        "properties" : {
-          "visitId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The visit id"
-          },
-          "visitSlotId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The visit slot id"
-          },
-          "prisonId" : {
-            "type" : "string",
-            "description" : "Prison where the visit is to occur"
-          },
-          "offenderNo" : {
-            "type" : "string",
-            "description" : "The offender number, aka nomsId, prisonerId"
-          },
-          "bookingId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The offender booking id"
-          },
-          "currentTerm" : {
-            "type" : "boolean",
-            "description" : "true if the related booking is current"
-          },
-          "startDateTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Visit start date and time"
-          },
-          "endDateTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Visit end date and time"
-          },
-          "internalLocationId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The room where the visit will take place"
-          },
-          "visitStatus" : {
-            "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The status of the visit; Scheduled, Normal, Cancelled"
-          },
-          "visitOutcome" : {
-            "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The outcome of the visit; Completed, Cancelled, Scheduled, Expired"
-          },
-          "cancellationReason" : {
-            "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The reason of the visit cancellation"
-          },
-          "prisonerAttendanceOutcome" : {
-            "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The status of prisoner, Attended or Absent"
-          },
-          "prisonerSearchType" : {
-            "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The type of search to apply to prisoner"
-          },
-          "visitorConcernText" : {
-            "type" : "string",
-            "description" : "Visitor concerns text"
-          },
-          "commentText" : {
-            "type" : "string",
-            "description" : "Visit comments"
-          },
-          "overrideBanStaffUsername" : {
-            "type" : "string",
-            "description" : "A username associated with the staff user who override ban"
-          },
-          "visitors" : {
-            "type" : "array",
-            "description" : "Visitors",
-            "items" : {
-              "$ref" : "#/components/schemas/OfficialVisitor"
-            }
-          },
-          "visitOrder" : {
-            "$ref" : "#/components/schemas/VisitOrder",
-            "description" : "Details about any related visitor order"
-          },
-          "audit" : {
-            "$ref" : "#/components/schemas/NomisAudit",
-            "description" : "Audit information"
-          }
-        },
-        "required" : [ "audit", "bookingId", "currentTerm", "endDateTime", "internalLocationId", "offenderNo", "prisonId", "startDateTime", "visitId", "visitSlotId", "visitStatus", "visitors" ]
-      },
-      "OfficialVisitor" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "ID of the visitor"
-          },
-          "personId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "visitor NOMIS person Id"
-          },
-          "firstName" : {
-            "type" : "string",
-            "description" : "First name of the person"
-          },
-          "lastName" : {
-            "type" : "string",
-            "description" : "Surname name of the person"
-          },
-          "dateOfBirth" : {
-            "type" : "string",
-            "format" : "date",
-            "description" : "Date of birth name of the person"
-          },
-          "leadVisitor" : {
-            "type" : "boolean",
-            "description" : "Indicates lead visitor for the visit"
-          },
-          "assistedVisit" : {
-            "type" : "boolean",
-            "description" : "Indicates visitor requires assistance"
-          },
-          "visitorAttendanceOutcome" : {
-            "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The status of visitor, Attended or Absent"
-          },
-          "cancellationReason" : {
-            "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The reason of the visit cancellation - typically matches the overall cancellation reason"
-          },
-          "eventStatus" : {
-            "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "The status of the visit; Scheduled, Normal, Cancelled"
-          },
-          "commentText" : {
-            "type" : "string",
-            "description" : "Visitor comments"
-          },
-          "relationships" : {
-            "type" : "array",
-            "description" : "List of visitor contact relationships",
-            "items" : {
-              "$ref" : "#/components/schemas/ContactRelationship"
-            }
-          },
-          "audit" : {
-            "$ref" : "#/components/schemas/NomisAudit",
-            "description" : "Audit information"
-          }
-        },
-        "required" : [ "assistedVisit", "audit", "firstName", "id", "lastName", "leadVisitor", "personId", "relationships" ]
-      },
-      "VisitOrder" : {
-        "type" : "object",
-        "properties" : {
-          "number" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The visit order number as displayed in NOMIS",
-            "example" : 123456789
-          }
-        },
-        "required" : [ "number" ]
       },
       "PagedModelVisitIdResponse" : {
         "type" : "object",
@@ -32750,6 +32995,86 @@
           }
         },
         "required" : [ "audit", "bookingId", "movementDate", "movementReason", "movementTime", "sequence", "toPrison" ]
+      },
+      "Applications" : {
+        "type" : "object",
+        "description" : "Offender temporary absence application counts",
+        "properties" : {
+          "count" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The number of applications"
+          }
+        },
+        "required" : [ "count" ]
+      },
+      "Movements" : {
+        "type" : "object",
+        "description" : "Offender temporary absence movement counts",
+        "properties" : {
+          "count" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The number of actual movements"
+          },
+          "scheduled" : {
+            "$ref" : "#/components/schemas/MovementsByDirection",
+            "description" : "The number of scheduled movements by direction"
+          },
+          "unscheduled" : {
+            "$ref" : "#/components/schemas/MovementsByDirection",
+            "description" : "The number of unscheduled movements by direction"
+          }
+        },
+        "required" : [ "count", "scheduled", "unscheduled" ]
+      },
+      "MovementsByDirection" : {
+        "type" : "object",
+        "description" : "Offender temporary absence scheduled movement counts",
+        "properties" : {
+          "outCount" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The number of actual OUT movements"
+          },
+          "inCount" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The number of actual IN movements"
+          }
+        },
+        "required" : [ "inCount", "outCount" ]
+      },
+      "OffenderTemporaryAbsenceSummaryResponse" : {
+        "type" : "object",
+        "description" : "Offender temporary absence counts for an offender",
+        "properties" : {
+          "applications" : {
+            "$ref" : "#/components/schemas/Applications",
+            "description" : "The application counts"
+          },
+          "scheduledOutMovements" : {
+            "$ref" : "#/components/schemas/ScheduledOut",
+            "description" : "The scheduled outbound movement counts"
+          },
+          "movements" : {
+            "$ref" : "#/components/schemas/Movements",
+            "description" : "The actual movement counts"
+          }
+        },
+        "required" : [ "applications", "movements", "scheduledOutMovements" ]
+      },
+      "ScheduledOut" : {
+        "type" : "object",
+        "description" : "Offender temporary absence scheduled OUT counts",
+        "properties" : {
+          "count" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The number of scheduled OUT movements"
+          }
+        },
+        "required" : [ "count" ]
       },
       "ScheduledTemporaryAbsenceResponse" : {
         "type" : "object",

@@ -18,7 +18,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingProfileDetailsResponse
@@ -232,12 +231,12 @@ class CorePersonSynchronisationProfileDetailsIntTest(
               booking(
                 bookingId = 12345,
                 sequence = 1,
-                profileDetails = listOf(profileDetails(type = "DISABILITY", code = "Y")),
+                profileDetails = listOf(profileDetails(type = "DISABILITY", code = "YES")),
               ),
             ),
           ),
         )
-        cprApi.stubSyncCreateDisability()
+        cprApi.stubSyncCreateDisability("A1234AA")
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "DISABILITY")
           .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-success") }
@@ -248,11 +247,10 @@ class CorePersonSynchronisationProfileDetailsIntTest(
           profileType = "DISABILITY",
         )
         cprApi.verify(
-          postRequestedFor(urlPathEqualTo("/syscon-sync/${"disability-status"}"))
-            .withRequestBodyJsonPath("prisonNumber", "A1234AA")
+          postRequestedFor(urlPathEqualTo("/syscon-sync/disability-status/A1234AA"))
             .withRequestBodyJsonPath("disability", true)
-            .withRequestBodyJsonPath("createUserId", "A_USER")
-            .withRequestBodyJsonPath("createDateTime", "2024-09-04T12:34:56"),
+            .withRequestBodyJsonPath("modifyUserId", "A_USER")
+            .withRequestBodyJsonPath("modifyDateTime", "2024-09-04T12:34:56"),
         )
         verifyTelemetry(
           "coreperson-profiledetails-synchronisation-success",
@@ -296,15 +294,8 @@ class CorePersonSynchronisationProfileDetailsIntTest(
           bookingId = null,
           profileType = "IMM",
         )
-        val requestBody = PrisonImmigrationStatus(
-          "A1234AA",
-          true,
-          current = true,
-          createUserId = "A_USER",
-          createDateTime = LocalDateTime.parse("2024-09-04T12:34:56"),
-        )
         cprApi.verify(
-          postRequestedFor(urlPathEqualTo("/syscon-sync/${"immigration-status"}"))
+          postRequestedFor(urlPathEqualTo("/syscon-sync/immigration-status"))
             .withRequestBodyJsonPath("prisonNumber", "A1234AA")
             .withRequestBodyJsonPath("interestToImmigration", true)
             .withRequestBodyJsonPath("createUserId", "A_USER")
