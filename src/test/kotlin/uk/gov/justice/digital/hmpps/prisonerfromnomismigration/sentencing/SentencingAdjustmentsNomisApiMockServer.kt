@@ -153,6 +153,7 @@ private fun keyDateAdjustmentResponse(
     "code": "ADA",
     "description": "Additional days"
   },
+  "hiddenFromUsers": false,
   "hasBeenReleased": false,
   "prisonId": "$prisonId"
 }

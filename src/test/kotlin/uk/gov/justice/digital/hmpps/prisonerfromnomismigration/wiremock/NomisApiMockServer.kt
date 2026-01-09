@@ -45,7 +45,7 @@ class NomisApiExtension :
 
   override fun beforeAll(context: ExtensionContext) {
     nomisApi.start()
-    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonObjectMapper") as ObjectMapper)
+    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jackson2ObjectMapper") as ObjectMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
@@ -701,7 +701,8 @@ private fun basicLocationResponse(id: Long = 1234): String =
     "certified": true,
     "active": true,
     "createDatetime": "2023-01-01T11:00:01.234567",
-    "createUsername": "ITAG1"
+    "createUsername": "ITAG1",
+    "tracking": false
   }
   """.trimIndent()
 
