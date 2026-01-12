@@ -746,6 +746,7 @@ private fun activitiesResponse(
   "minimumIncentiveLevel": "BAS",
   "excludeBankHolidays": false,
   "payPerSession": "H",
+  "outsideWork": false,
   "scheduleRules": [
     {
       "startTime": "09:00",

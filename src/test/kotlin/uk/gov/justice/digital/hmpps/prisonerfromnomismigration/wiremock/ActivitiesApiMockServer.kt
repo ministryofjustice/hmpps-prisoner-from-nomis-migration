@@ -118,8 +118,9 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
               .withBody(
                 """
               {
+                "activityId": 1234,
                 "allocationId": ${allocationId + offset},
-                "activityScheduleId": ${activityScheduleId + offset }}
+                "activityScheduleId": ${activityScheduleId + offset }
               }
                 """.trimIndent(),
               ),
