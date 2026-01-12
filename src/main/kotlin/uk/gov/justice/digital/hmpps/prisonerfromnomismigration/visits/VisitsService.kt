@@ -6,7 +6,7 @@ import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenUnprocessableEntity
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenUnprocessableContent
 import java.time.LocalDateTime
 
 @Service
@@ -19,7 +19,7 @@ class VisitsService(@Qualifier("visitsApiWebClient") private val webClient: WebC
     .uri("/migrate-visits")
     .bodyValue(createVisitRequest)
     .retrieve()
-    .awaitBodyOrNullWhenUnprocessableEntity<String>()?.let { VisitCreated(it) } ?: VisitCreateAborted
+    .awaitBodyOrNullWhenUnprocessableContent<String>()?.let { VisitCreated(it) } ?: VisitCreateAborted
 
   suspend fun cancelVisit(visitReference: String, outcome: VsipOutcomeDto) = webClient.put()
     .uri("/migrate-visits/{visitReference}/cancel", visitReference)

@@ -12,8 +12,8 @@ suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenN
   .onErrorResume(WebClientResponseException.NotFound::class.java) { Mono.empty() }
   .awaitSingleOrNull()
 
-suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenUnprocessableEntity(): T? = this.bodyToMono<T>()
-  .onErrorResume(WebClientResponseException.UnprocessableEntity::class.java) { Mono.empty() }
+suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenUnprocessableContent(): T? = this.bodyToMono<T>()
+  .onErrorResume(WebClientResponseException.UnprocessableContent::class.java) { Mono.empty() }
   .awaitSingleOrNull()
 
 suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrLogAndRethrowBadRequest(): T = this.bodyToMono<T>()

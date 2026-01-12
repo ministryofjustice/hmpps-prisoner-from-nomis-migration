@@ -48,7 +48,7 @@ class CourtSentencingDpsApiExtension :
 
   override fun beforeAll(context: ExtensionContext) {
     dpsCourtSentencingServer.start()
-    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonObjectMapper") as ObjectMapper)
+    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jackson2ObjectMapper") as ObjectMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
