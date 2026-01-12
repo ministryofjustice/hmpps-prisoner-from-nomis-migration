@@ -1232,8 +1232,9 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               isNull(),
             )
 
+            // web client retry twice more
             courtSentencingMappingApiMockServer.verify(
-              1,
+              3,
               deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/dps-sentence-id/$DPS_SENTENCE_ID")),
             )
           }
@@ -2770,8 +2771,9 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               isNull(),
             )
 
+            // web client retry twice more
             courtSentencingMappingApiMockServer.verify(
-              1,
+              3,
               deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentence-terms/dps-term-id/$DPS_TERM_ID")),
             )
           }

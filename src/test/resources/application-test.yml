@@ -59,6 +59,9 @@ courtsentencing:
   complete-check:
     delay-seconds: 1
     count: 1
+  mapping-retry:
+    delay-milliseconds: 180
+    count: 2
   page:
     size: 10
   has-migrated-data: true

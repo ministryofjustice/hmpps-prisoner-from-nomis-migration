@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
 import kotlinx.coroutines.reactive.awaitFirstOrDefault
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
@@ -10,6 +11,8 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
+import reactor.util.retry.Retry
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityWithRetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -24,9 +27,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NomisSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceTermMappingDto
+import java.time.Duration
 
 @Service
-class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CourtCaseMigrationMapping>(domainUrl = "/mapping/court-sentencing/prisoner", webClient) {
+class CourtSentencingMappingApiService(
+  @Qualifier("mappingApiWebClient") webClient: WebClient,
+  @Value("\${courtsentencing.mapping-retry.count:8}") private val retryCount: Long,
+  @Value("\${courtsentencing.mapping-retry.delay-milliseconds:10000}") private val delayMillisSeconds: Long,
+) : MigrationMapping<CourtCaseMigrationMapping>(domainUrl = "/mapping/court-sentencing/prisoner", webClient) {
 
   suspend fun createMapping(
     offenderNo: String,
@@ -281,7 +289,12 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
       sentenceId,
     )
     .retrieve()
-    .awaitBodilessEntity()
+    .awaitBodilessEntityWithRetry(
+      Retry.fixedDelay(
+        retryCount,
+        Duration.ofMillis(delayMillisSeconds),
+      ),
+    )
 
   suspend fun deleteSentenceTermMappingByDpsId(termId: String) = webClient.delete()
     .uri(
@@ -289,7 +302,12 @@ class CourtSentencingMappingApiService(@Qualifier("mappingApiWebClient") webClie
       termId,
     )
     .retrieve()
-    .awaitBodilessEntity()
+    .awaitBodilessEntityWithRetry(
+      Retry.fixedDelay(
+        retryCount,
+        Duration.ofMillis(delayMillisSeconds),
+      ),
+    )
 
   suspend fun getOffenderMigrationSummaryOrNull(offenderNo: String): CourtSentencingMigrationSummary? = webClient.get()
     .uri(

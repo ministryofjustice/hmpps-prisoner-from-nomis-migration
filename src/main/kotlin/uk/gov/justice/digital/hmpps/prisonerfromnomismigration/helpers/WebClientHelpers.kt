@@ -6,6 +6,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
+import reactor.util.retry.Retry
 
 suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenNotFound(): T? = this.bodyToMono<T>()
   .onErrorResume(WebClientResponseException.NotFound::class.java) { Mono.empty() }
@@ -37,6 +38,10 @@ suspend inline fun WebClient.ResponseSpec.awaitBodilessEntityIgnoreNotFound() = 
   .onErrorResume(WebClientResponseException.NotFound::class.java) {
     Mono.empty()
   }
+  .awaitSingleOrNull()
+
+suspend inline fun WebClient.ResponseSpec.awaitBodilessEntityWithRetry(retrySpec: Retry) = this.toBodilessEntity()
+  .retryWhen(retrySpec)
   .awaitSingleOrNull()
 
 suspend inline fun WebClient.ResponseSpec.awaitBodilessEntityAsTrueNotFoundAsFalse(): Boolean = this.toBodilessEntity()

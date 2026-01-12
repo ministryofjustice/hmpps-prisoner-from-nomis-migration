@@ -187,6 +187,11 @@ allocations:
 finance:
   transactions.forwardingDelaySeconds: 5
 
+courtsentencing:
+  mapping-retry:
+    delay-milliseconds: 1000
+    count: 9
+
 personalrelationships:
   complete-check:
     delay-seconds: 180
