@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.databind.JsonNode
 import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.ParameterizedTypeReference
@@ -15,6 +14,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
+import tools.jackson.databind.JsonNode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException

@@ -62,7 +62,7 @@ class MappingApiExtension :
 
   override fun beforeAll(context: ExtensionContext) {
     mappingApi.start()
-    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonObjectMapper") as ObjectMapper)
+    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jackson2ObjectMapper") as ObjectMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
@@ -506,6 +506,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     fun aMigration(id: Int) = """{
       "nomisCourseActivityId": $id,
+      "activityId": 123,
       "activityScheduleId": ${if (hasScheduleRules) 456 else null},
       "label": "$migrationId",
       "whenCreated": "$whenCreated"
@@ -780,6 +781,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
               "moreInfo": 
               {
                 "existing" :  {
+                  "activityId": 1234,
                   "nomisAllocationId": $nomisAllocationId,
                   "activityAllocationId": $existingAllocationId,
                   "activityScheduleId": 123,
@@ -787,6 +789,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
                   "whenCreated": "2022-02-14T09:58:45"
                  },
                  "duplicate" : {
+                  "activityId": 1234,
                   "nomisAllocationId": $nomisAllocationId,
                   "activityAllocationId": $duplicateAllocationId,
                   "activityScheduleId": 123,

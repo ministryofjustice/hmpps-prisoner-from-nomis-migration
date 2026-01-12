@@ -45,7 +45,7 @@ class NomisApiExtension :
 
   override fun beforeAll(context: ExtensionContext) {
     nomisApi.start()
-    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonObjectMapper") as ObjectMapper)
+    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jackson2ObjectMapper") as ObjectMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
@@ -746,6 +746,7 @@ private fun activitiesResponse(
   "minimumIncentiveLevel": "BAS",
   "excludeBankHolidays": false,
   "payPerSession": "H",
+  "outsideWork": false,
   "scheduleRules": [
     {
       "startTime": "09:00",
