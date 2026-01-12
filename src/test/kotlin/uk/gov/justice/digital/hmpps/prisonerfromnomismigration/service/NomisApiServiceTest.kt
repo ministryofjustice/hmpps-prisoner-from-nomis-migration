@@ -105,7 +105,7 @@ internal class NomisApiServiceTest {
     }
 
     @Test
-    internal fun `will pass empty filters when not present`() {
+    internal fun `will not pass empty filters when not present`() {
       runBlocking {
         nomisService.getVisits(
           prisonIds = listOf(),
@@ -119,7 +119,7 @@ internal class NomisApiServiceTest {
       }
       nomisApi.verify(
         getRequestedFor(
-          urlEqualTo("/visits/ids?prisonIds&visitTypes&fromDateTime&toDateTime&ignoreMissingRoom=false&page=23&size=10"),
+          urlEqualTo("/visits/ids?ignoreMissingRoom=false&page=23&size=10"),
         ),
       )
     }
@@ -477,14 +477,17 @@ internal class NomisApiServiceTest {
 {
     "content": [
       {
-        "courseActivityId": 1
+        "courseActivityId": 1,
+        "hasScheduleRules": false
       },
       {
-        "courseActivityId": 2
+        "courseActivityId": 2,
+        "hasScheduleRules": true
       },
       {
-        "courseActivityId": 3
-      }
+        "courseActivityId": 3,
+        "hasScheduleRules": false
+     }
     ],
     "pageable": {
         "sort": {
@@ -580,7 +583,8 @@ internal class NomisApiServiceTest {
                       "payBand": "2",
                       "rate": 3.6
                     }
-                  ]
+                  ],
+                  "outsideWork": false
                 }
               """.trimIndent(),
             ),

@@ -60,8 +60,10 @@ class IncidentsNomisApiService(@Qualifier("nomisApiWebClient") private val webCl
   ): PageImpl<IncidentIdResponse> = webClient.get()
     .uri {
       it.path("/incidents/ids")
-        .queryParam("fromDate", fromDate)
-        .queryParam("toDate", toDate)
+        .apply {
+          fromDate?.let { queryParam("fromDate", fromDate) }
+          toDate?.let { queryParam("toDate", toDate) }
+        }
         .queryParam("page", pageNumber)
         .queryParam("size", pageSize)
         .build()

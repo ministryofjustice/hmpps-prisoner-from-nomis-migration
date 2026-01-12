@@ -32,7 +32,7 @@ class HmppsPrisonerFromNomisMigrationExceptionHandler {
   ).also { log.info("Validation exception: {}", e.message) }
 
   @ExceptionHandler(NotFoundException::class)
-  fun handleNotFoundException(e: NotFoundException): Mono<ResponseEntity<ErrorResponse?>>? = Mono.just(
+  fun handleNotFoundException(e: NotFoundException): Mono<ResponseEntity<ErrorResponse>> = Mono.just(
     ResponseEntity
       .status(HttpStatus.NOT_FOUND)
       .body(
@@ -45,7 +45,7 @@ class HmppsPrisonerFromNomisMigrationExceptionHandler {
   ).also { log.info("Not Found: {}", e.message) }
 
   @ExceptionHandler(MigrationAlreadyInProgressException::class)
-  fun handleMigrationAlreadyInProgressException(e: MigrationAlreadyInProgressException): Mono<ResponseEntity<ErrorResponse?>>? = Mono.just(
+  fun handleMigrationAlreadyInProgressException(e: MigrationAlreadyInProgressException): Mono<ResponseEntity<ErrorResponse>> = Mono.just(
     ResponseEntity
       .status(HttpStatus.CONFLICT)
       .body(
