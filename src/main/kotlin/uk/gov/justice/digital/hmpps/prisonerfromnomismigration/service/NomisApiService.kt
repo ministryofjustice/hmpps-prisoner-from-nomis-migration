@@ -54,10 +54,12 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   ): PageImpl<VisitId> = webClient.get()
     .uri {
       it.path("/visits/ids")
-        .queryParam("prisonIds", prisonIds)
-        .queryParam("visitTypes", visitTypes)
-        .queryParam("fromDateTime", fromDateTime)
-        .queryParam("toDateTime", toDateTime)
+        .apply {
+          prisonIds.forEach { queryParam("prisonIds", it) }
+          visitTypes.forEach { queryParam("visitTypes", it) }
+          fromDateTime?.let { queryParam("fromDateTime", it) }
+          toDateTime?.let { queryParam("toDateTime", it) }
+        }
         .queryParam("ignoreMissingRoom", ignoreMissingRoom)
         .queryParam("page", pageNumber)
         .queryParam("size", pageSize)
@@ -80,10 +82,12 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   ): List<VisitRoomUsageResponse> = webClient.get()
     .uri {
       it.path("/visits/rooms/usage-count")
-        .queryParam("prisonIds", filter.prisonIds)
-        .queryParam("visitTypes", filter.visitTypes)
-        .queryParam("fromDateTime", filter.fromDateTime)
-        .queryParam("toDateTime", filter.toDateTime)
+        .apply {
+          filter.prisonIds.forEach { queryParam("prisonIds", it) }
+          filter.visitTypes.forEach { queryParam("visitTypes", it) }
+          filter.fromDateTime?.let { queryParam("fromDateTime", it) }
+          filter.toDateTime?.let { queryParam("toDateTime", it) }
+        }
         .build()
     }
     .retrieve()
@@ -105,9 +109,11 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   ): PageImpl<AppointmentIdResponse> = webClient.get()
     .uri {
       it.path("/appointments/ids")
-        .queryParam("prisonIds", prisonIds)
-        .queryParam("fromDate", fromDate)
-        .queryParam("toDate", toDate)
+        .apply {
+          prisonIds.forEach { queryParam("prisonIds", it) }
+          fromDate?.let { queryParam("fromDate", it) }
+          toDate?.let { queryParam("toDate", it) }
+        }
         .queryParam("page", pageNumber)
         .queryParam("size", pageSize)
         .build()
@@ -131,7 +137,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .uri {
       it.path("/activities/ids")
         .queryParam("prisonId", prisonId)
-        .apply { courseActivityId?.run { queryParam("courseActivityId", courseActivityId) } }
+        .apply { courseActivityId?.let { queryParam("courseActivityId", courseActivityId) } }
         .queryParam("page", pageNumber)
         .queryParam("size", pageSize)
         .build()
@@ -172,8 +178,10 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .uri {
       it.path("/allocations/ids")
         .queryParam("prisonId", prisonId)
-        .apply { courseActivityId?.run { queryParam("courseActivityId", courseActivityId) } }
-        .apply { activeOnDate?.run { queryParam("activeOnDate", activeOnDate) } }
+        .apply {
+          courseActivityId?.let { queryParam("courseActivityId", courseActivityId) }
+          activeOnDate?.let { queryParam("activeOnDate", activeOnDate) }
+        }
         .queryParam("page", pageNumber)
         .queryParam("size", pageSize)
         .build()
@@ -263,7 +271,7 @@ data class NomisVisit(
   val whenUpdated: LocalDateTime? = null,
 )
 
-class RestResponsePage<T>(
+class RestResponsePage<T : Any>(
   @JsonProperty("content") content: List<T>,
   @JsonProperty("number") number: Int,
   @JsonProperty("size") size: Int,
@@ -279,11 +287,11 @@ data class PageMetadata(
   val totalPages: Int,
 )
 
-class RestResponsePagedModel<T>(
+class RestResponsePagedModel<T : Any>(
   @JsonProperty("content") content: List<T>,
   @JsonProperty("page") page: PageMetadata,
 ) : PagedModel<T>(
   PageImpl(content, PageRequest.of(page.number.toInt(), page.size.toInt()), page.totalElements),
 )
 
-inline fun <reified T> typeReference() = object : ParameterizedTypeReference<T>() {}
+inline fun <reified T : Any> typeReference() = object : ParameterizedTypeReference<T>() {}

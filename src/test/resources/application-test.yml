@@ -188,3 +188,9 @@ hmpps.sqs:
     migrationexternalmovements:
       errorVisibilityTimeout: 0
       dlqMaxReceiveCount: 1
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
