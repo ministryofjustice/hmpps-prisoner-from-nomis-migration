@@ -94,12 +94,11 @@ class CorePersonSynchronisationProfileDetailsService(
 
             "IMM" -> {
               corePersonCprApiService.syncCreateImmigrationStatus(
+                offenderIdDisplay,
                 PrisonImmigrationStatus(
-                  prisonNumber = offenderIdDisplay,
                   interestToImmigration = code == "Y",
-                  current = true,
-                  createUserId = modifiedBy ?: createdBy,
-                  createDateTime = modifiedDateTime ?: createDateTime,
+                  modifyUserId = modifiedBy ?: createdBy,
+                  modifyDateTime = modifiedDateTime ?: createDateTime,
                 ),
               )
             }

@@ -165,9 +165,9 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubSyncCreateImmigration(status: Int = 201) {
+  fun stubSyncCreateImmigration(prisonNumber: String, status: Int = 201) {
     stubFor(
-      post("/syscon-sync/immigration-status").willReturn(
+      post("/syscon-sync/immigration-status/$prisonNumber").willReturn(
         aResponse()
           .withStatus(status)
           .withHeader("Content-Type", "application/json")

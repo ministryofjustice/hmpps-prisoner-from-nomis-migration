@@ -32,8 +32,8 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncCreateImmigrationStatus(request: PrisonImmigrationStatus): PrisonImmigrationStatusResponse = api
-    .prepare(api.createImmigrationStatusRequestConfig(request))
+  suspend fun syncCreateImmigrationStatus(prisonNumber: String, request: PrisonImmigrationStatus): PrisonImmigrationStatusResponse = api
+    .prepare(api.updateImmigrationStatus1RequestConfig(prisonNumber, request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 

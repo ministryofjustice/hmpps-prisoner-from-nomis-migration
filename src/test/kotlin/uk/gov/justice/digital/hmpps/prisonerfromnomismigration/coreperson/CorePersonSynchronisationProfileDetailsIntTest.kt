@@ -284,7 +284,7 @@ class CorePersonSynchronisationProfileDetailsIntTest(
             ),
           ),
         )
-        cprApi.stubSyncCreateImmigration()
+        cprApi.stubSyncCreateImmigration("A1234AA")
 
         sendProfileDetailsChangedEvent(prisonerNumber = "A1234AA", bookingId = 12345, profileType = "IMM")
           .also { waitForAnyProcessingToComplete("coreperson-profiledetails-synchronisation-success") }
@@ -295,11 +295,10 @@ class CorePersonSynchronisationProfileDetailsIntTest(
           profileType = "IMM",
         )
         cprApi.verify(
-          postRequestedFor(urlPathEqualTo("/syscon-sync/immigration-status"))
-            .withRequestBodyJsonPath("prisonNumber", "A1234AA")
+          postRequestedFor(urlPathEqualTo("/syscon-sync/immigration-status/A1234AA"))
             .withRequestBodyJsonPath("interestToImmigration", true)
-            .withRequestBodyJsonPath("createUserId", "A_USER")
-            .withRequestBodyJsonPath("createDateTime", "2024-09-04T12:34:56"),
+            .withRequestBodyJsonPath("modifyUserId", "A_USER")
+            .withRequestBodyJsonPath("modifyDateTime", "2024-09-04T12:34:56"),
         )
         verifyTelemetry(
           "coreperson-profiledetails-synchronisation-success",
