@@ -6,7 +6,6 @@ import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.SysconSyncApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDisabilityStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatusResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonNationality
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSexualOrientation
@@ -32,7 +31,7 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncCreateImmigrationStatus(prisonNumber: String, request: PrisonImmigrationStatus): PrisonImmigrationStatusResponse = api
+  suspend fun syncCreateImmigrationStatus(prisonNumber: String, request: PrisonImmigrationStatus): String = api
     .prepare(api.updateImmigrationStatus1RequestConfig(prisonNumber, request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
