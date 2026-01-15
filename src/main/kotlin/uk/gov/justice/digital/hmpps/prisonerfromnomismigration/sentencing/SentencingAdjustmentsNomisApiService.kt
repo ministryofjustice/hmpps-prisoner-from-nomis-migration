@@ -49,7 +49,7 @@ data class NomisAdjustment(
   val adjustmentDays: Long,
   val comment: String?,
   val active: Boolean,
-  val hiddenFromUsers: Boolean,
+  val hiddenFromUsers: Boolean? = false,
   val hasBeenReleased: Boolean,
   val prisonId: String,
 ) {
