@@ -49,7 +49,7 @@ class SentencingAdjustmentsSynchronisationService(
     )
   }
   suspend fun createOrUpdateSentenceAdjustment(request: SentenceAdjustmentUpdateOrCreateRequest) {
-    sentencingAdjustmentsNomisApiService.getSentenceAdjustment(request.adjustmentId)?.takeUnless { it.hiddenFromUsers }
+    sentencingAdjustmentsNomisApiService.getSentenceAdjustment(request.adjustmentId)?.takeUnless { it.hiddenFromUsers == true }
       ?.also { nomisAdjustment ->
         sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
           nomisAdjustmentId = request.adjustmentId,
