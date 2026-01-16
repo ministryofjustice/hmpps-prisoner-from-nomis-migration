@@ -7,6 +7,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PagedModelMigrationDetails
 
 abstract class MigrationMapping<MAPPING : Any>(
   val domainUrl: String,
@@ -22,6 +23,19 @@ abstract class MigrationMapping<MAPPING : Any>(
     }
     .retrieve()
     .bodyToMono(MigrationDetails::class.java)
+    .onErrorResume(WebClientResponseException.NotFound::class.java) {
+      Mono.empty()
+    }
+    .awaitSingleOrNull()?.count ?: 0
+
+  open suspend fun getPagedModelMigrationCount(migrationId: String): Long = webClient.get()
+    .uri {
+      it.path("$domainUrl/migration-id/{migrationId}")
+        .queryParam("size", 1)
+        .build(migrationId)
+    }
+    .retrieve()
+    .bodyToMono(PagedModelMigrationDetails::class.java)
     .onErrorResume(WebClientResponseException.NotFound::class.java) {
       Mono.empty()
     }

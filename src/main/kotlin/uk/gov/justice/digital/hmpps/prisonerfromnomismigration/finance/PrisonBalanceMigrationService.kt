@@ -56,6 +56,8 @@ class PrisonBalanceMigrationService(
     pageNumber: Long,
   ): List<String> = getIds(migrationFilter)
 
+  override suspend fun getMigrationCount(migrationId: String): Long = prisonBalanceMappingService.getPagedModelMigrationCount(migrationId)
+
   override suspend fun getTotalNumberOfIds(migrationFilter: PrisonBalanceMigrationFilter): Long = getIds(migrationFilter).size.toLong()
 
   override suspend fun migrateNomisEntity(context: MigrationContext<String>) {

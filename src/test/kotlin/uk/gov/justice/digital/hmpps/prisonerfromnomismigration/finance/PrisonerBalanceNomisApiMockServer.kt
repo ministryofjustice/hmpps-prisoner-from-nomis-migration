@@ -9,11 +9,11 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageMetadata
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PagedModelLong
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAccountDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBalanceDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pagedModelContent
 import java.math.BigDecimal
 import java.time.LocalDateTime
 import kotlin.collections.map
@@ -30,12 +30,16 @@ class PrisonerBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) 
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(
-            pagedModelContent(
-              objectMapper = NomisApiExtension.objectMapper,
-              content = content,
-              pageSize = pageSize,
-              pageNumber = 0,
-              totalElements = totalElements,
+            objectMapper.writeValueAsString(
+              PagedModelLong(
+                content = content,
+                page = PageMetadata(
+                  propertySize = pageSize,
+                  number = 0,
+                  totalPages = totalElements,
+                  totalElements = totalElements,
+                ),
+              ),
             ),
           ),
       ),

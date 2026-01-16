@@ -12,9 +12,10 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PageMetadata
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PagedModelPrisonBalanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonBalanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
 
 @Component
@@ -49,21 +50,24 @@ class PrisonBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(
-            pageContent(
-              objectMapper = objectMapper,
-              content = listOf(
-                PrisonBalanceMappingDto(
-                  dpsId = "MDI",
-                  nomisId = "MDI",
-                  mappingType = PrisonBalanceMappingDto.MappingType.MIGRATED,
-                  label = migrationId,
-                  whenCreated = LocalDateTime.now().toString(),
+            objectMapper.writeValueAsString(
+              PagedModelPrisonBalanceMappingDto(
+                content = listOf(
+                  PrisonBalanceMappingDto(
+                    dpsId = "MDI",
+                    nomisId = "MDI",
+                    mappingType = PrisonBalanceMappingDto.MappingType.MIGRATED,
+                    label = migrationId,
+                    whenCreated = LocalDateTime.now().toString(),
+                  ),
+                ),
+                page = PageMetadata(
+                  propertySize = 1,
+                  number = 0,
+                  totalPages = count.toLong(),
+                  totalElements = count.toLong(),
                 ),
               ),
-              pageSize = 1L,
-              pageNumber = 0L,
-              totalElements = count.toLong(),
-              size = 1,
             ),
           ),
       ),
