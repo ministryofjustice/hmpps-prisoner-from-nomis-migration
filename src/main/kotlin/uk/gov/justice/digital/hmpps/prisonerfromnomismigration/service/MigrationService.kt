@@ -32,9 +32,6 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
   protected lateinit var queueService: MigrationQueueService
 
   @Autowired
-  protected lateinit var generalMappingService: GeneralMappingService
-
-  @Autowired
   protected lateinit var migrationHistoryService: MigrationHistoryService
 
   @Autowired
