@@ -257,6 +257,23 @@ fun OffenderChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharg
   performedByUser = this.modifiedByUsername ?: this.createdByUsername,
 )
 
+fun CourtEventChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharge(
+  offenceCode = this.offenderCharge.offence.offenceCode,
+  offenceStartDate = this.offenceDate,
+  legacyData =
+  ChargeLegacyData(
+    postedDate = LocalDate.now().toString(),
+    outcomeDescription = this.resultCode1?.description,
+    nomisOutcomeCode = this.resultCode1?.code,
+    outcomeDispositionCode = this.resultCode1?.dispositionCode,
+    outcomeConvictionFlag = this.resultCode1?.conviction,
+    offenceDescription = this.offenderCharge.offence.description,
+  ),
+  offenceEndDate = this.offenceEndDate,
+  appearanceLifetimeUuid = UUID.fromString(appearanceId),
+  performedByUser = this.modifiedByUsername ?: this.createdByUsername,
+)
+
 fun CourtEventChargeResponse.toDpsCharge() = LegacyUpdateCharge(
   offenceStartDate = this.offenceDate,
   legacyData =

@@ -399,6 +399,17 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
     )
   }
 
+  fun stubGetCourtEventCharge(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    nomisApi.stubFor(
+      get(WireMock.urlPathMatching("/prisoners/\\S+/sentencing/court-appearances/\\d+/charges/\\d+")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(objectMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun stubGetSentence(
     endpointUsingCase: Boolean = true,
     bookingId: Long = 123456,
