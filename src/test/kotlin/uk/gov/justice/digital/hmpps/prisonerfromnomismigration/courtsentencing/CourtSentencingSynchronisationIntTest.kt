@@ -1952,9 +1952,10 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
           // court event charge mocking
           chargeIds.forEach {
-            courtSentencingNomisApiMockServer.stubGetOffenderCharge(
+            courtSentencingNomisApiMockServer.stubGetCourtEventCharge(
               offenderNo = OFFENDER_ID_DISPLAY,
               offenderChargeId = it.first,
+              courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
             )
 
             dpsCourtSentencingServer.stubPostCourtChargeForCreate(
@@ -2613,9 +2614,10 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class NoMapping {
         @BeforeEach
         fun setUp() {
-          courtSentencingNomisApiMockServer.stubGetOffenderCharge(
+          courtSentencingNomisApiMockServer.stubGetCourtEventCharge(
             offenderNo = OFFENDER_ID_DISPLAY,
             offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
+            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
           )
 
           courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
@@ -2639,10 +2641,10 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             postRequestedFor(urlPathEqualTo("/legacy/charge"))
               .withRequestBody(matchingJsonPath("appearanceLifetimeUuid", equalTo(DPS_COURT_APPEARANCE_ID)))
               .withRequestBody(matchingJsonPath("offenceCode", equalTo("RI64006")))
-              .withRequestBody(matchingJsonPath("offenceStartDate", equalTo("2024-04-04")))
+              .withRequestBody(matchingJsonPath("offenceStartDate", equalTo("2024-03-03")))
               .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("1002")))
               .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("F")))
-              .withRequestBody(matchingJsonPath("legacyData.offenceDescription", equalTo("Offence description"))),
+              .withRequestBody(matchingJsonPath("legacyData.offenceDescription", equalTo("Offender description"))),
           )
         }
 
@@ -2686,9 +2688,10 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class DPSCreateFailsWhenNoMapping {
         @BeforeEach
         fun setUp() {
-          courtSentencingNomisApiMockServer.stubGetOffenderCharge(
+          courtSentencingNomisApiMockServer.stubGetCourtEventCharge(
             offenderNo = OFFENDER_ID_DISPLAY,
             offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
+            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
           )
           courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
           dpsCourtSentencingServer.stubPostCourtChargeForCreateError()
@@ -2835,9 +2838,10 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class MappingFail {
         @BeforeEach
         fun setUp() {
-          courtSentencingNomisApiMockServer.stubGetOffenderCharge(
+          courtSentencingNomisApiMockServer.stubGetCourtEventCharge(
             offenderNo = OFFENDER_ID_DISPLAY,
             offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
+            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
           )
 
           courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
@@ -2978,9 +2982,10 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         // in the case of multiple events received at the same time - mapping doesn't exist
         courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(status = NOT_FOUND)
 
-        courtSentencingNomisApiMockServer.stubGetOffenderCharge(
+        courtSentencingNomisApiMockServer.stubGetCourtEventCharge(
           offenderNo = OFFENDER_ID_DISPLAY,
           offenderChargeId = NOMIS_OFFENDER_CHARGE_ID,
+          courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
         )
 
         courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(

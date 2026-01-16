@@ -702,22 +702,23 @@ class CourtSentencingSynchronisationService(
             )
           }
         } ?: let {
-          val nomisOffenderCharge =
-            nomisApiService.getOffenderCharge(
+          val nomisCourtEventCharge =
+            nomisApiService.getCourtEventCharge(
               offenderNo = offenderNo,
               offenderChargeId = chargeId,
+              eventId = eventId,
             )
           // no mapping means this is a new offender charge to be created and applied to the appearance
           telemetry["existingDpsCharge"] = "false"
-          telemetry["nomisOutcomeCode"] = nomisOffenderCharge.resultCode1?.code.toString()
+          telemetry["nomisOutcomeCode"] = nomisCourtEventCharge.resultCode1?.code.toString()
           trackIfFailure(name = "court-charge-synchronisation-created", telemetry = telemetry) {
             dpsApiService.addNewCourtCharge(
-              nomisOffenderCharge.toDpsCharge(courtAppearanceMapping.dpsCourtAppearanceId),
+              nomisCourtEventCharge.toDpsCharge(courtAppearanceMapping.dpsCourtAppearanceId),
             )
           }.run {
             telemetry["dpsChargeId"] = this.lifetimeUuid.toString()
             tryToCreateChargeMapping(
-              nomisOffenderCharge = nomisOffenderCharge,
+              nomisOffenderCharge = nomisCourtEventCharge.offenderCharge,
               dpsChargeResponse = this,
               telemetry,
             ).also { mappingCreateResult ->
