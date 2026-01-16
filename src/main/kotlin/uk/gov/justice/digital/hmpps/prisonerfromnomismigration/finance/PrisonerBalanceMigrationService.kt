@@ -47,6 +47,8 @@ class PrisonerBalanceMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
+  override suspend fun getMigrationCount(migrationId: String): Long = prisonerBalanceMappingService.getPagedModelMigrationCount(migrationId)
+
   suspend fun getIds(
     migrationFilter: PrisonerBalanceMigrationFilter,
     pageSize: Long,

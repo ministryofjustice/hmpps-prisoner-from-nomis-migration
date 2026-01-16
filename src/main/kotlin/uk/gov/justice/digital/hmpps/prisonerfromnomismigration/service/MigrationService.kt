@@ -32,6 +32,9 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
   protected lateinit var queueService: MigrationQueueService
 
   @Autowired
+  protected lateinit var generalMappingService: GeneralMappingService
+
+  @Autowired
   protected lateinit var migrationHistoryService: MigrationHistoryService
 
   @Autowired
@@ -48,7 +51,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
 
   open suspend fun getContextProperties(migrationFilter: FILTER): MutableMap<String, Any> = mutableMapOf()
 
-  suspend fun getMigrationCount(migrationId: String): Long = mappingService.getMigrationCount(migrationId)
+  open suspend fun getMigrationCount(migrationId: String): Long = mappingService.getMigrationCount(migrationId)
 
   suspend fun startMigration(migrationFilter: FILTER): MigrationContext<FILTER> {
     // ensure that we aren't in the middle of a migration already

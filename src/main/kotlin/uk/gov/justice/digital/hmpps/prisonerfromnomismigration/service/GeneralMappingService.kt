@@ -37,10 +37,11 @@ class GeneralMappingService(
     MigrationType.CORE_PERSON -> corePersonMappingApiService.getMigrationCount(migrationId)
     MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
-    MigrationType.PRISON_BALANCE -> prisonBalanceMappingApiService.getMigrationCount(migrationId)
-    MigrationType.PRISONER_BALANCE -> prisonerBalanceMappingApiService.getMigrationCount(migrationId)
     MigrationType.EXTERNAL_MOVEMENTS -> externalMovementsMappingApiService.getMigrationCount(migrationId)
     MigrationType.OFFICIAL_VISITS -> officialVisitsMappingService.getMigrationCount(migrationId)
     MigrationType.VISIT_SLOTS -> visitSlotsMappingService.getMigrationCount(migrationId)
+
+    MigrationType.PRISON_BALANCE -> prisonBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
+    MigrationType.PRISONER_BALANCE -> prisonerBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
   }
 }

@@ -14,7 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonBalanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pagedModelContent
 import java.time.LocalDateTime
 
 @Component
@@ -49,7 +49,7 @@ class PrisonBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(
-            pageContent(
+            pagedModelContent(
               objectMapper = objectMapper,
               content = listOf(
                 PrisonBalanceMappingDto(
@@ -63,7 +63,6 @@ class PrisonBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) 
               pageSize = 1L,
               pageNumber = 0L,
               totalElements = count.toLong(),
-              size = 1,
             ),
           ),
       ),
