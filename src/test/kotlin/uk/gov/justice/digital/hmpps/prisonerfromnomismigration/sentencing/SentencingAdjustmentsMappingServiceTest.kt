@@ -13,6 +13,9 @@ import org.springframework.context.annotation.Import
 import org.springframework.core.ParameterizedTypeReference
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentencingAdjustmentMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentencingAdjustmentMappingDto.MappingType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentencingAdjustmentMappingDto.NomisAdjustmentCategory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.ADJUSTMENTS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
@@ -32,13 +35,13 @@ class SentencingAdjustmentsMappingServiceTest {
 
       runBlocking {
         sentencingAdjustmentsMappingService.createMapping(
-          SentencingAdjustmentNomisMapping(
+          SentencingAdjustmentMappingDto(
             nomisAdjustmentId = 1234L,
-            nomisAdjustmentCategory = "SENTENCE",
+            nomisAdjustmentCategory = NomisAdjustmentCategory.SENTENCE,
             adjustmentId = ADJUSTMENT_ID,
-            mappingType = "NOMIS_CREATED",
+            mappingType = MappingType.NOMIS_CREATED,
           ),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
+          object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentMappingDto>>() {},
         )
       }
 
@@ -55,13 +58,13 @@ class SentencingAdjustmentsMappingServiceTest {
 
       runBlocking {
         sentencingAdjustmentsMappingService.createMapping(
-          SentencingAdjustmentNomisMapping(
+          SentencingAdjustmentMappingDto(
             nomisAdjustmentId = 1234L,
-            nomisAdjustmentCategory = "SENTENCE",
+            nomisAdjustmentCategory = NomisAdjustmentCategory.SENTENCE,
             adjustmentId = ADJUSTMENT_ID,
-            mappingType = "NOMIS_CREATED",
+            mappingType = MappingType.NOMIS_CREATED,
           ),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
+          object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentMappingDto>>() {},
         )
       }
 
