@@ -13,7 +13,6 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatusResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
@@ -21,7 +20,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.Org
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDateTime
-import java.util.UUID
 
 class CorePersonCprApiExtension :
   BeforeAllCallback,
@@ -171,11 +169,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withStatus(status)
           .withHeader("Content-Type", "application/json")
-          .withBody(
-            objectMapper.writeValueAsString(
-              PrisonImmigrationStatusResponse(cprImmigrationStatusId = UUID.randomUUID()),
-            ),
-          ),
+          .withBody("success"),
       ),
     )
   }
