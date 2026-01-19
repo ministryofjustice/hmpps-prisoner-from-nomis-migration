@@ -1,0 +1,15 @@
+**/build.gradle
+**/gradlew
+**/docs/
+**/gradle/
+**/gradlew.bat
+**/README.md
+**/settings.gradle
+**/.openapi-generator-ignore
+**/client/infrastructure/
+**/src/test/
+**/api/*
+**/model/*
+!**/LegacyControllerApi.kt
+!**/LegacyAdjustment.kt
+!**/LegacyAdjustmentCreatedResponse.kt

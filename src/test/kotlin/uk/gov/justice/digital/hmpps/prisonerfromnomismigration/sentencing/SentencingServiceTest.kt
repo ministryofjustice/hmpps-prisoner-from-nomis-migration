@@ -63,6 +63,14 @@ internal class SentencingServiceTest {
     }
 
     @Test
+    fun `should call api with legacy content header`() {
+      sentencingApi.verify(
+        postRequestedFor(urlEqualTo("/legacy/adjustments"))
+          .withHeader("Content-Type", equalTo("application/vnd.nomis-offence+json")),
+      )
+    }
+
+    @Test
     fun `will pass data to the api`() {
       sentencingApi.verify(
         postRequestedFor(urlEqualTo("/legacy/adjustments"))
@@ -115,6 +123,14 @@ internal class SentencingServiceTest {
     }
 
     @Test
+    fun `should call api with legacy content header`() {
+      sentencingApi.verify(
+        putRequestedFor(urlEqualTo("/legacy/adjustments/$ADJUSTMENT_ID"))
+          .withHeader("Content-Type", equalTo("application/vnd.nomis-offence+json")),
+      )
+    }
+
+    @Test
     fun `will pass data to the api`() {
       sentencingApi.verify(
         putRequestedFor(urlEqualTo("/legacy/adjustments/$ADJUSTMENT_ID"))
@@ -151,6 +167,14 @@ internal class SentencingServiceTest {
         sentencingApi.verify(
           deleteRequestedFor(urlEqualTo("/legacy/adjustments/$ADJUSTMENT_ID"))
             .withHeader("Authorization", equalTo("Bearer ABCDE")),
+        )
+      }
+
+      @Test
+      fun `should call api with legacy content header`() {
+        sentencingApi.verify(
+          deleteRequestedFor(urlEqualTo("/legacy/adjustments/$ADJUSTMENT_ID"))
+            .withHeader("Content-Type", equalTo("application/vnd.nomis-offence+json")),
         )
       }
     }

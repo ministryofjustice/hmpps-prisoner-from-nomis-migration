@@ -1,38 +1,47 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
+import org.openapitools.client.infrastructure.RequestConfig
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.api.LegacyControllerApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.adjustments.model.LegacyAdjustmentCreatedResponse
+import java.util.UUID
 
 @Service
-class SentencingService(@Qualifier("sentencingApiWebClient") private val webClient: WebClient) {
-  companion object {
-    const val LEGACY_CONTENT_TYPE = "application/vnd.nomis-offence+json"
-  }
+class SentencingService(@Qualifier("sentencingApiWebClient") webClient: WebClient) {
+  private val legacyControllerApi = LegacyControllerApi(webClient)
 
-  suspend fun createSentencingAdjustment(sentencingAdjustment: LegacyAdjustment): LegacyAdjustmentCreatedResponse = webClient.post()
-    .uri("/legacy/adjustments")
-    .header("Content-Type", LEGACY_CONTENT_TYPE)
-    .bodyValue(sentencingAdjustment)
+  suspend fun createSentencingAdjustment(sentencingAdjustment: LegacyAdjustment): LegacyAdjustmentCreatedResponse = legacyControllerApi.prepare(
+    legacyControllerApi.createRequestConfig(sentencingAdjustment).apply {
+      setLegacyContentTypeHeader()
+    },
+  )
     .retrieve()
     .awaitBody()
 
-  suspend fun updateSentencingAdjustment(adjustmentId: String, sentencingAdjustment: LegacyAdjustment): Unit = webClient.put()
-    .uri("/legacy/adjustments/{adjustmentId}", adjustmentId)
-    .header("Content-Type", LEGACY_CONTENT_TYPE)
-    .bodyValue(sentencingAdjustment)
+  suspend fun updateSentencingAdjustment(adjustmentId: String, sentencingAdjustment: LegacyAdjustment): Unit = legacyControllerApi.prepare(
+    legacyControllerApi.updateRequestConfig(UUID.fromString(adjustmentId), sentencingAdjustment).apply {
+      setLegacyContentTypeHeader()
+    },
+  )
     .retrieve()
     .awaitBody()
 
   suspend fun deleteSentencingAdjustment(adjustmentId: String) {
-    webClient.delete()
-      .uri("/legacy/adjustments/{adjustmentId}", adjustmentId)
-      .header("Content-Type", LEGACY_CONTENT_TYPE)
+    legacyControllerApi.prepare(
+      legacyControllerApi.deleteRequestConfig(UUID.fromString(adjustmentId)).apply {
+        setLegacyContentTypeHeader()
+      },
+    )
       .retrieve()
       .awaitBodyOrNullWhenNotFound<Unit>()
+  }
+
+  private fun <T> RequestConfig<T>.setLegacyContentTypeHeader() {
+    headers["Content-Type"] = "application/vnd.nomis-offence+json"
   }
 }

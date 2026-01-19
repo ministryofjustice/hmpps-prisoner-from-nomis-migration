@@ -181,7 +181,6 @@ val models = listOf(
     packageName = "sentencing.adjustments",
     testPackageName = "sentencing",
     url = "https://adjustments-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
-    models = "LegacyAdjustment,LegacyAdjustmentCreatedResponse",
   ),
   ModelConfiguration(
     name = "visit-balance",
