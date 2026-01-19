@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.SyncSentenceAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.NomisPrisonerMergeEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.KeyDateAdjustmentResponse
@@ -49,7 +48,7 @@ class SentencingAdjustmentsSynchronisationService(
     )
   }
   suspend fun createOrUpdateSentenceAdjustment(request: SentenceAdjustmentUpdateOrCreateRequest) {
-    sentencingAdjustmentsNomisApiService.getSentenceAdjustment(request.adjustmentId)?.takeUnless { it.hiddenFromUsers == true }
+    sentencingAdjustmentsNomisApiService.getSentenceAdjustment(request.adjustmentId)?.takeUnless { it.hiddenFromUsers }
       ?.also { nomisAdjustment ->
         sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
           nomisAdjustmentId = request.adjustmentId,
