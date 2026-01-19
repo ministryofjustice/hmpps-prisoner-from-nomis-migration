@@ -10,6 +10,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.S
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.NomisPrisonerMergeEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.SentencingMappingResourceApi.NomisAdjustmentCategoryGetSentenceAdjustmentMappingGivenNomisId.KEYMinusDATE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.SentencingMappingResourceApi.NomisAdjustmentCategoryGetSentenceAdjustmentMappingGivenNomisId.SENTENCE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentencingAdjustmentMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentencingAdjustmentMappingDto.MappingType.NOMIS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentencingAdjustmentMappingDto.NomisAdjustmentCategory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.KeyDateAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService.MappingResponse.MAPPING_CREATED
@@ -52,7 +57,7 @@ class SentencingAdjustmentsSynchronisationService(
       ?.also { nomisAdjustment ->
         sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
           nomisAdjustmentId = request.adjustmentId,
-          nomisAdjustmentCategory = "SENTENCE",
+          nomisAdjustmentCategory = SENTENCE,
         )?.let {
           sentencingService.updateSentencingAdjustment(it.adjustmentId, nomisAdjustment.toSentencingAdjustment())
           telemetryClient.trackEvent(
@@ -94,7 +99,7 @@ class SentencingAdjustmentsSynchronisationService(
   suspend fun synchroniseSentenceAdjustmentDelete(event: SentenceAdjustmentOffenderEvent) {
     sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
       nomisAdjustmentId = event.adjustmentId,
-      nomisAdjustmentCategory = "SENTENCE",
+      nomisAdjustmentCategory = SENTENCE,
     )?.let {
       sentencingService.deleteSentencingAdjustment(it.adjustmentId)
       sentencingAdjustmentsMappingService.deleteNomisSentenceAdjustmentMapping(it.adjustmentId)
@@ -121,7 +126,7 @@ class SentencingAdjustmentsSynchronisationService(
     sentencingAdjustmentsNomisApiService.getKeyDateAdjustment(event.adjustmentId)?.also { nomisAdjustment ->
       sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
         nomisAdjustmentId = event.adjustmentId,
-        nomisAdjustmentCategory = "KEY-DATE",
+        nomisAdjustmentCategory = KEYMinusDATE,
       )?.let {
         sentencingService.updateSentencingAdjustment(it.adjustmentId, nomisAdjustment.toSentencingAdjustment())
         telemetryClient.trackEvent(
@@ -149,7 +154,7 @@ class SentencingAdjustmentsSynchronisationService(
   suspend fun synchroniseKeyDateAdjustmentDelete(event: KeyDateAdjustmentOffenderEvent) {
     sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
       nomisAdjustmentId = event.adjustmentId,
-      nomisAdjustmentCategory = "KEY-DATE",
+      nomisAdjustmentCategory = KEYMinusDATE,
     )?.let {
       sentencingService.deleteSentencingAdjustment(it.adjustmentId)
       sentencingAdjustmentsMappingService.deleteNomisSentenceAdjustmentMapping(it.adjustmentId)
@@ -174,16 +179,16 @@ class SentencingAdjustmentsSynchronisationService(
     event: SentenceAdjustmentUpdateOrCreateRequest,
     adjustmentId: String,
   ): MappingResponse {
-    val mapping = SentencingAdjustmentNomisMapping(
+    val mapping = SentencingAdjustmentMappingDto(
       nomisAdjustmentId = event.adjustmentId,
-      nomisAdjustmentCategory = "SENTENCE",
+      nomisAdjustmentCategory = NomisAdjustmentCategory.SENTENCE,
       adjustmentId = adjustmentId,
-      mappingType = "NOMIS_CREATED",
+      mappingType = NOMIS_CREATED,
     )
     try {
       sentencingAdjustmentsMappingService.createMapping(
         mapping,
-        object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
+        object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentMappingDto>>() {},
       ).also {
         if (it.isError) {
           it.errorResponse!!.trackDuplicate()
@@ -209,16 +214,16 @@ class SentencingAdjustmentsSynchronisationService(
     event: KeyDateAdjustmentOffenderEvent,
     adjustmentId: String,
   ): MappingResponse {
-    val mapping = SentencingAdjustmentNomisMapping(
+    val mapping = SentencingAdjustmentMappingDto(
       nomisAdjustmentId = event.adjustmentId,
-      nomisAdjustmentCategory = "KEY-DATE",
+      nomisAdjustmentCategory = NomisAdjustmentCategory.KEYMinusDATE,
       adjustmentId = adjustmentId,
-      mappingType = "NOMIS_CREATED",
+      mappingType = NOMIS_CREATED,
     )
     try {
       sentencingAdjustmentsMappingService.createMapping(
         mapping,
-        object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
+        object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentMappingDto>>() {},
       ).also {
         if (it.isError) {
           it.errorResponse!!.trackDuplicate()
@@ -240,10 +245,10 @@ class SentencingAdjustmentsSynchronisationService(
     }
   }
 
-  suspend fun retryCreateSentenceAdjustmentMapping(retryMessage: InternalMessage<SentencingAdjustmentNomisMapping>) {
+  suspend fun retryCreateSentenceAdjustmentMapping(retryMessage: InternalMessage<SentencingAdjustmentMappingDto>) {
     sentencingAdjustmentsMappingService.createMapping(
       retryMessage.body,
-      object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentNomisMapping>>() {},
+      object : ParameterizedTypeReference<DuplicateErrorResponse<SentencingAdjustmentMappingDto>>() {},
     ).also {
       if (it.isError) {
         it.errorResponse!!.trackDuplicate()
@@ -314,24 +319,24 @@ class SentencingAdjustmentsSynchronisationService(
 
   private suspend fun doesNotExist(adjustment: SentenceAdjustmentResponse) = sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
     nomisAdjustmentId = adjustment.id,
-    nomisAdjustmentCategory = "SENTENCE",
+    nomisAdjustmentCategory = SENTENCE,
   ) == null
   private suspend fun doesNotExist(adjustment: KeyDateAdjustmentResponse) = sentencingAdjustmentsMappingService.findNomisSentencingAdjustmentMappingOrNull(
     nomisAdjustmentId = adjustment.id,
-    nomisAdjustmentCategory = "KEY-DATE",
+    nomisAdjustmentCategory = KEYMinusDATE,
   ) == null
 
-  private fun DuplicateErrorResponse<SentencingAdjustmentNomisMapping>.trackDuplicate() {
+  private fun DuplicateErrorResponse<SentencingAdjustmentMappingDto>.trackDuplicate() {
     val duplicateErrorDetails = (this).moreInfo
     telemetryClient.trackEvent(
       "from-nomis-synch-adjustment-duplicate",
       mapOf<String, String>(
         "duplicateAdjustmentId" to duplicateErrorDetails.duplicate.adjustmentId,
         "duplicateNomisAdjustmentId" to duplicateErrorDetails.duplicate.nomisAdjustmentId.toString(),
-        "duplicateNomisAdjustmentCategory" to duplicateErrorDetails.duplicate.nomisAdjustmentCategory,
+        "duplicateNomisAdjustmentCategory" to duplicateErrorDetails.duplicate.nomisAdjustmentCategory.value,
         "existingAdjustmentId" to duplicateErrorDetails.existing.adjustmentId,
         "existingNomisAdjustmentId" to duplicateErrorDetails.existing.nomisAdjustmentId.toString(),
-        "existingNomisAdjustmentCategory" to duplicateErrorDetails.existing.nomisAdjustmentCategory,
+        "existingNomisAdjustmentCategory" to duplicateErrorDetails.existing.nomisAdjustmentCategory.value,
       ),
       null,
     )
