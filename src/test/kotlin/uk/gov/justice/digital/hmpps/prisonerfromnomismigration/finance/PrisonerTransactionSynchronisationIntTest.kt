@@ -530,7 +530,6 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will not attempt to create mapping and will track a telemetry event for failure`() {
           await untilAsserted {
             verify(telemetryClient, atLeast(2)).trackEvent(
-              // ******* was at least 1
               eq("transactions-synchronisation-created-failed"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
@@ -816,7 +815,6 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will not attempt to create mapping and will track a telemetry event for failure`() {
           await untilAsserted {
             verify(telemetryClient, atLeast(2)).trackEvent(
-              // ******* was at least 1
               eq("transactions-synchronisation-updated-failed"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
