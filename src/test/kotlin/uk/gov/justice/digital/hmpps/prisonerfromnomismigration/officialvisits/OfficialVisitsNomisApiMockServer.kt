@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -8,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactRelationship
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
@@ -21,7 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApi
 import java.time.LocalDateTime
 
 @Component
-class OfficialVisitsNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class OfficialVisitsNomisApiMockServer(private val jsonMapper: JsonMapper) {
   companion object {
     fun pageVisitIdResponse(content: List<VisitIdResponse>, totalElements: Long = content.size.toLong(), pageSize: Int = 20, pageNumber: Int = 1): PagedModelVisitIdResponse = PagedModelVisitIdResponse(
       content = content,
@@ -84,7 +84,7 @@ class OfficialVisitsNomisApiMockServer(private val objectMapper: ObjectMapper) {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(pageVisitIdResponse(content, pageSize = pageSize, pageNumber = pageNumber, totalElements = totalElements))),
+            .withBody(jsonMapper.writeValueAsString(pageVisitIdResponse(content, pageSize = pageSize, pageNumber = pageNumber, totalElements = totalElements))),
         ),
     )
   }
@@ -97,7 +97,7 @@ class OfficialVisitsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(VisitIdsPage(content))),
+          .withBody(jsonMapper.writeValueAsString(VisitIdsPage(content))),
       ),
     )
   }
@@ -111,7 +111,7 @@ class OfficialVisitsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }

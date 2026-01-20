@@ -1,12 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitBalanceAdjustmentResponse
@@ -15,7 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApi
 import java.time.LocalDate
 
 @Component
-class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class VisitBalanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetVisitBalanceDetail(
     nomisVisitBalanceId: Long = 12345L,
     prisonNumber: String = "A0001BC",
@@ -27,7 +27,7 @@ class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(
-            objectMapper.writeValueAsString(visitBalance),
+            jsonMapper.writeValueAsString(visitBalance),
           ),
       ),
     )
@@ -43,7 +43,7 @@ class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(
-            objectMapper.writeValueAsString(visitBalance),
+            jsonMapper.writeValueAsString(visitBalance),
           ),
       ),
     )
@@ -60,7 +60,7 @@ class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
           .withBody(
-            objectMapper.writeValueAsString(error),
+            jsonMapper.writeValueAsString(error),
           ),
       ),
     )
@@ -76,7 +76,7 @@ class VisitBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(
-            objectMapper.writeValueAsString(visitBalanceAdjustment),
+            jsonMapper.writeValueAsString(visitBalanceAdjustment),
           ),
       ),
     )

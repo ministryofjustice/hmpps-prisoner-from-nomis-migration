@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
@@ -16,6 +15,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransactionMappingDto
@@ -24,7 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 import java.util.UUID
 
 @Component
-class FinanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
+class FinanceMappingApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetByNomisId(
     transactionId: Long = 1,
     mapping: TransactionMappingDto = TransactionMappingDto(
@@ -40,7 +40,7 @@ class FinanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(mapping)),
+          .withBody(jsonMapper.writeValueAsString(mapping)),
       ),
     )
   }
@@ -51,7 +51,7 @@ class FinanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -91,7 +91,7 @@ class FinanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetMappings(mappings: List<TransactionMappingDto>) {
     mappingApi.stubFor(
       post("/mapping/transactions/nomis-transaction-id").willReturn(
-        okJson(objectMapper.writeValueAsString(mappings)),
+        okJson(jsonMapper.writeValueAsString(mappings)),
       ),
     )
   }
@@ -109,7 +109,7 @@ class FinanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubGetByDpsId(dpsId: String, mappings: List<TransactionMappingDto>) {
     mappingApi.stubFor(
       get("/mapping/transactions/dps-transaction-id/$dpsId/all").willReturn(
-        okJson(objectMapper.writeValueAsString(mappings)),
+        okJson(jsonMapper.writeValueAsString(mappings)),
       ),
     )
   }
@@ -126,7 +126,7 @@ class FinanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -137,7 +137,7 @@ class FinanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -156,7 +156,7 @@ class FinanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
   ) {
     mappingApi.stubFor(
       put(urlPathMatching("/mapping/transactions/merge/from/.+/to/.+")).willReturn(
-        jsonResponse(objectMapper.writeValueAsString(error), status.value()),
+        jsonResponse(jsonMapper.writeValueAsString(error), status.value()),
       ),
     )
   }
@@ -164,7 +164,7 @@ class FinanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
   fun stubUpdateMappingsByBookingId(response: List<TransactionMappingDto>) {
     mappingApi.stubFor(
       put(urlPathMatching("/mapping/transactions/merge/booking-id/.+/to/.+")).willReturn(
-        okJson(objectMapper.writeValueAsString(response)),
+        okJson(jsonMapper.writeValueAsString(response)),
       ),
     )
   }

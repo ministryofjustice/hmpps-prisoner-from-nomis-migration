@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
@@ -31,6 +30,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.SentenceIdAndAdjustmentType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.SyncSentenceAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeNomisEvent
@@ -60,9 +60,9 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
   private lateinit var nomisApi: SentencingAdjustmentsNomisApiMockServer
 
   @Autowired
-  private lateinit var objectMapper: ObjectMapper
+  private lateinit var jsonMapper: JsonMapper
 
-  private fun Any.toJson(): String = objectMapper.writeValueAsString(this)
+  private fun Any.toJson(): String = jsonMapper.writeValueAsString(this)
 
   @Nested
   @DisplayName("SENTENCE_ADJUSTMENT_UPSERTED")

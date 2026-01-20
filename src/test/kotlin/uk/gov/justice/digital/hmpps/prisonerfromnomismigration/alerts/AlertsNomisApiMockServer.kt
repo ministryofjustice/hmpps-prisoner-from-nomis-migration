@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -8,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AlertResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
@@ -19,7 +19,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Component
-class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class AlertsNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetAlert(
     bookingId: Long = 123456,
     alertSequence: Long = 1,
@@ -43,7 +43,7 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(alert)),
+          .withBody(jsonMapper.writeValueAsString(alert)),
       ),
     )
   }
@@ -54,7 +54,7 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -86,7 +86,7 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -97,7 +97,7 @@ class AlertsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(prisonerDetails)),
+          .withBody(jsonMapper.writeValueAsString(prisonerDetails)),
       ),
     )
   }

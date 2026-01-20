@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.resources
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilCallTo
@@ -12,18 +11,18 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageAttributes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.INCIDENTS
 import uk.gov.justice.hmpps.sqs.countMessagesOnQueue
-import kotlin.text.get
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class MigrateDeadLetterQueueIntTest : SqsIntegrationTestBase() {
   @Autowired
-  private lateinit var objectMapper: ObjectMapper
+  private lateinit var jsonMapper: JsonMapper
 
   @Nested
   @DisplayName("GET /migrate/dead-letter-queue/{migrationType}")
@@ -32,7 +31,7 @@ class MigrateDeadLetterQueueIntTest : SqsIntegrationTestBase() {
     val defaultEvent = HmppsEvent("event-id", "test.type", "event-contents")
     fun testMessage(id: String) = SQSMessage(
       Type = "test.type",
-      Message = objectMapper.writeValueAsString(defaultEvent),
+      Message = jsonMapper.writeValueAsString(defaultEvent),
       MessageId = "message-$id",
       MessageAttributes = defaultMessageAttributes,
     )
@@ -69,7 +68,7 @@ class MigrateDeadLetterQueueIntTest : SqsIntegrationTestBase() {
       for (i in 1..3) {
         awsSqsIncidentsMigrationDlqClient!!.sendMessage(
           SendMessageRequest.builder().queueUrl(incidentsMigrationDlqUrl!!).messageBody(
-            objectMapper.writeValueAsString(testMessage("id-$i")),
+            jsonMapper.writeValueAsString(testMessage("id-$i")),
           ).build(),
         )
       }
@@ -100,7 +99,7 @@ class MigrateDeadLetterQueueIntTest : SqsIntegrationTestBase() {
     val defaultEvent = HmppsEvent("event-id", "test.type", "event-contents")
     fun testMessage(id: String) = SQSMessage(
       Type = "test.type",
-      Message = objectMapper.writeValueAsString(defaultEvent),
+      Message = jsonMapper.writeValueAsString(defaultEvent),
       MessageId = "message-$id",
       MessageAttributes = defaultMessageAttributes,
     )
@@ -135,7 +134,7 @@ class MigrateDeadLetterQueueIntTest : SqsIntegrationTestBase() {
     @Test
     fun `should get count of messages from the specified dlq`() {
       for (i in 1..3) {
-        awsSqsIncidentsMigrationDlqClient!!.sendMessage(SendMessageRequest.builder().queueUrl(incidentsMigrationDlqUrl!!).messageBody(objectMapper.writeValueAsString(testMessage("id-$i"))).build())
+        awsSqsIncidentsMigrationDlqClient!!.sendMessage(SendMessageRequest.builder().queueUrl(incidentsMigrationDlqUrl!!).messageBody(jsonMapper.writeValueAsString(testMessage("id-$i"))).build())
       }
       await untilCallTo { awsSqsIncidentsMigrationDlqClient!!.countMessagesOnQueue(incidentsMigrationDlqUrl!!).get() } matches { it == 3 }
 
@@ -154,7 +153,7 @@ class MigrateDeadLetterQueueIntTest : SqsIntegrationTestBase() {
     val defaultEvent = HmppsEvent("event-id", "test.type", "event-contents")
     fun testMessage(id: String) = SQSMessage(
       Type = "test.type",
-      Message = objectMapper.writeValueAsString(defaultEvent),
+      Message = jsonMapper.writeValueAsString(defaultEvent),
       MessageId = "message-$id",
       MessageAttributes = defaultMessageAttributes,
     )
@@ -188,8 +187,8 @@ class MigrateDeadLetterQueueIntTest : SqsIntegrationTestBase() {
 
     @Test
     fun `should delete messages from the dead letter queue`() {
-      awsSqsIncidentsMigrationDlqClient!!.sendMessage(SendMessageRequest.builder().queueUrl(incidentsMigrationDlqUrl).messageBody(objectMapper.writeValueAsString(HmppsEvent("id1", "test.type", "message1"))).build())
-      awsSqsIncidentsMigrationDlqClient!!.sendMessage(SendMessageRequest.builder().queueUrl(incidentsMigrationDlqUrl).messageBody(objectMapper.writeValueAsString(HmppsEvent("id2", "test.type", "message2"))).build())
+      awsSqsIncidentsMigrationDlqClient!!.sendMessage(SendMessageRequest.builder().queueUrl(incidentsMigrationDlqUrl).messageBody(jsonMapper.writeValueAsString(HmppsEvent("id1", "test.type", "message1"))).build())
+      awsSqsIncidentsMigrationDlqClient!!.sendMessage(SendMessageRequest.builder().queueUrl(incidentsMigrationDlqUrl).messageBody(jsonMapper.writeValueAsString(HmppsEvent("id2", "test.type", "message2"))).build())
       await untilCallTo { awsSqsIncidentsMigrationDlqClient!!.countMessagesOnQueue(incidentsMigrationDlqUrl!!).get() } matches { it == 2 }
 
       webTestClient.delete().uri("/migrate/dead-letter-queue/{migrationType}", INCIDENTS)

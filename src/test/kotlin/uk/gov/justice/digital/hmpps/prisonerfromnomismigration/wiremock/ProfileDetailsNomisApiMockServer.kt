@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -9,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
@@ -18,7 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApi
 import java.time.LocalDateTime
 
 @Component
-class ProfileDetailsNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class ProfileDetailsNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetProfileDetails(
     offenderNo: String = "A1234AA",
     bookingId: Long? = 12345,
@@ -33,7 +33,7 @@ class ProfileDetailsNomisApiMockServer(private val objectMapper: ObjectMapper) {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(response)),
+            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -48,7 +48,7 @@ class ProfileDetailsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }

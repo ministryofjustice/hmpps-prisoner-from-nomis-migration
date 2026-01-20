@@ -1,12 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageMetadata
@@ -20,7 +20,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Component
-class VisitSlotsNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class VisitSlotsNomisApiMockServer(private val jsonMapper: JsonMapper) {
   companion object {
     fun pageVisitTimeSlotIdResponse(content: List<VisitTimeSlotIdResponse>, totalElements: Long = content.size.toLong(), pageSize: Int = 20, pageNumber: Int = 1): PagedModelVisitTimeSlotIdResponse = PagedModelVisitTimeSlotIdResponse(
       content = content,
@@ -66,7 +66,7 @@ class VisitSlotsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(pageVisitTimeSlotIdResponse(content, pageSize = pageSize, pageNumber = pageNumber, totalElements = totalElements))),
+          .withBody(jsonMapper.writeValueAsString(pageVisitTimeSlotIdResponse(content, pageSize = pageSize, pageNumber = pageNumber, totalElements = totalElements))),
       ),
     )
   }
@@ -81,7 +81,7 @@ class VisitSlotsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }

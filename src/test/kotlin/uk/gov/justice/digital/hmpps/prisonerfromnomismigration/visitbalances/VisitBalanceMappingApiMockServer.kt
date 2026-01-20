@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -9,13 +8,14 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitBalanceAdjustmentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
 @Component
-class VisitBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
+class VisitBalanceMappingApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubCreateVisitBalanceAdjustmentMapping() {
     mappingApi.stubFor(
       post("/mapping/visit-balance-adjustment").willReturn(
@@ -32,7 +32,7 @@ class VisitBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -53,7 +53,7 @@ class VisitBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(mapping)),
+            .withBody(jsonMapper.writeValueAsString(mapping)),
         ),
       )
     } ?: run {
@@ -62,7 +62,7 @@ class VisitBalanceMappingApiMockServer(private val objectMapper: ObjectMapper) {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
         ),
       )
     }

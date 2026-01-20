@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -8,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageMetadata
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PagedModelLong
@@ -20,7 +20,7 @@ import kotlin.collections.map
 import kotlin.math.min
 
 @Component
-class PrisonerBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class PrisonerBalanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubGetRootOffenderIdsToMigrate(totalElements: Long = 20, pageSize: Long = 20, firstRootOffenderId: Long = 10000) {
     val content: List<Long> = (1..min(pageSize, totalElements)).map { firstRootOffenderId + it - 1 }
@@ -30,7 +30,7 @@ class PrisonerBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) 
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(
-            objectMapper.writeValueAsString(
+            jsonMapper.writeValueAsString(
               PagedModelLong(
                 content = content,
                 page = PageMetadata(
@@ -57,7 +57,7 @@ class PrisonerBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) 
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(
-            objectMapper.writeValueAsString(prisonerBalance),
+            jsonMapper.writeValueAsString(prisonerBalance),
           ),
       ),
     )
@@ -74,7 +74,7 @@ class PrisonerBalanceNomisApiMockServer(private val objectMapper: ObjectMapper) 
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
           .withBody(
-            objectMapper.writeValueAsString(error),
+            jsonMapper.writeValueAsString(error),
           ),
       ),
     )

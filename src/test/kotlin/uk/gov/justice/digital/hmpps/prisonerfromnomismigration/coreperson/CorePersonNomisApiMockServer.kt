@@ -1,12 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
@@ -27,7 +27,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Component
-class CorePersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetCorePerson(
     prisonNumber: String = "A1234BC",
     corePerson: CorePerson = corePerson(prisonNumber = prisonNumber),
@@ -40,7 +40,7 @@ class CorePersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
           .withBody(
-            objectMapper.writeValueAsString(if (status == HttpStatus.OK) corePerson else error),
+            jsonMapper.writeValueAsString(if (status == HttpStatus.OK) corePerson else error),
           ),
       ),
     )
@@ -57,7 +57,7 @@ class CorePersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
           .withBody(
-            objectMapper.writeValueAsString(if (status == HttpStatus.OK) religions else error),
+            jsonMapper.writeValueAsString(if (status == HttpStatus.OK) religions else error),
           ),
       ),
     )
