@@ -17,8 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.TestPropertySource
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.TransactionSynchronisationIntTest.Companion.dpsTransactionUuid
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.TransactionSynchronisationIntTest.Companion.messageUuid
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventType
@@ -31,6 +29,15 @@ import java.util.UUID
 
 @TestPropertySource(properties = ["finance.transactions.forwardingDelaySeconds=1"])
 class TransactionSynchronisationMultiIntTest : SqsIntegrationTestBase() {
+  companion object {
+    val dpsTransactionUuid: UUID = UUID.fromString(DPS_TRANSACTION_ID)
+    val messageUuid: UUID = UUID.fromString(MESSAGE_ID)
+    internal const val BOOKING_ID = 1234L
+    internal const val NOMIS_TRANSACTION_ID = 2345678L
+    internal const val OFFENDER_ID_DISPLAY = "A3864DZ"
+    internal const val DPS_TRANSACTION_ID = "a04f7a8d-61aa-400c-9395-000011112222"
+    internal const val MESSAGE_ID = "abcdef01-0000-1111-2222-000011112222"
+  }
 
   @Autowired
   private lateinit var financeNomisApiMockServer: FinanceNomisApiMockServer
