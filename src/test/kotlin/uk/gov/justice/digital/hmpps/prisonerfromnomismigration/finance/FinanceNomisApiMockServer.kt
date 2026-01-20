@@ -10,6 +10,10 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerTransactionSynchronisationIntTest.Companion.BOOKING_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerTransactionSynchronisationIntTest.Companion.NOMIS_TRANSACTION_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerTransactionSynchronisationIntTest.Companion.OFFENDER_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerTransactionSynchronisationIntTest.Companion.OFFENDER_ID_DISPLAY
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GeneralLedgerTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonAccountBalanceDto
@@ -158,5 +162,53 @@ fun prisonBalance(prisonId: String = "MDI"): PrisonBalanceDto = PrisonBalanceDto
       balance = BigDecimal.valueOf(23.50),
       transactionDate = LocalDateTime.parse("2025-06-01T01:02:03"),
     ),
+  ),
+)
+
+fun nomisGLTransactions(transactionId: Long = NOMIS_TRANSACTION_ID) = listOf(
+  GeneralLedgerTransactionDto(
+    transactionId = transactionId,
+    transactionEntrySequence = 1,
+    generalLedgerEntrySequence = 1,
+    caseloadId = "SWI",
+    amount = BigDecimal(5.4),
+    type = "type",
+    postingType = GeneralLedgerTransactionDto.PostingType.CR,
+    accountCode = 1021,
+    description = "GL desc",
+    transactionTimestamp = LocalDateTime.parse("2021-02-03T04:05:09"),
+    reference = "ref",
+    createdAt = LocalDateTime.parse("2021-02-03T04:05:07"),
+    createdBy = "me",
+    createdByDisplayName = "Me",
+    lastModifiedAt = LocalDateTime.parse("2021-02-03T04:05:59"),
+    lastModifiedBy = "you",
+    lastModifiedByDisplayName = "You",
+  ),
+)
+
+fun nomisTransactions(bookingId: Long = BOOKING_ID, transactionId: Long = NOMIS_TRANSACTION_ID) = listOf(
+  OffenderTransactionDto(
+    transactionId = transactionId,
+    transactionEntrySequence = 1,
+    offenderId = OFFENDER_ID,
+    offenderNo = OFFENDER_ID_DISPLAY,
+    caseloadId = "SWI",
+    bookingId = bookingId,
+    amount = BigDecimal(5.4),
+    type = "type",
+    postingType = OffenderTransactionDto.PostingType.CR,
+    description = "desc",
+    entryDate = LocalDate.parse("2021-02-03"),
+    subAccountType = OffenderTransactionDto.SubAccountType.REG,
+    generalLedgerTransactions = nomisGLTransactions(),
+    createdAt = LocalDateTime.parse("2021-02-03T04:05:06"),
+    createdBy = "me",
+    createdByDisplayName = "Me",
+    clientReference = "clientref",
+    reference = "ref",
+    lastModifiedAt = LocalDateTime.parse("2021-02-03T04:05:59"),
+    lastModifiedBy = "you",
+    lastModifiedByDisplayName = "You",
   ),
 )
