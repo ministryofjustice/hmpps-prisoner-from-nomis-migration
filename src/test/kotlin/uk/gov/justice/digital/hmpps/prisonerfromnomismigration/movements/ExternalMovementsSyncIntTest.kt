@@ -633,6 +633,14 @@ class ExternalMovementsSyncIntTest(
           isNull(),
         )
       }
+
+      @Test
+      fun `should not delete mapping`() {
+        mappingApi.verify(
+          count = 0,
+          deleteRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")),
+        )
+      }
     }
   }
 
@@ -1701,6 +1709,14 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["dpsOccurrenceId"]).isEqualTo("$dpsOccurrenceId")
           },
           isNull(),
+        )
+      }
+
+      @Test
+      fun `should not delete mapping`() {
+        mappingApi.verify(
+          count = 0,
+          deleteRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")),
         )
       }
     }
