@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension.Companion.dpsContactPersonServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension.Companion.objectMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerDomesticStatusResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.model.SyncPrisonerNumberOfChildrenResponse
 
@@ -25,7 +25,7 @@ class ContactPersonProfileDetailsDpsApiMockServer {
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(objectMapper.writeValueAsString(response)),
+            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -41,7 +41,7 @@ class ContactPersonProfileDetailsDpsApiMockServer {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(status.value())
-            .withBody(objectMapper.writeValueAsString(error)),
+            .withBody(jsonMapper.writeValueAsString(error)),
         ),
     )
   }
@@ -56,7 +56,7 @@ class ContactPersonProfileDetailsDpsApiMockServer {
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(objectMapper.writeValueAsString(response)),
+            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -72,7 +72,7 @@ class ContactPersonProfileDetailsDpsApiMockServer {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(status.value())
-            .withBody(objectMapper.writeValueAsString(error)),
+            .withBody(jsonMapper.writeValueAsString(error)),
         ),
     )
   }
@@ -100,7 +100,7 @@ class ContactPersonProfileDetailsDpsApiMockServer {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(status.value())
-            .withBody(objectMapper.writeValueAsString(error)),
+            .withBody(jsonMapper.writeValueAsString(error)),
         ),
     )
   }

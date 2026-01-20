@@ -1,6 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jsonMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
@@ -12,6 +12,7 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import com.github.tomakehurst.wiremock.stubbing.Scenario
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonAddressMappingDto
@@ -23,18 +24,18 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonRestrictionMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
 import java.util.*
 
 @Component
-class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) {
+class ContactPersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   companion object {
-    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = mappingApi.getRequestBody(pattern, objectMapper = objectMapper)
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = mappingApi.getRequestBody(pattern, jsonMapper = jsonMapper)
   }
 
   fun stubGetByNomisPersonIdOrNull(
@@ -51,7 +52,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(mapping)),
+            .withBody(jsonMapper.writeValueAsString(mapping)),
         ),
       )
     } ?: run {
@@ -60,7 +61,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
         ),
       )
     }
@@ -105,7 +106,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -117,7 +118,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           .withHeader("Content-Type", "application/json")
           .withBody(
             pageContent(
-              objectMapper = objectMapper,
+              jsonMapper = jsonMapper,
               content = listOf(
                 PersonMappingDto(
                   dpsId = UUID.randomUUID().toString(),
@@ -174,7 +175,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -195,7 +196,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(mapping)),
+            .withBody(jsonMapper.writeValueAsString(mapping)),
         ),
       )
     } ?: run {
@@ -204,7 +205,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
         ),
       )
     }
@@ -247,7 +248,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -261,7 +262,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(status.value())
-            .withBody(objectMapper.writeValueAsString(error)),
+            .withBody(jsonMapper.writeValueAsString(error)),
         ).willSetStateTo("Cause Mapping Contact Success"),
     )
 
@@ -292,7 +293,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(mapping)),
+            .withBody(jsonMapper.writeValueAsString(mapping)),
         ),
       )
     } ?: run {
@@ -301,7 +302,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
         ),
       )
     }
@@ -321,7 +322,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(mapping)),
+            .withBody(jsonMapper.writeValueAsString(mapping)),
         ),
       )
     }
@@ -355,7 +356,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -369,7 +370,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(status.value())
-            .withBody(objectMapper.writeValueAsString(error)),
+            .withBody(jsonMapper.writeValueAsString(error)),
         ).willSetStateTo("Cause Mapping Address Success"),
     )
 
@@ -399,7 +400,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(mapping)),
+            .withBody(jsonMapper.writeValueAsString(mapping)),
         ),
       )
     } ?: run {
@@ -408,7 +409,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
         ),
       )
     }
@@ -450,7 +451,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -464,7 +465,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(status.value())
-            .withBody(objectMapper.writeValueAsString(error)),
+            .withBody(jsonMapper.writeValueAsString(error)),
         ).willSetStateTo("Cause Mapping Email Success"),
     )
 
@@ -497,7 +498,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -511,7 +512,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(status.value())
-            .withBody(objectMapper.writeValueAsString(error)),
+            .withBody(jsonMapper.writeValueAsString(error)),
         ).willSetStateTo("Cause Mapping Phone Success"),
     )
 
@@ -543,7 +544,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(mapping)),
+            .withBody(jsonMapper.writeValueAsString(mapping)),
         ),
       )
     } ?: run {
@@ -552,7 +553,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
         ),
       )
     }
@@ -596,7 +597,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -610,7 +611,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(status.value())
-            .withBody(objectMapper.writeValueAsString(error)),
+            .withBody(jsonMapper.writeValueAsString(error)),
         ).willSetStateTo("Cause Mapping Identifier Success"),
     )
 
@@ -643,7 +644,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(mapping)),
+            .withBody(jsonMapper.writeValueAsString(mapping)),
         ),
       )
     } ?: run {
@@ -652,7 +653,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
         ),
       )
     }
@@ -685,7 +686,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -699,7 +700,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(status.value())
-            .withBody(objectMapper.writeValueAsString(error)),
+            .withBody(jsonMapper.writeValueAsString(error)),
         ).willSetStateTo("Cause Mapping Employment Success"),
     )
 
@@ -732,7 +733,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(mapping)),
+            .withBody(jsonMapper.writeValueAsString(mapping)),
         ),
       )
     } ?: run {
@@ -741,7 +742,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
         ),
       )
     }
@@ -772,7 +773,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(mapping)),
+            .withBody(jsonMapper.writeValueAsString(mapping)),
         ),
       )
     } ?: run {
@@ -781,7 +782,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
         ),
       )
     }
@@ -840,7 +841,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -854,7 +855,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(status.value())
-            .withBody(objectMapper.writeValueAsString(error)),
+            .withBody(jsonMapper.writeValueAsString(error)),
         ).willSetStateTo("Cause Mapping Contact Restriction Success"),
     )
 
@@ -885,7 +886,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(mapping)),
+            .withBody(jsonMapper.writeValueAsString(mapping)),
         ),
       )
     } ?: run {
@@ -894,7 +895,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
         ),
       )
     }
@@ -928,7 +929,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -942,7 +943,7 @@ class ContactPersonMappingApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(status.value())
-            .withBody(objectMapper.writeValueAsString(error)),
+            .withBody(jsonMapper.writeValueAsString(error)),
         ).willSetStateTo("Cause Mapping Person Restriction Success"),
     )
 

@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.containing
@@ -18,12 +17,13 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.FindActiveActivityIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.objectMapper
 import java.lang.Long.min
 
 class NomisApiExtension :
@@ -40,12 +40,12 @@ class NomisApiExtension :
 
     @JvmField
     val nomisApi = NomisApiMockServer()
-    lateinit var objectMapper: ObjectMapper
+    lateinit var jsonMapper: JsonMapper
   }
 
   override fun beforeAll(context: ExtensionContext) {
     nomisApi.start()
-    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jackson2ObjectMapper") as ObjectMapper)
+    jsonMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonJsonMapper") as JsonMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
@@ -476,7 +476,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withStatus(HttpStatus.OK.value())
           .withBody(
             pageContent(
-              objectMapper = objectMapper,
+              jsonMapper = jsonMapper,
               content = content,
               pageSize = pageSize,
               pageNumber = 0,
@@ -491,7 +491,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubGetPrisonerDetails(offenderNo: String, details: PrisonerDetails) {
     stubFor(
       get("/prisoners/$offenderNo")
-        .willReturn(okJson(objectMapper.writeValueAsString(details))),
+        .willReturn(okJson(jsonMapper.writeValueAsString(details))),
     )
   }
 

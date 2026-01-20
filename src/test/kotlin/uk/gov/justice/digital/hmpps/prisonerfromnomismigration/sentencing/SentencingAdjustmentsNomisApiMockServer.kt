@@ -77,7 +77,7 @@ class SentencingAdjustmentsNomisApiMockServer(private val objectMapper: ObjectMa
           aResponse()
             .withStatus(status.value())
             .withHeader("Content-Type", "application/json")
-            .withBody(NomisApiExtension.objectMapper.writeValueAsString(error)),
+            .withBody(NomisApiExtension.jsonMapper.writeValueAsString(error)),
         ),
     )
   }
@@ -122,7 +122,7 @@ class SentencingAdjustmentsNomisApiMockServer(private val objectMapper: ObjectMa
           aResponse()
             .withStatus(status.value())
             .withHeader("Content-Type", "application/json")
-            .withBody(NomisApiExtension.objectMapper.writeValueAsString(error)),
+            .withBody(NomisApiExtension.jsonMapper.writeValueAsString(error)),
         ),
     )
   }

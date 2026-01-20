@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -13,7 +12,8 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus.CREATED
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.objectMapper
+import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerPointInTimeBalance
@@ -32,22 +32,22 @@ class FinanceApiExtension :
   companion object {
     @JvmField
     val financeApi = FinanceApiMockServer()
-    lateinit var objectMapper: ObjectMapper
+    lateinit var jsonMapper: JsonMapper
 
     @Suppress("unused")
     inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = financeApi.getRequestBody(
       pattern,
-      objectMapper,
+      jsonMapper,
     )
     inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = financeApi.getRequestBodies(
       pattern,
-      objectMapper,
+      jsonMapper,
     )
   }
 
   override fun beforeAll(context: ExtensionContext) {
     financeApi.start()
-    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jackson2ObjectMapper") as ObjectMapper)
+    jsonMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonJsonMapper") as JsonMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
@@ -116,7 +116,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -128,7 +128,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withStatus(INTERNAL_SERVER_ERROR.value())
           .withBody(
-            objectMapper.writeValueAsString(
+            jsonMapper.writeValueAsString(
               ErrorResponse(
                 status = 500,
                 userMessage = "test message",
@@ -146,7 +146,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(CREATED.value())
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -158,7 +158,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withStatus(INTERNAL_SERVER_ERROR.value())
           .withBody(
-            objectMapper.writeValueAsString(
+            jsonMapper.writeValueAsString(
               ErrorResponse(
                 status = 500,
                 userMessage = "test message",

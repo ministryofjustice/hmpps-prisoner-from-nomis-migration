@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -10,6 +9,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import tools.jackson.databind.json.JsonMapper
 
 class NomisSyncApiExtension :
   BeforeAllCallback,
@@ -18,12 +18,12 @@ class NomisSyncApiExtension :
   companion object {
     @JvmField
     val nomisSyncApi = NomisSyncApiMockServer()
-    lateinit var objectMapper: ObjectMapper
+    lateinit var jsonMapper: JsonMapper
   }
 
   override fun beforeAll(context: ExtensionContext) {
     nomisSyncApi.start()
-    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jackson2ObjectMapper") as ObjectMapper)
+    jsonMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonJsonMapper") as JsonMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {

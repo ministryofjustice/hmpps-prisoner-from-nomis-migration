@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
@@ -28,6 +27,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import tools.jackson.databind.json.JsonMapper
 import java.net.URLEncoder
 
 class MappingApiExtension :
@@ -53,16 +53,16 @@ class MappingApiExtension :
     const val ADJUSTMENTS_CREATE_MAPPING_URL = "/mapping/sentencing/adjustments"
     const val LOCATIONS_CREATE_MAPPING_URL = "/mapping/locations"
     const val LOCATIONS_GET_MAPPING_URL = "/mapping/locations/nomis"
-    lateinit var objectMapper: ObjectMapper
+    lateinit var jsonMapper: JsonMapper
     inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = mappingApi.getRequestBodies(
       pattern,
-      objectMapper,
+      jsonMapper,
     )
   }
 
   override fun beforeAll(context: ExtensionContext) {
     mappingApi.start()
-    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jackson2ObjectMapper") as ObjectMapper)
+    jsonMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonJsonMapper") as JsonMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {

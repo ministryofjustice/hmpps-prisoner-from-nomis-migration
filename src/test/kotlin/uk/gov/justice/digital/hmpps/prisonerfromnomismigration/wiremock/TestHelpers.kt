@@ -1,13 +1,13 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import com.github.tomakehurst.wiremock.matching.StringValuePattern
 import org.junit.jupiter.api.Assertions
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 
 fun RequestPatternBuilder.withRequestBodyJsonPath(path: String, pattern: StringValuePattern): RequestPatternBuilder = this.withRequestBody(matchingJsonPath(path, pattern))
 
@@ -21,10 +21,10 @@ fun WireMockServer.getRequestBodyAsString(pattern: RequestPatternBuilder): Strin
 
 fun WireMockServer.getRequestBodiesAsString(pattern: RequestPatternBuilder): List<String> = findAll(pattern).map { it.bodyAsString }
 
-inline fun <reified T> WireMockServer.getRequestBody(pattern: RequestPatternBuilder, objectMapper: ObjectMapper): T = getRequestBodyAsString(pattern).let {
-  return objectMapper.readValue<T>(it)
+inline fun <reified T> WireMockServer.getRequestBody(pattern: RequestPatternBuilder, jsonMapper: JsonMapper): T = getRequestBodyAsString(pattern).let {
+  return jsonMapper.readValue<T>(it)
 }
 
-inline fun <reified T> WireMockServer.getRequestBodies(pattern: RequestPatternBuilder, objectMapper: ObjectMapper): List<T> = getRequestBodiesAsString(pattern).map {
-  objectMapper.readValue<T>(it)
+inline fun <reified T> WireMockServer.getRequestBodies(pattern: RequestPatternBuilder, jsonMapper: JsonMapper): List<T> = getRequestBodiesAsString(pattern).map {
+  jsonMapper.readValue<T>(it)
 }

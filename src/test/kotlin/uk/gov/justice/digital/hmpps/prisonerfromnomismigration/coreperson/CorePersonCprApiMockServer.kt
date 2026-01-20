@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -13,10 +12,11 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.objectMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDateTime
@@ -28,16 +28,16 @@ class CorePersonCprApiExtension :
   companion object {
     @JvmField
     val cprCorePersonServer = CorePersonCprApiMockServer()
-    lateinit var objectMapper: ObjectMapper
+    lateinit var jsonMapper: JsonMapper
 
     @Suppress("unused")
-    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = cprCorePersonServer.getRequestBody(pattern, objectMapper)
-    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = cprCorePersonServer.getRequestBodies(pattern, objectMapper)
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = cprCorePersonServer.getRequestBody(pattern, jsonMapper)
+    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = cprCorePersonServer.getRequestBodies(pattern, jsonMapper)
   }
 
   override fun beforeAll(context: ExtensionContext) {
     cprCorePersonServer.start()
-    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jackson2ObjectMapper") as ObjectMapper)
+    jsonMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonJsonMapper") as JsonMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
@@ -114,7 +114,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(CorePersonCprApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(CorePersonCprApiExtension.jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -130,7 +130,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(status.value())
             .withHeader("Content-Type", "application/json")
-            .withBody(objectMapper.writeValueAsString(if (status == HttpStatus.OK) status else error)),
+            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) status else error)),
         ),
     )
   }
