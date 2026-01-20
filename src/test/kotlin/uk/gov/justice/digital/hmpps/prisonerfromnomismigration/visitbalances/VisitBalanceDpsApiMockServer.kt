@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -11,6 +10,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerMigrationDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
@@ -24,21 +24,21 @@ class VisitBalanceDpsApiExtension :
   companion object {
     @JvmField
     val dpsVisitBalanceServer = VisitBalanceDpsApiMockServer()
-    lateinit var objectMapper: ObjectMapper
+    lateinit var jsonMapper: JsonMapper
 
     @Suppress("unused")
     inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsVisitBalanceServer.getRequestBody(
       pattern,
-      objectMapper,
+      jsonMapper,
     )
     inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsVisitBalanceServer.getRequestBodies(
       pattern,
-      objectMapper,
+      jsonMapper,
     )
   }
   override fun beforeAll(context: ExtensionContext) {
     dpsVisitBalanceServer.start()
-    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jackson2ObjectMapper") as ObjectMapper)
+    jsonMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonJsonMapper") as JsonMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {

@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
@@ -11,21 +10,22 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerRestrictionMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
 import java.util.*
 
 @Component
-class PrisonerRestrictionMappingApiMockServer(private val objectMapper: ObjectMapper) {
+class PrisonerRestrictionMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   companion object {
-    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = mappingApi.getRequestBody(pattern, objectMapper = objectMapper)
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = mappingApi.getRequestBody(pattern, jsonMapper = jsonMapper)
   }
 
   fun stubGetByNomisPrisonerRestrictionIdOrNull(
@@ -44,7 +44,7 @@ class PrisonerRestrictionMappingApiMockServer(private val objectMapper: ObjectMa
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(mapping)),
+            .withBody(jsonMapper.writeValueAsString(mapping)),
         ),
       )
     } ?: run {
@@ -53,7 +53,7 @@ class PrisonerRestrictionMappingApiMockServer(private val objectMapper: ObjectMa
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody(objectMapper.writeValueAsString(ErrorResponse(status = 404))),
+            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
         ),
       )
     }
@@ -87,7 +87,7 @@ class PrisonerRestrictionMappingApiMockServer(private val objectMapper: ObjectMa
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -99,7 +99,7 @@ class PrisonerRestrictionMappingApiMockServer(private val objectMapper: ObjectMa
           .withHeader("Content-Type", "application/json")
           .withBody(
             pageContent(
-              objectMapper = objectMapper,
+              jsonMapper = jsonMapper,
               content = listOf(
                 PrisonerRestrictionMappingDto(
                   dpsId = UUID.randomUUID().toString(),

@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCasesResponse
@@ -28,7 +28,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeCreateCourtCasesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.objectMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.util.UUID
 
@@ -39,16 +39,16 @@ class CourtSentencingDpsApiExtension :
   companion object {
     @JvmField
     val dpsCourtSentencingServer = CourtSentencingDpsApiMockServer()
-    lateinit var objectMapper: ObjectMapper
+    lateinit var jsonMapper: JsonMapper
     inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsCourtSentencingServer.getRequestBody(
       pattern,
-      objectMapper,
+      jsonMapper,
     )
   }
 
   override fun beforeAll(context: ExtensionContext) {
     dpsCourtSentencingServer.start()
-    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jackson2ObjectMapper") as ObjectMapper)
+    jsonMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonJsonMapper") as JsonMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
@@ -65,7 +65,7 @@ private const val NOMIS_CASE_ID = 12345L
 class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8094
-    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsCourtSentencingServer.getRequestBody(pattern, objectMapper = objectMapper)
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsCourtSentencingServer.getRequestBody(pattern, jsonMapper = jsonMapper)
   }
 
   fun stubPostCourtCaseForCreate(
@@ -80,7 +80,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(CourtSentencingDpsApiExtension.jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -120,7 +120,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(CourtSentencingDpsApiExtension.jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -146,7 +146,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(CourtSentencingDpsApiExtension.jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -167,7 +167,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(mergeResponse)),
+            .withBody(CourtSentencingDpsApiExtension.jsonMapper.writeValueAsString(mergeResponse)),
         ),
     )
   }
@@ -186,7 +186,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(CourtSentencingDpsApiExtension.jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -232,7 +232,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(CourtSentencingDpsApiExtension.jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -263,7 +263,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(CourtSentencingDpsApiExtension.jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -297,7 +297,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(CourtSentencingDpsApiExtension.jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -435,7 +435,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(CourtSentencingDpsApiExtension.jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -516,7 +516,7 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(CourtSentencingDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(CourtSentencingDpsApiExtension.jsonMapper.writeValueAsString(response)),
         ),
     )
   }

@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.Alert
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.AlertCodeSummary
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.model.ResyncedAlert
@@ -27,12 +27,12 @@ class AlertsDpsApiExtension :
   companion object {
     @JvmField
     val dpsAlertsServer = AlertsDpsApiMockServer()
-    lateinit var objectMapper: ObjectMapper
+    lateinit var jsonMapper: JsonMapper
   }
 
   override fun beforeAll(context: ExtensionContext) {
     dpsAlertsServer.start()
-    objectMapper = (SpringExtension.getApplicationContext(context).getBean("jackson2ObjectMapper") as ObjectMapper)
+    jsonMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonJsonMapper") as JsonMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
@@ -87,7 +87,7 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(AlertsDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(AlertsDpsApiExtension.jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -102,7 +102,7 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(AlertsDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(AlertsDpsApiExtension.jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -116,7 +116,7 @@ class AlertsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(AlertsDpsApiExtension.objectMapper.writeValueAsString(response)),
+            .withBody(AlertsDpsApiExtension.jsonMapper.writeValueAsString(response)),
         ),
     )
   }

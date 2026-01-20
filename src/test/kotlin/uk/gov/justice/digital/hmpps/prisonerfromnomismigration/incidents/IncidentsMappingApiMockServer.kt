@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
@@ -15,12 +14,13 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IncidentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 
 @Component
-class IncidentsMappingApiMockServer(private val objectMapper: ObjectMapper) {
+class IncidentsMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   companion object {
     const val INCIDENTS_CREATE_MAPPING_URL = "/mapping/incidents"
@@ -138,7 +138,7 @@ class IncidentsMappingApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withBody(
             pageContent(
-              objectMapper = objectMapper,
+              jsonMapper = jsonMapper,
               content = listOf(
                 IncidentMappingDto(
                   nomisIncidentId = 1234,

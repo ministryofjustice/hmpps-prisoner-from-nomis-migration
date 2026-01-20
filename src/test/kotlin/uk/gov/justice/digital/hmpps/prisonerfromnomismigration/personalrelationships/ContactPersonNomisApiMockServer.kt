@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -8,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactForPerson
@@ -36,7 +36,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Component
-class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class ContactPersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetPerson(
     personId: Long = 123456,
     person: ContactPerson = contactPerson(),
@@ -46,7 +46,7 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(person)),
+          .withBody(jsonMapper.writeValueAsString(person)),
       ),
     )
   }
@@ -64,7 +64,7 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -78,7 +78,7 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(contact)),
+          .withBody(jsonMapper.writeValueAsString(contact)),
       ),
     )
   }
@@ -108,7 +108,7 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(contacts)),
+          .withBody(jsonMapper.writeValueAsString(contacts)),
       ),
     )
   }
@@ -118,7 +118,7 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(prisonerDetails)),
+          .withBody(jsonMapper.writeValueAsString(prisonerDetails)),
       ),
     )
   }
@@ -129,7 +129,7 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -140,7 +140,7 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -152,7 +152,7 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
     count: Long,
     content: List<PersonIdResponse>,
   ) = pageContent(
-    objectMapper = objectMapper,
+    jsonMapper = jsonMapper,
     content = content,
     pageSize = 1L,
     pageNumber = 0L,
@@ -163,7 +163,7 @@ class ContactPersonNomisApiMockServer(private val objectMapper: ObjectMapper) {
     count: Long,
     content: List<PrisonerRestrictionIdResponse>,
   ) = pageContent(
-    objectMapper = objectMapper,
+    jsonMapper = jsonMapper,
     content = content,
     pageSize = 1L,
     pageNumber = 0L,

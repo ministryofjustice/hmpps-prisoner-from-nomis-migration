@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
@@ -15,6 +14,7 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
@@ -22,15 +22,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceTermMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.objectMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.util.UUID
 
 @Component
-class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper) {
+class CourtSentencingMappingApiMockServer(private val jsonMapper: JsonMapper) {
   companion object {
-    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = mappingApi.getRequestBody(pattern, objectMapper = objectMapper)
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = mappingApi.getRequestBody(pattern, jsonMapper = jsonMapper)
   }
 
   fun stubGetByNomisId(
@@ -47,7 +47,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(mapping)),
+          .withBody(jsonMapper.writeValueAsString(mapping)),
       ),
     )
   }
@@ -58,7 +58,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -68,7 +68,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
       post(urlPathEqualTo("/mapping/court-sentencing/court-cases/nomis-case-ids/get-list")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -85,7 +85,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(summary)),
+          .withBody(jsonMapper.writeValueAsString(summary)),
       ),
     )
   }
@@ -96,7 +96,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -117,7 +117,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -186,7 +186,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -259,7 +259,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(mapping)),
+          .withBody(jsonMapper.writeValueAsString(mapping)),
       ),
     )
   }
@@ -294,7 +294,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(mapping)),
+            .withBody(jsonMapper.writeValueAsString(mapping)),
         )
         .willSetStateTo(successScenario),
     )
@@ -309,7 +309,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -333,7 +333,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -399,7 +399,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -423,7 +423,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -442,7 +442,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(mapping)),
+          .withBody(jsonMapper.writeValueAsString(mapping)),
       ),
     )
   }
@@ -456,7 +456,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.NOT_FOUND.value())
           .withBody(
-            objectMapper.writeValueAsString(ErrorResponse(HttpStatus.NOT_FOUND.value())),
+            jsonMapper.writeValueAsString(ErrorResponse(HttpStatus.NOT_FOUND.value())),
           ),
       ),
     )
@@ -468,7 +468,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -489,7 +489,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -562,7 +562,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(mapping)),
+          .withBody(jsonMapper.writeValueAsString(mapping)),
       ),
     )
   }
@@ -573,7 +573,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -596,7 +596,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(mapping)),
+          .withBody(jsonMapper.writeValueAsString(mapping)),
       ),
     )
   }
@@ -607,7 +607,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -638,7 +638,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -649,7 +649,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -762,7 +762,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -786,7 +786,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -797,7 +797,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
       get(urlPathMatching("/mapping/court-sentencing/prisoner/migration-id/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody(mappingApi.pageContent(objectMapper.writeValueAsString(summary), count)),
+          .withBody(mappingApi.pageContent(jsonMapper.writeValueAsString(summary), count)),
       ),
     )
   }
@@ -846,7 +846,7 @@ class CourtSentencingMappingApiMockServer(private val objectMapper: ObjectMapper
       post(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-sentence-ids/get-list")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
