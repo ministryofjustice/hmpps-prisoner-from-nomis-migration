@@ -15,7 +15,7 @@ class FinanceNomisApiService(@Qualifier("nomisApiWebClient") webClient: WebClien
   private val transactionsApi = TransactionsResourceApi(webClient)
   private val prisonApi = PrisonBalanceResourceApi(webClient)
 
-  suspend fun getTransactions(transactionId: Long): List<OffenderTransactionDto> = transactionsApi
+  suspend fun getPrisonerTransactions(transactionId: Long): List<OffenderTransactionDto> = transactionsApi
     .getTransaction(transactionId)
     .awaitSingle()
 

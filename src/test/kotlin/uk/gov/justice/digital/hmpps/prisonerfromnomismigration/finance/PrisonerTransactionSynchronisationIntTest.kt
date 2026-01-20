@@ -19,12 +19,13 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.eq
+import org.mockito.Mockito.atLeastOnce
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
+import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.NOT_FOUND
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
@@ -38,6 +39,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.TransactionIdBufferRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import uk.gov.justice.hmpps.sqs.countMessagesOnQueue
 import java.util.AbstractMap.SimpleEntry
 import java.util.UUID
 
@@ -186,7 +188,10 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("offenderTransactions[0].type", equalTo(t1.type))
                 .withRequestBodyJsonPath("offenderTransactions[0].description", equalTo(t1.description))
                 .withRequestBodyJsonPath("offenderTransactions[0].amount", equalTo("5.4"))
-                .withRequestBodyJsonPath("offenderTransactions[0].offenderBookingId", equalTo(t1.bookingId.toString()))
+                .withRequestBodyJsonPath(
+                  "offenderTransactions[0].offenderBookingId",
+                  equalTo(t1.bookingId.toString()),
+                )
                 .withRequestBodyJsonPath("offenderTransactions[0].reference", equalTo(t1.reference))
                 .withRequestBodyJsonPath(
                   "offenderTransactions[0].generalLedgerEntries[0].entrySequence",
@@ -305,7 +310,10 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("offenderTransactions[0].type", equalTo(t1.type))
                 .withRequestBodyJsonPath("offenderTransactions[0].description", equalTo(t1.description))
                 .withRequestBodyJsonPath("offenderTransactions[0].amount", equalTo("5.4"))
-                .withRequestBodyJsonPath("offenderTransactions[0].offenderBookingId", equalTo(t1.bookingId.toString()))
+                .withRequestBodyJsonPath(
+                  "offenderTransactions[0].offenderBookingId",
+                  equalTo(t1.bookingId.toString()),
+                )
                 .withRequestBodyJsonPath("offenderTransactions[0].reference", equalTo(t1.reference))
                 .withRequestBodyJsonPath(
                   "offenderTransactions[0].generalLedgerEntries[0].entrySequence",
@@ -447,7 +455,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
         inner class FailsConstantly {
           @BeforeEach
           fun setUp() {
-            financeMappingApiMockServer.stubPostMapping(status = INTERNAL_SERVER_ERROR)
+            financeMappingApiMockServer.stubPostMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
             financeOffenderEventsQueue.sendMessage(
               offenderTransactionEvent(
                 "OFFENDER_TRANSACTIONS-INSERTED",
@@ -545,7 +553,287 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("OFFENDER_TRANSACTIONS-UPDATED")
   inner class PrisonerTransactionUpdated {
-    // TODO
+
+    @Nested
+    @DisplayName("When transaction was created in DPS")
+    inner class DPSCreated {
+
+      @BeforeEach
+      fun setUp() {
+        val message = offenderTransactionEvent(
+          eventType = "OFFENDER_TRANSACTIONS-UPDATED",
+          messageId = messageUuid,
+          bookingId = BOOKING_ID,
+          offenderNo = OFFENDER_ID_DISPLAY,
+          auditModuleName = "DPS_SYNCHRONISATION",
+        )
+        financeOffenderEventsQueue.sendMessage(message)
+      }
+
+      @Test
+      fun `the event is ignored`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("transactions-synchronisation-updated-skipped"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["nomisTransactionId"]).isEqualTo(NOMIS_TRANSACTION_ID.toString())
+            },
+            isNull(),
+          )
+        }
+
+        // will not bother getting Nomis or mapping data
+        financeNomisApiMockServer.verify(
+          count = 0,
+          getRequestedFor(urlPathMatching("/transactions/\\d+")),
+        )
+        financeMappingApiMockServer.verify(
+          count = 0,
+          getRequestedFor(urlPathMatching("/mapping/transactions/nomis-transaction-id/\\d+")),
+        )
+        // will not create a transaction in DPS
+        financeApi.verify(0, postRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    @DisplayName("When transaction was created in NOMIS")
+    inner class NomisCreated {
+
+      @BeforeEach
+      fun setUp() = runTest {
+        transactionIdBufferRepository.deleteAll()
+      }
+
+      @Nested
+      @DisplayName("Happy path where transaction already exists in DPS")
+      inner class HappyPath {
+        val receipt = SyncTransactionReceipt(
+          synchronizedTransactionId = dpsTransactionUuid,
+          requestId = UUID.randomUUID(),
+          action = SyncTransactionReceipt.Action.CREATED,
+        )
+        val nomisTransactions = nomisTransactions()
+
+        @BeforeEach
+        fun setUp() {
+          financeNomisApiMockServer.stubGetOffenderTransaction(
+            bookingId = BOOKING_ID,
+            transactionId = NOMIS_TRANSACTION_ID,
+            response = nomisTransactions,
+          )
+          financeApi.stubPostOffenderTransaction(receipt)
+          financeMappingApiMockServer.stubGetByNomisId(NOMIS_TRANSACTION_ID)
+
+          financeOffenderEventsQueue.sendMessage(
+            offenderTransactionEvent(
+              "OFFENDER_TRANSACTIONS-UPDATED",
+              messageUuid,
+              bookingId = BOOKING_ID,
+              transactionId = NOMIS_TRANSACTION_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+          waitForAnyProcessingToComplete("transactions-synchronisation-updated-success-additional")
+        }
+
+        @Test
+        fun `will create transaction in DPS`() {
+          await untilAsserted {
+            val t1 = nomisTransactions.first()
+            val g1 = t1.generalLedgerTransactions.first()
+            financeApi.verify(
+              1,
+              postRequestedFor(urlPathEqualTo("/sync/offender-transactions"))
+                .withRequestBodyJsonPath("transactionId", equalTo(NOMIS_TRANSACTION_ID.toString()))
+                .withRequestBodyJsonPath("requestId", equalTo(MESSAGE_ID))
+                .withRequestBodyJsonPath("caseloadId", equalTo("SWI"))
+                .withRequestBodyJsonPath("transactionTimestamp", equalTo(g1.transactionTimestamp.toString()))
+                .withRequestBodyJsonPath("createdAt", equalTo(t1.createdAt.toString()))
+                .withRequestBodyJsonPath("createdBy", equalTo(t1.createdBy))
+                .withRequestBodyJsonPath("createdByDisplayName", equalTo(t1.createdByDisplayName))
+                .withRequestBodyJsonPath("lastModifiedAt", equalTo(t1.lastModifiedAt.toString()))
+                .withRequestBodyJsonPath("lastModifiedBy", equalTo(t1.lastModifiedBy))
+                .withRequestBodyJsonPath("lastModifiedByDisplayName", equalTo(t1.lastModifiedByDisplayName))
+                .withRequestBodyJsonPath(
+                  "offenderTransactions[0].entrySequence",
+                  equalTo(t1.transactionEntrySequence.toString()),
+                )
+                .withRequestBodyJsonPath(
+                  "offenderTransactions[0].offenderId",
+                  equalTo(
+                    OFFENDER_ID.toString(),
+                  ),
+                )
+                .withRequestBodyJsonPath(
+                  "offenderTransactions[0].offenderDisplayId",
+                  equalTo(
+                    OFFENDER_ID_DISPLAY,
+                  ),
+                )
+                .withRequestBodyJsonPath("offenderTransactions[0].subAccountType", equalTo(t1.subAccountType.name))
+                .withRequestBodyJsonPath("offenderTransactions[0].postingType", equalTo(t1.postingType.name))
+                .withRequestBodyJsonPath("offenderTransactions[0].type", equalTo(t1.type))
+                .withRequestBodyJsonPath("offenderTransactions[0].description", equalTo(t1.description))
+                .withRequestBodyJsonPath("offenderTransactions[0].amount", equalTo("5.4"))
+                .withRequestBodyJsonPath("offenderTransactions[0].offenderBookingId", equalTo(t1.bookingId.toString()))
+                .withRequestBodyJsonPath("offenderTransactions[0].reference", equalTo(t1.reference))
+                .withRequestBodyJsonPath(
+                  "offenderTransactions[0].generalLedgerEntries[0].entrySequence",
+                  equalTo(g1.generalLedgerEntrySequence.toString()),
+                )
+                .withRequestBodyJsonPath(
+                  "offenderTransactions[0].generalLedgerEntries[0].code",
+                  equalTo(g1.accountCode.toString()),
+                )
+                .withRequestBodyJsonPath(
+                  "offenderTransactions[0].generalLedgerEntries[0].postingType",
+                  equalTo(g1.postingType.name),
+                )
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].amount", equalTo("5.4")),
+            )
+          }
+        }
+
+        @Test
+        fun `will get the mapping between DPS and NOMIS ids - once during update and once during upsert`() {
+          financeMappingApiMockServer.verify(
+            2,
+            getRequestedFor(urlPathMatching("/mapping/transactions/nomis-transaction-id/$NOMIS_TRANSACTION_ID")),
+          )
+        }
+
+        @Test
+        fun `will not create mapping between DPS and NOMIS ids`() {
+          financeMappingApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/mapping/transactions")))
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("transactions-synchronisation-updated-success-additional"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["nomisTransactionId"]).isEqualTo(NOMIS_TRANSACTION_ID.toString())
+                assertThat(it["dpsTransactionId"]).isEqualTo(DPS_TRANSACTION_ID)
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("No mapping exists")
+      inner class HappyPathNoMapping {
+        @BeforeEach
+        fun setUp() {
+          financeNomisApiMockServer.stubGetOffenderTransaction(
+            bookingId = BOOKING_ID,
+            transactionId = NOMIS_TRANSACTION_ID,
+            response = nomisTransactions(),
+          )
+          financeMappingApiMockServer.stubGetByNomisId(NOT_FOUND)
+
+          financeOffenderEventsQueue.sendMessage(
+            offenderTransactionEvent(
+              "OFFENDER_TRANSACTIONS-UPDATED",
+              messageUuid,
+            ),
+          )
+          await untilCallTo { awsSqsFinanceOffenderEventsDlqClient.countMessagesOnQueue(financeQueueOffenderEventsDlqUrl).get() } matches { it == 1 }
+        }
+
+        @Test
+        fun `will attempt to get the mapping between DPS and NOMIS ids more than once due to retry`() {
+          financeMappingApiMockServer.verify(
+            exactly(2),
+            getRequestedFor(urlPathMatching("/mapping/transactions/nomis-transaction-id/$NOMIS_TRANSACTION_ID")),
+          )
+        }
+
+        @Test
+        fun `will not update transaction in DPS`() {
+          financeApi.verify(0, postRequestedFor(urlPathEqualTo("/sync/offender-transactions")))
+        }
+
+        @Test
+        fun `will track a telemetry event for failure`() {
+          await untilAsserted {
+            verify(telemetryClient, atLeastOnce()).trackEvent(
+              eq("transactions-synchronisation-updated-failed"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["nomisTransactionId"]).isEqualTo(NOMIS_TRANSACTION_ID.toString())
+                assertThat(it).doesNotContainKey("dpsTransactionId")
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
+          }
+          // and will not create mapping between DPS and NOMIS ids as it already exists
+          financeMappingApiMockServer.verify(
+            0,
+            postRequestedFor(urlPathEqualTo("/mapping/transactions")),
+          )
+        }
+
+        @Test
+        fun `the event is placed on dead letter queue`() {
+          await untilAsserted {
+            assertThat(
+              awsSqsFinanceOffenderEventsDlqClient.countAllMessagesOnQueue(financeQueueOffenderEventsDlqUrl).get(),
+            ).isEqualTo(1)
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When finance api POST fails")
+      inner class FinanceApiFail {
+
+        @BeforeEach
+        fun setUp() {
+          financeNomisApiMockServer.stubGetOffenderTransaction(
+            bookingId = BOOKING_ID,
+            transactionId = NOMIS_TRANSACTION_ID,
+            response = nomisTransactions(),
+          )
+          financeApi.stubPostOffenderTransactionFailure()
+
+          financeOffenderEventsQueue.sendMessage(
+            offenderTransactionEvent("OFFENDER_TRANSACTIONS-UPDATED", messageUuid),
+          )
+        }
+
+        @Test
+        fun `will not attempt to create mapping and will track a telemetry event for failure`() {
+          await untilAsserted {
+            verify(telemetryClient, atLeast(2)).trackEvent(
+              // ******* was at least 1
+              eq("transactions-synchronisation-updated-failed"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["nomisTransactionId"]).isEqualTo(NOMIS_TRANSACTION_ID.toString())
+              },
+              isNull(),
+            )
+          }
+          // but will not create a mapping between DPS and NOMIS ids as it already exists
+          financeMappingApiMockServer.verify(
+            0,
+            postRequestedFor(urlPathEqualTo("/mapping/transactions")),
+          )
+        }
+      }
+    }
   }
 
   private fun Any.toJson(): String = jsonMapper.writeValueAsString(this)
