@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -10,6 +9,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
@@ -33,7 +33,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Component
-class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class CourtSentencingNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetCourtCase(
     bookingId: Long = 123456,
     offenderNo: String = "A3864DZ",
@@ -63,7 +63,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -74,7 +74,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -118,7 +118,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(response)),
+            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -133,7 +133,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(response)),
+            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -149,7 +149,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(response)),
+            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -209,7 +209,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(response)),
+            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -243,7 +243,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              objectMapper.writeValueAsString(
+              jsonMapper.writeValueAsString(
                 PostPrisonerMergeCaseChanges(
                   courtCasesCreated = courtCasesCreated,
                   courtCasesDeactivated = courtCasesDeactivated,
@@ -265,7 +265,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
           aResponse().withHeader("Content-Type", "application/json")
             .withStatus(status.value())
             .withBody(
-              objectMapper.writeValueAsString(error),
+              jsonMapper.writeValueAsString(error),
             ),
         ),
     )
@@ -301,7 +301,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -312,7 +312,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -336,7 +336,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -347,7 +347,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -380,7 +380,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -394,7 +394,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -405,7 +405,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -490,7 +490,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -501,7 +501,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -512,7 +512,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -542,7 +542,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -553,7 +553,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
-          .withBody(objectMapper.writeValueAsString(error)),
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -593,7 +593,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         )
           .willReturn(
             aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(objectMapper.writeValueAsString(listOf(courtCaseResponse(caseId = it.toLong())))),
+              .withBody(jsonMapper.writeValueAsString(listOf(courtCaseResponse(caseId = it.toLong())))),
           ),
       )
     }
@@ -605,7 +605,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
       )
         .willReturn(
           aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-            .withBody(objectMapper.writeValueAsString(listOf(courtCaseResponse(caseId = 1)))),
+            .withBody(jsonMapper.writeValueAsString(listOf(courtCaseResponse(caseId = 1)))),
         ),
     )
   }
@@ -616,7 +616,7 @@ class CourtSentencingNomisApiMockServer(private val objectMapper: ObjectMapper) 
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(response)),
+          .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
   }

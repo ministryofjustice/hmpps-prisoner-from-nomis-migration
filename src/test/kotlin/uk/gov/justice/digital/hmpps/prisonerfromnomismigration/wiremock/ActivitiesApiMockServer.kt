@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
@@ -18,6 +17,9 @@ import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
+import org.springframework.test.context.junit.jupiter.SpringExtension
+import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.sampleAppointmentInstance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension.Companion.activitiesApi
 import java.time.LocalDate
@@ -29,10 +31,12 @@ class ActivitiesApiExtension :
   companion object {
     @JvmField
     val activitiesApi = ActivitiesApiMockServer()
+    lateinit var jsonMapper: JsonMapper
   }
 
   override fun beforeAll(context: ExtensionContext) {
     activitiesApi.start()
+    jsonMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonJsonMapper") as JsonMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
@@ -47,9 +51,6 @@ class ActivitiesApiExtension :
 class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8086
-    private val objectMapper = jacksonObjectMapper().apply {
-      findAndRegisterModules()
-    }
   }
 
   fun stubHealthPing(status: Int) {
@@ -64,7 +65,7 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubCreateAppointmentForMigration(appointmentInstanceId: Long?) {
-    val response = appointmentInstanceId?.let { objectMapper.writeValueAsString(sampleAppointmentInstance(it)) }
+    val response = appointmentInstanceId?.let { jsonMapper.writeValueAsString(sampleAppointmentInstance(it)) }
 
     stubFor(
       post(urlMatching("/migrate-appointment"))
@@ -149,7 +150,7 @@ class ActivitiesApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubGetActivityCategories() {
-    ActivitiesApiExtension.activitiesApi.stubFor(
+    activitiesApi.stubFor(
       get(WireMock.urlEqualTo("/activity-categories")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")

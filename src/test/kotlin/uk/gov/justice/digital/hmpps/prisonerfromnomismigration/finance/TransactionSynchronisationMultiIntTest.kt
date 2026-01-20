@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.runBlocking
@@ -16,6 +15,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.TestPropertySource
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -43,7 +43,7 @@ class TransactionSynchronisationMultiIntTest : SqsIntegrationTestBase() {
   private lateinit var financeNomisApiMockServer: FinanceNomisApiMockServer
 
   @Autowired
-  private lateinit var objectMapper: ObjectMapper
+  private lateinit var jsonMapper: JsonMapper
 
   @Autowired
   private lateinit var financeMappingApiMockServer: FinanceMappingApiMockServer
@@ -118,7 +118,7 @@ class TransactionSynchronisationMultiIntTest : SqsIntegrationTestBase() {
     }
   }
 
-  private fun Any.toJson(): String = objectMapper.writeValueAsString(this)
+  private fun Any.toJson(): String = jsonMapper.writeValueAsString(this)
 
   fun offenderTransactionEvent(
     eventType: String,

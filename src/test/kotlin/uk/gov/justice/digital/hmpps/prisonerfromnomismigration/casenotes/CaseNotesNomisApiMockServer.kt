@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
@@ -10,6 +9,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse.SourceSystem
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
@@ -18,7 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApi
 import java.time.LocalDateTime
 
 @Component
-class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class CaseNotesNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetCaseNote(
     caseNoteId: Long = 1001,
     bookingId: Long = 123456,
@@ -46,7 +46,7 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
   ) {
     nomisApi.stubFor(
       get(urlEqualTo("/casenotes/$caseNoteId")).willReturn(
-        okJson(objectMapper.writeValueAsString(caseNote)),
+        okJson(jsonMapper.writeValueAsString(caseNote)),
       ),
     )
   }
@@ -89,7 +89,7 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
     )
     nomisApi.stubFor(
       get(urlEqualTo("/prisoners/$offenderNo/casenotes")).willReturn(
-        okJson(objectMapper.writeValueAsString(response)),
+        okJson(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -101,7 +101,7 @@ class CaseNotesNomisApiMockServer(private val objectMapper: ObjectMapper) {
     val response = PrisonerCaseNotesResponse(caseNotes = caseNotes)
     nomisApi.stubFor(
       get(urlEqualTo("/prisoners/$offenderNo/casenotes")).willReturn(
-        okJson(objectMapper.writeValueAsString(response)),
+        okJson(jsonMapper.writeValueAsString(response)),
       ),
     )
   }

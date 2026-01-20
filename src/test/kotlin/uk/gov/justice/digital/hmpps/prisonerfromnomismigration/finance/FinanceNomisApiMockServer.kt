@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
@@ -9,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerTransactionSynchronisationIntTest.Companion.BOOKING_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerTransactionSynchronisationIntTest.Companion.NOMIS_TRANSACTION_ID
@@ -25,7 +25,7 @@ import java.time.LocalDateTime
 import kotlin.math.min
 
 @Component
-class FinanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class FinanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetOffenderTransaction(
     transactionId: Long = 1001,
     bookingId: Long = 123456,
@@ -57,7 +57,7 @@ class FinanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
   ) {
     nomisApi.stubFor(
       get(urlEqualTo("/transactions/$transactionId")).willReturn(
-        okJson(objectMapper.writeValueAsString(response)),
+        okJson(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -89,7 +89,7 @@ class FinanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
   ) {
     nomisApi.stubFor(
       get(urlEqualTo("/transactions/$transactionId/general-ledger")).willReturn(
-        okJson(objectMapper.writeValueAsString(response)),
+        okJson(jsonMapper.writeValueAsString(response)),
       ),
     )
   }
@@ -103,7 +103,7 @@ class FinanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(content)),
+          .withBody(jsonMapper.writeValueAsString(content)),
       ),
     )
   }
@@ -127,7 +127,7 @@ class FinanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(
-            objectMapper.writeValueAsString(prisonBalance),
+            jsonMapper.writeValueAsString(prisonBalance),
           ),
       ),
     )
@@ -144,7 +144,7 @@ class FinanceNomisApiMockServer(private val objectMapper: ObjectMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
           .withBody(
-            objectMapper.writeValueAsString(error),
+            jsonMapper.writeValueAsString(error),
           ),
       ),
     )

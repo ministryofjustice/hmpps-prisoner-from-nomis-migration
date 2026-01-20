@@ -2,8 +2,6 @@
 
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -28,6 +26,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.reactive.function.BodyInserters
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
@@ -53,7 +53,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
 
   @Autowired
-  private lateinit var objectMapper: ObjectMapper
+  private lateinit var jsonMapper: JsonMapper
 
   private val today = LocalDate.now()
   private val tomorrow = today.plusDays(1)
@@ -468,7 +468,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .expectStatus().isOk
 
       with(migrationHistoryRepository.findById(migrationId)!!) {
-        val filter = objectMapper.readValue<ActivitiesMigrationFilter>(filter!!)
+        val filter = jsonMapper.readValue<ActivitiesMigrationFilter>(filter!!)
         assertThat(filter.activityStartDate).isEqualTo(activityStartDate)
         assertThat(filter.nomisActivityEndDate).isEqualTo(activityStartDate.minusDays(1))
       }
@@ -669,7 +669,7 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
 
     private fun checkFilter(expectedNomisActivityEndDate: LocalDate, expectedActivityStartDate: LocalDate) = runTest {
       with(migrationHistoryRepository.findById(migrationId)!!) {
-        val filter = objectMapper.readValue<ActivitiesMigrationFilter>(filter!!)
+        val filter = jsonMapper.readValue<ActivitiesMigrationFilter>(filter!!)
         assertThat(filter.nomisActivityEndDate).isEqualTo(expectedNomisActivityEndDate)
         assertThat(filter.activityStartDate).isEqualTo(expectedActivityStartDate)
       }

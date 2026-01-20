@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -9,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.KeyDateAdjustmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceAdjustmentResponse
@@ -17,7 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 
 @Component
-class SentencingAdjustmentsNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class SentencingAdjustmentsNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetAllByBookingId(
     bookingId: Long = 123456,
     sentenceAdjustments: List<SentenceAdjustmentResponse> = emptyList(),
@@ -28,7 +28,7 @@ class SentencingAdjustmentsNomisApiMockServer(private val objectMapper: ObjectMa
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(SentencingAdjustmentsResponse(keyDateAdjustments, sentenceAdjustments))),
+          .withBody(jsonMapper.writeValueAsString(SentencingAdjustmentsResponse(keyDateAdjustments, sentenceAdjustments))),
       ),
     )
   }

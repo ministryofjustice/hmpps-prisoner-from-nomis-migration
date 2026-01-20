@@ -1,12 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateInternetAddress
@@ -18,7 +18,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Component
-class OrganisationsNomisApiMockServer(private val objectMapper: ObjectMapper) {
+class OrganisationsNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetCorporateOrganisation(
     corporateId: Long = 123456,
     corporate: CorporateOrganisation = corporateOrganisation(),
@@ -28,7 +28,7 @@ class OrganisationsNomisApiMockServer(private val objectMapper: ObjectMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
-          .withBody(objectMapper.writeValueAsString(corporate)),
+          .withBody(jsonMapper.writeValueAsString(corporate)),
       ),
     )
   }
