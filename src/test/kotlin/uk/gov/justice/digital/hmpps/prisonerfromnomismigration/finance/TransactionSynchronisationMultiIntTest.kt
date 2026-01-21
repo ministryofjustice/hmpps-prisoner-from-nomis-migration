@@ -91,7 +91,7 @@ class TransactionSynchronisationMultiIntTest : SqsIntegrationTestBase() {
       val sendMessageRequest = SendMessageRequest.builder()
         .queueUrl(financeQueueOffenderEventsUrl)
         .messageBody(
-          offenderTransactionEvent("OFFENDER_TRANSACTIONS-INSERTED", messageUuid),
+          offenderTransactionEvent(messageId = messageUuid),
         ).build()
       val m1 = awsSqsFinanceOffenderEventsClient.sendMessage(sendMessageRequest)
       val m2 = awsSqsFinanceOffenderEventsClient.sendMessage(sendMessageRequest)
@@ -121,7 +121,7 @@ class TransactionSynchronisationMultiIntTest : SqsIntegrationTestBase() {
   private fun Any.toJson(): String = jsonMapper.writeValueAsString(this)
 
   fun offenderTransactionEvent(
-    eventType: String,
+    eventType: String = "OFFENDER_TRANSACTIONS-INSERTED",
     messageId: UUID,
     bookingId: Long = BOOKING_ID,
     transactionId: Long = NOMIS_TRANSACTION_ID,

@@ -279,6 +279,17 @@ Authorization: Bearer {{$auth.token("hmpps-auth")}}
 
 The is currently not a repair that pushes data from DPS to NOMIS. There maybe a requirement for this in the future.
 
+# Transactions Synchronisation
+## Finance - Prison (GL_TRANSACTIONS) and Prisoner (OFFENDER_TRANSACTIONS)
+The transactions sync has a feature that differs from other syncs: a grace period. This is because the DPS api requires that as much
+data for a transaction as possible is sent in one go. Some transactions contain 1000s of DB rows.
+```
+When event arrives, check DB table of txn_ids:
+if not there, add and requeue message for 5s time
+if it is there then ignore event,
+when re-queued message arrives: remove from cache if necessary, get data and call api
+```
+
 # Architecture
 
 Architecture decision records start [here](doc/architecture/decisions/0001-use-adr.md)

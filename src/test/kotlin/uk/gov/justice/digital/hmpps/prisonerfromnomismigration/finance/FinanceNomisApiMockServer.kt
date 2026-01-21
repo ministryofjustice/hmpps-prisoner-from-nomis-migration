@@ -29,31 +29,7 @@ class FinanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetOffenderTransaction(
     transactionId: Long = 1001,
     bookingId: Long = 123456,
-    response: List<OffenderTransactionDto> = listOf(
-      OffenderTransactionDto(
-        transactionId = transactionId,
-        transactionEntrySequence = 1,
-        offenderId = 1234,
-        offenderNo = "A1234AA",
-        bookingId = bookingId,
-        caseloadId = "MDI",
-        subAccountType = OffenderTransactionDto.SubAccountType.REG,
-        type = "type",
-        reference = "FG1/12",
-        clientReference = "clientUniqueRef",
-        entryDate = LocalDate.parse("2025-06-01"),
-        description = "entryDescription",
-        amount = BigDecimal.valueOf(2.34),
-        createdAt = LocalDateTime.now(),
-        postingType = OffenderTransactionDto.PostingType.CR,
-        createdBy = "me",
-        createdByDisplayName = "Me",
-        lastModifiedAt = LocalDateTime.now(),
-        lastModifiedBy = "you",
-        lastModifiedByDisplayName = "You",
-        generalLedgerTransactions = listOf(),
-      ),
-    ),
+    response: List<OffenderTransactionDto> = nomisTransactions(bookingId = bookingId, transactionId = transactionId),
   ) {
     nomisApi.stubFor(
       get(urlEqualTo("/transactions/$transactionId")).willReturn(
@@ -64,28 +40,7 @@ class FinanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubGetGLTransaction(
     transactionId: Long = 1001,
-    type: String = "SPEN",
-    response: List<GeneralLedgerTransactionDto> = listOf(
-      GeneralLedgerTransactionDto(
-        transactionId = transactionId,
-        transactionEntrySequence = 1,
-        generalLedgerEntrySequence = 1,
-        accountCode = 2100,
-        transactionTimestamp = LocalDateTime.now(),
-        caseloadId = "MDI",
-        type = type,
-        reference = "FG1/12",
-        description = "entryDescription",
-        amount = BigDecimal.valueOf(2.34),
-        createdAt = LocalDateTime.now(),
-        postingType = GeneralLedgerTransactionDto.PostingType.CR,
-        createdBy = "me",
-        createdByDisplayName = "Me",
-        lastModifiedAt = LocalDateTime.now(),
-        lastModifiedBy = "you",
-        lastModifiedByDisplayName = "You",
-      ),
-    ),
+    response: List<GeneralLedgerTransactionDto> = nomisGLTransactions(transactionId),
   ) {
     nomisApi.stubFor(
       get(urlEqualTo("/transactions/$transactionId/general-ledger")).willReturn(
@@ -172,7 +127,7 @@ fun nomisGLTransactions(transactionId: Long = NOMIS_TRANSACTION_ID) = listOf(
     generalLedgerEntrySequence = 1,
     caseloadId = "SWI",
     amount = BigDecimal(5.4),
-    type = "type",
+    type = "SPEN",
     postingType = GeneralLedgerTransactionDto.PostingType.CR,
     accountCode = 1021,
     description = "GL desc",

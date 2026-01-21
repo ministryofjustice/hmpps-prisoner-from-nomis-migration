@@ -8,8 +8,6 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
@@ -175,10 +173,30 @@ class TransactionSynchronisationService(
 
   suspend fun glTransactionInserted(event: GLTransactionEvent, requestId: UUID) {
     if (event.originatesInDps) {
-      telemetryClient.trackEvent("transactions-synchronisation-created-skipped", event.toTransactionEvent().toTelemetryProperties())
+      val telemetry = event.toTransactionEvent().toTelemetryProperties() +
+        mapOf("glSequence" to event.gLEntrySequence.toString())
+      telemetryClient.trackEvent("transactions-synchronisation-created-skipped", telemetry)
       return
     }
     transactionIdCheck(event.toTransactionEvent(), requestId)
+  }
+
+  suspend fun glTransactionUpdated(event: GLTransactionEvent, requestId: UUID) {
+    if (event.originatesInDps) {
+      val telemetry = event.toTransactionEvent().toTelemetryProperties() +
+        mapOf("glSequence" to event.gLEntrySequence.toString())
+      telemetryClient.trackEvent("transactions-synchronisation-updated-skipped", telemetry)
+      return
+    }
+
+    transactionMappingService.getMappingGivenNomisIdOrNull(event.transactionId)
+      ?.let {
+        transactionIdCheck(event.toTransactionEvent(), requestId, "updated")
+      }
+      ?: run {
+        telemetryClient.trackEvent("transactions-synchronisation-updated-failed", event.toTransactionEvent().toTelemetryProperties())
+        throw IllegalStateException("Received GL_TRANSACTIONS-UPDATED for a transaction that has never been created")
+      }
   }
 
   enum class MappingResponse {

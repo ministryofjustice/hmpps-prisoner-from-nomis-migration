@@ -4,7 +4,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
@@ -46,14 +45,14 @@ import java.util.UUID
 class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
 
   companion object {
-    val dpsTransactionUuid: UUID = UUID.fromString(DPS_TRANSACTION_ID)
-    val messageUuid: UUID = UUID.fromString(MESSAGE_ID)
     internal const val BOOKING_ID = 1234L
     internal const val NOMIS_TRANSACTION_ID = 2345678L
     internal const val OFFENDER_ID = 101L
     internal const val OFFENDER_ID_DISPLAY = "A3864DZ"
     internal const val DPS_TRANSACTION_ID = "a04f7a8d-61aa-400c-9395-000011112222"
     internal const val MESSAGE_ID = "abcdef01-0000-1111-2222-000011112222"
+    val dpsTransactionUuid: UUID = UUID.fromString(DPS_TRANSACTION_ID)
+    val messageUuid: UUID = UUID.fromString(MESSAGE_ID)
   }
 
   @Autowired
@@ -79,8 +78,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         val message = offenderTransactionEvent(
-          "OFFENDER_TRANSACTIONS-INSERTED",
-          messageUuid,
+          messageId = messageUuid,
           bookingId = BOOKING_ID,
           offenderNo = OFFENDER_ID_DISPLAY,
           auditModuleName = "DPS_SYNCHRONISATION",
@@ -136,22 +134,18 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           action = SyncTransactionReceipt.Action.CREATED,
         )
 
-        val nomisTransactions = nomisTransactions()
-
         @BeforeEach
         fun setUp() {
           financeNomisApiMockServer.stubGetOffenderTransaction(
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
-            response = nomisTransactions,
           )
           financeApi.stubPostOffenderTransaction(receipt)
           financeMappingApiMockServer.stubPostMapping()
 
           financeOffenderEventsQueue.sendMessage(
             offenderTransactionEvent(
-              "OFFENDER_TRANSACTIONS-INSERTED",
-              messageUuid,
+              messageId = messageUuid,
               bookingId = BOOKING_ID,
               transactionId = NOMIS_TRANSACTION_ID,
               offenderNo = OFFENDER_ID_DISPLAY,
@@ -162,49 +156,34 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create transaction in DPS`() {
           await untilAsserted {
-            val t1 = nomisTransactions.first()
+            val t1 = nomisTransactions().first()
             val g1 = t1.generalLedgerTransactions.first()
             financeApi.verify(
               1,
               postRequestedFor(urlPathEqualTo("/sync/offender-transactions"))
-                .withRequestBodyJsonPath("transactionId", equalTo(NOMIS_TRANSACTION_ID.toString()))
-                .withRequestBodyJsonPath("requestId", equalTo(MESSAGE_ID))
-                .withRequestBodyJsonPath("caseloadId", equalTo("SWI"))
-                .withRequestBodyJsonPath("transactionTimestamp", equalTo(g1.transactionTimestamp.toString()))
-                .withRequestBodyJsonPath("createdAt", equalTo(t1.createdAt.toString()))
-                .withRequestBodyJsonPath("createdBy", equalTo(t1.createdBy))
-                .withRequestBodyJsonPath("createdByDisplayName", equalTo(t1.createdByDisplayName))
-                .withRequestBodyJsonPath("lastModifiedAt", equalTo(t1.lastModifiedAt.toString()))
-                .withRequestBodyJsonPath("lastModifiedBy", equalTo(t1.lastModifiedBy))
-                .withRequestBodyJsonPath("lastModifiedByDisplayName", equalTo(t1.lastModifiedByDisplayName))
-                .withRequestBodyJsonPath(
-                  "offenderTransactions[0].entrySequence",
-                  equalTo(t1.transactionEntrySequence.toString()),
-                )
-                .withRequestBodyJsonPath("offenderTransactions[0].offenderId", equalTo(OFFENDER_ID.toString()))
-                .withRequestBodyJsonPath("offenderTransactions[0].offenderDisplayId", equalTo(OFFENDER_ID_DISPLAY))
-                .withRequestBodyJsonPath("offenderTransactions[0].subAccountType", equalTo(t1.subAccountType.name))
-                .withRequestBodyJsonPath("offenderTransactions[0].postingType", equalTo(t1.postingType.name))
-                .withRequestBodyJsonPath("offenderTransactions[0].type", equalTo(t1.type))
-                .withRequestBodyJsonPath("offenderTransactions[0].description", equalTo(t1.description))
-                .withRequestBodyJsonPath("offenderTransactions[0].amount", equalTo("5.4"))
-                .withRequestBodyJsonPath(
-                  "offenderTransactions[0].offenderBookingId",
-                  equalTo(t1.bookingId.toString()),
-                )
+                .withRequestBodyJsonPath("transactionId", NOMIS_TRANSACTION_ID)
+                .withRequestBodyJsonPath("requestId", MESSAGE_ID)
+                .withRequestBodyJsonPath("caseloadId", "SWI")
+                .withRequestBodyJsonPath("transactionTimestamp", g1.transactionTimestamp)
+                .withRequestBodyJsonPath("createdAt", t1.createdAt)
+                .withRequestBodyJsonPath("createdBy", t1.createdBy)
+                .withRequestBodyJsonPath("createdByDisplayName", t1.createdByDisplayName)
+                .withRequestBodyJsonPath("lastModifiedAt", t1.lastModifiedAt.toString())
+                .withRequestBodyJsonPath("lastModifiedBy", t1.lastModifiedBy.toString())
+                .withRequestBodyJsonPath("lastModifiedByDisplayName", t1.lastModifiedByDisplayName.toString())
+                .withRequestBodyJsonPath("offenderTransactions[0].entrySequence", equalTo(t1.transactionEntrySequence.toString()))
+                .withRequestBodyJsonPath("offenderTransactions[0].offenderId", OFFENDER_ID)
+                .withRequestBodyJsonPath("offenderTransactions[0].offenderDisplayId", OFFENDER_ID_DISPLAY)
+                .withRequestBodyJsonPath("offenderTransactions[0].subAccountType", t1.subAccountType.name)
+                .withRequestBodyJsonPath("offenderTransactions[0].postingType", t1.postingType.name)
+                .withRequestBodyJsonPath("offenderTransactions[0].type", t1.type)
+                .withRequestBodyJsonPath("offenderTransactions[0].description", t1.description)
+                .withRequestBodyJsonPath("offenderTransactions[0].amount", "5.4")
+                .withRequestBodyJsonPath("offenderTransactions[0].offenderBookingId", t1.bookingId.toString())
                 .withRequestBodyJsonPath("offenderTransactions[0].reference", equalTo(t1.reference))
-                .withRequestBodyJsonPath(
-                  "offenderTransactions[0].generalLedgerEntries[0].entrySequence",
-                  equalTo(g1.generalLedgerEntrySequence.toString()),
-                )
-                .withRequestBodyJsonPath(
-                  "offenderTransactions[0].generalLedgerEntries[0].code",
-                  equalTo(g1.accountCode.toString()),
-                )
-                .withRequestBodyJsonPath(
-                  "offenderTransactions[0].generalLedgerEntries[0].postingType",
-                  equalTo(g1.postingType.name),
-                )
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].entrySequence", g1.generalLedgerEntrySequence.toString())
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].code", g1.accountCode)
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].postingType", g1.postingType.name)
                 .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].amount", equalTo("5.4")),
             )
           }
@@ -215,11 +194,11 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           await untilAsserted {
             financeMappingApiMockServer.verify(
               postRequestedFor(urlPathEqualTo("/mapping/transactions"))
-                .withRequestBody(matchingJsonPath("dpsTransactionId", equalTo(DPS_TRANSACTION_ID)))
-                .withRequestBody(matchingJsonPath("nomisBookingId", equalTo(BOOKING_ID.toString())))
-                .withRequestBody(matchingJsonPath("offenderNo", equalTo(OFFENDER_ID_DISPLAY)))
-                .withRequestBody(matchingJsonPath("nomisTransactionId", equalTo(NOMIS_TRANSACTION_ID.toString())))
-                .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+                .withRequestBodyJsonPath("dpsTransactionId", DPS_TRANSACTION_ID)
+                .withRequestBodyJsonPath("nomisBookingId", BOOKING_ID)
+                .withRequestBodyJsonPath("offenderNo", OFFENDER_ID_DISPLAY)
+                .withRequestBodyJsonPath("nomisTransactionId", NOMIS_TRANSACTION_ID)
+                .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
             )
           }
         }
@@ -251,14 +230,11 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           action = SyncTransactionReceipt.Action.UPDATED,
         )
 
-        val nomisTransactions = nomisTransactions()
-
         @BeforeEach
         fun setUp() {
           financeNomisApiMockServer.stubGetOffenderTransaction(
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
-            response = nomisTransactions,
           )
           financeMappingApiMockServer.stubGetByNomisId(
             NOMIS_TRANSACTION_ID,
@@ -275,8 +251,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
 
           financeOffenderEventsQueue.sendMessage(
             offenderTransactionEvent(
-              "OFFENDER_TRANSACTIONS-INSERTED",
-              messageUuid,
+              messageId = messageUuid,
             ),
           )
         }
@@ -284,32 +259,32 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will update transaction in DPS`() {
           await untilAsserted {
-            val t1 = nomisTransactions.first()
+            val t1 = nomisTransactions().first()
             val g1 = t1.generalLedgerTransactions.first()
             financeApi.verify(
               1,
               postRequestedFor(urlPathEqualTo("/sync/offender-transactions"))
-                .withRequestBodyJsonPath("transactionId", equalTo(NOMIS_TRANSACTION_ID.toString()))
-                .withRequestBodyJsonPath("requestId", equalTo(MESSAGE_ID))
-                .withRequestBodyJsonPath("caseloadId", equalTo("SWI"))
-                .withRequestBodyJsonPath("transactionTimestamp", equalTo(g1.transactionTimestamp.toString()))
-                .withRequestBodyJsonPath("createdAt", equalTo(t1.createdAt.toString()))
-                .withRequestBodyJsonPath("createdBy", equalTo(t1.createdBy))
-                .withRequestBodyJsonPath("createdByDisplayName", equalTo(t1.createdByDisplayName))
-                .withRequestBodyJsonPath("lastModifiedAt", equalTo(t1.lastModifiedAt.toString()))
+                .withRequestBodyJsonPath("transactionId", NOMIS_TRANSACTION_ID.toString())
+                .withRequestBodyJsonPath("requestId", MESSAGE_ID)
+                .withRequestBodyJsonPath("caseloadId", "SWI")
+                .withRequestBodyJsonPath("transactionTimestamp", g1.transactionTimestamp.toString())
+                .withRequestBodyJsonPath("createdAt", t1.createdAt.toString())
+                .withRequestBodyJsonPath("createdBy", t1.createdBy)
+                .withRequestBodyJsonPath("createdByDisplayName", t1.createdByDisplayName)
+                .withRequestBodyJsonPath("lastModifiedAt", t1.lastModifiedAt.toString())
                 .withRequestBodyJsonPath("lastModifiedBy", equalTo(t1.lastModifiedBy))
                 .withRequestBodyJsonPath("lastModifiedByDisplayName", equalTo(t1.lastModifiedByDisplayName))
                 .withRequestBodyJsonPath(
                   "offenderTransactions[0].entrySequence",
                   equalTo(t1.transactionEntrySequence.toString()),
                 )
-                .withRequestBodyJsonPath("offenderTransactions[0].offenderId", equalTo(OFFENDER_ID.toString()))
-                .withRequestBodyJsonPath("offenderTransactions[0].offenderDisplayId", equalTo(OFFENDER_ID_DISPLAY))
-                .withRequestBodyJsonPath("offenderTransactions[0].subAccountType", equalTo(t1.subAccountType.name))
-                .withRequestBodyJsonPath("offenderTransactions[0].postingType", equalTo(t1.postingType.name))
-                .withRequestBodyJsonPath("offenderTransactions[0].type", equalTo(t1.type))
-                .withRequestBodyJsonPath("offenderTransactions[0].description", equalTo(t1.description))
-                .withRequestBodyJsonPath("offenderTransactions[0].amount", equalTo("5.4"))
+                .withRequestBodyJsonPath("offenderTransactions[0].offenderId", OFFENDER_ID.toString())
+                .withRequestBodyJsonPath("offenderTransactions[0].offenderDisplayId", OFFENDER_ID_DISPLAY)
+                .withRequestBodyJsonPath("offenderTransactions[0].subAccountType", t1.subAccountType.name)
+                .withRequestBodyJsonPath("offenderTransactions[0].postingType", t1.postingType.name)
+                .withRequestBodyJsonPath("offenderTransactions[0].type", t1.type)
+                .withRequestBodyJsonPath("offenderTransactions[0].description", t1.description)
+                .withRequestBodyJsonPath("offenderTransactions[0].amount", "5.4")
                 .withRequestBodyJsonPath(
                   "offenderTransactions[0].offenderBookingId",
                   equalTo(t1.bookingId.toString()),
@@ -319,10 +294,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                   "offenderTransactions[0].generalLedgerEntries[0].entrySequence",
                   equalTo(g1.generalLedgerEntrySequence.toString()),
                 )
-                .withRequestBodyJsonPath(
-                  "offenderTransactions[0].generalLedgerEntries[0].code",
-                  equalTo(g1.accountCode.toString()),
-                )
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].code", g1.accountCode.toString())
                 .withRequestBodyJsonPath(
                   "offenderTransactions[0].generalLedgerEntries[0].postingType",
                   equalTo(g1.postingType.name),
@@ -359,14 +331,11 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
       @DisplayName("When mapping POST fails")
       inner class MappingFail {
 
-        val nomisTransactions = nomisTransactions()
-
         @BeforeEach
         fun setUp() {
           financeNomisApiMockServer.stubGetOffenderTransaction(
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
-            response = nomisTransactions,
           )
           financeMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
           financeApi.stubPostOffenderTransaction(
@@ -387,8 +356,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
 
             financeOffenderEventsQueue.sendMessage(
               offenderTransactionEvent(
-                "OFFENDER_TRANSACTIONS-INSERTED",
-                messageUuid,
+                messageId = messageUuid,
               ),
             )
           }
@@ -408,10 +376,10 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
               financeMappingApiMockServer.verify(
                 exactly(2),
                 postRequestedFor(urlPathEqualTo("/mapping/transactions"))
-                  .withRequestBody(matchingJsonPath("dpsTransactionId", equalTo(DPS_TRANSACTION_ID)))
-                  .withRequestBody(matchingJsonPath("nomisBookingId", equalTo(BOOKING_ID.toString())))
-                  .withRequestBody(matchingJsonPath("nomisTransactionId", equalTo(NOMIS_TRANSACTION_ID.toString())))
-                  .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+                  .withRequestBodyJsonPath("dpsTransactionId", DPS_TRANSACTION_ID)
+                  .withRequestBodyJsonPath("nomisBookingId", BOOKING_ID)
+                  .withRequestBodyJsonPath("nomisTransactionId", NOMIS_TRANSACTION_ID.toString())
+                  .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
               )
             }
 
@@ -458,8 +426,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
             financeMappingApiMockServer.stubPostMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
             financeOffenderEventsQueue.sendMessage(
               offenderTransactionEvent(
-                "OFFENDER_TRANSACTIONS-INSERTED",
-                messageUuid,
+                messageId = messageUuid,
               ),
             )
             await untilCallTo {
@@ -507,21 +474,17 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
       @Nested
       @DisplayName("When finance api POST fails")
       inner class FinanceApiFail {
-        val nomisTransactions = nomisTransactions()
-
         @BeforeEach
         fun setUp() {
           financeNomisApiMockServer.stubGetOffenderTransaction(
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
-            response = nomisTransactions,
           )
           financeApi.stubPostOffenderTransactionFailure()
 
           financeOffenderEventsQueue.sendMessage(
             offenderTransactionEvent(
-              "OFFENDER_TRANSACTIONS-INSERTED",
-              messageUuid,
+              messageId = messageUuid,
             ),
           )
         }
@@ -614,14 +577,12 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           requestId = UUID.randomUUID(),
           action = SyncTransactionReceipt.Action.CREATED,
         )
-        val nomisTransactions = nomisTransactions()
 
         @BeforeEach
         fun setUp() {
           financeNomisApiMockServer.stubGetOffenderTransaction(
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
-            response = nomisTransactions,
           )
           financeApi.stubPostOffenderTransaction(receipt)
           financeMappingApiMockServer.stubGetByNomisId(NOMIS_TRANSACTION_ID)
@@ -641,19 +602,19 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will create transaction in DPS`() {
           await untilAsserted {
-            val t1 = nomisTransactions.first()
+            val t1 = nomisTransactions().first()
             val g1 = t1.generalLedgerTransactions.first()
             financeApi.verify(
               1,
               postRequestedFor(urlPathEqualTo("/sync/offender-transactions"))
-                .withRequestBodyJsonPath("transactionId", equalTo(NOMIS_TRANSACTION_ID.toString()))
-                .withRequestBodyJsonPath("requestId", equalTo(MESSAGE_ID))
-                .withRequestBodyJsonPath("caseloadId", equalTo("SWI"))
-                .withRequestBodyJsonPath("transactionTimestamp", equalTo(g1.transactionTimestamp.toString()))
-                .withRequestBodyJsonPath("createdAt", equalTo(t1.createdAt.toString()))
-                .withRequestBodyJsonPath("createdBy", equalTo(t1.createdBy))
-                .withRequestBodyJsonPath("createdByDisplayName", equalTo(t1.createdByDisplayName))
-                .withRequestBodyJsonPath("lastModifiedAt", equalTo(t1.lastModifiedAt.toString()))
+                .withRequestBodyJsonPath("transactionId", NOMIS_TRANSACTION_ID.toString())
+                .withRequestBodyJsonPath("requestId", MESSAGE_ID)
+                .withRequestBodyJsonPath("caseloadId", "SWI")
+                .withRequestBodyJsonPath("transactionTimestamp", g1.transactionTimestamp)
+                .withRequestBodyJsonPath("createdAt", t1.createdAt)
+                .withRequestBodyJsonPath("createdBy", t1.createdBy)
+                .withRequestBodyJsonPath("createdByDisplayName", t1.createdByDisplayName)
+                .withRequestBodyJsonPath("lastModifiedAt", t1.lastModifiedAt.toString())
                 .withRequestBodyJsonPath("lastModifiedBy", equalTo(t1.lastModifiedBy))
                 .withRequestBodyJsonPath("lastModifiedByDisplayName", equalTo(t1.lastModifiedByDisplayName))
                 .withRequestBodyJsonPath(
@@ -672,12 +633,12 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                     OFFENDER_ID_DISPLAY,
                   ),
                 )
-                .withRequestBodyJsonPath("offenderTransactions[0].subAccountType", equalTo(t1.subAccountType.name))
-                .withRequestBodyJsonPath("offenderTransactions[0].postingType", equalTo(t1.postingType.name))
-                .withRequestBodyJsonPath("offenderTransactions[0].type", equalTo(t1.type))
-                .withRequestBodyJsonPath("offenderTransactions[0].description", equalTo(t1.description))
-                .withRequestBodyJsonPath("offenderTransactions[0].amount", equalTo("5.4"))
-                .withRequestBodyJsonPath("offenderTransactions[0].offenderBookingId", equalTo(t1.bookingId.toString()))
+                .withRequestBodyJsonPath("offenderTransactions[0].subAccountType", t1.subAccountType.name)
+                .withRequestBodyJsonPath("offenderTransactions[0].postingType", t1.postingType.name)
+                .withRequestBodyJsonPath("offenderTransactions[0].type", t1.type)
+                .withRequestBodyJsonPath("offenderTransactions[0].description", t1.description)
+                .withRequestBodyJsonPath("offenderTransactions[0].amount", "5.4")
+                .withRequestBodyJsonPath("offenderTransactions[0].offenderBookingId", t1.bookingId.toString())
                 .withRequestBodyJsonPath("offenderTransactions[0].reference", equalTo(t1.reference))
                 .withRequestBodyJsonPath(
                   "offenderTransactions[0].generalLedgerEntries[0].entrySequence",
@@ -735,7 +696,6 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           financeNomisApiMockServer.stubGetOffenderTransaction(
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
-            response = nomisTransactions(),
           )
           financeMappingApiMockServer.stubGetByNomisId(NOT_FOUND)
 
@@ -802,7 +762,6 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           financeNomisApiMockServer.stubGetOffenderTransaction(
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
-            response = nomisTransactions(),
           )
           financeApi.stubPostOffenderTransactionFailure()
 
@@ -837,12 +796,12 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
   private fun Any.toJson(): String = jsonMapper.writeValueAsString(this)
 
   fun offenderTransactionEvent(
-    eventType: String,
+    eventType: String = "OFFENDER_TRANSACTIONS-INSERTED",
     messageId: UUID,
     bookingId: Long = BOOKING_ID,
     transactionId: Long = NOMIS_TRANSACTION_ID,
     offenderNo: String = OFFENDER_ID_DISPLAY,
-    auditModuleName: String = "OIDNOMIS",
+    auditModuleName: String = "OTIDTACC",
   ) = SQSMessage(
     MessageId = "$messageId",
     Type = "Notification",
