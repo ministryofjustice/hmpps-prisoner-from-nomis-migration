@@ -1,10 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
 import kotlinx.coroutines.future.await
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import uk.gov.justice.hmpps.sqs.eventTypeMessageAttributes
@@ -26,7 +26,7 @@ const val CASE_BOOKING_RESYNCHRONISATION = "courtsentencing.resync.case.booking"
 class SynchronisationQueueService(
   private val hmppsQueueService: HmppsQueueService,
   private val telemetryClient: TelemetryClient,
-  private val objectMapper: ObjectMapper,
+  private val jsonMapper: JsonMapper,
 ) {
 
   suspend fun sendMessage(
@@ -69,7 +69,7 @@ class SynchronisationQueueService(
       }
   }
 
-  private fun Any.toJson() = objectMapper.writeValueAsString(this)
+  private fun Any.toJson() = jsonMapper.writeValueAsString(this)
 }
 
 data class InternalMessage<T>(

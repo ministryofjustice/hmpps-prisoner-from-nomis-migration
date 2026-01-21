@@ -1,10 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners
 
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import software.amazon.awssdk.services.sqs.model.Message
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.CANCEL_MIGRATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_BY_DIVISION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_BY_PAGE
@@ -17,7 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import java.util.concurrent.CompletableFuture
 
 abstract class MigrationMessageListener(
-  internal val objectMapper: ObjectMapper,
+  internal val jsonMapper: JsonMapper,
   private val migrationService: MigrationService<*, *, *, *>,
 ) {
   private companion object {
@@ -45,5 +45,5 @@ abstract class MigrationMessageListener(
     }
   }
 
-  private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this, object : TypeReference<T>() {})
+  private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
 }
