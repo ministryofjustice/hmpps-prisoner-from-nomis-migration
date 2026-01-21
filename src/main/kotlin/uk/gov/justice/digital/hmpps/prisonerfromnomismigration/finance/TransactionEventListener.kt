@@ -38,16 +38,18 @@ class TransactionEventListener(
           if (eventFeatureSwitch.isEnabled(eventType, "transactions")) {
             val messageId = UUID.fromString(sqsMessage.MessageId)
             when (eventType) {
-              "OFFENDER_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.transactionInsertCheck(
+              // NOTE: Several inserts per second!
+              "OFFENDER_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.transactionInserted(
                 sqsMessage.Message.fromJson(),
                 messageId,
               )
-              // NOTE: Several inserts per second!
-
-              "OFFENDER_TRANSACTIONS-UPDATED" -> null // can happen, there are some rows with modify datetime after create
+              "OFFENDER_TRANSACTIONS-UPDATED" -> transactionSynchronisationService.transactionUpdated(
+                sqsMessage.Message.fromJson(),
+                messageId,
+              )
               "OFFENDER_TRANSACTIONS-DELETED" -> null // extremely rare (only happened 61 times ever according to oms_deleted_rows, mostly by scripts)
 
-              "GL_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.glTransactionInsertCheck(
+              "GL_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.glTransactionInserted(
                 sqsMessage.Message.fromJson(),
                 messageId,
               )
@@ -65,7 +67,7 @@ class TransactionEventListener(
 
         RETRY_SYNCHRONISATION_MAPPING.name -> transactionSynchronisationService.retryCreateTransactionMapping(sqsMessage.Message.fromJson())
 
-        PERFORM_TRANSACTION_SYNC.name -> transactionSynchronisationService.transactionInserted(sqsMessage.Message.fromJson())
+        PERFORM_TRANSACTION_SYNC.name -> transactionSynchronisationService.transactionUpserted(sqsMessage.Message.fromJson())
       }
     }
   }

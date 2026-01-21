@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
@@ -35,12 +36,7 @@ class TransactionSynchronisationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  suspend fun transactionInsertCheck(event: TransactionEvent, requestId: UUID) {
-    if (event.originatesInDps) {
-      telemetryClient.trackEvent("transactions-synchronisation-created-skipped", event.toTelemetryProperties())
-      return
-    }
-
+  suspend fun transactionIdCheck(event: TransactionEvent, requestId: UUID, eventType: String = "created") {
     if (transactionIdBufferRepository.existsById(event.transactionId)) {
       log.debug("Skipping synchronisation of transaction ${event.transactionId} as id already recorded")
       return
@@ -55,7 +51,7 @@ class TransactionSynchronisationService(
       queueService.sendMessage(
         messageType = SynchronisationMessageType.PERFORM_TRANSACTION_SYNC.name,
         synchronisationType = SynchronisationType.FINANCE,
-        message = EncapsulatedTransaction(event, requestId),
+        message = EncapsulatedTransaction(event, requestId, eventType),
         telemetryAttributes = mapOf("transactionId" to event.transactionId.toString()),
         delaySeconds = forwardingDelaySeconds,
       )
@@ -66,11 +62,34 @@ class TransactionSynchronisationService(
     }
   }
 
-  suspend fun transactionInserted(encapsulatedTransaction: InternalMessage<EncapsulatedTransaction>) {
-    val (event, requestId) = encapsulatedTransaction.body
+  suspend fun transactionInserted(event: TransactionEvent, requestId: UUID) {
+    if (event.originatesInDps) {
+      telemetryClient.trackEvent("transactions-synchronisation-created-skipped", event.toTelemetryProperties())
+      return
+    }
+    transactionIdCheck(event, requestId)
+  }
+
+  suspend fun transactionUpdated(event: TransactionEvent, requestId: UUID) {
+    if (event.originatesInDps) {
+      telemetryClient.trackEvent("transactions-synchronisation-updated-skipped", event.toTelemetryProperties())
+      return
+    }
+
+    transactionMappingService.getMappingGivenNomisIdOrNull(event.transactionId)
+      ?.let {
+        transactionIdCheck(event, requestId, "updated")
+      }
+      ?: run {
+        telemetryClient.trackEvent("transactions-synchronisation-updated-failed", event.toTelemetryProperties())
+        throw IllegalStateException("Received OFFENDER_TRANSACTIONS-UPDATED for a transaction that has never been created")
+      }
+  }
+
+  suspend fun transactionUpserted(encapsulatedTransaction: InternalMessage<EncapsulatedTransaction>) {
+    val (event, requestId, eventType) = encapsulatedTransaction.body
     try {
       transactionIdBufferRepository.deleteById(event.transactionId)
-
       val mapping = transactionMappingService.getMappingGivenNomisIdOrNull(event.transactionId)
 //      if (event.auditMissing()) {
       // TODO mapping may or may not exist anyway! Need another way to detect null audit name - if it ever happens
@@ -86,7 +105,7 @@ class TransactionSynchronisationService(
 //            }
 //          }
 //      }
-      val nomisTransactions = nomisApiService.getTransactions(event.transactionId)
+      val nomisTransactions = nomisApiService.getPrisonerTransactions(event.transactionId)
       if (nomisTransactions.isEmpty()) {
         val glTransactions = nomisApiService.getGLTransactions(event.transactionId)
         if (glTransactions.isEmpty()) {
@@ -101,7 +120,7 @@ class TransactionSynchronisationService(
                 val mappingResponse = maybeCreateTransactionMapping(event, financeResponse)
 
                 telemetryClient.trackEvent(
-                  "transactions-synchronisation-created-success-gl",
+                  "transactions-synchronisation-$eventType-success-gl",
                   event.toTelemetryProperties(
                     dpsTransactionId = financeResponse.synchronizedTransactionId,
                     mappingFailed = mappingResponse == MappingResponse.MAPPING_FAILED,
@@ -109,7 +128,7 @@ class TransactionSynchronisationService(
                 )
               } else {
                 telemetryClient.trackEvent(
-                  "transactions-synchronisation-created-success-gl-additional",
+                  "transactions-synchronisation-$eventType-success-gl-additional",
                   event.toTelemetryProperties(
                     dpsTransactionId = financeResponse.synchronizedTransactionId,
                     mappingFailed = false,
@@ -128,7 +147,7 @@ class TransactionSynchronisationService(
               val mappingResponse = maybeCreateTransactionMapping(event, financeResponse)
 
               telemetryClient.trackEvent(
-                "transactions-synchronisation-created-success",
+                "transactions-synchronisation-$eventType-success",
                 event.toTelemetryProperties(
                   dpsTransactionId = financeResponse.synchronizedTransactionId,
                   mappingFailed = mappingResponse == MappingResponse.MAPPING_FAILED,
@@ -136,7 +155,7 @@ class TransactionSynchronisationService(
               )
             } else {
               telemetryClient.trackEvent(
-                "transactions-synchronisation-created-success-additional",
+                "transactions-synchronisation-$eventType-success-additional",
                 event.toTelemetryProperties(
                   dpsTransactionId = financeResponse.synchronizedTransactionId,
                   mappingFailed = false,
@@ -147,15 +166,19 @@ class TransactionSynchronisationService(
       }
     } catch (e: Exception) {
       telemetryClient.trackEvent(
-        "transactions-synchronisation-created-failed",
+        "transactions-synchronisation-$eventType-failed",
         event.toTelemetryProperties() + mapOf("error" to (e.message ?: e.javaClass.toString())),
       )
       throw e
     }
   }
 
-  suspend fun glTransactionInsertCheck(event: GLTransactionEvent, requestId: UUID) {
-    transactionInsertCheck(event.toTransactionEvent(), requestId)
+  suspend fun glTransactionInserted(event: GLTransactionEvent, requestId: UUID) {
+    if (event.originatesInDps) {
+      telemetryClient.trackEvent("transactions-synchronisation-created-skipped", event.toTransactionEvent().toTelemetryProperties())
+      return
+    }
+    transactionIdCheck(event.toTransactionEvent(), requestId)
   }
 
   enum class MappingResponse {
@@ -252,4 +275,4 @@ private fun TransactionEvent.toTelemetryProperties(
   if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap()
   )
 
-data class EncapsulatedTransaction(val transactionEvent: TransactionEvent, val requestId: UUID)
+data class EncapsulatedTransaction(val transactionEvent: TransactionEvent, val requestId: UUID, val eventType: String)
