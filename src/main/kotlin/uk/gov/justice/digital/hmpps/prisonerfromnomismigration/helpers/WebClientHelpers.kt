@@ -1,7 +1,9 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers
 
+import kotlinx.coroutines.reactive.awaitFirstOrDefault
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.bodyToMono
@@ -49,13 +51,27 @@ suspend inline fun WebClient.ResponseSpec.awaitBodilessEntityAsTrueNotFoundAsFal
   .onErrorResume(WebClientResponseException.NotFound::class.java) { Mono.just(false) }
   .awaitSingle()
 
-class DuplicateErrorResponse(
-  val moreInfo: DuplicateErrorContent,
+suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitSuccessOrDuplicate(): SuccessOrDuplicate<T> = this.bodyToMono<Unit>()
+  .map { SuccessOrDuplicate<T>() }
+  .onErrorResume(WebClientResponseException.Conflict::class.java) {
+    Mono.just(SuccessOrDuplicate(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateError<T>>() {})))
+  }
+  .awaitFirstOrDefault(SuccessOrDuplicate())
+
+data class SuccessOrDuplicate<T>(
+  val errorResponse: DuplicateError<T>? = null,
+) {
+  val isError
+    get() = errorResponse != null
+}
+
+class DuplicateError<T>(
+  val moreInfo: DuplicateDetails<T>,
 )
 
-data class DuplicateErrorContent(
-  val duplicate: Map<String, *>,
-  val existing: Map<String, *>? = null,
+data class DuplicateDetails<MAPPING>(
+  val duplicate: MAPPING,
+  val existing: MAPPING?,
 )
 
 class ParentEntityNotFoundRetry(message: String) : RuntimeException(message)
