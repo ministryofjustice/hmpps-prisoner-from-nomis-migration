@@ -195,7 +195,7 @@ class OfficialVisitsMappingApiServiceTest {
 
       assertThat(result.isError).isTrue()
       assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
-      assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
+      assertThat(result.errorResponse.moreInfo.existing?.dpsId).isEqualTo(existingDpsId)
     }
   }
 
@@ -349,7 +349,7 @@ class OfficialVisitsMappingApiServiceTest {
 
       assertThat(result.isError).isTrue()
       assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
-      assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
+      assertThat(result.errorResponse.moreInfo.existing?.dpsId).isEqualTo(existingDpsId)
     }
   }
 
