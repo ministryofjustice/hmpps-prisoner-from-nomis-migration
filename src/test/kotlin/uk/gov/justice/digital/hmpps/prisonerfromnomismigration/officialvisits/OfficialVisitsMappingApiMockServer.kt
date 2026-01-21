@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitorMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
@@ -75,7 +76,28 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetByNomisIdsOrNull(
+  fun stubCreateVisitMapping() {
+    mappingApi.stubFor(
+      post("/mapping/official-visits/visit").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateVisitMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/official-visits/visit").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubGetByVisitNomisIdsOrNull(
     nomisVisitId: Long = 1234L,
     mapping: OfficialVisitMappingDto? = OfficialVisitMappingDto(
       dpsId = "123456",
@@ -95,6 +117,56 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     } ?: run {
       mappingApi.stubFor(
         get(urlEqualTo("/mapping/official-visits/visit/nomis-id/$nomisVisitId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
+        ),
+      )
+    }
+  }
+
+  fun stubCreateVisitorMapping() {
+    mappingApi.stubFor(
+      post("/mapping/official-visits/visitor").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateVisitorMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/official-visits/visitor").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubGetByVisitorNomisIdsOrNull(
+    nomisVisitorId: Long = 1234L,
+    mapping: OfficialVisitorMappingDto? = OfficialVisitorMappingDto(
+      dpsId = "123456",
+      nomisId = nomisVisitorId,
+      mappingType = OfficialVisitorMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    mapping?.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/official-visits/visitor/nomis-id/$nomisVisitorId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(jsonMapper.writeValueAsString(mapping)),
+        ),
+      )
+    } ?: run {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/official-visits/visitor/nomis-id/$nomisVisitorId")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())

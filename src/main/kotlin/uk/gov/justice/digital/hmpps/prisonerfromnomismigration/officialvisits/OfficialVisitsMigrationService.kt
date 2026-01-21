@@ -101,7 +101,7 @@ class OfficialVisitsMigrationService(
 
   override suspend fun migrateNomisEntity(context: MigrationContext<VisitIdResponse>) {
     val nomisVisitId = context.body.visitId
-    val alreadyMigratedMapping = officialVisitsMappingService.getByNomisIdsOrNull(
+    val alreadyMigratedMapping = officialVisitsMappingService.getByVisitNomisIdsOrNull(
       nomisVisitId = nomisVisitId,
     )
 

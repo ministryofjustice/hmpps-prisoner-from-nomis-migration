@@ -21808,14 +21808,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -21922,14 +21922,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -22040,14 +22040,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -22086,14 +22086,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -22158,14 +22158,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -22283,14 +22283,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -22431,14 +22431,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -22537,14 +22537,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -22611,14 +22611,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -22679,14 +22679,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
