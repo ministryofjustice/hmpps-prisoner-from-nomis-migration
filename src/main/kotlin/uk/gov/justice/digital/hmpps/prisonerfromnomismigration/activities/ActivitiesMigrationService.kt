@@ -1,12 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.ActivityMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.ActivityMigrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.NomisPayRate
@@ -38,7 +38,7 @@ class ActivitiesMigrationService(
   private val nomisApiService: NomisApiService,
   private val activitiesApiService: ActivitiesApiService,
   private val activitiesMappingService: ActivitiesMappingService,
-  objectMapper: ObjectMapper,
+  jsonMapper: JsonMapper,
   @Value("\${activities.page.size:20}") pageSize: Long,
   @Value("\${activities.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${activities.complete-check.count}") completeCheckCount: Int,
@@ -50,7 +50,7 @@ class ActivitiesMigrationService(
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
-  objectMapper = objectMapper,
+  jsonMapper = jsonMapper,
 ) {
 
   private val log = LoggerFactory.getLogger(this::class.java)
@@ -120,7 +120,7 @@ class ActivitiesMigrationService(
       .map { it.nomisCourseActivityId }
 
     val migration = migrationHistoryService.get(migrationId)
-    val filter = objectMapper.readValue(migration.filter, ActivitiesMigrationFilter::class.java)
+    val filter = jsonMapper.readValue(migration.filter, ActivitiesMigrationFilter::class.java)
     // There will always be a start date because it's now mandatory in the UI, but is still nullable due to old data that can be displayed
     filter.nomisActivityEndDate = filter.activityStartDate!!.minusDays(1)
     nomisApiService.endActivities(allActivityIds, filter.nomisActivityEndDate!!)
@@ -135,7 +135,7 @@ class ActivitiesMigrationService(
       .map { it.nomisCourseActivityId }
 
     val filter = migrationHistoryService.get(migrationId)
-      .let { objectMapper.readValue(it.filter, ActivitiesMigrationFilter::class.java) }
+      .let { jsonMapper.readValue(it.filter, ActivitiesMigrationFilter::class.java) }
 
     if (newActivityStartDate <= filter.activityStartDate) throw BadRequestException("The new start date must be after the current start date ${filter.activityStartDate}")
 
@@ -218,13 +218,13 @@ class ActivitiesMigrationService(
   )
 
   private suspend fun Long?.toDpsLocationId(): UUID? = this?.let { activitiesMappingService.getDpsLocation(it).dpsLocationId }?.let { UUID.fromString(it) }
-  override fun parseContextFilter(json: String): MigrationMessage<*, ActivitiesMigrationFilter> = objectMapper.readValue(json)
+  override fun parseContextFilter(json: String): MigrationMessage<*, ActivitiesMigrationFilter> = jsonMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<ActivitiesMigrationFilter, ByPageNumber>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<ActivitiesMigrationFilter, ByPageNumber>> = jsonMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, ActivitiesMigrationRequest> = objectMapper.readValue(json)
+  override fun parseContextNomisId(json: String): MigrationMessage<*, ActivitiesMigrationRequest> = jsonMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, ActivityMigrationMappingDto> = objectMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, ActivityMigrationMappingDto> = jsonMapper.readValue(json)
 }
 
 private fun List<ScheduleRulesResponse>.toNomisScheduleRules(): List<NomisScheduleRule> = map {

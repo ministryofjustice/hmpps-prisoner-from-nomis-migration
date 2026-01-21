@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -29,9 +28,12 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.json.JsonTest
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
@@ -60,7 +62,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsServ
 import java.time.LocalDateTime
 
 @ExtendWith(MockitoExtension::class)
-internal class VisitsMigrationServiceTest {
+@JsonTest
+internal class VisitsMigrationServiceTest(@Autowired private val jsonMapper: JsonMapper) {
   private val nomisApiService: NomisApiService = mock()
   private val queueService: MigrationQueueService = mock()
   private val visitMappingService: VisitMappingService = mock()
@@ -75,7 +78,7 @@ internal class VisitsMigrationServiceTest {
     pageSize = 200,
     completeCheckDelaySeconds = 10,
     completeCheckCount = 9,
-    objectMapper = ObjectMapper(),
+    jsonMapper = jsonMapper,
   ) {
     init {
       queueService = this@VisitsMigrationServiceTest.queueService
@@ -100,7 +103,7 @@ internal class VisitsMigrationServiceTest {
       pageSize = 200,
       completeCheckDelaySeconds = 10,
       completeCheckCount = 9,
-      objectMapper = ObjectMapper(),
+      jsonMapper = jsonMapper,
     ) {
       init {
         queueService = this@VisitsMigrationServiceTest.queueService

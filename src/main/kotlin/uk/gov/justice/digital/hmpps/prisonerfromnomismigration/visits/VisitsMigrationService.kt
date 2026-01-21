@@ -1,13 +1,13 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
@@ -30,7 +30,7 @@ class VisitsMigrationService(
   private val nomisApiService: NomisApiService,
   private val visitsService: VisitsService,
   private val visitMappingService: VisitMappingService,
-  objectMapper: ObjectMapper,
+  jsonMapper: JsonMapper,
   @Value("\${visits.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
@@ -40,7 +40,7 @@ class VisitsMigrationService(
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
-  objectMapper = objectMapper,
+  jsonMapper = jsonMapper,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -302,13 +302,13 @@ class VisitsMigrationService(
   } else {
     nomisVisit.endDateTime
   }
-  override fun parseContextFilter(json: String): MigrationMessage<*, VisitsMigrationFilter> = objectMapper.readValue(json)
+  override fun parseContextFilter(json: String): MigrationMessage<*, VisitsMigrationFilter> = jsonMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<VisitsMigrationFilter, ByPageNumber>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<VisitsMigrationFilter, ByPageNumber>> = jsonMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, VisitId> = objectMapper.readValue(json)
+  override fun parseContextNomisId(json: String): MigrationMessage<*, VisitId> = jsonMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, VisitNomisMapping> = objectMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, VisitNomisMapping> = jsonMapper.readValue(json)
 }
 
 sealed interface RoomMappingResponse

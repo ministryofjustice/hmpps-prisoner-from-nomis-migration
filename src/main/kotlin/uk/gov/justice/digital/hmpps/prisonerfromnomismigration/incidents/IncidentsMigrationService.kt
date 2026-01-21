@@ -1,7 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -9,6 +7,8 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -27,7 +27,7 @@ class IncidentsMigrationService(
   private val nomisApiService: IncidentsNomisApiService,
   private val incidentsService: IncidentsService,
   private val incidentsMappingService: IncidentsMappingService,
-  objectMapper: ObjectMapper,
+  jsonMapper: JsonMapper,
   @Value("\${incidents.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
@@ -38,7 +38,7 @@ class IncidentsMigrationService(
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
-  objectMapper = objectMapper,
+  jsonMapper = jsonMapper,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -182,11 +182,11 @@ class IncidentsMigrationService(
       ),
     )
   }
-  override fun parseContextFilter(json: String): MigrationMessage<*, IncidentsMigrationFilter> = objectMapper.readValue(json)
+  override fun parseContextFilter(json: String): MigrationMessage<*, IncidentsMigrationFilter> = jsonMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<IncidentsMigrationFilter, ByPageNumber>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<IncidentsMigrationFilter, ByPageNumber>> = jsonMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, IncidentIdResponse> = objectMapper.readValue(json)
+  override fun parseContextNomisId(json: String): MigrationMessage<*, IncidentIdResponse> = jsonMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, IncidentMappingDto> = objectMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, IncidentMappingDto> = jsonMapper.readValue(json)
 }

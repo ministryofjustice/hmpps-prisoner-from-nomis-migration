@@ -1,12 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AllocationMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AllocationMigrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot
@@ -44,7 +44,7 @@ class AllocationsMigrationService(
   private val activitiesApiService: ActivitiesApiService,
   private val allocationsMappingService: AllocationsMappingService,
   private val activityMappingService: ActivitiesMappingService,
-  objectMapper: ObjectMapper,
+  jsonMapper: JsonMapper,
   @Value("\${allocations.page.size:50}") pageSize: Long,
   @Value("\${allocations.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${allocations.complete-check.count}") completeCheckCount: Int,
@@ -56,7 +56,7 @@ class AllocationsMigrationService(
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
-  objectMapper = objectMapper,
+  jsonMapper = jsonMapper,
 ) {
 
   private val log = LoggerFactory.getLogger(this::class.java)
@@ -161,13 +161,13 @@ class AllocationsMigrationService(
         null,
       )
     }
-  override fun parseContextFilter(json: String): MigrationMessage<*, AllocationsMigrationFilter> = objectMapper.readValue(json)
+  override fun parseContextFilter(json: String): MigrationMessage<*, AllocationsMigrationFilter> = jsonMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<AllocationsMigrationFilter, ByPageNumber>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<AllocationsMigrationFilter, ByPageNumber>> = jsonMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, FindActiveAllocationIdsResponse> = objectMapper.readValue(json)
+  override fun parseContextNomisId(json: String): MigrationMessage<*, FindActiveAllocationIdsResponse> = jsonMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, AllocationMigrationMappingDto> = objectMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, AllocationMigrationMappingDto> = jsonMapper.readValue(json)
 }
 
 private fun GetAllocationResponse.toAllocationMigrateRequest(activityId: Long, splitRegimeActivityId: Long?): AllocationMigrateRequest = AllocationMigrateRequest(

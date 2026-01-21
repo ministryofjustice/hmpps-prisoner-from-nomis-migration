@@ -1,12 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -39,7 +39,7 @@ class OfficialVisitsMigrationService(
   private val visitSlotsMappingService: VisitSlotsMappingService,
   private val nomisApiService: OfficialVisitsNomisApiService,
   private val dpsApiService: OfficialVisitsDpsApiService,
-  objectMapper: ObjectMapper,
+  jsonMapper: JsonMapper,
   @Value($$"${officialvisits.page.size:1000}") pageSize: Long,
   @Value($$"${officialvisits.parallel.count:8}") getIdsParallelCount: Int,
   @Value($$"${officialvisits.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
@@ -55,7 +55,7 @@ class OfficialVisitsMigrationService(
   completeCheckCount = completeCheckRetrySeconds,
   completeCheckRetrySeconds = completeCheckCount,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
-  objectMapper = objectMapper,
+  jsonMapper = jsonMapper,
 ) {
 
   private companion object {
@@ -177,15 +177,15 @@ class OfficialVisitsMigrationService(
 
   private suspend fun Long.lookUpDpsLocationId(): UUID = officialVisitsMappingService.getInternalLocationByNomisId(this).dpsLocationId.let { UUID.fromString(it) }
   private suspend fun Long.lookUpDpsVisitSlotId(): Long = visitSlotsMappingService.getVisitSlotByNomisId(this).dpsId.toLong()
-  override fun parseContextFilter(json: String): MigrationMessage<*, OfficialVisitsMigrationFilter> = objectMapper.readValue(json)
+  override fun parseContextFilter(json: String): MigrationMessage<*, OfficialVisitsMigrationFilter> = jsonMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<OfficialVisitsMigrationFilter, ByLastId<VisitIdResponse>>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<OfficialVisitsMigrationFilter, ByLastId<VisitIdResponse>>> = jsonMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, VisitIdResponse> = objectMapper.readValue(json)
+  override fun parseContextNomisId(json: String): MigrationMessage<*, VisitIdResponse> = jsonMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, OfficialVisitMigrationMappingDto> = objectMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, OfficialVisitMigrationMappingDto> = jsonMapper.readValue(json)
 
-  override fun parseContextDivisionFilter(json: String): MigrationMessage<*, MigrationDivision<OfficialVisitsMigrationFilter, VisitIdResponse>> = objectMapper.readValue(json)
+  override fun parseContextDivisionFilter(json: String): MigrationMessage<*, MigrationDivision<OfficialVisitsMigrationFilter, VisitIdResponse>> = jsonMapper.readValue(json)
 }
 
 internal suspend fun OfficialVisitResponse.toMigrateVisitRequest(prisonVisitSlotLookup: suspend (Long) -> Long, dpsLocationLookup: suspend (Long) -> UUID): MigrateVisitRequest = MigrateVisitRequest(

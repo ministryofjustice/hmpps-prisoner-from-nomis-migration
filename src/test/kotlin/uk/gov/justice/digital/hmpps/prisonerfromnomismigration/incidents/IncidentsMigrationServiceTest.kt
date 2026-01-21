@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -30,12 +29,15 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.json.JsonTest
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisReport
@@ -75,7 +77,8 @@ private const val NOMIS_INCIDENT_ID = 1234L
 private const val DPS_INCIDENT_ID = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42"
 
 @ExtendWith(MockitoExtension::class)
-internal class IncidentsMigrationServiceTest {
+@JsonTest
+internal class IncidentsMigrationServiceTest(@Autowired private val jsonMapper: JsonMapper) {
   private val nomisApiService: IncidentsNomisApiService = mock()
   private val queueService: MigrationQueueService = mock()
   private val migrationHistoryService: MigrationHistoryService = mock()
@@ -90,7 +93,7 @@ internal class IncidentsMigrationServiceTest {
     pageSize = 200,
     completeCheckDelaySeconds = 10,
     completeCheckCount = 9,
-    objectMapper = ObjectMapper(),
+    jsonMapper = jsonMapper,
   ) {
     init {
       queueService = this@IncidentsMigrationServiceTest.queueService
@@ -117,7 +120,7 @@ internal class IncidentsMigrationServiceTest {
       pageSize = 200,
       completeCheckDelaySeconds = 10,
       completeCheckCount = 9,
-      objectMapper = ObjectMapper(),
+      jsonMapper = jsonMapper,
     ) {
       init {
         queueService = this@IncidentsMigrationServiceTest.queueService

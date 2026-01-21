@@ -1,7 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -9,6 +7,8 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
@@ -40,7 +40,7 @@ class CourtSentencingMigrationService(
   private val nomisApiService: NomisApiService,
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
   private val courtSentencingDpsService: CourtSentencingDpsApiService,
-  objectMapper: ObjectMapper,
+  jsonMapper: JsonMapper,
   @Value("\${courtsentencing.page.size:1000}") pageSize: Long,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
@@ -50,7 +50,7 @@ class CourtSentencingMigrationService(
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
-  objectMapper = objectMapper,
+  jsonMapper = jsonMapper,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -187,23 +187,23 @@ class CourtSentencingMigrationService(
   }
 
   // dependent on court appearance order back from dps to match nomis
-  private fun buildCourtAppearanceMapping(responseMappings: List<MigrationCreateCourtAppearanceResponse>): List<CourtAppearanceMappingDto> = responseMappings.map { it ->
+  private fun buildCourtAppearanceMapping(responseMappings: List<MigrationCreateCourtAppearanceResponse>): List<CourtAppearanceMappingDto> = responseMappings.map {
     CourtAppearanceMappingDto(
-      nomisCourtAppearanceId = it.eventId.toLong(),
+      nomisCourtAppearanceId = it.eventId,
       dpsCourtAppearanceId = it.appearanceUuid.toString(),
       mappingType = CourtAppearanceMappingDto.MappingType.MIGRATED,
     )
   }
 
-  private fun buildCourtChargeMapping(responseMappings: List<MigrationCreateChargeResponse>): List<CourtChargeMappingDto> = responseMappings.map { it ->
+  private fun buildCourtChargeMapping(responseMappings: List<MigrationCreateChargeResponse>): List<CourtChargeMappingDto> = responseMappings.map {
     CourtChargeMappingDto(
-      nomisCourtChargeId = it.chargeNOMISId.toLong(),
+      nomisCourtChargeId = it.chargeNOMISId,
       dpsCourtChargeId = it.chargeUuid.toString(),
       mappingType = CourtChargeMappingDto.MappingType.MIGRATED,
     )
   }
 
-  private fun buildSentenceMapping(responseMappings: List<MigrationCreateSentenceResponse>): List<SentenceMappingDto> = responseMappings.map { it ->
+  private fun buildSentenceMapping(responseMappings: List<MigrationCreateSentenceResponse>): List<SentenceMappingDto> = responseMappings.map {
     SentenceMappingDto(
       nomisSentenceSequence = it.sentenceNOMISId.sequence,
       nomisBookingId = it.sentenceNOMISId.offenderBookingId,
@@ -212,7 +212,7 @@ class CourtSentencingMigrationService(
     )
   }
 
-  private fun buildSentenceTermMapping(responseMappings: List<MigrationCreatePeriodLengthResponse>): List<SentenceTermMappingDto> = responseMappings.map { it ->
+  private fun buildSentenceTermMapping(responseMappings: List<MigrationCreatePeriodLengthResponse>): List<SentenceTermMappingDto> = responseMappings.map {
     SentenceTermMappingDto(
       nomisSentenceSequence = it.sentenceTermNOMISId.sentenceSequence,
       nomisBookingId = it.sentenceTermNOMISId.offenderBookingId,
@@ -222,7 +222,7 @@ class CourtSentencingMigrationService(
     )
   }
 
-  private fun buildCourtCaseMapping(responseMappings: List<MigrationCreateCourtCaseResponse>): List<CourtCaseMappingDto> = responseMappings.map { it -> CourtCaseMappingDto(nomisCourtCaseId = it.caseId, dpsCourtCaseId = it.courtCaseUuid, mappingType = CourtCaseMappingDto.MappingType.MIGRATED) }
+  private fun buildCourtCaseMapping(responseMappings: List<MigrationCreateCourtCaseResponse>): List<CourtCaseMappingDto> = responseMappings.map { CourtCaseMappingDto(nomisCourtCaseId = it.caseId, dpsCourtCaseId = it.courtCaseUuid, mappingType = CourtCaseMappingDto.MappingType.MIGRATED) }
 
   suspend fun offenderMigrationPayload(offenderNo: String): MigrationCreateCourtCases {
     val nomisCourtCases = courtSentencingNomisApiService.getCourtCasesForMigration(offenderNo = offenderNo)
@@ -232,11 +232,11 @@ class CourtSentencingMigrationService(
       courtCases = dpsCases,
     )
   }
-  override fun parseContextFilter(json: String): MigrationMessage<*, CourtSentencingMigrationFilter> = objectMapper.readValue(json)
+  override fun parseContextFilter(json: String): MigrationMessage<*, CourtSentencingMigrationFilter> = jsonMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<CourtSentencingMigrationFilter, ByPageNumber>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<CourtSentencingMigrationFilter, ByPageNumber>> = jsonMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = objectMapper.readValue(json)
+  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = jsonMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, CourtCaseMigrationMapping> = objectMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, CourtCaseMigrationMapping> = jsonMapper.readValue(json)
 }

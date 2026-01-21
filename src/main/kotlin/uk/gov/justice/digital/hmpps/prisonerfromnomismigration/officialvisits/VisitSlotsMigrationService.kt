@@ -1,12 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -31,7 +31,7 @@ class VisitSlotsMigrationService(
   private val visitSlotsMappingService: VisitSlotsMappingService,
   private val nomisApiService: VisitSlotsNomisApiService,
   private val dpsApiService: OfficialVisitsDpsApiService,
-  objectMapper: ObjectMapper,
+  jsonMapper: JsonMapper,
   @Value("\${visitslots.page.size:1000}") pageSize: Long,
   @Value("\${visitslots.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${visitslots.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
@@ -45,7 +45,7 @@ class VisitSlotsMigrationService(
   completeCheckCount = completeCheckRetrySeconds,
   completeCheckRetrySeconds = completeCheckCount,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
-  objectMapper = objectMapper,
+  jsonMapper = jsonMapper,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -183,13 +183,13 @@ class VisitSlotsMigrationService(
   )
 
   private suspend fun VisitInternalLocationResponse.lookUpDpsLocationId(): UUID = visitSlotsMappingService.getInternalLocationByNomisId(id).dpsLocationId.let { UUID.fromString(it) }
-  override fun parseContextFilter(json: String): MigrationMessage<*, Any> = objectMapper.readValue(json)
+  override fun parseContextFilter(json: String): MigrationMessage<*, Any> = jsonMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<Any, ByPageNumber>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<Any, ByPageNumber>> = jsonMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, VisitTimeSlotIdResponse> = objectMapper.readValue(json)
+  override fun parseContextNomisId(json: String): MigrationMessage<*, VisitTimeSlotIdResponse> = jsonMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, VisitTimeSlotMigrationMappingDto> = objectMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, VisitTimeSlotMigrationMappingDto> = jsonMapper.readValue(json)
 }
 
 private fun VisitTimeSlotIdResponse.DayOfWeek.asNomisApiDayOfWeek(): VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot = when (this) {
