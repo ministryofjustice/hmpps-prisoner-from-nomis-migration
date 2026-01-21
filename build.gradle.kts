@@ -287,6 +287,7 @@ tasks.test {
       excludeTestsMatching("uk.gov.justice.digital.hmpps.prisonerfromnomismigration.$it.*")
     }
   }
+  maxHeapSize = "1024m"
 }
 
 val buildDirectory: Directory = layout.buildDirectory.get()

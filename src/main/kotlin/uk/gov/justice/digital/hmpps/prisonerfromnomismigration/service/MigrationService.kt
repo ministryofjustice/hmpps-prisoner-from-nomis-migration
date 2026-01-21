@@ -2,11 +2,11 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.ParameterizedTypeReference
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
@@ -25,7 +25,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
   private val completeCheckCount: Int,
   private val completeCheckRetrySeconds: Int = 1,
   private val completeCheckScheduledRetrySeconds: Int = completeCheckDelaySeconds,
-  internal val objectMapper: ObjectMapper,
+  internal val jsonMapper: JsonMapper,
 ) {
 
   @Autowired
@@ -253,7 +253,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
 
   private fun <T> migrationContextFilter(message: MigrationMessage<*, T>): MigrationContext<T> = message.context
 
-  private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this, object : TypeReference<T>() {})
+  private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
 
   abstract fun parseContextFilter(json: String): MigrationMessage<*, FILTER>
   abstract fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<FILTER, PAGE_KEY>>

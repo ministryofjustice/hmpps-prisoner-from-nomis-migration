@@ -1,12 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerAccountPointInTimeBalance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
@@ -31,7 +31,7 @@ class PrisonerBalanceMigrationService(
   val prisonerBalanceMappingService: PrisonerBalanceMappingApiService,
   val prisonerBalanceNomisApiService: PrisonerBalanceNomisApiService,
   val dpsApiService: FinanceApiService,
-  objectMapper: ObjectMapper,
+  jsonMapper: JsonMapper,
   @Value($$"${prisonerbalance.page.size:1000}") pageSize: Long,
   @Value($$"${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value($$"${complete-check.count}") completeCheckCount: Int,
@@ -41,7 +41,7 @@ class PrisonerBalanceMigrationService(
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
-  objectMapper = objectMapper,
+  jsonMapper = jsonMapper,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -131,13 +131,13 @@ class PrisonerBalanceMigrationService(
       }
     }
   }
-  override fun parseContextFilter(json: String): MigrationMessage<*, PrisonerBalanceMigrationFilter> = objectMapper.readValue(json)
+  override fun parseContextFilter(json: String): MigrationMessage<*, PrisonerBalanceMigrationFilter> = jsonMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<PrisonerBalanceMigrationFilter, ByPageNumber>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<PrisonerBalanceMigrationFilter, ByPageNumber>> = jsonMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, Long> = objectMapper.readValue(json)
+  override fun parseContextNomisId(json: String): MigrationMessage<*, Long> = jsonMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, PrisonerBalanceMappingDto> = objectMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, PrisonerBalanceMappingDto> = jsonMapper.readValue(json)
 }
 
 fun PrisonerBalanceDto.toMigrationDto() = PrisonerBalancesSyncRequest(

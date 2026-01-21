@@ -1,6 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
@@ -13,7 +13,7 @@ abstract class ByPageNumberMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPIN
   completeCheckCount: Int,
   completeCheckRetrySeconds: Int = 1,
   completeCheckScheduledRetrySeconds: Int = completeCheckDelaySeconds,
-  objectMapper: ObjectMapper,
+  jsonMapper: JsonMapper,
 ) : MigrationService<FILTER, NOMIS_ID, MAPPING, ByPageNumber>(
   mappingService = mappingService,
   migrationType = migrationType,
@@ -21,7 +21,7 @@ abstract class ByPageNumberMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPIN
   completeCheckCount = completeCheckCount,
   completeCheckRetrySeconds = completeCheckRetrySeconds,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
-  objectMapper = objectMapper,
+  jsonMapper = jsonMapper,
 ) {
   override suspend fun divideEntitiesByPage(context: MigrationContext<FILTER>) {
     (1..context.estimatedCount step pageSize).asSequence()

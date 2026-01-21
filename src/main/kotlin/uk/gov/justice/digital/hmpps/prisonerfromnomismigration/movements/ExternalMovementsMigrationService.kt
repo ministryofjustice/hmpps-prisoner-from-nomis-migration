@@ -1,12 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -45,7 +45,7 @@ class ExternalMovementsMigrationService(
   val nomisIdsApiService: NomisApiService,
   val nomisApiService: ExternalMovementsNomisApiService,
   val dpsApiService: ExternalMovementsDpsApiService,
-  objectMapper: ObjectMapper,
+  jsonMapper: JsonMapper,
   @Value($$"${externalmovements.page.size:1000}") pageSize: Long,
   @Value($$"${externalmovements.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value($$"${externalmovements.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
@@ -59,7 +59,7 @@ class ExternalMovementsMigrationService(
   completeCheckCount = completeCheckCount,
   completeCheckRetrySeconds = completeCheckRetrySeconds,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
-  objectMapper = objectMapper,
+  jsonMapper = jsonMapper,
 ) {
   suspend fun getIds(
     migrationFilter: ExternalMovementsMigrationFilter,
@@ -72,7 +72,7 @@ class ExternalMovementsMigrationService(
     )
   } else {
     // If a single prisoner migration is requested, then we'll trust the input as we're probably testing. Pretend that we called nomis-prisoner-api which found a single prisoner.
-    PageImpl<PrisonerId>(mutableListOf(PrisonerId(migrationFilter.prisonerNumber)), Pageable.ofSize(1), 1)
+    PageImpl(mutableListOf(PrisonerId(migrationFilter.prisonerNumber)), Pageable.ofSize(1), 1)
   }
 
   override suspend fun getPageOfIds(
@@ -229,7 +229,7 @@ class ExternalMovementsMigrationService(
   private fun MigrateTapResponse.findDpsMovementId(nomisBookingId: Long, nomisMovementSeq: Int): UUID {
     val movementResponses = (temporaryAbsences.flatMap { it.occurrences.flatMap { it.movements } } + unscheduledMovements)
     return movementResponses
-      .firstOrNull { it ->
+      .firstOrNull {
         val (bookingId, sequence) = it.legacyId.parseNomisMovementId()
         bookingId == nomisBookingId && sequence == nomisMovementSeq
       }
@@ -340,13 +340,13 @@ class ExternalMovementsMigrationService(
     comments = commentText,
     updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId ?: "") },
   )
-  override fun parseContextFilter(json: String): MigrationMessage<*, ExternalMovementsMigrationFilter> = objectMapper.readValue(json)
+  override fun parseContextFilter(json: String): MigrationMessage<*, ExternalMovementsMigrationFilter> = jsonMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<ExternalMovementsMigrationFilter, ByPageNumber>> = objectMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<ExternalMovementsMigrationFilter, ByPageNumber>> = jsonMapper.readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = objectMapper.readValue(json)
+  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = jsonMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, TemporaryAbsencesPrisonerMappingDto> = objectMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, TemporaryAbsencesPrisonerMappingDto> = jsonMapper.readValue(json)
 }
 
 class ExternalMovementMigrationException(message: String) : RuntimeException(message)

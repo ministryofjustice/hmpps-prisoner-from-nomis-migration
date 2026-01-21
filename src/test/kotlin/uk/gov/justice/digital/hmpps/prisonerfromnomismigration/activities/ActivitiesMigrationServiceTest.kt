@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -29,11 +28,14 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.json.JsonTest
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.ActivityMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.ActivityMigrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
@@ -58,7 +60,8 @@ import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
 
-class ActivitiesMigrationServiceTest {
+@JsonTest
+class ActivitiesMigrationServiceTest(@Autowired private val jsonMapper: JsonMapper) {
   private val nomisApiService: NomisApiService = mock()
   private val queueService: MigrationQueueService = mock()
   private val mappingService: ActivitiesMappingService = mock()
@@ -71,7 +74,7 @@ class ActivitiesMigrationServiceTest {
     nomisApiService = nomisApiService,
     activitiesMappingService = mappingService,
     activitiesApiService = activitiesApiService,
-    objectMapper = jacksonObjectMapper(),
+    jsonMapper = jsonMapper,
     pageSize = 3L,
     completeCheckDelaySeconds = 10,
     completeCheckCount = 9,
@@ -97,7 +100,7 @@ class ActivitiesMigrationServiceTest {
       nomisApiService = nomisApiService,
       activitiesMappingService = mappingService,
       activitiesApiService = activitiesApiService,
-      objectMapper = jacksonObjectMapper(),
+      jsonMapper = jsonMapper,
       pageSize = 3L,
       completeCheckDelaySeconds = 10,
       completeCheckCount = 9,
