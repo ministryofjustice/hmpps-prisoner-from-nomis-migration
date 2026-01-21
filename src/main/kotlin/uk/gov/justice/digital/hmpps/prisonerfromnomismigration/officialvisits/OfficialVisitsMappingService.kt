@@ -11,15 +11,24 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitorMappingDto
 
 @Service
 class OfficialVisitsMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<OfficialVisitMigrationMappingDto>("/mapping/official-visits", webClient) {
   private val api = OfficialVisitsResourceApi(webClient)
   private val locationApi = LocationMappingResourceApi(webClient)
 
-  suspend fun getByNomisIdsOrNull(nomisVisitId: Long): OfficialVisitMappingDto? = api.prepare(
+  suspend fun getByVisitNomisIdsOrNull(nomisVisitId: Long): OfficialVisitMappingDto? = api.prepare(
     api.getVisitMappingByNomisIdRequestConfig(
       nomisVisitId = nomisVisitId,
+    ),
+  )
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getByVisitorNomisIdsOrNull(nomisVisitorId: Long): OfficialVisitorMappingDto? = api.prepare(
+    api.getVisitorMappingByNomisIdRequestConfig(
+      nomisVisitorId = nomisVisitorId,
     ),
   )
     .retrieve()
