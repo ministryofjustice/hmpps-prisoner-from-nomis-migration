@@ -29,7 +29,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 @SpringAPIServiceTest
 @Import(OfficialVisitsMappingService::class, OfficialVisitsMappingApiMockServer::class)
 class OfficialVisitsMappingApiServiceTest {
-  val errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<OfficialVisitMigrationMappingDto>>() {}
 
   @Autowired
   private lateinit var apiService: OfficialVisitsMappingService
@@ -39,6 +38,8 @@ class OfficialVisitsMappingApiServiceTest {
 
   @Nested
   inner class CreateMappingsForMigration {
+    val errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<OfficialVisitMigrationMappingDto>>() {}
+
     @Test
     fun `will pass oath2 token to migrate endpoint`() = runTest {
       mockServer.stubCreateMappingsForMigration()
@@ -122,6 +123,83 @@ class OfficialVisitsMappingApiServiceTest {
   }
 
   @Nested
+  inner class CreateVisitMapping {
+
+    @Test
+    fun `will pass oath2 token to migrate endpoint`() = runTest {
+      mockServer.stubCreateVisitMapping()
+
+      apiService.createVisitMapping(
+        OfficialVisitMappingDto(
+          mappingType = OfficialVisitMappingDto.MappingType.NOMIS_CREATED,
+          label = "2020-01-01T10:00",
+          dpsId = "1233",
+          nomisId = 54321L,
+        ),
+      )
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/official-visits/visit")).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will return success when OK response`() = runTest {
+      mockServer.stubCreateVisitMapping()
+
+      val result = apiService.createVisitMapping(
+        OfficialVisitMappingDto(
+          mappingType = OfficialVisitMappingDto.MappingType.NOMIS_CREATED,
+          label = "2020-01-01T10:00",
+          dpsId = "1233",
+          nomisId = 54321L,
+        ),
+      )
+
+      assertThat(result.isError).isFalse()
+    }
+
+    @Test
+    fun `will return error when 409 conflict`() = runTest {
+      val dpsId = "1234"
+      val existingDpsId = "5678"
+
+      mockServer.stubCreateVisitMapping(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            duplicate = OfficialVisitMappingDto(
+              dpsId = dpsId,
+              nomisId = 54321L,
+              mappingType = OfficialVisitMappingDto.MappingType.MIGRATED,
+            ),
+            existing = OfficialVisitMappingDto(
+              dpsId = existingDpsId,
+              nomisId = 54321L,
+              mappingType = OfficialVisitMappingDto.MappingType.MIGRATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      val result = apiService.createVisitMapping(
+        OfficialVisitMappingDto(
+          mappingType = OfficialVisitMappingDto.MappingType.NOMIS_CREATED,
+          label = "2020-01-01T10:00",
+          dpsId = "1233",
+          nomisId = 54321L,
+        ),
+      )
+
+      assertThat(result.isError).isTrue()
+      assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
+      assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
+    }
+  }
+
+  @Nested
   inner class GetByVisitNomisIdsOrNull {
     val nomisVisitId = 12345L
 
@@ -195,6 +273,83 @@ class OfficialVisitsMappingApiServiceTest {
           nomisVisitId = nomisVisitId,
         ),
       ).isNull()
+    }
+  }
+
+  @Nested
+  inner class CreateVisitorMapping {
+
+    @Test
+    fun `will pass oath2 token to migrate endpoint`() = runTest {
+      mockServer.stubCreateVisitorMapping()
+
+      apiService.createVisitorMapping(
+        OfficialVisitorMappingDto(
+          mappingType = OfficialVisitorMappingDto.MappingType.NOMIS_CREATED,
+          label = "2020-01-01T10:00",
+          dpsId = "1233",
+          nomisId = 54321L,
+        ),
+      )
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/official-visits/visitor")).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will return success when OK response`() = runTest {
+      mockServer.stubCreateVisitorMapping()
+
+      val result = apiService.createVisitorMapping(
+        OfficialVisitorMappingDto(
+          mappingType = OfficialVisitorMappingDto.MappingType.NOMIS_CREATED,
+          label = "2020-01-01T10:00",
+          dpsId = "1233",
+          nomisId = 54321L,
+        ),
+      )
+
+      assertThat(result.isError).isFalse()
+    }
+
+    @Test
+    fun `will return error when 409 conflict`() = runTest {
+      val dpsId = "1234"
+      val existingDpsId = "5678"
+
+      mockServer.stubCreateVisitorMapping(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            duplicate = OfficialVisitorMappingDto(
+              dpsId = dpsId,
+              nomisId = 54321L,
+              mappingType = OfficialVisitorMappingDto.MappingType.MIGRATED,
+            ),
+            existing = OfficialVisitorMappingDto(
+              dpsId = existingDpsId,
+              nomisId = 54321L,
+              mappingType = OfficialVisitorMappingDto.MappingType.MIGRATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      val result = apiService.createVisitorMapping(
+        OfficialVisitorMappingDto(
+          mappingType = OfficialVisitorMappingDto.MappingType.NOMIS_CREATED,
+          label = "2020-01-01T10:00",
+          dpsId = "1233",
+          nomisId = 54321L,
+        ),
+      )
+
+      assertThat(result.isError).isTrue()
+      assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
+      assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
     }
   }
 

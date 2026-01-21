@@ -76,6 +76,27 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubCreateVisitMapping() {
+    mappingApi.stubFor(
+      post("/mapping/official-visits/visit").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateVisitMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/official-visits/visit").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun stubGetByVisitNomisIdsOrNull(
     nomisVisitId: Long = 1234L,
     mapping: OfficialVisitMappingDto? = OfficialVisitMappingDto(
@@ -104,6 +125,28 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
       )
     }
   }
+
+  fun stubCreateVisitorMapping() {
+    mappingApi.stubFor(
+      post("/mapping/official-visits/visitor").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateVisitorMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/official-visits/visitor").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun stubGetByVisitorNomisIdsOrNull(
     nomisVisitorId: Long = 1234L,
     mapping: OfficialVisitorMappingDto? = OfficialVisitorMappingDto(
