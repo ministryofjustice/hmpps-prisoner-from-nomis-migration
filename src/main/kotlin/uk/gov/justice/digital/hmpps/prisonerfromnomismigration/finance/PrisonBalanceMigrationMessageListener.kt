@@ -1,21 +1,21 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import io.awspring.cloud.sqs.annotation.SqsListener
 import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageListener
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.PRISON_BALANCE_QUEUE_ID
 import java.util.concurrent.CompletableFuture
 
 @Service
 class PrisonBalanceMigrationMessageListener(
-  objectMapper: ObjectMapper,
+  jsonMapper: JsonMapper,
   migrationService: PrisonBalanceMigrationService,
 ) : MigrationMessageListener(
-  objectMapper,
+  jsonMapper,
   migrationService,
 ) {
 
