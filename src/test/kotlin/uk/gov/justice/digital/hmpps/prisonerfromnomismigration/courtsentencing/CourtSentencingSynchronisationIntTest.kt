@@ -3445,7 +3445,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             1,
             putRequestedFor(urlPathEqualTo("/legacy/charge/$DPS_CHARGE_ID/appearance/$DPS_COURT_APPEARANCE_ID"))
               .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("F")))
-              .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Imprisonment"))),
+              .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Imprisonment")))
+              .withRequestBody(matchingJsonPath("offenceCode", equalTo("RI64006"))),
           )
         }
 

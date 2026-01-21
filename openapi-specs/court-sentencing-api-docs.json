@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-01-20.1160.e3293a3"
+    "version": "2026-01-21.1166.f7d3448"
   },
   "servers" : [ {
     "url" : "https://remand-and-sentencing-api.hmpps.service.justice.gov.uk",
@@ -5613,7 +5613,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:40.90185672"
+            "example": "10:20:05.726590926"
           },
           "outcomeDispositionCode" : {
             "type" : "string"
@@ -5688,6 +5688,9 @@
           },
           "performedByUser" : {
             "type" : "string"
+          },
+          "offenceCode": {
+            "type": "string"
           }
         },
         "required" : [ "legacyData" ]
@@ -5944,7 +5947,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:40.90185672"
+            "example": "10:20:05.726590926"
           },
           "courtCode" : {
             "type" : "string"
@@ -8198,7 +8201,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:40.90185672"
+            "example": "10:20:05.726590926"
           },
           "courtCode" : {
             "type" : "string"
@@ -8829,7 +8832,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:40.90185672"
+            "example": "10:20:05.726590926"
           },
           "nomisOutcomeCode" : {
             "type" : "string"
@@ -8889,7 +8892,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:40.90185672"
+            "example": "10:20:05.726590926"
           },
           "courtId" : {
             "type" : "string"
@@ -9029,7 +9032,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:40.90185672"
+            "example": "10:20:05.726590926"
           },
           "charges" : {
             "type" : "array",
@@ -9056,7 +9059,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:40.90185672"
+            "example": "10:20:05.726590926"
           },
           "courtId" : {
             "type" : "string"
@@ -9320,21 +9323,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -9355,12 +9358,12 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "paged" : {
-            "type" : "boolean"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "paged": {
+            "type": "boolean"
           },
           "unpaged" : {
             "type" : "boolean"
@@ -9406,21 +9409,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
           },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -9660,7 +9663,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:40.90185672"
+            "example": "10:20:05.726590926"
           },
           "courtCode" : {
             "type" : "string"
