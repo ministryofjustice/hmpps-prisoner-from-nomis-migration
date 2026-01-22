@@ -187,7 +187,7 @@ class CourtSentencingMappingApiService(
 
   suspend fun deleteCourtChargeMappingByNomisId(nomisCourtChargeId: Long) = webClient.delete()
     .uri(
-      "/court-charges/nomis-court-charge-id/{nomisCourtChargeId}",
+      "/mapping/court-sentencing/court-charges/nomis-court-charge-id/{nomisCourtChargeId}",
       nomisCourtChargeId,
     )
     .retrieve()

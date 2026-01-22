@@ -16,7 +16,8 @@ import java.time.Duration
 class CourtSentencingConfiguration(
   @Value("\${api.base.url.court.sentencing}") val apiBaseUri: String,
   @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
-  @Value("\${api.timeout:90s}") val timeout: Duration,
+  @Value("\${api.timeout:60s}") val timeout: Duration,
+  @Value("\${api.time-critical.timeout:3s}") val timeCriticalTimeout: Duration,
 ) {
 
   @Bean
@@ -27,6 +28,17 @@ class CourtSentencingConfiguration(
     authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
     builder: WebClient.Builder,
   ): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "court-sentencing-api", url = apiBaseUri, timeout)
+
+  @Bean
+  fun courtSentencingApiTimeCriticalWebClient(
+    authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
+    builder: WebClient.Builder,
+  ): WebClient = builder.reactiveAuthorisedWebClient(
+    authorizedClientManager,
+    registrationId = "court-sentencing-api",
+    url = apiBaseUri,
+    timeCriticalTimeout,
+  )
 
   @Component("courtSentencingApi")
   class CourtSentencingApiHealth(@Qualifier("courtSentencingApiHealthWebClient") webClient: WebClient) : ReactiveHealthPingCheck(webClient)

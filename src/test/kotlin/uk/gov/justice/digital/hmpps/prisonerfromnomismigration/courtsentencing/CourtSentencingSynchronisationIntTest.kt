@@ -3135,6 +3135,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             chargeId = DPS_CHARGE_ID,
           )
 
+          courtSentencingMappingApiMockServer.stubDeleteCourtChargeMapping(NOMIS_OFFENDER_CHARGE_ID)
+
           courtSentencingNomisApiMockServer.stubGetOffenderCharge(status = NOT_FOUND)
           courtSentencingOffenderEventsQueue.sendMessage(
             courtEventChargeEvent(
@@ -3144,20 +3146,18 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will delete a court appearance in DPS`() {
+        fun `will delete a court charge in DPS`() {
           dpsCourtSentencingServer.verify(
             1,
             deleteRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID/charge/$DPS_CHARGE_ID")),
-            // TODO DPS to implement this endpoint
           )
         }
 
         @Test
         fun `will remove the mapping if nomis charge has been deleted`() {
-          courtSentencingMappingApiMockServer.stubDeleteCourtChargeMapping(NOMIS_OFFENDER_CHARGE_ID)
           courtSentencingMappingApiMockServer.verify(
             1,
-            deleteRequestedFor(urlPathEqualTo("/court-charges/nomis-court-charge-id/$NOMIS_OFFENDER_CHARGE_ID")),
+            deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-charges/nomis-court-charge-id/$NOMIS_OFFENDER_CHARGE_ID")),
           )
         }
 
@@ -3211,7 +3211,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
-        fun `will track a telemetry event for success`() {
+        fun `will track a telemetry event for error`() {
           verify(telemetryClient).trackEvent(
             eq("court-charge-synchronisation-deleted-error"),
             check {
