@@ -47,17 +47,22 @@ class TransactionEventListener(
                 sqsMessage.Message.fromJson(),
                 messageId,
               )
-              "OFFENDER_TRANSACTIONS-DELETED" -> null // extremely rare (only happened 61 times ever according to oms_deleted_rows, mostly by scripts)
+              // extremely rare (only happened 61 times ever according to oms_deleted_rows, mostly by scripts)
+              // "OFFENDER_TRANSACTIONS-DELETED"
+              // TODO Waiting for DPS to decide whether to intercept this event
 
               "GL_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.glTransactionInserted(
                 sqsMessage.Message.fromJson(),
                 messageId,
               )
-              "GL_TRANSACTIONS-UPDATED" -> null
-              "GL_TRANSACTIONS-DELETED" -> null // extremely rare (only happened once at 11-AUG-2021 10:39:26.470007000 according to oms_deleted_rows, 8 deleted)
+              "GL_TRANSACTIONS-UPDATED" -> transactionSynchronisationService.glTransactionUpdated(
+                sqsMessage.Message.fromJson(),
+                messageId,
+              )
+              // extremely rare (only happened once at 11-AUG-2021 10:39:26.470007000 according to oms_deleted_rows, 8 deleted)
+              // GL_TRANSACTIONS-DELETED"
+              // TODO Waiting for DPS to decide whether to intercept this event
 
-              "prison-offender-events.prisoner.merged" -> null // transactionMergeService.synchronisePrisonerMerged(sqsMessage.Message.fromJson())
-              "prison-offender-events.prisoner.booking.moved" -> null // transactionMergeService.synchronisePrisonerBookingMoved(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
