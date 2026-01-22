@@ -29,7 +29,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityIgnoreNotFound
 
 @Service
-class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") private val webClient: WebClient) {
+class CourtSentencingDpsApiService(
+  @Qualifier("courtSentencingApiWebClient") private val webClient: WebClient,
+  @Qualifier("courtSentencingApiTimeCriticalWebClient") private val timeCriticalWebClient: WebClient,
+) {
   suspend fun createCourtCase(courtCase: LegacyCreateCourtCase): LegacyCourtCaseCreatedResponse = webClient
     .post()
     .uri("/legacy/court-case")
@@ -138,7 +141,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
     .retrieve()
     .awaitBody()
 
-  suspend fun deleteSentence(sentenceId: String) = webClient
+  suspend fun deleteSentence(sentenceId: String) = timeCriticalWebClient
     .delete()
     .uri("/legacy/sentence/{sentenceId}", sentenceId)
     .retrieve()
@@ -158,7 +161,7 @@ class CourtSentencingDpsApiService(@Qualifier("courtSentencingApiWebClient") pri
     .retrieve()
     .awaitBody()
 
-  suspend fun deletePeriodLength(periodLengthId: String) = webClient
+  suspend fun deletePeriodLength(periodLengthId: String) = timeCriticalWebClient
     .delete()
     .uri("/legacy/period-length/{periodLengthId}", periodLengthId)
     .retrieve()

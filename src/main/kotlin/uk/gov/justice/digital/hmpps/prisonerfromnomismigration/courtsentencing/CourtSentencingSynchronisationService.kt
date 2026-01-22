@@ -943,7 +943,7 @@ class CourtSentencingSynchronisationService(
       mapOf("nomisOffenderCharge" to mapping.nomisCourtChargeId, "dpsCourtChargeId" to mapping.dpsCourtChargeId),
     )
     log.warn(
-      "Unable to delete mapping for court charge with nomis id: $mapping.nomisCourtChargeId. Please delete manually",
+      "Unable to delete mapping for court charge with nomis id: ${mapping.nomisCourtChargeId}. Please delete manually",
       e,
     )
   }
