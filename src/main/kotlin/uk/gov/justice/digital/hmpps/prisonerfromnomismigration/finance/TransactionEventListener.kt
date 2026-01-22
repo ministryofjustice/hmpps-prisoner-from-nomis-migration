@@ -48,8 +48,8 @@ class TransactionEventListener(
                 messageId,
               )
               // extremely rare (only happened 61 times ever according to oms_deleted_rows, mostly by scripts)
+              // "OFFENDER_TRANSACTIONS-DELETED"
               // TODO Waiting for DPS to decide whether to intercept this event
-              "OFFENDER_TRANSACTIONS-DELETED" -> log.info("Received an OFFENDER_TRANSACTIONS-DELETED I wasn't expecting {}", eventType)
 
               "GL_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.glTransactionInserted(
                 sqsMessage.Message.fromJson(),
@@ -60,8 +60,8 @@ class TransactionEventListener(
                 messageId,
               )
               // extremely rare (only happened once at 11-AUG-2021 10:39:26.470007000 according to oms_deleted_rows, 8 deleted)
+              // GL_TRANSACTIONS-DELETED"
               // TODO Waiting for DPS to decide whether to intercept this event
-              "GL_TRANSACTIONS-DELETED" -> log.info("Received a GL_TRANSACTIONS-DELETED I wasn't expecting {}", eventType)
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
