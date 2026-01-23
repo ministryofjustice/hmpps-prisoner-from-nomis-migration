@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.microsoft.applicationinsights.TelemetryClient
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -13,6 +12,7 @@ import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
@@ -25,7 +25,7 @@ import java.time.Duration
 class MigrationQueueService(
   private val hmppsQueueService: HmppsQueueService,
   private val telemetryClient: TelemetryClient,
-  private val objectMapper: ObjectMapper,
+  private val jsonMapper: JsonMapper,
   @Value("\${cancel.queue.purge-frequency-time}") val purgeFrequency: Duration,
   @Value("\${cancel.queue.purge-total-time}") val purgeTotalTime: Duration,
 ) {
@@ -76,7 +76,7 @@ class MigrationQueueService(
     return queue.sqsDlqClient!!.countMessagesOnQueue(queue.dlqUrl!!).await().toLong()
   }
 
-  private fun Any.toJson() = objectMapper.writeValueAsString(this)
+  private fun Any.toJson() = jsonMapper.writeValueAsString(this)
 
   suspend fun purgeAllMessages(type: MigrationType) {
     val queue = hmppsQueueService.findByQueueId(type.queueId)

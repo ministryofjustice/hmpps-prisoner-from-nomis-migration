@@ -1,7 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.stereotype.Service
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.hmpps.kotlin.auth.HmppsReactiveAuthenticationHolder
 import uk.gov.justice.hmpps.sqs.audit.HmppsAuditService
 
@@ -9,7 +9,7 @@ import uk.gov.justice.hmpps.sqs.audit.HmppsAuditService
 class AuditService(
   private val hmppsAuditService: HmppsAuditService,
   private val securityUserContext: HmppsReactiveAuthenticationHolder,
-  private val mapper: ObjectMapper,
+  private val mapper: JsonMapper,
 ) {
   suspend fun sendAuditEvent(what: String, details: Any) {
     hmppsAuditService.publishEvent(

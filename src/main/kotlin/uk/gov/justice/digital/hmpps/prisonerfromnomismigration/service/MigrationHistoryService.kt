@@ -1,12 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import kotlinx.coroutines.future.await
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest
 import software.amazon.awssdk.services.sqs.model.QueueAttributeName
+import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus.CANCELLED
@@ -19,7 +19,7 @@ import java.time.LocalDateTime
 @Service
 class MigrationHistoryService(
   val migrationHistoryRepository: MigrationHistoryRepository,
-  private val objectMapper: ObjectMapper,
+  private val jsonMapper: JsonMapper,
   private val hmppsQueueService: HmppsQueueService,
   private val generalMappingService: GeneralMappingService,
 ) {
@@ -38,7 +38,7 @@ class MigrationHistoryService(
         migrationId = migrationId,
         migrationType = migrationType,
         estimatedRecordCount = estimatedRecordCount,
-        filter = filter?.let { objectMapper.writeValueAsString(it) },
+        filter = filter?.let { jsonMapper.writeValueAsString(it) },
       ),
     )
   }.onFailure { log.error("Unable to record migration started record", it) }
@@ -137,7 +137,7 @@ class MigrationHistoryService(
   }
 
   suspend fun updateFilter(migrationId: String, filter: Any) = migrationHistoryRepository.findById(migrationId)
-    ?.let { migrationHistoryRepository.save(it.copy(filter = objectMapper.writeValueAsString(filter))) }
+    ?.let { migrationHistoryRepository.save(it.copy(filter = jsonMapper.writeValueAsString(filter))) }
     ?: run { throw NotFoundException(migrationId) }
 }
 
