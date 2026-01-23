@@ -705,7 +705,10 @@ class OfficialVisitsMigrationIntTest(
         dpsApiMock.stubMigrateVisit()
         mappingApiMock.stubCreateMappingsForMigration()
         mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 81)
-        migrationResult = performMigration()
+        // wait until all records have individually migrated since status check might finish just before some entities are still in flight due to the "big" numbers
+        migrationResult = performMigration {
+          verify(telemetryClient, times(81)).trackEvent(eq("officialvisits-migration-entity-migrated"), any(), isNull())
+        }
         migrationRequests = getRequestBodies(postRequestedFor(urlPathEqualTo("/migrate/visit")))
       }
 
@@ -995,21 +998,26 @@ class OfficialVisitsMigrationIntTest(
     }
   }
 
-  private fun performMigration(body: OfficialVisitsMigrationFilter = OfficialVisitsMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/official-visits")
+  private fun performMigration(
+    body: OfficialVisitsMigrationFilter = OfficialVisitsMigrationFilter(),
+    waitUntilVerify: () -> Unit = {
+      verify(telemetryClient).trackEvent(
+        eq("officialvisits-migration-completed"),
+        any(),
+        isNull(),
+      )
+    },
+  ): MigrationResult = webTestClient.post().uri("/migrate/official-visits")
     .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .bodyValue(body)
     .exchange()
     .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
     .also {
-      waitUntilCompleted()
+      waitUntilCompleted(waitUntilVerify)
     }
 
-  private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
-    verify(telemetryClient).trackEvent(
-      eq("officialvisits-migration-completed"),
-      any(),
-      isNull(),
-    )
+  private fun waitUntilCompleted(waitUntilVerify: () -> Unit) = await atMost Duration.ofSeconds(60) untilAsserted {
+    waitUntilVerify()
   }
 }
