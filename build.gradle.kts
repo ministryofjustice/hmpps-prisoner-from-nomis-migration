@@ -12,9 +12,9 @@ import kotlin.io.path.name
 import kotlin.io.path.Path as KotlinPath
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "10.0.0"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "10.0.1"
   kotlin("plugin.spring") version "2.3.0"
-  id("org.openapi.generator") version "7.18.0"
+  id("org.openapi.generator") version "7.19.0"
 }
 
 configurations {
@@ -34,7 +34,7 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-webclient")
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("org.springframework.security:spring-security-access")
-  implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:3.0.0")
+  implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:3.0.1")
   implementation("org.springframework.boot:spring-boot-jackson2")
 
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
@@ -49,7 +49,7 @@ dependencies {
 
   runtimeOnly("org.postgresql:r2dbc-postgresql:1.1.1.RELEASE")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
-  runtimeOnly("org.postgresql:postgresql:42.7.8")
+  runtimeOnly("org.postgresql:postgresql:42.7.9")
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
 
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.0.0")
