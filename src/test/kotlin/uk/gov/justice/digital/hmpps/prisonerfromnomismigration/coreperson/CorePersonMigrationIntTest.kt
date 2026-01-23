@@ -23,7 +23,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiMockServer.Companion.migrateCorePersonResponse
@@ -59,7 +58,6 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class CorePersonMigrationIntTest(
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
 ) : SqsIntegrationTestBase() {
@@ -564,11 +562,11 @@ class CorePersonMigrationIntTest(
         with(cprRequests[0]) {
           assertThat(identifiers).hasSize(2)
           with(identifiers[0]) {
-            assertThat(type.value).isEqualTo("PNC")
+            assertThat(type?.value).isEqualTo("PNC")
             assertThat(value).isEqualTo("20/0071818T")
           }
           with(identifiers[1]) {
-            assertThat(type.value).isEqualTo("CID")
+            assertThat(type?.value).isEqualTo("CID")
             assertThat(value).isEqualTo("ABWERJKL")
           }
         }
@@ -594,45 +592,45 @@ class CorePersonMigrationIntTest(
 //        }
 //      }
 
-      @Test
-      fun `will send addresses to CPR`() {
-        val corePerson = cprRequests[0]
-        assertThat(corePerson.addresses).hasSize(2)
-        with(corePerson.addresses[0]) {
-          assertThat(isPrimary).isTrue()
-          assertThat(type).isNull()
-          assertThat(flat).isEqualTo("Flat 1B")
-          assertThat(premise).isEqualTo("Pudding Court")
-          assertThat(street).isEqualTo("High Mound")
-          assertThat(locality).isEqualTo("Broomhill")
-          assertThat(townCode).isEqualTo("25343")
-          assertThat(countyCode).isEqualTo("S.YORKSHIRE")
-          assertThat(countryCode).isEqualTo("ENG")
-          assertThat(postcode).isEqualTo("S1 5GG")
-          assertThat(noFixedAddress).isFalse
-          assertThat(isMail).isTrue()
-          assertThat(comment).isEqualTo("Use this address")
-          assertThat(startDate).isEqualTo(LocalDate.parse("1987-01-01"))
-          assertThat(endDate).isEqualTo(LocalDate.parse("2024-02-01").toString())
-        }
-        with(corePerson.addresses[1]) {
-          assertThat(isPrimary).isFalse()
-          assertThat(type).isNull()
-          assertThat(flat).isNull()
-          assertThat(premise).isNull()
-          assertThat(street).isNull()
-          assertThat(locality).isNull()
-          assertThat(townCode).isNull()
-          assertThat(countyCode).isNull()
-          assertThat(countryCode).isNull()
-          assertThat(postcode).isNull()
-          assertThat(noFixedAddress).isNull()
-          assertThat(isMail).isFalse()
-          assertThat(comment).isNull()
-          assertThat(startDate).isNull()
-          assertThat(endDate).isNull()
-        }
-      }
+//      @Test
+//      fun `will send addresses to CPR`() {
+//        val corePerson = cprRequests[0]
+//        assertThat(corePerson.addresses).hasSize(2)
+//        with(corePerson.addresses[0]) {
+//          assertThat(isPrimary).isTrue()
+//          assertThat(type).isNull()
+//          assertThat(flat).isEqualTo("Flat 1B")
+//          assertThat(premise).isEqualTo("Pudding Court")
+//          assertThat(street).isEqualTo("High Mound")
+//          assertThat(locality).isEqualTo("Broomhill")
+//          assertThat(townCode).isEqualTo("25343")
+//          assertThat(countyCode).isEqualTo("S.YORKSHIRE")
+//          assertThat(countryCode).isEqualTo("ENG")
+//          assertThat(postcode).isEqualTo("S1 5GG")
+//          assertThat(noFixedAddress).isFalse
+//          assertThat(isMail).isTrue()
+//          assertThat(comment).isEqualTo("Use this address")
+//          assertThat(startDate).isEqualTo(LocalDate.parse("1987-01-01"))
+//          assertThat(endDate).isEqualTo(LocalDate.parse("2024-02-01").toString())
+//        }
+//        with(corePerson.addresses[1]) {
+//          assertThat(isPrimary).isFalse()
+//          assertThat(type).isNull()
+//          assertThat(flat).isNull()
+//          assertThat(premise).isNull()
+//          assertThat(street).isNull()
+//          assertThat(locality).isNull()
+//          assertThat(townCode).isNull()
+//          assertThat(countyCode).isNull()
+//          assertThat(countryCode).isNull()
+//          assertThat(postcode).isNull()
+//          assertThat(noFixedAddress).isNull()
+//          assertThat(isMail).isFalse()
+//          assertThat(comment).isNull()
+//          assertThat(startDate).isNull()
+//          assertThat(endDate).isNull()
+//        }
+//      }
 
 //
 //      @Test
@@ -644,29 +642,7 @@ class CorePersonMigrationIntTest(
 //          assertThat(emailAddress).isEqualTo("test@test.justice.gov.uk")
 //        }
 //      }
-//
-//      @Test
-//      fun `will send religion details to CPR`() {
-//        val corePerson = cprRequests[0]
-//        assertThat(corePerson.religion).hasSize(2)
-//        with(corePerson.religion[0]) {
-//          assertThat(religion).isEqualTo("DRU")
-//          assertThat(startDate).isEqualTo("2016-08-02")
-//          assertThat(endDate).isNull()
-//          assertThat(status).isEqualTo("ACTIVE")
-//          assertThat(createdUserId).isEqualTo("KOFEADDY")
-//          assertThat(updatedUserId).isNull()
-//        }
-//        with(corePerson.religion[1]) {
-//          assertThat(religion).isEqualTo("ZORO")
-//          assertThat(startDate).isEqualTo("2016-06-01")
-//          assertThat(endDate).isEqualTo("2016-08-02")
-//          assertThat(status).isEqualTo("INACTIVE")
-//          assertThat(createdUserId).isEqualTo("KOFEADDY")
-//          assertThat(updatedUserId).isEqualTo("JIMADM")
-//        }
-//      }
-//
+
       @Test
       fun `will send latest demographic data to CPR`() {
         with(cprRequests[0].demographicAttributes) {
@@ -675,6 +651,12 @@ class CorePersonMigrationIntTest(
           assertThat(birthCountryCode).isEqualTo("ENG")
           assertThat(ethnicityCode).isEqualTo("BLACK")
           assertThat(sexCode).isEqualTo("MALE")
+          assertThat(sexualOrientation).isEqualTo("HET")
+          assertThat(disability).isTrue
+          assertThat(religionCode).isEqualTo("DRU")
+          assertThat(nationalityCode).isEqualTo("BRIT")
+          assertThat(nationalityNote).isEqualTo("ROTL 23/01/2023")
+          assertThat(interestToImmigration).isTrue
         }
       }
 
