@@ -592,45 +592,45 @@ class CorePersonMigrationIntTest(
 //        }
 //      }
 
-//      @Test
-//      fun `will send addresses to CPR`() {
-//        val corePerson = cprRequests[0]
-//        assertThat(corePerson.addresses).hasSize(2)
-//        with(corePerson.addresses[0]) {
-//          assertThat(isPrimary).isTrue()
-//          assertThat(type).isNull()
-//          assertThat(flat).isEqualTo("Flat 1B")
-//          assertThat(premise).isEqualTo("Pudding Court")
-//          assertThat(street).isEqualTo("High Mound")
-//          assertThat(locality).isEqualTo("Broomhill")
-//          assertThat(townCode).isEqualTo("25343")
-//          assertThat(countyCode).isEqualTo("S.YORKSHIRE")
-//          assertThat(countryCode).isEqualTo("ENG")
-//          assertThat(postcode).isEqualTo("S1 5GG")
-//          assertThat(noFixedAddress).isFalse
-//          assertThat(isMail).isTrue()
-//          assertThat(comment).isEqualTo("Use this address")
-//          assertThat(startDate).isEqualTo(LocalDate.parse("1987-01-01"))
-//          assertThat(endDate).isEqualTo(LocalDate.parse("2024-02-01").toString())
-//        }
-//        with(corePerson.addresses[1]) {
-//          assertThat(isPrimary).isFalse()
-//          assertThat(type).isNull()
-//          assertThat(flat).isNull()
-//          assertThat(premise).isNull()
-//          assertThat(street).isNull()
-//          assertThat(locality).isNull()
-//          assertThat(townCode).isNull()
-//          assertThat(countyCode).isNull()
-//          assertThat(countryCode).isNull()
-//          assertThat(postcode).isNull()
-//          assertThat(noFixedAddress).isNull()
-//          assertThat(isMail).isFalse()
-//          assertThat(comment).isNull()
-//          assertThat(startDate).isNull()
-//          assertThat(endDate).isNull()
-//        }
-//      }
+      @Test
+      fun `will send addresses to CPR`() {
+        val corePerson = cprRequests[0]
+        assertThat(corePerson.addresses).hasSize(2)
+        with(corePerson.addresses[0]) {
+          assertThat(isPrimary).isTrue()
+          assertThat(subBuildingName).isEqualTo("Flat 1B")
+          assertThat(buildingName).isEqualTo("Pudding Court")
+          assertThat(thoroughfareName).isEqualTo("High Mound")
+          assertThat(dependentLocality).isEqualTo("Broomhill")
+          assertThat(postTown).isEqualTo("25343")
+          assertThat(county).isEqualTo("S.YORKSHIRE")
+          assertThat(countryCode).isEqualTo("ENG")
+          assertThat(postcode).isEqualTo("S1 5GG")
+          assertThat(noFixedAbode).isFalse
+          assertThat(isMail).isTrue()
+          assertThat(comment).isEqualTo("Use this address")
+          assertThat(startDate).isEqualTo(LocalDate.parse("1987-01-01"))
+          assertThat(endDate).isEqualTo(LocalDate.parse("2024-02-01").toString())
+          assertThat(addressUsage?.map { it.addressUsageCode.toString() }).isEqualTo(listOf("HOME"))
+        }
+        with(corePerson.addresses[1]) {
+          assertThat(isPrimary).isFalse()
+          assertThat(subBuildingName).isNull()
+          assertThat(buildingName).isNull()
+          assertThat(thoroughfareName).isNull()
+          assertThat(dependentLocality).isNull()
+          assertThat(postTown).isNull()
+          assertThat(county).isNull()
+          assertThat(countryCode).isNull()
+          assertThat(postcode).isNull()
+          assertThat(noFixedAbode).isNull()
+          assertThat(isMail).isFalse()
+          assertThat(comment).isNull()
+          assertThat(startDate).isNull()
+          assertThat(endDate).isNull()
+          assertThat(addressUsage?.map { it.addressUsageCode.toString() }).isEqualTo(listOf("HOME"))
+        }
+      }
 
 //
 //      @Test

@@ -21,7 +21,7 @@ fun CorePerson.toCprPrisoner(): Prisoner {
     name = currentAlias.toCprName(),
     demographicAttributes = toDemographicAttributes(currentAlias),
     // TODO: remap in new structure when we get it
-    addresses = emptyList(), // addresses?.map { it.toCprAddress() } ?: emptyList(),
+    addresses = addresses?.map { it.toCprAddress() } ?: emptyList(),
     contacts = listOf(),
 //    Contact(
 //      phoneNumbers = emptyList(), // phoneNumbers?.map { it.toCprPhoneNumber() } ?: emptyList(),
@@ -81,7 +81,7 @@ private fun OffenderAddress.toCprAddress() = Address(
   dependentLocality = locality,
   postTown = city?.code,
   county = county?.description,
-  countryCode = county?.code,
+  countryCode = country?.code,
   comment = comment,
   isPrimary = primaryAddress,
   isMail = mailAddress,
