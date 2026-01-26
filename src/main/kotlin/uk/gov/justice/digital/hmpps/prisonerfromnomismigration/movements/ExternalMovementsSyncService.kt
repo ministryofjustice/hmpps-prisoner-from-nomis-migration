@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
 import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.core.env.Environment
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
@@ -47,7 +46,6 @@ class ExternalMovementsSyncService(
   private val mappingApiService: ExternalMovementsMappingApiService,
   private val nomisApiService: ExternalMovementsNomisApiService,
   private val dpsApiService: ExternalMovementsDpsApiService,
-  private val environment: Environment,
 ) : TelemetryEnabled {
   suspend fun movementApplicationInserted(event: MovementApplicationEvent) {
     val (nomisApplicationId, bookingId, prisonerNumber) = event
@@ -131,16 +129,8 @@ class ExternalMovementsSyncService(
 
   suspend fun scheduledMovementInserted(event: ScheduledMovementEvent) = when (event.eventMovementType) {
     TAP if (event.directionCode == DirectionCode.OUT) -> syncScheduledMovementTapOutInserted(event)
-    // TODO SDIT-2845 if this experiment to ignore scheduled IN movements works remove the feature switch and all scheduled inbound processing
-    TAP if (event.directionCode == DirectionCode.IN) -> if (!ignoreScheduleTapIn()) {
-      syncScheduledMovementTapInInserted(event)
-    } else {
-      log.info("Ignoring insert of scheduled IN movement event ID ${event.eventId} due to feature switch FEATURE_IGNORE_SCHEDULED_IN_MOVEMENTS")
-    }
     else -> log.info("Ignoring insert of scheduled movement event ID ${event.eventId} with type ${event.eventMovementType} and direction ${event.directionCode} ")
   }
-
-  fun ignoreScheduleTapIn() = environment.getProperty("feature.ignore.scheduled.in.movements", Boolean::class.java, false)
 
   suspend fun syncScheduledMovementTapOutInserted(event: ScheduledMovementEvent) {
     val (eventId, bookingId, prisonerNumber, _, directionCode) = event
@@ -224,33 +214,8 @@ class ExternalMovementsSyncService(
     }
   }
 
-  suspend fun syncScheduledMovementTapInInserted(event: ScheduledMovementEvent) {
-    val (eventId, bookingId, prisonerNumber, _, directionCode) = event
-    val telemetry = mutableMapOf<String, Any>(
-      "offenderNo" to prisonerNumber,
-      "bookingId" to bookingId,
-      "nomisEventId" to eventId,
-      "directionCode" to directionCode,
-    )
-
-    if (event.originatesInDps) {
-      telemetryClient.trackEvent("$TELEMETRY_PREFIX-scheduled-movement-inserted-skipped", telemetry)
-      return
-    }
-
-    val outboundEventId = nomisApiService.getTemporaryAbsenceScheduledReturnMovement(prisonerNumber, eventId).parentEventId
-
-    scheduledMovementTapOutUpdated(outboundEventId, prisonerNumber, telemetry)
-  }
-
   suspend fun scheduledMovementUpdated(event: ScheduledMovementEvent) = when (event.eventMovementType) {
     TAP if (event.directionCode == DirectionCode.OUT) -> scheduledMovementTapOutUpdated(event)
-    // TODO SDIT-2845 if this experiment to ignore scheduled IN movements works remove the feature switch and all scheduled inbound processing
-    TAP if (event.directionCode == DirectionCode.IN) -> if (!ignoreScheduleTapIn()) {
-      scheduledMovementTapInUpdated(event)
-    } else {
-      log.info("Ignoring update of scheduled IN movement event ID ${event.eventId} due to feature switch FEATURE_IGNORE_SCHEDULED_IN_MOVEMENTS")
-    }
     else -> log.info("Ignoring update of scheduled movement event ID ${event.eventId} with type ${event.eventMovementType} and direction ${event.directionCode} ")
   }
 
@@ -269,25 +234,6 @@ class ExternalMovementsSyncService(
     }
 
     scheduledMovementTapOutUpdated(eventId, prisonerNumber, telemetry)
-  }
-
-  suspend fun scheduledMovementTapInUpdated(event: ScheduledMovementEvent) {
-    val (eventId, bookingId, prisonerNumber, _, directionCode) = event
-    val telemetry = mutableMapOf<String, Any>(
-      "offenderNo" to prisonerNumber,
-      "bookingId" to bookingId,
-      "nomisEventId" to eventId,
-      "directionCode" to directionCode,
-    )
-
-    if (event.originatesInDps) {
-      telemetryClient.trackEvent("$TELEMETRY_PREFIX-scheduled-movement-updated-skipped", telemetry)
-      return
-    }
-
-    val outboundEventId = nomisApiService.getTemporaryAbsenceScheduledReturnMovement(prisonerNumber, eventId).parentEventId
-
-    scheduledMovementTapOutUpdated(outboundEventId, prisonerNumber, telemetry)
   }
 
   suspend fun scheduledMovementTapOutUpdated(eventId: Long, prisonerNumber: String, telemetry: MutableMap<String, Any>) {
@@ -461,7 +407,6 @@ class ExternalMovementsSyncService(
       }
       ?: run {
         track("$TELEMETRY_PREFIX-external-movement-inserted", telemetry) {
-          // TODO if there's an address id find the address mapping and use that, otherwise take NOMIS details as now
           val mapping = when (directionCode) {
             DirectionCode.OUT -> syncExternalMovementTapOut(prisonerNumber, bookingId, movementSeq, telemetry)
             DirectionCode.IN -> syncExternalMovementTapIn(prisonerNumber, bookingId, movementSeq, telemetry)
