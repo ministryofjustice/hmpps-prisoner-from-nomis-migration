@@ -125,7 +125,7 @@ class PrisonTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
     @DisplayName("When transaction was created in NOMIS")
     inner class NomisCreated {
       @Nested
-      @DisplayName("Happy path where transaction with no offender details")
+      @DisplayName("Happy path where transaction has no offender details")
       inner class HappyPathGLTransactionNoOffenderNo {
         val receipt = SyncTransactionReceipt(
           synchronizedTransactionId = dpsTransactionUuid,
