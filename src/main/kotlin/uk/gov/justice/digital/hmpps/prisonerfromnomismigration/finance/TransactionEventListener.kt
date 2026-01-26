@@ -85,7 +85,7 @@ data class TransactionEvent(
   val entrySequence: Int,
   val caseload: String,
   val transactionType: String? = null,
-  val offenderIdDisplay: String,
+  val offenderIdDisplay: String? = null,
   val bookingId: Long? = null,
   override val auditModuleName: String? = null,
 ) : EventAudited
@@ -96,7 +96,7 @@ data class GLTransactionEvent(
   val gLEntrySequence: Int,
   val caseload: String,
   val transactionType: String? = null,
-  val offenderIdDisplay: String,
+  val offenderIdDisplay: String? = null,
   val bookingId: Long? = null,
   override val auditModuleName: String? = null,
 ) : EventAudited

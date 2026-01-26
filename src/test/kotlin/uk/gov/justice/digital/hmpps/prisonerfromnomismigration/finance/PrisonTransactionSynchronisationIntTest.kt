@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertNull
 import org.mockito.ArgumentMatchers.eq
 import org.mockito.Mockito.atLeastOnce
 import org.mockito.kotlin.atLeast
@@ -123,6 +124,95 @@ class PrisonTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
     @Nested
     @DisplayName("When transaction was created in NOMIS")
     inner class NomisCreated {
+      @Nested
+      @DisplayName("Happy path where transaction with no offender details")
+      inner class HappyPathGLTransactionNoOffenderNo {
+        val receipt = SyncTransactionReceipt(
+          synchronizedTransactionId = dpsTransactionUuid,
+          requestId = UUID.randomUUID(),
+          action = SyncTransactionReceipt.Action.CREATED,
+        )
+
+        @BeforeEach
+        fun setUp() {
+          financeNomisApiMockServer.stubGetOffenderTransaction(
+            transactionId = NOMIS_TRANSACTION_ID,
+            response = emptyList(),
+          )
+          financeNomisApiMockServer.stubGetGLTransaction(
+            transactionId = NOMIS_TRANSACTION_ID,
+          )
+          financeApi.stubPostGLTransaction(receipt)
+          financeMappingApiMockServer.stubPostMapping()
+
+          financeOffenderEventsQueue.sendMessage(
+            glTransactionEvent(
+              messageId = messageUuid,
+              offenderNo = null,
+            ),
+          )
+        }
+
+        @Test
+        fun `will create transaction in DPS`() {
+          await untilAsserted {
+            val g1 = nomisGLTransactions().first()
+            financeApi.verify(
+              1,
+              postRequestedFor(urlPathEqualTo("/sync/general-ledger-transactions"))
+                .withRequestBodyJsonPath("transactionId", NOMIS_TRANSACTION_ID)
+                .withRequestBodyJsonPath("requestId", MESSAGE_ID)
+                .withRequestBodyJsonPath("description", g1.description)
+                .withRequestBodyJsonPath("caseloadId", g1.caseloadId)
+                .withRequestBodyJsonPath("transactionType", g1.type)
+                .withRequestBodyJsonPath("transactionTimestamp", g1.transactionTimestamp)
+                .withRequestBodyJsonPath("createdAt", g1.createdAt)
+                .withRequestBodyJsonPath("createdBy", g1.createdBy)
+                .withRequestBodyJsonPath("createdByDisplayName", g1.createdByDisplayName)
+                .withRequestBodyJsonPath("reference", equalTo(g1.reference))
+                .withRequestBodyJsonPath("lastModifiedAt", g1.lastModifiedAt.toString())
+                .withRequestBodyJsonPath("lastModifiedBy", equalTo(g1.lastModifiedBy))
+                .withRequestBodyJsonPath("lastModifiedByDisplayName", equalTo(g1.lastModifiedByDisplayName))
+                .withRequestBodyJsonPath("generalLedgerEntries[0].entrySequence", g1.generalLedgerEntrySequence)
+                .withRequestBodyJsonPath("generalLedgerEntries[0].code", equalTo(g1.accountCode.toString()))
+                .withRequestBodyJsonPath("generalLedgerEntries[0].postingType", equalTo(g1.postingType.name))
+                .withRequestBodyJsonPath("generalLedgerEntries[0].amount", equalTo("5.4")),
+            )
+          }
+        }
+
+        @Test
+        fun `will create mapping between DPS and NOMIS ids`() {
+          await untilAsserted {
+            financeMappingApiMockServer.verify(
+              postRequestedFor(urlPathEqualTo("/mapping/transactions"))
+                .withRequestBodyJsonPath("dpsTransactionId", DPS_TRANSACTION_ID)
+                .withRequestBodyJsonPath("nomisBookingId", BOOKING_ID)
+                .withoutQueryParam("offenderNo")
+                .withRequestBodyJsonPath("nomisTransactionId", NOMIS_TRANSACTION_ID.toString())
+                .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("transactions-synchronisation-created-success-gl"),
+              check {
+                assertNull(it["offenderNo"])
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["nomisTransactionId"]).isEqualTo(NOMIS_TRANSACTION_ID.toString())
+                assertThat(it["dpsTransactionId"]).isEqualTo(DPS_TRANSACTION_ID)
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
       @Nested
       @DisplayName("Happy path where transaction does not already exist in DPS")
       inner class HappyPathGLTransactionFirst {
@@ -563,7 +653,7 @@ class PrisonTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
     messageId: UUID,
     bookingId: Long = BOOKING_ID,
     transactionId: Long = NOMIS_TRANSACTION_ID,
-    offenderNo: String = OFFENDER_ID_DISPLAY,
+    offenderNo: String? = OFFENDER_ID_DISPLAY,
     auditModuleName: String = "OTDSUBAT",
   ) = SQSMessage(
     MessageId = "$messageId",

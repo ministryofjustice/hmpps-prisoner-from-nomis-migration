@@ -285,12 +285,12 @@ private fun assertMappingExistenceMatchesAction(
 private fun TransactionEvent.toTelemetryProperties(
   dpsTransactionId: UUID? = null,
   mappingFailed: Boolean? = null,
-) = mapOf(
+): Map<String, String> = mapOf(
   "nomisTransactionId" to this.transactionId.toString(),
-  "offenderNo" to this.offenderIdDisplay,
   "bookingId" to this.bookingId.toString(),
-) + (dpsTransactionId?.let { mapOf("dpsTransactionId" to it.toString()) } ?: emptyMap()) + (
-  if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap()
-  )
+) +
+  (offenderIdDisplay?.let { mapOf("offenderNo" to it) } ?: emptyMap()) +
+  (dpsTransactionId?.let { mapOf("dpsTransactionId" to it.toString()) } ?: emptyMap()) +
+  (if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap())
 
 data class EncapsulatedTransaction(val transactionEvent: TransactionEvent, val requestId: UUID, val eventType: String)
