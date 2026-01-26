@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-01-23.369.05fb31e"
+    "version" : "2026-01-26.371.5b33e69"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -18462,7 +18462,7 @@
             "pattern" : "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
           }
         },
-        "required" : [ "dpsTransactionId", "mappingType", "nomisBookingId", "nomisTransactionId", "offenderNo" ]
+        "required" : [ "dpsTransactionId", "mappingType", "nomisBookingId", "nomisTransactionId" ]
       },
       "ScheduledMovementSyncMappingDto" : {
         "type" : "object",
@@ -21990,12 +21990,12 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "paged" : {
-            "type" : "boolean"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "paged" : {
+            "type" : "boolean"
           },
           "unpaged" : {
             "type" : "boolean"
