@@ -815,82 +815,10 @@ class ExternalMovementsSyncIntTest(
     }
 
     @Nested
-    inner class HappyPathInbound {
-      @BeforeEach
-      fun setUp() {
-        nomisApi.stubGetTemporaryAbsenceScheduledReturnMovement(eventId = 45555, parentEventId = 45678)
-        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
-        nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678, eventTime = eventTime)
-        dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
-        mappingApi.stubUpdateScheduledMovementMapping()
-
-        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED", direction = "IN", eventId = 45555))
-          .also { waitForAnyProcessingToComplete() }
-      }
-
-      @Test
-      fun `should get NOMIS scheduled inbound movement`() {
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence-return/45555")))
-      }
-
-      @Test
-      fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
-      }
-
-      @Test
-      fun `should get NOMIS scheduled outbound movement`() {
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence/45678")))
-      }
-
-      @Test
-      fun `should update DPS occurrence`() {
-        ExternalMovementsDpsApiMockServer.getRequestBody<SyncWriteTapOccurrence>(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId/occurrences")),
-        ).apply {
-          assertThat(id).isEqualTo(dpsOccurrenceId)
-          assertThat(start).isCloseTo(now, within(1, ChronoUnit.MINUTES))
-          assertThat(end).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
-          assertThat(location.description).isEqualTo("some description")
-          assertThat(location.address).isEqualTo("to full address")
-          assertThat(location.postcode).isEqualTo("S1 1AB")
-          assertThat(absenceTypeCode).isEqualTo("RDR")
-          assertThat(absenceSubTypeCode).isEqualTo("RR")
-          assertThat(absenceReasonCode).isEqualTo("C5")
-          assertThat(transportCode).isEqualTo("VAN")
-          assertThat(comments).isEqualTo("scheduled absence comment")
-          assertThat(created.by).isEqualTo("USER")
-          assertThat(updated).isNull()
-          assertThat(isCancelled).isFalse
-          assertThat(legacyId).isEqualTo(45678)
-        }
-      }
-
-      @Test
-      fun `should create success telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("temporary-absence-sync-scheduled-movement-updated-success"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-            assertThat(it["bookingId"]).isEqualTo("12345")
-            assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            assertThat(it["nomisEventId"]).isEqualTo("45555")
-            assertThat(it["directionCode"]).isEqualTo("IN")
-            assertThat(it["dpsOccurrenceId"]).isEqualTo("$dpsOccurrenceId")
-            assertThat(it["nomisAddressId"]).isEqualTo("321")
-            assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
-          },
-          isNull(),
-        )
-      }
-    }
-
-    @Nested
-    inner class WhenNotTapMovement {
+    inner class WhenNotTapOutMovement {
       @BeforeEach
       fun setUp(output: CapturedOutput) {
-        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED", nomisEventType = "TRN"))
+        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED", nomisEventType = "TAP", direction = "IN"))
           .also { await untilCallTo { output.out } matches { it!!.contains("Ignoring") } }
       }
 
@@ -1261,78 +1189,6 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
             assertThat(it["nomisEventId"]).isEqualTo("45678")
             assertThat(it["directionCode"]).isEqualTo("OUT")
-            assertThat(it["dpsOccurrenceId"]).isEqualTo("$dpsOccurrenceId")
-            assertThat(it["nomisAddressId"]).isEqualTo("321")
-            assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
-          },
-          isNull(),
-        )
-      }
-    }
-
-    @Nested
-    inner class HappyPathInbound {
-      @BeforeEach
-      fun setUp() {
-        nomisApi.stubGetTemporaryAbsenceScheduledReturnMovement(eventId = 45555, parentEventId = 45678)
-        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
-        nomisApi.stubGetTemporaryAbsenceScheduledMovement(eventId = 45678, eventTime = eventTime)
-        dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
-        mappingApi.stubUpdateScheduledMovementMapping()
-
-        sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-UPDATED", direction = "IN", eventId = 45555))
-          .also { waitForAnyProcessingToComplete() }
-      }
-
-      @Test
-      fun `should get NOMIS scheduled inbound movement`() {
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence-return/45555")))
-      }
-
-      @Test
-      fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
-      }
-
-      @Test
-      fun `should get NOMIS scheduled outbound movement`() {
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence/45678")))
-      }
-
-      @Test
-      fun `should update DPS occurrence`() {
-        ExternalMovementsDpsApiMockServer.getRequestBody<SyncWriteTapOccurrence>(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId/occurrences")),
-        ).apply {
-          assertThat(id).isEqualTo(dpsOccurrenceId)
-          assertThat(start).isCloseTo(yesterday, within(1, ChronoUnit.MINUTES))
-          assertThat(end).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
-          assertThat(location.description).isEqualTo("some description")
-          assertThat(location.address).isEqualTo("to full address")
-          assertThat(location.postcode).isEqualTo("S1 1AB")
-          assertThat(absenceTypeCode).isEqualTo("RDR")
-          assertThat(absenceSubTypeCode).isEqualTo("RR")
-          assertThat(absenceReasonCode).isEqualTo("C5")
-          assertThat(transportCode).isEqualTo("VAN")
-          assertThat(comments).isEqualTo("scheduled absence comment")
-          assertThat(created.by).isEqualTo("USER")
-          assertThat(updated).isNull()
-          assertThat(isCancelled).isFalse
-          assertThat(legacyId).isEqualTo(45678)
-        }
-      }
-
-      @Test
-      fun `should create success telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("temporary-absence-sync-scheduled-movement-updated-success"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-            assertThat(it["bookingId"]).isEqualTo("12345")
-            assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            assertThat(it["nomisEventId"]).isEqualTo("45555")
-            assertThat(it["directionCode"]).isEqualTo("IN")
             assertThat(it["dpsOccurrenceId"]).isEqualTo("$dpsOccurrenceId")
             assertThat(it["nomisAddressId"]).isEqualTo("321")
             assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
