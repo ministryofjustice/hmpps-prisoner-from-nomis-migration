@@ -229,6 +229,8 @@ hmpps.sqs:
     # a short delay should be enough for the hierarchy to be created in the right order.
     eventcourtsentencing:
       errorVisibilityTimeout: 1, 1, 1, 10, 60
+    eventexternalmovements:
+      errorVisibilityTimeout: 1, 1, 1, 10, 60, 600
     migrationvisits:
       propagateTracing: false
     migrationactivities:
