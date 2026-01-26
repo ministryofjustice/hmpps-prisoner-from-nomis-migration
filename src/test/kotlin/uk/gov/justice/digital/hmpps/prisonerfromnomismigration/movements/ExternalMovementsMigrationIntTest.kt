@@ -389,6 +389,49 @@ class ExternalMovementsMigrationIntTest(
   }
 
   @Nested
+  inner class HappyPathMovedInDifferentPrison {
+    val prisonerNumber = "A0001KT"
+    val movementPrison = "MDI"
+
+    @BeforeEach
+    fun setUp() = runTest {
+      nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = prisonerNumber)
+      mappingApi.stubCreateTemporaryAbsenceMapping()
+      mappingApi.stubGetTemporaryAbsenceMappings(prisonerNumber, NOT_FOUND)
+      // The prison on the application and schedules is LEI
+      externalMovementsNomisApi.stubGetTemporaryAbsences(prisonerNumber, response = externalMovementsNomisApi.temporaryAbsencesResponse(movementPrison = movementPrison))
+      dpsApi.stubMigratePrisonerTaps(
+        personIdentifier = prisonerNumber,
+        response = migrateResponse(dpsAuthorisationId, dpsOccurrenceId, dpsScheduledMovementOutId, dpsScheduledMovementInId, dpsUnscheduledMovementOutId, dpsUnscheduledMovementInId),
+      )
+
+      migrationId = performMigration()
+    }
+
+    @Test
+    fun `will populate DPS TAP OUT movement prison`() {
+      ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
+        putRequestedFor(urlEqualTo("/migrate/temporary-absences/$prisonerNumber")),
+      ).apply {
+        with(temporaryAbsences[0].occurrences[0].movements[0]) {
+          assertThat(this.prisonCode).isEqualTo(movementPrison)
+        }
+      }
+    }
+
+    @Test
+    fun `will populate DPS TAP IN movement prison`() {
+      ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
+        putRequestedFor(urlEqualTo("/migrate/temporary-absences/$prisonerNumber")),
+      ).apply {
+        with(temporaryAbsences[0].occurrences[0].movements[1]) {
+          assertThat(prisonCode).isEqualTo(movementPrison)
+        }
+      }
+    }
+  }
+
+  @Nested
   inner class MigrateEntityFailure {
     @BeforeEach
     fun setUp() = runTest {

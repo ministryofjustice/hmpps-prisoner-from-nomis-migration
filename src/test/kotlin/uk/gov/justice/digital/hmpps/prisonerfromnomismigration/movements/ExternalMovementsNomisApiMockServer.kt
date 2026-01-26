@@ -62,7 +62,7 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun temporaryAbsencesResponse(): OffenderTemporaryAbsencesResponse = OffenderTemporaryAbsencesResponse(
+  fun temporaryAbsencesResponse(movementPrison: String = "LEI"): OffenderTemporaryAbsencesResponse = OffenderTemporaryAbsencesResponse(
     bookings = listOf(
       BookingTemporaryAbsences(
         bookingId = 12345,
@@ -91,11 +91,17 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
               Absence(
                 scheduledTemporaryAbsence = scheduledAbsence(),
                 scheduledTemporaryAbsenceReturn = scheduledAbsenceReturn(),
-                temporaryAbsence = absence().copy(sequence = 3, movementDate = yesterday.toLocalDate(), movementTime = yesterday),
+                temporaryAbsence = absence().copy(
+                  sequence = 3,
+                  movementDate = yesterday.toLocalDate(),
+                  movementTime = yesterday,
+                  fromPrison = movementPrison,
+                ),
                 temporaryAbsenceReturn = absenceReturn().copy(
                   sequence = 4,
                   movementDate = now.toLocalDate(),
                   movementTime = now,
+                  toPrison = movementPrison,
                 ),
               ),
             ),

@@ -261,7 +261,7 @@ class ExternalMovementsMigrationService(
             absence.scheduledTemporaryAbsence?.let { scheduleOut ->
               scheduleOut.toDpsRequest(
                 returnTime = absence.scheduledTemporaryAbsenceReturn?.startTime ?: scheduleOut.returnTime,
-                prison = scheduleOut.fromPrison ?: application.prisonId,
+                schedulePrison = scheduleOut.fromPrison ?: application.prisonId,
                 bookingId = booking.bookingId,
                 movementOut = absence.temporaryAbsence,
                 movementIn = absence.temporaryAbsenceReturn,
@@ -287,7 +287,7 @@ class ExternalMovementsMigrationService(
     temporaryAbsenceType: String?,
     temporaryAbsenceSubType: String?,
     returnTime: LocalDateTime,
-    prison: String,
+    schedulePrison: String,
     bookingId: Long,
     movementOut: TemporaryAbsence?,
     movementIn: TemporaryAbsenceReturn?,
@@ -306,39 +306,41 @@ class ExternalMovementsMigrationService(
     created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
     updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId ?: "") },
     legacyId = eventId,
-    movements = listOfNotNull(movementOut?.toDpsRequest(bookingId, prison), movementIn?.toDpsRequest(bookingId, prison)),
+    movements = listOfNotNull(movementOut?.toDpsRequest(bookingId, schedulePrison), movementIn?.toDpsRequest(bookingId, schedulePrison)),
   )
 
   private fun TemporaryAbsenceReturn.toDpsRequest(
     bookingId: Long,
-    prison: String,
+    schedulePrison: String,
   ): MigrateTapMovement = MigrateTapMovement(
     occurredAt = movementTime,
     direction = MigrateTapMovement.Direction.IN,
     absenceReasonCode = movementReason,
     location = Location(description = fromAddressDescription, address = fromFullAddress, postcode = fromAddressPostcode),
     accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
-    created = SyncAtAndByWithPrison(audit.createDatetime, audit.createUsername, prison),
+    created = SyncAtAndByWithPrison(audit.createDatetime, audit.createUsername),
     legacyId = "${bookingId}_$sequence",
     accompaniedByComments = escortText,
     comments = commentText,
     updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId ?: "") },
+    prisonCode = toPrison ?: schedulePrison,
   )
 
   private fun TemporaryAbsence.toDpsRequest(
     bookingId: Long,
-    prison: String,
+    schedulePrison: String,
   ): MigrateTapMovement = MigrateTapMovement(
     occurredAt = movementTime,
     direction = MigrateTapMovement.Direction.OUT,
     absenceReasonCode = movementReason,
     location = Location(description = toAddressDescription, address = toFullAddress, postcode = toAddressPostcode),
     accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
-    created = SyncAtAndByWithPrison(audit.createDatetime, audit.createUsername, prison),
+    created = SyncAtAndByWithPrison(audit.createDatetime, audit.createUsername),
     legacyId = "${bookingId}_$sequence",
     accompaniedByComments = escortText,
     comments = commentText,
     updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId ?: "") },
+    prisonCode = fromPrison ?: schedulePrison,
   )
   override fun parseContextFilter(json: String): MigrationMessage<*, ExternalMovementsMigrationFilter> = jsonMapper.readValue(json)
 
