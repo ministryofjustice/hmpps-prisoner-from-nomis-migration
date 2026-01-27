@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.jsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.DayType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigResponse
@@ -19,6 +20,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitSlot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitor
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateTimeSlotRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncTimeSlot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
@@ -115,6 +118,27 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       visitors = listOf(IdPair(nomisId = 30, dpsId = 300, elementType = IdPair.ElementType.OFFICIAL_VISITOR)),
       prisoner = IdPair(nomisId = 20, dpsId = 200, elementType = IdPair.ElementType.PRISONER_VISITED),
     )
+
+    fun syncCreateTimeSlotRequest() = SyncCreateTimeSlotRequest(
+      prisonCode = "MDI",
+      dayCode = DayType.MON,
+      startTime = "10:00",
+      endTime = "11:00",
+      effectiveDate = LocalDate.parse("2021-01-01"),
+      createdBy = "T.SMITH",
+      createdTime = LocalDateTime.parse("2020-01-01T08:00"),
+    )
+
+    fun syncTimeSlot() = SyncTimeSlot(
+      prisonTimeSlotId = 1,
+      prisonCode = "MDI",
+      dayCode = DayType.MON,
+      startTime = "10:00",
+      endTime = "11:00",
+      effectiveDate = LocalDate.parse("2025-01-01"),
+      createdBy = "T.SMITH",
+      createdTime = LocalDateTime.parse("2020-01-01T08:00"),
+    )
   }
 
   fun stubHealthPing(status: Int) {
@@ -143,6 +167,18 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubMigrateVisit(response: MigrateVisitResponse = migrateVisitResponse()) {
     stubFor(
       post("/migrate/visit")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(201)
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubCreateTimeSlot(response: SyncTimeSlot = syncTimeSlot()) {
+    stubFor(
+      post("/sync/time-slot")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
