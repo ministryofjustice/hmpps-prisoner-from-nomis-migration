@@ -85,7 +85,7 @@ private fun OffenderAddress.toCprAddress() = Address(
   comment = comment,
   isPrimary = primaryAddress,
   isMail = mailAddress,
-  addressUsage = this.usages?.map { AddressUsage(AddressUsageCode.valueOf(it.usage.code), it.active) },
+  addressUsage = this.usages?.map { AddressUsage(AddressUsageCode.valueOf(it.usage.code), it.active) } ?: emptyList(),
 )
 
 private fun MutableList<String>.addIfNotEmpty(value: String?) {

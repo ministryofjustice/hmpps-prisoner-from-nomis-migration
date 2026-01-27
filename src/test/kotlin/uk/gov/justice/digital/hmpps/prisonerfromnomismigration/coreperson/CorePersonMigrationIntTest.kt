@@ -622,7 +622,7 @@ class CorePersonMigrationIntTest(
           assertThat(comment).isEqualTo("Use this address")
           assertThat(startDate).isEqualTo(LocalDate.parse("1987-01-01"))
           assertThat(endDate).isEqualTo(LocalDate.parse("2024-02-01").toString())
-          assertThat(addressUsage?.map { it.addressUsageCode }).isEqualTo(listOf(AddressUsage.AddressUsageCode.HOME))
+          assertThat(addressUsage.map { it.addressUsageCode }).isEqualTo(listOf(AddressUsage.AddressUsageCode.HOME))
         }
         with(corePerson.addresses[1]) {
           assertThat(isPrimary).isFalse()
@@ -639,7 +639,7 @@ class CorePersonMigrationIntTest(
           assertThat(comment).isNull()
           assertThat(startDate).isNull()
           assertThat(endDate).isNull()
-          assertThat(addressUsage).isNull()
+          assertThat(addressUsage).isEmpty()
         }
       }
 
