@@ -13,13 +13,17 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligion
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Identifier
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Identifier.Type
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Name
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Sentence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
-import java.time.LocalDateTime
+import java.time.LocalDate
 
 class CorePersonCprApiExtension :
   BeforeAllCallback,
@@ -54,59 +58,43 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     private const val WIREMOCK_PORT = 8099
 
     fun migrateCorePersonRequest() = Prisoner(
-      name = TODO(),
-      demographicAttributes = TODO(),
-      addresses = TODO(),
-      contacts = TODO(),
-      aliases = TODO(),
-      identifiers = TODO(),
-      sentences = TODO(),
-
-//      offenders = listOf(
-//        Names(
-//          offenderId = "1",
-//          title = "MR",
-//          firstName = "JOHN",
-//          lastName = "SMITH",
-//          workingName = true,
-//          middleName1 = "FRED",
-//          middleName2 = "JAMES",
-//          dateOfBirth = LocalDate.parse("1980-01-01"),
-//          birthPlace = "LONDON",
-//          birthCountry = "ENG",
-//          raceCode = "BLACK",
-//          sex = Names.Sex.MALE,
-//          nameType = Names.NameType.MAIDEN,
-//          identifiers = listOf(
-//            Identifier(
-//              type = "PNC",
-//              value = "20/0071818T",
-//            ),
-//          ),
-//        ),
-//      ),
-//      sentenceStartDates = listOf(LocalDate.parse("1980-01-01")),
-//      religion = listOf(Religion()),
-//      phoneNumbers = emptyList(),
-//      emails = emptyList(),
-//      addresses = emptyList(),
-//      nationality = "ENG",
-//      secondaryNationality = "NOT_ENG",
-//      sexualOrientation = "HET",
-//      interestToImmigration = true,
-//      disability = true,
-//      status = "ACTIVE",
+      name = Name(
+        titleCode = "MR",
+        firstName = "JOHN",
+        lastName = "SMITH",
+        middleNames = "FRED JAMES",
+      ),
+      demographicAttributes = DemographicAttributes(
+        dateOfBirth = LocalDate.parse("1980-01-01"),
+        birthPlace = "LONDON",
+        birthCountryCode = "ENG",
+        ethnicityCode = "BLACK",
+        sexCode = "M",
+        sexualOrientation = "HET",
+        disability = true,
+        interestToImmigration = true,
+        religionCode = "REL",
+        nationalityCode = "ENG",
+        nationalityNote = "NOT_ENG",
+      ),
+      identifiers = listOf(
+        Identifier(
+          type = Type.PNC,
+          value = "20/0071818T",
+        ),
+      ),
+      aliases = listOf(),
+      addresses = listOf(),
+      contacts = listOf(),
+      sentences = listOf(
+        Sentence(LocalDate.parse("1980-01-01")),
+      ),
     )
 
-    fun migrateCorePersonResponse(request: Prisoner = migrateCorePersonRequest()) = CreateResponse(
-      // TODO fix when lists correctly set up as nullable
-      addressIds = listOf(),
-      phoneIds = listOf(),
-      emailIds = listOf(),
-    )
+    fun migrateCorePersonResponse(request: Prisoner = migrateCorePersonRequest()) = "OK"
   }
 
-  fun stubMigrateCorePerson(nomisPrisonNumber: String = "A1234BC", response: CreateResponse = migrateCorePersonResponse()) {
+  fun stubMigrateCorePerson(nomisPrisonNumber: String = "A1234BC", response: String = migrateCorePersonResponse()) {
     stubFor(
       put("/syscon-sync/$nomisPrisonNumber")
         .willReturn(
@@ -133,12 +121,6 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
-
-  fun prisonReligionResponse() = PrisonReligion(
-    current = true,
-    modifyDateTime = LocalDateTime.parse("2020-11-01T11:10:00"),
-    modifyUserId = "ME",
-  )
 
   fun stubSyncCreateSexualOrientation(prisonNumber: String, status: Int = 201) {
     stubFor(

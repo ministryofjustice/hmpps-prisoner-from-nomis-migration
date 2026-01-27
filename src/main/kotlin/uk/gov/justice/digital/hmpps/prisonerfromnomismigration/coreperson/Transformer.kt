@@ -4,6 +4,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.AddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.AddressUsage.AddressUsageCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Alias
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Contact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Identifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Name
@@ -12,6 +13,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPhoneNumber
 
 private val allowedIdentifiers: Set<String> = Identifier.Type.entries.map { it.value }.toSet()
 
@@ -20,13 +23,10 @@ fun CorePerson.toCprPrisoner(): Prisoner {
   return Prisoner(
     name = currentAlias.toCprName(),
     demographicAttributes = toDemographicAttributes(currentAlias),
-    // TODO: remap in new structure when we get it
     addresses = addresses?.map { it.toCprAddress() } ?: emptyList(),
-    contacts = listOf(),
-//    Contact(
-//      phoneNumbers = emptyList(), // phoneNumbers?.map { it.toCprPhoneNumber() } ?: emptyList(),
-//      emails = emptyList(), // emailAddresses?.map { Email(it.emailAddressId, it.email) } ?: emptyList(),
-//    )),
+    contacts = (phoneNumbers?.map { it.toCprContact() } ?: emptyList()) +
+      (emailAddresses?.map { it.toCprContact() } ?: emptyList()) +
+      (addresses?.flatMap { it.toCprContact() ?: emptyList() } ?: emptyList()),
     aliases = offenders.filterNot { it.workingName }.map { it.toCprAlias() },
     identifiers = offenders.flatMap {
       it.identifiers
@@ -41,14 +41,14 @@ fun CorePerson.toCprPrisoner(): Prisoner {
 private fun CoreOffender.toCprName() = Name(
   titleCode = title?.code,
   firstName = firstName,
-  middleNames = listOfNotNull(middleName1, middleName2).joinToString(" "),
+  middleNames = listOfNotNull(middleName1, middleName2).takeIf { it.isNotEmpty() }?.joinToString(" "),
   lastName = lastName,
 )
 
 private fun CoreOffender.toCprAlias() = Alias(
   titleCode = title?.code,
   firstName = firstName,
-  middleNames = listOfNotNull(middleName1, middleName2).joinToString(" "),
+  middleNames = listOfNotNull(middleName1, middleName2).takeIf { it.isNotEmpty() }?.joinToString(" "),
   lastName = lastName,
   dateOfBirth = dateOfBirth,
   sexCode = sex?.code,
@@ -69,7 +69,7 @@ private fun CorePerson.toDemographicAttributes(currentAlias: CoreOffender): Demo
 )
 
 private fun OffenderAddress.toCprAddress() = Address(
-  fullAddress = null,
+  fullAddress = buildFullAddress(),
   noFixedAbode = noFixedAddress,
   startDate = startDate,
   endDate = endDate?.toString(),
@@ -88,37 +88,61 @@ private fun OffenderAddress.toCprAddress() = Address(
   addressUsage = this.usages?.map { AddressUsage(AddressUsageCode.valueOf(it.usage.code), it.active) },
 )
 
-//  // TODO Check - type is always null in NOMIS - not required as part of Cpr Address?
-//  type = Address.Type.HOME,
-//  isPrimary = primaryAddress,
-//  isMail = mailAddress,
-//  // TODO: hard coded
-//  isActive = true,
-//  // TODO: remove
-//  id = addressId.toString(),
-//  flat = flat,
-//  premise = premise,
-//  street = street,
-//  locality = locality,
-//  townCode = city?.code,
-//  postcode = postcode,
-//  countyCode = county?.code,
-//  countryCode = country?.code,
-//  // TODO this is a boolean - should the CprAddress noFixedAddress field also be a boolean?
-//  noFixedAddress = noFixedAddress,
-//  startDate = startDate,
-//  endDate = endDate.toString(),
-//  comment = comment,
-// )
-//
-// fun OffenderPhoneNumber.toCprPhoneNumber() = PhoneNumber(
-//  phoneId = phoneId,
-//  phoneNumber = number,
-//  // TODO check this should be a code
-//  phoneType = type.toCprPhoneType(),
-//  phoneExtension = extension,
-// )
-//
+private fun MutableList<String>.addIfNotEmpty(value: String?) {
+  if (!value.isNullOrBlank()) add(value.trim())
+}
+
+fun OffenderAddress.buildFullAddress(): String {
+  // Code duplicated from Prisoner Search Indexer
+  if (noFixedAddress == true) return "No fixed address"
+
+  val address = mutableListOf<String>()
+
+  // Append "Flat" if there is one
+  if (!flat.isNullOrBlank()) {
+    address.add("Flat ${flat.trim()}")
+  }
+  // Don't separate a numeric premise from the street, only if it's a name
+  val hasPremise = !premise.isNullOrBlank()
+  val premiseIsNumber = premise?.all { it.isDigit() } ?: false
+  val hasStreet = !street.isNullOrBlank()
+  when {
+    hasPremise && premiseIsNumber && hasStreet -> address.add("$premise $street")
+    hasPremise && !premiseIsNumber && hasStreet -> address.add("$premise, $street")
+    hasPremise -> address.add(premise)
+    hasStreet -> address.add(street)
+  }
+  // Add others if they exist
+  address.addIfNotEmpty(locality)
+  address.addIfNotEmpty(city?.description)
+  address.addIfNotEmpty(county?.description)
+  address.addIfNotEmpty(postcode)
+  address.addIfNotEmpty(country?.description)
+  return address.joinToString(", ")
+}
+
+fun OffenderPhoneNumber.toCprContact(fromAddress: Boolean = false) = Contact(
+  isPersonContact = fromAddress.not(),
+  isAddressContact = fromAddress,
+  value = number,
+  type = when (type.code) {
+    "HOME" -> Contact.Type.HOME
+    "MOB" -> Contact.Type.MOBILE
+    // TODO Not all codes are catered for here
+    else -> Contact.Type.HOME
+  },
+  extension = extension,
+)
+
+fun OffenderEmailAddress.toCprContact() = Contact(
+  isPersonContact = true,
+  isAddressContact = false,
+  value = email,
+  type = Contact.Type.EMAIL,
+)
+
+fun OffenderAddress.toCprContact(): List<Contact>? = this.phoneNumbers?.map { it.toCprContact(fromAddress = true) }
+
 // fun OffenderBelief.toCprReligion() = Religion(
 //  religion = belief.code,
 //  startDate = startDate,
@@ -129,18 +153,6 @@ private fun OffenderAddress.toCprAddress() = Address(
 //  createdUserId = audit.createUsername,
 //  updatedUserId = audit.modifyUserId,
 // )
-//
-// fun CodeDescription.toCprPhoneType() = when (this.code) {
-//  "HOME" -> PhoneNumber.PhoneType.HOME
-//  "MOB" -> PhoneNumber.PhoneType.MOBILE
-//  "BUS" -> PhoneNumber.PhoneType.BUSINESS
-//  // TODO Not all codes are catered for here
-//  "FAX" -> PhoneNumber.PhoneType.HOME
-//  "ALTB" -> PhoneNumber.PhoneType.HOME
-//  "ALTH" -> PhoneNumber.PhoneType.HOME
-//  "VISIT" -> PhoneNumber.PhoneType.HOME
-//  else -> throw IllegalArgumentException("Invalid phone Type ${this.code} found in NOMIS data")
-// }
 //
 // fun CodeDescription.toCprSexType() = when (this.code) {
 //  "F" -> Names.Sex.FEMALE

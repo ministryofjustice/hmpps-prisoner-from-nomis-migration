@@ -12,7 +12,6 @@ import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -26,13 +25,14 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiMockServer.Companion.migrateCorePersonResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.AddressUsage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Contact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
@@ -160,7 +160,6 @@ class CorePersonMigrationIntTest(
     }
 
     @Nested
-    @Disabled
     inner class HappyPath {
       private lateinit var migrationResult: MigrationResult
 
@@ -271,7 +270,6 @@ class CorePersonMigrationIntTest(
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    @Disabled
     inner class HappyPathNomisToCPRMapping {
       private lateinit var cprRequests: List<Prisoner>
       private lateinit var cprRequests2: List<Prisoner>
@@ -525,12 +523,12 @@ class CorePersonMigrationIntTest(
       @Test
       fun `will send mandatory core person data to CPR`() {
         with(cprRequests2[0]) {
-          assertThat(aliases.size).isEqualTo(1)
-          with(aliases[0]) {
+          with(name) {
             assertThat(firstName).isEqualTo("KWAME")
             assertThat(middleNames).isNull()
             assertThat(lastName).isEqualTo("KOBE")
           }
+          assertThat(aliases.size).isEqualTo(0)
           assertThat(addresses).isEmpty()
           assertThat(sentences).isEmpty()
         }
@@ -546,7 +544,7 @@ class CorePersonMigrationIntTest(
             assertThat(lastName).isEqualTo("SMITH")
           }
           assertThat(aliases).hasSize(1)
-          with(aliases[1]) {
+          with(aliases[0]) {
             assertThat(titleCode).isNull()
             assertThat(firstName).isEqualTo("JIM")
             assertThat(middleNames).isNull()
@@ -560,37 +558,50 @@ class CorePersonMigrationIntTest(
       @Test
       fun `will send offender identifier details to CPR`() {
         with(cprRequests[0]) {
-          assertThat(identifiers).hasSize(2)
+          assertThat(identifiers).hasSize(1)
           with(identifiers[0]) {
             assertThat(type?.value).isEqualTo("PNC")
             assertThat(value).isEqualTo("20/0071818T")
           }
-          with(identifiers[1]) {
-            assertThat(type?.value).isEqualTo("CID")
-            assertThat(value).isEqualTo("ABWERJKL")
+        }
+      }
+
+      @Test
+      fun `will send phone numbers to CPR`() {
+        with(cprRequests[0]) {
+          assertThat(contacts).hasSize(4)
+          with(contacts[0]) {
+            assertThat(value).isEqualTo("0114 555 5555")
+            assertThat(type).isEqualTo(Contact.Type.MOBILE)
+            assertThat(extension).isEqualTo("ext 5555")
+            assertThat(isPersonContact).isTrue
+            assertThat(isAddressContact).isFalse
+          }
+          with(contacts[1]) {
+            assertThat(value).isEqualTo("0114 1111 1111111")
+            // FAX is not mapped to a phone type
+            assertThat(type).isEqualTo(Contact.Type.HOME)
+            assertThat(extension).isNull()
+            assertThat(isPersonContact).isTrue
+            assertThat(isAddressContact).isFalse
+          }
+          with(contacts[2]) {
+            assertThat(value).isEqualTo("test@test.justice.gov.uk")
+            // FAX is not mapped to a phone type
+            assertThat(type).isEqualTo(Contact.Type.EMAIL)
+            assertThat(extension).isNull()
+            assertThat(isPersonContact).isTrue
+            assertThat(isAddressContact).isFalse
+          }
+          with(contacts[3]) {
+            assertThat(value).isEqualTo("0113 555 5555")
+            assertThat(type).isEqualTo(Contact.Type.HOME)
+            assertThat(extension).isEqualTo("ext 5555")
+            assertThat(isPersonContact).isFalse
+            assertThat(isAddressContact).isTrue
           }
         }
       }
-//
-//      @Test
-//      fun `will send phone numbers to CPR`() {
-//        with(cprRequests[0]) {
-//          assertThat(phoneNumbers).hasSize(2)
-//          with(phoneNumbers[0]) {
-//            assertThat(phoneId).isEqualTo(10)
-//            assertThat(phoneNumber).isEqualTo("0114 555 5555")
-//            assertThat(phoneType).isEqualTo(PhoneNumber.PhoneType.MOBILE)
-//            assertThat(phoneExtension).isEqualTo("ext 5555")
-//          }
-//          with(phoneNumbers[1]) {
-//            assertThat(phoneId).isEqualTo(11)
-//            assertThat(phoneNumber).isEqualTo("0114 1111 1111111")
-//            // FAX is not mapped to a phone type
-//            assertThat(phoneType).isEqualTo(PhoneNumber.PhoneType.HOME)
-//            assertThat(phoneExtension).isNull()
-//          }
-//        }
-//      }
 
       @Test
       fun `will send addresses to CPR`() {
@@ -603,7 +614,7 @@ class CorePersonMigrationIntTest(
           assertThat(thoroughfareName).isEqualTo("High Mound")
           assertThat(dependentLocality).isEqualTo("Broomhill")
           assertThat(postTown).isEqualTo("25343")
-          assertThat(county).isEqualTo("S.YORKSHIRE")
+          assertThat(county).isEqualTo("South Yorkshire")
           assertThat(countryCode).isEqualTo("ENG")
           assertThat(postcode).isEqualTo("S1 5GG")
           assertThat(noFixedAbode).isFalse
@@ -611,7 +622,7 @@ class CorePersonMigrationIntTest(
           assertThat(comment).isEqualTo("Use this address")
           assertThat(startDate).isEqualTo(LocalDate.parse("1987-01-01"))
           assertThat(endDate).isEqualTo(LocalDate.parse("2024-02-01").toString())
-          assertThat(addressUsage?.map { it.addressUsageCode.toString() }).isEqualTo(listOf("HOME"))
+          assertThat(addressUsage?.map { it.addressUsageCode }).isEqualTo(listOf(AddressUsage.AddressUsageCode.HOME))
         }
         with(corePerson.addresses[1]) {
           assertThat(isPrimary).isFalse()
@@ -628,20 +639,9 @@ class CorePersonMigrationIntTest(
           assertThat(comment).isNull()
           assertThat(startDate).isNull()
           assertThat(endDate).isNull()
-          assertThat(addressUsage?.map { it.addressUsageCode.toString() }).isEqualTo(listOf("HOME"))
+          assertThat(addressUsage).isNull()
         }
       }
-
-//
-//      @Test
-//      fun `will send email addresses to CPR`() {
-//        val corePerson = cprRequests[0]
-//        assertThat(corePerson.emails).hasSize(1)
-//        with(corePerson.emails[0]) {
-//          assertThat(id).isEqualTo(130)
-//          assertThat(emailAddress).isEqualTo("test@test.justice.gov.uk")
-//        }
-//      }
 
       @Test
       fun `will send latest demographic data to CPR`() {
@@ -650,7 +650,7 @@ class CorePersonMigrationIntTest(
           assertThat(birthPlace).isEqualTo("LONDON")
           assertThat(birthCountryCode).isEqualTo("ENG")
           assertThat(ethnicityCode).isEqualTo("BLACK")
-          assertThat(sexCode).isEqualTo("MALE")
+          assertThat(sexCode).isEqualTo("M")
           assertThat(sexualOrientation).isEqualTo("HET")
           assertThat(disability).isTrue
           assertThat(religionCode).isEqualTo("DRU")
@@ -675,52 +675,9 @@ class CorePersonMigrationIntTest(
           assertThat(personMapping.cprId).isEqualTo("A0002BC")
         }
       }
-
-      @Test
-      fun `will create mappings for nomis addresses to cpr address`() {
-        with(mappingRequests.find { it.personMapping.nomisPrisonNumber == "A0001BC" }?.addressMappings ?: throw AssertionError("Request not found")) {
-          assertThat(this).hasSize(2)
-          assertThat(this[0].nomisId).isEqualTo(101L)
-          assertThat(this[0].cprId).isEqualTo("CPR-101")
-          assertThat(this[1].nomisId).isEqualTo(102L)
-          assertThat(this[1].cprId).isEqualTo("CPR-102")
-        }
-        with(mappingRequests.find { it.personMapping.nomisPrisonNumber == "A0002BC" }?.addressMappings ?: throw AssertionError("Request not found")) {
-          assertThat(this).isEmpty()
-        }
-      }
-
-      @Test
-      fun `will create mappings for nomis phones to cpr phones including from the addresses`() {
-        with(mappingRequests.find { it.personMapping.nomisPrisonNumber == "A0001BC" }?.phoneMappings ?: throw AssertionError("Request not found")) {
-          assertThat(this).hasSize(2)
-          assertThat(this[0].nomisId).isEqualTo(10L)
-          assertThat(this[0].cprId).isEqualTo("CPR-10")
-          assertThat(this[0].cprPhoneType).isEqualTo(CorePersonPhoneMappingIdDto.CprPhoneType.CORE_PERSON)
-          assertThat(this[1].nomisId).isEqualTo(11L)
-          assertThat(this[1].cprId).isEqualTo("CPR-11")
-          assertThat(this[1].cprPhoneType).isEqualTo(CorePersonPhoneMappingIdDto.CprPhoneType.CORE_PERSON)
-        }
-        with(mappingRequests.find { it.personMapping.nomisPrisonNumber == "A0002BC" }?.phoneMappings ?: throw AssertionError("Request not found")) {
-          assertThat(this).isEmpty()
-        }
-      }
-
-      @Test
-      fun `will create mappings for nomis emails to cpr emails`() {
-        with(mappingRequests.find { it.personMapping.nomisPrisonNumber == "A0001BC" }?.emailMappings ?: throw AssertionError("Request not found")) {
-          assertThat(this).hasSize(1)
-          assertThat(this[0].nomisId).isEqualTo(130L)
-          assertThat(this[0].cprId).isEqualTo("CPR-130")
-        }
-        with(mappingRequests.find { it.personMapping.nomisPrisonNumber == "A0002BC" }?.emailMappings ?: throw AssertionError("Request not found")) {
-          assertThat(this).isEmpty()
-        }
-      }
     }
 
     @Nested
-    @Disabled
     inner class MappingErrorRecovery {
       private lateinit var migrationResult: MigrationResult
 
@@ -792,7 +749,6 @@ class CorePersonMigrationIntTest(
     }
 
     @Nested
-    @Disabled
     inner class DuplicateMappingErrorHandling {
       private lateinit var migrationResult: MigrationResult
 
