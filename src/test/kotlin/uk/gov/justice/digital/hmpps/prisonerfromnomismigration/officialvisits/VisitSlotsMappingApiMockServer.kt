@@ -75,6 +75,27 @@ class VisitSlotsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubCreateTimeSlotMapping() {
+    mappingApi.stubFor(
+      post("/mapping/visit-slots/time-slots").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateTimeSlotMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/visit-slots/time-slots").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun stubGetTimeSlotByNomisIdsOrNull(
     nomisPrisonId: String = "WWI",
     nomisDayOfWeek: String = "MON",
