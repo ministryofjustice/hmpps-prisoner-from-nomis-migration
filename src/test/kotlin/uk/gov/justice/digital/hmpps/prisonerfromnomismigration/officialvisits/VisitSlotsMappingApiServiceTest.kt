@@ -132,6 +132,92 @@ class VisitSlotsMappingApiServiceTest {
   }
 
   @Nested
+  inner class CreateTimeSlotMapping {
+    @Test
+    fun `will pass oath2 token to migrate endpoint`() = runTest {
+      mockServer.stubCreateTimeSlotMapping()
+
+      apiService.createTimeSlotMapping(
+        VisitTimeSlotMappingDto(
+          mappingType = VisitTimeSlotMappingDto.MappingType.MIGRATED,
+          label = "2020-01-01T10:00",
+          dpsId = "1233",
+          nomisPrisonId = "WWI",
+          nomisDayOfWeek = "MON",
+          nomisSlotSequence = 2,
+        ),
+      )
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/visit-slots/time-slots")).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will return success when OK response`() = runTest {
+      mockServer.stubCreateTimeSlotMapping()
+
+      val result = apiService.createTimeSlotMapping(
+        VisitTimeSlotMappingDto(
+          mappingType = VisitTimeSlotMappingDto.MappingType.MIGRATED,
+          label = "2020-01-01T10:00",
+          dpsId = "1233",
+          nomisPrisonId = "WWI",
+          nomisDayOfWeek = "MON",
+          nomisSlotSequence = 2,
+        ),
+      )
+
+      assertThat(result.isError).isFalse()
+    }
+
+    @Test
+    fun `will return error when 409 conflict`() = runTest {
+      val dpsId = "1234"
+      val existingDpsId = "5678"
+
+      mockServer.stubCreateTimeSlotMapping(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            duplicate = VisitTimeSlotMappingDto(
+              dpsId = dpsId,
+              nomisPrisonId = "WWI",
+              nomisDayOfWeek = "MON",
+              nomisSlotSequence = 2,
+              mappingType = VisitTimeSlotMappingDto.MappingType.MIGRATED,
+            ),
+            existing = VisitTimeSlotMappingDto(
+              dpsId = existingDpsId,
+              nomisPrisonId = "WWI",
+              nomisDayOfWeek = "MON",
+              nomisSlotSequence = 2,
+              mappingType = VisitTimeSlotMappingDto.MappingType.MIGRATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      val result = apiService.createTimeSlotMapping(
+        VisitTimeSlotMappingDto(
+          mappingType = VisitTimeSlotMappingDto.MappingType.MIGRATED,
+          label = "2020-01-01T10:00",
+          dpsId = "1233",
+          nomisPrisonId = "WWI",
+          nomisDayOfWeek = "MON",
+          nomisSlotSequence = 2,
+        ),
+      )
+
+      assertThat(result.isError).isTrue()
+      assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
+      assertThat(result.errorResponse.moreInfo.existing?.dpsId).isEqualTo(existingDpsId)
+    }
+  }
+
+  @Nested
   inner class GetTimeSlotByNomisIdsOrNull {
     val nomisPrisonId = "WWI"
     val nomisDayOfWeek = "MON"
