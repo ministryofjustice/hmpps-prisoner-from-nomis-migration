@@ -17,7 +17,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType.TAP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndByWithPrison
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
@@ -728,9 +727,10 @@ private fun TemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, occurrenceId
   accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
   accompaniedByComments = escortText,
   comments = commentText,
-  created = SyncAtAndByWithPrison(audit.createDatetime, audit.createUsername, fromPrison),
+  created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
   updated = audit.modifyDatetime?.let { SyncAtAndBy(audit.modifyDatetime, audit.modifyUserId!!) },
   legacyId = "${bookingId}_$sequence",
+  prisonCode = fromPrison,
 )
 
 private fun TemporaryAbsenceReturnResponse.toDpsRequest(id: UUID? = null, occurrenceId: UUID? = null, dpsLocation: Location) = SyncWriteTapMovement(
@@ -743,9 +743,10 @@ private fun TemporaryAbsenceReturnResponse.toDpsRequest(id: UUID? = null, occurr
   accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
   accompaniedByComments = escortText,
   comments = commentText,
-  created = SyncAtAndByWithPrison(audit.createDatetime, audit.createUsername, toPrison),
+  created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
   updated = audit.modifyDatetime?.let { SyncAtAndBy(audit.modifyDatetime, audit.modifyUserId!!) },
   legacyId = "${bookingId}_$sequence",
+  prisonCode = toPrison,
 )
 
 private fun ScheduledMovementSyncMappingDto.hasChanged(original: ScheduledMovementSyncMappingDto) = this.prisonerNumber != original.prisonerNumber ||
