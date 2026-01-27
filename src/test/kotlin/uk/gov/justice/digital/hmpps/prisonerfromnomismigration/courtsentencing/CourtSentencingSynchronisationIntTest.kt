@@ -3460,6 +3460,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
               assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
               assertThat(it["nomisOutcomeCode"]).isEqualTo("1002")
+              assertThat(it["offenceCode"]).isEqualTo("RI64006")
             },
             isNull(),
           )
@@ -4020,6 +4021,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
               assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
               assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
+              assertThat(it["offenceCode"]).isEqualTo("TTT4006")
             },
             isNull(),
           )

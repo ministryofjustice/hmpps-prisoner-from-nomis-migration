@@ -786,48 +786,51 @@ class CourtSentencingSynchronisationService(
   }
 
   suspend fun nomisCourtChargeUpdated(event: CourtEventChargeEvent) {
-    var telemetry =
-      mapOf(
-        "nomisBookingId" to event.bookingId.toString(),
-        "nomisOffenderChargeId" to event.chargeId.toString(),
-        "nomisCourtAppearanceId" to event.eventId.toString(),
-        "offenderNo" to event.offenderIdDisplay,
-      )
+    var telemetry = mapOf(
+      "nomisBookingId" to event.bookingId.toString(),
+      "nomisOffenderChargeId" to event.chargeId.toString(),
+      "nomisCourtAppearanceId" to event.eventId.toString(),
+      "offenderNo" to event.offenderIdDisplay,
+    )
     if (event.originatesInDps) {
       telemetryClient.trackEvent("court-charge-synchronisation-updated-skipped", telemetry)
     } else {
-      mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)
-        ?.let { courtAppearanceMapping ->
-          mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { chargeMapping ->
-            nomisApiService.getCourtEventChargeOrNull(
-              offenderNo = event.offenderIdDisplay,
-              eventId = event.eventId,
-              offenderChargeId = event.chargeId,
-            )?.let { nomisCourtAppearanceCharge ->
-              track(
-                name = "court-charge-synchronisation-updated",
-                telemetry = (telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("dpsCourtAppearanceId" to courtAppearanceMapping.dpsCourtAppearanceId) + ("nomisOutcomeCode" to nomisCourtAppearanceCharge.resultCode1?.code.toString())).toMutableMap(),
-              ) {
-                dpsApiService.updateCourtCharge(
-                  chargeId = chargeMapping.dpsCourtChargeId,
-                  appearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
-                  charge = nomisCourtAppearanceCharge.toDpsCharge(),
-                )
-              }
-            } ?: let {
-              telemetryClient.trackEvent(
-                "court-charge-synchronisation-updated-ignored",
-                telemetry + ("reason" to "charge no longer exists in nomis"),
+      mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)?.let { courtAppearanceMapping ->
+        mappingApiService.getOffenderChargeOrNullByNomisId(event.chargeId)?.let { chargeMapping ->
+          nomisApiService.getCourtEventChargeOrNull(
+            offenderNo = event.offenderIdDisplay,
+            eventId = event.eventId,
+            offenderChargeId = event.chargeId,
+          )?.let { nomisCourtAppearanceCharge ->
+            track(
+              name = "court-charge-synchronisation-updated",
+              telemetry = (
+                telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) +
+                  ("dpsCourtAppearanceId" to courtAppearanceMapping.dpsCourtAppearanceId) +
+                  ("nomisOutcomeCode" to nomisCourtAppearanceCharge.resultCode1?.code.toString()) +
+                  ("offenceCode" to nomisCourtAppearanceCharge.offenderCharge.offence.offenceCode)
+                ).toMutableMap(),
+            ) {
+              dpsApiService.updateCourtCharge(
+                chargeId = chargeMapping.dpsCourtChargeId,
+                appearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
+                charge = nomisCourtAppearanceCharge.toDpsCharge(),
               )
             }
           } ?: let {
             telemetryClient.trackEvent(
-              "court-charge-synchronisation-updated-failed",
-              telemetry + ("reason" to "charge is not mapped"),
+              "court-charge-synchronisation-updated-ignored",
+              telemetry + ("reason" to "charge no longer exists in nomis"),
             )
-            throw ParentEntityNotFoundRetry("Received OFFENDER_CHARGES_UPDATED for charge ${event.chargeId} has never been mapped")
           }
         } ?: let {
+          telemetryClient.trackEvent(
+            "court-charge-synchronisation-updated-failed",
+            telemetry + ("reason" to "charge is not mapped"),
+          )
+          throw ParentEntityNotFoundRetry("Received OFFENDER_CHARGES_UPDATED for charge ${event.chargeId} has never been mapped")
+        }
+      } ?: let {
         telemetryClient.trackEvent(
           "court-charge-synchronisation-updated-failed",
           telemetry + ("reason" to "associated court appearance is not mapped"),
@@ -890,7 +893,10 @@ class CourtSentencingSynchronisationService(
             offenderNo = event.offenderIdDisplay,
             offenderChargeId = event.chargeId,
           ).let { nomisOffenderCharge ->
-            track(name = "court-charge-synchronisation-updated", telemetry = (telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("reason" to "offence code changed")).toMutableMap()) {
+            track(
+              name = "court-charge-synchronisation-updated",
+              telemetry = (telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("reason" to "offence code changed") + ("offenceCode" to nomisOffenderCharge.offence.offenceCode)).toMutableMap(),
+            ) {
               dpsApiService.updateChargeOffence(
                 chargeId = chargeMapping.dpsCourtChargeId,
                 charge = LegacyUpdateWholeCharge(
