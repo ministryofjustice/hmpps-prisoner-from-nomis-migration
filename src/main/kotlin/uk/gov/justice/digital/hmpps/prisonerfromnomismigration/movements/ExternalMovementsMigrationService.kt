@@ -18,7 +18,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.M
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndByWithPrison
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationMappingDto
@@ -318,7 +317,7 @@ class ExternalMovementsMigrationService(
     absenceReasonCode = movementReason,
     location = Location(description = fromAddressDescription, address = fromFullAddress, postcode = fromAddressPostcode),
     accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
-    created = SyncAtAndByWithPrison(audit.createDatetime, audit.createUsername),
+    created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
     legacyId = "${bookingId}_$sequence",
     accompaniedByComments = escortText,
     comments = commentText,
@@ -335,7 +334,7 @@ class ExternalMovementsMigrationService(
     absenceReasonCode = movementReason,
     location = Location(description = toAddressDescription, address = toFullAddress, postcode = toAddressPostcode),
     accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
-    created = SyncAtAndByWithPrison(audit.createDatetime, audit.createUsername),
+    created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
     legacyId = "${bookingId}_$sequence",
     accompaniedByComments = escortText,
     comments = commentText,

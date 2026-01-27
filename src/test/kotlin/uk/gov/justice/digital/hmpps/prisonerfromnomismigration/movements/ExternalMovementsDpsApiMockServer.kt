@@ -24,7 +24,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.M
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigratedMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigratedOccurrence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndByWithPrison
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
@@ -124,9 +123,10 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       accompaniedByCode = "P",
       accompaniedByComments = "accompanied notes",
       comments = "movement notes",
-      created = SyncAtAndByWithPrison(today, "AAA11A", "LEI"),
+      created = SyncAtAndBy(today, "AAA11A"),
       updated = SyncAtAndBy(today, "AAA11A"),
       legacyId = "12345_6",
+      prisonCode = "LEI",
     )
 
     fun syncResponse() = SyncResponse(UUID.randomUUID())
@@ -181,11 +181,12 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
                     uprn = 876L,
                   ),
                   accompaniedByCode = "S",
-                  created = SyncAtAndByWithPrison(yesterday, "AAA11A", "LEI"),
+                  created = SyncAtAndBy(yesterday, "AAA11A"),
                   legacyId = "12345_2",
                   accompaniedByComments = "accompanied notes",
                   comments = "movement notes",
                   updated = SyncAtAndBy(today, "AAA11A"),
+                  prisonCode = "LEI",
                 ),
                 MigrateTapMovement(
                   occurredAt = today,
@@ -198,11 +199,12 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
                     uprn = 876L,
                   ),
                   accompaniedByCode = "T",
-                  created = SyncAtAndByWithPrison(today, "AAA11A", "LEI"),
+                  created = SyncAtAndBy(today, "AAA11A"),
                   legacyId = "12345_3",
                   accompaniedByComments = "accompanied IN notes",
                   comments = "movement IN notes",
                   updated = null,
+                  prisonCode = "LEI",
                 ),
               ),
             ),
@@ -221,11 +223,12 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             uprn = 876L,
           ),
           accompaniedByCode = "S",
-          created = SyncAtAndByWithPrison(yesterday, "AAA11A", "LEI"),
+          created = SyncAtAndBy(yesterday, "AAA11A"),
           legacyId = "12345_4",
           accompaniedByComments = "accompanied notes",
           comments = "movement notes",
           updated = SyncAtAndBy(today, "AAA11A"),
+          prisonCode = "LEI",
         ),
         MigrateTapMovement(
           occurredAt = today,
@@ -238,11 +241,12 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             uprn = 876L,
           ),
           accompaniedByCode = "T",
-          created = SyncAtAndByWithPrison(today, "AAA11A", "LEI"),
+          created = SyncAtAndBy(today, "AAA11A"),
           legacyId = "12345_5",
           accompaniedByComments = "accompanied IN notes",
           comments = "movement IN notes",
           updated = null,
+          prisonCode = "LEI",
         ),
       ),
     )
