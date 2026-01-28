@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncTimeSlot
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateTimeSlotRequest
 
 @Service
 class OfficialVisitsDpsApiService(
@@ -22,5 +23,6 @@ class OfficialVisitsDpsApiService(
 
   suspend fun migrateVisitConfiguration(request: MigrateVisitConfigRequest): MigrateVisitConfigResponse = migrationApi.migrateVisitConfiguration(request).awaitSingle()
   suspend fun createTimeSlot(request: SyncCreateTimeSlotRequest): SyncTimeSlot = syncApi.syncCreateTimeSlot(request).awaitSingle()
+  suspend fun updateTimeSlot(prisonTimeSlotId: Long, request: SyncUpdateTimeSlotRequest): SyncTimeSlot = syncApi.syncUpdateTimeSlot(prisonTimeSlotId, request).awaitSingle()
   suspend fun migrateVisit(request: MigrateVisitRequest): MigrateVisitResponse = migrationApi.migrateVisit(request).awaitSingle()
 }

@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitTimeSlotResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.DayType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateTimeSlotRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -72,7 +73,32 @@ class VisitSlotsSynchronisationService(
       }
     }
   }
-  fun visitTimeslotUpdated(event: AgencyVisitTimeEvent) = track("officialvisits-timeslot-synchronisation-updated", event.asTelemetry()) {}
+  suspend fun visitTimeslotUpdated(event: AgencyVisitTimeEvent) {
+    val telemetryName = "officialvisits-timeslot-synchronisation-updated"
+    if (event.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_OFFICIAL_VISITS")) {
+      telemetryClient.trackEvent("$telemetryName-skipped", event.asTelemetry())
+    } else {
+      val telemetry = event.asTelemetry()
+      track(telemetryName, telemetry) {
+        val mapping = mappingApiService.getTimeSlotByNomisIds(
+          nomisPrisonId = event.agencyLocationId,
+          nomisDayOfWeek = event.weekDay,
+          nomisSlotSequence = event.timeslotSequence,
+        ).also {
+          telemetry["dpsPrisonTimeSlotId"] = it.dpsId
+        }
+
+        nomisApiService.getVisitTimeSlot(
+          prisonId = event.agencyLocationId,
+          dayOfWeek = event.weekDay.asNomisApiDayOfWeek(),
+          timeSlotSequence = event.timeslotSequence,
+        ).also { nomisTimeSlot ->
+          dpsApiService.updateTimeSlot(prisonTimeSlotId = mapping.dpsId.toLong(), nomisTimeSlot.toSyncUpdateTimeSlotRequest())
+        }
+      }
+    }
+  }
+
   fun visitTimeslotDeleted(event: AgencyVisitTimeEvent) = track("officialvisits-timeslot-synchronisation-deleted", event.asTelemetry()) {}
   fun visitSlotAdded(event: AgencyVisitSlotEvent) = track("officialvisits-visitslot-synchronisation-created", event.asTelemetry()) {}
   fun visitSlotUpdated(event: AgencyVisitSlotEvent) = track("officialvisits-visitslot-synchronisation-updated", event.asTelemetry()) {}
@@ -139,6 +165,16 @@ private fun VisitTimeSlotResponse.toSyncCreateTimeSlotRequest() = SyncCreateTime
   effectiveDate = this.effectiveDate,
   createdBy = this.audit.createUsername,
   createdTime = this.audit.createDatetime,
+  expiryDate = this.expiryDate,
+)
+private fun VisitTimeSlotResponse.toSyncUpdateTimeSlotRequest() = SyncUpdateTimeSlotRequest(
+  prisonCode = this.prisonId,
+  dayCode = this.dayOfWeek.asDpsApiDayOfWeek(),
+  startTime = this.startTime,
+  endTime = this.endTime,
+  effectiveDate = this.effectiveDate,
+  updatedBy = this.audit.modifyUserId!!,
+  updatedTime = this.audit.modifyDatetime!!,
   expiryDate = this.expiryDate,
 )
 

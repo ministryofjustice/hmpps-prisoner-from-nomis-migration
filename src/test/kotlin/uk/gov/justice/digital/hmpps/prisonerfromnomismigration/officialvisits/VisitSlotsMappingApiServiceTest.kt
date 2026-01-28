@@ -319,6 +319,65 @@ class VisitSlotsMappingApiServiceTest {
   }
 
   @Nested
+  inner class GetTimeSlotByNomisIds {
+    val nomisPrisonId = "WWI"
+    val nomisDayOfWeek = "MON"
+    val nomisSlotSequence = 2
+
+    @Test
+    fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetTimeSlotByNomisIds(
+        nomisPrisonId = nomisPrisonId,
+        nomisDayOfWeek = nomisDayOfWeek,
+        nomisSlotSequence = nomisSlotSequence,
+        mapping = VisitTimeSlotMappingDto(
+          dpsId = "1234",
+          nomisPrisonId = nomisPrisonId,
+          nomisDayOfWeek = nomisDayOfWeek,
+          nomisSlotSequence = nomisSlotSequence,
+          mappingType = VisitTimeSlotMappingDto.MappingType.MIGRATED,
+        ),
+      )
+
+      apiService.getTimeSlotByNomisIds(
+        nomisPrisonId = nomisPrisonId,
+        nomisDayOfWeek = nomisDayOfWeek,
+        nomisSlotSequence = nomisSlotSequence,
+      )
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetTimeSlotByNomisIds(
+        nomisPrisonId = nomisPrisonId,
+        nomisDayOfWeek = nomisDayOfWeek,
+        nomisSlotSequence = nomisSlotSequence,
+        mapping = VisitTimeSlotMappingDto(
+          dpsId = "1234",
+          nomisPrisonId = nomisPrisonId,
+          nomisDayOfWeek = nomisDayOfWeek,
+          nomisSlotSequence = nomisSlotSequence,
+          mappingType = VisitTimeSlotMappingDto.MappingType.MIGRATED,
+        ),
+      )
+
+      apiService.getTimeSlotByNomisIds(
+        nomisPrisonId = nomisPrisonId,
+        nomisDayOfWeek = nomisDayOfWeek,
+        nomisSlotSequence = nomisSlotSequence,
+      )
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/mapping/visit-slots/time-slots/nomis-prison-id/$nomisPrisonId/nomis-day-of-week/$nomisDayOfWeek/nomis-slot-sequence/$nomisSlotSequence")),
+      )
+    }
+  }
+
+  @Nested
   inner class GetVisitSlotByNomisId {
     val nomisId = 123456L
 
