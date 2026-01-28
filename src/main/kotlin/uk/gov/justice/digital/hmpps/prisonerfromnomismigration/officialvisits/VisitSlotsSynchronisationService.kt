@@ -47,13 +47,15 @@ class VisitSlotsSynchronisationService(
           event.asTelemetry() + ("dpsPrisonTimeSlotId" to mapping.dpsId),
         )
       } else {
-        track(telemetryName, event.asTelemetry()) {
+        val telemetry = event.asTelemetry()
+        track(telemetryName, telemetry) {
           nomisApiService.getVisitTimeSlot(
             prisonId = event.agencyLocationId,
             dayOfWeek = event.weekDay.asNomisApiDayOfWeek(),
             timeSlotSequence = event.timeslotSequence,
           ).also { nomisTimeSlot ->
             dpsApiService.createTimeSlot(nomisTimeSlot.toSyncCreateTimeSlotRequest()).also { dpsTimeSlot ->
+              telemetry["dpsPrisonTimeSlotId"] = dpsTimeSlot.prisonTimeSlotId
               tryToCreateMapping(
                 VisitTimeSlotMappingDto(
                   dpsId = dpsTimeSlot.prisonTimeSlotId.toString(),
@@ -62,7 +64,7 @@ class VisitSlotsSynchronisationService(
                   nomisSlotSequence = nomisTimeSlot.timeSlotSequence,
                   mappingType = VisitTimeSlotMappingDto.MappingType.NOMIS_CREATED,
                 ),
-                telemetry = event.asTelemetry(),
+                telemetry = telemetry,
               )
             }
           }
