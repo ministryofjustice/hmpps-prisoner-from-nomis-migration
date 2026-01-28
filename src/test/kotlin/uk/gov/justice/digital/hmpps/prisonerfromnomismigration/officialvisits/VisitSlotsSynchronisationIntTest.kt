@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -27,6 +28,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.Of
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.VisitSlotsNomisApiMockServer.Companion.visitTimeSlotResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.DayType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateTimeSlotRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -364,9 +366,74 @@ class VisitSlotsSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class AgencyVisitTimeUpdated {
 
     @Nested
-    inner class WhenUpdatedInNomis {
+    inner class WhenUpdatedInDps {
       @BeforeEach
       fun setUp() {
+        officialVisitsOffenderEventsQueue.sendMessage(
+          agencyVisitTimeEvent(
+            eventType = "AGENCY_VISIT_TIMES-UPDATED",
+            agencyLocationId = prisonId,
+            timeslotSequence = nomisTimeslotSequence,
+            weekDay = nomisWeekDay,
+            auditModuleName = "DPS_SYNCHRONISATION_OFFICIAL_VISITS",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("officialvisits-timeslot-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["prisonId"]).isEqualTo(prisonId)
+            assertThat(it["nomisWeekDay"]).isEqualTo(nomisWeekDay)
+            assertThat(it["nomisTimeslotSequence"]).isEqualTo(nomisTimeslotSequence.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInNomis {
+      val dpsPrisonTimeSlotId = 123L
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetTimeSlotByNomisIds(
+          nomisPrisonId = prisonId,
+          nomisDayOfWeek = nomisWeekDay,
+          nomisSlotSequence = nomisTimeslotSequence,
+          mapping = VisitTimeSlotMappingDto(
+            dpsId = dpsPrisonTimeSlotId.toString(),
+            nomisPrisonId = prisonId,
+            nomisDayOfWeek = nomisWeekDay,
+            nomisSlotSequence = nomisTimeslotSequence,
+            mappingType = VisitTimeSlotMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        nomisApiMock.stubGetVisitTimeSlot(
+          prisonId = prisonId,
+          dayOfWeek = VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MON,
+          timeSlotSequence = nomisTimeslotSequence,
+          response = visitTimeSlotResponse().copy(
+            timeSlotSequence = nomisTimeslotSequence,
+            prisonId = prisonId,
+            dayOfWeek = VisitTimeSlotResponse.DayOfWeek.MON,
+            startTime = "14:00",
+            endTime = "15:00",
+            effectiveDate = LocalDate.parse("2021-01-01"),
+            expiryDate = LocalDate.parse("2031-01-01"),
+            audit = NomisAudit(
+              createDatetime = LocalDateTime.parse("2021-01-01T10:30"),
+              createUsername = "T.SMITH",
+              modifyDatetime = LocalDateTime.parse("2021-01-02T10:30"),
+              modifyUserId = "A.SMITH",
+            ),
+          ),
+        )
+        dpsApiMock.stubUpdateTimeSlot(prisonTimeSlotId = dpsPrisonTimeSlotId)
+
         officialVisitsOffenderEventsQueue.sendMessage(
           agencyVisitTimeEvent(
             eventType = "AGENCY_VISIT_TIMES-UPDATED",
@@ -378,6 +445,21 @@ class VisitSlotsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
+      fun `will update time slot in DPS`() {
+        val request: SyncUpdateTimeSlotRequest = getRequestBody(putRequestedFor(urlPathEqualTo("/sync/time-slot/$dpsPrisonTimeSlotId")))
+        with(request) {
+          assertThat(this.prisonCode).isEqualTo(prisonId)
+          assertThat(this.dayCode).isEqualTo(DayType.MON)
+          assertThat(this.startTime).isEqualTo("14:00")
+          assertThat(this.endTime).isEqualTo("15:00")
+          assertThat(this.effectiveDate).isEqualTo(LocalDate.parse("2021-01-01"))
+          assertThat(this.expiryDate).isEqualTo(LocalDate.parse("2031-01-01"))
+          assertThat(this.updatedTime).isEqualTo(LocalDateTime.parse("2021-01-02T10:30"))
+          assertThat(this.updatedBy).isEqualTo("A.SMITH")
+        }
+      }
+
+      @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("officialvisits-timeslot-synchronisation-updated-success"),
@@ -385,6 +467,7 @@ class VisitSlotsSynchronisationIntTest : SqsIntegrationTestBase() {
             assertThat(it["prisonId"]).isEqualTo(prisonId)
             assertThat(it["nomisWeekDay"]).isEqualTo(nomisWeekDay)
             assertThat(it["nomisTimeslotSequence"]).isEqualTo(nomisTimeslotSequence.toString())
+            assertThat(it["dpsPrisonTimeSlotId"]).isEqualTo(dpsPrisonTimeSlotId.toString())
           },
           isNull(),
         )

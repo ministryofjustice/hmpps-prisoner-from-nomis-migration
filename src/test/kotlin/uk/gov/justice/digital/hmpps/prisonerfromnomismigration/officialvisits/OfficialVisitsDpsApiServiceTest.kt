@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
@@ -14,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.Of
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.migrateVisitConfigRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.migrateVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncCreateTimeSlotRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncUpdateTimeSlotRequest
 
 @SpringAPIServiceTest
 @Import(OfficialVisitsDpsApiService::class, OfficialVisitsConfiguration::class)
@@ -95,6 +97,32 @@ class OfficialVisitsDpsApiServiceTest {
 
       dpsOfficialVisitsServer.verify(
         postRequestedFor(urlPathEqualTo("/sync/time-slot")),
+      )
+    }
+  }
+
+  @Nested
+  inner class UpdateTimeSlot {
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubUpdateTimeSlot(123)
+
+      apiService.updateTimeSlot(prisonTimeSlotId = 123, syncUpdateTimeSlotRequest())
+
+      dpsOfficialVisitsServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the update endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubUpdateTimeSlot(123)
+
+      apiService.updateTimeSlot(prisonTimeSlotId = 123, syncUpdateTimeSlotRequest())
+
+      dpsOfficialVisitsServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/time-slot/123")),
       )
     }
   }

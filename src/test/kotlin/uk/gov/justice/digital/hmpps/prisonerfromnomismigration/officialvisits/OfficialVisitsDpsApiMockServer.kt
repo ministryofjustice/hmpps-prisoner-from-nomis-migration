@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -22,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncTimeSlot
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
@@ -129,6 +131,16 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createdTime = LocalDateTime.parse("2020-01-01T08:00"),
     )
 
+    fun syncUpdateTimeSlotRequest() = SyncUpdateTimeSlotRequest(
+      prisonCode = "MDI",
+      dayCode = DayType.MON,
+      startTime = "10:00",
+      endTime = "11:00",
+      effectiveDate = LocalDate.parse("2021-01-01"),
+      updatedBy = "T.SMITH",
+      updatedTime = LocalDateTime.parse("2020-01-01T08:00"),
+    )
+
     fun syncTimeSlot() = SyncTimeSlot(
       prisonTimeSlotId = 1,
       prisonCode = "MDI",
@@ -183,6 +195,18 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(201)
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubUpdateTimeSlot(prisonTimeSlotId: Long, response: SyncTimeSlot = syncTimeSlot()) {
+    stubFor(
+      put("/sync/time-slot/$prisonTimeSlotId")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(200)
             .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )

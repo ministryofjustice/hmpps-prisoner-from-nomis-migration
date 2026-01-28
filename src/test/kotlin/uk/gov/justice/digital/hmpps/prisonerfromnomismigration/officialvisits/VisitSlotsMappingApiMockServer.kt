@@ -129,6 +129,20 @@ class VisitSlotsMappingApiMockServer(private val jsonMapper: JsonMapper) {
       )
     }
   }
+
+  fun stubGetTimeSlotByNomisIds(
+    nomisPrisonId: String = "WWI",
+    nomisDayOfWeek: String = "MON",
+    nomisSlotSequence: Int = 2,
+    mapping: VisitTimeSlotMappingDto = VisitTimeSlotMappingDto(
+      dpsId = "123456",
+      mappingType = VisitTimeSlotMappingDto.MappingType.MIGRATED,
+      nomisPrisonId = nomisPrisonId,
+      nomisDayOfWeek = nomisDayOfWeek,
+      nomisSlotSequence = nomisSlotSequence,
+    ),
+  ) = stubGetTimeSlotByNomisIdsOrNull(nomisPrisonId, nomisDayOfWeek, nomisSlotSequence, mapping)
+
   fun stubGetVisitSlotByNomisId(
     nomisId: Long = 123456,
     mapping: VisitSlotMappingDto = VisitSlotMappingDto(

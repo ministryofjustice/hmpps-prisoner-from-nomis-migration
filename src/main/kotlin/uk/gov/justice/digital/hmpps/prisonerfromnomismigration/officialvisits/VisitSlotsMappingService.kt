@@ -30,6 +30,13 @@ class VisitSlotsMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
+  suspend fun getTimeSlotByNomisIds(nomisPrisonId: String, nomisDayOfWeek: String, nomisSlotSequence: Int): VisitTimeSlotMappingDto = api.getVisitTimeSlotMappingByNomisIds(
+    nomisPrisonId = nomisPrisonId,
+    nomisDayOfWeek = nomisDayOfWeek,
+    nomisSlotSequence = nomisSlotSequence,
+  )
+    .awaitSingle()
+
   suspend fun createTimeSlotMapping(mapping: VisitTimeSlotMappingDto): SuccessOrDuplicate<VisitTimeSlotMappingDto> = api.prepare(api.createVisitTimeSlotMappingRequestConfig(mapping))
     .retrieve()
     .awaitSuccessOrDuplicate()
