@@ -206,6 +206,7 @@ class VisitSlotsSynchronisationIntTest : SqsIntegrationTestBase() {
               assertThat(it["prisonId"]).isEqualTo(prisonId)
               assertThat(it["nomisWeekDay"]).isEqualTo(nomisWeekDay)
               assertThat(it["nomisTimeslotSequence"]).isEqualTo(nomisTimeslotSequence.toString())
+              assertThat(it["dpsPrisonTimeSlotId"]).isEqualTo(dpsPrisonTimeSlotId.toString())
             },
             isNull(),
           )
