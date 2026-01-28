@@ -33,7 +33,6 @@ class VisitSlotsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  @Suppress("unused")
   fun stubCreateMappingsForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/visit-slots")
 
   fun stubCreateMappingsForMigration(error: DuplicateMappingErrorResponse) {
@@ -84,6 +83,8 @@ class VisitSlotsMappingApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
   }
+
+  fun stubCreateTimeSlotMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/visit-slots/time-slots")
 
   fun stubCreateTimeSlotMapping(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(

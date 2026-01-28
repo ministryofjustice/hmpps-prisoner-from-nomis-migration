@@ -75,6 +75,7 @@ enum class SynchronisationType(val queueId: String) {
   FINANCE(FINANCE_SYNC_QUEUE_ID),
   VISIT_BALANCE(VISIT_BALANCE_SYNC_QUEUE_ID),
   EXTERNAL_MOVEMENTS(EXTERNALMOVEMENTS_SYNC_QUEUE_ID),
+  OFFICIAL_VISITS(OFFICIAL_VISITS_SYNC_QUEUE_ID),
 }
 
 fun Any.asMap(): Map<String, String> = this::class.memberProperties
