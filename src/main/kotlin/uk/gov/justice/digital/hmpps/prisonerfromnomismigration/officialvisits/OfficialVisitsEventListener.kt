@@ -46,17 +46,27 @@ class OfficialVisitsEventListener(
               "AGENCY_VISIT_SLOTS-INSERTED" -> visitSlotsService.visitSlotAdded(sqsMessage.Message.fromJson())
               "AGENCY_VISIT_SLOTS-UPDATED" -> visitSlotsService.visitSlotUpdated(sqsMessage.Message.fromJson())
               "AGENCY_VISIT_SLOTS-DELETED" -> visitSlotsService.visitSlotDeleted(sqsMessage.Message.fromJson())
-
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
             log.info("Feature switch is disabled for event {}", eventType)
           }
         }
+
+        else -> retryMapping(sqsMessage.Type, sqsMessage.Message)
       }
     }
   }
   private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this)
+  private suspend fun retryMapping(mappingName: String, message: String) {
+    when (OfficialVisitsSynchronisationMessageType.valueOf(mappingName)) {
+      OfficialVisitsSynchronisationMessageType.RETRY_SYNCHRONISATION_TIME_SLOT_MAPPING -> visitSlotsService.retryCreateVisitTimeSlotMapping(message.fromJson())
+    }
+  }
+}
+
+enum class OfficialVisitsSynchronisationMessageType {
+  RETRY_SYNCHRONISATION_TIME_SLOT_MAPPING,
 }
 
 data class VisitEvent(
