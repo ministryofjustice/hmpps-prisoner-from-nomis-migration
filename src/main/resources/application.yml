@@ -232,6 +232,7 @@ hmpps.sqs:
     eventexternalmovements:
       errorVisibilityTimeout: 1, 1, 1, 10, 60, 600
     migrationvisits:
+      errorVisibilityTimeout: 1, 1, 1, 1
       propagateTracing: false
     migrationactivities:
       errorVisibilityTimeout: 1, 1, 1, 10
