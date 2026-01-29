@@ -143,6 +143,29 @@ class VisitSlotsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     ),
   ) = stubGetTimeSlotByNomisIdsOrNull(nomisPrisonId, nomisDayOfWeek, nomisSlotSequence, mapping)
 
+  fun stubCreateVisitSlotMapping() {
+    mappingApi.stubFor(
+      post("/mapping/visit-slots/visit-slot").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateVisitSlotMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/visit-slots/visit-slot")
+
+  fun stubCreateVisitSlotMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/visit-slots/visit-slot").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun stubGetVisitSlotByNomisId(
     nomisId: Long = 123456,
     mapping: VisitSlotMappingDto = VisitSlotMappingDto(

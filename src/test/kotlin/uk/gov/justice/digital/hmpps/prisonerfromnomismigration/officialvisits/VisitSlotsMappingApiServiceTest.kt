@@ -378,6 +378,83 @@ class VisitSlotsMappingApiServiceTest {
   }
 
   @Nested
+  inner class CreateVisitSlotMapping {
+    @Test
+    fun `will pass oath2 token to create endpoint`() = runTest {
+      mockServer.stubCreateVisitSlotMapping()
+
+      apiService.createVisitSlotMapping(
+        VisitSlotMappingDto(
+          mappingType = VisitSlotMappingDto.MappingType.MIGRATED,
+          label = "2020-01-01T10:00",
+          dpsId = "1233",
+          nomisId = 3311,
+        ),
+      )
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/visit-slots/visit-slot"))
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will return success when OK response`() = runTest {
+      mockServer.stubCreateVisitSlotMapping()
+
+      val result = apiService.createVisitSlotMapping(
+        VisitSlotMappingDto(
+          mappingType = VisitSlotMappingDto.MappingType.MIGRATED,
+          label = "2020-01-01T10:00",
+          dpsId = "1233",
+          nomisId = 3321,
+        ),
+      )
+
+      assertThat(result.isError).isFalse()
+    }
+
+    @Test
+    fun `will return error when 409 conflict`() = runTest {
+      val dpsId = "1234"
+      val existingDpsId = "5678"
+
+      mockServer.stubCreateVisitSlotMapping(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            duplicate = VisitSlotMappingDto(
+              dpsId = dpsId,
+              nomisId = 4321,
+              mappingType = VisitSlotMappingDto.MappingType.MIGRATED,
+            ),
+            existing = VisitSlotMappingDto(
+              dpsId = existingDpsId,
+              nomisId = 4321,
+              mappingType = VisitSlotMappingDto.MappingType.MIGRATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      val result = apiService.createVisitSlotMapping(
+        VisitSlotMappingDto(
+          mappingType = VisitSlotMappingDto.MappingType.MIGRATED,
+          label = "2020-01-01T10:00",
+          dpsId = "1233",
+          nomisId = 3321,
+        ),
+      )
+
+      assertThat(result.isError).isTrue()
+      assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
+      assertThat(result.errorResponse.moreInfo.existing?.dpsId).isEqualTo(existingDpsId)
+    }
+  }
+
+  @Nested
   inner class GetVisitSlotByNomisId {
     val nomisId = 123456L
 
