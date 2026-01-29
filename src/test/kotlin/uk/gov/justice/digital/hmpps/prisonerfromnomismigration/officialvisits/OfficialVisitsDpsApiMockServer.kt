@@ -22,14 +22,17 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitSlot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateTimeSlotRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateVisitSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncTimeSlot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateTimeSlotRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateVisitSlotRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncVisitSlot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 class OfficialVisitsDpsApiExtension :
   BeforeAllCallback,
@@ -151,6 +154,35 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createdBy = "T.SMITH",
       createdTime = LocalDateTime.parse("2020-01-01T08:00"),
     )
+
+    fun syncCreateVisitSlotRequest() = SyncCreateVisitSlotRequest(
+      createdBy = "T.SMITH",
+      createdTime = LocalDateTime.parse("2020-01-01T08:00"),
+      prisonTimeSlotId = 1,
+      dpsLocationId = UUID.randomUUID(),
+      maxAdults = 10,
+      maxGroups = 2,
+    )
+
+    fun syncUpdateVisitSlotRequest() = SyncUpdateVisitSlotRequest(
+      updatedBy = "T.SMITH",
+      updatedTime = LocalDateTime.parse("2020-01-01T08:00"),
+      dpsLocationId = UUID.randomUUID(),
+      maxAdults = 10,
+      maxGroups = 2,
+    )
+    fun syncVisitSlot() = SyncVisitSlot(
+      prisonTimeSlotId = 1,
+      prisonCode = "MDI",
+      createdBy = "T.SMITH",
+      createdTime = LocalDateTime.parse("2020-01-01T08:00"),
+      visitSlotId = 2,
+      dpsLocationId = UUID.randomUUID(),
+      maxAdults = 10,
+      maxGroups = 2,
+      updatedBy = "T.SMITH",
+      updatedTime = LocalDateTime.parse("2020-01-01T08:00"),
+    )
   }
 
   fun stubHealthPing(status: Int) {
@@ -203,6 +235,30 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubUpdateTimeSlot(prisonTimeSlotId: Long, response: SyncTimeSlot = syncTimeSlot()) {
     stubFor(
       put("/sync/time-slot/$prisonTimeSlotId")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(200)
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubCreateVisitSlot(response: SyncVisitSlot = syncVisitSlot()) {
+    stubFor(
+      post("/sync/visit-slot")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(201)
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubUpdateVisitSlot(prisonVisitSlotId: Long, response: SyncVisitSlot = syncVisitSlot()) {
+    stubFor(
+      put("/sync/visit-slot/$prisonVisitSlotId")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
