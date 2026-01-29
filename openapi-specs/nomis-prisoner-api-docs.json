@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-01-26.967.de18e6b"
+    "version" : "2026-01-28.979.e8ce9b7"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -21714,7 +21714,7 @@
           "adjustmentTypeCode" : {
             "type" : "string",
             "description" : "NOMIS Adjustment type code from SENTENCE_ADJUSTMENTS",
-            "enum" : [ "RSR", "UR", "S240A", "RST", "RX" ],
+            "enum" : [ "RSR", "UR", "S240A", "RST", "RX", "TCA", "TSA" ],
             "example" : "RX"
           },
           "adjustmentDate" : {
@@ -27381,7 +27381,7 @@
           "adjustmentTypeCode" : {
             "type" : "string",
             "description" : "NOMIS Adjustment type code from SENTENCE_ADJUSTMENTS",
-            "enum" : [ "RSR", "UR", "S240A", "RST", "RX" ],
+            "enum" : [ "RSR", "UR", "S240A", "RST", "RX", "TCA", "TSA" ],
             "example" : "RX"
           },
           "adjustmentDate" : {
@@ -29026,15 +29026,15 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "pageNumber" : {
-            "type" : "integer",
-            "format" : "int32"
+          "unpaged" : {
+            "type" : "boolean"
           },
           "paged" : {
             "type" : "boolean"
           },
-          "unpaged" : {
-            "type" : "boolean"
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         }
       },
