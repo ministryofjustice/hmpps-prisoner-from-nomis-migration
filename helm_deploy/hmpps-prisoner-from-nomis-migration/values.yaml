@@ -104,6 +104,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONCOREPERSON_QUEUE_NAME: "sqs_name"
     sqs-migration-coreperson-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONCOREPERSON_DLQ_NAME: "sqs_name"
+    sqs-migration-csra-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONCSRA_QUEUE_NAME: "sqs_name"
+    sqs-migration-csra-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONCSRA_DLQ_NAME: "sqs_name"
     sqs-migration-prisonbalance-queue:
      HMPPS_SQS_QUEUES_MIGRATIONPRISONBALANCE_QUEUE_NAME: "sqs_name"
     sqs-migration-prisonbalance-dlq:
@@ -160,6 +164,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTCOURTSENTENCING_QUEUE_NAME: "sqs_name"
     prison-events-courtsentencing-dl-queue:
       HMPPS_SQS_QUEUES_EVENTCOURTSENTENCING_DLQ_NAME: "sqs_name"
+    prison-events-csra-queue:
+      HMPPS_SQS_QUEUES_EVENTCSRA_QUEUE_NAME: "sqs_name"
+    prison-events-csra-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTCSRA_DLQ_NAME: "sqs_name"
     prison-events-personalrelationships-queue:
       HMPPS_SQS_QUEUES_EVENTPERSONALRELATIONSHIPS_QUEUE_NAME: "sqs_name"
     prison-events-personalrelationships-dl-queue:

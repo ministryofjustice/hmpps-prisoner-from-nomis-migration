@@ -20,6 +20,7 @@ const val ACTIVITIES_QUEUE_ID = "migrationactivities"
 const val ALLOCATIONS_QUEUE_ID = "migrationallocations"
 const val APPOINTMENTS_QUEUE_ID = "migrationappointments"
 const val CORE_PERSON_QUEUE_ID = "migrationcoreperson"
+const val CSRA_QUEUE_ID = "migrationcsra"
 const val COURT_SENTENCING_QUEUE_ID = "migrationcourtsentencing"
 const val EXTERNAL_MOVEMENTS_QUEUE_ID = "migrationexternalmovements"
 const val INCIDENTS_QUEUE_ID = "migrationincidents"
@@ -33,6 +34,7 @@ const val VISITS_SYNC_QUEUE_ID = "eventvisits"
 const val SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID = "eventsentencing"
 const val COURT_SENTENCING_SYNC_QUEUE_ID = "eventcourtsentencing"
 const val CORE_PERSON_SYNC_QUEUE_ID = "eventcoreperson"
+const val CSRA_SYNC_QUEUE_ID = "eventcsra"
 const val INCIDENTS_SYNC_QUEUE_ID = "eventincidents"
 const val LOCATIONS_SYNC_QUEUE_ID = "eventlocations"
 const val CASENOTES_SYNC_QUEUE_ID = "eventcasenotes"
@@ -52,6 +54,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   ALLOCATIONS(ALLOCATIONS_QUEUE_ID, "activity-allocation"),
   APPOINTMENTS(APPOINTMENTS_QUEUE_ID, "appointments"),
   CORE_PERSON(CORE_PERSON_QUEUE_ID, "coreperson"),
+  CSRA(CSRA_QUEUE_ID, "csra"),
   COURT_SENTENCING(COURT_SENTENCING_QUEUE_ID, "court-sentencing"),
   EXTERNAL_MOVEMENTS(EXTERNAL_MOVEMENTS_QUEUE_ID, "temporary-absences"),
   INCIDENTS(INCIDENTS_QUEUE_ID, "incidents"),
