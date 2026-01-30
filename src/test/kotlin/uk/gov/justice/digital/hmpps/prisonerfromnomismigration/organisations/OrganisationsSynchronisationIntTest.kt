@@ -14,7 +14,9 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.eq
+import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
@@ -71,14 +73,14 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     private val corporateAndOrganisationId = 123456L
 
     @Nested
-    inner class WhenCreatedInDps {
+    inner class WhenCreatedInDpsByOrganisationSyncService {
       @BeforeEach
       fun setUp() {
         organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-INSERTED",
             corporateId = corporateAndOrganisationId,
-            auditModuleName = "DPS_SYNCHRONISATION",
+            auditModuleName = "DPS_SYNCHRONISATION_ORGANISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -92,9 +94,41 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-corporate-synchronisation-created-skipped"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo(corporateAndOrganisationId.toString())
           },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenCreatedInDpsByAnotherSynService {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisCorporateIdOrNull(nomisCorporateId = corporateAndOrganisationId, mapping = null)
+        nomisApiMock.stubGetCorporateOrganisation(corporateId = corporateAndOrganisationId)
+        dpsApiMock.stubCreateOrganisation(syncOrganisationResponse().copy(organisationId = corporateAndOrganisationId))
+        mappingApiMock.stubCreateCorporateMapping()
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateEvent(
+            eventType = "CORPORATE-INSERTED",
+            corporateId = corporateAndOrganisationId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will create organisation in DPS`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-corporate-synchronisation-created-success"),
+          any(),
           isNull(),
         )
       }
@@ -174,7 +208,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-corporate-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
           },
@@ -205,7 +239,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-corporate-synchronisation-created-ignored"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo(corporateAndOrganisationId.toString())
             assertThat(it["dpsOrganisationId"]).isEqualTo(corporateAndOrganisationId.toString())
           },
@@ -271,7 +305,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry for both overall success and duplicate`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-corporate-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
           },
@@ -279,7 +313,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         verify(telemetryClient).trackEvent(
           eq("from-nomis-sync-organisations-duplicate"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["existingNomisId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["existingDpsId"]).isEqualTo("9999")
             assertThat(it["duplicateNomisId"]).isEqualTo("$corporateAndOrganisationId")
@@ -329,7 +363,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-corporate-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
           },
@@ -346,14 +380,14 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     private val dpsOrganisationId = 123456L
 
     @Nested
-    inner class WhenUpdatedInDps {
+    inner class WhenUpdatedInDpsByOrganisationSyncService {
       @BeforeEach
       fun setUp() {
         organisationsOffenderEventsQueue.sendMessage(
           corporateEvent(
             eventType = "CORPORATE-UPDATED",
             corporateId = nomisCorporateId,
-            auditModuleName = "DPS_SYNCHRONISATION",
+            auditModuleName = "DPS_SYNCHRONISATION_ORGANISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -367,9 +401,55 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-corporate-synchronisation-updated-skipped"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo(nomisCorporateId.toString())
           },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInDpsByAnotherSyncService {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisCorporateId(
+          nomisCorporateId = nomisCorporateId,
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationId.toString(), nomisId = nomisCorporateId, mappingType = MIGRATED),
+        )
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporateId = nomisCorporateId,
+          corporate = corporateOrganisation().copy(
+            id = nomisCorporateId,
+            audit = NomisAudit(
+              createUsername = "J.SPEAK",
+              createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
+              modifyUserId = "T.SMITH",
+              modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
+            ),
+          ),
+        )
+        dpsApiMock.stubUpdateOrganisation(organisationId = dpsOrganisationId)
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateEvent(
+            eventType = "CORPORATE-UPDATED",
+            corporateId = nomisCorporateId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will update organisation in DPS`() {
+        dpsApiMock.verify(putRequestedFor(urlPathMatching("/sync/organisation/.*")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-corporate-synchronisation-updated-success"),
+          any(),
           isNull(),
         )
       }
@@ -417,7 +497,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-corporate-synchronisation-updated-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$nomisCorporateId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$dpsOrganisationId")
           },
@@ -475,7 +555,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-corporate-synchronisation-deleted-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo(nomisCorporateId.toString())
             assertThat(it["dpsOrganisationId"]).isEqualTo(dpsOrganisationId.toString())
           },
@@ -516,7 +596,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry for delete ignored`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-corporate-synchronisation-deleted-ignored"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo(nomisCorporateId.toString())
           },
           isNull(),
@@ -533,7 +613,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     private val dpsOrganisationAddressId = 76543L
 
     @Nested
-    inner class WhenCreatedInDps {
+    inner class WhenCreatedInDpsByOrganisationSyncService {
       @BeforeEach
       fun setUp() {
         organisationsOffenderEventsQueue.sendMessage(
@@ -541,7 +621,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             eventType = "ADDRESSES_CORPORATE-INSERTED",
             corporateId = corporateAndOrganisationId,
             addressId = nomisAddressId,
-            auditModuleName = "DPS_SYNCHRONISATION",
+            auditModuleName = "DPS_SYNCHRONISATION_ORGANISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -555,11 +635,63 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-synchronisation-created-skipped"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
           },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenCreatedInDpsByAnotherSyncService {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressIdOrNull(nomisAddressId = nomisAddressId, mapping = null)
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporate = corporateOrganisation().withAddress(
+            CorporateAddress(
+              id = nomisAddressId,
+              phoneNumbers = emptyList(),
+              validatedPAF = false,
+              primaryAddress = true,
+              mailAddress = true,
+              noFixedAddress = false,
+              type = CodeDescription("HOME", "Home Address"),
+              startDate = LocalDate.parse("2021-01-01"),
+              audit = NomisAudit(
+                createUsername = "J.SPEAK",
+                createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
+              ),
+              isServices = true,
+            ),
+          ),
+        )
+        dpsApiMock.stubCreateOrganisationAddress(syncAddressResponse().copy(organisationAddressId = dpsOrganisationAddressId))
+        mappingApiMock.stubCreateAddressMapping()
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateAddressEvent(
+            eventType = "ADDRESSES_CORPORATE-INSERTED",
+            corporateId = corporateAndOrganisationId,
+            addressId = nomisAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will create address in DPS`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/sync/organisation-address")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-address-synchronisation-created-success"),
+          any(),
           isNull(),
         )
       }
@@ -669,7 +801,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
@@ -703,7 +835,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-synchronisation-created-ignored"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
@@ -773,7 +905,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry for both overall success and duplicate`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
           },
@@ -781,7 +913,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         verify(telemetryClient).trackEvent(
           eq("from-nomis-sync-organisations-duplicate"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["existingNomisId"]).isEqualTo("$nomisAddressId")
             assertThat(it["existingDpsId"]).isEqualTo("9999")
             assertThat(it["duplicateNomisId"]).isEqualTo("$nomisAddressId")
@@ -832,7 +964,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
@@ -852,7 +984,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     private val dpsOrganisationAddressId = 76543L
 
     @Nested
-    inner class WhenUpdatedInDps {
+    inner class WhenUpdatedInDpsByOrganisationSyncService {
       @BeforeEach
       fun setUp() {
         organisationsOffenderEventsQueue.sendMessage(
@@ -860,7 +992,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             eventType = "ADDRESSES_CORPORATE-UPDATED",
             corporateId = corporateAndOrganisationId,
             addressId = nomisAddressId,
-            auditModuleName = "DPS_SYNCHRONISATION",
+            auditModuleName = "DPS_SYNCHRONISATION_ORGANISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -874,13 +1006,77 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-synchronisation-updated-skipped"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
           },
           isNull(),
         )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInDpsByAnotherSyncService {
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressId(
+          nomisAddressId = nomisAddressId,
+          mapping = OrganisationsMappingDto(dpsId = dpsOrganisationAddressId.toString(), nomisId = nomisAddressId, mappingType = MIGRATED),
+        )
+        nomisApiMock.stubGetCorporateOrganisation(
+          corporateId = corporateAndOrganisationId,
+          corporate = corporateOrganisation().withAddress(
+            CorporateAddress(
+              id = nomisAddressId,
+              phoneNumbers = emptyList(),
+              validatedPAF = false,
+              primaryAddress = true,
+              mailAddress = true,
+              noFixedAddress = false,
+              type = CodeDescription("HOME", "Home Address"),
+              startDate = LocalDate.parse("2021-01-01"),
+              endDate = LocalDate.parse("2025-01-01"),
+              isServices = true,
+              audit = NomisAudit(
+                createUsername = "J.SPEAK",
+                createDatetime = LocalDateTime.parse("2024-09-01T13:31"),
+                modifyUserId = "T.SMITH",
+                modifyDatetime = LocalDateTime.parse("2024-10-01T13:31"),
+              ),
+            ),
+          ),
+        )
+        dpsApiMock.stubUpdateOrganisationAddress(organisationAddressId = dpsOrganisationAddressId)
+
+        organisationsOffenderEventsQueue.sendMessage(
+          corporateAddressEvent(
+            eventType = "ADDRESSES_CORPORATE-UPDATED",
+            corporateId = corporateAndOrganisationId,
+            addressId = nomisAddressId,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("organisations-address-synchronisation-updated-success"),
+          check {
+            assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
+            assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
+            assertThat(it["dpsOrganisationAddressId"]).isEqualTo("$dpsOrganisationAddressId")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will update the address in DPS from the NOMIS address`() {
+        dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/organisation-address/$dpsOrganisationAddressId")))
       }
     }
 
@@ -942,7 +1138,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-synchronisation-updated-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
@@ -1015,7 +1211,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-synchronisation-deleted-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
@@ -1059,7 +1255,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry for delete ignored`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-synchronisation-deleted-ignored"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
@@ -1078,7 +1274,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     private val dpsOrganisationPhoneId = 76543L
 
     @Nested
-    inner class WhenCreatedInDps {
+    inner class WhenCreatedInDpsByOrganisationSyncService {
       @BeforeEach
       fun setUp() {
         organisationsOffenderEventsQueue.sendMessage(
@@ -1086,7 +1282,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             eventType = "PHONES_CORPORATE-INSERTED",
             corporateId = corporateAndOrganisationId,
             phoneId = nomisPhoneId,
-            auditModuleName = "DPS_SYNCHRONISATION",
+            auditModuleName = "DPS_SYNCHRONISATION_ORGANISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -1100,7 +1296,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-phone-synchronisation-created-skipped"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
@@ -1182,7 +1378,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-phone-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
@@ -1216,7 +1412,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-phone-synchronisation-created-ignored"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
@@ -1286,7 +1482,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry for both overall success and duplicate`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-phone-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
           },
@@ -1294,7 +1490,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         verify(telemetryClient).trackEvent(
           eq("from-nomis-sync-organisations-duplicate"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["existingNomisId"]).isEqualTo("$nomisPhoneId")
             assertThat(it["existingDpsId"]).isEqualTo("9999")
             assertThat(it["duplicateNomisId"]).isEqualTo("$nomisPhoneId")
@@ -1345,7 +1541,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-phone-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
@@ -1365,7 +1561,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     private val dpsOrganisationPhoneId = 76543L
 
     @Nested
-    inner class WhenUpdatedInDps {
+    inner class WhenUpdatedInDpsByOrganisationSyncService {
       @BeforeEach
       fun setUp() {
         organisationsOffenderEventsQueue.sendMessage(
@@ -1373,7 +1569,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             eventType = "PHONES_CORPORATE-UPDATED",
             corporateId = corporateAndOrganisationId,
             phoneId = nomisPhoneId,
-            auditModuleName = "DPS_SYNCHRONISATION",
+            auditModuleName = "DPS_SYNCHRONISATION_ORGANISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -1387,7 +1583,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-phone-synchronisation-updated-skipped"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
@@ -1438,7 +1634,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-phone-synchronisation-updated-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
@@ -1487,7 +1683,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             eventType = "PHONES_CORPORATE-DELETED",
             corporateId = corporateAndOrganisationId,
             phoneId = nomisPhoneId,
-            auditModuleName = "DPS_SYNCHRONISATION",
+            auditModuleName = "DPS_SYNCHRONISATION_ORGANISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -1496,7 +1692,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-phone-synchronisation-deleted-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
@@ -1540,7 +1736,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry for delete ignored`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-phone-synchronisation-deleted-ignored"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
@@ -1561,7 +1757,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     private val dpsOrganisationAddressPhoneId = 76543L
 
     @Nested
-    inner class WhenCreatedInDps {
+    inner class WhenCreatedInDpsByOrganisationSyncService {
       @BeforeEach
       fun setUp() {
         organisationsOffenderEventsQueue.sendMessage(
@@ -1570,7 +1766,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             corporateId = corporateAndOrganisationId,
             phoneId = nomisPhoneId,
             addressId = nomisAddressId,
-            auditModuleName = "DPS_SYNCHRONISATION",
+            auditModuleName = "DPS_SYNCHRONISATION_ORGANISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -1584,7 +1780,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-phone-synchronisation-created-skipped"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
@@ -1677,7 +1873,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-phone-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
@@ -1714,7 +1910,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-phone-synchronisation-created-ignored"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
@@ -1796,7 +1992,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry for both overall success and duplicate`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-phone-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
           },
@@ -1804,7 +2000,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         verify(telemetryClient).trackEvent(
           eq("from-nomis-sync-organisations-duplicate"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["existingNomisId"]).isEqualTo("$nomisPhoneId")
             assertThat(it["existingDpsId"]).isEqualTo("9999")
             assertThat(it["duplicateNomisId"]).isEqualTo("$nomisPhoneId")
@@ -1868,7 +2064,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-phone-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
@@ -1891,7 +2087,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     private val dpsOrganisationAddressPhoneId = 76543L
 
     @Nested
-    inner class WhenUpdatedInDps {
+    inner class WhenUpdatedInDpsByOrganisationSyncService {
       @BeforeEach
       fun setUp() {
         organisationsOffenderEventsQueue.sendMessage(
@@ -1900,7 +2096,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             corporateId = corporateAndOrganisationId,
             phoneId = nomisPhoneId,
             addressId = nomisAddressId,
-            auditModuleName = "DPS_SYNCHRONISATION",
+            auditModuleName = "DPS_SYNCHRONISATION_ORGANISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -1914,7 +2110,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-phone-synchronisation-updated-skipped"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
@@ -1967,7 +2163,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-phone-synchronisation-updated-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisPhoneId"]).isEqualTo("$nomisPhoneId")
@@ -2028,7 +2224,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-phone-synchronisation-deleted-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
@@ -2074,7 +2270,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry for delete ignored`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-address-phone-synchronisation-deleted-ignored"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisAddressId"]).isEqualTo("$nomisAddressId")
@@ -2094,7 +2290,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     private val dpsOrganisationWebAddressId = 76543L
 
     @Nested
-    inner class WhenCreatedInDps {
+    inner class WhenCreatedInDpsByOrganisationSyncService {
       @BeforeEach
       fun setUp() {
         organisationsOffenderEventsQueue.sendMessage(
@@ -2102,7 +2298,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             eventType = "INTERNET_ADDRESSES_CORPORATE-INSERTED",
             corporateId = corporateAndOrganisationId,
             internetAddressId = nomisInternetAddressId,
-            auditModuleName = "DPS_SYNCHRONISATION",
+            auditModuleName = "DPS_SYNCHRONISATION_ORGANISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -2116,7 +2312,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-internet-address-synchronisation-created-skipped"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -2194,7 +2390,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-web-address-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -2236,7 +2432,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-web-address-synchronisation-created-ignored"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -2311,7 +2507,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry for both overall success and duplicate`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-web-address-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
           },
@@ -2319,7 +2515,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         verify(telemetryClient).trackEvent(
           eq("from-nomis-sync-organisations-duplicate"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["existingNomisId"]).isEqualTo("$nomisInternetAddressId")
             assertThat(it["existingDpsId"]).isEqualTo("9999")
             assertThat(it["duplicateNomisId"]).isEqualTo("$nomisInternetAddressId")
@@ -2376,7 +2572,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-web-address-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -2396,7 +2592,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     private val dpsOrganisationEmailId = 76543L
 
     @Nested
-    inner class WhenCreatedInDps {
+    inner class WhenCreatedInDpsByOrganisationSyncService {
       @BeforeEach
       fun setUp() {
         organisationsOffenderEventsQueue.sendMessage(
@@ -2404,7 +2600,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             eventType = "INTERNET_ADDRESSES_CORPORATE-INSERTED",
             corporateId = corporateAndOrganisationId,
             internetAddressId = nomisInternetAddressId,
-            auditModuleName = "DPS_SYNCHRONISATION",
+            auditModuleName = "DPS_SYNCHRONISATION_ORGANISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -2418,7 +2614,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-internet-address-synchronisation-created-skipped"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -2496,7 +2692,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-email-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -2538,7 +2734,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-email-synchronisation-created-ignored"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -2613,7 +2809,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry for both overall success and duplicate`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-email-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
           },
@@ -2621,7 +2817,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         )
         verify(telemetryClient).trackEvent(
           eq("from-nomis-sync-organisations-duplicate"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["existingNomisId"]).isEqualTo("$nomisInternetAddressId")
             assertThat(it["existingDpsId"]).isEqualTo("9999")
             assertThat(it["duplicateNomisId"]).isEqualTo("$nomisInternetAddressId")
@@ -2678,7 +2874,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-email-synchronisation-created-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -2697,7 +2893,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     private val nomisInternetAddressId = 34567L
 
     @Nested
-    inner class WhenUpdatedInDps {
+    inner class WhenUpdatedInDpsByOrganisationSyncService {
       @BeforeEach
       fun setUp() {
         organisationsOffenderEventsQueue.sendMessage(
@@ -2705,7 +2901,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             eventType = "INTERNET_ADDRESSES_CORPORATE-UPDATED",
             corporateId = corporateAndOrganisationId,
             internetAddressId = nomisInternetAddressId,
-            auditModuleName = "DPS_SYNCHRONISATION",
+            auditModuleName = "DPS_SYNCHRONISATION_ORGANISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -2720,7 +2916,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-internet-address-synchronisation-updated-skipped"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -2770,7 +2966,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-web-address-synchronisation-updated-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -2832,7 +3028,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-email-synchronisation-updated-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -2897,7 +3093,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-web-address-synchronisation-updated-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -2983,7 +3179,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-email-synchronisation-updated-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -3060,7 +3256,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
         await untilAsserted {
           verify(telemetryClient, atLeastOnce()).trackEvent(
             eq("organisations-internet-address-synchronisation-updated-error"),
-            org.mockito.kotlin.check {
+            check {
               assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
               assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
               assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -3112,7 +3308,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-web-address-synchronisation-deleted-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -3160,7 +3356,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-email-synchronisation-deleted-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -3208,7 +3404,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry for delete ignored`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-internet-address-synchronisation-deleted-ignored"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisInternetAddressId"]).isEqualTo("$nomisInternetAddressId")
@@ -3226,7 +3422,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     private val nomisCorporateType = "BSKILLS"
 
     @Nested
-    inner class WhenInsertedInDps {
+    inner class WhenInsertedInDpsByOrganisationSyncService {
       @BeforeEach
       fun setUp() {
         organisationsOffenderEventsQueue.sendMessage(
@@ -3234,7 +3430,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             eventType = "CORPORATE_TYPES-INSERTED",
             corporateId = corporateAndOrganisationId,
             corporateType = nomisCorporateType,
-            auditModuleName = "DPS_SYNCHRONISATION",
+            auditModuleName = "DPS_SYNCHRONISATION_ORGANISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -3248,7 +3444,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-type-synchronisation-inserted-skipped"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisCorporateType"]).isEqualTo(nomisCorporateType)
@@ -3302,7 +3498,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-type-synchronisation-inserted-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisCorporateType"]).isEqualTo(nomisCorporateType)
@@ -3339,7 +3535,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     private val nomisCorporateType = "BSKILLS"
 
     @Nested
-    inner class WhenUpdatedInDps {
+    inner class WhenUpdatedInDpsByOrganisationSyncService {
       @BeforeEach
       fun setUp() {
         organisationsOffenderEventsQueue.sendMessage(
@@ -3347,7 +3543,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             eventType = "CORPORATE_TYPES-UPDATED",
             corporateId = corporateAndOrganisationId,
             corporateType = nomisCorporateType,
-            auditModuleName = "DPS_SYNCHRONISATION",
+            auditModuleName = "DPS_SYNCHRONISATION_ORGANISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -3361,7 +3557,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-type-synchronisation-updated-skipped"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisCorporateType"]).isEqualTo(nomisCorporateType)
@@ -3417,7 +3613,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-type-synchronisation-updated-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisCorporateType"]).isEqualTo(nomisCorporateType)
@@ -3454,7 +3650,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
     private val nomisCorporateType = "BSKILLS"
 
     @Nested
-    inner class WhenDeletedInDps {
+    inner class WhenDeletedInDpsByOrganisationSyncService {
       @BeforeEach
       fun setUp() {
         organisationsOffenderEventsQueue.sendMessage(
@@ -3462,7 +3658,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
             eventType = "CORPORATE_TYPES-DELETED",
             corporateId = corporateAndOrganisationId,
             corporateType = nomisCorporateType,
-            auditModuleName = "DPS_SYNCHRONISATION",
+            auditModuleName = "DPS_SYNCHRONISATION_ORGANISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -3476,7 +3672,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-type-synchronisation-deleted-skipped"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisCorporateType"]).isEqualTo(nomisCorporateType)
@@ -3523,7 +3719,7 @@ class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("organisations-type-synchronisation-deleted-success"),
-          org.mockito.kotlin.check {
+          check {
             assertThat(it["nomisCorporateId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["dpsOrganisationId"]).isEqualTo("$corporateAndOrganisationId")
             assertThat(it["nomisCorporateType"]).isEqualTo(nomisCorporateType)
