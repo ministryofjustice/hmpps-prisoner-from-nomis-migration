@@ -16,7 +16,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.dpsOrganisationsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.jsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncAddressPhoneResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncAddressResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressPhoneRequest
@@ -78,6 +80,14 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       nomisCorporateId = 123456,
       organisationName = "Test Organisation",
       active = true,
+      phoneNumbers = emptyList(),
+      addresses = emptyList(),
+      emailAddresses = emptyList(),
+      webAddresses = emptyList(),
+      organisationTypes = emptyList(),
+    )
+    fun migrateOrganisationResponse(request: MigrateOrganisationRequest = migrateOrganisationRequest()) = MigrateOrganisationResponse(
+      organisation = IdPair(elementType = IdPair.ElementType.ORGANISATION, nomisId = request.nomisCorporateId, dpsId = request.nomisCorporateId),
       phoneNumbers = emptyList(),
       addresses = emptyList(),
       emailAddresses = emptyList(),
@@ -252,6 +262,17 @@ class OrganisationsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubMigrateOrganisation(response: MigrateOrganisationResponse = migrateOrganisationResponse()) {
+    dpsOrganisationsServer.stubFor(
+      post("/migrate/organisation")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
   fun stubCreateOrganisation(response: SyncOrganisationResponse = syncOrganisationResponse()) {
     dpsOrganisationsServer.stubFor(
       post("/sync/organisation")
