@@ -7,6 +7,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
@@ -85,42 +86,47 @@ class OrganisationsEventListener(
   }
 }
 
+interface CorporateEventAudited : EventAudited {
+  override val originatesInDps: Boolean
+    get() = auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_ORGANISATION")
+}
+
 data class CorporateEvent(
   override val auditModuleName: String,
   val corporateId: Long,
-) : EventAudited
+) : CorporateEventAudited
 
 data class CorporateAddressEvent(
   override val auditModuleName: String,
   val corporateId: Long,
   val addressId: Long,
-) : EventAudited
+) : CorporateEventAudited
 
 data class CorporatePhoneEvent(
   override val auditModuleName: String,
   val corporateId: Long,
   val phoneId: Long,
   val isAddress: Boolean,
-) : EventAudited
+) : CorporateEventAudited
 
 data class CorporateAddressPhoneEvent(
   override val auditModuleName: String,
   val corporateId: Long,
   val phoneId: Long,
   val addressId: Long,
-) : EventAudited
+) : CorporateEventAudited
 
 data class CorporateInternetAddressEvent(
   override val auditModuleName: String,
   val corporateId: Long,
   val internetAddressId: Long,
-) : EventAudited
+) : CorporateEventAudited
 
 data class CorporateTypeEvent(
   override val auditModuleName: String,
   val corporateId: Long,
   val corporateType: String,
-) : EventAudited
+) : CorporateEventAudited
 
 enum class OrganisationsSynchronisationMessageType {
   RETRY_SYNCHRONISATION_ORGANISATION_MAPPING,
