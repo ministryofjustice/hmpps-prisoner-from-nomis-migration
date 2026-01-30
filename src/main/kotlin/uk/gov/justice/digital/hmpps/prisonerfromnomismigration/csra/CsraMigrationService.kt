@@ -1,12 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
@@ -22,7 +22,7 @@ class CsraMigrationService(
   val nomisApiService: NomisApiService,
   val csraMappingService: CsraMappingService,
   val csraNomisApiService: CsraNomisApiService,
-  objectMapper: ObjectMapper,
+  jsonMapper: JsonMapper,
   @Value($$"${csra.page.size:1000}") pageSize: Long,
   @Value($$"${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value($$"${complete-check.count}") completeCheckCount: Int,
@@ -32,7 +32,7 @@ class CsraMigrationService(
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
-  objectMapper = objectMapper,
+  jsonMapper = jsonMapper,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -88,13 +88,15 @@ class CsraMigrationService(
     }
   }
 
-  override fun parseContextFilter(json: String): MigrationMessage<*, PrisonerMigrationFilter> = objectMapper
+  override fun parseContextFilter(json: String): MigrationMessage<*, PrisonerMigrationFilter> = jsonMapper
     .readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<PrisonerMigrationFilter, ByPageNumber>> = objectMapper
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<PrisonerMigrationFilter, ByPageNumber>> = jsonMapper
     .readValue(json)
 
-  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = objectMapper.readValue(json)
+  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = jsonMapper
+    .readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, CsraMappingDto> = objectMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, CsraMappingDto> = jsonMapper
+    .readValue(json)
 }
