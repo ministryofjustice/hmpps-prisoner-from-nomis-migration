@@ -5,6 +5,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -45,6 +46,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
       .jsonPath("components.hmppsAuthApiHealth.status").isEqualTo("UP")
       .jsonPath("components.courtSentencingApi.status").isEqualTo("UP")
       .jsonPath("components.corePersonApi.status").isEqualTo("UP")
+//      .jsonPath("components.csraApi.status").isEqualTo("UP")
       .jsonPath("components.caseNotesApi.status").isEqualTo("UP")
 //      .jsonPath("components.financeApi.status").isEqualTo("UP")
       .jsonPath("components.alertsApi.status").isEqualTo("UP")
@@ -109,6 +111,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     ActivitiesApiExtension.activitiesApi.stubHealthPing(status)
     IncidentsApiExtension.incidentsApi.stubHealthPing(status)
     CorePersonCprApiExtension.cprCorePersonServer.stubHealthPing(status)
+    CsraApiExtension.csraApi.stubHealthPing(status)
     LocationsApiExtension.locationsApi.stubHealthPing(status)
     AlertsDpsApiExtension.dpsAlertsServer.stubHealthPing(status)
     CaseNotesApiExtension.caseNotesApi.stubHealthPing(status)

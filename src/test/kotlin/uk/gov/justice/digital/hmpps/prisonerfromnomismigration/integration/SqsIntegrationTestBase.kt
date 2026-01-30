@@ -31,6 +31,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
@@ -85,6 +86,7 @@ import java.util.concurrent.TimeUnit
   SentencingApiExtension::class,
   ActivitiesApiExtension::class,
   CorePersonCprApiExtension::class,
+  CsraApiExtension::class,
   IncidentsApiExtension::class,
   LocationsApiExtension::class,
   AlertsDpsApiExtension::class,

@@ -48,6 +48,8 @@ generic-service:
       CASENOTES_CLIENT_SECRET: "CASENOTES_CLIENT_SECRET"
       CORE_PERSON_CLIENT_ID: "CORE_PERSON_CLIENT_ID"
       CORE_PERSON_CLIENT_SECRET: "CORE_PERSON_CLIENT_SECRET"
+#      CSRA_CLIENT_ID: "CSRA_CLIENT_ID"
+#      CSRA_CLIENT_SECRET: "CSRA_CLIENT_SECRET"
       COURT_SENTENCING_CLIENT_ID: "COURT_SENTENCING_CLIENT_ID"
       COURT_SENTENCING_CLIENT_SECRET: "COURT_SENTENCING_CLIENT_SECRET"
       EXT_MOVEMENTS_CLIENT_ID: "EXT_MOVEMENTS_CLIENT_ID"
@@ -104,6 +106,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONCOREPERSON_QUEUE_NAME: "sqs_name"
     sqs-migration-coreperson-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONCOREPERSON_DLQ_NAME: "sqs_name"
+    sqs-migration-csra-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONCSRA_QUEUE_NAME: "sqs_name"
+    sqs-migration-csra-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONCSRA_DLQ_NAME: "sqs_name"
     sqs-migration-prisonbalance-queue:
      HMPPS_SQS_QUEUES_MIGRATIONPRISONBALANCE_QUEUE_NAME: "sqs_name"
     sqs-migration-prisonbalance-dlq:
@@ -160,6 +166,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTCOURTSENTENCING_QUEUE_NAME: "sqs_name"
     prison-events-courtsentencing-dl-queue:
       HMPPS_SQS_QUEUES_EVENTCOURTSENTENCING_DLQ_NAME: "sqs_name"
+    prison-events-csra-queue:
+      HMPPS_SQS_QUEUES_EVENTCSRA_QUEUE_NAME: "sqs_name"
+    prison-events-csra-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTCSRA_DLQ_NAME: "sqs_name"
     prison-events-personalrelationships-queue:
       HMPPS_SQS_QUEUES_EVENTPERSONALRELATIONSHIPS_QUEUE_NAME: "sqs_name"
     prison-events-personalrelationships-dl-queue:

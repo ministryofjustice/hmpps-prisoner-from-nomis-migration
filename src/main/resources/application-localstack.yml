@@ -22,6 +22,9 @@ hmpps.sqs:
     migrationcoreperson:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    migrationcsra:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     migrationprisonbalance:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
@@ -41,6 +44,9 @@ hmpps.sqs:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     eventcoreperson:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
+    eventcsra:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     eventincidents:
