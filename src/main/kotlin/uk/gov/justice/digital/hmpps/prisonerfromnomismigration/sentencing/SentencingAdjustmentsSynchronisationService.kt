@@ -289,6 +289,31 @@ class SentencingAdjustmentsSynchronisationService(
 
   suspend fun repairPostMergeAdjustments(bookingId: Long) = synchronisePrisonerMerge(NomisPrisonerMergeEvent(bookingId))
 
+  suspend fun repairAdjustmentsByBooking(bookingId: Long) {
+    val adjustmentsInNomis = sentencingAdjustmentsNomisApiService.getAllByBookingId(bookingId)
+    adjustmentsInNomis.sentenceAdjustments.forEach { adjustment ->
+      synchroniseSentenceAdjustmentCreateOrUpdate(
+        event = SentenceAdjustmentOffenderEvent(
+          offenderIdDisplay = adjustment.offenderNo,
+          bookingId = bookingId,
+          sentenceSeq = adjustment.sentenceSequence,
+          adjustmentId = adjustment.id,
+          auditModuleName = "REPAIR",
+        ),
+      )
+    }
+    adjustmentsInNomis.keyDateAdjustments.forEach { adjustment ->
+      synchroniseKeyDateAdjustmentCreateOrUpdate(
+        event = KeyDateAdjustmentOffenderEvent(
+          offenderIdDisplay = adjustment.offenderNo,
+          bookingId = bookingId,
+          adjustmentId = adjustment.id,
+          auditModuleName = "REPAIR",
+        ),
+      )
+    }
+  }
+
   private suspend fun SentencingAdjustmentsSynchronisationService.createAdjustment(
     prisonerMergeEvent: NomisPrisonerMergeEvent,
     adjustment: SentenceAdjustmentResponse,
