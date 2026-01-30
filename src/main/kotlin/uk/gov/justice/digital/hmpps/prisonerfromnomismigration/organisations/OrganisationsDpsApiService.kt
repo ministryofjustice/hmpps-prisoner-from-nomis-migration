@@ -6,6 +6,8 @@ import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityIgnoreNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncAddressPhoneResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncAddressResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressPhoneRequest
@@ -28,6 +30,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.mod
 
 @Service
 class OrganisationsDpsApiService(@Qualifier("organisationsDpsApiWebClient") private val webClient: WebClient) {
+  suspend fun migrateOrganisation(organisation: MigrateOrganisationRequest): MigrateOrganisationResponse = webClient.post()
+    .uri("/migrate/organisation")
+    .bodyValue(organisation)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
   suspend fun createOrganisation(organisation: SyncCreateOrganisationRequest): SyncOrganisationResponse = webClient.post()
     .uri("/sync/organisation")
     .bodyValue(organisation)

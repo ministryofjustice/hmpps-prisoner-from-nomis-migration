@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -18,6 +17,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateOrganisationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporatePhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationPhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.MigrateOrganisationWebAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressPhoneRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateAddressRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.model.SyncCreateEmailRequest
@@ -65,6 +70,66 @@ class OrganisationsSynchronisationService(
   }
   private val emailAddressMappingCreator = RetryableMappingCreator<OrganisationsMappingDto>(OrganisationMappingType.EMAIL) {
     mappingApiService.createEmailMapping(it)
+  }
+
+  suspend fun resynchronizeOrganisation(organisationId: Long) {
+    val telemetry = telemetryOf("organisationId" to organisationId)
+    val corporateOrganisation = nomisApiService.getCorporateOrganisation(nomisCorporateId = organisationId)
+    val mapping = dpsApiService.migrateOrganisation(corporateOrganisation.toDpsMigrateOrganisationRequest())
+    corporateMappingCreator.tryToCreateMapping(
+      OrganisationsMappingDto(
+        nomisId = organisationId,
+        dpsId = "$organisationId",
+        mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+      ),
+      telemetry,
+    )
+
+    mapping.addresses.forEach {
+      addressMappingCreator.tryToCreateMapping(
+        OrganisationsMappingDto(
+          nomisId = it.address.nomisId,
+          dpsId = it.address.dpsId.toString(),
+          mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+        ),
+        telemetry,
+      )
+      it.phoneNumbers.forEach { phoneNumber ->
+        addressPhoneMappingCreator.tryToCreateMapping(
+          OrganisationsMappingDto(
+            nomisId = phoneNumber.nomisId,
+            dpsId = "${phoneNumber.dpsId}",
+            mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+          ),
+          telemetry,
+        )
+      }
+    }
+    mapping.phoneNumbers.forEach {
+      phoneMappingCreator.tryToCreateMapping(
+        OrganisationsMappingDto(
+          nomisId = it.nomisId,
+          dpsId = "${it.dpsId}",
+          mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+        ),
+        telemetry,
+      )
+    }
+    mapping.webAddresses.forEach {
+      emailAddressMappingCreator.tryToCreateMapping(
+        OrganisationsMappingDto(
+          nomisId = it.nomisId,
+          dpsId = "${it.dpsId}",
+          mappingType = OrganisationsMappingDto.MappingType.NOMIS_CREATED,
+        ),
+        telemetry,
+      )
+    }
+
+    telemetryClient.trackEvent(
+      "from-nomis-synch-organisation-resynchronisation-repair",
+      telemetry,
+    )
   }
 
   suspend fun corporateInserted(event: CorporateEvent) {
@@ -419,12 +484,14 @@ class OrganisationsSynchronisationService(
           dpsOrganisationEmailId = internetAddressMapping.dpsId,
           telemetry = telemetry,
         )
+
         is InternetAddressMapping.WebAddressMapping -> corporateWebAddressUpdated(
           nomisInternetAddress = nomisInternetAddress,
           dpsOrganisationId = event.corporateId,
           dpsOrganisationWebAddressId = internetAddressMapping.dpsId,
           telemetry = telemetry,
         )
+
         null -> {
           telemetryClient.trackEvent("organisations-internet-address-synchronisation-updated-error", telemetry)
           throw IllegalStateException("Unable to find mapping for ${event.internetAddressId} - assuming we have not received create event yet")
@@ -541,11 +608,13 @@ class OrganisationsSynchronisationService(
         dpsApiService.deleteOrganisationEmail(internetAddressMapping.dpsId)
         mappingApiService.deleteByNomisEmailId(event.internetAddressId)
       }
+
       is InternetAddressMapping.WebAddressMapping -> track("organisations-web-address-synchronisation-deleted", telemetry) {
         telemetry["dpsOrganisationWebAddressId"] = internetAddressMapping.dpsId
         dpsApiService.deleteOrganisationWebAddress(internetAddressMapping.dpsId)
         mappingApiService.deleteByNomisWebId(event.internetAddressId)
       }
+
       null -> telemetryClient.trackEvent("organisations-internet-address-synchronisation-deleted-ignored", telemetry)
     }
   }
@@ -647,6 +716,101 @@ class OrganisationsSynchronisationService(
     }
   }
 }
+
+fun CorporateOrganisation.toDpsMigrateOrganisationRequest(): MigrateOrganisationRequest = MigrateOrganisationRequest(
+  nomisCorporateId = id,
+  organisationName = name,
+  active = active,
+  caseloadId = caseload?.code,
+  vatNumber = vatNumber,
+  programmeNumber = programmeNumber,
+  comments = comment,
+  organisationTypes = types.map { organisationType ->
+    MigrateOrganisationType(
+      type = organisationType.type.code,
+      createDateTime = organisationType.audit.createDatetime,
+      createUsername = organisationType.audit.createUsername,
+      modifyDateTime = organisationType.audit.modifyDatetime,
+      modifyUsername = organisationType.audit.modifyUserId,
+    )
+  },
+  phoneNumbers = phoneNumbers.map { phone ->
+    MigrateOrganisationPhoneNumber(
+      nomisPhoneId = phone.id,
+      number = phone.number,
+      extension = phone.extension,
+      type = phone.type.code,
+      createDateTime = phone.audit.createDatetime,
+      createUsername = phone.audit.createUsername,
+      modifyDateTime = phone.audit.modifyDatetime,
+      modifyUsername = phone.audit.modifyUserId,
+    )
+  },
+
+  addresses = this.addresses.map {
+    MigrateOrganisationAddress(
+      nomisAddressId = it.id,
+      type = it.type?.code,
+      flat = it.flat,
+      premise = it.premise,
+      street = it.street,
+      locality = it.locality,
+      postCode = it.postcode,
+      city = it.city?.code,
+      county = it.county?.code,
+      country = it.country?.code,
+      noFixedAddress = it.noFixedAddress ?: false,
+      primaryAddress = it.primaryAddress,
+      mailAddress = it.mailAddress,
+      comment = it.comment,
+      startDate = it.startDate,
+      endDate = it.endDate,
+      serviceAddress = it.isServices,
+      contactPersonName = it.contactPersonName,
+      businessHours = it.businessHours,
+      phoneNumbers = it.phoneNumbers.map { phone ->
+        MigrateOrganisationPhoneNumber(
+          nomisPhoneId = phone.id,
+          number = phone.number,
+          extension = phone.extension,
+          type = phone.type.code,
+          createDateTime = phone.audit.createDatetime,
+          createUsername = phone.audit.createUsername,
+          modifyDateTime = phone.audit.modifyDatetime,
+          modifyUsername = phone.audit.modifyUserId,
+        )
+      },
+      createDateTime = it.audit.createDatetime,
+      createUsername = it.audit.createUsername,
+      modifyDateTime = it.audit.modifyDatetime,
+      modifyUsername = it.audit.modifyUserId,
+    )
+  },
+  emailAddresses = this.internetAddresses.filter { it.type == "EMAIL" }.map {
+    MigrateOrganisationEmailAddress(
+      nomisEmailAddressId = it.id,
+      email = it.internetAddress,
+      createDateTime = it.audit.createDatetime,
+      createUsername = it.audit.createUsername,
+      modifyDateTime = it.audit.modifyDatetime,
+      modifyUsername = it.audit.modifyUserId,
+    )
+  },
+  webAddresses = this.internetAddresses.filter { it.type == "WEB" }.map {
+    MigrateOrganisationWebAddress(
+      nomisWebAddressId = it.id,
+      webAddress = it.internetAddress,
+      createDateTime = it.audit.createDatetime,
+      createUsername = it.audit.createUsername,
+      modifyDateTime = it.audit.modifyDatetime,
+      modifyUsername = it.audit.modifyUserId,
+    )
+  },
+  createDateTime = this.audit.createDatetime,
+  createUsername = this.audit.createUsername,
+  modifyDateTime = this.audit.modifyDatetime,
+  modifyUsername = this.audit.modifyUserId,
+)
 
 fun CorporateOrganisation.toDpsCreateOrganisationRequest() = SyncCreateOrganisationRequest(
   organisationId = id,
