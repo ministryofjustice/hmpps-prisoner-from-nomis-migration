@@ -35,4 +35,23 @@ class SentencingAdjustmentsDataRepairResource(
       null,
     )
   }
+
+  @PostMapping("/prisoners/booking-id/{bookingId}/update/sentencing-adjustments/repair")
+  @ResponseStatus(HttpStatus.OK)
+  @Operation(
+    summary = "Resynchronises existing adjustments for the given booking from NOMIS back to DPS",
+    description = "Used when an update has not be detected so new adjustments have not been update to DPS, so emergency use only. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW",
+  )
+  suspend fun repairAdjustments(
+    @PathVariable bookingId: Long,
+  ) {
+    sentencingAdjustmentsSynchronisationService.repairAdjustmentsByBooking(bookingId = bookingId)
+    telemetryClient.trackEvent(
+      "from-nomis-synch-adjustment-update-repair",
+      mapOf(
+        "bookingId" to bookingId.toString(),
+      ),
+      null,
+    )
+  }
 }
