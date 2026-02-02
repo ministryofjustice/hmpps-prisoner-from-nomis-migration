@@ -37,6 +37,15 @@ class VisitSlotsMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
   )
     .awaitSingle()
 
+  suspend fun deleteTimeSlotByNomisIds(nomisPrisonId: String, nomisDayOfWeek: String, nomisSlotSequence: Int) {
+    api.deleteVisitTimeSlotMappingByNomisIds(
+      nomisPrisonId = nomisPrisonId,
+      nomisDayOfWeek = nomisDayOfWeek,
+      nomisSlotSequence = nomisSlotSequence,
+    )
+      .awaitSingle()
+  }
+
   suspend fun createTimeSlotMapping(mapping: VisitTimeSlotMappingDto): SuccessOrDuplicate<VisitTimeSlotMappingDto> = api.prepare(api.createVisitTimeSlotMappingRequestConfig(mapping))
     .retrieve()
     .awaitSuccessOrDuplicate()
@@ -45,6 +54,10 @@ class VisitSlotsMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
   suspend fun getVisitSlotByNomisIdOrNull(nomisVisitSlotId: Long): VisitSlotMappingDto? = api.prepare(api.getVisitSlotMappingByNomisIdRequestConfig(nomisId = nomisVisitSlotId))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun deleteVisitSlotByNomisId(nomisVisitSlotId: Long) {
+    api.deleteVisitSlotMappingByNomisId(nomisId = nomisVisitSlotId).awaitSingle()
+  }
   suspend fun createVisitSlotMapping(mapping: VisitSlotMappingDto): SuccessOrDuplicate<VisitSlotMappingDto> = api.prepare(api.createVisitSlotMappingRequestConfig(mapping))
     .retrieve()
     .awaitSuccessOrDuplicate()

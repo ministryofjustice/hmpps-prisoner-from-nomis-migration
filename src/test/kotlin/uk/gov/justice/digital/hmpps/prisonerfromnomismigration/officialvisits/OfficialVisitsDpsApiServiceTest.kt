@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -130,6 +131,32 @@ class OfficialVisitsDpsApiServiceTest {
   }
 
   @Nested
+  inner class DeleteTimeSlot {
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubDeleteTimeSlot(123)
+
+      apiService.deleteTimeSlot(prisonTimeSlotId = 123)
+
+      dpsOfficialVisitsServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the delete endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubDeleteTimeSlot(123)
+
+      apiService.deleteTimeSlot(prisonTimeSlotId = 123)
+
+      dpsOfficialVisitsServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/time-slot/123")),
+      )
+    }
+  }
+
+  @Nested
   inner class CreateVisitSlot {
     @Test
     internal fun `will pass oath2 token to endpoint`() = runTest {
@@ -177,6 +204,32 @@ class OfficialVisitsDpsApiServiceTest {
 
       dpsOfficialVisitsServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/visit-slot/123")),
+      )
+    }
+  }
+
+  @Nested
+  inner class DeleteVisitSlot {
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubDeleteVisitSlot(123)
+
+      apiService.deleteVisitSlot(prisonVisitSlotId = 123)
+
+      dpsOfficialVisitsServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the delete endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubDeleteVisitSlot(123)
+
+      apiService.deleteVisitSlot(prisonVisitSlotId = 123)
+
+      dpsOfficialVisitsServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/visit-slot/123")),
       )
     }
   }
