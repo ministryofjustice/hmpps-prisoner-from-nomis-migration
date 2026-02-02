@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
@@ -243,6 +244,16 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
+  fun stubDeleteTimeSlot(prisonTimeSlotId: Long) {
+    stubFor(
+      delete("/sync/time-slot/$prisonTimeSlotId")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(204),
+        ),
+    )
+  }
 
   fun stubCreateVisitSlot(response: SyncVisitSlot = syncVisitSlot()) {
     stubFor(
@@ -264,6 +275,16 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withHeader("Content-Type", "application/json")
             .withStatus(200)
             .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+  fun stubDeleteVisitSlot(visitSlotId: Long) {
+    stubFor(
+      delete("/sync/visit-slot/$visitSlotId")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(204),
         ),
     )
   }
