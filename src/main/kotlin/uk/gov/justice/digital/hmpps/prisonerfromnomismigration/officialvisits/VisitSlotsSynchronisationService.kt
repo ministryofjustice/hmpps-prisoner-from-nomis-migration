@@ -10,15 +10,18 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.Telemetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.VisitsConfigurationResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitTimeSlotResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.DayType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateTimeSlotRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateVisitSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import java.util.UUID
 
 @Service
 class VisitSlotsSynchronisationService(
@@ -100,7 +103,59 @@ class VisitSlotsSynchronisationService(
   }
 
   fun visitTimeslotDeleted(event: AgencyVisitTimeEvent) = track("officialvisits-timeslot-synchronisation-deleted", event.asTelemetry()) {}
-  fun visitSlotAdded(event: AgencyVisitSlotEvent) = track("officialvisits-visitslot-synchronisation-created", event.asTelemetry()) {}
+  suspend fun visitSlotAdded(event: AgencyVisitSlotEvent) {
+    val telemetryName = "officialvisits-visitslot-synchronisation-created"
+    if (event.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_OFFICIAL_VISITS")) {
+      telemetryClient.trackEvent("$telemetryName-skipped", event.asTelemetry())
+    } else {
+      val mapping = mappingApiService.getVisitSlotByNomisIdOrNull(event.agencyVisitSlotId)
+      if (mapping != null) {
+        telemetryClient.trackEvent(
+          "$telemetryName-ignored",
+          event.asTelemetry() + ("dpsPrisonVisitSlotId" to mapping.dpsId),
+        )
+      } else {
+        val telemetry = event.asTelemetry()
+        track(telemetryName, telemetry) {
+          nomisApiService.getVisitTimeSlot(
+            prisonId = event.agencyLocationId,
+            dayOfWeek = event.weekDay.asNomisApiDayOfWeek(),
+            timeSlotSequence = event.timeslotSequence,
+          ).visitSlots.find { it.id == event.agencyVisitSlotId }!!.also { nomisVisitSlot ->
+            val locationMapping = mappingApiService.getInternalLocationByNomisId(
+              nomisLocationId = nomisVisitSlot.internalLocation.id,
+            ).also { telemetry["dpsLocationId"] = it.dpsLocationId }
+            val timeSlotMapping = mappingApiService.getTimeSlotByNomisIds(
+              nomisPrisonId = event.agencyLocationId,
+              nomisDayOfWeek = event.weekDay,
+              nomisSlotSequence = event.timeslotSequence,
+            ).also { telemetry["dpsPrisonTimeSlotId"] = it.dpsId }
+
+            dpsApiService.createVisitSlot(
+              SyncCreateVisitSlotRequest(
+                prisonTimeSlotId = timeSlotMapping.dpsId.toLong(),
+                dpsLocationId = UUID.fromString(locationMapping.dpsLocationId),
+                createdBy = nomisVisitSlot.audit.createUsername,
+                createdTime = nomisVisitSlot.audit.createDatetime,
+                maxAdults = nomisVisitSlot.maxAdults,
+                maxGroups = nomisVisitSlot.maxGroups,
+              ),
+            ).also { dpsVisitSlot ->
+              telemetry["dpsVisitSlotId"] = dpsVisitSlot.visitSlotId
+              tryToCreateMapping(
+                VisitSlotMappingDto(
+                  dpsId = dpsVisitSlot.visitSlotId.toString(),
+                  nomisId = nomisVisitSlot.id,
+                  mappingType = VisitSlotMappingDto.MappingType.NOMIS_CREATED,
+                ),
+                telemetry = telemetry,
+              )
+            }
+          }
+        }
+      }
+    }
+  }
   fun visitSlotUpdated(event: AgencyVisitSlotEvent) = track("officialvisits-visitslot-synchronisation-updated", event.asTelemetry()) {}
   fun visitSlotDeleted(event: AgencyVisitSlotEvent) = track("officialvisits-visitslot-synchronisation-deleted", event.asTelemetry()) {}
 
@@ -151,6 +206,54 @@ class VisitSlotsSynchronisationService(
       .also {
         telemetryClient.trackEvent(
           "officialvisits-timeslot-mapping-synchronisation-created",
+          retryMessage.telemetryAttributes,
+        )
+      }
+  }
+
+  private suspend fun tryToCreateMapping(
+    mapping: VisitSlotMappingDto,
+    telemetry: Map<String, Any>,
+  ) {
+    try {
+      createMapping(mapping)
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for visit slot id ${mapping.nomisId}", e)
+      queueService.sendMessage(
+        messageType = OfficialVisitsSynchronisationMessageType.RETRY_SYNCHRONISATION_VISIT_SLOT_MAPPING.name,
+        synchronisationType = SynchronisationType.OFFICIAL_VISITS,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+  private suspend fun createMapping(
+    mapping: VisitSlotMappingDto,
+  ) {
+    mappingApiService.createVisitSlotMapping(
+      mapping,
+    )
+      .takeIf { it.isError }?.also {
+        with(it.errorResponse!!.moreInfo) {
+          telemetryClient.trackEvent(
+            "from-nomis-sync-officialvisits-duplicate",
+            mapOf(
+              "existingNomisId" to existing!!.nomisId,
+              "existingDpsId" to existing.dpsId,
+              "duplicateNomisId" to duplicate.nomisId,
+              "duplicateDpsId" to duplicate.dpsId,
+              "type" to "VISITSLOT",
+            ),
+          )
+        }
+      }
+  }
+
+  suspend fun retryCreateVisitSlotMapping(retryMessage: InternalMessage<VisitSlotMappingDto>) {
+    createMapping(retryMessage.body)
+      .also {
+        telemetryClient.trackEvent(
+          "officialvisits-visitslot-mapping-synchronisation-created",
           retryMessage.telemetryAttributes,
         )
       }

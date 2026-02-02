@@ -166,6 +166,34 @@ class VisitSlotsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetVisitSlotByNomisIdOrNull(
+    nomisId: Long = 123456,
+    mapping: VisitSlotMappingDto? = VisitSlotMappingDto(
+      dpsId = "123456",
+      mappingType = VisitSlotMappingDto.MappingType.MIGRATED,
+      nomisId = nomisId,
+    ),
+  ) {
+    mapping?.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/visit-slots/visit-slot/nomis-id/$nomisId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(jsonMapper.writeValueAsString(mapping)),
+        ),
+      )
+    } ?: run {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/visit-slots/visit-slot/nomis-id/$nomisId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
+        ),
+      )
+    }
+  }
   fun stubGetVisitSlotByNomisId(
     nomisId: Long = 123456,
     mapping: VisitSlotMappingDto = VisitSlotMappingDto(
@@ -173,16 +201,7 @@ class VisitSlotsMappingApiMockServer(private val jsonMapper: JsonMapper) {
       mappingType = VisitSlotMappingDto.MappingType.MIGRATED,
       nomisId = nomisId,
     ),
-  ) {
-    mappingApi.stubFor(
-      get(urlEqualTo("/mapping/visit-slots/visit-slot/nomis-id/$nomisId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(jsonMapper.writeValueAsString(mapping)),
-      ),
-    )
-  }
+  ) = stubGetVisitSlotByNomisIdOrNull(nomisId, mapping)
 
   fun stubGetInternalLocationByNomisId(
     nomisLocationId: Long,
