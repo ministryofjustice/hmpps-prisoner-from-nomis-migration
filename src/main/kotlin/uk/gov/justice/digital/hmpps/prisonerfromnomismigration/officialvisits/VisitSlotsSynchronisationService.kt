@@ -18,10 +18,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateVisitSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateTimeSlotRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateVisitSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
-import java.util.UUID
+import java.util.*
 
 @Service
 class VisitSlotsSynchronisationService(
@@ -156,7 +157,39 @@ class VisitSlotsSynchronisationService(
       }
     }
   }
-  fun visitSlotUpdated(event: AgencyVisitSlotEvent) = track("officialvisits-visitslot-synchronisation-updated", event.asTelemetry()) {}
+  suspend fun visitSlotUpdated(event: AgencyVisitSlotEvent) {
+    val telemetryName = "officialvisits-visitslot-synchronisation-updated"
+    if (event.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_OFFICIAL_VISITS")) {
+      telemetryClient.trackEvent("$telemetryName-skipped", event.asTelemetry())
+    } else {
+      val telemetry = event.asTelemetry()
+      track(telemetryName, telemetry) {
+        nomisApiService.getVisitTimeSlot(
+          prisonId = event.agencyLocationId,
+          dayOfWeek = event.weekDay.asNomisApiDayOfWeek(),
+          timeSlotSequence = event.timeslotSequence,
+        ).visitSlots.find { it.id == event.agencyVisitSlotId }!!.also { nomisVisitSlot ->
+          val mapping = mappingApiService.getVisitSlotByNomisId(event.agencyVisitSlotId)
+            .also { telemetry["dpsVisitSlotId"] = it.dpsId }
+          val locationMapping = mappingApiService.getInternalLocationByNomisId(
+            nomisLocationId = nomisVisitSlot.internalLocation.id,
+          ).also { telemetry["dpsLocationId"] = it.dpsLocationId }
+
+          dpsApiService.updateVisitSlot(
+            prisonVisitSlotId = mapping.dpsId.toLong(),
+            SyncUpdateVisitSlotRequest(
+              dpsLocationId = UUID.fromString(locationMapping.dpsLocationId),
+              updatedBy = nomisVisitSlot.audit.modifyUserId!!,
+              updatedTime = nomisVisitSlot.audit.modifyDatetime!!,
+              maxAdults = nomisVisitSlot.maxAdults,
+              maxGroups = nomisVisitSlot.maxGroups,
+            ),
+          )
+        }
+      }
+    }
+  }
+
   fun visitSlotDeleted(event: AgencyVisitSlotEvent) = track("officialvisits-visitslot-synchronisation-deleted", event.asTelemetry()) {}
 
   private suspend fun tryToCreateMapping(
