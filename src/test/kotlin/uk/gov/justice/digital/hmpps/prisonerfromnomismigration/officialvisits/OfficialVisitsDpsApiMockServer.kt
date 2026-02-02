@@ -256,9 +256,9 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubUpdateVisitSlot(prisonVisitSlotId: Long, response: SyncVisitSlot = syncVisitSlot()) {
+  fun stubUpdateVisitSlot(visitSlotId: Long, response: SyncVisitSlot = syncVisitSlot()) {
     stubFor(
-      put("/sync/visit-slot/$prisonVisitSlotId")
+      put("/sync/visit-slot/$visitSlotId")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")

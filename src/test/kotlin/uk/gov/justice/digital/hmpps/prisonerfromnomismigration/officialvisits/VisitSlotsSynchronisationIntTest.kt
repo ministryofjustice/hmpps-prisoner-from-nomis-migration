@@ -35,6 +35,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateVisitSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateTimeSlotRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateVisitSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -915,9 +916,87 @@ class VisitSlotsSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class AgencyVisitSlotUpdated {
 
     @Nested
-    inner class WhenUpdatedInNomis {
+    inner class WhenUpdatedInDps {
       @BeforeEach
       fun setUp() {
+        officialVisitsOffenderEventsQueue.sendMessage(
+          agencyVisitSlotEvent(
+            eventType = "AGENCY_VISIT_SLOTS-UPDATED",
+            agencyVisitSlotId = nomisAgencyVisitSlotId,
+            agencyLocationId = prisonId,
+            timeslotSequence = nomisTimeslotSequence,
+            weekDay = nomisWeekDay,
+            auditModuleName = "DPS_SYNCHRONISATION_OFFICIAL_VISITS",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("officialvisits-visitslot-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["prisonId"]).isEqualTo(prisonId)
+            assertThat(it["nomisWeekDay"]).isEqualTo(nomisWeekDay)
+            assertThat(it["nomisTimeslotSequence"]).isEqualTo(nomisTimeslotSequence.toString())
+            assertThat(it["nomisAgencyVisitSlotId"]).isEqualTo(nomisAgencyVisitSlotId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInNomis {
+      val dpsVisitSlotId = 123L
+      val dpsLocationId: UUID = UUID.randomUUID()
+      val nomisLocationId = 765L
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetVisitSlotByNomisId(
+          nomisId = nomisAgencyVisitSlotId,
+          mapping = VisitSlotMappingDto(
+            dpsId = dpsVisitSlotId.toString(),
+            nomisId = nomisAgencyVisitSlotId,
+            mappingType = VisitSlotMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+
+        nomisApiMock.stubGetVisitTimeSlot(
+          prisonId = prisonId,
+          dayOfWeek = VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MON,
+          timeSlotSequence = nomisTimeslotSequence,
+          response = visitTimeSlotResponse().copy(
+            visitSlots = listOf(
+              visitSlotResponse(),
+              visitSlotResponse().copy(
+                id = nomisAgencyVisitSlotId,
+                maxGroups = 2,
+                maxAdults = 20,
+                internalLocation = VisitInternalLocationResponse(id = nomisLocationId, "MDI-VISIT-LEGAL-1"),
+                audit = NomisAudit(
+                  createDatetime = LocalDateTime.parse("2021-01-01T10:30"),
+                  createUsername = "T.SMITH",
+                  modifyDatetime = LocalDateTime.parse("2022-02-02T10:30"),
+                  modifyUserId = "A.SMITH",
+                ),
+              ),
+            ),
+          ),
+        )
+
+        mappingApiMock.stubGetInternalLocationByNomisId(
+          nomisLocationId = nomisLocationId,
+          mapping = LocationMappingDto(
+            dpsLocationId = dpsLocationId.toString(),
+            nomisLocationId = nomisLocationId,
+            mappingType = LocationMappingDto.MappingType.LOCATION_CREATED,
+          ),
+        )
+
+        dpsApiMock.stubUpdateVisitSlot(visitSlotId = dpsVisitSlotId, response = syncVisitSlot().copy(visitSlotId = dpsVisitSlotId))
+
         officialVisitsOffenderEventsQueue.sendMessage(
           agencyVisitSlotEvent(
             eventType = "AGENCY_VISIT_SLOTS-UPDATED",
@@ -938,9 +1017,22 @@ class VisitSlotsSynchronisationIntTest : SqsIntegrationTestBase() {
             assertThat(it["nomisWeekDay"]).isEqualTo(nomisWeekDay)
             assertThat(it["nomisTimeslotSequence"]).isEqualTo(nomisTimeslotSequence.toString())
             assertThat(it["nomisAgencyVisitSlotId"]).isEqualTo(nomisAgencyVisitSlotId.toString())
+            assertThat(it["dpsVisitSlotId"]).isEqualTo(dpsVisitSlotId.toString())
           },
           isNull(),
         )
+      }
+
+      @Test
+      fun `will update visit slot in DPS`() {
+        val request: SyncUpdateVisitSlotRequest = getRequestBody(putRequestedFor(urlPathEqualTo("/sync/visit-slot/$dpsVisitSlotId")))
+        with(request) {
+          assertThat(this.dpsLocationId).isEqualTo(dpsLocationId)
+          assertThat(this.maxAdults).isEqualTo(20)
+          assertThat(this.maxGroups).isEqualTo(2)
+          assertThat(this.updatedTime).isEqualTo(LocalDateTime.parse("2022-02-02T10:30"))
+          assertThat(this.updatedBy).isEqualTo("A.SMITH")
+        }
       }
     }
   }
