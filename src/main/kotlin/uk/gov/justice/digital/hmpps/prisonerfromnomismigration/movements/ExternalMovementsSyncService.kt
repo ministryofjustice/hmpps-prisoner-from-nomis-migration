@@ -388,7 +388,7 @@ class ExternalMovementsSyncService(
   suspend fun externalMovementTapInserted(event: ExternalMovementEvent) {
     val (bookingId, prisonerNumber, movementSeq, _, directionCode) = event
     val telemetry = mutableMapOf<String, Any>(
-      "offenderNo" to prisonerNumber,
+      "offenderNo" to prisonerNumber!!,
       "bookingId" to bookingId,
       "movementSeq" to movementSeq,
       "directionCode" to directionCode,
@@ -501,7 +501,7 @@ class ExternalMovementsSyncService(
   suspend fun externalMovementTapUpdated(event: ExternalMovementEvent) {
     val (bookingId, prisonerNumber, movementSeq, _, directionCode) = event
     val telemetry = mutableMapOf<String, Any>(
-      "offenderNo" to prisonerNumber,
+      "offenderNo" to prisonerNumber!!,
       "bookingId" to bookingId,
       "movementSeq" to movementSeq,
       "directionCode" to directionCode,
@@ -559,7 +559,7 @@ class ExternalMovementsSyncService(
   suspend fun externalMovementTapDeleted(event: ExternalMovementEvent) {
     val (bookingId, prisonerNumber, movementSeq, _, directionCode) = event
     val telemetry = mutableMapOf<String, Any>(
-      "offenderNo" to prisonerNumber,
+      "offenderNo" to prisonerNumber!!,
       "bookingId" to bookingId,
       "movementSeq" to movementSeq,
       "directionCode" to directionCode,
@@ -715,6 +715,7 @@ fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, dpsLocation
   updated = audit.modifyDatetime?.let { SyncAtAndBy(at = audit.modifyDatetime, by = audit.modifyUserId!!) },
   isCancelled = eventStatus == "CANC",
   legacyId = eventId,
+  contactInformation = this.contactPersonName,
 )
 
 private fun TemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, occurrenceId: UUID? = null, dpsLocation: Location) = SyncWriteTapMovement(

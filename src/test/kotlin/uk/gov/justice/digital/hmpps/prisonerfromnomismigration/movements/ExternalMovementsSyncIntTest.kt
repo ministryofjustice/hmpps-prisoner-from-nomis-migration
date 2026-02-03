@@ -708,6 +708,7 @@ class ExternalMovementsSyncIntTest(
           assertThat(absenceReasonCode).isEqualTo("C5")
           assertThat(transportCode).isEqualTo("VAN")
           assertThat(comments).isEqualTo("scheduled absence comment")
+          assertThat(contactInformation).isEqualTo("Derek")
           assertThat(created.by).isEqualTo("USER")
           assertThat(updated).isNull()
           assertThat(isCancelled).isFalse

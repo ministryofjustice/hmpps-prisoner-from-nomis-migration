@@ -508,6 +508,7 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
       eventDate = startTime.toLocalDate(),
       startTime = startTime,
       comment = "scheduled absence comment",
+      contactPersonName = "Derek",
       escort = "PECS",
       fromPrison = "LEI",
       toAgency = "COURT1",
