@@ -89,7 +89,8 @@ data class ScheduledMovementEvent(
 
 data class ExternalMovementEvent(
   val bookingId: Long,
-  val offenderIdDisplay: String,
+  // Some external movements don't have an offenderIdDisplay (REL / TRN) though TAPs always do
+  val offenderIdDisplay: String?,
   val movementSeq: Int,
   val movementType: MovementType,
   val directionCode: DirectionCode,
