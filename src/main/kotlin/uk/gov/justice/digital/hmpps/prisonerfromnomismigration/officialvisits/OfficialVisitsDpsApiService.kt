@@ -4,7 +4,6 @@ import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityIgnoreNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.api.MigrationApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.api.SynchronisationApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigRequest
@@ -29,14 +28,12 @@ class OfficialVisitsDpsApiService(
   suspend fun createTimeSlot(request: SyncCreateTimeSlotRequest): SyncTimeSlot = syncApi.syncCreateTimeSlot(request).awaitSingle()
   suspend fun updateTimeSlot(prisonTimeSlotId: Long, request: SyncUpdateTimeSlotRequest): SyncTimeSlot = syncApi.syncUpdateTimeSlot(prisonTimeSlotId, request).awaitSingle()
   suspend fun deleteTimeSlot(prisonTimeSlotId: Long) {
-    // TODO DPS swagger incorrect and suggest it will return a body
-    syncApi.prepare(syncApi.syncDelete1RequestConfig(prisonTimeSlotId)).retrieve().awaitBodilessEntityIgnoreNotFound()
+    syncApi.syncDeleteTimeSlot(timeSlotId = prisonTimeSlotId).awaitSingle()
   }
   suspend fun migrateVisit(request: MigrateVisitRequest): MigrateVisitResponse = migrationApi.migrateVisit(request).awaitSingle()
   suspend fun createVisitSlot(request: SyncCreateVisitSlotRequest): SyncVisitSlot = syncApi.syncCreateVisitSlot(request).awaitSingle()
   suspend fun updateVisitSlot(prisonVisitSlotId: Long, request: SyncUpdateVisitSlotRequest): SyncVisitSlot = syncApi.syncUpdateVisitSlot(prisonVisitSlotId, request).awaitSingle()
   suspend fun deleteVisitSlot(prisonVisitSlotId: Long) {
-    // TODO DPS swagger incorrect and suggest it will return a body
-    syncApi.prepare(syncApi.syncDeleteRequestConfig(prisonVisitSlotId)).retrieve().awaitBodilessEntityIgnoreNotFound()
+    syncApi.syncDeleteVisitSlot(prisonVisitSlotId).awaitSingle()
   }
 }
