@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -488,9 +489,32 @@ class VisitSlotsSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class AgencyVisitTimeDeleted {
 
     @Nested
-    inner class WhenDeletedInNomis {
+    inner class WhenMappingExists {
+      val dpsPrisonTimeSlotId = 123L
+
       @BeforeEach
       fun setUp() {
+        mappingApiMock.stubGetTimeSlotByNomisIdsOrNull(
+          nomisPrisonId = prisonId,
+          nomisDayOfWeek = nomisWeekDay,
+          nomisSlotSequence = nomisTimeslotSequence,
+          mapping = VisitTimeSlotMappingDto(
+            dpsId = dpsPrisonTimeSlotId.toString(),
+            nomisPrisonId = prisonId,
+            nomisDayOfWeek = nomisWeekDay,
+            nomisSlotSequence = nomisTimeslotSequence,
+            mappingType = VisitTimeSlotMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+
+        dpsApiMock.stubDeleteTimeSlot(dpsPrisonTimeSlotId)
+
+        mappingApiMock.stubDeleteTimeSlotByNomisIds(
+          nomisPrisonId = prisonId,
+          nomisDayOfWeek = nomisWeekDay,
+          nomisSlotSequence = nomisTimeslotSequence,
+        )
+
         officialVisitsOffenderEventsQueue.sendMessage(
           agencyVisitTimeEvent(
             eventType = "AGENCY_VISIT_TIMES-DELETED",
@@ -502,9 +526,66 @@ class VisitSlotsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
+      fun `will check mapping before deleting`() {
+        mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/visit-slots/time-slots/nomis-prison-id/$prisonId/nomis-day-of-week/$nomisWeekDay/nomis-slot-sequence/$nomisTimeslotSequence")))
+      }
+
+      @Test
+      fun `will delete from DPS`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/time-slot/$dpsPrisonTimeSlotId")))
+      }
+
+      @Test
+      fun `will delete the mapping`() {
+        mappingApiMock.verify(deleteRequestedFor(urlPathEqualTo("/mapping/visit-slots/time-slots/nomis-prison-id/$prisonId/nomis-day-of-week/$nomisWeekDay/nomis-slot-sequence/$nomisTimeslotSequence")))
+      }
+
+      @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("officialvisits-timeslot-synchronisation-deleted-success"),
+          check {
+            assertThat(it["prisonId"]).isEqualTo(prisonId)
+            assertThat(it["nomisWeekDay"]).isEqualTo(nomisWeekDay)
+            assertThat(it["nomisTimeslotSequence"]).isEqualTo(nomisTimeslotSequence.toString())
+            assertThat(it["dpsPrisonTimeSlotId"]).isEqualTo(dpsPrisonTimeSlotId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenMappingDoesNotExists {
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetTimeSlotByNomisIdsOrNull(
+          nomisPrisonId = prisonId,
+          nomisDayOfWeek = nomisWeekDay,
+          nomisSlotSequence = nomisTimeslotSequence,
+          mapping = null,
+        )
+
+        officialVisitsOffenderEventsQueue.sendMessage(
+          agencyVisitTimeEvent(
+            eventType = "AGENCY_VISIT_TIMES-DELETED",
+            agencyLocationId = prisonId,
+            timeslotSequence = nomisTimeslotSequence,
+            weekDay = nomisWeekDay,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will check mapping before deleting`() {
+        mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/visit-slots/time-slots/nomis-prison-id/$prisonId/nomis-day-of-week/$nomisWeekDay/nomis-slot-sequence/$nomisTimeslotSequence")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("officialvisits-timeslot-synchronisation-deleted-ignored"),
           check {
             assertThat(it["prisonId"]).isEqualTo(prisonId)
             assertThat(it["nomisWeekDay"]).isEqualTo(nomisWeekDay)

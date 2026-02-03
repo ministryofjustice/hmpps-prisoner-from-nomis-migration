@@ -103,7 +103,30 @@ class VisitSlotsSynchronisationService(
     }
   }
 
-  fun visitTimeslotDeleted(event: AgencyVisitTimeEvent) = track("officialvisits-timeslot-synchronisation-deleted", event.asTelemetry()) {}
+  suspend fun visitTimeslotDeleted(event: AgencyVisitTimeEvent) {
+    val telemetryName = "officialvisits-timeslot-synchronisation-deleted"
+    val telemetry = event.asTelemetry()
+    mappingApiService.getTimeSlotByNomisIdsOrNull(
+      nomisPrisonId = event.agencyLocationId,
+      nomisDayOfWeek = event.weekDay,
+      nomisSlotSequence = event.timeslotSequence,
+    )?.also { mapping ->
+      telemetry["dpsPrisonTimeSlotId"] = mapping.dpsId
+      track(telemetryName, telemetry) {
+        dpsApiService.deleteTimeSlot(mapping.dpsId.toLong())
+        mappingApiService.deleteTimeSlotByNomisIds(
+          nomisPrisonId = event.agencyLocationId,
+          nomisDayOfWeek = event.weekDay,
+          nomisSlotSequence = event.timeslotSequence,
+        )
+      }
+    } ?: run {
+      telemetryClient.trackEvent(
+        "$telemetryName-ignored",
+        telemetry,
+      )
+    }
+  }
   suspend fun visitSlotAdded(event: AgencyVisitSlotEvent) {
     val telemetryName = "officialvisits-visitslot-synchronisation-created"
     if (event.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_OFFICIAL_VISITS")) {
