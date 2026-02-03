@@ -168,7 +168,7 @@ class ExternalMovementsSyncService(
       val dpsAuthorisationId = requireParentApplicationExists(nomisSchedule.movementApplicationId)
         .also { telemetry["dpsAuthorisationId"] = it }
 
-      val dpsLocation = deriveDpsAddress(prisonerNumber, existingMapping, nomisSchedule)
+      val dpsLocation = deriveDpsAddress(existingMapping, nomisSchedule)
       dpsLocation.uprn?.also { telemetry["dpsUprn"] = it }
       val dpsOccurrence = nomisSchedule.toDpsRequest(existingMapping?.dpsOccurrenceId, dpsLocation)
       val dpsOccurrenceId = dpsApiService.syncTapOccurrence(dpsAuthorisationId, dpsOccurrence).id
@@ -195,7 +195,6 @@ class ExternalMovementsSyncService(
     }
 
   private suspend fun deriveDpsAddress(
-    prisonerNumber: String,
     existingScheduleMapping: ScheduledMovementSyncMappingDto?,
     nomisSchedule: ScheduledTemporaryAbsenceResponse,
   ): Location {
@@ -203,10 +202,7 @@ class ExternalMovementsSyncService(
     val newAddress = (existingScheduleMapping == null || (hasNomisAddress && existingScheduleMapping.nomisAddressId != nomisSchedule.toAddressId))
 
     return if (newAddress) {
-      // NOMIS address is new/changed, look for address mapping or just default from NOMIS
-      mappingApiService.findAddressMappingOrNull(prisonerNumber, nomisSchedule.toAddressOwnerClass!!, nomisSchedule.toAddressId!!)
-        ?.let { Location(it.dpsDescription, it.dpsAddressText, it.dpsPostcode, it.dpsUprn) }
-        ?: Location(nomisSchedule.toAddressDescription, nomisSchedule.toFullAddress ?: "", nomisSchedule.toAddressPostcode, null)
+      Location(nomisSchedule.toAddressDescription, nomisSchedule.toFullAddress ?: "", nomisSchedule.toAddressPostcode, null)
     } else {
       // NOMIS address is unchanged, use DPS address as saved on scheduled mapping
       Location(existingScheduleMapping.dpsDescription, existingScheduleMapping.dpsAddressText, existingScheduleMapping.dpsPostcode, existingScheduleMapping.dpsUprn)
@@ -431,7 +427,7 @@ class ExternalMovementsSyncService(
       val dpsOccurrenceId = nomisMovement.scheduledTemporaryAbsenceId?.let { requireParentScheduleExists(it) }
         ?.also { telemetry["dpsOccurrenceId"] = it }
 
-      val dpsLocation = deriveDpsAddress(prisonerNumber, existingMapping, nomisMovement.toAddressId, nomisMovement.toAddressOwnerClass, nomisMovement.toFullAddress, nomisMovement.toAddressDescription, nomisMovement.toAddressPostcode)
+      val dpsLocation = deriveDpsAddress(existingMapping, nomisMovement.toAddressId, nomisMovement.toAddressOwnerClass, nomisMovement.toFullAddress, nomisMovement.toAddressDescription, nomisMovement.toAddressPostcode)
       dpsLocation.uprn?.also { telemetry["dpsUprn"] = it }
       val dpsMovement = nomisMovement.toDpsRequest(existingMapping?.dpsMovementId, dpsOccurrenceId, dpsLocation)
       val dpsMovementId = dpsApiService.syncTapMovement(prisonerNumber, dpsMovement).id
@@ -473,7 +469,7 @@ class ExternalMovementsSyncService(
       val dpsOccurrenceId = nomisMovement.scheduledTemporaryAbsenceId?.let { requireParentScheduleExists(it) }
         ?.also { telemetry["dpsOccurrenceId"] = it }
 
-      val dpsLocation = deriveDpsAddress(prisonerNumber, existingMapping, nomisMovement.fromAddressId, nomisMovement.fromAddressOwnerClass, nomisMovement.fromFullAddress, nomisMovement.fromAddressDescription, nomisMovement.fromAddressPostcode)
+      val dpsLocation = deriveDpsAddress(existingMapping, nomisMovement.fromAddressId, nomisMovement.fromAddressOwnerClass, nomisMovement.fromFullAddress, nomisMovement.fromAddressDescription, nomisMovement.fromAddressPostcode)
       dpsLocation.uprn?.also { telemetry["dpsUprn"] = it }
       val dpsMovement = nomisMovement.toDpsRequest(existingMapping?.dpsMovementId, dpsOccurrenceId, dpsLocation)
       val dpsMovementId = dpsApiService.syncTapMovement(prisonerNumber, dpsMovement).id
@@ -529,7 +525,6 @@ class ExternalMovementsSyncService(
   }
 
   private suspend fun deriveDpsAddress(
-    prisonerNumber: String,
     existingMovementMapping: ExternalMovementSyncMappingDto?,
     nomisAddressId: Long?,
     nomisAddressOwnerClass: String?,
@@ -543,10 +538,7 @@ class ExternalMovementsSyncService(
       (!hasNomisAddress && existingMovementMapping.dpsAddressText != nomisAddress)
 
     return if (addressHasChanged && hasNomisAddress) {
-      // NOMIS address is new/changed, look for address mapping or just default from NOMIS
-      mappingApiService.findAddressMappingOrNull(prisonerNumber, nomisAddressOwnerClass, nomisAddressId)
-        ?.let { Location(it.dpsDescription, it.dpsAddressText, it.dpsPostcode, it.dpsUprn) }
-        ?: Location(nomisAddressDescription, nomisAddress ?: "", nomisAddressPostcode, null)
+      Location(nomisAddressDescription, nomisAddress ?: "", nomisAddressPostcode, null)
     } else if (addressHasChanged) {
       // There is no address in NOMIS so this must be a City and all we have is the NOMIS address text
       Location(null, nomisAddress, null, null)

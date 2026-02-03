@@ -19,7 +19,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.FindScheduledMovementsForAddressResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceAddressMappingResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceBookingMappingDto
@@ -219,12 +218,12 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
 
   fun stubUpdateScheduledMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingUpdateFailureFollowedBySuccess("/mapping/temporary-absence/scheduled-movement")
 
-  fun stubGetScheduledMovementMapping(nomisEventId: Long = 1L, dpsOccurrenceId: UUID = UUID.randomUUID(), eventTime: LocalDateTime = LocalDateTime.now()) {
+  fun stubGetScheduledMovementMapping(nomisEventId: Long = 1L, dpsOccurrenceId: UUID = UUID.randomUUID(), eventTime: LocalDateTime = LocalDateTime.now(), dpsUprn: Long = 987L) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/temporary-absence/scheduled-movement/nomis-event-id/$nomisEventId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody(jsonMapper.writeValueAsString(temporaryAbsenceScheduledMovementMapping(nomisEventId = nomisEventId, dpsOccurrenceId = dpsOccurrenceId, eventTime = eventTime))),
+          .withBody(jsonMapper.writeValueAsString(temporaryAbsenceScheduledMovementMapping(nomisEventId = nomisEventId, dpsOccurrenceId = dpsOccurrenceId, eventTime = eventTime, dpsUprn = dpsUprn))),
       ),
     )
   }
@@ -425,39 +424,6 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubFindAddressMappings(
-    offenderNo: String = "A1234BC",
-    ownerClass: String = "OFF",
-    addressId: Long = 65432L,
-    dpsUprn: Long? = 23456L,
-    dpsAddressText: String = "some address",
-    dpsDescription: String? = null,
-    dpsPostcode: String? = "S1 1AA",
-  ) {
-    mappingApi.stubFor(
-      post(urlPathMatching("/mapping/temporary-absence/addresses/by-nomis-id")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(
-            jsonMapper.writeValueAsString(
-              TemporaryAbsenceAddressMappingResponse(ownerClass, addressId, dpsAddressText, offenderNo, dpsUprn, dpsDescription, dpsPostcode),
-            ),
-          ),
-      ),
-    )
-  }
-
-  fun stubFindAddressMappings(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    mappingApi.stubFor(
-      post(urlPathMatching("/mapping/temporary-absence/addresses/by-nomis-id")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(jsonMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
@@ -547,6 +513,7 @@ fun temporaryAbsenceScheduledMovementMapping(
   dpsOccurrenceId: UUID = UUID.randomUUID(),
   eventTime: LocalDateTime = LocalDateTime.now(),
   nomisAddressOwnerClass: String = "OFF",
+  dpsUprn: Long? = null,
 ) = ScheduledMovementSyncMappingDto(
   prisonerNumber = prisonerNumber,
   bookingId = 12345,
@@ -558,6 +525,7 @@ fun temporaryAbsenceScheduledMovementMapping(
   dpsAddressText = "to full address",
   dpsDescription = "some description",
   dpsPostcode = "S1 1AB",
+  dpsUprn = dpsUprn,
   eventTime = "$eventTime",
 )
 
