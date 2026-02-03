@@ -213,7 +213,23 @@ class VisitSlotsSynchronisationService(
     }
   }
 
-  fun visitSlotDeleted(event: AgencyVisitSlotEvent) = track("officialvisits-visitslot-synchronisation-deleted", event.asTelemetry()) {}
+  suspend fun visitSlotDeleted(event: AgencyVisitSlotEvent) {
+    val telemetryName = "officialvisits-visitslot-synchronisation-deleted"
+    val telemetry = event.asTelemetry()
+
+    mappingApiService.getVisitSlotByNomisIdOrNull(event.agencyVisitSlotId)?.also { mapping ->
+      telemetry["dpsVisitSlotId"] = mapping.dpsId
+      track(telemetryName, telemetry) {
+        dpsApiService.deleteVisitSlot(mapping.dpsId.toLong())
+        mappingApiService.deleteVisitSlotByNomisId(event.agencyVisitSlotId)
+      }
+    } ?: run {
+      telemetryClient.trackEvent(
+        "$telemetryName-ignored",
+        telemetry,
+      )
+    }
+  }
 
   private suspend fun tryToCreateMapping(
     mapping: VisitTimeSlotMappingDto,
