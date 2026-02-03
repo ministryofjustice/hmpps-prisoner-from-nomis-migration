@@ -29,7 +29,7 @@ For running locally against docker instances of the following services:
 
 or
 
-`docker-compose up  --scale hmpps-prisoner-from-nomis-migration=0`
+`docker compose up  --scale hmpps-prisoner-from-nomis-migration=0`
 
 Running all services including this service
 
@@ -37,7 +37,7 @@ Running all services including this service
 
 or
 
-`docker-compose up`
+`docker compose up`
 
 ## Running locally against T3 test services
 
@@ -52,7 +52,7 @@ A better hybrid solution which gives better control messaging would be similar t
 
 The first 2 of the 3 steps is required but instead of step 3
 
-- `docker-compose up localstack migration-db` or `docker compose up localstack migration-db` (there is also docker-compose-local.yaml with just localstack and postgres defined )
+- `docker compose up localstack migration-db` or `docker compose up localstack migration-db` (there is also docker-compose-local.yaml with just localstack and postgres defined )
 
 Then run any of the `bash` scripts at the root of this project to send events to the local topic
 
