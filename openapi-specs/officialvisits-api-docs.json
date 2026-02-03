@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-02-02.310.c7f4450"
+    "version" : "2026-02-02.314.0e8f090"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -440,7 +440,7 @@
     "/official-visit/prison/{prisonCode}/id/{officialVisitId}/complete" : {
       "post" : {
         "tags" : [ "Official visits" ],
-        "summary" : "Endpoint to complete an official visit.",
+        "summary" : "Completes an official visit.",
         "description" : "\n\nRequires one of the following roles:\n* ROLE_OFFICIAL_VISITS_ADMIN\n* ROLE_OFFICIAL_VISITS_RW",
         "operationId" : "complete",
         "parameters" : [ {
@@ -476,6 +476,79 @@
         "responses" : {
           "200" : {
             "description" : "Official visit completed successfully"
+          },
+          "404" : {
+            "description" : "No official visit found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/official-visit/prison/{prisonCode}/id/{officialVisitId}/cancel" : {
+      "post" : {
+        "tags" : [ "Official visits" ],
+        "summary" : "Cancels an official visit.",
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_OFFICIAL_VISITS_ADMIN\n* ROLE_OFFICIAL_VISITS_RW",
+        "operationId" : "cancel",
+        "parameters" : [ {
+          "name" : "prisonCode",
+          "in" : "path",
+          "description" : "The prison code",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "MDI"
+        }, {
+          "name" : "officialVisitId",
+          "in" : "path",
+          "description" : "The official visit identifier",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "example" : 123
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OfficialVisitCancellationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Official visit cancelled successfully"
           },
           "404" : {
             "description" : "No official visit found",
@@ -1945,7 +2018,10 @@
         "description" : "The request with the official visit completion details",
         "properties" : {
           "completionReason" : {
-            "$ref" : "#/components/schemas/VisitCompletionType"
+            "$ref" : "#/components/schemas/VisitCompletionType",
+            "description" : "The reason for completion of the visit",
+            "enum" : [ "NORMAL", "PRISONER_EARLY", "PRISONER_REFUSED", "STAFF_EARLY", "VISITOR_DENIED", "VISITOR_EARLY", "VISITOR_NO_SHOW" ],
+            "example" : "NORMAL"
           },
           "prisonerAttendance" : {
             "$ref" : "#/components/schemas/AttendanceType"
@@ -1978,7 +2054,25 @@
       },
       "VisitCompletionType" : {
         "type" : "string",
-        "enum" : [ "NORMAL", "STAFF_CANCELLED", "VISITOR_CANCELLED", "VISITOR_DENIED", "PRISONER_EARLY", "VISITOR_EARLY", "PRISONER_REFUSED", "STAFF_EARLY", "PRISONER_CANCELLED", "VISITOR_NO_SHOW" ]
+        "enum" : [ "NORMAL", "PRISONER_EARLY", "PRISONER_REFUSED", "STAFF_EARLY", "VISITOR_DENIED", "VISITOR_EARLY", "VISITOR_NO_SHOW", "PRISONER_CANCELLED", "STAFF_CANCELLED", "VISITOR_CANCELLED" ]
+      },
+      "OfficialVisitCancellationRequest" : {
+        "type" : "object",
+        "description" : "The request with the official visit cancellation details",
+        "properties" : {
+          "cancellationReason" : {
+            "$ref" : "#/components/schemas/VisitCompletionType",
+            "description" : "The reason for cancellation of the visit",
+            "enum" : [ "PRISONER_CANCELLED", "STAFF_CANCELLED", "VISITOR_CANCELLED" ],
+            "example" : "PRISONER_CANCELLED"
+          },
+          "cancellationNotes" : {
+            "type" : "string",
+            "description" : "Optional notes containing details of the reason for cancellation",
+            "example" : "Prisoner in hospital"
+          }
+        },
+        "required" : [ "cancellationReason" ]
       },
       "OfficialVisitSummarySearchRequest" : {
         "type" : "object",
