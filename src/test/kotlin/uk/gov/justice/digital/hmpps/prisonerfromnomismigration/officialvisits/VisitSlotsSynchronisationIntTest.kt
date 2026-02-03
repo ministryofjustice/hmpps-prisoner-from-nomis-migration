@@ -1123,9 +1123,24 @@ class VisitSlotsSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class AgencyVisitSlotDeleted {
 
     @Nested
-    inner class WhenDeletedInNomis {
+    inner class WhenMappingExists {
+      val dpsVisitSlotId = 123L
+
       @BeforeEach
       fun setUp() {
+        mappingApiMock.stubGetVisitSlotByNomisIdOrNull(
+          nomisId = nomisAgencyVisitSlotId,
+          mapping = VisitSlotMappingDto(
+            dpsId = dpsVisitSlotId.toString(),
+            nomisId = nomisAgencyVisitSlotId,
+            mappingType = VisitSlotMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+
+        dpsApiMock.stubDeleteVisitSlot(visitSlotId = dpsVisitSlotId)
+
+        mappingApiMock.stubDeleteVisitSlotByNomisId(nomisId = nomisAgencyVisitSlotId)
+
         officialVisitsOffenderEventsQueue.sendMessage(
           agencyVisitSlotEvent(
             eventType = "AGENCY_VISIT_SLOTS-DELETED",
@@ -1138,9 +1153,66 @@ class VisitSlotsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
+      fun `will check mapping before deleting`() {
+        mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/visit-slots/visit-slot/nomis-id/$nomisAgencyVisitSlotId")))
+      }
+
+      @Test
+      fun `will delete from DPS`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/visit-slot/$dpsVisitSlotId")))
+      }
+
+      @Test
+      fun `will delete the mapping`() {
+        mappingApiMock.verify(deleteRequestedFor(urlPathEqualTo("/mapping/visit-slots/visit-slot/nomis-id/$nomisAgencyVisitSlotId")))
+      }
+
+      @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("officialvisits-visitslot-synchronisation-deleted-success"),
+          check {
+            assertThat(it["prisonId"]).isEqualTo(prisonId)
+            assertThat(it["nomisWeekDay"]).isEqualTo(nomisWeekDay)
+            assertThat(it["nomisTimeslotSequence"]).isEqualTo(nomisTimeslotSequence.toString())
+            assertThat(it["nomisAgencyVisitSlotId"]).isEqualTo(nomisAgencyVisitSlotId.toString())
+            assertThat(it["dpsVisitSlotId"]).isEqualTo(dpsVisitSlotId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenMappingDoesNotExist {
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetVisitSlotByNomisIdOrNull(
+          nomisId = nomisAgencyVisitSlotId,
+          mapping = null,
+        )
+
+        officialVisitsOffenderEventsQueue.sendMessage(
+          agencyVisitSlotEvent(
+            eventType = "AGENCY_VISIT_SLOTS-DELETED",
+            agencyVisitSlotId = nomisAgencyVisitSlotId,
+            agencyLocationId = prisonId,
+            timeslotSequence = nomisTimeslotSequence,
+            weekDay = nomisWeekDay,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will check mapping before deleting`() {
+        mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/visit-slots/visit-slot/nomis-id/$nomisAgencyVisitSlotId")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("officialvisits-visitslot-synchronisation-deleted-ignored"),
           check {
             assertThat(it["prisonId"]).isEqualTo(prisonId)
             assertThat(it["nomisWeekDay"]).isEqualTo(nomisWeekDay)
