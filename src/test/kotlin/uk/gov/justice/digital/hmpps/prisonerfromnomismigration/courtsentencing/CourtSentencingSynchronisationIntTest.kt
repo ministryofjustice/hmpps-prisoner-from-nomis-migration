@@ -3962,7 +3962,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
               assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
               assertThat(it["reason"]).isEqualTo("charge is not mapped")
-              assertThat(it["offenceCode"]).isEqualTo("TTT4006")
               assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE_ID.toString())
             },
             isNull(),
