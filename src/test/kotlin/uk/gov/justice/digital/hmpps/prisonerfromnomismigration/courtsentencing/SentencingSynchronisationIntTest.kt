@@ -1619,6 +1619,50 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class SentenceChargeDeleted {
 
     @Nested
+    @DisplayName("When event triggered by DPS synchronisation process")
+    inner class SourceIsDPS {
+      @BeforeEach
+      fun setUp() {
+        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+          courtSentencingQueueOffenderEventsUrl,
+          sentenceChargeEvent(
+            eventType = "OFFENDER_SENTENCE_CHARGES-DELETED",
+            auditModule = "DPS_SYNCHRONISATION",
+          ),
+        )
+      }
+
+      @Test
+      fun `telemetry added to track the skip`() {
+        await untilAsserted {
+          verify(telemetryClient, times(1)).trackEvent(
+            eq("sentence-charge-synchronisation-deleted-skipped"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+              assertThat(it["nomisChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE.toString())
+              assertThat(it["reason"]).isEqualTo("originates from DPS")
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Test
+      fun `the event is not placed on dead letter queue`() {
+        await untilAsserted {
+          assertThat(
+            awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+              courtSentencingQueueOffenderEventsDlqUrl,
+            ).get(),
+          ).isEqualTo(0)
+        }
+      }
+    }
+
+    @Nested
     @DisplayName("When mapping doesn't exist and nomis sentence does exist")
     inner class SentenceMappingDoesNotExist {
       @BeforeEach
@@ -1897,6 +1941,50 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
               assertThat(it["nomisChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE.toString())
               assertThat(it["reason"]).isEqualTo("sentence mapping does not exist, no update required")
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Test
+      fun `the event is not placed on dead letter queue`() {
+        await untilAsserted {
+          assertThat(
+            awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+              courtSentencingQueueOffenderEventsDlqUrl,
+            ).get(),
+          ).isEqualTo(0)
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("When event triggered by DPS synchronisation process")
+    inner class SourceIsDPS {
+      @BeforeEach
+      fun setUp() {
+        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+        awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+          courtSentencingQueueOffenderEventsUrl,
+          sentenceChargeEvent(
+            eventType = "OFFENDER_SENTENCE_CHARGES-INSERTED",
+            auditModule = "DPS_SYNCHRONISATION",
+          ),
+        )
+      }
+
+      @Test
+      fun `telemetry added to track the skip`() {
+        await untilAsserted {
+          verify(telemetryClient, times(1)).trackEvent(
+            eq("sentence-charge-synchronisation-inserted-skipped"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+              assertThat(it["nomisChargeId"]).isEqualTo(NOMIS_OFFENDER_CHARGE.toString())
+              assertThat(it["reason"]).isEqualTo("originates from DPS")
             },
             isNull(),
           )

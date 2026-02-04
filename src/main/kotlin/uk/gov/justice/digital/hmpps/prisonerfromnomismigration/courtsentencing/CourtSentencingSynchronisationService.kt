@@ -1349,41 +1349,47 @@ class CourtSentencingSynchronisationService(
         "nomisSentenceSequence" to event.sentenceSeq.toString(),
         "offenderNo" to event.offenderIdDisplay,
       )
-
-    val mapping = mappingApiService.getSentenceOrNullByNomisId(
-      bookingId = bookingId,
-      sentenceSequence = nomisSentenceSequence,
-    )
-    if (mapping == null) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
         "sentence-charge-synchronisation-inserted-skipped",
-        telemetry + ("reason" to "sentence mapping does not exist, no update required"),
+        telemetry + ("reason" to "originates from DPS"),
       )
     } else {
-      nomisApiService.getOffenderSentenceByBooking(
+      val mapping = mappingApiService.getSentenceOrNullByNomisId(
         bookingId = bookingId,
         sentenceSequence = nomisSentenceSequence,
-      ).let { nomisSentence ->
-        val eventId = nomisSentence.courtOrder!!.eventId
-        track(
-          "sentence-charge-synchronisation-inserted",
-          telemetry = (telemetry + ("dpsSentenceId" to mapping.dpsSentenceId)).toMutableMap(),
-        ) {
-          mappingApiService.getCourtAppearanceByNomisId(eventId).let { courtAppearanceMapping ->
-            dpsApiService.updateSentence(
-              sentenceId = mapping.dpsSentenceId,
-              nomisSentence.toDpsSentence(
-                dpsAppearanceUuid = courtAppearanceMapping.dpsCourtAppearanceId,
-                dpsConsecUuid = nomisSentence.consecSequence?.let {
-                  getConsecutiveSequenceMappingOrThrow(
-                    sentenceSequence = nomisSentenceSequence,
-                    bookingId = bookingId,
-                    consecSequence = it,
-                  )
-                },
-                sentenceChargeIds = getDpsChargeMappings(nomisSentence),
-              ),
-            )
+      )
+      if (mapping == null) {
+        telemetryClient.trackEvent(
+          "sentence-charge-synchronisation-inserted-skipped",
+          telemetry + ("reason" to "sentence mapping does not exist, no update required"),
+        )
+      } else {
+        nomisApiService.getOffenderSentenceByBooking(
+          bookingId = bookingId,
+          sentenceSequence = nomisSentenceSequence,
+        ).let { nomisSentence ->
+          val eventId = nomisSentence.courtOrder!!.eventId
+          track(
+            "sentence-charge-synchronisation-inserted",
+            telemetry = (telemetry + ("dpsSentenceId" to mapping.dpsSentenceId)).toMutableMap(),
+          ) {
+            mappingApiService.getCourtAppearanceByNomisId(eventId).let { courtAppearanceMapping ->
+              dpsApiService.updateSentence(
+                sentenceId = mapping.dpsSentenceId,
+                nomisSentence.toDpsSentence(
+                  dpsAppearanceUuid = courtAppearanceMapping.dpsCourtAppearanceId,
+                  dpsConsecUuid = nomisSentence.consecSequence?.let {
+                    getConsecutiveSequenceMappingOrThrow(
+                      sentenceSequence = nomisSentenceSequence,
+                      bookingId = bookingId,
+                      consecSequence = it,
+                    )
+                  },
+                  sentenceChargeIds = getDpsChargeMappings(nomisSentence),
+                ),
+              )
+            }
           }
         }
       }
@@ -1401,55 +1407,65 @@ class CourtSentencingSynchronisationService(
         "offenderNo" to event.offenderIdDisplay,
       )
 
-    val mapping = mappingApiService.getSentenceOrNullByNomisId(
-      bookingId = bookingId,
-      sentenceSequence = nomisSentenceSequence,
-    )
-    if (mapping == null) {
-      // check for existence as sentence could have been deleted in nomis
-      nomisApiService.getOffenderSentenceByBookingNullable(
-        bookingId = bookingId,
-        sentenceSequence = nomisSentenceSequence,
-      )?.let {
-        telemetryClient.trackEvent(
-          "sentence-charge-synchronisation-deleted-skipped",
-          telemetry + ("reason" to "sentence mapping does not exist, no update required"),
-        )
-      } ?: run {
-        telemetryClient.trackEvent(
-          "sentence-charge-synchronisation-deleted-skipped",
-          telemetry + ("reason" to "sentence does not exist in nomis, no update required"),
-        )
-      }
+    if (event.originatesInDps) {
+      telemetryClient.trackEvent(
+        "sentence-charge-synchronisation-deleted-skipped",
+        telemetry + ("reason" to "originates from DPS"),
+      )
     } else {
-      nomisApiService.getOffenderSentenceByBookingNullable(
+      val mapping = mappingApiService.getSentenceOrNullByNomisId(
         bookingId = bookingId,
         sentenceSequence = nomisSentenceSequence,
-      )?.also { nomisSentence ->
-        val eventId = nomisSentence.courtOrder!!.eventId
-        track("sentence-charge-synchronisation-deleted", telemetry = (telemetry + ("dpsSentenceId" to mapping.dpsSentenceId)).toMutableMap()) {
-          mappingApiService.getCourtAppearanceByNomisId(eventId).let { courtAppearanceMapping ->
-            dpsApiService.updateSentence(
-              sentenceId = mapping.dpsSentenceId,
-              nomisSentence.toDpsSentence(
-                dpsAppearanceUuid = courtAppearanceMapping.dpsCourtAppearanceId,
-                dpsConsecUuid = nomisSentence.consecSequence?.let {
-                  getConsecutiveSequenceMappingOrThrow(
-                    sentenceSequence = nomisSentenceSequence,
-                    bookingId = bookingId,
-                    consecSequence = it,
-                  )
-                },
-                sentenceChargeIds = getDpsChargeMappings(nomisSentence),
-              ),
-            )
-          }
+      )
+      if (mapping == null) {
+        // check for existence as sentence could have been deleted in nomis
+        nomisApiService.getOffenderSentenceByBookingNullable(
+          bookingId = bookingId,
+          sentenceSequence = nomisSentenceSequence,
+        )?.let {
+          telemetryClient.trackEvent(
+            "sentence-charge-synchronisation-deleted-skipped",
+            telemetry + ("reason" to "sentence mapping does not exist, no update required"),
+          )
+        } ?: run {
+          telemetryClient.trackEvent(
+            "sentence-charge-synchronisation-deleted-skipped",
+            telemetry + ("reason" to "sentence does not exist in nomis, no update required"),
+          )
         }
-      } ?: run {
-        telemetryClient.trackEvent(
-          "sentence-charge-synchronisation-deleted-skipped",
-          telemetry + ("reason" to "sentence does not exist in nomis, no update required"),
-        )
+      } else {
+        nomisApiService.getOffenderSentenceByBookingNullable(
+          bookingId = bookingId,
+          sentenceSequence = nomisSentenceSequence,
+        )?.also { nomisSentence ->
+          val eventId = nomisSentence.courtOrder!!.eventId
+          track(
+            "sentence-charge-synchronisation-deleted",
+            telemetry = (telemetry + ("dpsSentenceId" to mapping.dpsSentenceId)).toMutableMap(),
+          ) {
+            mappingApiService.getCourtAppearanceByNomisId(eventId).let { courtAppearanceMapping ->
+              dpsApiService.updateSentence(
+                sentenceId = mapping.dpsSentenceId,
+                nomisSentence.toDpsSentence(
+                  dpsAppearanceUuid = courtAppearanceMapping.dpsCourtAppearanceId,
+                  dpsConsecUuid = nomisSentence.consecSequence?.let {
+                    getConsecutiveSequenceMappingOrThrow(
+                      sentenceSequence = nomisSentenceSequence,
+                      bookingId = bookingId,
+                      consecSequence = it,
+                    )
+                  },
+                  sentenceChargeIds = getDpsChargeMappings(nomisSentence),
+                ),
+              )
+            }
+          }
+        } ?: run {
+          telemetryClient.trackEvent(
+            "sentence-charge-synchronisation-deleted-skipped",
+            telemetry + ("reason" to "sentence does not exist in nomis, no update required"),
+          )
+        }
       }
     }
   }

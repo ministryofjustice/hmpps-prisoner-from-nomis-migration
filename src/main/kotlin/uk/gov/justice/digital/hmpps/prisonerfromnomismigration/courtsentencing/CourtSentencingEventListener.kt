@@ -227,8 +227,8 @@ data class OffenderSentenceChargeEvent(
   val chargeId: Long,
   val offenderIdDisplay: String,
   val bookingId: Long,
-  val auditModuleName: String?,
-)
+  override val auditModuleName: String?,
+) : EventAudited
 
 data class OffenderCaseResynchronisationEvent(
   val dpsCaseUuid: String,
