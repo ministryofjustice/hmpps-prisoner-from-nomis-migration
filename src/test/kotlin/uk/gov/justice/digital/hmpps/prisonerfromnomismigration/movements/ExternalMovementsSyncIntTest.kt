@@ -687,7 +687,7 @@ class ExternalMovementsSyncIntTest(
           assertThat(id).isNull()
           assertThat(start).isCloseTo(now, within(1, ChronoUnit.MINUTES))
           assertThat(end).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
-          assertThat(location.description).isEqualTo("Some description")
+          assertThat(location.description).isEqualTo("some description")
           assertThat(location.address).isEqualTo("to full address")
           assertThat(location.postcode).isEqualTo("S1 1AB")
           assertThat(absenceTypeCode).isEqualTo("RDR")
@@ -3221,6 +3221,74 @@ class ExternalMovementsSyncIntTest(
           }
         }
       }
+
+      @Nested
+      inner class NomisAddressUpdated {
+
+        @BeforeEach
+        fun setUp() {
+          createStubs("OFF", toAddress = "updated address")
+
+          sendMessage(addressUpdatedEventOf(321, "OFFENDER"))
+            .also { waitForAnyProcessingToComplete("temporary-absence-sync-address-updated-success") }
+        }
+
+        @Test
+        fun `should update DPS scheduled movement`() {
+          dpsApi.verify(
+            putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/${scheduleMappings[0].dpsAuthorisationId}/occurrences"))
+              .withRequestBodyJsonPath("id", "${scheduleMappings[0].mapping.dpsOccurrenceId}")
+              .withRequestBodyJsonPath("legacyId", "1")
+              .withRequestBodyJsonPath("location.uprn", absent())
+              .withRequestBodyJsonPath("location.address", "updated address"),
+          )
+          dpsApi.verify(
+            putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/${scheduleMappings[1].dpsAuthorisationId}/occurrences"))
+              .withRequestBodyJsonPath("id", "${scheduleMappings[1].mapping.dpsOccurrenceId}")
+              .withRequestBodyJsonPath("legacyId", "2")
+              .withRequestBodyJsonPath("location.uprn", absent())
+              .withRequestBodyJsonPath("location.address", "updated address"),
+          )
+        }
+
+        @Test
+        fun `should update mappings`() {
+          mappingApi.verify(
+            putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+              .withRequestBodyJsonPath("dpsOccurrenceId", "${scheduleMappings[0].mapping.dpsOccurrenceId}")
+              .withRequestBodyJsonPath("nomisEventId", "1")
+              .withRequestBodyJsonPath("dpsAddressText", "updated address")
+              .withRequestBodyJsonPath("dpsUprn", absent()),
+          )
+
+          mappingApi.verify(
+            putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+              .withRequestBodyJsonPath("dpsOccurrenceId", "${scheduleMappings[1].mapping.dpsOccurrenceId}")
+              .withRequestBodyJsonPath("nomisEventId", "2")
+              .withRequestBodyJsonPath("dpsAddressText", "updated address")
+              .withRequestBodyJsonPath("dpsUprn", absent()),
+          )
+        }
+
+        @Test
+        fun `should create success telemetry for schedule updates`() {
+          scheduleMappings.forEach { testData ->
+            verify(telemetryClient).trackEvent(
+              eq("temporary-absence-sync-scheduled-movement-updated-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(testData.mapping.prisonerNumber)
+                assertThat(it["nomisApplicationId"]).isEqualTo("${testData.nomisApplicationId}")
+                assertThat(it["nomisEventId"]).isEqualTo("${testData.mapping.nomisEventId}")
+                assertThat(it["directionCode"]).isEqualTo("OUT")
+                assertThat(it["dpsOccurrenceId"]).isEqualTo("${testData.mapping.dpsOccurrenceId}")
+                assertThat(it["nomisAddressId"]).isEqualTo("321")
+                assertThat(it["nomisAddressOwnerClass"]).isEqualTo("OFF")
+              },
+              isNull(),
+            )
+          }
+        }
+      }
     }
 
     @Nested
@@ -3401,7 +3469,7 @@ class ExternalMovementsSyncIntTest(
       }
     }
 
-    private fun createStubs(addressOwnerClass: String, mappings: Int = 2) {
+    private fun createStubs(addressOwnerClass: String, mappings: Int = 2, toAddress: String = "to full address") {
       scheduleMappings = listOf(
         TestData(
           UUID.randomUUID(),
@@ -3423,6 +3491,7 @@ class ExternalMovementsSyncIntTest(
           applicationId = it.nomisApplicationId,
           addressOwnerClass = addressOwnerClass,
           eventStatus = "SCH",
+          toAddress = toAddress,
         )
         dpsApi.stubSyncTapOccurrence(
           authorisationId = it.dpsAuthorisationId,
