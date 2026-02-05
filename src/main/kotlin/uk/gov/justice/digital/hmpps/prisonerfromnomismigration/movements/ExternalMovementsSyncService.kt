@@ -199,7 +199,17 @@ class ExternalMovementsSyncService(
     nomisSchedule: ScheduledTemporaryAbsenceResponse,
   ): Location {
     val hasNomisAddress = nomisSchedule.toAddressId != null && nomisSchedule.toAddressOwnerClass != null
-    val newAddress = (existingScheduleMapping == null || (hasNomisAddress && existingScheduleMapping.nomisAddressId != nomisSchedule.toAddressId))
+    val newAddress = existingScheduleMapping == null ||
+      (
+        hasNomisAddress &&
+          (
+            existingScheduleMapping.nomisAddressId != nomisSchedule.toAddressId ||
+              existingScheduleMapping.nomisAddressOwnerClass != nomisSchedule.toAddressOwnerClass ||
+              existingScheduleMapping.dpsAddressText != nomisSchedule.toFullAddress ||
+              existingScheduleMapping.dpsDescription != nomisSchedule.toAddressDescription ||
+              existingScheduleMapping.dpsPostcode != nomisSchedule.toAddressPostcode
+            )
+        )
 
     return if (newAddress) {
       Location(nomisSchedule.toAddressDescription, nomisSchedule.toFullAddress ?: "", nomisSchedule.toAddressPostcode, null)
