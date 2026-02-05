@@ -518,7 +518,7 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
       toAddressId = toAddressId,
       toAddressOwnerClass = addressOwnerClass,
       toFullAddress = toAddress,
-      toAddressDescription = "Some description",
+      toAddressDescription = "some description",
       toAddressPostcode = "S1 1AB",
       applicationTime = now,
       audit = NomisAudit(
