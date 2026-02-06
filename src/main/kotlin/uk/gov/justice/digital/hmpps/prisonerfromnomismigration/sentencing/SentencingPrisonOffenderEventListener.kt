@@ -1,11 +1,11 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import io.awspring.cloud.sqs.annotation.SqsListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
@@ -16,7 +16,7 @@ import java.util.concurrent.CompletableFuture
 @Service
 class SentencingPrisonOffenderEventListener(
   private val sentencingAdjustmentsSynchronisationService: SentencingAdjustmentsSynchronisationService,
-  private val objectMapper: ObjectMapper,
+  private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
 
@@ -27,7 +27,7 @@ class SentencingPrisonOffenderEventListener(
   @SqsListener("eventsentencing", factory = "hmppsQueueContainerFactoryProxy")
   fun onMessage(message: String): CompletableFuture<Void?> {
     log.debug("Received offender event message {}", message)
-    val sqsMessage: SQSMessage = objectMapper.readValue(message)
+    val sqsMessage: SQSMessage = jsonMapper.readValue(message)
     return asCompletableFuture {
       when (sqsMessage.Type) {
         "Notification" -> {
@@ -68,7 +68,7 @@ class SentencingPrisonOffenderEventListener(
     }
   }
 
-  private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this)
+  private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
 }
 
 data class SentenceAdjustmentOffenderEvent(
