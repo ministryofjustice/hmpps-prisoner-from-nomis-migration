@@ -1,11 +1,11 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.readValue
 import io.awspring.cloud.sqs.annotation.SqsListener
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
@@ -13,7 +13,7 @@ import java.util.concurrent.CompletableFuture
 
 @Service
 class ContactPersonDomainEventListener(
-  private val objectMapper: ObjectMapper,
+  private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
   private val service: ContactPersonSynchronisationService,
 ) {
@@ -25,7 +25,7 @@ class ContactPersonDomainEventListener(
   @SqsListener("domaineventpersoncontacts", factory = "hmppsQueueContainerFactoryProxy")
   fun onMessage(message: String): CompletableFuture<Void?> {
     log.debug("Received domain event message {}", message)
-    val sqsMessage: SQSMessage = objectMapper.readValue(message)
+    val sqsMessage: SQSMessage = jsonMapper.readValue(message)
     return asCompletableFuture {
       when (sqsMessage.Type) {
         "Notification" -> {
@@ -46,5 +46,5 @@ class ContactPersonDomainEventListener(
       }
     }
   }
-  private inline fun <reified T> String.fromJson(): T = objectMapper.readValue(this)
+  private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
 }
