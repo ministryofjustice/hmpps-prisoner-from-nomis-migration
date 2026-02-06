@@ -1,12 +1,9 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.log
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseResponse
@@ -51,11 +48,6 @@ class CourtSentencingTransformerTest {
         assertThat(secondAppearanceSentencedCharge.sentence).isNotNull
         // confirm outcome of Imprisonment charge for first appearance
         assertThat(secondAppearanceSentencedCharge.legacyData.nomisOutcomeCode).isEqualTo("1002")
-        log.info(
-          JsonMapper.builder()
-            .addModule(JavaTimeModule())
-            .build().writeValueAsString(this),
-        )
       }
     }
 
