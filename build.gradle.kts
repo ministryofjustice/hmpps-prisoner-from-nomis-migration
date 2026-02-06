@@ -1,9 +1,9 @@
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 import org.jlleitschuh.gradle.ktlint.tasks.KtLintCheckTask
 import org.jlleitschuh.gradle.ktlint.tasks.KtLintFormatTask
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+import tools.jackson.databind.json.JsonMapper
 import java.net.URI
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -22,7 +22,6 @@ configurations {
     exclude(module = "spring-boot-starter-web")
     exclude(module = "spring-boot-starter-tomcat")
   }
-  testImplementation { exclude(group = "org.junit.vintage") }
 }
 
 dependencies {
@@ -35,7 +34,6 @@ dependencies {
   implementation("org.springframework.boot:spring-boot-starter-webflux")
   implementation("org.springframework.security:spring-security-access")
   implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:3.0.1")
-  implementation("org.springframework.boot:spring-boot-jackson2")
 
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
@@ -235,7 +233,7 @@ models.forEach {
     description = "Write JSON for ${it.name}"
     doLast {
       val json = URI.create(it.url).toURL().readText()
-      val formattedJson = ObjectMapper().let { mapper ->
+      val formattedJson = JsonMapper().let { mapper ->
         mapper.writerWithDefaultPrettyPrinter().writeValueAsString(mapper.readTree(json))
       }
       Files.write(Paths.get(it.input), formattedJson.toByteArray())
@@ -250,7 +248,7 @@ models.forEach {
           .replace("dev.".toRegex(), "")
           .replace("/v3/api-docs".toRegex(), "/info")
         val json = URI.create(productionUrl).toURL().readText()
-        val version = ObjectMapper().readTree(json).at("/build/version").asText()
+        val version = JsonMapper().readTree(json).at("/build/version").asString()
         println(version)
       }
     }
