@@ -17,6 +17,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.migratePrisonerTaps
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.moveBookingRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapOccurrence
@@ -345,6 +346,49 @@ class ExternalMovementsDpsApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.migratePrisonerTaps(prisonerNumber, migratePrisonerTaps())
+      }
+    }
+  }
+
+  @Nested
+  inner class MoveBooking {
+    val request = moveBookingRequest()
+
+    @Test
+    internal fun `should pass oath2 token`() = runTest {
+      dpsExtMovementsServer.stubMoveBooking()
+
+      apiService.moveBooking(request)
+
+      dpsExtMovementsServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should call the move endpoint`() = runTest {
+      dpsExtMovementsServer.stubMoveBooking()
+
+      apiService.moveBooking(request)
+
+      dpsExtMovementsServer.verify(
+        putRequestedFor(urlPathEqualTo("/move/temporary-absences"))
+          .withRequestBody(matchingJsonPath("fromPersonIdentifier", equalTo(request.fromPersonIdentifier)))
+          .withRequestBody(matchingJsonPath("toPersonIdentifier", equalTo(request.toPersonIdentifier)))
+          .withRequestBody(matchingJsonPath("authorisationIds.size()", equalTo("1")))
+          .withRequestBody(matchingJsonPath("authorisationIds[0]", equalTo("${request.authorisationIds.first()}")))
+          .withRequestBody(matchingJsonPath("unscheduledMovementIds.size()", equalTo("1")))
+          .withRequestBody(matchingJsonPath("unscheduledMovementIds[0]", equalTo("${request.unscheduledMovementIds.first()}"))),
+      )
+    }
+
+    @Test
+    fun `should throw if error`() = runTest {
+      dpsExtMovementsServer.stubMoveBookingError()
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.moveBooking(request)
       }
     }
   }

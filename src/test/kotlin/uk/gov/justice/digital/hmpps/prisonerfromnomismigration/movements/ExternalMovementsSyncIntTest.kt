@@ -2793,7 +2793,7 @@ class ExternalMovementsSyncIntTest(
     }
 
     @Nested
-    @DisplayName("Happy path inbound movement - unscheduled - mapping changed")
+    @DisplayName("Inbound movement - unscheduled - mapping update works on a retry")
     inner class WhenUnscheduledMovementMappingFailsOnce {
       val newCity = "Leeds"
 

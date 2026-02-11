@@ -1,25 +1,30 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
 
 import kotlinx.coroutines.reactive.awaitFirstOrDefault
+import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
-import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitSuccessOrDuplicate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TemporaryAbsenceResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.FindScheduledMovementsForAddressResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 
 @Service
 class ExternalMovementsMappingApiService(@Qualifier("extMovementsMappingApiWebClient") webClient: WebClient) : MigrationMapping<TemporaryAbsencesPrisonerMappingDto>(domainUrl = "/mapping/temporary-absence", webClient) {
+
+  private val mappingApi = TemporaryAbsenceResourceApi(webClient)
 
   override suspend fun createMapping(
     mapping: TemporaryAbsencesPrisonerMappingDto,
@@ -37,65 +42,49 @@ class ExternalMovementsMappingApiService(@Qualifier("extMovementsMappingApiWebCl
 
   override fun createMappingUrl() = "$domainUrl/migrate"
 
-  suspend fun createApplicationMapping(mapping: TemporaryAbsenceApplicationSyncMappingDto) = webClient.createMapping("$domainUrl/application", mapping)
+  suspend fun createApplicationMapping(mapping: TemporaryAbsenceApplicationSyncMappingDto) = mappingApi.prepare(mappingApi.createApplicationSyncMappingRequestConfig(mapping))
+    .retrieve()
+    .awaitSuccessOrDuplicate<TemporaryAbsenceApplicationSyncMappingDto>()
 
-  suspend fun getApplicationMappingOrNull(nomisApplicationId: Long): TemporaryAbsenceApplicationSyncMappingDto? = webClient.get()
-    .uri("$domainUrl/application/nomis-application-id/{nomisApplicationId}", nomisApplicationId)
+  suspend fun getApplicationMappingOrNull(nomisApplicationId: Long): TemporaryAbsenceApplicationSyncMappingDto? = mappingApi.prepare(mappingApi.getApplicationSyncMappingByNomisIdRequestConfig(nomisApplicationId))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-  suspend fun deleteApplicationMapping(nomisApplicationId: Long) = webClient.delete()
-    .uri("$domainUrl/application/nomis-application-id/{nomisApplicationId}", nomisApplicationId)
+  suspend fun deleteApplicationMapping(nomisApplicationId: Long): Unit = mappingApi.deleteApplicationSyncMappingByNomisId(nomisApplicationId).awaitSingle()
+
+  suspend fun createScheduledMovementMapping(mapping: ScheduledMovementSyncMappingDto) = mappingApi.prepare(mappingApi.createScheduledMovementSyncMappingRequestConfig(mapping))
     .retrieve()
-    .awaitBodyOrNullWhenNotFound<Unit>()
+    .awaitSuccessOrDuplicate<ScheduledMovementSyncMappingDto>()
 
-  suspend fun createScheduledMovementMapping(mapping: ScheduledMovementSyncMappingDto) = webClient.createMapping("$domainUrl/scheduled-movement", mapping)
+  suspend fun updateScheduledMovementMapping(mapping: ScheduledMovementSyncMappingDto) = mappingApi.updateScheduledMovementSyncMapping(mapping)
+    .awaitSingle()
 
-  suspend fun updateScheduledMovementMapping(mapping: ScheduledMovementSyncMappingDto) = webClient.updateMapping("$domainUrl/scheduled-movement", mapping)
-
-  suspend fun getScheduledMovementMappingOrNull(nomisEventId: Long): ScheduledMovementSyncMappingDto? = webClient.get()
-    .uri("$domainUrl/scheduled-movement/nomis-event-id/{nomisEventId}", nomisEventId)
-    .retrieve()
-    .awaitBodyOrNullWhenNotFound()
-
-  suspend fun deleteScheduledMovementMapping(nomisEventId: Long) = webClient.delete()
-    .uri("$domainUrl/scheduled-movement/nomis-event-id/{nomisEventId}", nomisEventId)
-    .retrieve()
-    .awaitBodyOrNullWhenNotFound<Unit>()
-
-  suspend fun createExternalMovementMapping(mapping: ExternalMovementSyncMappingDto) = webClient.createMapping("$domainUrl/external-movement", mapping)
-
-  suspend fun updateExternalMovementMapping(mapping: ExternalMovementSyncMappingDto) = webClient.updateMapping("$domainUrl/external-movement", mapping)
-
-  suspend fun getExternalMovementMappingOrNull(bookingId: Long, movementSeq: Int): ExternalMovementSyncMappingDto? = webClient.get()
-    .uri("$domainUrl/external-movement/nomis-movement-id/{bookingId}/{movementSeq}", bookingId, movementSeq)
+  suspend fun getScheduledMovementMappingOrNull(nomisEventId: Long): ScheduledMovementSyncMappingDto? = mappingApi.prepare(mappingApi.getScheduledMovementSyncMappingByNomisIdRequestConfig(nomisEventId))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-  suspend fun deleteExternalMovementMapping(bookingId: Long, movementSeq: Int) = webClient.delete()
-    .uri("$domainUrl/external-movement/nomis-movement-id/{bookingId}/{movementSeq}", bookingId, movementSeq)
-    .retrieve()
-    .awaitBodyOrNullWhenNotFound<Unit>()
+  suspend fun deleteScheduledMovementMapping(nomisEventId: Long): Unit = mappingApi.deleteScheduledMovementSyncMappingByNomisId(nomisEventId)
+    .awaitSingle()
 
-  suspend fun findScheduledMovementMappingsForAddress(nomisAddressId: Long): FindScheduledMovementsForAddressResponse = webClient.get()
-    .uri("$domainUrl/scheduled-movements/nomis-address-id/{nomisAddressId}", nomisAddressId)
+  suspend fun createExternalMovementMapping(mapping: ExternalMovementSyncMappingDto) = mappingApi.prepare(mappingApi.createExternalMovementSyncMappingRequestConfig(mapping))
     .retrieve()
-    .awaitBody()
+    .awaitSuccessOrDuplicate<ExternalMovementSyncMappingDto>()
 
-  private suspend inline fun <reified T : Any> WebClient.createMapping(url: String, mapping: T): CreateMappingResult<T> = post()
-    .uri(url)
-    .bodyValue(mapping)
-    .retrieve()
-    .bodyToMono(Unit::class.java)
-    .map { CreateMappingResult<T>() }
-    .onErrorResume(WebClientResponseException.Conflict::class.java) {
-      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<T>>() {})))
-    }
-    .awaitFirstOrDefault(CreateMappingResult())
+  suspend fun updateExternalMovementMapping(mapping: ExternalMovementSyncMappingDto) = mappingApi.updateExternalMovementSyncMapping(mapping)
+    .awaitSingle()
 
-  private suspend inline fun <reified T : Any> WebClient.updateMapping(url: String, mapping: T) = put()
-    .uri(url)
-    .bodyValue(mapping)
+  suspend fun getExternalMovementMappingOrNull(bookingId: Long, movementSeq: Int): ExternalMovementSyncMappingDto? = mappingApi.prepare(mappingApi.getExternalMovementSyncMappingByNomisIdRequestConfig(bookingId, movementSeq))
     .retrieve()
-    .awaitBody<Unit>()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun deleteExternalMovementMapping(bookingId: Long, movementSeq: Int): Unit = mappingApi.deleteExternalMovementSyncMappingByNomisId(bookingId, movementSeq)
+    .awaitSingle()
+
+  suspend fun findScheduledMovementMappingsForAddress(nomisAddressId: Long): FindScheduledMovementsForAddressResponse = mappingApi.findScheduledMovementsByNomisAddressId(nomisAddressId)
+    .awaitSingle()
+
+  suspend fun getMoveBookingMappings(bookingId: Long): TemporaryAbsenceMoveBookingMappingDto = mappingApi.getMoveBookingMappings(bookingId).awaitSingle()
+
+  suspend fun moveBookingMappings(bookingId: Long, fromOffenderNo: String, toOffenderNo: String): Unit = mappingApi.moveBookingMappings(bookingId, fromOffenderNo, toOffenderNo)
+    .awaitSingle()
 }

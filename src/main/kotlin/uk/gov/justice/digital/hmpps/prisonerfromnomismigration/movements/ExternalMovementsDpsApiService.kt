@@ -4,10 +4,12 @@ import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.api.SyncApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MoveTemporaryAbsencesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
@@ -40,4 +42,8 @@ class ExternalMovementsDpsApiService(@Qualifier("extMovementsDpsApiWebClient") p
   suspend fun migratePrisonerTaps(personIdentifier: String, request: MigrateTapRequest): MigrateTapResponse = syncApi.prepare(syncApi.migrateTemporaryAbsencesRequestConfig(personIdentifier, request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun moveBooking(request: MoveTemporaryAbsencesRequest) = syncApi.prepare(syncApi.moveTemporaryAbsencesRequestConfig(request))
+    .retrieve()
+    .awaitBodilessEntityOrLogAndRethrowBadRequest()
 }

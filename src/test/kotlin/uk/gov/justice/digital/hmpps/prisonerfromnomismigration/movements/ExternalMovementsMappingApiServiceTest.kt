@@ -26,7 +26,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMoveBookingMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMovementIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 import java.util.*
 
@@ -152,7 +155,7 @@ class ExternalMovementsMappingApiServiceTest {
       )
         .apply {
           assertThat(isError).isTrue
-          assertThat(errorResponse!!.moreInfo.existing.nomisMovementApplicationId).isEqualTo(1L)
+          assertThat(errorResponse!!.moreInfo.existing!!.nomisMovementApplicationId).isEqualTo(1L)
           assertThat(errorResponse.moreInfo.duplicate.nomisMovementApplicationId).isEqualTo(2L)
         }
     }
@@ -299,7 +302,7 @@ class ExternalMovementsMappingApiServiceTest {
       )
         .apply {
           assertThat(isError).isTrue
-          assertThat(errorResponse!!.moreInfo.existing.nomisEventId).isEqualTo(1L)
+          assertThat(errorResponse!!.moreInfo.existing!!.nomisEventId).isEqualTo(1L)
           assertThat(errorResponse.moreInfo.duplicate.nomisEventId).isEqualTo(2L)
         }
     }
@@ -483,7 +486,7 @@ class ExternalMovementsMappingApiServiceTest {
       apiService.createExternalMovementMapping(temporaryAbsenceExternalMovementMapping())
         .apply {
           assertThat(isError).isTrue
-          assertThat(errorResponse!!.moreInfo.existing.nomisMovementSeq).isEqualTo(1)
+          assertThat(errorResponse!!.moreInfo.existing!!.nomisMovementSeq).isEqualTo(1)
           assertThat(errorResponse.moreInfo.duplicate.nomisMovementSeq).isEqualTo(2)
         }
     }
@@ -631,6 +634,67 @@ class ExternalMovementsMappingApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.findScheduledMovementMappingsForAddress(123L)
+      }
+    }
+  }
+
+  @Nested
+  inner class GetMoveBookingMappings {
+    val response = TemporaryAbsenceMoveBookingMappingDto(
+      applicationIds = listOf(TemporaryAbsenceApplicationIdMapping(777L, UUID.randomUUID())),
+      movementIds = listOf(TemporaryAbsenceMovementIdMapping(77, UUID.randomUUID())),
+    )
+
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubGetMoveBookingMappings(12345L, response)
+
+      apiService.getMoveBookingMappings(12345L)
+
+      mappingApi.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should return mappings`() = runTest {
+      mappingApi.stubGetMoveBookingMappings(12345L, response)
+
+      with(apiService.getMoveBookingMappings(12345L)) {
+        assertThat(applicationIds).containsExactly(TemporaryAbsenceApplicationIdMapping(777, response.applicationIds.first().authorisationId))
+        assertThat(movementIds).containsExactly(TemporaryAbsenceMovementIdMapping(77, response.movementIds.first().dpsMovementId))
+      }
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubGetMoveBookingMappingsError(12345L)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.getMoveBookingMappings(12345L)
+      }
+    }
+  }
+
+  @Nested
+  inner class MoveBookingMappings {
+    @Test
+    fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubMoveBookingMappings()
+
+      apiService.moveBookingMappings(12345L, "A1234AA", "B1234BB")
+
+      mappingApi.verify(
+        putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubMoveBookingMappingsError(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.moveBookingMappings(12345L, "A1234AA", "B1234BB")
       }
     }
   }
