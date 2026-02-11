@@ -763,12 +763,6 @@ class CourtSentencingSynchronisationService(
               courtAppearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
               chargeId = chargeMapping.dpsCourtChargeId,
             )
-          }.also {
-            // check with nomis to see if offender_charge has been deleted
-            nomisApiService.getOffenderChargeOrNull(
-              offenderNo = event.offenderIdDisplay,
-              offenderChargeId = event.chargeId,
-            ) ?: tryToDeleteCourtChargeMapping(chargeMapping)
           }
         } ?: let {
           telemetryClient.trackEvent(
