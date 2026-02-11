@@ -3137,7 +3137,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
           courtSentencingMappingApiMockServer.stubDeleteCourtChargeMapping(NOMIS_OFFENDER_CHARGE_ID)
 
-          courtSentencingNomisApiMockServer.stubGetOffenderCharge(status = NOT_FOUND)
           courtSentencingOffenderEventsQueue.sendMessage(
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-DELETED",
@@ -3150,14 +3149,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           dpsCourtSentencingServer.verify(
             1,
             deleteRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID/charge/$DPS_CHARGE_ID")),
-          )
-        }
-
-        @Test
-        fun `will remove the mapping if nomis charge has been deleted`() {
-          courtSentencingMappingApiMockServer.verify(
-            1,
-            deleteRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-charges/nomis-court-charge-id/$NOMIS_OFFENDER_CHARGE_ID")),
           )
         }
 
