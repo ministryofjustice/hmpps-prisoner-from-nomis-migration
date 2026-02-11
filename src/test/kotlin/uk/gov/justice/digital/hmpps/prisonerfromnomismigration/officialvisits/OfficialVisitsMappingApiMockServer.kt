@@ -34,7 +34,6 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  @Suppress("unused")
   fun stubCreateMappingsForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/official-visits")
 
   fun stubCreateMappingsForMigration(error: DuplicateMappingErrorResponse) {
@@ -96,6 +95,8 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
   }
+
+  fun stubCreateVisitMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/official-visits/visit")
 
   fun stubGetByVisitNomisIdsOrNull(
     nomisVisitId: Long = 1234L,
