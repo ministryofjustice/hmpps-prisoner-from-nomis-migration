@@ -15,6 +15,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.dpsOfficialVisitsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.migrateVisitConfigRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.migrateVisitRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncCreateOfficialVisitRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncCreateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncCreateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncCreateVisitSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncUpdateTimeSlotRequest
@@ -48,32 +50,6 @@ class OfficialVisitsDpsApiServiceTest {
 
       dpsOfficialVisitsServer.verify(
         postRequestedFor(urlPathEqualTo("/migrate/visit-configuration")),
-      )
-    }
-  }
-
-  @Nested
-  inner class MigrateVisit {
-    @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
-      dpsOfficialVisitsServer.stubMigrateVisit()
-
-      apiService.migrateVisit(migrateVisitRequest())
-
-      dpsOfficialVisitsServer.verify(
-        postRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `will call the migrate endpoint`() = runTest {
-      dpsOfficialVisitsServer.stubMigrateVisit()
-
-      apiService.migrateVisit(migrateVisitRequest())
-
-      dpsOfficialVisitsServer.verify(
-        postRequestedFor(urlPathEqualTo("/migrate/visit")),
       )
     }
   }
@@ -230,6 +206,110 @@ class OfficialVisitsDpsApiServiceTest {
 
       dpsOfficialVisitsServer.verify(
         deleteRequestedFor(urlPathEqualTo("/sync/visit-slot/123")),
+      )
+    }
+  }
+
+  @Nested
+  inner class MigrateVisit {
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubMigrateVisit()
+
+      apiService.migrateVisit(migrateVisitRequest())
+
+      dpsOfficialVisitsServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the migrate endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubMigrateVisit()
+
+      apiService.migrateVisit(migrateVisitRequest())
+
+      dpsOfficialVisitsServer.verify(
+        postRequestedFor(urlPathEqualTo("/migrate/visit")),
+      )
+    }
+  }
+
+  @Nested
+  inner class CreateVisit {
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubCreateVisit()
+
+      apiService.createVisit(syncCreateOfficialVisitRequest())
+
+      dpsOfficialVisitsServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the create endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubCreateVisit()
+
+      apiService.createVisit(syncCreateOfficialVisitRequest())
+
+      dpsOfficialVisitsServer.verify(
+        postRequestedFor(urlPathEqualTo("/sync/official-visit")),
+      )
+    }
+  }
+
+  @Nested
+  inner class DeleteVisit {
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubDeleteVisit(123)
+
+      apiService.deleteVisit(123)
+
+      dpsOfficialVisitsServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the delete endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubDeleteVisit(123)
+
+      apiService.deleteVisit(123)
+
+      dpsOfficialVisitsServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/official-visit/id/123")),
+      )
+    }
+  }
+
+  @Nested
+  inner class CreateVisitor {
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubCreateVisitor(123)
+
+      apiService.createVisitor(officialVisitId = 123, syncCreateOfficialVisitorRequest())
+
+      dpsOfficialVisitsServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the create endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubCreateVisitor(123)
+
+      apiService.createVisitor(officialVisitId = 123, syncCreateOfficialVisitorRequest())
+
+      dpsOfficialVisitsServer.verify(
+        postRequestedFor(urlPathEqualTo("/sync/official-visit/123/visitor")),
       )
     }
   }
