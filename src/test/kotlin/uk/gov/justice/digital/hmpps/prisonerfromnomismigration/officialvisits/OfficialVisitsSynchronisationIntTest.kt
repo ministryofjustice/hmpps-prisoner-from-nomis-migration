@@ -20,12 +20,21 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitSlotMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitOrder
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.dpsOfficialVisitsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncOfficialVisit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsNomisApiMockServer.Companion.officialVisitResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsNomisApiMockServer.Companion.officialVisitor
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SearchLevelType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.*
 
 class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
@@ -144,7 +153,30 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
             visitId = nomisVisitId,
             response = officialVisitResponse().copy(
               internalLocationId = nomisLocationId,
+              visitId = nomisVisitId,
               visitSlotId = nomisVisitSlotId,
+              startDateTime = LocalDateTime.parse("2020-01-01T10:00"),
+              endDateTime = LocalDateTime.parse("2020-01-01T11:10"),
+              offenderNo = "A1234KT",
+              bookingId = 1234,
+              currentTerm = true,
+              prisonId = "MDI",
+              commentText = "First visit",
+              visitorConcernText = "Big concerns",
+              overrideBanStaffUsername = "T.SMITH",
+              visitOrder = VisitOrder(654321),
+              prisonerSearchType = CodeDescription(code = "PAT", description = "Pat Down Search"),
+              visitStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+              visitOutcome = null,
+              prisonerAttendanceOutcome = CodeDescription(code = "ATT", description = "Attended"),
+              cancellationReason = null,
+              audit = NomisAudit(
+                createDatetime = LocalDateTime.parse("2020-01-01T10:10:10"),
+                createUsername = "J.JOHN",
+              ),
+              visitors = listOf(
+                officialVisitor(),
+              ),
             ),
           )
 
@@ -219,7 +251,26 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `will create the official visit in DPS`() {
           val request: SyncCreateOfficialVisitRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/official-visit")))
           with(request) {
-            assertThat(this.dpsLocationId).isEqualTo(dpsLocationId)
+            assertThat(offenderVisitId).isEqualTo(nomisVisitId)
+            assertThat(dpsLocationId).isEqualTo(dpsLocationId)
+            assertThat(prisonVisitSlotId).isEqualTo(dpsVisitSlotId)
+            assertThat(prisonCode).isEqualTo("MDI")
+            assertThat(visitDate).isEqualTo(LocalDate.parse("2020-01-01"))
+            assertThat(startTime).isEqualTo("10:00")
+            assertThat(endTime).isEqualTo("11:10")
+            assertThat(commentText).isEqualTo("First visit")
+            assertThat(visitorConcernText).isEqualTo("Big concerns")
+            assertThat(overrideBanStaffUsername).isEqualTo("T.SMITH")
+            assertThat(searchTypeCode).isEqualTo(SearchLevelType.PAT)
+            assertThat(visitOrderNumber).isEqualTo(654321)
+            assertThat(prisonerNumber).isEqualTo("A1234KT")
+            assertThat(offenderBookId).isEqualTo(1234L)
+            assertThat(currentTerm).isTrue
+            assertThat(visitStatusCode).isEqualTo(VisitStatusType.SCHEDULED)
+            assertThat(visitTypeCode).isEqualTo(VisitType.UNKNOWN)
+            assertThat(visitCompletionCode).isNull()
+            assertThat(createUsername).isEqualTo("J.JOHN")
+            assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T10:10:10"))
           }
         }
 
