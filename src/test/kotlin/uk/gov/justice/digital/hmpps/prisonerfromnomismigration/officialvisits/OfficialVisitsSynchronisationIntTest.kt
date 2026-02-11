@@ -1,5 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -9,8 +12,21 @@ import org.mockito.Mockito.eq
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
+import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitSlotMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.dpsOfficialVisitsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.getRequestBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncOfficialVisit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsNomisApiMockServer.Companion.officialVisitResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import java.util.*
 
 class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
   val offenderNo = "A1234KT"
@@ -20,12 +36,22 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
   val nomisVisitorId = 76544L
   val nomisPersonId = 8987756L
 
+  @Autowired
+  private lateinit var nomisApiMock: OfficialVisitsNomisApiMockServer
+
+  private val dpsApiMock = dpsOfficialVisitsServer
+
+  @Autowired
+  private lateinit var mappingApiMock: OfficialVisitsMappingApiMockServer
+
+  @Autowired
+  private lateinit var visitSlotsMappingApiMock: VisitSlotsMappingApiMockServer
+
   @Nested
   @DisplayName("OFFENDER_OFFICIAL_VISIT-INSERTED")
   inner class OfficialVisitCreated {
-
     @Nested
-    inner class WhenCreatedInNomis {
+    inner class WhenCreatedInDps {
       @BeforeEach
       fun setUp() {
         officialVisitsOffenderEventsQueue.sendMessage(
@@ -35,6 +61,7 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
             visitId = nomisVisitId,
             agencyLocationId = prisonId,
             bookingId = bookingId,
+            auditModuleName = "DPS_SYNCHRONISATION_OFFICIAL_VISITS",
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -42,7 +69,7 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("officialvisits-visit-synchronisation-created-success"),
+          eq("officialvisits-visit-synchronisation-created-skipped"),
           check {
             assertThat(it["offenderNo"]).isEqualTo(offenderNo)
             assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
@@ -51,6 +78,333 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
           },
           isNull(),
         )
+      }
+    }
+
+    @Nested
+    inner class WhenCreatedInNomis {
+
+      @Nested
+      inner class AlreadyExists {
+        val dpsOfficialVisitId = 123L
+
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByVisitNomisIdsOrNull(
+            nomisVisitId = nomisVisitId,
+            mapping = OfficialVisitMappingDto(
+              dpsId = dpsOfficialVisitId.toString(),
+              nomisId = nomisVisitId,
+              mappingType = OfficialVisitMappingDto.MappingType.NOMIS_CREATED,
+            ),
+          )
+          officialVisitsOffenderEventsQueue.sendMessage(
+            officialVisitEvent(
+              eventType = "OFFENDER_OFFICIAL_VISIT-INSERTED",
+              offenderNo = offenderNo,
+              visitId = nomisVisitId,
+              agencyLocationId = prisonId,
+              bookingId = bookingId,
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("officialvisits-visit-synchronisation-created-ignored"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+              assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
+              assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+              assertThat(it["prisonId"]).isEqualTo(prisonId)
+              assertThat(it["dpsOfficialVisitId"]).isEqualTo(dpsOfficialVisitId.toString())
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class HappyPath {
+        val dpsOfficialVisitId = 8549934L
+        val dpsVisitSlotId = 123L
+        val nomisVisitSlotId = 8484L
+        val dpsLocationId: UUID = UUID.randomUUID()
+        val nomisLocationId = 765L
+
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByVisitNomisIdsOrNull(
+            nomisVisitId = nomisVisitId,
+            mapping = null,
+          )
+
+          nomisApiMock.stubGetOfficialVisit(
+            visitId = nomisVisitId,
+            response = officialVisitResponse().copy(
+              internalLocationId = nomisLocationId,
+              visitSlotId = nomisVisitSlotId,
+            ),
+          )
+
+          mappingApiMock.stubGetInternalLocationByNomisId(
+            nomisLocationId = nomisLocationId,
+            mapping = LocationMappingDto(
+              dpsLocationId = dpsLocationId.toString(),
+              nomisLocationId = nomisLocationId,
+              mappingType = LocationMappingDto.MappingType.LOCATION_CREATED,
+            ),
+          )
+
+          visitSlotsMappingApiMock.stubGetVisitSlotByNomisIdOrNull(
+            nomisId = nomisVisitSlotId,
+            mapping = VisitSlotMappingDto(
+              dpsId = dpsVisitSlotId.toString(),
+              nomisId = nomisVisitSlotId,
+              mappingType = VisitSlotMappingDto.MappingType.NOMIS_CREATED,
+            ),
+          )
+
+          dpsApiMock.stubCreateVisit(response = syncOfficialVisit().copy(officialVisitId = dpsOfficialVisitId))
+          mappingApiMock.stubCreateVisitMapping()
+
+          officialVisitsOffenderEventsQueue.sendMessage(
+            officialVisitEvent(
+              eventType = "OFFENDER_OFFICIAL_VISIT-INSERTED",
+              offenderNo = offenderNo,
+              visitId = nomisVisitId,
+              agencyLocationId = prisonId,
+              bookingId = bookingId,
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("officialvisits-visit-synchronisation-created-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+              assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
+              assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+              assertThat(it["prisonId"]).isEqualTo(prisonId)
+              assertThat(it["dpsOfficialVisitId"]).isEqualTo(dpsOfficialVisitId.toString())
+            },
+            isNull(),
+          )
+        }
+
+        @Test
+        fun `will check if visit has already been created`() {
+          mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/official-visits/visit/nomis-id/$nomisVisitId")))
+        }
+
+        @Test
+        fun `will retrieve the NOMIS visit details`() {
+          nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/official-visits/$nomisVisitId")))
+        }
+
+        @Test
+        fun `will retrieve the DPS location id for the visit slot room location`() {
+          mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/locations/nomis/$nomisLocationId")))
+        }
+
+        @Test
+        fun `will retrieve the DPS visit slot id for the NOMIS visit slot`() {
+          mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/visit-slots/visit-slot/nomis-id/$nomisVisitSlotId")))
+        }
+
+        @Test
+        fun `will create the official visit in DPS`() {
+          val request: SyncCreateOfficialVisitRequest = getRequestBody(postRequestedFor(urlPathEqualTo("/sync/official-visit")))
+          with(request) {
+            assertThat(this.dpsLocationId).isEqualTo(dpsLocationId)
+          }
+        }
+
+        @Test
+        fun `will create mapping`() {
+          mappingApiMock.verify(
+            postRequestedFor(urlPathEqualTo("/mapping/official-visits/visit"))
+              .withRequestBodyJsonPath("dpsId", dpsOfficialVisitId.toString())
+              .withRequestBodyJsonPath("nomisId", nomisVisitId)
+              .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+          )
+        }
+      }
+
+      @Nested
+      inner class MappingFailures {
+        val dpsOfficialVisitId = 8549934L
+        val dpsVisitSlotId = 123L
+        val nomisVisitSlotId = 8484L
+        val dpsLocationId: UUID = UUID.randomUUID()
+        val nomisLocationId = 765L
+
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByVisitNomisIdsOrNull(
+            nomisVisitId = nomisVisitId,
+            mapping = null,
+          )
+
+          nomisApiMock.stubGetOfficialVisit(
+            visitId = nomisVisitId,
+            response = officialVisitResponse().copy(
+              internalLocationId = nomisLocationId,
+              visitSlotId = nomisVisitSlotId,
+            ),
+          )
+
+          mappingApiMock.stubGetInternalLocationByNomisId(
+            nomisLocationId = nomisLocationId,
+            mapping = LocationMappingDto(
+              dpsLocationId = dpsLocationId.toString(),
+              nomisLocationId = nomisLocationId,
+              mappingType = LocationMappingDto.MappingType.LOCATION_CREATED,
+            ),
+          )
+
+          visitSlotsMappingApiMock.stubGetVisitSlotByNomisIdOrNull(
+            nomisId = nomisVisitSlotId,
+            mapping = VisitSlotMappingDto(
+              dpsId = dpsVisitSlotId.toString(),
+              nomisId = nomisVisitSlotId,
+              mappingType = VisitSlotMappingDto.MappingType.NOMIS_CREATED,
+            ),
+          )
+
+          dpsApiMock.stubCreateVisit(response = syncOfficialVisit().copy(officialVisitId = dpsOfficialVisitId))
+        }
+
+        @Nested
+        inner class FailureAndRecovery {
+          @BeforeEach
+          fun setUp() {
+            mappingApiMock.stubCreateVisitMappingFailureFollowedBySuccess()
+
+            officialVisitsOffenderEventsQueue.sendMessage(
+              officialVisitEvent(
+                eventType = "OFFENDER_OFFICIAL_VISIT-INSERTED",
+                offenderNo = offenderNo,
+                visitId = nomisVisitId,
+                agencyLocationId = prisonId,
+                bookingId = bookingId,
+              ),
+            ).also { waitForAnyProcessingToComplete("officialvisits-visit-mapping-synchronisation-created") }
+          }
+
+          @Test
+          fun `will create the official visit in DPS only once`() {
+            dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/official-visit")))
+          }
+
+          @Test
+          fun `will eventually create mapping after a retry`() {
+            mappingApiMock.verify(2, postRequestedFor(urlPathEqualTo("/mapping/official-visits/visit")))
+          }
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("officialvisits-visit-synchronisation-created-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+                assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
+                assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                assertThat(it["prisonId"]).isEqualTo(prisonId)
+                assertThat(it["dpsOfficialVisitId"]).isEqualTo(dpsOfficialVisitId.toString())
+              },
+              isNull(),
+            )
+
+            verify(telemetryClient).trackEvent(
+              eq("officialvisits-visit-mapping-synchronisation-created"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+                assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
+                assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                assertThat(it["prisonId"]).isEqualTo(prisonId)
+                assertThat(it["dpsOfficialVisitId"]).isEqualTo(dpsOfficialVisitId.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Nested
+        inner class DuplicateDetected {
+          @BeforeEach
+          fun setUp() {
+            mappingApiMock.stubCreateVisitMapping(
+              error = DuplicateMappingErrorResponse(
+                moreInfo = DuplicateErrorContentObject(
+                  duplicate = OfficialVisitMappingDto(
+                    dpsId = dpsOfficialVisitId.toString(),
+                    nomisId = nomisVisitId,
+                    mappingType = OfficialVisitMappingDto.MappingType.NOMIS_CREATED,
+                  ),
+                  existing = OfficialVisitMappingDto(
+                    dpsId = "98765",
+                    nomisId = nomisVisitId,
+                    mappingType = OfficialVisitMappingDto.MappingType.NOMIS_CREATED,
+                  ),
+                ),
+                errorCode = 1409,
+                status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+                userMessage = "Duplicate mapping",
+              ),
+            )
+
+            officialVisitsOffenderEventsQueue.sendMessage(
+              officialVisitEvent(
+                eventType = "OFFENDER_OFFICIAL_VISIT-INSERTED",
+                offenderNo = offenderNo,
+                visitId = nomisVisitId,
+                agencyLocationId = prisonId,
+                bookingId = bookingId,
+              ),
+            ).also { waitForAnyProcessingToComplete("from-nomis-sync-officialvisits-duplicate") }
+          }
+
+          @Test
+          fun `will create the official visit in DPS only once`() {
+            dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/official-visit")))
+          }
+
+          @Test
+          fun `will not bother retrying mapping`() {
+            mappingApiMock.verify(1, postRequestedFor(urlPathEqualTo("/mapping/official-visits/visit")))
+          }
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("officialvisits-visit-synchronisation-created-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+                assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
+                assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+                assertThat(it["prisonId"]).isEqualTo(prisonId)
+                assertThat(it["dpsOfficialVisitId"]).isEqualTo(dpsOfficialVisitId.toString())
+              },
+              isNull(),
+            )
+
+            verify(telemetryClient).trackEvent(
+              eq("from-nomis-sync-officialvisits-duplicate"),
+              check {
+                assertThat(it["type"]).isEqualTo("OFFICIALVISIT")
+                assertThat(it["existingNomisId"]).isEqualTo(nomisVisitId.toString())
+                assertThat(it["existingDpsId"]).isEqualTo("98765")
+                assertThat(it["duplicateNomisId"]).isEqualTo(nomisVisitId.toString())
+                assertThat(it["duplicateDpsId"]).isEqualTo(dpsOfficialVisitId.toString())
+              },
+              isNull(),
+            )
+          }
+        }
       }
     }
   }
