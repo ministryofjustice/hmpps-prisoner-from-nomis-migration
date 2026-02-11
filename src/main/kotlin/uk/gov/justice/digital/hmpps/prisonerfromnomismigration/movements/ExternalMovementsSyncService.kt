@@ -284,7 +284,7 @@ class ExternalMovementsSyncService(
           telemetryClient.trackEvent(
             "$TELEMETRY_PREFIX-application-inserted-duplicate",
             mapOf(
-              "existingOffenderNo" to existing.prisonerNumber,
+              "existingOffenderNo" to existing!!.prisonerNumber,
               "existingBookingId" to existing.bookingId,
               "existingNomisApplicationId" to existing.nomisMovementApplicationId,
               "existingDpsApplicationId" to existing.dpsMovementApplicationId,
@@ -314,7 +314,7 @@ class ExternalMovementsSyncService(
           telemetryClient.trackEvent(
             "$TELEMETRY_PREFIX-scheduled-movement-inserted-duplicate",
             mapOf(
-              "existingOffenderNo" to existing.prisonerNumber,
+              "existingOffenderNo" to existing!!.prisonerNumber,
               "existingBookingId" to existing.bookingId,
               "existingNomisEventId" to existing.nomisEventId,
               "existingDpsOccurrenceId" to existing.dpsOccurrenceId,
@@ -582,7 +582,7 @@ class ExternalMovementsSyncService(
           telemetryClient.trackEvent(
             "$TELEMETRY_PREFIX-external-movement-inserted-duplicate",
             mapOf(
-              "existingOffenderNo" to existing.prisonerNumber,
+              "existingOffenderNo" to existing!!.prisonerNumber,
               "existingBookingId" to existing.bookingId,
               "existingMovementSeq" to existing.nomisMovementSeq,
               "existingDpsMovementId" to existing.dpsMovementId,

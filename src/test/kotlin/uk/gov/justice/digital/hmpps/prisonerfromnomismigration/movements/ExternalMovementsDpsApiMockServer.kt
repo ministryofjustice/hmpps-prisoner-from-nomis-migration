@@ -23,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.M
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigratedAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigratedMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigratedOccurrence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MoveTemporaryAbsencesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
@@ -292,6 +293,18 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
       ),
     )
+
+    fun moveBookingRequest(
+      fromPrisoner: String = "A1234BC",
+      toPrisoner: String = "A1234BD",
+      authorisationIds: List<UUID> = listOf(UUID.randomUUID()),
+      unscheduledMovementIds: List<UUID> = listOf(UUID.randomUUID()),
+    ) = MoveTemporaryAbsencesRequest(
+      fromPersonIdentifier = fromPrisoner,
+      toPersonIdentifier = toPrisoner,
+      authorisationIds = authorisationIds.toSet(),
+      unscheduledMovementIds = unscheduledMovementIds.toSet(),
+    )
   }
 
   fun stubHealthPing(status: Int) {
@@ -486,6 +499,32 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     dpsExtMovementsServer.stubFor(
       put("/migrate/temporary-absences/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubMoveBooking() {
+    dpsExtMovementsServer.stubFor(
+      put("/move/temporary-absences")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubMoveBookingError(
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsExtMovementsServer.stubFor(
+      put("/move/temporary-absences")
         .willReturn(
           aResponse()
             .withStatus(status)
