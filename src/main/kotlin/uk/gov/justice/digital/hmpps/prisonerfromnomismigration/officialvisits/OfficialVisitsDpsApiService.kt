@@ -10,8 +10,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateVisitSlotRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncOfficialVisit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncOfficialVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncTimeSlot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateVisitSlotRequest
@@ -30,10 +34,15 @@ class OfficialVisitsDpsApiService(
   suspend fun deleteTimeSlot(prisonTimeSlotId: Long) {
     syncApi.syncDeleteTimeSlot(timeSlotId = prisonTimeSlotId).awaitSingle()
   }
-  suspend fun migrateVisit(request: MigrateVisitRequest): MigrateVisitResponse = migrationApi.migrateVisit(request).awaitSingle()
   suspend fun createVisitSlot(request: SyncCreateVisitSlotRequest): SyncVisitSlot = syncApi.syncCreateVisitSlot(request).awaitSingle()
   suspend fun updateVisitSlot(prisonVisitSlotId: Long, request: SyncUpdateVisitSlotRequest): SyncVisitSlot = syncApi.syncUpdateVisitSlot(prisonVisitSlotId, request).awaitSingle()
   suspend fun deleteVisitSlot(prisonVisitSlotId: Long) {
     syncApi.syncDeleteVisitSlot(prisonVisitSlotId).awaitSingle()
   }
+  suspend fun migrateVisit(request: MigrateVisitRequest): MigrateVisitResponse = migrationApi.migrateVisit(request).awaitSingle()
+  suspend fun createVisit(request: SyncCreateOfficialVisitRequest): SyncOfficialVisit = syncApi.syncCreateOfficialVisit(request).awaitSingle()
+  suspend fun deleteVisit(officialVisitId: Long) {
+    syncApi.syncDeleteOfficialVisit(officialVisitId).awaitSingle()
+  }
+  suspend fun createVisitor(officialVisitId: Long, request: SyncCreateOfficialVisitorRequest): SyncOfficialVisitor = syncApi.syncCreateOfficialVisitor(officialVisitId = officialVisitId, request).awaitSingle()
 }

@@ -22,13 +22,18 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitSlot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitor
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateVisitSlotRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncOfficialVisit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncOfficialVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncTimeSlot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateVisitSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncVisitSlot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDate
@@ -95,36 +100,6 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       },
     )
 
-    fun migrateVisitRequest() = MigrateVisitRequest(
-      offenderVisitId = 1,
-      prisonVisitSlotId = 10,
-      prisonCode = "MDI",
-      offenderBookId = 20,
-      prisonerNumber = "A1234KT",
-      currentTerm = true,
-      visitDate = LocalDate.parse("2020-01-01"),
-      startTime = "10:00",
-      endTime = "11:00",
-      dpsLocationId = UUID.fromString("d0cc8fcd-22db-46a7-bdb3-ada7ac1828f5"),
-      visitStatusCode = VisitStatusType.SCHEDULED,
-      createDateTime = LocalDateTime.parse("2020-01-01T08:00"),
-      createUsername = "T.SMITH",
-      visitors = listOf(
-        MigrateVisitor(
-          offenderVisitVisitorId = 30,
-          personId = 40,
-          createDateTime = LocalDateTime.parse("2020-01-01T08:00"),
-          createUsername = "T.SMITH",
-        ),
-      ),
-    )
-
-    fun migrateVisitResponse() = MigrateVisitResponse(
-      visit = IdPair(nomisId = 1, dpsId = 10, elementType = IdPair.ElementType.OFFICIAL_VISIT),
-      visitors = listOf(IdPair(nomisId = 30, dpsId = 300, elementType = IdPair.ElementType.OFFICIAL_VISITOR)),
-      prisoner = IdPair(nomisId = 20, dpsId = 200, elementType = IdPair.ElementType.PRISONER_VISITED),
-    )
-
     fun syncCreateTimeSlotRequest() = SyncCreateTimeSlotRequest(
       prisonCode = "MDI",
       dayCode = DayType.MON,
@@ -184,6 +159,81 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       updatedBy = "T.SMITH",
       updatedTime = LocalDateTime.parse("2020-01-01T08:00"),
     )
+
+    fun migrateVisitRequest() = MigrateVisitRequest(
+      offenderVisitId = 1,
+      prisonVisitSlotId = 10,
+      prisonCode = "MDI",
+      offenderBookId = 20,
+      prisonerNumber = "A1234KT",
+      currentTerm = true,
+      visitDate = LocalDate.parse("2020-01-01"),
+      startTime = "10:00",
+      endTime = "11:00",
+      dpsLocationId = UUID.fromString("d0cc8fcd-22db-46a7-bdb3-ada7ac1828f5"),
+      visitStatusCode = VisitStatusType.SCHEDULED,
+      createDateTime = LocalDateTime.parse("2020-01-01T08:00"),
+      createUsername = "T.SMITH",
+      visitors = listOf(
+        MigrateVisitor(
+          offenderVisitVisitorId = 30,
+          personId = 40,
+          createDateTime = LocalDateTime.parse("2020-01-01T08:00"),
+          createUsername = "T.SMITH",
+        ),
+      ),
+    )
+
+    fun migrateVisitResponse() = MigrateVisitResponse(
+      visit = IdPair(nomisId = 1, dpsId = 10, elementType = IdPair.ElementType.OFFICIAL_VISIT),
+      visitors = listOf(IdPair(nomisId = 30, dpsId = 300, elementType = IdPair.ElementType.OFFICIAL_VISITOR)),
+      prisoner = IdPair(nomisId = 20, dpsId = 200, elementType = IdPair.ElementType.PRISONER_VISITED),
+    )
+
+    fun syncCreateOfficialVisitRequest() = SyncCreateOfficialVisitRequest(
+      offenderVisitId = 1,
+      prisonVisitSlotId = 10,
+      prisonCode = "MDI",
+      offenderBookId = 100,
+      prisonerNumber = "A1234KT",
+      currentTerm = true,
+      visitDate = LocalDate.parse("2020-01-01"),
+      startTime = "10:00",
+      endTime = "11:00",
+      dpsLocationId = UUID.randomUUID(),
+      visitStatusCode = VisitStatusType.SCHEDULED,
+      createDateTime = LocalDateTime.parse("2020-01-01T08:00"),
+      createUsername = "T.SMITH",
+    )
+
+    fun syncOfficialVisit() = SyncOfficialVisit(
+      officialVisitId = 1,
+      visitDate = LocalDate.parse("2020-01-01"),
+      startTime = "10:00",
+      endTime = "11:00",
+      prisonVisitSlotId = 10,
+      dpsLocationId = UUID.randomUUID(),
+      prisonCode = "MDI",
+      prisonerNumber = "A1234KT",
+      statusCode = VisitStatusType.SCHEDULED,
+      visitType = VisitType.UNKNOWN,
+      createdBy = "T.SMITH",
+      createdTime = LocalDateTime.parse("2020-01-01T08:00"),
+      visitors = emptyList(),
+    )
+
+    fun syncCreateOfficialVisitorRequest() = SyncCreateOfficialVisitorRequest(
+      offenderVisitVisitorId = 1,
+      personId = 100,
+      createDateTime = LocalDateTime.parse("2020-01-01T08:00"),
+      createUsername = "T.SMITH",
+    )
+
+    fun syncOfficialVisitor() = SyncOfficialVisitor(
+      officialVisitorId = 1,
+      createdBy = "T.SMITH",
+      createdTime = LocalDateTime.parse("2020-01-01T08:00"),
+    )
   }
 
   fun stubHealthPing(status: Int) {
@@ -200,18 +250,6 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubMigrateVisitConfiguration(response: MigrateVisitConfigResponse = migrateVisitConfigResponse()) {
     stubFor(
       post("/migrate/visit-configuration")
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(201)
-            .withBody(jsonMapper.writeValueAsString(response)),
-        ),
-    )
-  }
-
-  fun stubMigrateVisit(response: MigrateVisitResponse = migrateVisitResponse()) {
-    stubFor(
-      post("/migrate/visit")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -285,6 +323,52 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(204),
+        ),
+    )
+  }
+
+  fun stubMigrateVisit(response: MigrateVisitResponse = migrateVisitResponse()) {
+    stubFor(
+      post("/migrate/visit")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(201)
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubCreateVisit(response: SyncOfficialVisit = syncOfficialVisit()) {
+    stubFor(
+      post("/sync/official-visit")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(201)
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubDeleteVisit(officialVisitId: Long) {
+    stubFor(
+      delete("/sync/official-visit/id/$officialVisitId")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(204),
+        ),
+    )
+  }
+  fun stubCreateVisitor(officialVisitId: Long, response: SyncOfficialVisitor = syncOfficialVisitor()) {
+    stubFor(
+      post("/sync/official-visit/$officialVisitId/visitor")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(201)
+            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }
