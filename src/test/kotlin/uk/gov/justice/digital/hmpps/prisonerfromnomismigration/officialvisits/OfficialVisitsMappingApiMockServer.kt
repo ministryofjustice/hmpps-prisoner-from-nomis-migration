@@ -98,7 +98,7 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateVisitMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/official-visits/visit")
 
-  fun stubGetByVisitNomisIdsOrNull(
+  fun stubGetByVisitNomisIdOrNull(
     nomisVisitId: Long = 1234L,
     mapping: OfficialVisitMappingDto? = OfficialVisitMappingDto(
       dpsId = "123456",
@@ -127,6 +127,15 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     }
   }
 
+  fun stubGetByVisitNomisId(
+    nomisVisitId: Long = 1234L,
+    mapping: OfficialVisitMappingDto = OfficialVisitMappingDto(
+      dpsId = "123456",
+      nomisId = nomisVisitId,
+      mappingType = OfficialVisitMappingDto.MappingType.MIGRATED,
+    ),
+  ) = stubGetByVisitNomisIdOrNull(nomisVisitId, mapping)
+
   fun stubCreateVisitorMapping() {
     mappingApi.stubFor(
       post("/mapping/official-visits/visitor").willReturn(
@@ -148,7 +157,9 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetByVisitorNomisIdsOrNull(
+  fun stubCreateVisitorMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/official-visits/visitor")
+
+  fun stubGetByVisitorNomisIdOrNull(
     nomisVisitorId: Long = 1234L,
     mapping: OfficialVisitorMappingDto? = OfficialVisitorMappingDto(
       dpsId = "123456",

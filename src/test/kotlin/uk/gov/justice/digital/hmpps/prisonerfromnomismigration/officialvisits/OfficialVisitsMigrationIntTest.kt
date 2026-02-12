@@ -140,7 +140,7 @@ class OfficialVisitsMigrationIntTest(
           visitId = 2,
           content = emptyList(),
         )
-        mappingApiMock.stubGetByVisitNomisIdsOrNull(
+        mappingApiMock.stubGetByVisitNomisIdOrNull(
           nomisVisitId = 2,
           mapping = OfficialVisitMappingDto(
             dpsId = "10000",
@@ -232,7 +232,7 @@ class OfficialVisitsMigrationIntTest(
           content = emptyList(),
         )
 
-        mappingApiMock.stubGetByVisitNomisIdsOrNull(
+        mappingApiMock.stubGetByVisitNomisIdOrNull(
           nomisVisitId = nomisVisitId,
           mapping = null,
         )
@@ -373,7 +373,7 @@ class OfficialVisitsMigrationIntTest(
           visitId = nomisVisitId,
           content = emptyList(),
         )
-        mappingApiMock.stubGetByVisitNomisIdsOrNull(
+        mappingApiMock.stubGetByVisitNomisIdOrNull(
           nomisVisitId = nomisVisitId,
           mapping = null,
         )
@@ -671,7 +671,7 @@ class OfficialVisitsMigrationIntTest(
         )
 
         (1L..81L).forEach {
-          mappingApiMock.stubGetByVisitNomisIdsOrNull(
+          mappingApiMock.stubGetByVisitNomisIdOrNull(
             nomisVisitId = it,
             mapping = null,
           )
@@ -751,7 +751,7 @@ class OfficialVisitsMigrationIntTest(
           visitId = nomisVisitId,
           content = emptyList(),
         )
-        mappingApiMock.stubGetByVisitNomisIdsOrNull(
+        mappingApiMock.stubGetByVisitNomisIdOrNull(
           nomisVisitId = nomisVisitId,
           mapping = null,
         )
@@ -886,7 +886,7 @@ class OfficialVisitsMigrationIntTest(
           content = emptyList(),
         )
 
-        mappingApiMock.stubGetByVisitNomisIdsOrNull(
+        mappingApiMock.stubGetByVisitNomisIdOrNull(
           nomisVisitId = nomisVisitId,
           mapping = null,
         )
