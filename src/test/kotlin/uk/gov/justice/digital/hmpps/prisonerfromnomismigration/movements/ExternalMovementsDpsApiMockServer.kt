@@ -508,6 +508,34 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubResyncPrisonerTaps(personIdentifier: String = "A1234BC", response: MigrateTapResponse = migrateResponse()) {
+    dpsExtMovementsServer.stubFor(
+      put("/resync/temporary-absences/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubResyncPrisonerTapsError(
+    personIdentifier: String = "A1234BC",
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsExtMovementsServer.stubFor(
+      put("/resync/temporary-absences/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
   fun stubMoveBooking() {
     dpsExtMovementsServer.stubFor(
       put("/move/temporary-absences")

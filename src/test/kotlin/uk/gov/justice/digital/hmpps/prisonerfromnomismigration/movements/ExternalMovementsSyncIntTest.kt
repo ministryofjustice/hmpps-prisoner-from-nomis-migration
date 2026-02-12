@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
@@ -33,6 +34,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -42,7 +44,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.time.Duration
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.temporal.ChronoUnit
 import java.util.*
 
@@ -89,22 +93,29 @@ class ExternalMovementsSyncIntTest(
 
       @Test
       fun `should create DPS application`() {
-        dpsApi.verify(
-          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/A1234BC"))
-            .withRequestBodyJsonPath("id", absent())
-            .withRequestBodyJsonPath("prisonCode", equalTo = "LEI")
-            .withRequestBodyJsonPath("statusCode", equalTo = "APPROVED")
-            .withRequestBodyJsonPath("absenceTypeCode", equalTo = "RR")
-            .withRequestBodyJsonPath("absenceSubTypeCode", equalTo = "SPL")
-            .withRequestBodyJsonPath("absenceReasonCode", equalTo = "C5")
-            .withRequestBodyJsonPath("accompaniedByCode", equalTo = "P")
-            .withRequestBodyJsonPath("transportCode", equalTo = "VAN")
-            .withRequestBodyJsonPath("repeat", equalTo = false)
-            .withRequestBodyJsonPath("start", equalTo = "$today")
-            .withRequestBodyJsonPath("end", equalTo = "${tomorrow.toLocalDate()}")
-            .withRequestBodyJsonPath("comments", equalTo = "application comment")
-            .withRequestBodyJsonPath("legacyId", equalTo = 111),
-        )
+        ExternalMovementsDpsApiMockServer.getRequestBody<SyncWriteTapAuthorisation>(
+          putRequestedFor(urlEqualTo("/sync/temporary-absence-authorisations/A1234BC")),
+        ).apply {
+          assertThat(id).isNull()
+          assertThat(prisonCode).isEqualTo("LEI")
+          assertThat(statusCode).isEqualTo("APPROVED")
+          assertThat(absenceTypeCode).isEqualTo("RR")
+          assertThat(absenceSubTypeCode).isEqualTo("SPL")
+          assertThat(absenceReasonCode).isEqualTo("C5")
+          assertThat(accompaniedByCode).isEqualTo("P")
+          assertThat(transportCode).isEqualTo("VAN")
+          assertThat(repeat).isEqualTo(false)
+          assertThat(start).isEqualTo("$today")
+          assertThat(end).isEqualTo("${tomorrow.toLocalDate()}")
+          assertThat(comments).isEqualTo("application comment")
+          assertThat(legacyId).isEqualTo(111)
+          assertThat(LocalTime.parse(startTime!!)).isCloseTo(now.minusDays(1).toLocalTime(), within(Duration.ofMinutes(5)))
+          assertThat(LocalTime.parse(endTime!!)).isCloseTo(now.toLocalTime(), within(Duration.ofMinutes(5)))
+          assertThat(location!!.uprn).isNull()
+          assertThat(location.address).isEqualTo("some full address")
+          assertThat(location.description).isEqualTo("some address description")
+          assertThat(location.postcode).isEqualTo("S1 1AA")
+        }
       }
 
       @Test

@@ -692,6 +692,9 @@ private fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) =
   updated = audit.modifyDatetime?.let { SyncAtAndBy(audit.modifyDatetime, audit.modifyUserId!!) },
   legacyId = movementApplicationId,
   transportCode = transportType ?: DEFAULT_TRANSPORT_TYPE,
+  startTime = "${releaseTime.toLocalTime()}",
+  endTime = "${returnTime.toLocalTime()}",
+  location = Location(description = toAddressDescription, address = toFullAddress, postcode = toAddressPostcode),
 )
 
 fun String.toDpsAuthorisationStatusCode() = when (this) {
