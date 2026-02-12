@@ -74,6 +74,6 @@ data class DuplicateDetails<MAPPING>(
   val existing: MAPPING?,
 )
 
-class ParentEntityNotFoundRetry(message: String) : RuntimeException(message)
+open class ParentEntityNotFoundRetry(message: String) : RuntimeException(message)
 
 class MissingChildEntityRetry(message: String) : RuntimeException(message)

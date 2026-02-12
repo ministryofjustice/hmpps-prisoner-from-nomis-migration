@@ -706,6 +706,32 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubMappingGetNotFoundFollowedBySuccess(url: String, mapping: String) {
+    stubFor(
+      get(urlPathMatching(url))
+        .inScenario("Retry get Scenario")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(
+          aResponse()
+            .withStatus(404)
+            .withHeader("Content-Type", "application/json"),
+        )
+        .willSetStateTo("Cause get Success"),
+    )
+
+    stubFor(
+      get(urlPathMatching(url))
+        .inScenario("Retry get Scenario")
+        .whenScenarioStateIs("Cause get Success")
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(mapping),
+        )
+        .willSetStateTo(STARTED),
+    )
+  }
+
   fun stubMultipleGetActivityMappings(
     count: Int,
     activityScheduleId: Long = 4444,

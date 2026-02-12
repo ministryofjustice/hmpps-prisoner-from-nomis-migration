@@ -9,6 +9,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.tryFetchParent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitorMappingDto
@@ -97,7 +98,8 @@ class OfficialVisitsSynchronisationService(
             nomisApiService.getOfficialVisit(
               event.visitId,
             ).let { it.visitors.find { visitor -> visitor.id == event.visitVisitorId } }?.also { nomisVisitor ->
-              val visitMapping = mappingApiService.getByVisitNomisId(event.visitId).also { telemetry["dpsOfficialVisitId"] = it.dpsId }
+              val visitMapping = tryFetchParent { mappingApiService.getByVisitNomisIdOrNull(event.visitId) }
+                .also { telemetry["dpsOfficialVisitId"] = it.dpsId }
               dpsApiService.createVisitor(officialVisitId = visitMapping.dpsId.toLong(), nomisVisitor.toSyncCreateOfficialVisitorRequest()).also { dpsVisitor ->
                 telemetry["dpsOfficialVisitorId"] = dpsVisitor.officialVisitorId
                 tryToCreateMapping(
