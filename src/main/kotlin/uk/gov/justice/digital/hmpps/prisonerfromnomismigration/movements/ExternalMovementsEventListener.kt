@@ -22,6 +22,7 @@ class ExternalMovementsEventListener(
   private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
   private val syncService: ExternalMovementsSyncService,
+  private val moveBookingService: ExternalMovementsMoveBookingService,
 ) {
 
   private companion object {
@@ -49,6 +50,7 @@ class ExternalMovementsEventListener(
               "ADDRESSES_OFFENDER-UPDATED" -> syncService.offenderAddressUpdated(sqsMessage.Message.fromJson())
               "ADDRESSES_CORPORATE-UPDATED" -> syncService.corporateAddressUpdated(sqsMessage.Message.fromJson())
               "ADDRESSES_AGENCY-UPDATED" -> syncService.agencyAddressUpdated(sqsMessage.Message.fromJson())
+              "prison-offender-events.prisoner.booking.moved" -> moveBookingService.moveBooking(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
