@@ -126,6 +126,14 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
       )
     }
   }
+  fun stubGetByVisitNomisIdOrNullNotFoundFollowedBySuccess(
+    nomisVisitId: Long = 1234L,
+    mapping: OfficialVisitMappingDto? = OfficialVisitMappingDto(
+      dpsId = "123456",
+      nomisId = nomisVisitId,
+      mappingType = OfficialVisitMappingDto.MappingType.MIGRATED,
+    ),
+  ) = mappingApi.stubMappingGetNotFoundFollowedBySuccess(url = "/mapping/official-visits/visit/nomis-id/$nomisVisitId", mapping = jsonMapper.writeValueAsString(mapping))
 
   fun stubGetByVisitNomisId(
     nomisVisitId: Long = 1234L,

@@ -726,6 +726,93 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      inner class VisitMissingRecovery {
+
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByVisitorNomisIdOrNull(
+            nomisVisitorId = nomisVisitorId,
+            mapping = null,
+          )
+
+          nomisApiMock.stubGetOfficialVisit(
+            visitId = nomisVisitId,
+            response = officialVisitResponse().copy(
+              visitId = nomisVisitId,
+              visitors = listOf(
+                officialVisitor().copy(
+                  id = nomisVisitorId,
+                  personId = nomisPersonId,
+                ),
+              ),
+            ),
+          )
+
+          mappingApiMock.stubGetByVisitNomisIdOrNullNotFoundFollowedBySuccess(
+            nomisVisitId = nomisVisitId,
+            mapping = OfficialVisitMappingDto(
+              dpsId = dpsOfficialVisitId.toString(),
+              nomisId = nomisVisitId,
+              mappingType = OfficialVisitMappingDto.MappingType.NOMIS_CREATED,
+            ),
+          )
+
+          dpsApiMock.stubCreateVisitor(officialVisitId = dpsOfficialVisitId, response = syncOfficialVisitor().copy(officialVisitorId = dpsOfficialVisitorId))
+          mappingApiMock.stubCreateVisitorMapping()
+
+          officialVisitsOffenderEventsQueue.sendMessage(
+            officialVisitVisitorEvent(
+              eventType = "OFFENDER_OFFICIAL_VISIT_VISITORS-INSERTED",
+              offenderNo = offenderNo,
+              visitId = nomisVisitId,
+              bookingId = bookingId,
+              visitVisitorId = nomisVisitorId,
+              personId = nomisPersonId,
+            ),
+          ).also { waitForAnyProcessingToComplete("officialvisits-visitor-synchronisation-created-success") }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("officialvisits-visitor-synchronisation-created-awaiting-parent"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+              assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
+              assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+              assertThat(it["nomisVisitorId"]).isEqualTo(nomisVisitorId.toString())
+              assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            },
+            isNull(),
+          )
+
+          verify(telemetryClient).trackEvent(
+            eq("officialvisits-visitor-synchronisation-created-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+              assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
+              assertThat(it["dpsOfficialVisitId"]).isEqualTo(dpsOfficialVisitId.toString())
+              assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+              assertThat(it["nomisVisitorId"]).isEqualTo(nomisVisitorId.toString())
+              assertThat(it["dpsOfficialVisitorId"]).isEqualTo(dpsOfficialVisitorId.toString())
+              assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+            },
+            isNull(),
+          )
+        }
+
+        @Test
+        fun `will eventually retrieve the DPS visit id for the visit`() {
+          mappingApiMock.verify(2, getRequestedFor(urlPathEqualTo("/mapping/official-visits/visit/nomis-id/$nomisVisitId")))
+        }
+
+        @Test
+        fun `will create the official visitor in DPS once`() {
+          dpsApiMock.verify(1, postRequestedFor(urlPathEqualTo("/sync/official-visit/$dpsOfficialVisitId/visitor")))
+        }
+      }
+
+      @Nested
       inner class MappingFailures {
         @BeforeEach
         fun setUp() {

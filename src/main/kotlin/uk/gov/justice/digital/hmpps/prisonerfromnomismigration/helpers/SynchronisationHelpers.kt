@@ -35,6 +35,10 @@ inline fun TelemetryEnabled.track(name: String, telemetry: MutableMap<String, An
   try {
     transform()
     telemetryClient.trackEvent("$name-success", telemetry)
+  } catch (e: AwaitParentEntityRetry) {
+    telemetry["error"] = e.message.toString()
+    telemetryClient.trackEvent("$name-awaiting-parent", telemetry)
+    throw e
   } catch (e: Exception) {
     telemetry["error"] = e.message.toString()
     telemetryClient.trackEvent("$name-error", telemetry)
@@ -58,4 +62,10 @@ data class MoveBookingForPrisoner(
   val bookingId: Long,
   val offenderNo: String,
   val whichPrisoner: WhichMoveBookingPrisoner,
+)
+
+class AwaitParentEntityRetry(message: String) : ParentEntityNotFoundRetry(message)
+
+suspend fun <T> tryFetchParent(get: suspend () -> T?): T = get() ?: throw AwaitParentEntityRetry(
+  "Expected parent entity not found, retrying",
 )
