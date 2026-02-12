@@ -24,7 +24,7 @@ class OfficialVisitsMappingService(@Qualifier("mappingApiWebClient") webClient: 
     .retrieve()
     .awaitSuccessOrDuplicate()
 
-  suspend fun getByVisitNomisIdsOrNull(nomisVisitId: Long): OfficialVisitMappingDto? = api.prepare(
+  suspend fun getByVisitNomisIdOrNull(nomisVisitId: Long): OfficialVisitMappingDto? = api.prepare(
     api.getVisitMappingByNomisIdRequestConfig(
       nomisVisitId = nomisVisitId,
     ),
@@ -32,11 +32,15 @@ class OfficialVisitsMappingService(@Qualifier("mappingApiWebClient") webClient: 
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
+  suspend fun getByVisitNomisId(nomisVisitId: Long): OfficialVisitMappingDto = api.getVisitMappingByNomisId(
+    nomisVisitId = nomisVisitId,
+  ).awaitSingle()
+
   suspend fun createVisitorMapping(mapping: OfficialVisitorMappingDto): SuccessOrDuplicate<OfficialVisitorMappingDto> = api.prepare(api.createVisitorMappingRequestConfig(mapping))
     .retrieve()
     .awaitSuccessOrDuplicate()
 
-  suspend fun getByVisitorNomisIdsOrNull(nomisVisitorId: Long): OfficialVisitorMappingDto? = api.prepare(
+  suspend fun getByVisitorNomisIdOrNull(nomisVisitorId: Long): OfficialVisitorMappingDto? = api.prepare(
     api.getVisitorMappingByNomisIdRequestConfig(
       nomisVisitorId = nomisVisitorId,
     ),

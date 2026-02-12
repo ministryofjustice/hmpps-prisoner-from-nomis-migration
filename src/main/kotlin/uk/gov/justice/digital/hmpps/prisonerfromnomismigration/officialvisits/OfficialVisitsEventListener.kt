@@ -63,6 +63,7 @@ class OfficialVisitsEventListener(
       OfficialVisitsSynchronisationMessageType.RETRY_SYNCHRONISATION_TIME_SLOT_MAPPING -> visitSlotsService.retryCreateVisitTimeSlotMapping(message.fromJson())
       OfficialVisitsSynchronisationMessageType.RETRY_SYNCHRONISATION_VISIT_SLOT_MAPPING -> visitSlotsService.retryCreateVisitSlotMapping(message.fromJson())
       OfficialVisitsSynchronisationMessageType.RETRY_SYNCHRONISATION_OFFICIAL_VISIT_MAPPING -> visitsService.retryCreateOfficialVisitMapping(message.fromJson())
+      OfficialVisitsSynchronisationMessageType.RETRY_SYNCHRONISATION_OFFICIAL_VISITOR_MAPPING -> visitsService.retryCreateOfficialVisitorMapping(message.fromJson())
     }
   }
 }
@@ -71,6 +72,7 @@ enum class OfficialVisitsSynchronisationMessageType {
   RETRY_SYNCHRONISATION_TIME_SLOT_MAPPING,
   RETRY_SYNCHRONISATION_VISIT_SLOT_MAPPING,
   RETRY_SYNCHRONISATION_OFFICIAL_VISIT_MAPPING,
+  RETRY_SYNCHRONISATION_OFFICIAL_VISITOR_MAPPING,
 }
 
 data class VisitEvent(

@@ -11,9 +11,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitorMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OfficialVisitResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OfficialVisitor
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsSynchronisationMessageType.RETRY_SYNCHRONISATION_OFFICIAL_VISITOR_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsSynchronisationMessageType.RETRY_SYNCHRONISATION_OFFICIAL_VISIT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -39,7 +43,7 @@ class OfficialVisitsSynchronisationService(
     if (event.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_OFFICIAL_VISITS")) {
       telemetryClient.trackEvent("$telemetryName-skipped", event.asTelemetry())
     } else {
-      val mapping = mappingApiService.getByVisitNomisIdsOrNull(
+      val mapping = mappingApiService.getByVisitNomisIdOrNull(
         nomisVisitId = event.visitId,
       )
       if (mapping != null) {
@@ -71,11 +75,44 @@ class OfficialVisitsSynchronisationService(
   }
   fun visitUpdated(event: VisitEvent) = track("officialvisits-visit-synchronisation-updated", event.asTelemetry()) {}
   fun visitDeleted(event: VisitEvent) = track("officialvisits-visit-synchronisation-deleted", event.asTelemetry()) {}
-  fun visitorAdded(event: VisitVisitorEvent) {
+  suspend fun visitorAdded(event: VisitVisitorEvent) {
     if (event.personId == null) {
       telemetryClient.trackEvent("officialvisits-visitor-synchronisation-created-ignored", event.asTelemetry())
     } else {
-      track("officialvisits-visitor-synchronisation-created", event.asTelemetry()) {}
+      val telemetryName = "officialvisits-visitor-synchronisation-created"
+      if (event.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_OFFICIAL_VISITS")) {
+        telemetryClient.trackEvent("$telemetryName-skipped", event.asTelemetry())
+      } else {
+        val mapping = mappingApiService.getByVisitorNomisIdOrNull(
+          nomisVisitorId = event.visitVisitorId,
+        )
+        if (mapping != null) {
+          telemetryClient.trackEvent(
+            "$telemetryName-ignored",
+            event.asTelemetry() + ("dpsOfficialVisitorId" to mapping.dpsId),
+          )
+        } else {
+          val telemetry = event.asTelemetry()
+          track(telemetryName, telemetry) {
+            nomisApiService.getOfficialVisit(
+              event.visitId,
+            ).let { it.visitors.find { visitor -> visitor.id == event.visitVisitorId } }?.also { nomisVisitor ->
+              val visitMapping = mappingApiService.getByVisitNomisId(event.visitId).also { telemetry["dpsOfficialVisitId"] = it.dpsId }
+              dpsApiService.createVisitor(officialVisitId = visitMapping.dpsId.toLong(), nomisVisitor.toSyncCreateOfficialVisitorRequest()).also { dpsVisitor ->
+                telemetry["dpsOfficialVisitorId"] = dpsVisitor.officialVisitorId
+                tryToCreateMapping(
+                  OfficialVisitorMappingDto(
+                    dpsId = dpsVisitor.officialVisitorId.toString(),
+                    nomisId = event.visitVisitorId,
+                    mappingType = OfficialVisitorMappingDto.MappingType.NOMIS_CREATED,
+                  ),
+                  telemetry = telemetry,
+                )
+              }
+            } ?: run { telemetryClient.trackEvent("$telemetryName-ignored", telemetry + ("reason" to "visitor no longer found in nomis")) }
+          }
+        }
+      }
     }
   }
   fun visitorUpdated(event: VisitVisitorEvent) {
@@ -140,7 +177,69 @@ class OfficialVisitsSynchronisationService(
         )
       }
   }
+  private suspend fun tryToCreateMapping(
+    mapping: OfficialVisitorMappingDto,
+    telemetry: Map<String, Any>,
+  ) {
+    try {
+      createMapping(mapping)
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for official visitor id ${mapping.nomisId},${mapping.dpsId}", e)
+      queueService.sendMessage(
+        messageType = RETRY_SYNCHRONISATION_OFFICIAL_VISITOR_MAPPING.name,
+        synchronisationType = SynchronisationType.OFFICIAL_VISITS,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+  private suspend fun createMapping(
+    mapping: OfficialVisitorMappingDto,
+  ) {
+    mappingApiService.createVisitorMapping(
+      mapping,
+    )
+      .takeIf { it.isError }?.also {
+        with(it.errorResponse!!.moreInfo) {
+          telemetryClient.trackEvent(
+            "from-nomis-sync-officialvisits-duplicate",
+            mapOf(
+              "existingNomisId" to existing!!.nomisId,
+              "existingDpsId" to existing.dpsId,
+              "duplicateNomisId" to duplicate.nomisId,
+              "duplicateDpsId" to duplicate.dpsId,
+              "type" to "OFFICIALVISITOR",
+            ),
+          )
+        }
+      }
+  }
 
+  suspend fun retryCreateOfficialVisitorMapping(retryMessage: InternalMessage<OfficialVisitorMappingDto>) {
+    createMapping(retryMessage.body)
+      .also {
+        telemetryClient.trackEvent(
+          "officialvisits-visitor-mapping-synchronisation-created",
+          retryMessage.telemetryAttributes,
+        )
+      }
+  }
+
+  private suspend fun OfficialVisitor.toSyncCreateOfficialVisitorRequest(): SyncCreateOfficialVisitorRequest = SyncCreateOfficialVisitorRequest(
+    offenderVisitVisitorId = id,
+    personId = personId,
+    createDateTime = audit.createDatetime,
+    createUsername = audit.createUsername,
+    firstName = firstName,
+    lastName = lastName,
+    dateOfBirth = dateOfBirth,
+    relationshipToPrisoner = relationships.firstOrNull()?.relationshipType?.code,
+    relationshipTypeCode = relationships.firstOrNull()?.contactType?.toDpsRelationshipType(),
+    groupLeaderFlag = leadVisitor,
+    assistedVisitFlag = assistedVisit,
+    commentText = commentText,
+    attendanceCode = visitorAttendanceOutcome?.toDpsAttendanceType(),
+  )
   private suspend fun OfficialVisitResponse.toSyncCreateOfficialVisitRequest(): SyncCreateOfficialVisitRequest = SyncCreateOfficialVisitRequest(
     offenderVisitId = visitId,
     prisonVisitSlotId = visitSlotsMappingApiService.getVisitSlotByNomisId(visitSlotId).dpsId.toLong(),
