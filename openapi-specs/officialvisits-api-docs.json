@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-02-11.369.2f3d66d"
+    "version" : "2026-02-12.379.68d5203"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -2850,6 +2850,11 @@
           "completionDescription" : {
             "type" : "string",
             "description" : "The official visit completion description"
+          },
+          "completionNotes" : {
+            "type" : "string",
+            "description" : "Optional notes captured when a visit is either cancelled or completed",
+            "example" : "Cancelled due to prisoner in hospital"
           },
           "createdBy" : {
             "type" : "string",
