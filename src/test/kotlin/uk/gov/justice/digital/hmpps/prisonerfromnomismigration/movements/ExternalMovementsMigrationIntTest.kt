@@ -37,6 +37,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequ
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.util.*
 
 class ExternalMovementsMigrationIntTest(
@@ -104,7 +105,7 @@ class ExternalMovementsMigrationIntTest(
       .forEach { prisonerNumber ->
         mappingApi.stubGetTemporaryAbsenceMappings(prisonerNumber, NOT_FOUND)
         externalMovementsNomisApi.stubGetTemporaryAbsences(prisonerNumber)
-        dpsApi.stubMigratePrisonerTaps(
+        dpsApi.stubResyncPrisonerTaps(
           personIdentifier = prisonerNumber,
           response = migrateResponse(dpsAuthorisationId, dpsOccurrenceId, dpsScheduledMovementOutId, dpsScheduledMovementInId, dpsUnscheduledMovementOutId, dpsUnscheduledMovementInId),
         )
@@ -147,17 +148,17 @@ class ExternalMovementsMigrationIntTest(
     @Test
     fun `will call DPS for each offender`() {
       dpsApi.verify(
-        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       )
       dpsApi.verify(
-        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0002KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0002KT")),
       )
     }
 
     @Test
     fun `will populate DPS TAP authorisation`() {
       ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
-        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(temporaryAbsences[0]) {
           assertThat(prisonCode).isEqualTo("LEI")
@@ -175,6 +176,12 @@ class ExternalMovementsMigrationIntTest(
           assertThat(updated).isNull()
           assertThat(legacyId).isEqualTo(1)
           assertThat(occurrences.size).isEqualTo(1)
+          assertThat(LocalTime.parse(startTime!!)).isCloseTo(now.minusDays(1).toLocalTime(), within(Duration.ofMinutes(5)))
+          assertThat(LocalTime.parse(endTime!!)).isCloseTo(now.toLocalTime(), within(Duration.ofMinutes(5)))
+          assertThat(location!!.uprn).isNull()
+          assertThat(location.address).isEqualTo("some full address")
+          assertThat(location.description).isEqualTo("some address description")
+          assertThat(location.postcode).isEqualTo("S1 1AA")
         }
       }
     }
@@ -182,7 +189,7 @@ class ExternalMovementsMigrationIntTest(
     @Test
     fun `will populate DPS TAP occurrence`() {
       ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
-        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(temporaryAbsences[0].occurrences[0]) {
           assertThat(isCancelled).isFalse
@@ -211,7 +218,7 @@ class ExternalMovementsMigrationIntTest(
     @Test
     fun `will populate DPS TAP OUT movement`() {
       ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
-        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(temporaryAbsences[0].occurrences[0].movements[0]) {
           assertThat(occurredAt).isCloseTo(now.minusDays(1), within(Duration.ofMinutes(5)))
@@ -235,7 +242,7 @@ class ExternalMovementsMigrationIntTest(
     @Test
     fun `will populate DPS TAP IN movement`() {
       ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
-        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(temporaryAbsences[0].occurrences[0].movements[1]) {
           assertThat(occurredAt).isCloseTo(now, within(Duration.ofMinutes(5)))
@@ -259,7 +266,7 @@ class ExternalMovementsMigrationIntTest(
     @Test
     fun `will populate unscheduled DPS TAP OUT movement`() {
       ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
-        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(unscheduledMovements[0]) {
           assertThat(occurredAt).isCloseTo(now.minusDays(1), within(Duration.ofMinutes(5)))
@@ -283,7 +290,7 @@ class ExternalMovementsMigrationIntTest(
     @Test
     fun `will populate unscheduled DPS TAP IN movement`() {
       ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
-        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(unscheduledMovements[1]) {
           assertThat(occurredAt).isCloseTo(now.minusDays(1), within(Duration.ofMinutes(5)))
@@ -400,7 +407,7 @@ class ExternalMovementsMigrationIntTest(
       mappingApi.stubGetTemporaryAbsenceMappings(prisonerNumber, NOT_FOUND)
       // The prison on the application and schedules is LEI
       externalMovementsNomisApi.stubGetTemporaryAbsences(prisonerNumber, response = externalMovementsNomisApi.temporaryAbsencesResponse(movementPrison = movementPrison))
-      dpsApi.stubMigratePrisonerTaps(
+      dpsApi.stubResyncPrisonerTaps(
         personIdentifier = prisonerNumber,
         response = migrateResponse(dpsAuthorisationId, dpsOccurrenceId, dpsScheduledMovementOutId, dpsScheduledMovementInId, dpsUnscheduledMovementOutId, dpsUnscheduledMovementInId),
       )
@@ -411,7 +418,7 @@ class ExternalMovementsMigrationIntTest(
     @Test
     fun `will populate DPS TAP OUT movement prison`() {
       ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
-        putRequestedFor(urlEqualTo("/migrate/temporary-absences/$prisonerNumber")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/$prisonerNumber")),
       ).apply {
         with(temporaryAbsences[0].occurrences[0].movements[0]) {
           assertThat(this.prisonCode).isEqualTo(movementPrison)
@@ -422,7 +429,7 @@ class ExternalMovementsMigrationIntTest(
     @Test
     fun `will populate DPS TAP IN movement prison`() {
       ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
-        putRequestedFor(urlEqualTo("/migrate/temporary-absences/$prisonerNumber")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/$prisonerNumber")),
       ).apply {
         with(temporaryAbsences[0].occurrences[0].movements[1]) {
           assertThat(prisonCode).isEqualTo(movementPrison)
@@ -436,7 +443,7 @@ class ExternalMovementsMigrationIntTest(
     @BeforeEach
     fun setUp() = runTest {
       stubMigrationDependencies(entities = 1)
-      dpsApi.stubMigratePrisonerTapsError("A0001KT", 400)
+      dpsApi.stubResyncPrisonerTapsError("A0001KT", 400)
       migrationId = performMigration()
     }
 
@@ -447,7 +454,7 @@ class ExternalMovementsMigrationIntTest(
         check {
           assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           assertThat(it["migrationId"]).isEqualTo(migrationId)
-          assertThat(it["reason"]).isEqualTo("400 Bad Request from PUT http://localhost:8103/migrate/temporary-absences/A0001KT")
+          assertThat(it["reason"]).isEqualTo("400 Bad Request from PUT http://localhost:8103/resync/temporary-absences/A0001KT")
         },
         isNull(),
       )
@@ -506,7 +513,7 @@ class ExternalMovementsMigrationIntTest(
     fun `will not migrate to DPS`() {
       dpsApi.verify(
         0,
-        putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       )
     }
 
@@ -555,7 +562,7 @@ class ExternalMovementsMigrationIntTest(
 
       @Test
       fun `will migrate to DPS`() {
-        dpsApi.verify(putRequestedFor(urlEqualTo("/migrate/temporary-absences/A0001KT")))
+        dpsApi.verify(putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")))
       }
 
       @Test

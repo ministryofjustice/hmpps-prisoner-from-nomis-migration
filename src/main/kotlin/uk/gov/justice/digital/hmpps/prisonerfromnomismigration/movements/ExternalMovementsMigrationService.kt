@@ -97,7 +97,8 @@ class ExternalMovementsMigrationService(
         publishTelemetry("ignored", telemetry.apply { this["reason"] = "The offender has no bookings" })
         return
       }
-      val dpsResponse = dpsApiService.migratePrisonerTaps(offenderNo, temporaryAbsences.toDpsRequest())
+      // Note that we're not expecting to perform a clean migration again so we're calling the DPS /resync endpoint which performs "patch migrations"
+      val dpsResponse = dpsApiService.resyncPrisonerTaps(offenderNo, temporaryAbsences.toDpsRequest())
       val mappings = temporaryAbsences.buildMappings(offenderNo, migrationId, dpsResponse)
 
       createMappingOrOnFailureDo(mappings) {
@@ -256,6 +257,9 @@ class ExternalMovementsMigrationService(
           created = SyncAtAndBy(application.audit.createDatetime, application.audit.createUsername),
           updated = application.audit.modifyDatetime?.let { SyncAtAndBy(application.audit.modifyDatetime, application.audit.modifyUserId ?: "") },
           legacyId = application.movementApplicationId,
+          startTime = "${application.releaseTime.toLocalTime()}",
+          endTime = "${application.returnTime.toLocalTime()}",
+          location = Location(description = application.toAddressDescription, address = application.toFullAddress, postcode = application.toAddressPostcode),
           occurrences = application.absences.mapNotNull { absence ->
             absence.scheduledTemporaryAbsence?.let { scheduleOut ->
               scheduleOut.toDpsRequest(
