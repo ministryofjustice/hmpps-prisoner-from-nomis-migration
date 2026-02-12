@@ -62,70 +62,72 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun temporaryAbsencesResponse(movementPrison: String = "LEI"): OffenderTemporaryAbsencesResponse = OffenderTemporaryAbsencesResponse(
+  fun temporaryAbsencesResponse(
+    movementPrison: String = "LEI",
+    bookingId: Long = 12345L,
+    absences: List<Absence> = listOf(absence(movementPrison = movementPrison)),
+    applications: List<TemporaryAbsenceApplication> = listOf(application(absences = absences)),
+    unscheduledTemporaryAbsences: List<TemporaryAbsence> = listOf(temporaryAbsence(seq = 1).copy(movementDate = yesterday.toLocalDate(), movementTime = yesterday)),
+    unscheduledTemporaryAbsenceReturns: List<TemporaryAbsenceReturn> = listOf(temporaryAbsenceReturn(seq = 2).copy(movementDate = yesterday.toLocalDate(), movementTime = yesterday)),
+  ): OffenderTemporaryAbsencesResponse = OffenderTemporaryAbsencesResponse(
     bookings = listOf(
       BookingTemporaryAbsences(
-        bookingId = 12345,
-        temporaryAbsenceApplications = listOf(
-          TemporaryAbsenceApplication(
-            movementApplicationId = 1,
-            eventSubType = "C5",
-            applicationDate = now.toLocalDate(),
-            fromDate = now.toLocalDate(),
-            releaseTime = now,
-            toDate = tomorrow.toLocalDate(),
-            returnTime = tomorrow,
-            applicationStatus = "APP-SCH",
-            applicationType = "SINGLE",
-            escortCode = "U",
-            transportType = "VAN",
-            comment = "application comment",
-            prisonId = "LEI",
-            toAgencyId = "COURT1",
-            toAddressId = 321,
-            toAddressOwnerClass = "OFF",
-            toAddressDescription = "some address description",
-            toFullAddress = "some full address",
-            toAddressPostcode = "S1 1AA",
-            contactPersonName = "Jeff",
-            temporaryAbsenceType = "RR",
-            temporaryAbsenceSubType = "SPL",
-            absences = listOf(
-              Absence(
-                scheduledTemporaryAbsence = scheduledAbsence(),
-                scheduledTemporaryAbsenceReturn = scheduledAbsenceReturn(),
-                temporaryAbsence = absence().copy(
-                  sequence = 3,
-                  movementDate = yesterday.toLocalDate(),
-                  movementTime = yesterday,
-                  fromPrison = movementPrison,
-                ),
-                temporaryAbsenceReturn = absenceReturn().copy(
-                  sequence = 4,
-                  movementDate = now.toLocalDate(),
-                  movementTime = now,
-                  toPrison = movementPrison,
-                ),
-              ),
-            ),
-            audit = NomisAudit(
-              createDatetime = now,
-              createUsername = "USER",
-            ),
-          ),
-        ),
-        unscheduledTemporaryAbsences = listOf(
-          absence().copy(sequence = 1, movementDate = yesterday.toLocalDate(), movementTime = yesterday),
-        ),
-        unscheduledTemporaryAbsenceReturns = listOf(
-          absenceReturn().copy(sequence = 2, movementDate = yesterday.toLocalDate(), movementTime = yesterday),
-        ),
+        bookingId = bookingId,
+        temporaryAbsenceApplications = applications,
+        unscheduledTemporaryAbsences = unscheduledTemporaryAbsences,
+        unscheduledTemporaryAbsenceReturns = unscheduledTemporaryAbsenceReturns,
       ),
     ),
   )
 
-  private fun absenceReturn() = TemporaryAbsenceReturn(
-    sequence = 2,
+  fun application(id: Long = 1, absences: List<Absence> = listOf(absence(movementPrison = "LEI"))) = TemporaryAbsenceApplication(
+    movementApplicationId = id,
+    eventSubType = "C5",
+    applicationDate = now.toLocalDate(),
+    fromDate = now.toLocalDate(),
+    releaseTime = now,
+    toDate = tomorrow.toLocalDate(),
+    returnTime = tomorrow,
+    applicationStatus = "APP-SCH",
+    applicationType = "SINGLE",
+    escortCode = "U",
+    transportType = "VAN",
+    comment = "application comment",
+    prisonId = "LEI",
+    toAgencyId = "COURT1",
+    toAddressId = 321,
+    toAddressOwnerClass = "OFF",
+    toAddressDescription = "some address description",
+    toFullAddress = "some full address",
+    toAddressPostcode = "S1 1AA",
+    contactPersonName = "Jeff",
+    temporaryAbsenceType = "RR",
+    temporaryAbsenceSubType = "SPL",
+    absences = absences,
+    audit = NomisAudit(
+      createDatetime = now,
+      createUsername = "USER",
+    ),
+  )
+
+  fun absence(
+    movementPrison: String = "LEI",
+    scheduledAbsence: ScheduledTemporaryAbsence = scheduledAbsence(),
+    scheduledAbsenceReturn: ScheduledTemporaryAbsenceReturn = scheduledAbsenceReturn(),
+    temporaryAbsence: TemporaryAbsence = temporaryAbsence(seq = 3).copy(
+      movementDate = yesterday.toLocalDate(),
+      movementTime = yesterday,
+      fromPrison = movementPrison,
+    ),
+    temporaryAbsenceReturn: TemporaryAbsenceReturn = temporaryAbsenceReturn(seq = 4).copy(
+      movementDate = now.toLocalDate(),
+      movementTime = now,
+      toPrison = movementPrison,
+    ),
+  ) = Absence(scheduledAbsence, scheduledAbsenceReturn, temporaryAbsence, temporaryAbsenceReturn)
+
+  fun temporaryAbsenceReturn(seq: Int = 2) = TemporaryAbsenceReturn(
+    sequence = seq,
     movementDate = now.toLocalDate(),
     movementTime = now,
     movementReason = "C5",
@@ -145,8 +147,8 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
     ),
   )
 
-  private fun absence() = TemporaryAbsence(
-    sequence = 1,
+  fun temporaryAbsence(seq: Int = 1) = TemporaryAbsence(
+    sequence = seq,
     movementDate = now.toLocalDate(),
     movementTime = now,
     movementReason = "C6",
@@ -167,8 +169,8 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
     ),
   )
 
-  private fun scheduledAbsenceReturn() = ScheduledTemporaryAbsenceReturn(
-    eventId = 2,
+  fun scheduledAbsenceReturn(id: Long = 2) = ScheduledTemporaryAbsenceReturn(
+    eventId = id,
     eventSubType = "C5",
     eventStatus = "SCH",
     escort = "PECS",
@@ -183,8 +185,8 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
     ),
   )
 
-  private fun scheduledAbsence(): ScheduledTemporaryAbsence = ScheduledTemporaryAbsence(
-    eventId = 1,
+  fun scheduledAbsence(id: Long = 1): ScheduledTemporaryAbsence = ScheduledTemporaryAbsence(
+    eventId = id,
     eventSubType = "C5",
     eventStatus = "SCH",
     escort = "PECS",
