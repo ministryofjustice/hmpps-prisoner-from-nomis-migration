@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
@@ -273,6 +274,41 @@ class OfficialVisitsMappingApiServiceTest {
           nomisVisitId = nomisVisitId,
         ),
       ).isNull()
+    }
+  }
+
+  @Nested
+  inner class DeleteByVisitNomisId {
+    val nomisVisitId = 12345L
+
+    @Test
+    fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubDeleteByVisitNomisId(
+        nomisVisitId = nomisVisitId,
+      )
+
+      apiService.deleteByVisitNomisId(
+        nomisVisitId = nomisVisitId,
+      )
+
+      mockServer.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubDeleteByVisitNomisId(
+        nomisVisitId = nomisVisitId,
+      )
+
+      apiService.deleteByVisitNomisId(
+        nomisVisitId = nomisVisitId,
+      )
+
+      mockServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/mapping/official-visits/visit/nomis-id/$nomisVisitId")),
+      )
     }
   }
 
