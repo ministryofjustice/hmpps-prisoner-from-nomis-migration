@@ -75,7 +75,27 @@ class OfficialVisitsSynchronisationService(
     }
   }
   fun visitUpdated(event: VisitEvent) = track("officialvisits-visit-synchronisation-updated", event.asTelemetry()) {}
-  fun visitDeleted(event: VisitEvent) = track("officialvisits-visit-synchronisation-deleted", event.asTelemetry()) {}
+
+  suspend fun visitDeleted(event: VisitEvent) {
+    val telemetryName = "officialvisits-visit-synchronisation-deleted"
+    val telemetry = event.asTelemetry()
+    mappingApiService.getByVisitNomisIdOrNull(
+      nomisVisitId = event.visitId,
+    )?.also { mapping ->
+      telemetry["dpsOfficialVisitId"] = mapping.dpsId
+      track(telemetryName, telemetry) {
+        dpsApiService.deleteVisit(mapping.dpsId.toLong())
+        mappingApiService.deleteByVisitNomisId(
+          nomisVisitId = event.visitId,
+        )
+      }
+    } ?: run {
+      telemetryClient.trackEvent(
+        "$telemetryName-ignored",
+        telemetry,
+      )
+    }
+  }
   suspend fun visitorAdded(event: VisitVisitorEvent) {
     if (event.personId == null) {
       telemetryClient.trackEvent("officialvisits-visitor-synchronisation-created-ignored", event.asTelemetry())

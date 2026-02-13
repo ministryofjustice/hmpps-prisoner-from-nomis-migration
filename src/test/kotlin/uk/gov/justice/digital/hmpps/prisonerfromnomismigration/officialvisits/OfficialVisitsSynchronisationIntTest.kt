@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -506,9 +507,14 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class OfficialVisitDeleted {
 
     @Nested
-    inner class WhenDeletedInNomis {
+    inner class WhenMappingExists {
+      val dpsOfficialVisitId = 8549934L
+
       @BeforeEach
       fun setUp() {
+        mappingApiMock.stubGetByVisitNomisIdOrNull(nomisVisitId, OfficialVisitMappingDto(dpsId = dpsOfficialVisitId.toString(), nomisId = nomisVisitId, mappingType = OfficialVisitMappingDto.MappingType.NOMIS_CREATED))
+        dpsApiMock.stubDeleteVisit(dpsOfficialVisitId)
+        mappingApiMock.stubDeleteByVisitNomisId(nomisVisitId)
         officialVisitsOffenderEventsQueue.sendMessage(
           officialVisitEvent(
             eventType = "OFFENDER_OFFICIAL_VISIT-DELETED",
@@ -524,6 +530,48 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("officialvisits-visit-synchronisation-deleted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
+            assertThat(it["dpsOfficialVisitId"]).isEqualTo(dpsOfficialVisitId.toString())
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["prisonId"]).isEqualTo(prisonId)
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will delete visit from DPS`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/official-visit/id/$dpsOfficialVisitId")))
+      }
+
+      @Test
+      fun `will delete the visit mapping`() {
+        mappingApiMock.verify(deleteRequestedFor(urlPathEqualTo("/mapping/official-visits/visit/nomis-id/$nomisVisitId")))
+      }
+    }
+
+    @Nested
+    inner class WhenMappingDoesNotExists {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByVisitNomisIdOrNull(nomisVisitId, null)
+        officialVisitsOffenderEventsQueue.sendMessage(
+          officialVisitEvent(
+            eventType = "OFFENDER_OFFICIAL_VISIT-DELETED",
+            offenderNo = offenderNo,
+            visitId = nomisVisitId,
+            agencyLocationId = prisonId,
+            bookingId = bookingId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("officialvisits-visit-synchronisation-deleted-ignored"),
           check {
             assertThat(it["offenderNo"]).isEqualTo(offenderNo)
             assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
