@@ -313,4 +313,30 @@ class OfficialVisitsDpsApiServiceTest {
       )
     }
   }
+
+  @Nested
+  inner class DeleteVisitor {
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubDeleteVisitor(123, 987)
+
+      apiService.deleteVisitor(123, 987)
+
+      dpsOfficialVisitsServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the delete endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubDeleteVisitor(123, 987)
+
+      apiService.deleteVisitor(123, 987)
+
+      dpsOfficialVisitsServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/official-visit/123/visitor/987")),
+      )
+    }
+  }
 }

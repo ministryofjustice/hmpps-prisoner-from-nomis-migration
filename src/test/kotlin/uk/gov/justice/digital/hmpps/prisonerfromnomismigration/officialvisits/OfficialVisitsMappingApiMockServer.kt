@@ -209,6 +209,18 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     }
   }
 
+  fun stubDeleteByVisitorNomisId(
+    nomisVisitorId: Long = 1234L,
+  ) {
+    mappingApi.stubFor(
+      delete(urlEqualTo("/mapping/official-visits/visitor/nomis-id/$nomisVisitorId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.NO_CONTENT.value()),
+      ),
+    )
+  }
+
   fun stubGetInternalLocationByNomisId(
     nomisLocationId: Long,
     mapping: LocationMappingDto = LocationMappingDto(
