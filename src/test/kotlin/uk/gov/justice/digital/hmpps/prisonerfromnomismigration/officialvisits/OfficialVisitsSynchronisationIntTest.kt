@@ -1135,9 +1135,18 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class OfficialVisitVisitorDeleted {
 
     @Nested
-    inner class WhenDeletedFromNomis {
+    inner class WhenVisitorMappingDoesNotExist {
       @BeforeEach
       fun setUp() {
+        mappingApiMock.stubGetByVisitorNomisIdOrNull(nomisVisitorId = nomisVisitorId, mapping = null)
+        mappingApiMock.stubGetByVisitNomisIdOrNull(
+          nomisVisitId = nomisVisitId,
+          mapping = OfficialVisitMappingDto(
+            dpsId = "123456",
+            nomisId = nomisVisitId,
+            mappingType = OfficialVisitMappingDto.MappingType.MIGRATED,
+          ),
+        )
         officialVisitsOffenderEventsQueue.sendMessage(
           officialVisitVisitorEvent(
             eventType = "OFFENDER_OFFICIAL_VISIT_VISITORS-DELETED",
@@ -1153,7 +1162,7 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("officialvisits-visitor-synchronisation-deleted-success"),
+          eq("officialvisits-visitor-synchronisation-deleted-ignored"),
           check {
             assertThat(it["offenderNo"]).isEqualTo(offenderNo)
             assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
@@ -1167,9 +1176,79 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
-    inner class WhenPrisonerVisitorDeletedFromNomis {
+    inner class WhenVisitMappingDoesNotExist {
       @BeforeEach
       fun setUp() {
+        mappingApiMock.stubGetByVisitorNomisIdOrNull(
+          nomisVisitorId = nomisVisitorId,
+          mapping = OfficialVisitorMappingDto(
+            dpsId = "123456",
+            nomisId = nomisVisitorId,
+            mappingType = OfficialVisitorMappingDto.MappingType.MIGRATED,
+          ),
+        )
+        mappingApiMock.stubGetByVisitNomisIdOrNull(
+          nomisVisitId = nomisVisitId,
+          mapping = null,
+        )
+        officialVisitsOffenderEventsQueue.sendMessage(
+          officialVisitVisitorEvent(
+            eventType = "OFFENDER_OFFICIAL_VISIT_VISITORS-DELETED",
+            offenderNo = offenderNo,
+            visitId = nomisVisitId,
+            bookingId = bookingId,
+            visitVisitorId = nomisVisitorId,
+            personId = nomisPersonId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("officialvisits-visitor-synchronisation-deleted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["nomisVisitorId"]).isEqualTo(nomisVisitorId.toString())
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenMappingExists {
+      val dpsOfficialVisitId = 7371L
+      val dpsOfficialVisitorId = 715315L
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByVisitorNomisIdOrNull(
+          nomisVisitorId = nomisVisitorId,
+          mapping = OfficialVisitorMappingDto(
+            dpsId = dpsOfficialVisitorId.toString(),
+            nomisId = nomisVisitorId,
+            mappingType = OfficialVisitorMappingDto.MappingType.MIGRATED,
+          ),
+        )
+        mappingApiMock.stubGetByVisitNomisIdOrNull(
+          nomisVisitId = nomisVisitId,
+          mapping = OfficialVisitMappingDto(
+            dpsId = dpsOfficialVisitId.toString(),
+            nomisId = nomisVisitId,
+            mappingType = OfficialVisitMappingDto.MappingType.MIGRATED,
+          ),
+        )
+        dpsApiMock.stubDeleteVisitor(
+          officialVisitId = dpsOfficialVisitId,
+          officialVisitorId = dpsOfficialVisitorId,
+        )
+
+        mappingApiMock.stubDeleteByVisitorNomisId(nomisVisitorId = nomisVisitorId)
+
         officialVisitsOffenderEventsQueue.sendMessage(
           officialVisitVisitorEvent(
             eventType = "OFFENDER_OFFICIAL_VISIT_VISITORS-DELETED",
@@ -1184,12 +1263,14 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
       @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("officialvisits-visitor-synchronisation-deleted-ignored"),
+          eq("officialvisits-visitor-synchronisation-deleted-success"),
           check {
             assertThat(it["offenderNo"]).isEqualTo(offenderNo)
             assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
+            assertThat(it["dpsOfficialVisitId"]).isEqualTo(dpsOfficialVisitId.toString())
             assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
             assertThat(it["nomisVisitorId"]).isEqualTo(nomisVisitorId.toString())
+            assertThat(it["dpsOfficialVisitorId"]).isEqualTo(dpsOfficialVisitorId.toString())
           },
           isNull(),
         )

@@ -4,7 +4,6 @@ import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.SuccessOrDuplicate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitSuccessOrDuplicate
@@ -54,8 +53,7 @@ class OfficialVisitsMappingService(@Qualifier("mappingApiWebClient") webClient: 
     .awaitBodyOrNullWhenNotFound()
 
   suspend fun deleteByVisitorNomisId(nomisVisitorId: Long) {
-    // TODO use `api` once mapping PR is merged
-    webClient.delete().uri("/mapping/official-visits/visitor/nomis-id/{nomisVisitorId}", nomisVisitorId).retrieve().awaitBodilessEntity()
+    api.deleteOfficialVisitorMapping(nomisVisitorId = nomisVisitorId).awaitSingle()
   }
 
   suspend fun getInternalLocationByNomisId(nomisLocationId: Long): LocationMappingDto = locationApi.getMappingGivenNomisId1(nomisLocationId = nomisLocationId).awaitSingle()
