@@ -17,9 +17,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.S
 import java.util.*
 
 @Service
-class ExternalMovementsDpsApiService(@Qualifier("extMovementsDpsApiWebClient") private val webClient: WebClient) {
+class ExternalMovementsDpsApiService(
+  @Qualifier("extMovementsDpsApiWebClient") private val webClient: WebClient,
+  @Qualifier("extMovementsDpsApiResyncWebClient") private val resyncWebClient: WebClient,
+) {
 
   private val syncApi = SyncApi(webClient)
+  private val resyncApi = SyncApi(resyncWebClient)
 
   suspend fun syncTapAuthorisation(personIdentifier: String, request: SyncWriteTapAuthorisation): SyncResponse = syncApi.prepare(syncApi.syncTemporaryAbsenceAuthorisationRequestConfig(personIdentifier, request))
     .retrieve()
@@ -40,12 +44,12 @@ class ExternalMovementsDpsApiService(@Qualifier("extMovementsDpsApiWebClient") p
   suspend fun deleteTapMovement(movementId: UUID) = syncApi.deleteTapMovementById(movementId).awaitSingle()
 
   // This is the original /migrate endpoint that we called during a fresh migration
-  suspend fun migratePrisonerTaps(personIdentifier: String, request: MigrateTapRequest): MigrateTapResponse = syncApi.prepare(syncApi.migrateTemporaryAbsences1RequestConfig(personIdentifier, request))
+  suspend fun migratePrisonerTaps(personIdentifier: String, request: MigrateTapRequest): MigrateTapResponse = resyncApi.prepare(resyncApi.migrateTemporaryAbsences1RequestConfig(personIdentifier, request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
   // This is the new /resync endpoint that we'll call going forward instead of the full migration endpoint. This performs a "patch migration" rather than delete and replace.
-  suspend fun resyncPrisonerTaps(personIdentifier: String, request: MigrateTapRequest): MigrateTapResponse = syncApi.prepare(syncApi.migrateTemporaryAbsencesRequestConfig(personIdentifier, request))
+  suspend fun resyncPrisonerTaps(personIdentifier: String, request: MigrateTapRequest): MigrateTapResponse = resyncApi.prepare(resyncApi.migrateTemporaryAbsencesRequestConfig(personIdentifier, request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 

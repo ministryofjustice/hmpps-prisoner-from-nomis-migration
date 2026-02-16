@@ -17,6 +17,7 @@ class ExternalMovementsConfiguration(
   @Value("\${api.base.url.ext.movements}") val apiBaseUri: String,
   @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
   @Value("\${api.ext-movements-timeout:10s}") val timeout: Duration,
+  @Value("\${api.ext-movements-resync-timeout:60s}") val resyncTimeout: Duration,
   @Value("\${api.ext-movements-mapping-timeout:60s}") val mappingTimeout: Duration,
   @Value("\${api.base.url.mapping}") val mappingApiBaseUri: String,
 ) {
@@ -26,6 +27,12 @@ class ExternalMovementsConfiguration(
     authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
     builder: WebClient.Builder,
   ): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "movements-api", url = apiBaseUri, timeout)
+
+  @Bean
+  fun extMovementsDpsApiResyncWebClient(
+    authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
+    builder: WebClient.Builder,
+  ): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "movements-api", url = apiBaseUri, resyncTimeout)
 
   @Bean
   fun extMovementsApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.reactiveHealthWebClient(apiBaseUri, healthTimeout)
