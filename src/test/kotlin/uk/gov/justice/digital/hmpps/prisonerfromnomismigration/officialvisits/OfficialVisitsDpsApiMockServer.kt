@@ -372,4 +372,15 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
+
+  fun stubDeleteVisitor(officialVisitId: Long, officialVisitorId: Long) {
+    stubFor(
+      delete("/sync/official-visit/$officialVisitId/visitor/$officialVisitorId")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(204),
+        ),
+    )
+  }
 }

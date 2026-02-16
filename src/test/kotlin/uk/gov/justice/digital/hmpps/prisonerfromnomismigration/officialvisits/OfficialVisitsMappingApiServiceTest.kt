@@ -390,6 +390,41 @@ class OfficialVisitsMappingApiServiceTest {
   }
 
   @Nested
+  inner class DeleteByVisitorNomisId {
+    val nomisVisitorId = 12345L
+
+    @Test
+    fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubDeleteByVisitorNomisId(
+        nomisVisitorId = nomisVisitorId,
+      )
+
+      apiService.deleteByVisitorNomisId(
+        nomisVisitorId = nomisVisitorId,
+      )
+
+      mockServer.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubDeleteByVisitorNomisId(
+        nomisVisitorId = nomisVisitorId,
+      )
+
+      apiService.deleteByVisitorNomisId(
+        nomisVisitorId = nomisVisitorId,
+      )
+
+      mockServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/mapping/official-visits/visitor/nomis-id/$nomisVisitorId")),
+      )
+    }
+  }
+
+  @Nested
   inner class GetByVisitorNomisIdOrNull {
     val nomisVisitorId = 12345L
 

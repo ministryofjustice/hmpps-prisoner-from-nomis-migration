@@ -45,4 +45,10 @@ class OfficialVisitsDpsApiService(
     syncApi.syncDeleteOfficialVisit(officialVisitId).awaitSingle()
   }
   suspend fun createVisitor(officialVisitId: Long, request: SyncCreateOfficialVisitorRequest): SyncOfficialVisitor = syncApi.syncCreateOfficialVisitor(officialVisitId = officialVisitId, request).awaitSingle()
+  suspend fun deleteVisitor(officialVisitId: Long, officialVisitorId: Long) {
+    syncApi.syncDeleteOfficialVisitor(
+      officialVisitId = officialVisitId,
+      officialVisitorId = officialVisitorId,
+    ).awaitSingle()
+  }
 }
