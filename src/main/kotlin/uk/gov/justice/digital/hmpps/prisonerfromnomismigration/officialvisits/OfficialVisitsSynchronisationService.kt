@@ -144,11 +144,34 @@ class OfficialVisitsSynchronisationService(
       track("officialvisits-visitor-synchronisation-updated", event.asTelemetry()) {}
     }
   }
-  fun visitorDeleted(event: VisitVisitorEvent) {
-    if (event.personId == null) {
-      telemetryClient.trackEvent("officialvisits-visitor-synchronisation-deleted-ignored", event.asTelemetry())
+  suspend fun visitorDeleted(event: VisitVisitorEvent) {
+    val telemetryName = "officialvisits-visitor-synchronisation-deleted"
+    val telemetry = event.asTelemetry()
+    val visitMapping = mappingApiService.getByVisitNomisIdOrNull(
+      nomisVisitId = event.visitId,
+    )
+    val visitorMapping = mappingApiService.getByVisitorNomisIdOrNull(
+      nomisVisitorId = event.visitVisitorId,
+    )
+    // visit mapping might have been deleted if we are midway through a
+    // cascading delete
+    if (visitMapping != null && visitorMapping != null) {
+      telemetry["dpsOfficialVisitId"] = visitMapping.dpsId
+      telemetry["dpsOfficialVisitorId"] = visitorMapping.dpsId
+      track(telemetryName, telemetry) {
+        dpsApiService.deleteVisitor(
+          officialVisitId = visitMapping.dpsId.toLong(),
+          officialVisitorId = visitorMapping.dpsId.toLong(),
+        )
+        mappingApiService.deleteByVisitorNomisId(
+          nomisVisitorId = event.visitVisitorId,
+        )
+      }
     } else {
-      track("officialvisits-visitor-synchronisation-deleted", event.asTelemetry()) {}
+      telemetryClient.trackEvent(
+        "$telemetryName-ignored",
+        telemetry,
+      )
     }
   }
 
