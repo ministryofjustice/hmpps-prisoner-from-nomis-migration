@@ -12,6 +12,7 @@ import kotlin.String
 @Service
 class CourtSentencingRepairService(
   val courtSentencingMigrationService: CourtSentencingMigrationService,
+  val courtSentencingSynchronisationService: CourtSentencingSynchronisationService,
   val telemetryClient: TelemetryClient,
 ) {
   suspend fun resynchronisePrisonerCourtCases(offenderNo: String) {
@@ -35,5 +36,26 @@ class CourtSentencingRepairService(
         null,
       )
     }
+  }
+
+  suspend fun resynchronisePrisonerCourtCaseStatus(offenderNo: String, bookingId: Long, caseId: Long) {
+    courtSentencingSynchronisationService.nomisCourtCaseUpdated(
+      CourtCaseEvent(
+        caseId = caseId,
+        offenderIdDisplay = offenderNo,
+        bookingId = bookingId,
+        auditModuleName = "NOMIS",
+      ),
+    )
+
+    telemetryClient.trackEvent(
+      "court-sentencing-prisoner-case-status-repaired",
+      mapOf(
+        "offenderNo" to offenderNo,
+        "nomisBookingId" to bookingId.toString(),
+        "nomisCourtCaseId" to caseId.toString(),
+      ),
+      null,
+    )
   }
 }
