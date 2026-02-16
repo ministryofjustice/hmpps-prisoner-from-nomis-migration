@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompl
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_TEMPORARY_ABSENCE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
 import java.util.concurrent.CompletableFuture
@@ -68,6 +69,7 @@ class ExternalMovementsEventListener(
     RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT -> syncService.retryCreateExternalMovementMapping(message.fromJson())
     RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT -> syncService.retryUpdateExternalMovementMapping(message.fromJson())
     RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT -> syncService.retryUpdateScheduledMovementMapping(message.fromJson())
+    RETRY_MOVE_BOOKING_MAPPING_TEMPORARY_ABSENCE -> moveBookingService.retryMoveBookingMapping(message.fromJson())
   }
 
   private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
@@ -134,4 +136,5 @@ enum class ExternalMovementRetryMappingMessageTypes {
   RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT,
   RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT,
   RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT,
+  RETRY_MOVE_BOOKING_MAPPING_TEMPORARY_ABSENCE,
 }
