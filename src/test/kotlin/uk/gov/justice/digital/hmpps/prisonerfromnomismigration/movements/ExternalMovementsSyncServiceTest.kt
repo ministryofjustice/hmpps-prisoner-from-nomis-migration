@@ -20,7 +20,7 @@ class ExternalMovementsSyncServiceTest {
       )
 
       with(nomis.toDpsRequest(dpsLocation = Location(address = "any"))) {
-        assertThat(accompaniedByCode).isEqualTo("U")
+        assertThat(accompaniedByCode).isEqualTo("NOT_PROVIDED")
       }
     }
 

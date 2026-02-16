@@ -35,7 +35,7 @@ import java.util.*
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED as SCHEDULED_MOVEMENT_NOMIS_CREATED
 
 private const val TELEMETRY_PREFIX: String = "temporary-absence-sync"
-const val DEFAULT_ESCORT_CODE = "U"
+const val DEFAULT_ESCORT_CODE = "NOT_PROVIDED"
 const val DEFAULT_TRANSPORT_TYPE = "TNR"
 
 @Service
