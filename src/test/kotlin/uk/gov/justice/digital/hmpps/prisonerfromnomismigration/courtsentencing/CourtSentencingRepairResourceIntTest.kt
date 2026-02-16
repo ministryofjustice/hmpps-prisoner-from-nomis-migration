@@ -1,7 +1,9 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
@@ -11,6 +13,10 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentMatchers.eq
+import org.mockito.kotlin.check
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateChargeResponse
@@ -132,6 +138,94 @@ class CourtSentencingRepairResourceIntTest : SqsIntegrationTestBase() {
           2,
           postRequestedFor(urlPathMatching("/mapping/court-sentencing/prisoner/$offenderNo/court-cases")),
 
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("PUT /prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/status/repair")
+  inner class RepairCourtCase {
+    val offenderNo = "A1234KT"
+    val bookingId = 12344321L
+    val caseId = 1234L
+    val dpsCaseId = UUID.randomUUID().toString()
+
+    @Nested
+    inner class Security {
+
+      @Test
+      internal fun `must have valid token`() {
+        webTestClient.put().uri("/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/status/repair", offenderNo, bookingId, caseId)
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      internal fun `must have correct role`() {
+        webTestClient.put().uri("/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/status/repair", offenderNo, bookingId, caseId)
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isForbidden
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+
+      @BeforeEach
+      internal fun setup() {
+        courtSentencingNomisApiMockServer.stubGetCourtCase(
+          courtCaseId = caseId,
+          bookingId = bookingId,
+          offenderNo = offenderNo,
+        )
+
+        courtSentencingMappingApiMockServer.stubGetByNomisId(
+          nomisCourtCaseId = caseId,
+          dpsCourtCaseId = dpsCaseId,
+        )
+
+        dpsCourtSentencingServer.stubPutCourtCaseForUpdate(courtCaseId = dpsCaseId)
+
+        webTestClient.put().uri("/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/status/repair", offenderNo, bookingId, caseId)
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+      }
+
+      @Test
+      fun `will update DPS with the changes`() {
+        dpsCourtSentencingServer.verify(
+          1,
+          putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCaseId"))
+            .withRequestBody(matchingJsonPath("bookingId", equalTo(bookingId.toString()))),
+        )
+      }
+
+      @Test
+      fun `will track a telemetry event for success`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-case-synchronisation-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisBookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["nomisCourtCaseId"]).isEqualTo(caseId.toString())
+            assertThat(it["dpsCourtCaseId"]).isEqualTo(dpsCaseId)
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("court-sentencing-prisoner-case-status-repaired"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisBookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["nomisCourtCaseId"]).isEqualTo(caseId.toString())
+          },
+          isNull(),
         )
       }
     }
