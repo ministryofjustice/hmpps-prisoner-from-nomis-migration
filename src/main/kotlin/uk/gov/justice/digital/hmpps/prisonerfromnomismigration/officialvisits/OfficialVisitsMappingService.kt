@@ -52,6 +52,9 @@ class OfficialVisitsMappingService(@Qualifier("mappingApiWebClient") webClient: 
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
+  suspend fun getByVisitorNomisId(nomisVisitorId: Long): OfficialVisitorMappingDto = api.getVisitorMappingByNomisId(nomisVisitorId = nomisVisitorId)
+    .awaitSingle()
+
   suspend fun deleteByVisitorNomisId(nomisVisitorId: Long) {
     api.deleteOfficialVisitorMapping(nomisVisitorId = nomisVisitorId).awaitSingle()
   }

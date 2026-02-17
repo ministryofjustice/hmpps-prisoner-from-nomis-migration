@@ -5,6 +5,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
@@ -19,12 +20,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.Of
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsSynchronisationMessageType.RETRY_SYNCHRONISATION_OFFICIAL_VISIT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitorRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.time.format.DateTimeFormatter
-import java.util.UUID
+import java.util.*
 
 @Service
 class OfficialVisitsSynchronisationService(
@@ -41,7 +43,7 @@ class OfficialVisitsSynchronisationService(
 
   suspend fun visitAdded(event: VisitEvent) {
     val telemetryName = "officialvisits-visit-synchronisation-created"
-    if (event.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_OFFICIAL_VISITS")) {
+    if (event.isFromDPSOfficialVisits()) {
       telemetryClient.trackEvent("$telemetryName-skipped", event.asTelemetry())
     } else {
       val mapping = mappingApiService.getByVisitNomisIdOrNull(
@@ -101,7 +103,7 @@ class OfficialVisitsSynchronisationService(
       telemetryClient.trackEvent("officialvisits-visitor-synchronisation-created-ignored", event.asTelemetry())
     } else {
       val telemetryName = "officialvisits-visitor-synchronisation-created"
-      if (event.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_OFFICIAL_VISITS")) {
+      if (event.isFromDPSOfficialVisits()) {
         telemetryClient.trackEvent("$telemetryName-skipped", event.asTelemetry())
       } else {
         val mapping = mappingApiService.getByVisitorNomisIdOrNull(
@@ -137,11 +139,39 @@ class OfficialVisitsSynchronisationService(
       }
     }
   }
-  fun visitorUpdated(event: VisitVisitorEvent) {
+  suspend fun visitorUpdated(event: VisitVisitorEvent) {
+    val telemetryName = "officialvisits-visitor-synchronisation-updated"
     if (event.personId == null) {
-      telemetryClient.trackEvent("officialvisits-visitor-synchronisation-updated-ignored", event.asTelemetry())
+      telemetryClient.trackEvent("$telemetryName-ignored", event.asTelemetry())
     } else {
-      track("officialvisits-visitor-synchronisation-updated", event.asTelemetry()) {}
+      if (event.isFromDPSOfficialVisits()) {
+        telemetryClient.trackEvent("$telemetryName-skipped", event.asTelemetry())
+      } else {
+        val telemetry = event.asTelemetry()
+        track(telemetryName, telemetry) {
+          nomisApiService.getOfficialVisit(
+            event.visitId,
+          ).let { it.visitors.find { visitor -> visitor.id == event.visitVisitorId } }?.also { nomisVisitor ->
+            val visitMapping = mappingApiService.getByVisitNomisId(
+              nomisVisitId = event.visitId,
+            ).also { telemetry["dpsOfficialVisitId"] = it.dpsId }
+            val visitorMapping = mappingApiService.getByVisitorNomisId(
+              nomisVisitorId = event.visitVisitorId,
+            ).also { telemetry["dpsOfficialVisitorId"] = it.dpsId }
+
+            dpsApiService.updateVisitor(
+              officialVisitId = visitMapping.dpsId.toLong(),
+              officialVisitorId = visitorMapping.dpsId.toLong(),
+              request = nomisVisitor.toSyncUpdateOfficialVisitorRequest(),
+            )
+          } ?: run {
+            telemetryClient.trackEvent(
+              "$telemetryName-ignored",
+              telemetry + ("reason" to "visitor no longer found in nomis"),
+            )
+          }
+        }
+      }
     }
   }
   suspend fun visitorDeleted(event: VisitVisitorEvent) {
@@ -284,6 +314,22 @@ class OfficialVisitsSynchronisationService(
     commentText = commentText,
     attendanceCode = visitorAttendanceOutcome?.toDpsAttendanceType(),
   )
+
+  private suspend fun OfficialVisitor.toSyncUpdateOfficialVisitorRequest(): SyncUpdateOfficialVisitorRequest = SyncUpdateOfficialVisitorRequest(
+    offenderVisitVisitorId = id,
+    personId = personId,
+    updateDateTime = audit.modifyDatetime!!,
+    updateUsername = audit.modifyUserId!!,
+    firstName = firstName,
+    lastName = lastName,
+    relationshipToPrisoner = relationships.firstOrNull()?.relationshipType?.code,
+    relationshipTypeCode = relationships.firstOrNull()?.contactType?.toDpsRelationshipType(),
+    groupLeaderFlag = leadVisitor,
+    assistedVisitFlag = assistedVisit,
+    commentText = commentText,
+    attendanceCode = visitorAttendanceOutcome?.toDpsAttendanceType(),
+  )
+
   private suspend fun OfficialVisitResponse.toSyncCreateOfficialVisitRequest(): SyncCreateOfficialVisitRequest = SyncCreateOfficialVisitRequest(
     offenderVisitId = visitId,
     prisonVisitSlotId = visitSlotsMappingApiService.getVisitSlotByNomisId(visitSlotId).dpsId.toLong(),
@@ -327,3 +373,4 @@ fun VisitVisitorEvent.asTelemetry() = mutableMapOf<String, Any>(
 }
 
 private fun String.asUUID() = UUID.fromString(this)
+private fun EventAudited.isFromDPSOfficialVisits() = this.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_OFFICIAL_VISITS")
