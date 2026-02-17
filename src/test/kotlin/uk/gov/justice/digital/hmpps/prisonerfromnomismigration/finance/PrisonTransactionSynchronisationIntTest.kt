@@ -25,7 +25,6 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpStatus
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
@@ -551,7 +550,7 @@ class PrisonTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
           financeNomisApiMockServer.stubGetPrisonTransaction(
             transactionId = NOMIS_TRANSACTION_ID,
           )
-          financeMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
+          financeMappingApiMockServer.stubGetByNomisId(mapping = null)
 
           financeOffenderEventsQueue.sendMessage(
             glTransactionEvent(

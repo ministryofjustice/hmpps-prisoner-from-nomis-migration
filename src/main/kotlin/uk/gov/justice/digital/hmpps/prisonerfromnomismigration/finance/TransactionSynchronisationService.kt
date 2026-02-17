@@ -12,6 +12,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransactionMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GeneralLedgerTransactionDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.TransactionIdBufferRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
@@ -84,60 +86,42 @@ class TransactionSynchronisationService(
       }
   }
 
+  suspend fun resynchroniseTransaction(nomisTransactionId: Long) {
+    val transactionEvent = nomisApiService.getPrisonerTransactions(nomisTransactionId).firstOrNull()
+      ?.toTransactionEvent()
+      ?: nomisApiService.getPrisonTransactions(nomisTransactionId).firstOrNull()
+        ?.toTransactionEvent()
+      ?: throw NotFoundException("No transaction found in nomis for transactionId=$nomisTransactionId")
+    transactionUpserted(transactionEvent, UUID.randomUUID(), "repair")
+  }
+
   suspend fun transactionUpserted(encapsulatedTransaction: InternalMessage<EncapsulatedTransaction>) {
     val (event, requestId, eventType) = encapsulatedTransaction.body
     try {
-      transactionIdBufferRepository.deleteById(event.transactionId)
-      val mapping = transactionMappingService.getMappingGivenNomisIdOrNull(event.transactionId)
-//      if (event.auditMissing()) {
-      // TODO mapping may or may not exist anyway! Need another way to detect null audit name - if it ever happens
-//        mapping
-//          ?.apply {
-//            if (mappingType == TransactionMappingDto.MappingType.DPS_CREATED) {
-//              // Detected where the auditModuleName is null but the mapping exists, signifying that this one was created from DPS
-//              telemetryClient.trackEvent(
-//                "transactions-synchronisation-created-skipped-null",
-//                event.toTelemetryProperties(),
-//              )
-//              return
-//            }
-//          }
-//      }
-      val nomisTransactions = nomisApiService.getPrisonerTransactions(event.transactionId)
-      if (nomisTransactions.isEmpty()) {
-        val glTransactions = nomisApiService.getPrisonTransactions(event.transactionId)
-        if (glTransactions.isEmpty()) {
-          throw NotFoundException("No GL transactions found in nomis for transactionId=$event.transactionId")
-        } else {
-          financeService.syncGeneralLedgerTransactions(
-            glTransactions.toSyncGeneralLedgerTransactionRequest(requestId),
-          )
-            .also { financeResponse ->
-              assertMappingExistenceMatchesAction(mapping, financeResponse)
-              if (mapping == null) {
-                val mappingResponse = maybeCreateTransactionMapping(event, financeResponse)
+      val nomisTransactionId = event.transactionId
+      transactionIdBufferRepository.deleteById(nomisTransactionId)
+      transactionUpserted(event, requestId, eventType)
+    } catch (e: Exception) {
+      telemetryClient.trackEvent(
+        "transactions-synchronisation-$eventType-failed",
+        event.toTelemetryProperties() + mapOf("error" to (e.message ?: e.javaClass.toString())),
+      )
+      throw e
+    }
+  }
 
-                telemetryClient.trackEvent(
-                  "transactions-synchronisation-$eventType-success-gl",
-                  event.toTelemetryProperties(
-                    dpsTransactionId = financeResponse.synchronizedTransactionId,
-                    mappingFailed = mappingResponse == MappingResponse.MAPPING_FAILED,
-                  ),
-                )
-              } else {
-                telemetryClient.trackEvent(
-                  "transactions-synchronisation-$eventType-success-gl-additional",
-                  event.toTelemetryProperties(
-                    dpsTransactionId = financeResponse.synchronizedTransactionId,
-                    mappingFailed = false,
-                  ),
-                )
-              }
-            }
-        }
+  private suspend fun transactionUpserted(event: TransactionEvent, requestId: UUID, eventType: String) {
+    val nomisTransactionId = event.transactionId
+
+    val mapping = transactionMappingService.getMappingGivenNomisIdOrNull(nomisTransactionId)
+    val nomisTransactions = nomisApiService.getPrisonerTransactions(nomisTransactionId)
+    if (nomisTransactions.isEmpty()) {
+      val glTransactions = nomisApiService.getPrisonTransactions(nomisTransactionId)
+      if (glTransactions.isEmpty()) {
+        throw NotFoundException("No Prison (GL) transactions found in nomis for transactionId=$nomisTransactionId")
       } else {
-        financeService.syncTransactions(
-          nomisTransactions.toSyncOffenderTransactionRequest(requestId),
+        financeService.syncGeneralLedgerTransactions(
+          glTransactions.toSyncGeneralLedgerTransactionRequest(requestId),
         )
           .also { financeResponse ->
             assertMappingExistenceMatchesAction(mapping, financeResponse)
@@ -145,7 +129,7 @@ class TransactionSynchronisationService(
               val mappingResponse = maybeCreateTransactionMapping(event, financeResponse)
 
               telemetryClient.trackEvent(
-                "transactions-synchronisation-$eventType-success",
+                "transactions-synchronisation-$eventType-success-gl",
                 event.toTelemetryProperties(
                   dpsTransactionId = financeResponse.synchronizedTransactionId,
                   mappingFailed = mappingResponse == MappingResponse.MAPPING_FAILED,
@@ -153,7 +137,7 @@ class TransactionSynchronisationService(
               )
             } else {
               telemetryClient.trackEvent(
-                "transactions-synchronisation-$eventType-success-additional",
+                "transactions-synchronisation-$eventType-success-gl-additional",
                 event.toTelemetryProperties(
                   dpsTransactionId = financeResponse.synchronizedTransactionId,
                   mappingFailed = false,
@@ -162,12 +146,32 @@ class TransactionSynchronisationService(
             }
           }
       }
-    } catch (e: Exception) {
-      telemetryClient.trackEvent(
-        "transactions-synchronisation-$eventType-failed",
-        event.toTelemetryProperties() + mapOf("error" to (e.message ?: e.javaClass.toString())),
+    } else {
+      financeService.syncTransactions(
+        nomisTransactions.toSyncOffenderTransactionRequest(requestId),
       )
-      throw e
+        .also { financeResponse ->
+          assertMappingExistenceMatchesAction(mapping, financeResponse)
+          if (mapping == null) {
+            val mappingResponse = maybeCreateTransactionMapping(event, financeResponse)
+
+            telemetryClient.trackEvent(
+              "transactions-synchronisation-$eventType-success",
+              event.toTelemetryProperties(
+                dpsTransactionId = financeResponse.synchronizedTransactionId,
+                mappingFailed = mappingResponse == MappingResponse.MAPPING_FAILED,
+              ),
+            )
+          } else {
+            telemetryClient.trackEvent(
+              "transactions-synchronisation-$eventType-success-additional",
+              event.toTelemetryProperties(
+                dpsTransactionId = financeResponse.synchronizedTransactionId,
+                mappingFailed = false,
+              ),
+            )
+          }
+        }
     }
   }
 
@@ -263,13 +267,31 @@ class TransactionSynchronisationService(
   }
 }
 
+private fun OffenderTransactionDto.toTransactionEvent() = TransactionEvent(
+  transactionId = transactionId,
+  entrySequence = transactionEntrySequence,
+  caseload = caseloadId,
+  offenderIdDisplay = offenderNo,
+  bookingId = bookingId,
+  auditModuleName = null,
+)
+
+private fun GeneralLedgerTransactionDto.toTransactionEvent() = TransactionEvent(
+  transactionId = transactionId,
+  entrySequence = transactionEntrySequence,
+  caseload = caseloadId,
+  offenderIdDisplay = null,
+  bookingId = null,
+  auditModuleName = null,
+)
+
 private fun GLTransactionEvent.toTransactionEvent() = TransactionEvent(
-  transactionId = this.transactionId,
-  entrySequence = this.entrySequence,
-  caseload = this.caseload,
-  offenderIdDisplay = this.offenderIdDisplay,
-  bookingId = this.bookingId,
-  auditModuleName = this.auditModuleName,
+  transactionId = transactionId,
+  entrySequence = entrySequence,
+  caseload = caseload,
+  offenderIdDisplay = offenderIdDisplay,
+  bookingId = bookingId,
+  auditModuleName = auditModuleName,
 )
 
 private fun assertMappingExistenceMatchesAction(

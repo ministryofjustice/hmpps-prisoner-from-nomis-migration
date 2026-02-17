@@ -27,7 +27,7 @@ import java.util.UUID
 class FinanceMappingApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetByNomisId(
     transactionId: Long = 1,
-    mapping: TransactionMappingDto = TransactionMappingDto(
+    mapping: TransactionMappingDto? = TransactionMappingDto(
       nomisBookingId = 123456,
       dpsTransactionId = UUID.randomUUID().toString(),
       nomisTransactionId = transactionId,
@@ -35,37 +35,26 @@ class FinanceMappingApiMockServer(private val jsonMapper: JsonMapper) {
       mappingType = MIGRATED,
     ),
   ) {
-    mappingApi.stubFor(
-      get(urlEqualTo("/mapping/transactions/nomis-transaction-id/$transactionId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(jsonMapper.writeValueAsString(mapping)),
-      ),
-    )
-  }
-
-  fun stubGetByNomisId(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    mappingApi.stubFor(
-      get(urlPathMatching("/mapping/transactions/nomis-transaction-id/\\d+")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(jsonMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubGetByNomisId(
-    transactionId: Long = 1,
-    status: HttpStatus,
-    error: ErrorResponse = ErrorResponse(status = status.value()),
-  ) {
-    mappingApi.stubFor(
-      get(urlEqualTo("/mapping/transactions/nomis-transaction-id/$transactionId")).willReturn(
-        jsonResponse(error, status.value()),
-      ),
-    )
+    mapping?.apply {
+      mappingApi.stubFor(
+        get(urlEqualTo("/mapping/transactions/nomis-transaction-id/$transactionId")).willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(jsonMapper.writeValueAsString(mapping)),
+        ),
+      )
+    }
+      ?: run {
+        mappingApi.stubFor(
+          get(urlEqualTo("/mapping/transactions/nomis-transaction-id/$transactionId")).willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpStatus.NOT_FOUND.value())
+              .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
+          ),
+        )
+      }
   }
 
   fun stubPostMapping() {
