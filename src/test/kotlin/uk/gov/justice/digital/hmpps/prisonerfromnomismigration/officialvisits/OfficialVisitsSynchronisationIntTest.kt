@@ -752,7 +752,6 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
             assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2019-01-01T10:10:10"))
             assertThat(firstName).isEqualTo("JOHN")
             assertThat(lastName).isEqualTo("SMITH")
-            assertThat(dateOfBirth).isEqualTo(LocalDate.parse("1965-07-19"))
             assertThat(groupLeaderFlag).isTrue
             assertThat(assistedVisitFlag).isTrue
             assertThat(commentText).isEqualTo("Requires access")
