@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.Of
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncCreateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncCreateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncCreateVisitSlotRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncUpdateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncUpdateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncUpdateVisitSlotRequest
 
@@ -310,6 +311,40 @@ class OfficialVisitsDpsApiServiceTest {
 
       dpsOfficialVisitsServer.verify(
         postRequestedFor(urlPathEqualTo("/sync/official-visit/123/visitor")),
+      )
+    }
+  }
+
+  @Nested
+  inner class UpdateVisitor {
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubUpdateVisitor(123, 987)
+
+      apiService.updateVisitor(
+        officialVisitId = 123,
+        officialVisitorId = 987,
+        request = syncUpdateOfficialVisitorRequest(),
+      )
+
+      dpsOfficialVisitsServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the put endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubUpdateVisitor(123, 987)
+
+      apiService.updateVisitor(
+        officialVisitId = 123,
+        officialVisitorId = 987,
+        request = syncUpdateOfficialVisitorRequest(),
+      )
+
+      dpsOfficialVisitsServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/official-visit/123/visitor/987")),
       )
     }
   }

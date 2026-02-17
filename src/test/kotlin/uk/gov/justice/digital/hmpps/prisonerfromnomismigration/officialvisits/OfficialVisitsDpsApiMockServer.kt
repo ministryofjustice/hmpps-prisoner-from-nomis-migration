@@ -29,6 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncOfficialVisit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncOfficialVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncTimeSlot
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateVisitSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncVisitSlot
@@ -229,6 +230,13 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createUsername = "T.SMITH",
     )
 
+    fun syncUpdateOfficialVisitorRequest() = SyncUpdateOfficialVisitorRequest(
+      offenderVisitVisitorId = 1,
+      personId = 100,
+      updateDateTime = LocalDateTime.parse("2020-01-01T08:00"),
+      updateUsername = "T.SMITH",
+    )
+
     fun syncOfficialVisitor() = SyncOfficialVisitor(
       officialVisitorId = 1,
       createdBy = "T.SMITH",
@@ -373,6 +381,17 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubUpdateVisitor(officialVisitId: Long, officialVisitorId: Long, response: SyncOfficialVisitor = syncOfficialVisitor()) {
+    stubFor(
+      put("/sync/official-visit/$officialVisitId/visitor/$officialVisitorId")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(200)
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
   fun stubDeleteVisitor(officialVisitId: Long, officialVisitorId: Long) {
     stubFor(
       delete("/sync/official-visit/$officialVisitId/visitor/$officialVisitorId")

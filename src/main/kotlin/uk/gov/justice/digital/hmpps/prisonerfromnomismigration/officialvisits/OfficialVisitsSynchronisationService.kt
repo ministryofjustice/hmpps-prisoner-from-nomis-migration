@@ -277,7 +277,6 @@ class OfficialVisitsSynchronisationService(
     createUsername = audit.createUsername,
     firstName = firstName,
     lastName = lastName,
-    dateOfBirth = dateOfBirth,
     relationshipToPrisoner = relationships.firstOrNull()?.relationshipType?.code,
     relationshipTypeCode = relationships.firstOrNull()?.contactType?.toDpsRelationshipType(),
     groupLeaderFlag = leadVisitor,

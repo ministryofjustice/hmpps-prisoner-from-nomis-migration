@@ -207,7 +207,6 @@ internal suspend fun OfficialVisitResponse.toMigrateVisitRequest(prisonVisitSlot
       createUsername = visitor.audit.createUsername,
       firstName = visitor.firstName,
       lastName = visitor.lastName,
-      dateOfBirth = visitor.dateOfBirth,
       relationshipToPrisoner = visitor.relationships.firstOrNull()?.relationshipType?.code,
       relationshipTypeCode = visitor.relationships.firstOrNull()?.contactType?.toDpsRelationshipType(),
       attendanceCode = visitor.visitorAttendanceOutcome?.toDpsAttendanceType(),
