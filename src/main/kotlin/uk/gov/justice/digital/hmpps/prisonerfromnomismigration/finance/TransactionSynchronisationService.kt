@@ -105,7 +105,7 @@ class TransactionSynchronisationService(
 //      }
       val nomisTransactions = nomisApiService.getPrisonerTransactions(event.transactionId)
       if (nomisTransactions.isEmpty()) {
-        val glTransactions = nomisApiService.getGLTransactions(event.transactionId)
+        val glTransactions = nomisApiService.getPrisonTransactions(event.transactionId)
         if (glTransactions.isEmpty()) {
           throw NotFoundException("No GL transactions found in nomis for transactionId=$event.transactionId")
         } else {
@@ -267,7 +267,6 @@ private fun GLTransactionEvent.toTransactionEvent() = TransactionEvent(
   transactionId = this.transactionId,
   entrySequence = this.entrySequence,
   caseload = this.caseload,
-  transactionType = this.transactionType,
   offenderIdDisplay = this.offenderIdDisplay,
   bookingId = this.bookingId,
   auditModuleName = this.auditModuleName,

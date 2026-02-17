@@ -7,7 +7,7 @@ class PrisonBalanceSynchronisationService(
   private val nomisApiService: FinanceNomisApiService,
   private val dpsApiService: FinanceApiService,
 ) {
-  suspend fun resynchronisePrisonerBalance(prisonId: String) {
+  suspend fun resynchronisePrisonBalance(prisonId: String) {
     val prisonBalance = nomisApiService.getPrisonBalance(prisonId)
     dpsApiService.migratePrisonBalance(prisonBalance.prisonId, prisonBalance.toMigrationDto())
   }

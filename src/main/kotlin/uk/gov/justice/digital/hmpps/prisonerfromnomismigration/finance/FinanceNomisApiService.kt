@@ -21,7 +21,7 @@ class FinanceNomisApiService(@Qualifier("nomisApiWebClient") webClient: WebClien
     .getTransaction(transactionId)
     .awaitSingle()
 
-  suspend fun getGLTransactions(transactionId: Long): List<GeneralLedgerTransactionDto> = prisonTransactionsApi
+  suspend fun getPrisonTransactions(transactionId: Long): List<GeneralLedgerTransactionDto> = prisonTransactionsApi
     .getGLTransaction(transactionId)
     .awaitSingle()
 

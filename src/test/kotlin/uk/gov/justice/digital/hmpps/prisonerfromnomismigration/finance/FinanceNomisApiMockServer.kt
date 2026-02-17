@@ -26,7 +26,7 @@ import kotlin.math.min
 
 @Component
 class FinanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
-  fun stubGetOffenderTransaction(
+  fun stubGetPrisonerTransaction(
     transactionId: Long = 1001,
     bookingId: Long = 123456,
     response: List<OffenderTransactionDto> = nomisTransactions(bookingId = bookingId, transactionId = transactionId),
@@ -38,7 +38,7 @@ class FinanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetGLTransaction(
+  fun stubGetPrisonTransaction(
     transactionId: Long = 1001,
     response: List<GeneralLedgerTransactionDto> = nomisGLTransactions(transactionId),
   ) {
