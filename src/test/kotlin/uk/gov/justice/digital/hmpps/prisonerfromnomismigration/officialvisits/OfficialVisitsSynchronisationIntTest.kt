@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -37,6 +38,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SearchLevelType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitorRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
@@ -1067,9 +1069,114 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class OfficialVisitVisitorUpdated {
 
     @Nested
-    inner class WhenUpdatedInNomis {
+    inner class WhenUpdatedInDps {
       @BeforeEach
       fun setUp() {
+        officialVisitsOffenderEventsQueue.sendMessage(
+          officialVisitVisitorEvent(
+            eventType = "OFFENDER_OFFICIAL_VISIT_VISITORS-UPDATED",
+            offenderNo = offenderNo,
+            visitId = nomisVisitId,
+            bookingId = bookingId,
+            visitVisitorId = nomisVisitorId,
+            personId = nomisPersonId,
+            auditModuleName = "DPS_SYNCHRONISATION_OFFICIAL_VISITS",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("officialvisits-visitor-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["nomisVisitorId"]).isEqualTo(nomisVisitorId.toString())
+            assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInNomis {
+      val dpsOfficialVisitId = 7371L
+      val dpsOfficialVisitorId = 715315L
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetOfficialVisit(
+          visitId = nomisVisitId,
+          response = officialVisitResponse().copy(
+            visitId = nomisVisitId,
+            visitors = listOf(
+              officialVisitor().copy(
+                id = nomisVisitorId,
+                personId = nomisPersonId,
+                firstName = "JOHN",
+                lastName = "SMITH",
+                dateOfBirth = LocalDate.parse("1965-07-19"),
+                leadVisitor = true,
+                assistedVisit = true,
+                commentText = "Requires access",
+                eventStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+                visitorAttendanceOutcome = CodeDescription(code = "ATT", description = "Attended"),
+                cancellationReason = null,
+                relationships = listOf(
+                  ContactRelationship(
+                    relationshipType = CodeDescription(
+                      code = "POL",
+                      description = "Police",
+                    ),
+                    contactType = CodeDescription(
+                      code = "O",
+                      description = "Official",
+                    ),
+                  ),
+                  ContactRelationship(
+                    relationshipType = CodeDescription(
+                      code = "DR",
+                      description = "Doctor",
+                    ),
+                    contactType = CodeDescription(
+                      code = "O",
+                      description = "Official",
+                    ),
+                  ),
+                ),
+                audit = NomisAudit(
+                  createDatetime = LocalDateTime.parse("2019-01-01T10:10:10"),
+                  createUsername = "S.JOHN",
+                  modifyDatetime = LocalDateTime.parse("2019-02-02T11:10:10"),
+                  modifyUserId = "T.SMITH",
+                ),
+              ),
+            ),
+          ),
+        )
+
+        mappingApiMock.stubGetByVisitorNomisId(
+          nomisVisitorId = nomisVisitorId,
+          mapping = OfficialVisitorMappingDto(
+            dpsId = dpsOfficialVisitorId.toString(),
+            nomisId = nomisVisitorId,
+            mappingType = OfficialVisitorMappingDto.MappingType.MIGRATED,
+          ),
+        )
+        mappingApiMock.stubGetByVisitNomisId(
+          nomisVisitId = nomisVisitId,
+          mapping = OfficialVisitMappingDto(
+            dpsId = dpsOfficialVisitId.toString(),
+            nomisId = nomisVisitId,
+            mappingType = OfficialVisitMappingDto.MappingType.MIGRATED,
+          ),
+        )
+
+        dpsApiMock.stubUpdateVisitor(officialVisitId = dpsOfficialVisitId, officialVisitorId = dpsOfficialVisitorId)
+
         officialVisitsOffenderEventsQueue.sendMessage(
           officialVisitVisitorEvent(
             eventType = "OFFENDER_OFFICIAL_VISIT_VISITORS-UPDATED",
@@ -1083,14 +1190,40 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
+      fun `will retrieve the NOMIS visit details to get the visitor details`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/official-visits/$nomisVisitId")))
+      }
+
+      @Test
+      fun `will create the official visitor in DPS`() {
+        val request: SyncUpdateOfficialVisitorRequest = getRequestBody(putRequestedFor(urlPathEqualTo("/sync/official-visit/$dpsOfficialVisitId/visitor/$dpsOfficialVisitorId")))
+        with(request) {
+          assertThat(offenderVisitVisitorId).isEqualTo(nomisVisitorId)
+          assertThat(personId).isEqualTo(nomisPersonId)
+          assertThat(updateUsername).isEqualTo("T.SMITH")
+          assertThat(updateDateTime).isEqualTo(LocalDateTime.parse("2019-02-02T11:10:10"))
+          assertThat(firstName).isEqualTo("JOHN")
+          assertThat(lastName).isEqualTo("SMITH")
+          assertThat(groupLeaderFlag).isTrue
+          assertThat(assistedVisitFlag).isTrue
+          assertThat(commentText).isEqualTo("Requires access")
+          assertThat(attendanceCode).isEqualTo(AttendanceType.ATTENDED)
+          assertThat(relationshipToPrisoner).isEqualTo("POL")
+          assertThat(relationshipTypeCode).isEqualTo(RelationshipType.OFFICIAL)
+        }
+      }
+
+      @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("officialvisits-visitor-synchronisation-updated-success"),
           check {
             assertThat(it["offenderNo"]).isEqualTo(offenderNo)
             assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
+            assertThat(it["dpsOfficialVisitId"]).isEqualTo(dpsOfficialVisitId.toString())
             assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
             assertThat(it["nomisVisitorId"]).isEqualTo(nomisVisitorId.toString())
+            assertThat(it["dpsOfficialVisitorId"]).isEqualTo(dpsOfficialVisitorId.toString())
             assertThat(it["nomisPersonId"]).isEqualTo(nomisPersonId.toString())
           },
           isNull(),

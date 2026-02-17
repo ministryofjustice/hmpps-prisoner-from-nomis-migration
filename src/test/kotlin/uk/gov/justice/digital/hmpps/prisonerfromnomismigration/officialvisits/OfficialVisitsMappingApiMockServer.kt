@@ -209,6 +209,15 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     }
   }
 
+  fun stubGetByVisitorNomisId(
+    nomisVisitorId: Long = 1234L,
+    mapping: OfficialVisitorMappingDto = OfficialVisitorMappingDto(
+      dpsId = "123456",
+      nomisId = nomisVisitorId,
+      mappingType = OfficialVisitorMappingDto.MappingType.MIGRATED,
+    ),
+  ) = stubGetByVisitorNomisIdOrNull(nomisVisitorId, mapping)
+
   fun stubDeleteByVisitorNomisId(
     nomisVisitorId: Long = 1234L,
   ) {

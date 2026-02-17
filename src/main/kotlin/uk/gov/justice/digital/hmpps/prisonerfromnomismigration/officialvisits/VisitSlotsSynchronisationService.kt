@@ -5,6 +5,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
@@ -38,7 +39,7 @@ class VisitSlotsSynchronisationService(
 
   suspend fun visitTimeslotAdded(event: AgencyVisitTimeEvent) {
     val telemetryName = "officialvisits-timeslot-synchronisation-created"
-    if (event.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_OFFICIAL_VISITS")) {
+    if (event.isFromDPSOfficialVisits()) {
       telemetryClient.trackEvent("$telemetryName-skipped", event.asTelemetry())
     } else {
       val mapping = mappingApiService.getTimeSlotByNomisIdsOrNull(
@@ -79,7 +80,7 @@ class VisitSlotsSynchronisationService(
   }
   suspend fun visitTimeslotUpdated(event: AgencyVisitTimeEvent) {
     val telemetryName = "officialvisits-timeslot-synchronisation-updated"
-    if (event.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_OFFICIAL_VISITS")) {
+    if (event.isFromDPSOfficialVisits()) {
       telemetryClient.trackEvent("$telemetryName-skipped", event.asTelemetry())
     } else {
       val telemetry = event.asTelemetry()
@@ -129,7 +130,7 @@ class VisitSlotsSynchronisationService(
   }
   suspend fun visitSlotAdded(event: AgencyVisitSlotEvent) {
     val telemetryName = "officialvisits-visitslot-synchronisation-created"
-    if (event.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_OFFICIAL_VISITS")) {
+    if (event.isFromDPSOfficialVisits()) {
       telemetryClient.trackEvent("$telemetryName-skipped", event.asTelemetry())
     } else {
       val mapping = mappingApiService.getVisitSlotByNomisIdOrNull(event.agencyVisitSlotId)
@@ -182,7 +183,7 @@ class VisitSlotsSynchronisationService(
   }
   suspend fun visitSlotUpdated(event: AgencyVisitSlotEvent) {
     val telemetryName = "officialvisits-visitslot-synchronisation-updated"
-    if (event.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_OFFICIAL_VISITS")) {
+    if (event.isFromDPSOfficialVisits()) {
       telemetryClient.trackEvent("$telemetryName-skipped", event.asTelemetry())
     } else {
       val telemetry = event.asTelemetry()
@@ -386,3 +387,5 @@ private fun VisitTimeSlotResponse.DayOfWeek.asDpsApiDayOfWeek(): DayType = when 
   VisitTimeSlotResponse.DayOfWeek.SAT -> DayType.SAT
   VisitTimeSlotResponse.DayOfWeek.SUN -> DayType.SUN
 }
+
+private fun EventAudited.isFromDPSOfficialVisits() = this.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_OFFICIAL_VISITS")

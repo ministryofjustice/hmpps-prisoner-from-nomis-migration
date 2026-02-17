@@ -278,6 +278,51 @@ class OfficialVisitsMappingApiServiceTest {
   }
 
   @Nested
+  inner class GetByVisitNomisId {
+    val nomisVisitId = 12345L
+
+    @Test
+    fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetByVisitNomisId(
+        nomisVisitId = nomisVisitId,
+        mapping = OfficialVisitMappingDto(
+          dpsId = "1234",
+          nomisId = nomisVisitId,
+          mappingType = OfficialVisitMappingDto.MappingType.MIGRATED,
+        ),
+      )
+
+      apiService.getByVisitNomisId(
+        nomisVisitId = nomisVisitId,
+      )
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetByVisitNomisId(
+        nomisVisitId = nomisVisitId,
+        mapping = OfficialVisitMappingDto(
+          dpsId = "1234",
+          nomisId = nomisVisitId,
+          mappingType = OfficialVisitMappingDto.MappingType.MIGRATED,
+        ),
+      )
+
+      apiService.getByVisitNomisId(
+        nomisVisitId = nomisVisitId,
+      )
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/mapping/official-visits/visit/nomis-id/$nomisVisitId")),
+      )
+    }
+  }
+
+  @Nested
   inner class DeleteByVisitNomisId {
     val nomisVisitId = 12345L
 
@@ -498,6 +543,51 @@ class OfficialVisitsMappingApiServiceTest {
           nomisVisitorId = nomisVisitorId,
         ),
       ).isNull()
+    }
+  }
+
+  @Nested
+  inner class GetByVisitorNomisId {
+    val nomisVisitorId = 12345L
+
+    @Test
+    fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetByVisitorNomisId(
+        nomisVisitorId = nomisVisitorId,
+        mapping = OfficialVisitorMappingDto(
+          dpsId = "1234",
+          nomisId = nomisVisitorId,
+          mappingType = OfficialVisitorMappingDto.MappingType.MIGRATED,
+        ),
+      )
+
+      apiService.getByVisitorNomisId(
+        nomisVisitorId = nomisVisitorId,
+      )
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetByVisitorNomisId(
+        nomisVisitorId = nomisVisitorId,
+        mapping = OfficialVisitorMappingDto(
+          dpsId = "1234",
+          nomisId = nomisVisitorId,
+          mappingType = OfficialVisitorMappingDto.MappingType.MIGRATED,
+        ),
+      )
+
+      apiService.getByVisitorNomisId(
+        nomisVisitorId = nomisVisitorId,
+      )
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/mapping/official-visits/visitor/nomis-id/$nomisVisitorId")),
+      )
     }
   }
 
