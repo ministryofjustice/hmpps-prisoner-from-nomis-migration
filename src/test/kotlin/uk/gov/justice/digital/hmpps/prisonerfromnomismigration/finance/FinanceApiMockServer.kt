@@ -110,7 +110,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubPostOffenderTransaction(response: SyncTransactionReceipt) {
+  fun stubPostPrisonerTransaction(response: SyncTransactionReceipt) {
     stubFor(
       post("/sync/offender-transactions").willReturn(
         aResponse()
@@ -140,7 +140,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubPostGLTransaction(response: SyncTransactionReceipt) {
+  fun stubPostPrisonTransaction(response: SyncTransactionReceipt) {
     stubFor(
       post("/sync/general-ledger-transactions").willReturn(
         aResponse()

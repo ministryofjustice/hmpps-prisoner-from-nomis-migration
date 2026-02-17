@@ -30,7 +30,7 @@ class FinanceMappingApiMockServer(private val jsonMapper: JsonMapper) {
     mapping: TransactionMappingDto = TransactionMappingDto(
       nomisBookingId = 123456,
       dpsTransactionId = UUID.randomUUID().toString(),
-      nomisTransactionId = 1234567,
+      nomisTransactionId = transactionId,
       offenderNo = "A1234KT",
       mappingType = MIGRATED,
     ),

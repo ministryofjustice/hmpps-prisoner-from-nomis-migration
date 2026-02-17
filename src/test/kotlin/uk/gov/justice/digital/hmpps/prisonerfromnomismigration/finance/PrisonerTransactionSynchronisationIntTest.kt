@@ -136,11 +136,11 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @BeforeEach
         fun setUp() {
-          financeNomisApiMockServer.stubGetOffenderTransaction(
+          financeNomisApiMockServer.stubGetPrisonerTransaction(
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
           )
-          financeApi.stubPostOffenderTransaction(receipt)
+          financeApi.stubPostPrisonerTransaction(receipt)
           financeMappingApiMockServer.stubPostMapping()
 
           financeOffenderEventsQueue.sendMessage(
@@ -232,7 +232,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @BeforeEach
         fun setUp() {
-          financeNomisApiMockServer.stubGetOffenderTransaction(
+          financeNomisApiMockServer.stubGetPrisonerTransaction(
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
           )
@@ -246,7 +246,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
               mappingType = TransactionMappingDto.MappingType.NOMIS_CREATED,
             ),
           )
-          financeApi.stubPostOffenderTransaction(receipt)
+          financeApi.stubPostPrisonerTransaction(receipt)
           financeMappingApiMockServer.stubPostMapping()
 
           financeOffenderEventsQueue.sendMessage(
@@ -333,12 +333,12 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @BeforeEach
         fun setUp() {
-          financeNomisApiMockServer.stubGetOffenderTransaction(
+          financeNomisApiMockServer.stubGetPrisonerTransaction(
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
           )
           financeMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
-          financeApi.stubPostOffenderTransaction(
+          financeApi.stubPostPrisonerTransaction(
             SyncTransactionReceipt(
               synchronizedTransactionId = dpsTransactionUuid,
               requestId = UUID.randomUUID(),
@@ -476,7 +476,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class FinanceApiFail {
         @BeforeEach
         fun setUp() {
-          financeNomisApiMockServer.stubGetOffenderTransaction(
+          financeNomisApiMockServer.stubGetPrisonerTransaction(
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
           )
@@ -580,11 +580,11 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @BeforeEach
         fun setUp() {
-          financeNomisApiMockServer.stubGetOffenderTransaction(
+          financeNomisApiMockServer.stubGetPrisonerTransaction(
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
           )
-          financeApi.stubPostOffenderTransaction(receipt)
+          financeApi.stubPostPrisonerTransaction(receipt)
           financeMappingApiMockServer.stubGetByNomisId(NOMIS_TRANSACTION_ID)
 
           financeOffenderEventsQueue.sendMessage(
@@ -693,7 +693,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
       inner class HappyPathNoMapping {
         @BeforeEach
         fun setUp() {
-          financeNomisApiMockServer.stubGetOffenderTransaction(
+          financeNomisApiMockServer.stubGetPrisonerTransaction(
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
           )
@@ -759,7 +759,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @BeforeEach
         fun setUp() {
-          financeNomisApiMockServer.stubGetOffenderTransaction(
+          financeNomisApiMockServer.stubGetPrisonerTransaction(
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
           )

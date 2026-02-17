@@ -26,9 +26,9 @@ class PrisonBalanceDataRepairResource(
     summary = "Resynchronises account balances for the given prison (Nomis prisonId) from NOMIS to DPS",
     description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW",
   )
-  suspend fun repairPrisonerBalance(@PathVariable prisonId: String) {
+  suspend fun repairPrisonBalance(@PathVariable prisonId: String) {
     try {
-      prisonBalanceSynchronisationService.resynchronisePrisonerBalance(prisonId)
+      prisonBalanceSynchronisationService.resynchronisePrisonBalance(prisonId)
       telemetryClient.trackEvent(
         "prisonbalance-resynchronisation-repair",
         mapOf(

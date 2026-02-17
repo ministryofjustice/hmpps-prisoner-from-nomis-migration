@@ -70,7 +70,7 @@ class TransactionSynchronisationMultiIntTest : SqsIntegrationTestBase() {
 
     @BeforeEach
     fun setUp() {
-      financeNomisApiMockServer.stubGetOffenderTransaction(
+      financeNomisApiMockServer.stubGetPrisonerTransaction(
         bookingId = BOOKING_ID,
         transactionId = NOMIS_TRANSACTION_ID,
         response = nomisTransactions,
@@ -85,7 +85,7 @@ class TransactionSynchronisationMultiIntTest : SqsIntegrationTestBase() {
           mappingType = TransactionMappingDto.MappingType.NOMIS_CREATED,
         ),
       )
-      financeApi.stubPostOffenderTransaction(receipt)
+      financeApi.stubPostPrisonerTransaction(receipt)
       financeMappingApiMockServer.stubPostMapping()
 
       val sendMessageRequest = SendMessageRequest.builder()
