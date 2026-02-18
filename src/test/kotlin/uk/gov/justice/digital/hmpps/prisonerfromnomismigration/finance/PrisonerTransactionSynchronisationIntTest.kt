@@ -25,7 +25,6 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import org.springframework.http.HttpStatus.NOT_FOUND
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
@@ -337,7 +336,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
           )
-          financeMappingApiMockServer.stubGetByNomisId(status = NOT_FOUND)
+          financeMappingApiMockServer.stubGetByNomisId(mapping = null)
           financeApi.stubPostPrisonerTransaction(
             SyncTransactionReceipt(
               synchronizedTransactionId = dpsTransactionUuid,
@@ -697,7 +696,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
             bookingId = BOOKING_ID,
             transactionId = NOMIS_TRANSACTION_ID,
           )
-          financeMappingApiMockServer.stubGetByNomisId(NOT_FOUND)
+          financeMappingApiMockServer.stubGetByNomisId(mapping = null)
 
           financeOffenderEventsQueue.sendMessage(
             offenderTransactionEvent(
