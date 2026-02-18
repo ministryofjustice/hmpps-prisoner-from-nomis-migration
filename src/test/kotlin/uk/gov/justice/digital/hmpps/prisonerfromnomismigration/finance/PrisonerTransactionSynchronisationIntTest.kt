@@ -177,13 +177,13 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("offenderTransactions[0].postingType", t1.postingType.name)
                 .withRequestBodyJsonPath("offenderTransactions[0].type", t1.type)
                 .withRequestBodyJsonPath("offenderTransactions[0].description", t1.description)
-                .withRequestBodyJsonPath("offenderTransactions[0].amount", "5.4")
+                .withRequestBodyJsonPath("offenderTransactions[0].amount", "5.42")
                 .withRequestBodyJsonPath("offenderTransactions[0].offenderBookingId", t1.bookingId.toString())
                 .withRequestBodyJsonPath("offenderTransactions[0].reference", equalTo(t1.reference))
                 .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].entrySequence", g1.generalLedgerEntrySequence.toString())
                 .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].code", g1.accountCode)
                 .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].postingType", g1.postingType.name)
-                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].amount", equalTo("5.4")),
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].amount", "6.71"),
             )
           }
         }
@@ -283,7 +283,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("offenderTransactions[0].postingType", t1.postingType.name)
                 .withRequestBodyJsonPath("offenderTransactions[0].type", t1.type)
                 .withRequestBodyJsonPath("offenderTransactions[0].description", t1.description)
-                .withRequestBodyJsonPath("offenderTransactions[0].amount", "5.4")
+                .withRequestBodyJsonPath("offenderTransactions[0].amount", "5.42")
                 .withRequestBodyJsonPath(
                   "offenderTransactions[0].offenderBookingId",
                   equalTo(t1.bookingId.toString()),
@@ -298,7 +298,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                   "offenderTransactions[0].generalLedgerEntries[0].postingType",
                   equalTo(g1.postingType.name),
                 )
-                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].amount", equalTo("5.4")),
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].amount", equalTo("6.71")),
             )
           }
         }
@@ -636,7 +636,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("offenderTransactions[0].postingType", t1.postingType.name)
                 .withRequestBodyJsonPath("offenderTransactions[0].type", t1.type)
                 .withRequestBodyJsonPath("offenderTransactions[0].description", t1.description)
-                .withRequestBodyJsonPath("offenderTransactions[0].amount", "5.4")
+                .withRequestBodyJsonPath("offenderTransactions[0].amount", "5.42")
                 .withRequestBodyJsonPath("offenderTransactions[0].offenderBookingId", t1.bookingId.toString())
                 .withRequestBodyJsonPath("offenderTransactions[0].reference", equalTo(t1.reference))
                 .withRequestBodyJsonPath(
@@ -651,7 +651,7 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                   "offenderTransactions[0].generalLedgerEntries[0].postingType",
                   equalTo(g1.postingType.name),
                 )
-                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].amount", equalTo("5.4")),
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].amount", equalTo("6.71")),
             )
           }
         }
