@@ -58,7 +58,7 @@ fun OffenderTransactionDto.toDPSSyncTransaction(): OffenderTransaction = Offende
   postingType = OffenderTransaction.PostingType.valueOf(postingType.name),
   type = type,
   description = description,
-  amount = amount.toDouble(),
+  amount = amount,
   offenderBookingId = bookingId,
   reference = reference,
   generalLedgerEntries = this.generalLedgerTransactions.map {
@@ -70,5 +70,5 @@ fun GeneralLedgerTransactionDto.toDPSSyncGLTransaction() = GeneralLedgerEntry(
   entrySequence = generalLedgerEntrySequence,
   code = accountCode,
   postingType = GeneralLedgerEntry.PostingType.valueOf(postingType.name),
-  amount = amount.toDouble(),
+  amount = amount,
 )

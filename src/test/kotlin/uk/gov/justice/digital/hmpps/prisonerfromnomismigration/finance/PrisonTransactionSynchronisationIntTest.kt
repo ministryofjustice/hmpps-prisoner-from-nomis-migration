@@ -175,7 +175,7 @@ class PrisonTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("generalLedgerEntries[0].entrySequence", g1.generalLedgerEntrySequence)
                 .withRequestBodyJsonPath("generalLedgerEntries[0].code", equalTo(g1.accountCode.toString()))
                 .withRequestBodyJsonPath("generalLedgerEntries[0].postingType", equalTo(g1.postingType.name))
-                .withRequestBodyJsonPath("generalLedgerEntries[0].amount", equalTo("5.4")),
+                .withRequestBodyJsonPath("generalLedgerEntries[0].amount", equalTo("6.71")),
             )
           }
         }
@@ -263,7 +263,7 @@ class PrisonTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("generalLedgerEntries[0].entrySequence", g1.generalLedgerEntrySequence)
                 .withRequestBodyJsonPath("generalLedgerEntries[0].code", equalTo(g1.accountCode.toString()))
                 .withRequestBodyJsonPath("generalLedgerEntries[0].postingType", equalTo(g1.postingType.name))
-                .withRequestBodyJsonPath("generalLedgerEntries[0].amount", equalTo("5.4")),
+                .withRequestBodyJsonPath("generalLedgerEntries[0].amount", equalTo("6.71")),
             )
           }
         }
@@ -361,7 +361,7 @@ class PrisonTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("generalLedgerEntries[0].entrySequence", g1.generalLedgerEntrySequence.toString())
                 .withRequestBodyJsonPath("generalLedgerEntries[0].code", equalTo(g1.accountCode.toString()))
                 .withRequestBodyJsonPath("generalLedgerEntries[0].postingType", equalTo(g1.postingType.name))
-                .withRequestBodyJsonPath("generalLedgerEntries[0].amount", equalTo("5.4")),
+                .withRequestBodyJsonPath("generalLedgerEntries[0].amount", equalTo("6.71")),
             )
           }
         }
@@ -506,7 +506,7 @@ class PrisonTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
                 .withRequestBodyJsonPath("generalLedgerEntries[0].entrySequence", g1.generalLedgerEntrySequence.toString())
                 .withRequestBodyJsonPath("generalLedgerEntries[0].code", equalTo(g1.accountCode.toString()))
                 .withRequestBodyJsonPath("generalLedgerEntries[0].postingType", equalTo(g1.postingType.name))
-                .withRequestBodyJsonPath("generalLedgerEntries[0].amount", equalTo("5.4")),
+                .withRequestBodyJsonPath("generalLedgerEntries[0].amount", equalTo("6.71")),
             )
           }
         }
