@@ -43,12 +43,7 @@ class ExternalMovementsDpsApiService(
 
   suspend fun deleteTapMovement(movementId: UUID) = syncApi.deleteTapMovementById(movementId).awaitSingle()
 
-  // This is the original /migrate endpoint that we called during a fresh migration
-  suspend fun migratePrisonerTaps(personIdentifier: String, request: MigrateTapRequest): MigrateTapResponse = resyncApi.prepare(resyncApi.migrateTemporaryAbsences1RequestConfig(personIdentifier, request))
-    .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
-
-  // This is the new /resync endpoint that we'll call going forward instead of the full migration endpoint. This performs a "patch migration" rather than delete and replace.
+  // This is the /resync endpoint that we'll call going forward instead of the full migration endpoint. This performs a "patch migration" rather than delete and replace.
   suspend fun resyncPrisonerTaps(personIdentifier: String, request: MigrateTapRequest): MigrateTapResponse = resyncApi.prepare(resyncApi.migrateTemporaryAbsencesRequestConfig(personIdentifier, request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
