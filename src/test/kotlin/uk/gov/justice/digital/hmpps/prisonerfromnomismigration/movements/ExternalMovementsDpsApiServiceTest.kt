@@ -16,7 +16,6 @@ import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.migratePrisonerTaps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.moveBookingRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapMovement
@@ -291,61 +290,6 @@ class ExternalMovementsDpsApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.deleteTapMovement(movementId)
-      }
-    }
-  }
-
-  @Nested
-  inner class MigratePrisonerTaps {
-    val prisonerNumber = "A1234BC"
-
-    @Test
-    internal fun `should pass oath2 token`() = runTest {
-      dpsExtMovementsServer.stubMigratePrisonerTaps()
-
-      apiService.migratePrisonerTaps(prisonerNumber, migratePrisonerTaps())
-
-      dpsExtMovementsServer.verify(
-        putRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `should call the sync endpoint`() = runTest {
-      dpsExtMovementsServer.stubMigratePrisonerTaps()
-
-      apiService.migratePrisonerTaps(prisonerNumber, migratePrisonerTaps())
-
-      dpsExtMovementsServer.verify(
-        putRequestedFor(urlPathEqualTo("/migrate/temporary-absences/$prisonerNumber"))
-          .withRequestBody(matchingJsonPath("temporaryAbsences[0].prisonCode", equalTo("LEI")))
-          .withRequestBody(matchingJsonPath("temporaryAbsences[0].occurrences[0].location.description", equalTo("Boots")))
-          .withRequestBody(matchingJsonPath("temporaryAbsences[0].occurrences[0].movements[0].direction", equalTo("OUT")))
-          .withRequestBody(matchingJsonPath("unscheduledMovements[0].direction", equalTo("OUT"))),
-      )
-    }
-
-    @Test
-    fun `should parse the response`() = runTest {
-      dpsExtMovementsServer.stubMigratePrisonerTaps()
-
-      apiService.migratePrisonerTaps(prisonerNumber, migratePrisonerTaps())
-        .apply {
-          assertThat(temporaryAbsences.size).isEqualTo(1)
-          assertThat(temporaryAbsences[0].legacyId).isEqualTo(1)
-          assertThat(temporaryAbsences[0].occurrences.size).isEqualTo(1)
-          assertThat(temporaryAbsences[0].occurrences[0].movements.size).isEqualTo(2)
-          assertThat(temporaryAbsences[0].occurrences[0].movements[0].legacyId).isEqualTo("12345_3")
-        }
-    }
-
-    @Test
-    fun `should throw if error`() = runTest {
-      dpsExtMovementsServer.stubMigratePrisonerTapsError()
-
-      assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.migratePrisonerTaps(prisonerNumber, migratePrisonerTaps())
       }
     }
   }
