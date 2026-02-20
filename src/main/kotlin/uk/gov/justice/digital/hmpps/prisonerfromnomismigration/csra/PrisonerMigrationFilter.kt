@@ -7,8 +7,8 @@ import io.swagger.v3.oas.annotations.media.Schema
 @Schema(description = "Filter specifying who should be migrated from NOMIS to DPS")
 data class PrisonerMigrationFilter(
   @Schema(
-    description = "Only include prisoners for this prison id",
-    example = "MDI",
+    description = "Only migrate these specific prisoners",
+    example = "A1234AA,B1234BB",
   )
-  val prisonId: String? = null,
+  val offenderNos: List<String>? = null,
 )

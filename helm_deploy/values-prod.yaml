@@ -13,7 +13,8 @@ generic-service:
     API_BASE_URL_NOMIS: https://nomis-prisoner-api.prison.service.justice.gov.uk
     API_BASE_URL_NOMIS-SYNC: https://prisoner-to-nomis-update.hmpps.service.justice.gov.uk
     API_BASE_URL_CORE_PERSON: https://hmpps-person-record.hmpps.service.justice.gov.uk
-    API_BASE_URL_CSRA: https://cell-sharing-risk-assessment-api.hmpps.service.justice.gov.uk
+#    API_BASE_URL_CSRA: https://cell-sharing-risk-assessment-api.hmpps.service.justice.gov.uk
+    API_BASE_URL_CSRA: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
     API_BASE_URL_VISITS: https://visit-scheduler.prison.service.justice.gov.uk
     API_BASE_URL_VISIT_BALANCE: https://hmpps-visit-allocation-api.prison.service.justice.gov.uk
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk

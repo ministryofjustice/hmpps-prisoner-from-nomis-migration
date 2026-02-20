@@ -119,6 +119,13 @@ val models = listOf(
     url = "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk/v3/api-docs",
   ),
   ModelConfiguration(
+    name = "csra",
+    packageName = "csra",
+    testPackageName = "csra",
+    url = "https://cell-sharing-risk-assessment-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+    isLive = false,
+  ),
+  ModelConfiguration(
     name = "court-sentencing",
     packageName = "courtsentencing",
     testPackageName = "courtsentencing",

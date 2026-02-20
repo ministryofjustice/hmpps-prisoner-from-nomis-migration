@@ -5,6 +5,7 @@ import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PagedModelMigrationDetails
@@ -22,7 +23,7 @@ abstract class MigrationMapping<MAPPING : Any>(
         .build(migrationId)
     }
     .retrieve()
-    .bodyToMono(MigrationDetails::class.java)
+    .bodyToMono<MigrationDetails>()
     .onErrorResume(WebClientResponseException.NotFound::class.java) {
       Mono.empty()
     }
@@ -35,7 +36,7 @@ abstract class MigrationMapping<MAPPING : Any>(
         .build(migrationId)
     }
     .retrieve()
-    .bodyToMono(PagedModelMigrationDetails::class.java)
+    .bodyToMono<PagedModelMigrationDetails>()
     .onErrorResume(WebClientResponseException.NotFound::class.java) {
       Mono.empty()
     }
@@ -50,7 +51,7 @@ abstract class MigrationMapping<MAPPING : Any>(
       mapping,
     )
     .retrieve()
-    .bodyToMono(Unit::class.java)
+    .bodyToMono<Unit>()
     .map { CreateMappingResult<MAPPING>() }
     .onErrorResume(WebClientResponseException.Conflict::class.java) {
       Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
