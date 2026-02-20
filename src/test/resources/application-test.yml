@@ -17,7 +17,6 @@ api.base.url:
   alerts: http://localhost:8092
   locations: http://localhost:8093
   court.sentencing: http://localhost:8094
-  prison.person: http://localhost:8095
   casenotes: http://localhost:8096
   finance: http://localhost:8102
   personal.relationships: http://localhost:8097
@@ -184,6 +183,7 @@ hmpps.sqs:
       errorVisibilityTimeout: 0
     migrationcsra:
       errorVisibilityTimeout: 0
+      dlqMaxReceiveCount: 2
     migrationprisonbalance:
       errorVisibilityTimeout: 0
     migrationprisonerbalance:

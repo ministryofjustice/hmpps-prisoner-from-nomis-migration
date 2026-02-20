@@ -47,6 +47,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CASENOTES
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CORE_PERSON_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.COURT_SENTENCING_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.COURT_SENTENCING_SYNC_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSRA_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSRA_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.EXTERNALMOVEMENTS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.FINANCE_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCIDENTS_QUEUE_ID
@@ -118,6 +120,7 @@ class SqsIntegrationTestBase : TestBase() {
   internal val allocationsMigrationQueue by lazy { hmppsQueueService.findByQueueId(ALLOCATIONS_QUEUE_ID) as HmppsQueue }
   internal val incidentsMigrationQueue by lazy { hmppsQueueService.findByQueueId(INCIDENTS_QUEUE_ID) as HmppsQueue }
   internal val prisonerBalanceMigrationQueue by lazy { hmppsQueueService.findByQueueId(PRISONER_BALANCE_QUEUE_ID) as HmppsQueue }
+  internal val csraMigrationQueue by lazy { hmppsQueueService.findByQueueId(CSRA_QUEUE_ID) as HmppsQueue }
 
   internal val awsSqsVisitsMigrationDlqClient by lazy { visitsMigrationQueue.sqsDlqClient }
 
@@ -201,6 +204,7 @@ class SqsIntegrationTestBase : TestBase() {
   internal val externalMovementsQueueOffenderEventsDlqUrl by lazy { externalMovementsOffenderEventsQueue.dlqUrl as String }
 
   internal val officialVisitsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(OFFICIAL_VISITS_SYNC_QUEUE_ID) as HmppsQueue }
+  internal val csraOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(CSRA_SYNC_QUEUE_ID) as HmppsQueue }
 
   internal val corePersonOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(CORE_PERSON_SYNC_QUEUE_ID) as HmppsQueue }
   internal val awsSqsCorePersonOffenderEventsClient by lazy { corePersonOffenderEventsQueue.sqsClient }
@@ -219,6 +223,7 @@ class SqsIntegrationTestBase : TestBase() {
       incidentsMigrationQueue,
       prisonerBalanceMigrationQueue,
       visitsMigrationQueue,
+      csraMigrationQueue,
       alertsOffenderEventsQueue,
       caseNotesOffenderEventsQueue,
       financeOffenderEventsQueue,
