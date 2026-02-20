@@ -16,7 +16,7 @@ import java.time.Duration
 class CourtSentencingConfiguration(
   @Value("\${api.base.url.court.sentencing}") val apiBaseUri: String,
   @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
-  @Value("\${api.timeout:60s}") val timeout: Duration,
+  @Value("\${api.court-sentencing-timeout:10s}") val timeout: Duration,
   @Value("\${api.time-critical.timeout:3s}") val timeCriticalTimeout: Duration,
 ) {
 
