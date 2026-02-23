@@ -15,15 +15,19 @@ import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.FindScheduledMovementsForAddressResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
@@ -62,19 +66,35 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/temporary-absence/migrate", WireMock::put)
   }
 
-  fun stubGetTemporaryAbsenceMappings(prisonerNumber: String = "A1234BC") {
+  fun stubGetTemporaryAbsenceMappingIds(
+    prisonerNumber: String = "A1234BC",
+    bookingId: Long = 12345,
+    nomisApplicationId: Long = 1,
+    dpsAuthorisationId: UUID = UUID.randomUUID(),
+    nomisScheduleOutEventId: Long = 2,
+    dpsOccurrenceId: UUID = UUID.randomUUID(),
+    nomisMovementOutSeq: Int = 3,
+    dpsMovementOutId: UUID = UUID.randomUUID(),
+    nomisMovementInSeq: Int = 4,
+    dpsMovementInId: UUID = UUID.randomUUID(),
+    nomisUnscheduledMovementOutSeq: Int = 5,
+    dpsUnscheduledMovementOutId: UUID = UUID.randomUUID(),
+    nomisUnscheduledMovementInSeq: Int = 6,
+    dpsUnscheduledMovementInId: UUID = UUID.randomUUID(),
+    idMappings: TemporaryAbsencesPrisonerMappingIdsDto = temporaryAbsencePrisonerIdMappings(bookingId, nomisApplicationId, dpsAuthorisationId, nomisScheduleOutEventId, dpsOccurrenceId, nomisMovementOutSeq, dpsMovementOutId, nomisMovementInSeq, dpsMovementInId, nomisUnscheduledMovementOutSeq, dpsUnscheduledMovementOutId, nomisUnscheduledMovementInSeq, dpsUnscheduledMovementInId),
+  ) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/temporary-absence/nomis-prisoner-number/$prisonerNumber")).willReturn(
+      get(urlPathMatching("/mapping/temporary-absence/$prisonerNumber/ids")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody(jsonMapper.writeValueAsString(temporaryAbsencePrisonerMappings(prisonerNumber))),
+          .withBody(jsonMapper.writeValueAsString(idMappings)),
       ),
     )
   }
 
-  fun stubGetTemporaryAbsenceMappings(prisonerNumber: String = "A1234BC", status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubGetTemporaryAbsenceMappingIds(prisonerNumber: String = "A1234BC", status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/temporary-absence/nomis-prisoner-number/$prisonerNumber")).willReturn(
+      get(urlPathMatching("/mapping/temporary-absence/$prisonerNumber/ids")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -595,4 +615,30 @@ fun temporaryAbsenceExternalMovementMapping(
   dpsAddressText = city ?: "full address",
   dpsDescription = if (city == null) "some description" else null,
   dpsPostcode = if (city == null) "S1 1AB" else null,
+)
+
+fun temporaryAbsencePrisonerIdMappings(
+  bookingId: Long = 12345,
+  nomisApplicationId: Long = 1,
+  dpsAuthorisationId: UUID = UUID.randomUUID(),
+  nomisScheduleOutEventId: Long = 2,
+  dpsOccurrenceId: UUID = UUID.randomUUID(),
+  nomisMovementOutSeq: Int = 3,
+  dpsMovementOutId: UUID = UUID.randomUUID(),
+  nomisMovementInSeq: Int = 4,
+  dpsMovementInId: UUID = UUID.randomUUID(),
+  nomisUnscheduledMovementOutSeq: Int = 5,
+  dpsUnscheduledMovementOutId: UUID = UUID.randomUUID(),
+  nomisUnscheduledMovementInSeq: Int = 6,
+  dpsUnscheduledMovementInId: UUID = UUID.randomUUID(),
+) = TemporaryAbsencesPrisonerMappingIdsDto(
+  prisonerNumber = "A1234BC",
+  applications = listOf(TemporaryAbsenceApplicationMappingIdsDto(nomisApplicationId, dpsAuthorisationId)),
+  schedules = listOf(ScheduledMovementMappingIdsDto(nomisScheduleOutEventId, dpsOccurrenceId)),
+  movements = listOf(
+    ExternalMovementMappingIdsDto(bookingId, nomisMovementOutSeq, dpsMovementOutId),
+    ExternalMovementMappingIdsDto(bookingId, nomisMovementInSeq, dpsMovementInId),
+    ExternalMovementMappingIdsDto(bookingId, nomisUnscheduledMovementOutSeq, dpsUnscheduledMovementOutId),
+    ExternalMovementMappingIdsDto(bookingId, nomisUnscheduledMovementInSeq, dpsUnscheduledMovementInId),
+  ),
 )

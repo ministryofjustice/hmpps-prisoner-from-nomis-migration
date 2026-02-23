@@ -30,6 +30,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -103,7 +104,7 @@ class ExternalMovementsMigrationIntTest(
     (1..entities)
       .map { index -> "A%04dKT".format(index) }
       .forEach { prisonerNumber ->
-        mappingApi.stubGetTemporaryAbsenceMappings(prisonerNumber, NOT_FOUND)
+        mappingApi.stubGetTemporaryAbsenceMappingIds(prisonerNumber, 12345L, 1, dpsAuthorisationId, 1, dpsOccurrenceId, 3, dpsScheduledMovementOutId, 4, dpsScheduledMovementInId, 1, dpsUnscheduledMovementOutId, 2, dpsUnscheduledMovementInId)
         externalMovementsNomisApi.stubGetTemporaryAbsences(prisonerNumber)
         dpsApi.stubResyncPrisonerTaps(
           personIdentifier = prisonerNumber,
@@ -182,6 +183,7 @@ class ExternalMovementsMigrationIntTest(
           assertThat(location.address).isEqualTo("some full address")
           assertThat(location.description).isEqualTo("some address description")
           assertThat(location.postcode).isEqualTo("S1 1AA")
+          assertThat(id).isEqualTo(dpsAuthorisationId)
         }
       }
     }
@@ -211,6 +213,7 @@ class ExternalMovementsMigrationIntTest(
           assertThat(updated).isNull()
           assertThat(legacyId).isEqualTo(1)
           assertThat(movements.size).isEqualTo(2)
+          assertThat(id).isEqualTo(dpsOccurrenceId)
         }
       }
     }
@@ -235,6 +238,7 @@ class ExternalMovementsMigrationIntTest(
           assertThat(accompaniedByComments).isEqualTo("Absence escort text")
           assertThat(comments).isEqualTo("Absence comment text")
           assertThat(updated).isNull()
+          assertThat(id).isEqualTo(dpsScheduledMovementOutId)
         }
       }
     }
@@ -259,6 +263,7 @@ class ExternalMovementsMigrationIntTest(
           assertThat(accompaniedByComments).isEqualTo("Return escort text")
           assertThat(comments).isEqualTo("Return comment text")
           assertThat(updated).isNull()
+          assertThat(id).isEqualTo(dpsScheduledMovementInId)
         }
       }
     }
@@ -283,6 +288,7 @@ class ExternalMovementsMigrationIntTest(
           assertThat(accompaniedByComments).isEqualTo("Absence escort text")
           assertThat(comments).isEqualTo("Absence comment text")
           assertThat(updated).isNull()
+          assertThat(id).isEqualTo(dpsUnscheduledMovementOutId)
         }
       }
     }
@@ -307,6 +313,7 @@ class ExternalMovementsMigrationIntTest(
           assertThat(accompaniedByComments).isEqualTo("Return escort text")
           assertThat(comments).isEqualTo("Return comment text")
           assertThat(updated).isNull()
+          assertThat(id).isEqualTo(dpsUnscheduledMovementInId)
         }
       }
     }
@@ -404,7 +411,7 @@ class ExternalMovementsMigrationIntTest(
     fun setUp() = runTest {
       nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = prisonerNumber)
       mappingApi.stubCreateTemporaryAbsenceMapping()
-      mappingApi.stubGetTemporaryAbsenceMappings(prisonerNumber, NOT_FOUND)
+      mappingApi.stubGetTemporaryAbsenceMappingIds(prisonerNumber, idMappings = TemporaryAbsencesPrisonerMappingIdsDto(prisonerNumber, listOf(), listOf(), listOf()))
       // The prison on the application and schedules is LEI
       externalMovementsNomisApi.stubGetTemporaryAbsences(prisonerNumber, response = externalMovementsNomisApi.temporaryAbsencesResponse(movementPrison = movementPrison))
       dpsApi.stubResyncPrisonerTaps(
@@ -503,7 +510,7 @@ class ExternalMovementsMigrationIntTest(
     @BeforeEach
     fun setUp() = runTest {
       nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
-      mappingApi.stubGetTemporaryAbsenceMappings("A0001KT", NOT_FOUND)
+      mappingApi.stubGetTemporaryAbsenceMappingIds("A0001KT", idMappings = TemporaryAbsencesPrisonerMappingIdsDto("A0001KT", listOf(), listOf(), listOf()))
       externalMovementsNomisApi.stubGetTemporaryAbsences("A0001KT", response = OffenderTemporaryAbsencesResponse(bookings = listOf()))
 
       migrationId = performMigration()
