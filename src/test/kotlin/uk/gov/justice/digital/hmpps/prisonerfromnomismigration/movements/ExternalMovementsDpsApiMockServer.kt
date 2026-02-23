@@ -79,6 +79,8 @@ class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       repeat = false,
       start = today.toLocalDate(),
       end = tomorrow.toLocalDate(),
+      startTime = "$today",
+      endTime = "$tomorrow",
       comments = "Authorisation comment",
       created = SyncAtAndBy(today, "AAA11A"),
       updated = SyncAtAndBy(today, "AAA11A"),
