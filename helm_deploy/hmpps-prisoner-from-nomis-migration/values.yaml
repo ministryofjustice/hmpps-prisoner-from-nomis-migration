@@ -29,6 +29,9 @@ generic-service:
     SPRING_PROFILES_ACTIVE: "logstash"
     APPLICATIONINSIGHTS_CONFIGURATION_FILE: applicationinsights.json
     FEATURE_ADJUDICATIONS_REPORT_MODE: false
+    FEATURE_EVENT_COREPERSON_OFFENDER_BELIEFS-INSERTED: false
+    FEATURE_EVENT_COREPERSON_OFFENDER_BELIEFS-UPDATED: false
+    FEATURE_EVENT_COREPERSON_OFFENDER_BELIEFS-DELETED: false
 
   # Pre-existing kubernetes secrets to load as environment variables in the deployment.
   # namespace_secrets:
