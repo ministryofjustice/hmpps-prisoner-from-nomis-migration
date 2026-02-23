@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingIdsDto
 
 @Service
 class ExternalMovementsMappingApiService(@Qualifier("extMovementsMappingApiWebClient") webClient: WebClient) : MigrationMapping<TemporaryAbsencesPrisonerMappingDto>(domainUrl = "/mapping/temporary-absence", webClient) {
@@ -87,4 +88,6 @@ class ExternalMovementsMappingApiService(@Qualifier("extMovementsMappingApiWebCl
 
   suspend fun moveBookingMappings(bookingId: Long, fromOffenderNo: String, toOffenderNo: String): Unit = mappingApi.moveBookingMappings(bookingId, fromOffenderNo, toOffenderNo)
     .awaitSingle()
+
+  suspend fun getPrisonerMappingIds(prisoner: String): TemporaryAbsencesPrisonerMappingIdsDto = mappingApi.getMappings1(prisoner).awaitSingle()
 }

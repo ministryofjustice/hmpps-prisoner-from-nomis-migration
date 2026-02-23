@@ -698,4 +698,43 @@ class ExternalMovementsMappingApiServiceTest {
       }
     }
   }
+
+  @Nested
+  inner class GetPrisonerMappingIds {
+    val response = TemporaryAbsenceMoveBookingMappingDto(
+      applicationIds = listOf(TemporaryAbsenceApplicationIdMapping(777L, UUID.randomUUID())),
+      movementIds = listOf(TemporaryAbsenceMovementIdMapping(77, UUID.randomUUID())),
+    )
+
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubGetTemporaryAbsenceMappingIds()
+
+      apiService.getPrisonerMappingIds("A1234BC")
+
+      mappingApi.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should return mappings`() = runTest {
+      mappingApi.stubGetTemporaryAbsenceMappingIds()
+
+      with(apiService.getPrisonerMappingIds("A1234BC")) {
+        assertThat(applications[0].nomisMovementApplicationId).isEqualTo(1)
+        assertThat(schedules[0].nomisEventId).isEqualTo(2)
+        assertThat(movements[0].nomisMovementSeq).isEqualTo(3)
+      }
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubGetTemporaryAbsenceMappingIds("A1234BC", status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.getPrisonerMappingIds("A1234BC")
+      }
+    }
+  }
 }
