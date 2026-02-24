@@ -27,6 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationR
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.migrateResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.application
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.temporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
@@ -441,6 +442,43 @@ class ExternalMovementsMigrationIntTest(
       ).apply {
         with(temporaryAbsences[0].occurrences[0].movements[1]) {
           assertThat(prisonCode).isEqualTo(movementPrison)
+        }
+      }
+    }
+  }
+
+  @Nested
+  inner class HappyPathInactiveBookingFutureApplication {
+    val prisonerNumber = "A0001KT"
+
+    @BeforeEach
+    fun setUp() = runTest {
+      nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = prisonerNumber)
+      mappingApi.stubCreateTemporaryAbsenceMapping()
+      mappingApi.stubGetTemporaryAbsenceMappingIds(prisonerNumber, idMappings = TemporaryAbsencesPrisonerMappingIdsDto(prisonerNumber, listOf(), listOf(), listOf()))
+      // The application is approved, on an inactive booking, and is not active
+      externalMovementsNomisApi.stubGetTemporaryAbsences(
+        prisonerNumber,
+        response = temporaryAbsencesResponse(
+          activeBooking = false,
+          applications = listOf(application(status = "APP-SCH", toDate = LocalDate.now())),
+        ),
+      )
+      dpsApi.stubResyncPrisonerTaps(
+        personIdentifier = prisonerNumber,
+        response = migrateResponse(dpsAuthorisationId, dpsOccurrenceId, dpsScheduledMovementOutId, dpsScheduledMovementInId, dpsUnscheduledMovementOutId, dpsUnscheduledMovementInId),
+      )
+
+      migrationId = performMigration()
+    }
+
+    @Test
+    fun `will set application status to expired`() {
+      ExternalMovementsDpsApiMockServer.getRequestBody<MigrateTapRequest>(
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/$prisonerNumber")),
+      ).apply {
+        with(temporaryAbsences[0]) {
+          assertThat(statusCode).isEqualTo("EXPIRED")
         }
       }
     }

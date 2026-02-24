@@ -255,7 +255,7 @@ fun OffenderTemporaryAbsencesResponse.toDpsRequest(oldMappingIds: TemporaryAbsen
     booking.temporaryAbsenceApplications.map { application ->
       MigrateTapAuthorisation(
         prisonCode = application.prisonId,
-        statusCode = application.applicationStatus.toDpsAuthorisationStatusCode(),
+        statusCode = toDpsAuthorisationStatusCode(application.applicationStatus, application.toDate, booking.activeBooking),
         absenceTypeCode = application.temporaryAbsenceType,
         absenceSubTypeCode = application.temporaryAbsenceSubType,
         absenceReasonCode = application.eventSubType,
