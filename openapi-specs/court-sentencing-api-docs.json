@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-02-20.1338.c94cee6"
+    "version" : "2026-02-23.1349.6553f03"
   },
   "servers" : [ {
     "url" : "https://remand-and-sentencing-api.hmpps.service.justice.gov.uk",
@@ -328,6 +328,33 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/person/{prisonerId}/fix-many-charges-to-sentence" : {
+      "put" : {
+        "tags" : [ "person-controller" ],
+        "summary" : "Ensure many-charges-to-sentence fix is applied for a prisoner",
+        "description" : "Applies the many-charges-to-sentence fix and emits domain events if changes occur.",
+        "operationId" : "fixManyChargesToSentence",
+        "parameters" : [ {
+          "name" : "prisonerId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Fix applied"
+          },
+          "401" : {
+            "description" : "Unauthorised"
+          },
+          "403" : {
+            "description" : "Forbidden"
           }
         }
       }
@@ -5811,7 +5838,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:49.364011525"
+            "example" : "06:23:48.707873217"
           },
           "outcomeDispositionCode" : {
             "type" : "string"
@@ -6153,7 +6180,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:49.364011525"
+            "example" : "06:23:48.707873217"
           },
           "courtCode" : {
             "type" : "string"
@@ -8549,7 +8576,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:49.364011525"
+            "example" : "06:23:48.707873217"
           },
           "courtCode" : {
             "type" : "string"
@@ -9180,7 +9207,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:49.364011525"
+            "example" : "06:23:48.707873217"
           },
           "nomisOutcomeCode" : {
             "type" : "string"
@@ -9244,7 +9271,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:49.364011525"
+            "example" : "06:23:48.707873217"
           },
           "courtId" : {
             "type" : "string"
@@ -9384,7 +9411,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:49.364011525"
+            "example" : "06:23:48.707873217"
           },
           "charges" : {
             "type" : "array",
@@ -9411,7 +9438,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:49.364011525"
+            "example" : "06:23:48.707873217"
           },
           "courtId" : {
             "type" : "string"
@@ -9718,15 +9745,15 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "unpaged" : {
-            "type" : "boolean"
-          },
           "paged" : {
             "type" : "boolean"
           },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "unpaged" : {
+            "type" : "boolean"
           }
         }
       },
@@ -9966,7 +9993,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "06:23:49.364011525"
+            "example" : "06:23:48.707873217"
           },
           "courtCode" : {
             "type" : "string"
