@@ -29,6 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncOfficialVisit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncOfficialVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncTimeSlot
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateOfficialVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateVisitSlotRequest
@@ -206,6 +207,20 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createDateTime = LocalDateTime.parse("2020-01-01T08:00"),
       createUsername = "T.SMITH",
     )
+    fun syncUpdateOfficialVisitRequest() = SyncUpdateOfficialVisitRequest(
+      offenderVisitId = 1,
+      prisonVisitSlotId = 10,
+      prisonCode = "MDI",
+      offenderBookId = 100,
+      prisonerNumber = "A1234KT",
+      visitDate = LocalDate.parse("2020-01-01"),
+      startTime = "10:00",
+      endTime = "11:00",
+      dpsLocationId = UUID.randomUUID(),
+      visitStatusCode = VisitStatusType.SCHEDULED,
+      updateDateTime = LocalDateTime.parse("2020-01-01T08:00"),
+      updateUsername = "T.SMITH",
+    )
 
     fun syncOfficialVisit() = SyncOfficialVisit(
       officialVisitId = 1,
@@ -354,6 +369,17 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(201)
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+  fun stubUpdateVisit(officialVisitId: Long, response: SyncOfficialVisit = syncOfficialVisit()) {
+    stubFor(
+      put("/sync/official-visit/$officialVisitId")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(200)
             .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )

@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.Of
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsSynchronisationMessageType.RETRY_SYNCHRONISATION_OFFICIAL_VISIT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitorRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateOfficialVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -76,7 +77,25 @@ class OfficialVisitsSynchronisationService(
       }
     }
   }
-  fun visitUpdated(event: VisitEvent) = track("officialvisits-visit-synchronisation-updated", event.asTelemetry()) {}
+  suspend fun visitUpdated(event: VisitEvent) {
+    val telemetryName = "officialvisits-visit-synchronisation-updated"
+    val telemetry = event.asTelemetry()
+
+    if (event.isFromDPSOfficialVisits()) {
+      telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
+    } else {
+      track(telemetryName, telemetry) {
+        mappingApiService.getByVisitNomisId(
+          nomisVisitId = event.visitId,
+        ).also { mapping ->
+          telemetry["dpsOfficialVisitId"] = mapping.dpsId
+          nomisApiService.getOfficialVisit(event.visitId).also { nomisVisit ->
+            dpsApiService.updateVisit(mapping.dpsId.toLong(), nomisVisit.toSyncUpdateOfficialVisitRequest())
+          }
+        }
+      }
+    }
+  }
 
   suspend fun visitDeleted(event: VisitEvent) {
     val telemetryName = "officialvisits-visit-synchronisation-deleted"
@@ -345,6 +364,26 @@ class OfficialVisitsSynchronisationService(
     createDateTime = audit.createDatetime,
     createUsername = audit.createUsername,
     visitTypeCode = VisitType.UNKNOWN,
+    commentText = commentText,
+    searchTypeCode = prisonerSearchType?.toDpsSearchLevelType(),
+    visitCompletionCode = cancellationReason.toDpsVisitCompletionType(visitStatus),
+    visitorConcernText = visitorConcernText,
+    overrideBanStaffUsername = overrideBanStaffUsername,
+    visitOrderNumber = visitOrder?.number,
+  )
+  private suspend fun OfficialVisitResponse.toSyncUpdateOfficialVisitRequest(): SyncUpdateOfficialVisitRequest = SyncUpdateOfficialVisitRequest(
+    offenderVisitId = visitId,
+    prisonVisitSlotId = visitSlotsMappingApiService.getVisitSlotByNomisId(visitSlotId).dpsId.toLong(),
+    prisonCode = prisonId,
+    offenderBookId = bookingId,
+    prisonerNumber = offenderNo,
+    visitDate = startDateTime.toLocalDate(),
+    startTime = startDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
+    endTime = endDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
+    dpsLocationId = visitSlotsMappingApiService.getInternalLocationByNomisId(internalLocationId).dpsLocationId.asUUID(),
+    visitStatusCode = visitStatus.toDpsVisitStatusType(),
+    updateDateTime = audit.modifyDatetime!!,
+    updateUsername = audit.modifyUserId!!,
     commentText = commentText,
     searchTypeCode = prisonerSearchType?.toDpsSearchLevelType(),
     visitCompletionCode = cancellationReason.toDpsVisitCompletionType(visitStatus),
