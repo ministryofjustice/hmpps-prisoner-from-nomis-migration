@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncOfficialVisit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncOfficialVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncTimeSlot
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateOfficialVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateVisitSlotRequest
@@ -42,6 +43,7 @@ class OfficialVisitsDpsApiService(
   }
   suspend fun migrateVisit(request: MigrateVisitRequest): MigrateVisitResponse = migrationApi.migrateVisit(request).awaitSingle()
   suspend fun createVisit(request: SyncCreateOfficialVisitRequest): SyncOfficialVisit = syncApi.syncCreateOfficialVisit(request).awaitSingle()
+  suspend fun updateVisit(officialVisitId: Long, request: SyncUpdateOfficialVisitRequest): SyncOfficialVisit = syncApi.syncUpdateOfficialVisit(officialVisitId, request).awaitSingle()
   suspend fun deleteVisit(officialVisitId: Long) {
     syncApi.syncDeleteOfficialVisit(officialVisitId).awaitSingle()
   }

@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.Of
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncCreateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncCreateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncCreateVisitSlotRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncUpdateOfficialVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncUpdateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncUpdateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncUpdateVisitSlotRequest
@@ -259,6 +260,32 @@ class OfficialVisitsDpsApiServiceTest {
 
       dpsOfficialVisitsServer.verify(
         postRequestedFor(urlPathEqualTo("/sync/official-visit")),
+      )
+    }
+  }
+
+  @Nested
+  inner class UpdateVisit {
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubUpdateVisit(123)
+
+      apiService.updateVisit(123, syncUpdateOfficialVisitRequest())
+
+      dpsOfficialVisitsServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the update endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubUpdateVisit(123)
+
+      apiService.updateVisit(123, syncUpdateOfficialVisitRequest())
+
+      dpsOfficialVisitsServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/official-visit/123")),
       )
     }
   }

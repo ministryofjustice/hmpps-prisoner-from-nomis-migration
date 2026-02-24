@@ -38,6 +38,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SearchLevelType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitorRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateOfficialVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitStatusType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
@@ -472,11 +473,100 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
   @Nested
   @DisplayName("OFFENDER_OFFICIAL_VISIT-UPDATED")
   inner class OfficialVisitUpdated {
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        officialVisitsOffenderEventsQueue.sendMessage(
+          officialVisitEvent(
+            eventType = "OFFENDER_OFFICIAL_VISIT-UPDATED",
+            offenderNo = offenderNo,
+            visitId = nomisVisitId,
+            agencyLocationId = prisonId,
+            bookingId = bookingId,
+            auditModuleName = "DPS_SYNCHRONISATION_OFFICIAL_VISITS",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("officialvisits-visit-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["prisonId"]).isEqualTo(prisonId)
+          },
+          isNull(),
+        )
+      }
+    }
 
     @Nested
     inner class WhenUpdatedInNomis {
+      val dpsOfficialVisitId = 8549934L
+      val nomisVisitSlotId = 8484L
+      val dpsLocationId: UUID = UUID.randomUUID()
+      val nomisLocationId = 765L
+      val dpsVisitSlotId = 123L
+
       @BeforeEach
       fun setUp() {
+        mappingApiMock.stubGetByVisitNomisIdOrNull(nomisVisitId, OfficialVisitMappingDto(dpsId = dpsOfficialVisitId.toString(), nomisId = nomisVisitId, mappingType = OfficialVisitMappingDto.MappingType.NOMIS_CREATED))
+        nomisApiMock.stubGetOfficialVisit(
+          visitId = nomisVisitId,
+          response = officialVisitResponse().copy(
+            internalLocationId = nomisLocationId,
+            visitId = nomisVisitId,
+            visitSlotId = nomisVisitSlotId,
+            startDateTime = LocalDateTime.parse("2020-01-01T10:00"),
+            endDateTime = LocalDateTime.parse("2020-01-01T11:10"),
+            offenderNo = "A1234KT",
+            bookingId = 1234,
+            currentTerm = true,
+            prisonId = "MDI",
+            commentText = "First visit",
+            visitorConcernText = "Big concerns",
+            overrideBanStaffUsername = "T.SMITH",
+            visitOrder = VisitOrder(654321),
+            prisonerSearchType = CodeDescription(code = "PAT", description = "Pat Down Search"),
+            visitStatus = CodeDescription(code = "SCH", description = "Scheduled"),
+            visitOutcome = null,
+            prisonerAttendanceOutcome = CodeDescription(code = "ATT", description = "Attended"),
+            cancellationReason = null,
+            audit = NomisAudit(
+              createDatetime = LocalDateTime.parse("2020-01-01T10:10:10"),
+              createUsername = "J.JOHN",
+              modifyDatetime = LocalDateTime.parse("2020-02-01T10:10:10"),
+              modifyUserId = "T.SMITH",
+            ),
+            visitors = listOf(
+              officialVisitor(),
+            ),
+          ),
+        )
+        mappingApiMock.stubGetInternalLocationByNomisId(
+          nomisLocationId = nomisLocationId,
+          mapping = LocationMappingDto(
+            dpsLocationId = dpsLocationId.toString(),
+            nomisLocationId = nomisLocationId,
+            mappingType = LocationMappingDto.MappingType.LOCATION_CREATED,
+          ),
+        )
+
+        visitSlotsMappingApiMock.stubGetVisitSlotByNomisIdOrNull(
+          nomisId = nomisVisitSlotId,
+          mapping = VisitSlotMappingDto(
+            dpsId = dpsVisitSlotId.toString(),
+            nomisId = nomisVisitSlotId,
+            mappingType = VisitSlotMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+
+        dpsApiMock.stubUpdateVisit(dpsOfficialVisitId)
+
         officialVisitsOffenderEventsQueue.sendMessage(
           officialVisitEvent(
             eventType = "OFFENDER_OFFICIAL_VISIT-UPDATED",
@@ -489,6 +579,31 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
+      fun `will update the official visit in DPS`() {
+        val request: SyncUpdateOfficialVisitRequest = getRequestBody(putRequestedFor(urlPathEqualTo("/sync/official-visit/$dpsOfficialVisitId")))
+        with(request) {
+          assertThat(offenderVisitId).isEqualTo(nomisVisitId)
+          assertThat(dpsLocationId).isEqualTo(dpsLocationId)
+          assertThat(prisonVisitSlotId).isEqualTo(dpsVisitSlotId)
+          assertThat(prisonCode).isEqualTo("MDI")
+          assertThat(visitDate).isEqualTo(LocalDate.parse("2020-01-01"))
+          assertThat(startTime).isEqualTo("10:00")
+          assertThat(endTime).isEqualTo("11:10")
+          assertThat(commentText).isEqualTo("First visit")
+          assertThat(visitorConcernText).isEqualTo("Big concerns")
+          assertThat(overrideBanStaffUsername).isEqualTo("T.SMITH")
+          assertThat(searchTypeCode).isEqualTo(SearchLevelType.PAT)
+          assertThat(visitOrderNumber).isEqualTo(654321)
+          assertThat(prisonerNumber).isEqualTo("A1234KT")
+          assertThat(offenderBookId).isEqualTo(1234L)
+          assertThat(visitStatusCode).isEqualTo(VisitStatusType.SCHEDULED)
+          assertThat(visitCompletionCode).isNull()
+          assertThat(updateUsername).isEqualTo("T.SMITH")
+          assertThat(updateDateTime).isEqualTo(LocalDateTime.parse("2020-02-01T10:10:10"))
+        }
+      }
+
+      @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
           eq("officialvisits-visit-synchronisation-updated-success"),
@@ -497,6 +612,7 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
             assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
             assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
             assertThat(it["prisonId"]).isEqualTo(prisonId)
+            assertThat(it["dpsOfficialVisitId"]).isEqualTo(dpsOfficialVisitId.toString())
           },
           isNull(),
         )
