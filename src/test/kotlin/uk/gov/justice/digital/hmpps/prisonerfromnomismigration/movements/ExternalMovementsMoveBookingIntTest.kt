@@ -17,6 +17,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMov
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.absence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.application
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.temporaryAbsence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.temporaryAbsenceReturn
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.temporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MoveTemporaryAbsencesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMoveBookingMappingDto
@@ -58,25 +63,25 @@ class ExternalMovementsMoveBookingIntTest(
       ),
     )
 
-    private val nomisData = externalMovementsNomisApi.temporaryAbsencesResponse(
+    private val nomisData = temporaryAbsencesResponse(
       bookingId = 1234567L,
       applications = listOf(
-        externalMovementsNomisApi.application(
+        application(
           id = applicationId1,
           absences = listOf(
-            externalMovementsNomisApi.absence(
-              temporaryAbsence = externalMovementsNomisApi.temporaryAbsence(seq = scheduledMovementSeq1),
-              temporaryAbsenceReturn = externalMovementsNomisApi.temporaryAbsenceReturn(seq = scheduledMovementSeq2),
+            absence(
+              temporaryAbsence = temporaryAbsence(seq = scheduledMovementSeq1),
+              temporaryAbsenceReturn = temporaryAbsenceReturn(seq = scheduledMovementSeq2),
             ),
           ),
         ),
-        externalMovementsNomisApi.application(
+        application(
           id = applicationId2,
-          absences = listOf(externalMovementsNomisApi.absence()),
+          absences = listOf(absence()),
         ),
       ),
-      unscheduledTemporaryAbsences = listOf(externalMovementsNomisApi.temporaryAbsence(seq = movementSeq1)),
-      unscheduledTemporaryAbsenceReturns = listOf(externalMovementsNomisApi.temporaryAbsenceReturn(seq = movementSeq2)),
+      unscheduledTemporaryAbsences = listOf(temporaryAbsence(seq = movementSeq1)),
+      unscheduledTemporaryAbsenceReturns = listOf(temporaryAbsenceReturn(seq = movementSeq2)),
     )
 
     @BeforeEach
@@ -192,7 +197,7 @@ class ExternalMovementsMoveBookingIntTest(
       movementIds = listOf(),
     )
 
-    private val nomisData = externalMovementsNomisApi.temporaryAbsencesResponse(
+    private val nomisData = temporaryAbsencesResponse(
       bookingId = 1234567L,
       applications = listOf(),
       unscheduledTemporaryAbsences = listOf(),
@@ -248,10 +253,10 @@ class ExternalMovementsMoveBookingIntTest(
       movementIds = listOf(),
     )
 
-    private val nomisData = externalMovementsNomisApi.temporaryAbsencesResponse(
+    private val nomisData = temporaryAbsencesResponse(
       bookingId = 1234567L,
       applications = listOf(),
-      unscheduledTemporaryAbsences = listOf(externalMovementsNomisApi.temporaryAbsence(seq = movementSeq1)),
+      unscheduledTemporaryAbsences = listOf(temporaryAbsence(seq = movementSeq1)),
       unscheduledTemporaryAbsenceReturns = listOf(),
     )
 
@@ -307,9 +312,9 @@ class ExternalMovementsMoveBookingIntTest(
       movementIds = listOf(),
     )
 
-    private val nomisData = externalMovementsNomisApi.temporaryAbsencesResponse(
+    private val nomisData = temporaryAbsencesResponse(
       bookingId = 1234567L,
-      applications = listOf(externalMovementsNomisApi.application(id = applicationId1)),
+      applications = listOf(application(id = applicationId1)),
       unscheduledTemporaryAbsences = listOf(),
       unscheduledTemporaryAbsenceReturns = listOf(),
     )
@@ -367,10 +372,10 @@ class ExternalMovementsMoveBookingIntTest(
       movementIds = listOf(),
     )
 
-    private val nomisData = externalMovementsNomisApi.temporaryAbsencesResponse(
+    private val nomisData = temporaryAbsencesResponse(
       bookingId = 1234567L,
       applications = listOf(
-        externalMovementsNomisApi.application(
+        application(
           id = applicationId1,
           absences = listOf(),
         ),
@@ -431,10 +436,10 @@ class ExternalMovementsMoveBookingIntTest(
       movementIds = listOf(),
     )
 
-    private val nomisData = externalMovementsNomisApi.temporaryAbsencesResponse(
+    private val nomisData = temporaryAbsencesResponse(
       bookingId = 1234567L,
       applications = listOf(
-        externalMovementsNomisApi.application(
+        application(
           id = applicationId1,
           absences = listOf(),
         ),
