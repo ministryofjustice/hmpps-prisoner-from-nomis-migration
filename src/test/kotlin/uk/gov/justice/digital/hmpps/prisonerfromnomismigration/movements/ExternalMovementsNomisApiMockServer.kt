@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceReturn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceReturnResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Component
@@ -62,156 +63,6 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun temporaryAbsencesResponse(
-    movementPrison: String = "LEI",
-    bookingId: Long = 12345L,
-    absences: List<Absence> = listOf(absence(movementPrison = movementPrison)),
-    applications: List<TemporaryAbsenceApplication> = listOf(application(absences = absences)),
-    unscheduledTemporaryAbsences: List<TemporaryAbsence> = listOf(temporaryAbsence(seq = 1).copy(movementDate = yesterday.toLocalDate(), movementTime = yesterday)),
-    unscheduledTemporaryAbsenceReturns: List<TemporaryAbsenceReturn> = listOf(temporaryAbsenceReturn(seq = 2).copy(movementDate = yesterday.toLocalDate(), movementTime = yesterday)),
-  ): OffenderTemporaryAbsencesResponse = OffenderTemporaryAbsencesResponse(
-    bookings = listOf(
-      BookingTemporaryAbsences(
-        bookingId = bookingId,
-        temporaryAbsenceApplications = applications,
-        unscheduledTemporaryAbsences = unscheduledTemporaryAbsences,
-        unscheduledTemporaryAbsenceReturns = unscheduledTemporaryAbsenceReturns,
-      ),
-    ),
-  )
-
-  fun application(id: Long = 1, absences: List<Absence> = listOf(absence(movementPrison = "LEI"))) = TemporaryAbsenceApplication(
-    movementApplicationId = id,
-    eventSubType = "C5",
-    applicationDate = now.toLocalDate(),
-    fromDate = now.toLocalDate(),
-    releaseTime = now,
-    toDate = tomorrow.toLocalDate(),
-    returnTime = tomorrow,
-    applicationStatus = "APP-SCH",
-    applicationType = "SINGLE",
-    escortCode = "U",
-    transportType = "VAN",
-    comment = "application comment",
-    prisonId = "LEI",
-    toAgencyId = "COURT1",
-    toAddressId = 321,
-    toAddressOwnerClass = "OFF",
-    toAddressDescription = "some address description",
-    toFullAddress = "some full address",
-    toAddressPostcode = "S1 1AA",
-    contactPersonName = "Jeff",
-    temporaryAbsenceType = "RR",
-    temporaryAbsenceSubType = "SPL",
-    absences = absences,
-    audit = NomisAudit(
-      createDatetime = now,
-      createUsername = "USER",
-    ),
-  )
-
-  fun absence(
-    movementPrison: String = "LEI",
-    scheduledAbsence: ScheduledTemporaryAbsence = scheduledAbsence(),
-    scheduledAbsenceReturn: ScheduledTemporaryAbsenceReturn = scheduledAbsenceReturn(),
-    temporaryAbsence: TemporaryAbsence = temporaryAbsence(seq = 3).copy(
-      movementDate = yesterday.toLocalDate(),
-      movementTime = yesterday,
-      fromPrison = movementPrison,
-    ),
-    temporaryAbsenceReturn: TemporaryAbsenceReturn = temporaryAbsenceReturn(seq = 4).copy(
-      movementDate = now.toLocalDate(),
-      movementTime = now,
-      toPrison = movementPrison,
-    ),
-  ) = Absence(scheduledAbsence, scheduledAbsenceReturn, temporaryAbsence, temporaryAbsenceReturn)
-
-  fun temporaryAbsenceReturn(seq: Int = 2) = TemporaryAbsenceReturn(
-    sequence = seq,
-    movementDate = now.toLocalDate(),
-    movementTime = now,
-    movementReason = "C5",
-    escort = "PECS",
-    escortText = "Return escort text",
-    fromAgency = "COURT1",
-    toPrison = "LEI",
-    commentText = "Return comment text",
-    fromAddressId = 321L,
-    fromAddressOwnerClass = "CORP",
-    fromAddressDescription = "Absence return address description",
-    fromFullAddress = "Absence return full address",
-    fromAddressPostcode = "S2 2AA",
-    audit = NomisAudit(
-      createDatetime = now,
-      createUsername = "USER",
-    ),
-  )
-
-  fun temporaryAbsence(seq: Int = 1) = TemporaryAbsence(
-    sequence = seq,
-    movementDate = now.toLocalDate(),
-    movementTime = now,
-    movementReason = "C6",
-    arrestAgency = "POL",
-    escort = "U",
-    escortText = "Absence escort text",
-    fromPrison = "LEI",
-    toAgency = "COURT1",
-    commentText = "Absence comment text",
-    toAddressId = 432L,
-    toAddressOwnerClass = "AGY",
-    toAddressDescription = "Absence address description",
-    toFullAddress = "Absence full address",
-    toAddressPostcode = "S1 1AA",
-    audit = NomisAudit(
-      createDatetime = now,
-      createUsername = "USER",
-    ),
-  )
-
-  fun scheduledAbsenceReturn(id: Long = 2) = ScheduledTemporaryAbsenceReturn(
-    eventId = id,
-    eventSubType = "C5",
-    eventStatus = "SCH",
-    escort = "PECS",
-    eventDate = tomorrow.toLocalDate(),
-    startTime = tomorrow,
-    comment = "scheduled return comment",
-    fromAgency = "COURT1",
-    toPrison = "LEI",
-    audit = NomisAudit(
-      createDatetime = now,
-      createUsername = "USER",
-    ),
-  )
-
-  fun scheduledAbsence(id: Long = 1): ScheduledTemporaryAbsence = ScheduledTemporaryAbsence(
-    eventId = id,
-    eventSubType = "C5",
-    eventStatus = "SCH",
-    escort = "PECS",
-    applicationTime = now,
-    applicationDate = now,
-    eventDate = yesterday.toLocalDate(),
-    startTime = yesterday,
-    returnDate = tomorrow.toLocalDate(),
-    returnTime = tomorrow,
-    comment = "scheduled absence comment",
-    fromPrison = "LEI",
-    toAgency = "COURT1",
-    transportType = "VAN",
-    toAddressId = 543L,
-    toAddressOwnerClass = "CORP",
-    toAddressDescription = "Schedule address description",
-    toFullAddress = "Schedule full address",
-    toAddressPostcode = "S1 1AA",
-    contactPersonName = "Derek",
-    audit = NomisAudit(
-      createDatetime = now,
-      createUsername = "USER",
-    ),
-  )
-
   fun stubGetTemporaryAbsenceApplication(
     offenderNo: String = "A1234BC",
     applicationId: Long = 12345L,
@@ -240,36 +91,6 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
   }
-
-  fun temporaryAbsenceApplicationResponse() = TemporaryAbsenceApplicationResponse(
-    bookingId = 12345,
-    movementApplicationId = 111,
-    eventSubType = "C5",
-    applicationDate = now.toLocalDate(),
-    fromDate = now.toLocalDate(),
-    releaseTime = now,
-    toDate = tomorrow.toLocalDate(),
-    returnTime = tomorrow,
-    applicationStatus = "APP-SCH",
-    applicationType = "SINGLE",
-    escortCode = "P",
-    transportType = "VAN",
-    comment = "application comment",
-    prisonId = "LEI",
-    toAgencyId = "COURT1",
-    toAddressId = 321,
-    toAddressOwnerClass = "OFF",
-    toAddressDescription = "some address description",
-    toFullAddress = "some full address",
-    toAddressPostcode = "S1 1AA",
-    contactPersonName = "Jeff",
-    temporaryAbsenceType = "RR",
-    temporaryAbsenceSubType = "SPL",
-    audit = NomisAudit(
-      createDatetime = now,
-      createUsername = "USER",
-    ),
-  )
 
   fun stubGetTemporaryAbsenceScheduledMovement(
     offenderNo: String = "A1234BC",
@@ -338,25 +159,6 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun scheduledTemporaryAbsenceReturnResponse(parentEventId: Long = 1) = ScheduledTemporaryAbsenceReturnResponse(
-    bookingId = 12345,
-    movementApplicationId = 111,
-    eventId = 2,
-    parentEventId = parentEventId,
-    eventSubType = "C5",
-    eventStatus = "SCH",
-    eventDate = tomorrow.toLocalDate(),
-    startTime = tomorrow,
-    comment = "scheduled return comment",
-    escort = "PECS",
-    fromAgency = "COURT1",
-    toPrison = "LEI",
-    audit = NomisAudit(
-      createDatetime = now,
-      createUsername = "USER",
-    ),
-  )
-
   fun stubGetTemporaryAbsenceMovement(
     offenderNo: String = "A1234BC",
     bookingId: Long = 12345L,
@@ -388,38 +190,6 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
   }
-
-  fun temporaryAbsenceResponse(
-    movementApplicationId: Long? = 111,
-    scheduledTemporaryAbsenceId: Long? = 1,
-    sequence: Int = 1,
-    address: String = "full address",
-    addressId: Long = 321,
-    city: String? = null,
-  ) = TemporaryAbsenceResponse(
-    bookingId = 12345,
-    sequence = sequence,
-    movementDate = now.toLocalDate(),
-    movementTime = now,
-    movementReason = "C6",
-    audit = NomisAudit(
-      createDatetime = now,
-      createUsername = "USER",
-    ),
-    movementApplicationId = movementApplicationId,
-    scheduledTemporaryAbsenceId = scheduledTemporaryAbsenceId,
-    arrestAgency = "POL",
-    escort = "P",
-    escortText = "Absence escort text",
-    fromPrison = "LEI",
-    toAgency = "COURT1",
-    commentText = "Absence comment text",
-    toAddressId = if (city == null) addressId else null,
-    toAddressOwnerClass = if (city == null) "OFF" else null,
-    toAddressDescription = if (city == null) "Some description" else null,
-    toFullAddress = city ?: address,
-    toAddressPostcode = if (city == null) "S1 1AB" else null,
-  )
 
   fun stubGetTemporaryAbsenceReturnMovement(
     offenderNo: String = "A1234BC",
@@ -453,39 +223,6 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
   }
-
-  fun temporaryAbsenceReturnResponse(
-    movementApplicationId: Long? = 111,
-    scheduledTemporaryAbsenceReturnId: Long? = 2,
-    sequence: Int = 1,
-    scheduledTemporaryAbsenceId: Long? = 1,
-    address: String = "full address",
-    addressId: Long = 321L,
-    city: String? = null,
-  ) = TemporaryAbsenceReturnResponse(
-    bookingId = 12345,
-    sequence = sequence,
-    movementDate = now.toLocalDate(),
-    movementTime = now,
-    movementReason = "C5",
-    audit = NomisAudit(
-      createDatetime = now,
-      createUsername = "USER",
-    ),
-    movementApplicationId = movementApplicationId,
-    scheduledTemporaryAbsenceId = scheduledTemporaryAbsenceId,
-    scheduledTemporaryAbsenceReturnId = scheduledTemporaryAbsenceReturnId,
-    escort = "PECS",
-    escortText = "Return escort text",
-    fromAgency = "COURT1",
-    toPrison = "LEI",
-    commentText = "Return comment text",
-    fromAddressId = if (city == null) addressId else null,
-    fromAddressOwnerClass = if (city == null) "OFF" else null,
-    fromAddressDescription = if (city == null) "some description" else null,
-    fromFullAddress = city ?: address,
-    fromAddressPostcode = if (city == null) "S1 1AB" else null,
-  )
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
@@ -533,6 +270,284 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
         createDatetime = now,
         createUsername = "USER",
       ),
+    )
+
+    fun temporaryAbsencesResponse(
+      movementPrison: String = "LEI",
+      bookingId: Long = 12345L,
+      activeBooking: Boolean = true,
+      absences: List<Absence> = listOf(absence(movementPrison = movementPrison)),
+      applications: List<TemporaryAbsenceApplication> = listOf(application(absences = absences)),
+      unscheduledTemporaryAbsences: List<TemporaryAbsence> = listOf(temporaryAbsence(seq = 1).copy(movementDate = yesterday.toLocalDate(), movementTime = yesterday)),
+      unscheduledTemporaryAbsenceReturns: List<TemporaryAbsenceReturn> = listOf(temporaryAbsenceReturn(seq = 2).copy(movementDate = yesterday.toLocalDate(), movementTime = yesterday)),
+    ): OffenderTemporaryAbsencesResponse = OffenderTemporaryAbsencesResponse(
+      bookings = listOf(
+        BookingTemporaryAbsences(
+          bookingId = bookingId,
+          activeBooking = activeBooking,
+          temporaryAbsenceApplications = applications,
+          unscheduledTemporaryAbsences = unscheduledTemporaryAbsences,
+          unscheduledTemporaryAbsenceReturns = unscheduledTemporaryAbsenceReturns,
+        ),
+      ),
+    )
+
+    fun application(
+      id: Long = 1,
+      fromDate: LocalDate = now.toLocalDate(),
+      toDate: LocalDate = tomorrow.toLocalDate(),
+      status: String = "APP-SCH",
+      absences: List<Absence> = listOf(absence(movementPrison = "LEI")),
+    ) = TemporaryAbsenceApplication(
+      movementApplicationId = id,
+      eventSubType = "C5",
+      applicationDate = now.toLocalDate(),
+      fromDate = fromDate,
+      releaseTime = now,
+      toDate = toDate,
+      returnTime = tomorrow,
+      applicationStatus = status,
+      applicationType = "SINGLE",
+      escortCode = "U",
+      transportType = "VAN",
+      comment = "application comment",
+      prisonId = "LEI",
+      toAgencyId = "COURT1",
+      toAddressId = 321,
+      toAddressOwnerClass = "OFF",
+      toAddressDescription = "some address description",
+      toFullAddress = "some full address",
+      toAddressPostcode = "S1 1AA",
+      contactPersonName = "Jeff",
+      temporaryAbsenceType = "RR",
+      temporaryAbsenceSubType = "SPL",
+      absences = absences,
+      audit = NomisAudit(
+        createDatetime = now,
+        createUsername = "USER",
+      ),
+    )
+
+    fun absence(
+      movementPrison: String = "LEI",
+      scheduledAbsence: ScheduledTemporaryAbsence = scheduledAbsence(),
+      scheduledAbsenceReturn: ScheduledTemporaryAbsenceReturn = scheduledAbsenceReturn(),
+      temporaryAbsence: TemporaryAbsence = temporaryAbsence(seq = 3).copy(
+        movementDate = yesterday.toLocalDate(),
+        movementTime = yesterday,
+        fromPrison = movementPrison,
+      ),
+      temporaryAbsenceReturn: TemporaryAbsenceReturn = temporaryAbsenceReturn(seq = 4).copy(
+        movementDate = now.toLocalDate(),
+        movementTime = now,
+        toPrison = movementPrison,
+      ),
+    ) = Absence(scheduledAbsence, scheduledAbsenceReturn, temporaryAbsence, temporaryAbsenceReturn)
+
+    fun temporaryAbsenceReturn(seq: Int = 2) = TemporaryAbsenceReturn(
+      sequence = seq,
+      movementDate = now.toLocalDate(),
+      movementTime = now,
+      movementReason = "C5",
+      escort = "PECS",
+      escortText = "Return escort text",
+      fromAgency = "COURT1",
+      toPrison = "LEI",
+      commentText = "Return comment text",
+      fromAddressId = 321L,
+      fromAddressOwnerClass = "CORP",
+      fromAddressDescription = "Absence return address description",
+      fromFullAddress = "Absence return full address",
+      fromAddressPostcode = "S2 2AA",
+      audit = NomisAudit(
+        createDatetime = now,
+        createUsername = "USER",
+      ),
+    )
+
+    fun temporaryAbsence(seq: Int = 1) = TemporaryAbsence(
+      sequence = seq,
+      movementDate = now.toLocalDate(),
+      movementTime = now,
+      movementReason = "C6",
+      arrestAgency = "POL",
+      escort = "U",
+      escortText = "Absence escort text",
+      fromPrison = "LEI",
+      toAgency = "COURT1",
+      commentText = "Absence comment text",
+      toAddressId = 432L,
+      toAddressOwnerClass = "AGY",
+      toAddressDescription = "Absence address description",
+      toFullAddress = "Absence full address",
+      toAddressPostcode = "S1 1AA",
+      audit = NomisAudit(
+        createDatetime = now,
+        createUsername = "USER",
+      ),
+    )
+
+    fun scheduledAbsenceReturn(id: Long = 2) = ScheduledTemporaryAbsenceReturn(
+      eventId = id,
+      eventSubType = "C5",
+      eventStatus = "SCH",
+      escort = "PECS",
+      eventDate = tomorrow.toLocalDate(),
+      startTime = tomorrow,
+      comment = "scheduled return comment",
+      fromAgency = "COURT1",
+      toPrison = "LEI",
+      audit = NomisAudit(
+        createDatetime = now,
+        createUsername = "USER",
+      ),
+    )
+
+    fun scheduledAbsence(id: Long = 1): ScheduledTemporaryAbsence = ScheduledTemporaryAbsence(
+      eventId = id,
+      eventSubType = "C5",
+      eventStatus = "SCH",
+      escort = "PECS",
+      applicationTime = now,
+      applicationDate = now,
+      eventDate = yesterday.toLocalDate(),
+      startTime = yesterday,
+      returnDate = tomorrow.toLocalDate(),
+      returnTime = tomorrow,
+      comment = "scheduled absence comment",
+      fromPrison = "LEI",
+      toAgency = "COURT1",
+      transportType = "VAN",
+      toAddressId = 543L,
+      toAddressOwnerClass = "CORP",
+      toAddressDescription = "Schedule address description",
+      toFullAddress = "Schedule full address",
+      toAddressPostcode = "S1 1AA",
+      contactPersonName = "Derek",
+      audit = NomisAudit(
+        createDatetime = now,
+        createUsername = "USER",
+      ),
+    )
+
+    fun temporaryAbsenceApplicationResponse(
+      activeBooking: Boolean = true,
+      status: String = "APP-SCH",
+      fromDate: LocalDate = now.toLocalDate(),
+      toDate: LocalDate = tomorrow.toLocalDate(),
+    ) = TemporaryAbsenceApplicationResponse(
+      bookingId = 12345,
+      activeBooking = activeBooking,
+      movementApplicationId = 111,
+      eventSubType = "C5",
+      applicationDate = now.toLocalDate(),
+      fromDate = fromDate,
+      releaseTime = now,
+      toDate = toDate,
+      returnTime = tomorrow,
+      applicationStatus = status,
+      applicationType = "SINGLE",
+      escortCode = "P",
+      transportType = "VAN",
+      comment = "application comment",
+      prisonId = "LEI",
+      toAgencyId = "COURT1",
+      toAddressId = 321,
+      toAddressOwnerClass = "OFF",
+      toAddressDescription = "some address description",
+      toFullAddress = "some full address",
+      toAddressPostcode = "S1 1AA",
+      contactPersonName = "Jeff",
+      temporaryAbsenceType = "RR",
+      temporaryAbsenceSubType = "SPL",
+      audit = NomisAudit(
+        createDatetime = now,
+        createUsername = "USER",
+      ),
+    )
+
+    fun scheduledTemporaryAbsenceReturnResponse(parentEventId: Long = 1) = ScheduledTemporaryAbsenceReturnResponse(
+      bookingId = 12345,
+      movementApplicationId = 111,
+      eventId = 2,
+      parentEventId = parentEventId,
+      eventSubType = "C5",
+      eventStatus = "SCH",
+      eventDate = tomorrow.toLocalDate(),
+      startTime = tomorrow,
+      comment = "scheduled return comment",
+      escort = "PECS",
+      fromAgency = "COURT1",
+      toPrison = "LEI",
+      audit = NomisAudit(
+        createDatetime = now,
+        createUsername = "USER",
+      ),
+    )
+
+    fun temporaryAbsenceResponse(
+      movementApplicationId: Long? = 111,
+      scheduledTemporaryAbsenceId: Long? = 1,
+      sequence: Int = 1,
+      address: String = "full address",
+      addressId: Long = 321,
+      city: String? = null,
+    ) = TemporaryAbsenceResponse(
+      bookingId = 12345,
+      sequence = sequence,
+      movementDate = now.toLocalDate(),
+      movementTime = now,
+      movementReason = "C6",
+      audit = NomisAudit(
+        createDatetime = now,
+        createUsername = "USER",
+      ),
+      movementApplicationId = movementApplicationId,
+      scheduledTemporaryAbsenceId = scheduledTemporaryAbsenceId,
+      arrestAgency = "POL",
+      escort = "P",
+      escortText = "Absence escort text",
+      fromPrison = "LEI",
+      toAgency = "COURT1",
+      commentText = "Absence comment text",
+      toAddressId = if (city == null) addressId else null,
+      toAddressOwnerClass = if (city == null) "OFF" else null,
+      toAddressDescription = if (city == null) "Some description" else null,
+      toFullAddress = city ?: address,
+      toAddressPostcode = if (city == null) "S1 1AB" else null,
+    )
+
+    fun temporaryAbsenceReturnResponse(
+      movementApplicationId: Long? = 111,
+      scheduledTemporaryAbsenceReturnId: Long? = 2,
+      sequence: Int = 1,
+      scheduledTemporaryAbsenceId: Long? = 1,
+      address: String = "full address",
+      addressId: Long = 321L,
+      city: String? = null,
+    ) = TemporaryAbsenceReturnResponse(
+      bookingId = 12345,
+      sequence = sequence,
+      movementDate = now.toLocalDate(),
+      movementTime = now,
+      movementReason = "C5",
+      audit = NomisAudit(
+        createDatetime = now,
+        createUsername = "USER",
+      ),
+      movementApplicationId = movementApplicationId,
+      scheduledTemporaryAbsenceId = scheduledTemporaryAbsenceId,
+      scheduledTemporaryAbsenceReturnId = scheduledTemporaryAbsenceReturnId,
+      escort = "PECS",
+      escortText = "Return escort text",
+      fromAgency = "COURT1",
+      toPrison = "LEI",
+      commentText = "Return comment text",
+      fromAddressId = if (city == null) addressId else null,
+      fromAddressOwnerClass = if (city == null) "OFF" else null,
+      fromAddressDescription = if (city == null) "some description" else null,
+      fromFullAddress = city ?: address,
+      fromAddressPostcode = if (city == null) "S1 1AB" else null,
     )
   }
 }

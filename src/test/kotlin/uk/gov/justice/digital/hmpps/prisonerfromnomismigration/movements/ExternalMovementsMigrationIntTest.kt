@@ -27,6 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationR
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.migrateResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.temporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
@@ -177,8 +178,8 @@ class ExternalMovementsMigrationIntTest(
           assertThat(updated).isNull()
           assertThat(legacyId).isEqualTo(1)
           assertThat(occurrences.size).isEqualTo(1)
-          assertThat(LocalTime.parse(startTime!!)).isCloseTo(now.minusDays(1).toLocalTime(), within(Duration.ofMinutes(5)))
-          assertThat(LocalTime.parse(endTime!!)).isCloseTo(now.toLocalTime(), within(Duration.ofMinutes(5)))
+          assertThat(LocalTime.parse(startTime)).isCloseTo(now.minusDays(1).toLocalTime(), within(Duration.ofMinutes(5)))
+          assertThat(LocalTime.parse(endTime)).isCloseTo(now.toLocalTime(), within(Duration.ofMinutes(5)))
           assertThat(location!!.uprn).isNull()
           assertThat(location.address).isEqualTo("some full address")
           assertThat(location.description).isEqualTo("some address description")
@@ -413,7 +414,7 @@ class ExternalMovementsMigrationIntTest(
       mappingApi.stubCreateTemporaryAbsenceMapping()
       mappingApi.stubGetTemporaryAbsenceMappingIds(prisonerNumber, idMappings = TemporaryAbsencesPrisonerMappingIdsDto(prisonerNumber, listOf(), listOf(), listOf()))
       // The prison on the application and schedules is LEI
-      externalMovementsNomisApi.stubGetTemporaryAbsences(prisonerNumber, response = externalMovementsNomisApi.temporaryAbsencesResponse(movementPrison = movementPrison))
+      externalMovementsNomisApi.stubGetTemporaryAbsences(prisonerNumber, response = temporaryAbsencesResponse(movementPrison = movementPrison))
       dpsApi.stubResyncPrisonerTaps(
         personIdentifier = prisonerNumber,
         response = migrateResponse(dpsAuthorisationId, dpsOccurrenceId, dpsScheduledMovementOutId, dpsScheduledMovementInId, dpsUnscheduledMovementOutId, dpsUnscheduledMovementInId),

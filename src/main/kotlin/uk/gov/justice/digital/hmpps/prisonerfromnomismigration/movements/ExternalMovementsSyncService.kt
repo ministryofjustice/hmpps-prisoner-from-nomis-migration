@@ -676,7 +676,7 @@ class ExternalMovementsSyncService(
   }
 }
 
-private fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) = SyncWriteTapAuthorisation(
+fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) = SyncWriteTapAuthorisation(
   id = id,
   prisonCode = prisonId,
   statusCode = applicationStatus.toDpsAuthorisationStatusCode(),
