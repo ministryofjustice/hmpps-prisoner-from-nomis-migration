@@ -31,6 +31,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import java.time.LocalDate
 import java.util.*
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED as SCHEDULED_MOVEMENT_NOMIS_CREATED
 
@@ -679,7 +680,7 @@ class ExternalMovementsSyncService(
 fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) = SyncWriteTapAuthorisation(
   id = id,
   prisonCode = prisonId,
-  statusCode = applicationStatus.toDpsAuthorisationStatusCode(),
+  statusCode = toDpsAuthorisationStatusCode(applicationStatus, toDate, activeBooking),
   absenceTypeCode = temporaryAbsenceType,
   absenceSubTypeCode = temporaryAbsenceSubType,
   absenceReasonCode = eventSubType,
@@ -697,13 +698,17 @@ fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) = SyncWri
   location = Location(description = toAddressDescription, address = toFullAddress, postcode = toAddressPostcode),
 )
 
-fun String.toDpsAuthorisationStatusCode() = when (this) {
-  "PEN" -> "PENDING"
-  "APP-SCH", "APP-UNSCH" -> "APPROVED"
-  "DEN" -> "DENIED"
-  "CANC" -> "CANCELLED"
-  else -> throw IllegalArgumentException("Unknown temporary absence status code: $this")
+fun toDpsAuthorisationStatusCode(status: String, toDate: LocalDate, activeBooking: Boolean) = when {
+  !activeBooking && toDate.notEnded() && status.isApproved() -> "EXPIRED"
+  status == "PEN" -> "PENDING"
+  status.isApproved() -> "APPROVED"
+  status == "DEN" -> "DENIED"
+  status == "CANC" -> "CANCELLED"
+  else -> throw IllegalArgumentException("Unknown temporary absence status code: $status")
 }
+
+private fun LocalDate.notEnded() = isAfter(LocalDate.now().minusDays(1))
+private fun String.isApproved() = this in listOf("APP-SCH", "APP-UNSCH")
 
 fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, dpsLocation: Location) = SyncWriteTapOccurrence(
   id = id,

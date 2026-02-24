@@ -33,6 +33,7 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.temporaryAbsenceApplicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
@@ -45,6 +46,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.Duration
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.temporal.ChronoUnit
@@ -109,8 +111,8 @@ class ExternalMovementsSyncIntTest(
           assertThat(end).isEqualTo("${tomorrow.toLocalDate()}")
           assertThat(comments).isEqualTo("application comment")
           assertThat(legacyId).isEqualTo(111)
-          assertThat(LocalTime.parse(startTime!!)).isCloseTo(now.minusDays(1).toLocalTime(), within(Duration.ofMinutes(5)))
-          assertThat(LocalTime.parse(endTime!!)).isCloseTo(now.toLocalTime(), within(Duration.ofMinutes(5)))
+          assertThat(LocalTime.parse(startTime)).isCloseTo(now.minusDays(1).toLocalTime(), within(Duration.ofMinutes(5)))
+          assertThat(LocalTime.parse(endTime)).isCloseTo(now.toLocalTime(), within(Duration.ofMinutes(5)))
           assertThat(location!!.uprn).isNull()
           assertThat(location.address).isEqualTo("some full address")
           assertThat(location.description).isEqualTo("some address description")
@@ -525,6 +527,35 @@ class ExternalMovementsSyncIntTest(
             assertThat(it["dpsAuthorisationId"]).isEqualTo(dpsId.toString())
           },
           isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class HappyPathInactiveBookingFutureApplication {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsId)
+        nomisApi.stubGetTemporaryAbsenceApplication(
+          applicationId = 111,
+          response = temporaryAbsenceApplicationResponse(
+            activeBooking = false,
+            status = "APP-SCH",
+            fromDate = LocalDate.now(),
+            toDate = LocalDate.now().plusDays(1),
+          ),
+        )
+        dpsApi.stubSyncTapAuthorisation(response = SyncResponse(dpsId))
+
+        sendMessage(externalMovementApplicationEvent("MOVEMENT_APPLICATION-UPDATED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should set DPS application status to expired`() {
+        dpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/A1234BC"))
+            .withRequestBodyJsonPath("statusCode", equalTo = "EXPIRED"),
         )
       }
     }
