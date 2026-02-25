@@ -3,14 +3,18 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.check
+import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
@@ -85,11 +89,14 @@ class ExternalMovementsMoveBookingIntTest(
     )
 
     @BeforeEach
-    fun setUp() {
+    fun setUp() = runTest {
       externalMovementsNomisApi.stubGetTemporaryAbsences("A1234KT", nomisData)
       mappingApi.stubGetMoveBookingMappings(1234567L, moveBookingMappings)
       dpsApi.stubMoveBooking()
-      mappingApi.stubMoveBookingMappings(1234567L, "A1000KT", "A1234KT")
+      mappingApi.stubMoveBookingMappings(bookingId = 1234567L, fromOffenderNo = "A1000KT", toOffenderNo = "A1234KT")
+
+      // Also need stubs for the calls to resync the prisoner. This bypasses the resync process because stubbing all of the various API calls makes the test data setup even more unreadable.
+      doNothing().whenever(externalMovementsMigrationService).resyncPrisonerTaps(any())
 
       sendMessage(
         bookingMovedDomainEvent(
@@ -126,6 +133,12 @@ class ExternalMovementsMoveBookingIntTest(
     @Test
     fun `should move mappings to the new offender no`() {
       mappingApi.verify(putRequestedFor(urlEqualTo("/mapping/temporary-absence/move-booking/1234567/from/A1000KT/to/A1234KT")))
+    }
+
+    @Test
+    fun `should resync each offender`() = runTest {
+      verify(externalMovementsMigrationService).resyncPrisonerTaps("A1000KT")
+      verify(externalMovementsMigrationService).resyncPrisonerTaps("A1234KT")
     }
 
     @Test
@@ -449,11 +462,14 @@ class ExternalMovementsMoveBookingIntTest(
     )
 
     @BeforeEach
-    fun setUp() {
+    fun setUp() = runTest {
       externalMovementsNomisApi.stubGetTemporaryAbsences("A1234KT", nomisData)
       mappingApi.stubGetMoveBookingMappings(1234567L, moveBookingMappings)
       dpsApi.stubMoveBooking()
       mappingApi.stubMoveBookingMappingsFailureFollowedBySuccess(1234567L, "A1000KT", "A1234KT")
+
+      // Also need stubs for the calls to resync the prisoner. This bypasses the resync process because stubbing all of the various API calls makes the test data setup even more unreadable.
+      doNothing().whenever(externalMovementsMigrationService).resyncPrisonerTaps(any())
 
       sendMessage(
         bookingMovedDomainEvent(
@@ -507,6 +523,12 @@ class ExternalMovementsMoveBookingIntTest(
         },
         isNull(),
       )
+    }
+
+    @Test
+    fun `should resync each offender`() = runTest {
+      verify(externalMovementsMigrationService).resyncPrisonerTaps("A1000KT")
+      verify(externalMovementsMigrationService).resyncPrisonerTaps("A1234KT")
     }
   }
 
