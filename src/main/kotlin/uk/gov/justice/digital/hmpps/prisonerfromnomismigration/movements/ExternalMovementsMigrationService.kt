@@ -9,6 +9,7 @@ import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
@@ -82,6 +83,15 @@ class ExternalMovementsMigrationService(
   ): List<PrisonerId> = getIds(migrationFilter, pageSize, pageNumber).content
 
   override suspend fun getTotalNumberOfIds(migrationFilter: ExternalMovementsMigrationFilter): Long = getIds(migrationFilter, 1, 0).totalElements
+
+  suspend fun resyncPrisonerTaps(prisonerNumber: String) = migrateNomisEntity(
+    MigrationContext(
+      MigrationType.EXTERNAL_MOVEMENTS,
+      generateBatchId(),
+      1,
+      PrisonerId(prisonerNumber),
+    ),
+  )
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     val offenderNo = context.body.offenderNo

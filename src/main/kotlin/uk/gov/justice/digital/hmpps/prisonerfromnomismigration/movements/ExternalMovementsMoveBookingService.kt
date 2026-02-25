@@ -25,6 +25,7 @@ class ExternalMovementsMoveBookingService(
   private val nomisApi: ExternalMovementsNomisApiService,
   private val mappingApi: ExternalMovementsMappingApiService,
   private val queueService: SynchronisationQueueService,
+  private val migrationService: ExternalMovementsMigrationService,
   override val telemetryClient: TelemetryClient,
 ) : TelemetryEnabled {
 
@@ -92,7 +93,7 @@ class ExternalMovementsMoveBookingService(
 
   private suspend fun tryToMoveBookingMappings(bookingId: Long, fromOffenderNo: String, toOffenderNo: String, telemetry: MutableMap<String, Any>) {
     try {
-      mappingApi.moveBookingMappings(bookingId, fromOffenderNo, toOffenderNo)
+      moveMappingsAndResync(bookingId, fromOffenderNo, toOffenderNo)
     } catch (e: Exception) {
       log.error("Failed to move booking mappings for bookingId=$bookingId", e)
       queueService.sendMessage(
@@ -106,13 +107,19 @@ class ExternalMovementsMoveBookingService(
 
   suspend fun retryMoveBookingMapping(retryMessage: InternalMessage<BookingMovedAdditionalInformationEvent>) {
     val (toOffenderNo, fromOffenderNo, bookingId) = retryMessage.body
-    mappingApi.moveBookingMappings(bookingId, fromOffenderNo, toOffenderNo)
+    moveMappingsAndResync(bookingId, fromOffenderNo, toOffenderNo)
       .also {
         telemetryClient.trackEvent(
           "temporary-absence-move-booking-mapping-retry-updated",
           retryMessage.telemetryAttributes,
         )
       }
+  }
+
+  suspend fun moveMappingsAndResync(bookingId: Long, fromOffenderNo: String, toOffenderNo: String) {
+    mappingApi.moveBookingMappings(bookingId, fromOffenderNo, toOffenderNo)
+    migrationService.resyncPrisonerTaps(fromOffenderNo)
+    migrationService.resyncPrisonerTaps(toOffenderNo)
   }
 
   private fun BookingTemporaryAbsences.isEmpty() = this.temporaryAbsenceApplications.isEmpty() &&

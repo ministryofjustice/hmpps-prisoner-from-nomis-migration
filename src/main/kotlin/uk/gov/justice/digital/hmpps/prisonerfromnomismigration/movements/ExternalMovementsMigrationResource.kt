@@ -18,10 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 
 @RestController
 @RequestMapping("/migrate/external-movements", produces = [MediaType.APPLICATION_JSON_VALUE])
@@ -61,11 +57,11 @@ class ExternalMovementsMigrationResource(
   @PutMapping("/repair/{prisonerNumber}")
   @Operation(
     summary = "Repair all TAP applications, schedules and movements for a single prisoner",
-    description = "Migrates a single prisoner to DPS. For prisoners with lots of movements this could be a lengthy process - maybe up to 2 minutes.",
+    description = "Resyncs a single prisoner to DPS. For prisoners with lots of movements this could be a lengthy process - maybe up to 2 minutes.",
     responses = [
       ApiResponse(
         responseCode = "200",
-        description = "Prisoner migrated",
+        description = "Prisoner re-synchronised",
       ),
       ApiResponse(
         responseCode = "401",
@@ -85,23 +81,15 @@ class ExternalMovementsMigrationResource(
     ],
   )
   suspend fun repairPrisoner(
-    @Schema(description = "The prisoner to migrate")
+    @Schema(description = "The prisoner to resync")
     @PathVariable prisonerNumber: String,
   ) {
-    val migrationId = generateBatchId()
     telemetryClient.trackEvent(
       "temporary-absences-migration-entity-repair-requested",
-      mapOf("offenderNo" to prisonerNumber, "migrationId" to migrationId),
+      mapOf("offenderNo" to prisonerNumber),
       null,
     )
 
-    migrationService.migrateNomisEntity(
-      MigrationContext(
-        MigrationType.EXTERNAL_MOVEMENTS,
-        migrationId,
-        1,
-        PrisonerId(prisonerNumber),
-      ),
-    )
+    migrationService.resyncPrisonerTaps(prisonerNumber)
   }
 }
