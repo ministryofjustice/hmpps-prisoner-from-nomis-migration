@@ -545,7 +545,7 @@ class ExternalMovementsMigrationIntTest(
   }
 
   @Nested
-  inner class IgnoreOffendersWithNoBookings {
+  inner class IgnoreOffendersWithNoMovements {
     @BeforeEach
     fun setUp() = runTest {
       nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
@@ -570,7 +570,7 @@ class ExternalMovementsMigrationIntTest(
         check {
           assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           assertThat(it["migrationId"]).isEqualTo(migrationId)
-          assertThat(it["reason"]).isEqualTo("The offender has no bookings")
+          assertThat(it["reason"]).isEqualTo("The offender has no TAPs")
         },
         isNull(),
       )
@@ -604,6 +604,39 @@ class ExternalMovementsMigrationIntTest(
           putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
             .withRequestBodyJsonPath("prisonerNumber", "A0001KT"),
         )
+      }
+
+      @Test
+      fun `will migrate to DPS`() {
+        dpsApi.verify(putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")))
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absences-migration-entity-repair-requested"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absences-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class DontIgnoreOffendersWithNoMovements {
+      @BeforeEach
+      fun setUp() = runTest {
+        externalMovementsNomisApi.stubGetTemporaryAbsences("A0001KT", response = OffenderTemporaryAbsencesResponse(bookings = listOf()))
+
+        repairPrisonerOk(prisonerNumber)
       }
 
       @Test

@@ -90,6 +90,7 @@ class ExternalMovementsMigrationService(
       generateBatchId(),
       1,
       PrisonerId(prisonerNumber),
+      mutableMapOf("ignoreMissingTaps" to false),
     ),
   )
 
@@ -100,12 +101,13 @@ class ExternalMovementsMigrationService(
       "offenderNo" to offenderNo,
       "migrationId" to migrationId,
     )
+    val ignoreMissingTaps = context.properties["ignoreMissingTaps"] as Boolean? ?: true
 
     runCatching {
       val temporaryAbsences = nomisApiService.getTemporaryAbsencesOrNull(offenderNo)
         ?: throw NotFoundException("Prisoner $offenderNo not found")
-      if (temporaryAbsences.bookings.isEmpty()) {
-        publishTelemetry("ignored", telemetry.apply { this["reason"] = "The offender has no bookings" })
+      if (ignoreMissingTaps && temporaryAbsences.bookings.isEmpty()) {
+        publishTelemetry("ignored", telemetry.apply { this["reason"] = "The offender has no TAPs" })
         return
       }
       val oldMappingIds = migrationMappingService.getPrisonerMappingIds(offenderNo)
