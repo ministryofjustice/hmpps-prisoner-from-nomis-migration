@@ -15,10 +15,14 @@ interface EventAudited {
 
   companion object {
     const val DPS_SYNC_AUDIT_MODULE = "DPS_SYNCHRONISATION"
+    const val FLUSH_SCHEDULES_AUDIT_MODULE = "FLUSH_SCHEDULES"
   }
 
   val originatesInDps: Boolean
     get() = auditModuleName.originatesInDps()
+
+  val triggeredByFlushSchedules: Boolean
+    get() = FLUSH_SCHEDULES_AUDIT_MODULE == auditModuleName
 
   // Caters for null or empty which should be treated as DPS_SYNCHRONISATION
   val originatesInDpsOrHasMissingAudit: Boolean

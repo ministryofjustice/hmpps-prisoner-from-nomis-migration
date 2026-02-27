@@ -2235,6 +2235,42 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Nested
+      @DisplayName("Update caused by Flush Schedules process")
+      inner class TriggerByFlushSchedules {
+        @BeforeEach
+        fun setUp() {
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
+          courtSentencingOffenderEventsQueue.sendMessage(
+            courtAppearanceEvent(
+              eventType = "COURT_EVENTS-UPDATED",
+              auditModule = "FLUSH_SCHEDULES",
+            ),
+          ).also { waitForAnyProcessingToComplete("court-appearance-synchronisation-updated-ignored") }
+        }
+
+        @Test
+        fun `telemetry added and event ignored`() {
+          verify(telemetryClient).trackEvent(
+            eq("court-appearance-synchronisation-updated-ignored"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["reason"]).isEqualTo("update triggered by the flush schedules nightly batch job")
+            },
+            isNull(),
+          )
+
+          courtSentencingMappingApiMockServer.verify(
+            0,
+            getRequestedFor(urlPathMatching("/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/\\d+")),
+          )
+          // will not update a court appearance in DPS
+          dpsCourtSentencingServer.verify(0, putRequestedFor(anyUrl()))
+        }
+      }
+
+      @Nested
       @DisplayName("When mapping exists")
       inner class MappingExists {
         @BeforeEach
