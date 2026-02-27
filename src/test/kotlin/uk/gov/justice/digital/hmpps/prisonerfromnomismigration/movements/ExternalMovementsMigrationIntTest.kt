@@ -664,13 +664,43 @@ class ExternalMovementsMigrationIntTest(
     }
 
     @Nested
-    inner class Validation {
-      @Test
-      fun `will return not found if prisoner unknown`() {
-        externalMovementsNomisApi.stubGetTemporaryAbsences(NOT_FOUND)
+    inner class DontIgnoreOffendersNotInNomis {
+      @BeforeEach
+      fun setUp() = runTest {
+        externalMovementsNomisApi.stubGetTemporaryAbsences(status = NOT_FOUND)
 
-        repairPrisoner("UNKNOWN")
-          .expectStatus().isNotFound
+        repairPrisonerOk(prisonerNumber)
+      }
+
+      @Test
+      fun `will migrate to DPS`() {
+        dpsApi.verify(putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")))
+      }
+
+      @Test
+      fun `will update mappings`() {
+        mappingApi.verify(
+          putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
+            .withRequestBodyJsonPath("prisonerNumber", "A0001KT"),
+        )
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absences-migration-entity-repair-requested"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absences-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
       }
     }
 
