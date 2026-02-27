@@ -577,45 +577,55 @@ class CourtSentencingSynchronisationService(
         "isBreachHearing" to event.isBreachHearing,
       )
     if (isAppearancePartOfACourtCase(event)) {
-      if (event.originatesInDps && !event.isBreachHearing) {
-        telemetryClient.trackEvent("court-appearance-synchronisation-updated-skipped", telemetry)
-      } else {
-        val mapping = mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)
-        if (mapping == null) {
-          if (ignoreMissingCourtAppearances) {
-            // require temporarily in preprod since batch will trigger updates on court events overnight that may not have been migrated
-            // so no point in sending to DLQ and causing confusion
-            telemetryClient.trackEvent(
-              "court-appearance-synchronisation-updated-skipped",
-              telemetry,
-            )
-            return
-          }
-          telemetryClient.trackEvent(
-            "court-appearance-synchronisation-updated-failed",
-            telemetry,
-          )
-          throw IllegalStateException("Received COURT_EVENTS-UPDATED for court appearance that has never been created")
+      if (!event.triggeredByFlushSchedules) {
+        if (event.originatesInDps && !event.isBreachHearing) {
+          telemetryClient.trackEvent("court-appearance-synchronisation-updated-skipped", telemetry)
         } else {
-          val nomisCourtAppearance = nomisApiService.getCourtAppearance(
-            offenderNo = event.offenderIdDisplay,
-            courtAppearanceId = event.eventId,
-          )
-          mappingApiService.getCourtCaseOrNullByNomisId(nomisCourtAppearance.caseId!!)?.let { courtCaseMapping ->
-            track(name = "court-appearance-synchronisation-updated", telemetry = (telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId)).toMutableMap()) {
-              dpsApiService.updateCourtAppearance(
-                courtAppearanceId = mapping.dpsCourtAppearanceId,
-                nomisCourtAppearance.toDpsCourtAppearance(dpsCaseId = courtCaseMapping.dpsCourtCaseId),
+          val mapping = mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)
+          if (mapping == null) {
+            if (ignoreMissingCourtAppearances) {
+              // require temporarily in preprod since batch will trigger updates on court events overnight that may not have been migrated
+              // so no point in sending to DLQ and causing confusion
+              telemetryClient.trackEvent(
+                "court-appearance-synchronisation-updated-skipped",
+                telemetry,
               )
+              return
             }
-          } ?: let {
             telemetryClient.trackEvent(
               "court-appearance-synchronisation-updated-failed",
-              telemetry + ("nomisCourtCaseId" to nomisCourtAppearance.caseId.toString()) + ("reason" to "associated court case is not mapped"),
+              telemetry,
             )
-            throw IllegalStateException("Received COURT_EVENTS_UPDATED with court case ${nomisCourtAppearance.caseId} that has never been created/mapped")
+            throw IllegalStateException("Received COURT_EVENTS-UPDATED for court appearance that has never been created")
+          } else {
+            val nomisCourtAppearance = nomisApiService.getCourtAppearance(
+              offenderNo = event.offenderIdDisplay,
+              courtAppearanceId = event.eventId,
+            )
+            mappingApiService.getCourtCaseOrNullByNomisId(nomisCourtAppearance.caseId!!)?.let { courtCaseMapping ->
+              track(
+                name = "court-appearance-synchronisation-updated",
+                telemetry = (telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId)).toMutableMap(),
+              ) {
+                dpsApiService.updateCourtAppearance(
+                  courtAppearanceId = mapping.dpsCourtAppearanceId,
+                  nomisCourtAppearance.toDpsCourtAppearance(dpsCaseId = courtCaseMapping.dpsCourtCaseId),
+                )
+              }
+            } ?: let {
+              telemetryClient.trackEvent(
+                "court-appearance-synchronisation-updated-failed",
+                telemetry + ("nomisCourtCaseId" to nomisCourtAppearance.caseId.toString()) + ("reason" to "associated court case is not mapped"),
+              )
+              throw IllegalStateException("Received COURT_EVENTS_UPDATED with court case ${nomisCourtAppearance.caseId} that has never been created/mapped")
+            }
           }
         }
+      } else {
+        telemetryClient.trackEvent(
+          "court-appearance-synchronisation-updated-ignored",
+          telemetry + ("reason" to "update triggered by the flush schedules nightly batch job"),
+        )
       }
     } else {
       telemetryClient.trackEvent(
