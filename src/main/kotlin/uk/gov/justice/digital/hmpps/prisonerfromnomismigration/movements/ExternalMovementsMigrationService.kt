@@ -36,7 +36,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import java.time.LocalDateTime
 import java.util.*
 
@@ -105,7 +104,8 @@ class ExternalMovementsMigrationService(
 
     runCatching {
       val temporaryAbsences = nomisApiService.getTemporaryAbsencesOrNull(offenderNo)
-        ?: throw NotFoundException("Prisoner $offenderNo not found")
+        // carry on even if there is no offender in NOMIS - this could be for a merged prisoner and we still need to update the mappings etc.
+        ?: OffenderTemporaryAbsencesResponse(bookings = emptyList())
       if (ignoreMissingTaps && temporaryAbsences.bookings.isEmpty()) {
         publishTelemetry("ignored", telemetry.apply { this["reason"] = "The offender has no TAPs" })
         return
