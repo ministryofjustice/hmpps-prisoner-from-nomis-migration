@@ -31,6 +31,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.temporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
@@ -635,6 +636,7 @@ class ExternalMovementsMigrationIntTest(
       @BeforeEach
       fun setUp() = runTest {
         externalMovementsNomisApi.stubGetTemporaryAbsences("A0001KT", response = OffenderTemporaryAbsencesResponse(bookings = listOf()))
+        dpsApi.stubResyncPrisonerTaps("A0001KT", response = MigrateTapResponse(listOf(), listOf()))
 
         repairPrisonerOk(prisonerNumber)
       }
@@ -668,6 +670,7 @@ class ExternalMovementsMigrationIntTest(
       @BeforeEach
       fun setUp() = runTest {
         externalMovementsNomisApi.stubGetTemporaryAbsences(status = NOT_FOUND)
+        dpsApi.stubResyncPrisonerTapsError("A0001KT", status = 404)
 
         repairPrisonerOk(prisonerNumber)
       }
@@ -681,7 +684,8 @@ class ExternalMovementsMigrationIntTest(
       fun `will update mappings`() {
         mappingApi.verify(
           putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
-            .withRequestBodyJsonPath("prisonerNumber", "A0001KT"),
+            .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
+            .withRequestBodyJsonPath("bookings.length()", 0),
         )
       }
 
