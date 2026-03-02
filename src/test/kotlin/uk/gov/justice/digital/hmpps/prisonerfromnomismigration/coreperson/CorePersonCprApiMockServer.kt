@@ -14,9 +14,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Identifier
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Identifier.Type
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Name
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Sentence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
@@ -24,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.Org
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDate
+import java.util.UUID
 
 class CorePersonCprApiExtension :
   BeforeAllCallback,
@@ -58,18 +58,11 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     private const val WIREMOCK_PORT = 8099
 
     fun migrateCorePersonRequest() = Prisoner(
-      name = Name(
-        titleCode = "MR",
-        firstName = "JOHN",
-        lastName = "SMITH",
-        middleNames = "FRED JAMES",
-      ),
       demographicAttributes = DemographicAttributes(
-        dateOfBirth = LocalDate.parse("1980-01-01"),
         birthPlace = "LONDON",
         birthCountryCode = "ENG",
         ethnicityCode = "BLACK",
-        sexCode = "M",
+        sexCode = DemographicAttributes.SexCode.valueOf("M"),
         sexualOrientation = "HET",
         disability = true,
         interestToImmigration = true,
@@ -77,21 +70,20 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
         nationalityCode = "ENG",
         nationalityNote = "NOT_ENG",
       ),
-      identifiers = listOf(
-        Identifier(
-          type = Type.PNC,
-          value = "20/0071818T",
-        ),
-      ),
       aliases = listOf(),
       addresses = listOf(),
-      contacts = listOf(),
+      personContacts = listOf(),
       sentences = listOf(
         Sentence(LocalDate.parse("1980-01-01")),
       ),
     )
 
     fun migrateCorePersonResponse(request: Prisoner = migrateCorePersonRequest()) = "OK"
+
+    fun migrateCorePersonReligionResponse(prisonNumber: String, nomisId: Long) = PrisonReligionResponseBody(
+      prisonNumber = prisonNumber,
+      religionMappings = PrisonReligionMapping(nomisId.toString(), UUID.randomUUID().toString()),
+    )
   }
 
   fun stubMigrateCorePerson(nomisPrisonNumber: String = "A1234BC", response: String = migrateCorePersonResponse()) {
@@ -109,15 +101,34 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubSyncCreateOffenderBelief(
     prisonNumber: String = "A1234BC",
     status: HttpStatus = HttpStatus.OK,
+    response: PrisonReligionResponseBody = migrateCorePersonReligionResponse(prisonNumber, 12345L),
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     stubFor(
-      post("/syscon-sync/religion/$prisonNumber")
+      post("/person/prison/$prisonNumber/religion")
         .willReturn(
           aResponse()
             .withStatus(status.value())
             .withHeader("Content-Type", "application/json")
-            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) status else error)),
+            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) response else error)),
+        ),
+    )
+  }
+
+  fun stubSyncUpdateOffenderBelief(
+    prisonNumber: String = "A1234BC",
+    cprId: String = "cprId",
+    status: HttpStatus = HttpStatus.OK,
+    response: PrisonReligionResponseBody = migrateCorePersonReligionResponse(prisonNumber, 12345L),
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    stubFor(
+      put("/person/prison/$prisonNumber/religion/$cprId")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) response else error)),
         ),
     )
   }

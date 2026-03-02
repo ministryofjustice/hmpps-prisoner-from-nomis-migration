@@ -3,21 +3,32 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.HMPPSPersonAPIApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.SysconSyncApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDisabilityStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonNationality
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionResponseBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSexualOrientation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 
 @Service
 class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val webClient: WebClient) {
   private val api = SysconSyncApi(webClient)
+  private val personApi = HMPPSPersonAPIApi(webClient)
 
   suspend fun migrateCorePerson(prisonNumber: String, corePerson: Prisoner): String = api
-    .prepare(api.createRequestConfig(prisonNumber, corePerson))
+    .prepare(api.updateRequestConfig(prisonNumber, corePerson))
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun migrateCorePersonReligion(prisonNumber: String, request: PrisonReligionRequest): SysconReligionResponseBody = api
+    .prepare(api.savePrisonerReligionsRequestConfig(prisonNumber, request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
@@ -41,8 +52,13 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncCreateOffenderBelief(prisonNumber: String, religion: PrisonReligionRequest): String? = api
-    .prepare(api.saveReligionsRequestConfig(prisonNumber, religion))
+  suspend fun syncCreateOffenderBelief(prisonNumber: String, religion: PrisonReligion): PrisonReligionResponseBody = personApi
+    .prepare(personApi.saveRequestConfig(prisonNumber, religion))
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun syncUpdateOffenderBelief(prisonNumber: String, cprReligionId: String, religion: PrisonReligionUpdateRequest): PrisonReligionResponseBody = personApi
+    .prepare(personApi.update1RequestConfig(prisonNumber, cprReligionId, religion))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 }

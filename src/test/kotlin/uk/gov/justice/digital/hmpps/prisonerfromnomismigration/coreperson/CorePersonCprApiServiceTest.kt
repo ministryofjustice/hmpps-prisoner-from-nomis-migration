@@ -17,7 +17,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension.Companion.cprCorePersonServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiMockServer.Companion.migrateCorePersonRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligion
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
@@ -57,7 +57,7 @@ class CorePersonCprApiServiceTest {
   }
 
   @Nested
-  inner class SyncOffenderBelief {
+  inner class SyncCreateOffenderBelief {
     @Test
     internal fun `will pass oath2 token to sync endpoint`() = runTest {
       cprCorePersonServer.stubSyncCreateOffenderBelief("A1234BC")
@@ -78,16 +78,16 @@ class CorePersonCprApiServiceTest {
 
       cprCorePersonServer.verify(
         postRequestedFor(anyUrl())
-          .withRequestBodyJsonPath("religions[0].religionCode", equalTo("BAPT"))
-          .withRequestBodyJsonPath("religions[0].current", equalTo("true"))
-          .withRequestBodyJsonPath("religions[0].changeReasonKnown", equalTo("true"))
-          .withRequestBodyJsonPath("religions[0].comments", equalTo("This is a comment"))
-          .withRequestBodyJsonPath("religions[0].verified", equalTo("true"))
-          .withRequestBodyJsonPath("religions[0].startDate", equalTo("2020-11-01"))
-          .withRequestBodyJsonPath("religions[0].endDate", equalTo("2022-07-19"))
-          .withRequestBodyJsonPath("religions[0].modifyDateTime", equalTo("2020-11-01T04:05:00"))
-          .withRequestBodyJsonPath("religions[0].modifyUserId", equalTo("FRED_ADM")),
-
+          .withRequestBodyJsonPath("nomisReligionId", equalTo("1"))
+          .withRequestBodyJsonPath("religionCode", equalTo("BAPT"))
+          .withRequestBodyJsonPath("current", equalTo("true"))
+          .withRequestBodyJsonPath("changeReasonKnown", equalTo("true"))
+          .withRequestBodyJsonPath("comments", equalTo("This is a comment"))
+          .withRequestBodyJsonPath("verified", equalTo("true"))
+          .withRequestBodyJsonPath("startDate", equalTo("2020-11-01"))
+          .withRequestBodyJsonPath("endDate", equalTo("2022-07-19"))
+          .withRequestBodyJsonPath("modifyDateTime", equalTo("2020-11-01T04:05:00"))
+          .withRequestBodyJsonPath("modifyUserId", equalTo("FRED_ADM")),
       )
     }
 
@@ -98,7 +98,7 @@ class CorePersonCprApiServiceTest {
       apiService.syncCreateOffenderBelief("A1234BC", prisonReligionRequest())
 
       cprCorePersonServer.verify(
-        postRequestedFor(urlPathEqualTo("/syscon-sync/religion/A1234BC")),
+        postRequestedFor(urlPathEqualTo("/person/prison/A1234BC/religion")),
       )
     }
 
@@ -112,19 +112,79 @@ class CorePersonCprApiServiceTest {
     }
   }
 
-  fun prisonReligionRequest() = PrisonReligionRequest(
-    religions = listOf(
-      PrisonReligion(
-        religionCode = "BAPT",
-        current = true,
-        changeReasonKnown = true,
-        comments = "This is a comment",
-        verified = true,
-        startDate = LocalDate.parse("2020-11-01"),
-        endDate = LocalDate.parse("2022-07-19"),
-        modifyDateTime = LocalDateTime.parse("2020-11-01T04:05:00"),
-        modifyUserId = "FRED_ADM",
-      ),
-    ),
+  @Nested
+  inner class SyncUpdateOffenderBelief {
+    @Test
+    internal fun `will pass oath2 token to sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncUpdateOffenderBelief("A1234BC")
+
+      apiService.syncUpdateOffenderBelief("A1234BC", "cprId", prisonReligionUpdateRequest())
+
+      cprCorePersonServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will post request data to the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncUpdateOffenderBelief()
+
+      apiService.syncUpdateOffenderBelief("A1234BC", "cprId", prisonReligionUpdateRequest())
+
+      cprCorePersonServer.verify(
+        putRequestedFor(anyUrl())
+          .withRequestBodyJsonPath("nomisReligionId", equalTo("1"))
+          .withRequestBodyJsonPath("current", equalTo("true"))
+          .withRequestBodyJsonPath("comments", equalTo("This is a comment"))
+          .withRequestBodyJsonPath("verified", equalTo("true"))
+          .withRequestBodyJsonPath("endDate", equalTo("2022-07-19"))
+          .withRequestBodyJsonPath("modifyDateTime", equalTo("2020-11-01T04:05:00"))
+          .withRequestBodyJsonPath("modifyUserId", equalTo("FRED_ADM")),
+      )
+    }
+
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncUpdateOffenderBelief("A1234BC")
+
+      apiService.syncUpdateOffenderBelief("A1234BC", "cprId", prisonReligionUpdateRequest())
+
+      cprCorePersonServer.verify(
+        putRequestedFor(urlPathEqualTo("/person/prison/A1234BC/religion/cprId")),
+      )
+    }
+
+    @Test
+    fun `should throw if bad request`() = runTest {
+      cprCorePersonServer.stubSyncUpdateOffenderBelief("A1234BC", status = BAD_REQUEST)
+
+      assertThrows<WebClientResponseException.BadRequest> {
+        apiService.syncUpdateOffenderBelief("A1234BC", "cprId", prisonReligionUpdateRequest())
+      }
+    }
+  }
+
+  fun prisonReligionRequest() = PrisonReligion(
+    nomisReligionId = "1",
+    religionCode = "BAPT",
+    current = true,
+    changeReasonKnown = true,
+    comments = "This is a comment",
+    verified = true,
+    startDate = LocalDate.parse("2020-11-01"),
+    endDate = LocalDate.parse("2022-07-19"),
+    modifyDateTime = LocalDateTime.parse("2020-11-01T04:05:00"),
+    modifyUserId = "FRED_ADM",
+  )
+
+  fun prisonReligionUpdateRequest() = PrisonReligionUpdateRequest(
+    nomisReligionId = "1",
+    current = true,
+    comments = "This is a comment",
+    verified = true,
+    endDate = LocalDate.parse("2022-07-19"),
+    modifyDateTime = LocalDateTime.parse("2020-11-01T04:05:00"),
+    modifyUserId = "FRED_ADM",
   )
 }

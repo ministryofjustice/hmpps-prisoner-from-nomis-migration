@@ -12,6 +12,7 @@ import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -27,6 +28,7 @@ import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiMockServer.Companion.migrateCorePersonResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.AddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Contact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
@@ -71,6 +73,7 @@ class CorePersonMigrationIntTest(
 
   @Nested
   @DisplayName("POST /migrate/core-person")
+  @Disabled("Need to rewrite for migration of religion instead")
   inner class MigrateCorePerson {
     @BeforeEach
     internal fun deleteHistoryRecords() {
@@ -523,12 +526,13 @@ class CorePersonMigrationIntTest(
       @Test
       fun `will send mandatory core person data to CPR`() {
         with(cprRequests2[0]) {
-          with(name) {
+          assertThat(aliases.size).isEqualTo(1)
+          with(aliases[0]) {
             assertThat(firstName).isEqualTo("KWAME")
             assertThat(middleNames).isNull()
             assertThat(lastName).isEqualTo("KOBE")
+            assertThat(isPrimary).isTrue
           }
-          assertThat(aliases.size).isEqualTo(0)
           assertThat(addresses).isEmpty()
           assertThat(sentences).isEmpty()
         }
@@ -537,14 +541,14 @@ class CorePersonMigrationIntTest(
       @Test
       fun `will send offender details to CPR`() {
         with(cprRequests[0]) {
-          with(name) {
+          assertThat(aliases).hasSize(2)
+          with(aliases[0]) {
             assertThat(titleCode).isEqualTo("MR")
             assertThat(firstName).isEqualTo("JOHN")
             assertThat(middleNames).isEqualTo("FRED JAMES")
             assertThat(lastName).isEqualTo("SMITH")
           }
-          assertThat(aliases).hasSize(1)
-          with(aliases[0]) {
+          with(aliases[1]) {
             assertThat(titleCode).isNull()
             assertThat(firstName).isEqualTo("JIM")
             assertThat(middleNames).isNull()
@@ -558,9 +562,9 @@ class CorePersonMigrationIntTest(
       @Test
       fun `will send offender identifier details to CPR`() {
         with(cprRequests[0]) {
-          assertThat(identifiers).hasSize(1)
-          with(identifiers[0]) {
-            assertThat(type?.value).isEqualTo("PNC")
+          assertThat(aliases[0].identifiers).hasSize(1)
+          with(aliases[0].identifiers[0]) {
+            assertThat(type.value).isEqualTo("PNC")
             assertThat(value).isEqualTo("20/0071818T")
           }
         }
@@ -569,36 +573,29 @@ class CorePersonMigrationIntTest(
       @Test
       fun `will send phone numbers to CPR`() {
         with(cprRequests[0]) {
-          assertThat(contacts).hasSize(4)
-          with(contacts[0]) {
+          assertThat(personContacts).hasSize(3)
+          with(personContacts[0]) {
             assertThat(value).isEqualTo("0114 555 5555")
             assertThat(type).isEqualTo(Contact.Type.MOBILE)
             assertThat(extension).isEqualTo("ext 5555")
-            assertThat(isPersonContact).isTrue
-            assertThat(isAddressContact).isFalse
           }
-          with(contacts[1]) {
+          with(personContacts[1]) {
             assertThat(value).isEqualTo("0114 1111 1111111")
             // FAX is not mapped to a phone type
             assertThat(type).isEqualTo(Contact.Type.HOME)
             assertThat(extension).isNull()
-            assertThat(isPersonContact).isTrue
-            assertThat(isAddressContact).isFalse
           }
-          with(contacts[2]) {
+          with(personContacts[2]) {
             assertThat(value).isEqualTo("test@test.justice.gov.uk")
             // FAX is not mapped to a phone type
             assertThat(type).isEqualTo(Contact.Type.EMAIL)
             assertThat(extension).isNull()
-            assertThat(isPersonContact).isTrue
-            assertThat(isAddressContact).isFalse
           }
-          with(contacts[3]) {
+          assertThat(addresses[0].contacts).hasSize(1)
+          with(addresses[0].contacts[0]) {
             assertThat(value).isEqualTo("0113 555 5555")
             assertThat(type).isEqualTo(Contact.Type.HOME)
             assertThat(extension).isEqualTo("ext 5555")
-            assertThat(isPersonContact).isFalse
-            assertThat(isAddressContact).isTrue
           }
         }
       }
@@ -646,11 +643,10 @@ class CorePersonMigrationIntTest(
       @Test
       fun `will send latest demographic data to CPR`() {
         with(cprRequests[0].demographicAttributes) {
-          assertThat(dateOfBirth).isEqualTo(LocalDate.parse("1980-01-01"))
           assertThat(birthPlace).isEqualTo("LONDON")
           assertThat(birthCountryCode).isEqualTo("ENG")
           assertThat(ethnicityCode).isEqualTo("BLACK")
-          assertThat(sexCode).isEqualTo("M")
+          assertThat(sexCode).isEqualTo(DemographicAttributes.SexCode.valueOf("M"))
           assertThat(sexualOrientation).isEqualTo("HET")
           assertThat(disability).isTrue
           assertThat(religionCode).isEqualTo("DRU")

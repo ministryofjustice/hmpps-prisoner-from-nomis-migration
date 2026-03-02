@@ -68,10 +68,9 @@ class CorePersonEventListener(
               "OFFENDER_EMAIL-UPDATED" -> service.offenderEmailUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_EMAIL-DELETED" -> service.offenderEmailDeleted(sqsMessage.Message.fromJson())
 
-              "OFFENDER_BELIEFS-INSERTED",
-              "OFFENDER_BELIEFS-UPDATED",
-              "OFFENDER_BELIEFS-DELETED",
-              -> beliefsService.offenderBeliefChanged(sqsMessage.Message.fromJson())
+              "OFFENDER_BELIEFS-INSERTED" -> beliefsService.offenderBeliefCreated(sqsMessage.Message.fromJson())
+              "OFFENDER_BELIEFS-UPDATED" -> beliefsService.offenderBeliefUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_BELIEFS-DELETED" -> beliefsService.offenderBeliefDeleted(sqsMessage.Message.fromJson())
 
               // TODO: Ignore for now - core person haven't mapped address usage
               // If needed then a JIRA is required to add in audit module name - maybe new trigger
