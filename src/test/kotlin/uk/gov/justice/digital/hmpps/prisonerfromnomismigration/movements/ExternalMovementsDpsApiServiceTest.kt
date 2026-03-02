@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapOccurrence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import java.time.LocalDate
 import java.util.*
@@ -334,6 +335,50 @@ class ExternalMovementsDpsApiServiceTest {
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.moveBooking(request)
       }
+    }
+  }
+
+  @Nested
+  inner class Resync {
+    val request = MigrateTapRequest(listOf(), listOf())
+
+    @Test
+    internal fun `should pass oath2 token`() = runTest {
+      dpsExtMovementsServer.stubResyncPrisonerTaps()
+
+      apiService.resyncPrisonerTaps("A1234BC", request)
+
+      dpsExtMovementsServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should call the move endpoint`() = runTest {
+      dpsExtMovementsServer.stubResyncPrisonerTaps()
+
+      apiService.resyncPrisonerTaps("A1234BC", request)
+
+      dpsExtMovementsServer.verify(
+        putRequestedFor(urlPathEqualTo("/resync/temporary-absences/A1234BC")),
+      )
+    }
+
+    @Test
+    fun `should throw if error`() = runTest {
+      dpsExtMovementsServer.stubResyncPrisonerTapsError()
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.resyncPrisonerTaps("A1234BC", request)
+      }
+    }
+
+    @Test
+    fun `should return null if not found`() = runTest {
+      dpsExtMovementsServer.stubResyncPrisonerTapsError(status = 404)
+
+      assertThat(apiService.resyncPrisonerTaps("A1234BC", request)).isNull()
     }
   }
 }

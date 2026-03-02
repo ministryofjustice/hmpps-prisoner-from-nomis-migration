@@ -113,6 +113,7 @@ class ExternalMovementsMigrationService(
       val oldMappingIds = migrationMappingService.getPrisonerMappingIds(offenderNo)
       // Note that we're not expecting to perform a clean migration again so we're calling the DPS /resync endpoint which performs "patch migrations"
       val dpsResponse = dpsApiService.resyncPrisonerTaps(offenderNo, temporaryAbsences.toDpsRequest(oldMappingIds))
+        ?: MigrateTapResponse(temporaryAbsences = emptyList(), unscheduledMovements = emptyList())
       val mappings = temporaryAbsences.buildMappings(offenderNo, migrationId, dpsResponse)
 
       createMappingOrOnFailureDo(mappings) {
