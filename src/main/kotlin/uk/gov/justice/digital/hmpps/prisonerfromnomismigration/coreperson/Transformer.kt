@@ -7,7 +7,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Contact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Identifier
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Name
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Sentence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
@@ -21,45 +20,43 @@ private val allowedIdentifiers: Set<String> = Identifier.Type.entries.map { it.v
 fun CorePerson.toCprPrisoner(): Prisoner {
   val currentAlias = offenders?.first { it.workingName }!!
   return Prisoner(
-    name = currentAlias.toCprName(),
     demographicAttributes = toDemographicAttributes(currentAlias),
     addresses = addresses?.map { it.toCprAddress() } ?: emptyList(),
-    contacts = (phoneNumbers?.map { it.toCprContact() } ?: emptyList()) +
+    personContacts = (phoneNumbers?.map { it.toCprContact() } ?: emptyList()) +
       (emailAddresses?.map { it.toCprContact() } ?: emptyList()) +
       (addresses?.flatMap { it.toCprContact() ?: emptyList() } ?: emptyList()),
     aliases = offenders.filterNot { it.workingName }.map { it.toCprAlias() },
-    identifiers = offenders.flatMap {
-      it.identifiers
-        // TOOD: confirm only 4 identifier types required
-        .filter { i -> allowedIdentifiers.contains(i.type.code) }
-        .map { i -> Identifier(type = Identifier.Type.valueOf(i.type.code), value = i.identifier) }
-    },
     sentences = sentenceStartDates?.map { Sentence(it) } ?: emptyList(),
   )
 }
 
-private fun CoreOffender.toCprName() = Name(
-  titleCode = title?.code,
-  firstName = firstName,
-  middleNames = listOfNotNull(middleName1, middleName2).takeIf { it.isNotEmpty() }?.joinToString(" "),
-  lastName = lastName,
-)
-
 private fun CoreOffender.toCprAlias() = Alias(
+  nomisAliasId = offenderId,
+  isPrimary = workingName,
   titleCode = title?.code,
   firstName = firstName,
   middleNames = listOfNotNull(middleName1, middleName2).takeIf { it.isNotEmpty() }?.joinToString(" "),
   lastName = lastName,
   dateOfBirth = dateOfBirth,
-  sexCode = sex?.code,
+  sexCode = sex?.code?.let { Alias.SexCode.valueOf(it) },
+  identifiers = identifiers
+    // TODO: confirm only 4 identifier types required
+    .filter { i -> allowedIdentifiers.contains(i.type.code) }
+    .map { i ->
+      Identifier(
+        type = Identifier.Type.valueOf(i.type.code),
+        value = i.identifier,
+        nomisIdentifierId = i.sequence,
+        comment = i.issuedAuthority,
+      )
+    },
 )
 
 private fun CorePerson.toDemographicAttributes(currentAlias: CoreOffender): DemographicAttributes = DemographicAttributes(
-  dateOfBirth = currentAlias.dateOfBirth,
   birthPlace = currentAlias.birthPlace,
   birthCountryCode = currentAlias.birthCountry?.code,
   ethnicityCode = currentAlias.ethnicity?.code,
-  sexCode = currentAlias.sex?.code,
+  sexCode = currentAlias.sex?.code?.let { DemographicAttributes.SexCode.valueOf(it) },
   sexualOrientation = sexualOrientations?.firstOrNull()?.sexualOrientation?.code,
   disability = disabilities?.firstOrNull()?.disability,
   religionCode = this.beliefs?.firstOrNull()?.belief?.code,
@@ -69,10 +66,11 @@ private fun CorePerson.toDemographicAttributes(currentAlias: CoreOffender): Demo
 )
 
 private fun OffenderAddress.toCprAddress() = Address(
+  nomisAddressId = addressId,
   fullAddress = buildFullAddress(),
   noFixedAbode = noFixedAddress,
   startDate = startDate,
-  endDate = endDate?.toString(),
+  endDate = endDate,
   postcode = postcode,
   subBuildingName = flat,
   buildingName = premise,
@@ -85,7 +83,8 @@ private fun OffenderAddress.toCprAddress() = Address(
   comment = comment,
   isPrimary = primaryAddress,
   isMail = mailAddress,
-  addressUsage = this.usages?.map { AddressUsage(AddressUsageCode.valueOf(it.usage.code), it.active) } ?: emptyList(),
+  addressUsage = usages?.map { AddressUsage(addressId, AddressUsageCode.valueOf(it.usage.code), it.active) } ?: emptyList(),
+  contacts = this.toCprContact() ?: emptyList(),
 )
 
 private fun MutableList<String>.addIfNotEmpty(value: String?) {
@@ -121,9 +120,7 @@ fun OffenderAddress.buildFullAddress(): String {
   return address.joinToString(", ")
 }
 
-fun OffenderPhoneNumber.toCprContact(fromAddress: Boolean = false) = Contact(
-  isPersonContact = fromAddress.not(),
-  isAddressContact = fromAddress,
+fun OffenderPhoneNumber.toCprContact() = Contact(
   value = number,
   type = when (type.code) {
     "HOME" -> Contact.Type.HOME
@@ -135,13 +132,11 @@ fun OffenderPhoneNumber.toCprContact(fromAddress: Boolean = false) = Contact(
 )
 
 fun OffenderEmailAddress.toCprContact() = Contact(
-  isPersonContact = true,
-  isAddressContact = false,
   value = email,
   type = Contact.Type.EMAIL,
 )
 
-fun OffenderAddress.toCprContact(): List<Contact>? = this.phoneNumbers?.map { it.toCprContact(fromAddress = true) }
+fun OffenderAddress.toCprContact(): List<Contact>? = this.phoneNumbers?.map { it.toCprContact() }
 
 // fun OffenderBelief.toCprReligion() = Religion(
 //  religion = belief.code,
