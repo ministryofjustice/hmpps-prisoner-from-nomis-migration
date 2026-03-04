@@ -214,6 +214,11 @@ officialvisits:
     delay-seconds: 180
     count: 9
 
+coreperson:
+  complete-check:
+    delay-seconds: 10
+    count: 9
+
 azure:
   application-insights:
     web:
