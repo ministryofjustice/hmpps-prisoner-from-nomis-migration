@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-03-03.1171.d9b9a89"
+    "version" : "2026-03-05.1184.09db6f0"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -34540,9 +34540,13 @@
           "activeBooking" : {
             "type" : "boolean",
             "description" : "Whether this is an active booking"
+          },
+          "latestBooking" : {
+            "type" : "boolean",
+            "description" : "Whether this is the latest booking"
           }
         },
-        "required" : [ "activeBooking", "bookingId", "temporaryAbsenceApplications", "unscheduledTemporaryAbsenceReturns", "unscheduledTemporaryAbsences" ]
+        "required" : [ "activeBooking", "bookingId", "latestBooking", "temporaryAbsenceApplications", "unscheduledTemporaryAbsenceReturns", "unscheduledTemporaryAbsences" ]
       },
       "OffenderTemporaryAbsencesResponse" : {
         "type" : "object",
@@ -35490,6 +35494,10 @@
             "format" : "int64",
             "description" : "Booking ID"
           },
+          "latestBooking" : {
+            "type" : "boolean",
+            "description" : "Whether this is the latest booking"
+          },
           "activeBooking" : {
             "type" : "boolean",
             "description" : "Whether this is an active booking"
@@ -35594,7 +35602,7 @@
             "description" : "Audit data associated with the records"
           }
         },
-        "required" : [ "activeBooking", "applicationDate", "applicationStatus", "applicationType", "audit", "bookingId", "eventSubType", "fromDate", "movementApplicationId", "prisonId", "releaseTime", "returnTime", "toDate" ]
+        "required" : [ "activeBooking", "applicationDate", "applicationStatus", "applicationType", "audit", "bookingId", "eventSubType", "fromDate", "latestBooking", "movementApplicationId", "prisonId", "releaseTime", "returnTime", "toDate" ]
       },
       "AmendmentResponse" : {
         "type" : "object",
