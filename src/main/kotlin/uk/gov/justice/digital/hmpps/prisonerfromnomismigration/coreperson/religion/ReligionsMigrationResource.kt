@@ -1,32 +1,28 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
-import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 
 @RestController
-@RequestMapping("/migrate/core-person", produces = [MediaType.APPLICATION_JSON_VALUE])
-@Tag(name = "Core Person Migration Resource")
+@RequestMapping("/migrate/core-person/religion", produces = [MediaType.APPLICATION_JSON_VALUE])
+@Tag(name = "Core Person Religions Migration Resource")
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
-class CorePersonMigrationResource(
-  private val migrationService: CorePersonMigrationService,
-) {
+class ReligionsMigrationResource(private val migrationService: ReligionsMigrationService) {
   @PostMapping
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
-    summary = "Starts a core person migration. The entity type is determined by the migration filter",
+    summary = "Starts a religion migration. This migration has no filter",
     description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
     responses = [
       ApiResponse(
@@ -50,7 +46,5 @@ class CorePersonMigrationResource(
       ),
     ],
   )
-  suspend fun migrateCorePerson(
-    @RequestBody @Valid migrationFilter: CorePersonMigrationFilter,
-  ) = migrationService.startMigration(migrationFilter)
+  suspend fun startMigration() = migrationService.startMigration("")
 }

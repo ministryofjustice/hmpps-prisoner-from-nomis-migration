@@ -5,6 +5,7 @@ import kotlinx.coroutines.future.await
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
 import uk.gov.justice.hmpps.sqs.eventTypeMessageAttributes
@@ -58,7 +59,6 @@ class SynchronisationQueueService(
         telemetryClient.trackEvent(
           messageType,
           mapOf("messageId" to it.messageId()),
-          null,
         )
       }
       .also {
