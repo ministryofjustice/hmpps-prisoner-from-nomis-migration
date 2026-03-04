@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.Appo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityAsTrueNotFoundAsFalse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.PrisonersResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.ProfileDetailsResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.ServiceAgencySwitchesResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.EndActivitiesRequest
@@ -42,6 +43,7 @@ import java.time.LocalDateTime
 class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
   private val profileDetailsResourceApi = ProfileDetailsResourceApi(webClient)
   private val serviceAgencySwitchesResourceApi = ServiceAgencySwitchesResourceApi(webClient)
+  private val prisonersResourceApi = PrisonersResourceApi(webClient)
 
   suspend fun getVisits(
     prisonIds: List<String>,
@@ -214,9 +216,9 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .retrieve()
     .awaitBody()
 
-  suspend fun getPrisonerDetails(offenderNo: String): PrisonerDetails? = webClient.get()
-    .uri("/prisoners/{offenderNo}", offenderNo)
-    .retrieve()
+  suspend fun getPrisonerDetails(offenderNo: String): PrisonerDetails? = prisonersResourceApi.prepare(
+    prisonersResourceApi.getPrisonerDetailsRequestConfig(offenderNo),
+  ).retrieve()
     .awaitBodyOrNullWhenNotFound()
 
   suspend fun getProfileDetails(offenderNo: String, profileTypes: List<String> = emptyList(), bookingId: Long? = null): PrisonerProfileDetailsResponse = profileDetailsResourceApi
@@ -232,6 +234,14 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .prepare(serviceAgencySwitchesResourceApi.checkServiceAgencyRequestConfig(serviceCode, agencyId))
     .retrieve()
     .awaitBodilessEntityAsTrueNotFoundAsFalse()
+
+  suspend fun getAllPrisonersInRange(fromRootOffenderId: Long, toRootOffenderId: Long) = prisonersResourceApi
+    .getAllPrisonersInRange1(fromRootOffenderId, toRootOffenderId)
+    .awaitSingle()
+
+  suspend fun getAllPrisonersIdRanges(pageSize: Long) = prisonersResourceApi
+    .getAllPrisonersIdRanges1(pageSize.toInt())
+    .awaitSingle()
 }
 
 data class VisitId(
