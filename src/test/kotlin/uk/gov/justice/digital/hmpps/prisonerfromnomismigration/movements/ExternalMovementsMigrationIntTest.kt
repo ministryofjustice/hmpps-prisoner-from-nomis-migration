@@ -449,7 +449,7 @@ class ExternalMovementsMigrationIntTest(
   }
 
   @Nested
-  inner class HappyPathInactiveBookingFutureApplication {
+  inner class HappyPathOldBookingFutureApplication {
     val prisonerNumber = "A0001KT"
 
     @BeforeEach
@@ -461,7 +461,8 @@ class ExternalMovementsMigrationIntTest(
       externalMovementsNomisApi.stubGetTemporaryAbsences(
         prisonerNumber,
         response = temporaryAbsencesResponse(
-          activeBooking = false,
+          activeBooking = true,
+          latestBooking = false,
           applications = listOf(application(status = "APP-SCH", toDate = LocalDate.now())),
         ),
       )

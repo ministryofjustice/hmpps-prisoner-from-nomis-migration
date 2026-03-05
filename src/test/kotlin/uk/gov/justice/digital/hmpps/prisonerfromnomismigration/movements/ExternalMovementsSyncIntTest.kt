@@ -532,14 +532,15 @@ class ExternalMovementsSyncIntTest(
     }
 
     @Nested
-    inner class HappyPathInactiveBookingFutureApplication {
+    inner class HappyPathOldBookingFutureApplication {
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsId)
         nomisApi.stubGetTemporaryAbsenceApplication(
           applicationId = 111,
           response = temporaryAbsenceApplicationResponse(
-            activeBooking = false,
+            activeBooking = true,
+            latestBooking = false,
             status = "APP-SCH",
             fromDate = LocalDate.now(),
             toDate = LocalDate.now().plusDays(1),

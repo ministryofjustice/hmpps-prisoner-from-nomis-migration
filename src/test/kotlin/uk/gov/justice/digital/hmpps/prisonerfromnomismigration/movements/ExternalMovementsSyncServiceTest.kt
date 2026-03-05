@@ -54,7 +54,8 @@ class ExternalMovementsSyncServiceTest {
     @Test
     fun `should set expired if approved scheduled, inactive booking not ended yet`() {
       val nomisResponse = temporaryAbsenceApplicationResponse(
-        activeBooking = false,
+        activeBooking = true,
+        latestBooking = false,
         status = "APP-SCH",
         fromDate = LocalDate.now().minusDays(1),
         toDate = LocalDate.now(),
@@ -68,7 +69,8 @@ class ExternalMovementsSyncServiceTest {
     @Test
     fun `should set expired if approved unscheduled, inactive booking not ended yet`() {
       val nomisResponse = temporaryAbsenceApplicationResponse(
-        activeBooking = false,
+        activeBooking = true,
+        latestBooking = false,
         status = "APP-UNSCH",
         fromDate = LocalDate.now().minusDays(1),
         toDate = LocalDate.now(),
