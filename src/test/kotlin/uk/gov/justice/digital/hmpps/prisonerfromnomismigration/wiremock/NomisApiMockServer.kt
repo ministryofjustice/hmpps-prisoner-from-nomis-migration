@@ -536,11 +536,11 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubGetAllPrisonersInRange(fromRootOffenderId: Long = 1L, toRootOffenderId: Long = 20L) {
+  fun stubGetAllPrisonersInRange(fromRootOffenderId: Long = 1L, toRootOffenderId: Long = 20L, firstOffenderNo: String = "A0001KT") {
     val content: List<PrisonNumberAndRootOffenderId> = (fromRootOffenderId..toRootOffenderId).map {
       PrisonNumberAndRootOffenderId(
         rootOffenderId = it,
-        prisonNumber = String.format("A%04dBC", it),
+        prisonNumber = firstOffenderNo.replace("0001", "$it".padStart(4, '0')),
       )
     }
     nomisApi.stubFor(
