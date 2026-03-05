@@ -680,7 +680,7 @@ class ExternalMovementsSyncService(
 fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) = SyncWriteTapAuthorisation(
   id = id,
   prisonCode = prisonId,
-  statusCode = toDpsAuthorisationStatusCode(applicationStatus, toDate, activeBooking),
+  statusCode = toDpsAuthorisationStatusCode(applicationStatus, toDate, latestBooking),
   absenceTypeCode = temporaryAbsenceType,
   absenceSubTypeCode = temporaryAbsenceSubType,
   absenceReasonCode = eventSubType,
@@ -698,8 +698,8 @@ fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) = SyncWri
   location = Location(description = toAddressDescription, address = toFullAddress, postcode = toAddressPostcode),
 )
 
-fun toDpsAuthorisationStatusCode(status: String, toDate: LocalDate, activeBooking: Boolean) = when {
-  !activeBooking && toDate.notEnded() && status.isApproved() -> "EXPIRED"
+fun toDpsAuthorisationStatusCode(status: String, toDate: LocalDate, latestBooking: Boolean) = when {
+  !latestBooking && toDate.notEnded() && status.isApproved() -> "EXPIRED"
   status == "PEN" -> "PENDING"
   status.isApproved() -> "APPROVED"
   status == "DEN" -> "DENIED"

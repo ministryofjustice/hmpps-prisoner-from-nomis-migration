@@ -16,9 +16,10 @@ class ExternalMovementsMigrationTest {
   @Nested
   inner class ApplicationStatus {
     @Test
-    fun `should set expired if approved scheduled, inactive booking not ended yet`() {
+    fun `should set expired if approved scheduled, old booking not ended yet`() {
       val nomisResponse = temporaryAbsencesResponse(
-        activeBooking = false,
+        activeBooking = true,
+        latestBooking = false,
         applications = listOf(
           application(
             fromDate = LocalDate.now().minusDays(1),
@@ -34,9 +35,10 @@ class ExternalMovementsMigrationTest {
     }
 
     @Test
-    fun `should set expired if approved unscheduled, inactive booking not ended yet`() {
+    fun `should set expired if approved unscheduled, old booking not ended yet`() {
       val nomisResponse = temporaryAbsencesResponse(
-        activeBooking = false,
+        activeBooking = true,
+        latestBooking = false,
         applications = listOf(
           application(
             fromDate = LocalDate.now().minusDays(1),

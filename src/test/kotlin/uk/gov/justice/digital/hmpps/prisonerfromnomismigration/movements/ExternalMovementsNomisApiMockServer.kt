@@ -276,6 +276,7 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
       movementPrison: String = "LEI",
       bookingId: Long = 12345L,
       activeBooking: Boolean = true,
+      latestBooking: Boolean = true,
       absences: List<Absence> = listOf(absence(movementPrison = movementPrison)),
       applications: List<TemporaryAbsenceApplication> = listOf(application(absences = absences)),
       unscheduledTemporaryAbsences: List<TemporaryAbsence> = listOf(temporaryAbsence(seq = 1).copy(movementDate = yesterday.toLocalDate(), movementTime = yesterday)),
@@ -285,7 +286,7 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
         BookingTemporaryAbsences(
           bookingId = bookingId,
           activeBooking = activeBooking,
-          latestBooking = true,
+          latestBooking = latestBooking,
           temporaryAbsenceApplications = applications,
           unscheduledTemporaryAbsences = unscheduledTemporaryAbsences,
           unscheduledTemporaryAbsenceReturns = unscheduledTemporaryAbsenceReturns,
@@ -433,13 +434,14 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
 
     fun temporaryAbsenceApplicationResponse(
       activeBooking: Boolean = true,
+      latestBooking: Boolean = true,
       status: String = "APP-SCH",
       fromDate: LocalDate = now.toLocalDate(),
       toDate: LocalDate = tomorrow.toLocalDate(),
     ) = TemporaryAbsenceApplicationResponse(
       bookingId = 12345,
       activeBooking = activeBooking,
-      latestBooking = true,
+      latestBooking = latestBooking,
       movementApplicationId = 111,
       eventSubType = "C5",
       applicationDate = now.toLocalDate(),
