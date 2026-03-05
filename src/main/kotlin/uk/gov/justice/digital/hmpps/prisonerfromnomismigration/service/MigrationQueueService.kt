@@ -13,6 +13,7 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.HmppsQueueService
@@ -26,8 +27,8 @@ class MigrationQueueService(
   private val hmppsQueueService: HmppsQueueService,
   private val telemetryClient: TelemetryClient,
   private val jsonMapper: JsonMapper,
-  @Value("\${cancel.queue.purge-frequency-time}") val purgeFrequency: Duration,
-  @Value("\${cancel.queue.purge-total-time}") val purgeTotalTime: Duration,
+  @Value($$"${cancel.queue.purge-frequency-time}") val purgeFrequency: Duration,
+  @Value($$"${cancel.queue.purge-total-time}") val purgeTotalTime: Duration,
 ) {
 
   private companion object {
@@ -56,7 +57,6 @@ class MigrationQueueService(
       telemetryClient.trackEvent(
         message.name,
         mapOf("messageId" to it.messageId(), "migrationId" to context.migrationId),
-        null,
       )
     }
   }

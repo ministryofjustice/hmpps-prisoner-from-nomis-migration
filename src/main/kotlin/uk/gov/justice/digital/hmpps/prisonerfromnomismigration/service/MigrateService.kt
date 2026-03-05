@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 
@@ -18,10 +19,9 @@ class MigrateService(
     val migration = migrationHistoryService.get(migrationId)
     telemetryClient.trackEvent(
       "${migration.migrationType.telemetryName}-migration-cancel-requested",
-      mapOf<String, String>(
+      mapOf(
         "migrationId" to migration.migrationId,
       ),
-      null,
     )
     migrationHistoryService.recordMigrationCancelledRequested(migrationId)
     auditService.sendAuditEvent(

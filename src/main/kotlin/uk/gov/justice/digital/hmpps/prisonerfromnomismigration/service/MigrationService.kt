@@ -136,12 +136,11 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
         )
         telemetryClient.trackEvent(
           "${migrationType.telemetryName}-migration-completed",
-          mapOf<String, String>(
+          mapOf(
             "migrationId" to context.migrationId,
             "estimatedCount" to context.estimatedCount.toString(),
             "durationMinutes" to context.durationMinutes().toString(),
           ),
-          null,
         )
       } else {
         queueService.sendMessage(
@@ -175,12 +174,11 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
       if (context.body.hasCheckedAReasonableNumberOfTimes(completeCheckCount)) {
         telemetryClient.trackEvent(
           "${migrationType.telemetryName}-migration-cancelled",
-          mapOf<String, String>(
+          mapOf(
             "migrationId" to context.migrationId,
             "estimatedCount" to context.estimatedCount.toString(),
             "durationMinutes" to context.durationMinutes().toString(),
           ),
-          null,
         )
         migrationHistoryService.recordMigrationCancelled(
           migrationId = context.migrationId,
@@ -205,10 +203,9 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
     val migration = migrationHistoryService.get(migrationId)
     telemetryClient.trackEvent(
       "${migrationType.telemetryName}-migration-cancel-requested",
-      mapOf<String, String>(
+      mapOf(
         "migrationId" to migration.migrationId,
       ),
-      null,
     )
     migrationHistoryService.recordMigrationCancelledRequested(migrationId)
     auditService.sendAuditEvent(

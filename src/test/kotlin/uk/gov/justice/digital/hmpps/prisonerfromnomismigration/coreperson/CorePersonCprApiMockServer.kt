@@ -18,6 +18,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Sentence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
@@ -80,9 +82,14 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
     fun migrateCorePersonResponse(request: Prisoner = migrateCorePersonRequest()) = "OK"
 
-    fun migrateCorePersonReligionResponse(prisonNumber: String, nomisId: Long) = PrisonReligionResponseBody(
+    fun syncCorePersonReligionResponse(prisonNumber: String, nomisId: Long) = PrisonReligionResponseBody(
       prisonNumber = prisonNumber,
       religionMappings = PrisonReligionMapping(nomisId.toString(), UUID.randomUUID().toString()),
+    )
+
+    fun migrateCorePersonReligionResponse(prisonNumber: String, nomisId: Long, cprId: String) = SysconReligionResponseBody(
+      prisonNumber = prisonNumber,
+      religionMappings = listOf(SysconReligionMapping(nomisId.toString(), cprId)),
     )
   }
 
@@ -98,10 +105,27 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubMigrateCorePersonReligion(
+    nomisPrisonNumber: String = "A1234BC",
+    nomisId: Long = 1L,
+    cprId: String = UUID.randomUUID().toString(),
+    response: SysconReligionResponseBody = migrateCorePersonReligionResponse(nomisPrisonNumber, nomisId, cprId),
+  ) {
+    stubFor(
+      post("/syscon-sync/religion/$nomisPrisonNumber")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(CorePersonCprApiExtension.jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
   fun stubSyncCreateOffenderBelief(
     prisonNumber: String = "A1234BC",
     status: HttpStatus = HttpStatus.OK,
-    response: PrisonReligionResponseBody = migrateCorePersonReligionResponse(prisonNumber, 12345L),
+    response: PrisonReligionResponseBody = syncCorePersonReligionResponse(prisonNumber, 12345L),
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     stubFor(
@@ -119,7 +143,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     prisonNumber: String = "A1234BC",
     cprId: String = "cprId",
     status: HttpStatus = HttpStatus.OK,
-    response: PrisonReligionResponseBody = migrateCorePersonReligionResponse(prisonNumber, 12345L),
+    response: PrisonReligionResponseBody = syncCorePersonReligionResponse(prisonNumber, 12345L),
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     stubFor(

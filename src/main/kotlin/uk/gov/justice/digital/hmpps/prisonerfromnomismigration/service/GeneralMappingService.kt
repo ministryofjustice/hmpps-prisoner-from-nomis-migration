@@ -4,7 +4,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.ActivitiesMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.AllocationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentsMappingService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion.ReligionsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonBalanceMappingApiService
@@ -21,7 +21,7 @@ class GeneralMappingService(
   private val visitMappingService: VisitMappingService,
   private val activityMappingService: ActivitiesMappingService,
   private val allocationsMappingService: AllocationsMappingService,
-  private val corePersonMappingApiService: CorePersonMappingApiService,
+  private val religionsMappingService: ReligionsMappingService,
   private val csraMappingService: CsraMappingService,
   private val incidentsMappingService: IncidentsMappingService,
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
@@ -32,19 +32,18 @@ class GeneralMappingService(
   private val officialVisitsMappingService: OfficialVisitsMappingService,
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long = when (migrationType) {
-    MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
-    MigrationType.VISITS -> visitMappingService.getMigrationCount(migrationId)
     MigrationType.ACTIVITIES -> activityMappingService.getMigrationCount(migrationId)
     MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
-    MigrationType.CORE_PERSON -> corePersonMappingApiService.getMigrationCount(migrationId)
-    MigrationType.CSRA -> csraMappingService.getMigrationCount(migrationId)
-    MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
+    MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
+    MigrationType.CORE_PERSON_RELIGION -> religionsMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
+    MigrationType.CSRA -> csraMappingService.getMigrationCount(migrationId)
     MigrationType.EXTERNAL_MOVEMENTS -> externalMovementsMappingApiService.getMigrationCount(migrationId)
+    MigrationType.INCIDENTS -> incidentsMappingService.getMigrationCount(migrationId)
     MigrationType.OFFICIAL_VISITS -> officialVisitsMappingService.getMigrationCount(migrationId)
-    MigrationType.VISIT_SLOTS -> visitSlotsMappingService.getMigrationCount(migrationId)
-
     MigrationType.PRISON_BALANCE -> prisonBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
     MigrationType.PRISONER_BALANCE -> prisonerBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
+    MigrationType.VISIT_SLOTS -> visitSlotsMappingService.getMigrationCount(migrationId)
+    MigrationType.VISITS -> visitMappingService.getMigrationCount(migrationId)
   }
 }

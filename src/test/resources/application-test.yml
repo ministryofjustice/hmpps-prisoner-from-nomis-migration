@@ -56,10 +56,14 @@ casenotes:
   page:
     size: 10
 coreperson:
+  parallel:
+    count: 4
   complete-check:
     delay-seconds: 0
     retry-seconds: 0
     count: 1
+  page:
+    size: 10
 courtsentencing:
   complete-check:
     delay-seconds: 1

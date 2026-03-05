@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion
 
 import io.awspring.cloud.sqs.annotation.SqsListener
 import io.opentelemetry.api.trace.SpanKind
@@ -11,9 +11,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CORE_PERS
 import java.util.concurrent.CompletableFuture
 
 @Service
-class CorePersonMigrationMessageListener(
+class ReligionsMigrationMessageListener(
   jsonMapper: JsonMapper,
-  migrationService: CorePersonMigrationService,
+  migrationService: ReligionsMigrationService,
 ) : MigrationMessageListener(
   jsonMapper,
   migrationService,
@@ -26,5 +26,5 @@ class CorePersonMigrationMessageListener(
     maxMessagesPerPoll = "8",
   )
   @WithSpan(value = "dps-syscon-migration_coreperson_queue", kind = SpanKind.SERVER)
-  fun onCorePersonMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
+  fun onMigrationMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
 }

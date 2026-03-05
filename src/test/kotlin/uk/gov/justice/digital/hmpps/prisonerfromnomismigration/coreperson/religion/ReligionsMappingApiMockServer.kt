@@ -81,7 +81,7 @@ class ReligionsMappingApiMockServer(private val jsonMapper: JsonMapper) {
   ) {
     mapping?.apply {
       mappingApi.stubFor(
-        get(urlEqualTo("/mapping/core-person-religion/nomis-prison-number/$nomisPrisonNumber")).willReturn(
+        get(urlEqualTo("/mapping/core-person-religion/religions/nomis-prison-number/$nomisPrisonNumber")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
@@ -90,7 +90,7 @@ class ReligionsMappingApiMockServer(private val jsonMapper: JsonMapper) {
       )
     } ?: run {
       mappingApi.stubFor(
-        get(urlEqualTo("/mapping/core-person-religion/nomis-prison-number/$nomisPrisonNumber")).willReturn(
+        get(urlEqualTo("/mapping/core-person-religion/religions/nomis-prison-number/$nomisPrisonNumber")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
