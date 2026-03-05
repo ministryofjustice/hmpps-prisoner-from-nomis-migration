@@ -1213,7 +1213,7 @@ internal class NomisApiServiceTest {
 
     @Test
     fun `will return a range of prisoners ids`() = runTest {
-      nomisApi.stubGetAllPrisonersInRange(fromRootOffenderId = 1, toRootOffenderId = 10)
+      nomisApi.stubGetAllPrisonersInRange(fromRootOffenderId = 1, toRootOffenderId = 10, firstOffenderNo = "A0001BC")
 
       val prisonerIds = nomisService.getAllPrisonersInRange(
         fromRootOffenderId = 1,
