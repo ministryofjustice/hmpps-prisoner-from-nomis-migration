@@ -179,25 +179,11 @@ fun corePerson(prisonNumber: String = "A1234BC"): CorePerson = CorePerson(
   beliefs = beliefs(),
 )
 
-fun beliefs() = listOf(offenderBelief1)
+fun beliefs() = listOf(offenderBelief2)
 fun multipleBeliefs() = listOf(offenderBelief1, offenderBelief2)
 
 val offenderBelief1 = OffenderBelief(
   beliefId = 1,
-  belief = CodeDescription("DRU", "Druid"),
-  startDate = LocalDate.parse("2016-08-02"),
-  verified = true,
-  audit = NomisAudit(
-    createDatetime = LocalDateTime.parse("2016-08-01T10:55:00"),
-    createUsername = "KOFEADDY",
-    createDisplayName = "KOFE ADDY",
-  ),
-  changeReason = true,
-  comments = "No longer believes in Zoroastrianism",
-)
-
-val offenderBelief2 = OffenderBelief(
-  beliefId = 2,
   belief = CodeDescription("ZOO", "Zoroastrianism"),
   startDate = LocalDate.parse("2015-08-02"),
   endDate = LocalDate.parse("2016-08-02"),
@@ -208,4 +194,18 @@ val offenderBelief2 = OffenderBelief(
     createDisplayName = "KOFE ADDY",
   ),
   changeReason = false,
+)
+
+val offenderBelief2 = OffenderBelief(
+  beliefId = 2,
+  belief = CodeDescription("DRU", "Druid"),
+  startDate = LocalDate.parse("2016-08-02"),
+  verified = true,
+  audit = NomisAudit(
+    createDatetime = LocalDateTime.parse("2016-08-01T10:55:00"),
+    createUsername = "KOFEADDY",
+    createDisplayName = "KOFE ADDY",
+  ),
+  changeReason = true,
+  comments = "No longer believes in Zoroastrianism",
 )

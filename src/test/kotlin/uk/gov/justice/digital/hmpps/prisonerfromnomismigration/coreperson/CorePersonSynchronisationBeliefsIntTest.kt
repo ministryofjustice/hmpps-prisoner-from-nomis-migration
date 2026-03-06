@@ -69,7 +69,7 @@ class CorePersonSynchronisationBeliefsIntTest(
         @BeforeEach
         fun setup() {
           nomisApi.stubGetOffenderReligions(prisonNumber = "A1234AA", religions = multipleBeliefs())
-          mappingApiMock.stubGetReligionByNomisIdOrNull(nomisId = 1, nomisPrisonNumber = "A1234AA", mapping = null)
+          mappingApiMock.stubGetReligionByNomisIdOrNull(nomisId = 2, nomisPrisonNumber = "A1234AA", mapping = null)
           cprApi.stubSyncCreateOffenderBelief("A1234AA")
           mappingApiMock.stubCreateReligionMapping()
         }
@@ -78,15 +78,15 @@ class CorePersonSynchronisationBeliefsIntTest(
         inner class HappyPathNoFailures {
           @Test
           fun `should sync new belief to CPR`() = runTest {
-            sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 1, eventType = "INSERTED")
+            sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 2, eventType = "INSERTED")
               .also { waitForAnyProcessingToComplete() }
 
             verifyNomis(offenderNo = "A1234AA")
-            verifyMappingCheck(nomisId = 1)
+            verifyMappingCheck(nomisId = 2)
             cprApi.verify(
               postRequestedFor(urlPathEqualTo("/person/prison/A1234AA/religion"))
-                .withRequestBodyJsonPath("nomisReligionId", 1)
-                .withRequestBodyJsonPath("current", true)
+                .withRequestBodyJsonPath("nomisReligionId", 2)
+                .withRequestBodyJsonPath("current", false)
                 .withRequestBodyJsonPath("religionCode", "DRU")
                 .withRequestBodyJsonPath("changeReasonKnown", true)
                 .withRequestBodyJsonPath("comments", "No longer believes in Zoroastrianism")
@@ -100,7 +100,7 @@ class CorePersonSynchronisationBeliefsIntTest(
             verifyTelemetry(
               "coreperson-beliefs-synchronisation-created-success",
               offenderNo = "A1234AA",
-              nomisId = 1,
+              nomisId = 2,
             )
           }
         }
