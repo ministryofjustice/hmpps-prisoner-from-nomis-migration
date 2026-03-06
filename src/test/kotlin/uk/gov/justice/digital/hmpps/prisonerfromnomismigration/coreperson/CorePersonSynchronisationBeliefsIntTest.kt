@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import kotlinx.coroutines.test.runTest
@@ -198,7 +199,73 @@ class CorePersonSynchronisationBeliefsIntTest(
     @Nested
     @DisplayName("OFFENDER_BELIEFS-UPDATED")
     inner class OfficialBeliefsUpdated {
-      // TODO
+      @Nested
+      inner class WhenUpdatedInDps {
+        @BeforeEach
+        fun setUp() {
+          sendBeliefsEvent(
+            prisonerNumber = "A1234AA",
+            beliefId = 1,
+            eventType = "UPDATED",
+            auditModuleName = "DPS_SYNCHRONISATION",
+          )
+            .also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("coreperson-beliefs-synchronisation-updated-skipped"),
+            check {
+              assertThat(it["prisonNumber"]).isEqualTo("A1234AA")
+              assertThat(it["nomisId"]).isEqualTo("1")
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class HappyPath {
+
+        @BeforeEach
+        fun setup() {
+          nomisApi.stubGetOffenderReligions(prisonNumber = "A1234AA", religions = multipleBeliefs())
+          mappingApiMock.stubGetReligionByNomisIdOrNull(nomisId = 2, nomisPrisonNumber = "A1234AA")
+          cprApi.stubSyncUpdateOffenderBelief("A1234AA", "123456")
+          sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 2, eventType = "UPDATED")
+            .also { waitForAnyProcessingToComplete("coreperson-beliefs-synchronisation-updated-success") }
+        }
+
+        @Test
+        fun `should sync belief to CPR`() = runTest {
+          verifyNomis(offenderNo = "A1234AA")
+          verifyMappingCheck(nomisId = 2)
+          cprApi.verify(
+            putRequestedFor(urlPathEqualTo("/person/prison/A1234AA/religion/123456"))
+              .withRequestBodyJsonPath("nomisReligionId", 2)
+              .withRequestBodyJsonPath("current", false)
+              .withRequestBodyJsonPath("comments", "No longer believes in Zoroastrianism")
+              .withRequestBodyJsonPath("verified", true)
+              .withRequestBodyJsonPath("modifyUserId", "KOFEADDY")
+              .withRequestBodyJsonPath("modifyDateTime", "2016-08-01T10:55:00"),
+          )
+          verifyMappingSaved(count = 0)
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("coreperson-beliefs-synchronisation-updated-success"),
+            check {
+              assertThat(it["prisonNumber"]).isEqualTo("A1234AA")
+              assertThat(it["nomisId"]).isEqualTo("2")
+              assertThat(it["cprId"]).isEqualTo("123456")
+            },
+            isNull(),
+          )
+        }
+      }
     }
   }
 
