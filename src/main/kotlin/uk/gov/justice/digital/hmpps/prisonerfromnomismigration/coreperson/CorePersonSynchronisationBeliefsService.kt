@@ -71,28 +71,30 @@ class CorePersonSynchronisationBeliefsService(
     if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-created-skipped", telemetry)
     } else {
-      track(TELEMETRY_PREFIX, telemetry) {
-        religionsMappingService.getReligionsByPrisonNumberOrNull(prisonNumber = offenderIdDisplay)
-          ?.run {
-            getNomisOffenderBelief(event).apply {
-              corePersonCprApiService.syncCreateOffenderBelief(
-                prisonNumber = offenderIdDisplay,
-                religion = this,
-              ).also {
-                tryToCreateMapping(
-                  ReligionMappingDto(
-                    nomisPrisonNumber = offenderIdDisplay,
-                    cprId = it.religionMappings.cprReligionId,
-                    nomisId = event.offenderBeliefId,
-                    mappingType = ReligionMappingDto.MappingType.NOMIS_CREATED,
-                  ),
-                  telemetry = telemetry,
-                )
-              }
+      val mapping = religionsMappingService.getReligionByNomisIdOrNull(event.offenderBeliefId)
+      if (mapping != null) {
+        telemetryClient.trackEvent(
+          "$TELEMETRY_PREFIX-created-ignored",
+          telemetry + ("cprId" to mapping.cprId),
+        )
+      } else {
+        track(TELEMETRY_PREFIX, telemetry) {
+          getNomisOffenderBelief(event).apply {
+            corePersonCprApiService.syncCreateOffenderBelief(
+              prisonNumber = offenderIdDisplay,
+              religion = this,
+            ).also {
+              tryToCreateMapping(
+                ReligionMappingDto(
+                  nomisPrisonNumber = offenderIdDisplay,
+                  cprId = it.religionMappings.cprReligionId,
+                  nomisId = event.offenderBeliefId,
+                  mappingType = ReligionMappingDto.MappingType.NOMIS_CREATED,
+                ),
+                telemetry = telemetry + ("cprId" to it.religionMappings.cprReligionId),
+              )
             }
-          } ?: run {
-          telemetryClient.trackEvent("${TELEMETRY_PREFIX}-created-failed", telemetry)
-          throw IllegalStateException("Received OFFENDER_BELIEFS-INSERTED for offender that has never been migrated")
+          }
         }
       }
     }

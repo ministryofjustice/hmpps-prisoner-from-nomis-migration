@@ -105,61 +105,78 @@ class CorePersonSynchronisationBeliefsIntTest(
               ),
             ),
           )
-          religionsMappingApiMock.stubGetReligionsByNomisPrisonNumber(nomisPrisonNumber = "A1234AA")
+          religionsMappingApiMock.stubGetReligionByNomisIdOrNull(nomisId = 1, nomisPrisonNumber = "A1234AA", mapping = null)
           cprApi.stubSyncCreateOffenderBelief("A1234AA")
           religionsMappingApiMock.stubCreateReligionMapping()
         }
 
-        @Test
-        fun `should sync new belief to CPR`() = runTest {
-          sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 1, eventType = "INSERTED")
-            .also { waitForAnyProcessingToComplete("coreperson-beliefs-synchronisation-success") }
+        @Nested
+        inner class HappyPathNoFailures {
+          @Test
+          fun `should sync new belief to CPR`() = runTest {
+            sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 1, eventType = "INSERTED")
+              .also { waitForAnyProcessingToComplete("coreperson-beliefs-synchronisation-success") }
 
-          verifyNomis(offenderNo = "A1234AA")
-          verifyMappingExistsCheck(prisonNumber = "A1234AA")
-          cprApi.verify(
-            postRequestedFor(urlPathEqualTo("/person/prison/A1234AA/religion"))
-              .withRequestBodyJsonPath("nomisReligionId", 1)
-              .withRequestBodyJsonPath("current", true)
-              .withRequestBodyJsonPath("religionCode", "DRU")
-              .withRequestBodyJsonPath("changeReasonKnown", true)
-              .withRequestBodyJsonPath("comments", "No longer believes in Zoroastrianism")
-              .withRequestBodyJsonPath("verified", true)
-              .withRequestBodyJsonPath("startDate", "2016-08-02")
-              .withRequestBodyJsonPath("modifyUserId", "KOFEADDY")
-              .withRequestBodyJsonPath("modifyDateTime", "2016-08-01T10:55:00"),
-          )
-          verifyMappingSaved(prisonNumber = "A1234AA")
+            verifyNomis(offenderNo = "A1234AA")
+            verifyMappingCheck(nomisId = 1)
+            cprApi.verify(
+              postRequestedFor(urlPathEqualTo("/person/prison/A1234AA/religion"))
+                .withRequestBodyJsonPath("nomisReligionId", 1)
+                .withRequestBodyJsonPath("current", true)
+                .withRequestBodyJsonPath("religionCode", "DRU")
+                .withRequestBodyJsonPath("changeReasonKnown", true)
+                .withRequestBodyJsonPath("comments", "No longer believes in Zoroastrianism")
+                .withRequestBodyJsonPath("verified", true)
+                .withRequestBodyJsonPath("startDate", "2016-08-02")
+                .withRequestBodyJsonPath("modifyUserId", "KOFEADDY")
+                .withRequestBodyJsonPath("modifyDateTime", "2016-08-01T10:55:00"),
+            )
+            verifyMappingSaved()
 
-          verifyTelemetry(
-            "coreperson-beliefs-synchronisation-success",
-            offenderNo = "A1234AA",
-            nomisId = 1,
-          )
+            verifyTelemetry(
+              "coreperson-beliefs-synchronisation-success",
+              offenderNo = "A1234AA",
+              nomisId = 1,
+            )
+          }
+        }
+
+        @Nested
+        inner class HappyPathWithMappingFailures {
+          @Nested
+          inner class MappingFailures {
+            // TODO
+          }
         }
       }
     }
 
     @Nested
-    @DisplayName("OFFENDER_BELIEFS-INSERTED")
+    inner class UnHappyPath {
+
+      @Nested
+      inner class AlreadyExists {
+        // TODO
+      }
+    }
+
+    @Nested
+    @DisplayName("OFFENDER_BELIEFS-UPDATED")
     inner class OfficialBeliefsUpdated {
       // TODO
     }
   }
 
-  private fun verifyNomis(
-    offenderNo: String = "A1234AA",
-  ) {
-    nomisApi.verify(
-      getRequestedFor(urlPathMatching("/core-person/$offenderNo/religions")),
-    )
+  private fun verifyNomis(offenderNo: String = "A1234AA") {
+    nomisApi.verify(getRequestedFor(urlPathMatching("/core-person/$offenderNo/religions")))
   }
-  private fun verifyMappingExistsCheck(prisonNumber: String = "A1234AA") {
-    religionsMappingApiMock.verify(getRequestedFor(urlPathMatching("/mapping/core-person-religion/religions/nomis-prison-number/$prisonNumber")))
+  private fun verifyMappingCheck(nomisId: Long = 1) {
+    religionsMappingApiMock.verify(getRequestedFor(urlPathMatching("/mapping/core-person-religion/religion/nomis-id/$nomisId")))
   }
-  private fun verifyMappingSaved(prisonNumber: String = "A1234AA") {
+  private fun verifyMappingSaved() {
     religionsMappingApiMock.verify(postRequestedFor(urlPathMatching("/mapping/core-person-religion/religion")))
   }
+
   private fun verifyTelemetry(
     name: String,
     offenderNo: String = "A1234AA",
