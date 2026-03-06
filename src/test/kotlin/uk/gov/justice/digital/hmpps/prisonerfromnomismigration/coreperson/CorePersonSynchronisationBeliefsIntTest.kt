@@ -10,7 +10,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.mockito.ArgumentMatchers
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -20,19 +19,14 @@ import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion.ReligionsMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderBelief
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
-import java.time.LocalDate
-import java.time.LocalDateTime
 
 class CorePersonSynchronisationBeliefsIntTest(
   @Autowired private val nomisApi: CorePersonNomisApiMockServer,
 ) : SqsIntegrationTestBase() {
 
   @Autowired
-  private lateinit var religionsMappingApiMock: ReligionsMappingApiMockServer
+  private lateinit var mappingApiMock: ReligionsMappingApiMockServer
 
   private val cprApi = CorePersonCprApiExtension.cprCorePersonServer
 
@@ -59,7 +53,7 @@ class CorePersonSynchronisationBeliefsIntTest(
         @Test
         fun `will track telemetry`() {
           verify(telemetryClient).trackEvent(
-            ArgumentMatchers.eq("coreperson-beliefs-synchronisation-created-skipped"),
+            eq("coreperson-beliefs-synchronisation-created-skipped"),
             check {
               assertThat(it["prisonNumber"]).isEqualTo("A1234AA")
               assertThat(it["nomisId"]).isEqualTo("1")
@@ -74,40 +68,10 @@ class CorePersonSynchronisationBeliefsIntTest(
 
         @BeforeEach
         fun setup() {
-          nomisApi.stubGetOffenderReligions(
-            prisonNumber = "A1234AA",
-            religions = listOf(
-              OffenderBelief(
-                beliefId = 1,
-                belief = CodeDescription("DRU", "Druid"),
-                startDate = LocalDate.parse("2016-08-02"),
-                verified = true,
-                audit = NomisAudit(
-                  createDatetime = LocalDateTime.parse("2016-08-01T10:55:00"),
-                  createUsername = "KOFEADDY",
-                  createDisplayName = "KOFE ADDY",
-                ),
-                changeReason = true,
-                comments = "No longer believes in Zoroastrianism",
-              ),
-              OffenderBelief(
-                beliefId = 2,
-                belief = CodeDescription("ZOO", "Zoroastrianism"),
-                startDate = LocalDate.parse("2015-08-02"),
-                endDate = LocalDate.parse("2016-08-02"),
-                verified = false,
-                audit = NomisAudit(
-                  createDatetime = LocalDateTime.parse("2016-08-01T10:55:00"),
-                  createUsername = "KOFEADDY",
-                  createDisplayName = "KOFE ADDY",
-                ),
-                changeReason = false,
-              ),
-            ),
-          )
-          religionsMappingApiMock.stubGetReligionByNomisIdOrNull(nomisId = 1, nomisPrisonNumber = "A1234AA", mapping = null)
+          nomisApi.stubGetOffenderReligions(prisonNumber = "A1234AA", religions = multipleBeliefs())
+          mappingApiMock.stubGetReligionByNomisIdOrNull(nomisId = 1, nomisPrisonNumber = "A1234AA", mapping = null)
           cprApi.stubSyncCreateOffenderBelief("A1234AA")
-          religionsMappingApiMock.stubCreateReligionMapping()
+          mappingApiMock.stubCreateReligionMapping()
         }
 
         @Nested
@@ -115,7 +79,7 @@ class CorePersonSynchronisationBeliefsIntTest(
           @Test
           fun `should sync new belief to CPR`() = runTest {
             sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 1, eventType = "INSERTED")
-              .also { waitForAnyProcessingToComplete("coreperson-beliefs-synchronisation-success") }
+              .also { waitForAnyProcessingToComplete() }
 
             verifyNomis(offenderNo = "A1234AA")
             verifyMappingCheck(nomisId = 1)
@@ -134,7 +98,7 @@ class CorePersonSynchronisationBeliefsIntTest(
             verifyMappingSaved()
 
             verifyTelemetry(
-              "coreperson-beliefs-synchronisation-success",
+              "coreperson-beliefs-synchronisation-created-success",
               offenderNo = "A1234AA",
               nomisId = 1,
             )
@@ -145,18 +109,89 @@ class CorePersonSynchronisationBeliefsIntTest(
         inner class HappyPathWithMappingFailures {
           @Nested
           inner class MappingFailures {
-            // TODO
+
+            @BeforeEach
+            fun setUp() {
+              nomisApi.stubGetOffenderReligions(prisonNumber = "A1234AA", religions = multipleBeliefs())
+              mappingApiMock.stubGetReligionByNomisIdOrNull(nomisId = 1, nomisPrisonNumber = "A1234AA", mapping = null)
+              cprApi.stubSyncCreateOffenderBelief("A1234AA")
+            }
+
+            @Nested
+            inner class FailureAndRecovery {
+              @BeforeEach
+              fun setUp() {
+                mappingApiMock.stubCreateReligionMappingFailureFollowedBySuccess()
+
+                sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 1, eventType = "INSERTED")
+                  .also { waitForAnyProcessingToComplete("coreperson-beliefs-synchronisation-mapping-created") }
+
+                verifyNomis(offenderNo = "A1234AA")
+                verifyMappingCheck(nomisId = 1)
+                verifyCpr()
+              }
+
+              @Test
+              fun `will eventually create mapping after a retry`() {
+                verifyMappingSaved(2)
+              }
+
+              @Test
+              fun `will track telemetry`() {
+                verify(telemetryClient).trackEvent(
+                  eq("coreperson-beliefs-synchronisation-created-success"),
+                  check {
+                    assertThat(it["prisonNumber"]).isEqualTo("A1234AA")
+                    assertThat(it["nomisId"]).isEqualTo("1")
+                  },
+                  isNull(),
+                )
+              }
+            }
           }
         }
       }
-    }
-
-    @Nested
-    inner class UnHappyPath {
 
       @Nested
-      inner class AlreadyExists {
-        // TODO
+      inner class UnHappyPath {
+        @Nested
+        inner class AlreadyExists {
+
+          @BeforeEach
+          fun setUp() {
+            mappingApiMock.stubGetReligionByNomisIdOrNull(nomisId = 1, nomisPrisonNumber = "A1234AA")
+            sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 1, eventType = "INSERTED")
+              .also { waitForAnyProcessingToComplete() }
+          }
+
+          @Test
+          fun `will not call Nomis`() {
+            verifyNomis("A1234AA", 0)
+          }
+
+          @Test
+          fun `will not create the religion in CPR`() {
+            verifyCpr(0)
+          }
+
+          @Test
+          fun `will not attempt to create a mapping`() {
+            verifyMappingSaved(0)
+          }
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("coreperson-beliefs-synchronisation-created-ignored"),
+              check {
+                assertThat(it["prisonNumber"]).isEqualTo("A1234AA")
+                assertThat(it["nomisId"]).isEqualTo("1")
+                assertThat(it["cprId"]).isEqualTo("123456")
+              },
+              isNull(),
+            )
+          }
+        }
       }
     }
 
@@ -167,14 +202,17 @@ class CorePersonSynchronisationBeliefsIntTest(
     }
   }
 
-  private fun verifyNomis(offenderNo: String = "A1234AA") {
-    nomisApi.verify(getRequestedFor(urlPathMatching("/core-person/$offenderNo/religions")))
+  private fun verifyNomis(offenderNo: String = "A1234AA", count: Int = 1) {
+    nomisApi.verify(count, getRequestedFor(urlPathMatching("/core-person/$offenderNo/religions")))
+  }
+  private fun verifyCpr(count: Int = 1) {
+    cprApi.verify(count, postRequestedFor(urlPathMatching("/person/prison/A1234AA/religion")))
   }
   private fun verifyMappingCheck(nomisId: Long = 1) {
-    religionsMappingApiMock.verify(getRequestedFor(urlPathMatching("/mapping/core-person-religion/religion/nomis-id/$nomisId")))
+    mappingApiMock.verify(getRequestedFor(urlPathMatching("/mapping/core-person-religion/religion/nomis-id/$nomisId")))
   }
-  private fun verifyMappingSaved() {
-    religionsMappingApiMock.verify(postRequestedFor(urlPathMatching("/mapping/core-person-religion/religion")))
+  private fun verifyMappingSaved(count: Int = 1) {
+    mappingApiMock.verify(count, postRequestedFor(urlPathMatching("/mapping/core-person-religion/religion")))
   }
 
   private fun verifyTelemetry(
