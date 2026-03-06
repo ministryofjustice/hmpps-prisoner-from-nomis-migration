@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CORE_PERSON_RELIGION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
@@ -85,14 +86,21 @@ class CorePersonEventListener(
             log.info("Feature switch is disabled for event {}", eventType)
           }
         }
-
-        else -> log.info("Retry mapping is not written yet for event {}", sqsMessage)
+        else -> retryMapping(sqsMessage.Type, sqsMessage.Message)
       }
     }
   }
   private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
+  private suspend fun retryMapping(mappingName: String, message: String) {
+    when (CorePersonSynchronisationMessageType.valueOf(mappingName)) {
+      RETRY_SYNCHRONISATION_CORE_PERSON_RELIGION_MAPPING -> beliefsService.retryCreateMapping(message.fromJson())
+    }
+  }
 }
 
+enum class CorePersonSynchronisationMessageType {
+  RETRY_SYNCHRONISATION_CORE_PERSON_RELIGION_MAPPING,
+}
 data class OffenderAddressEvent(
   val ownerId: Long,
   val addressId: Long,
