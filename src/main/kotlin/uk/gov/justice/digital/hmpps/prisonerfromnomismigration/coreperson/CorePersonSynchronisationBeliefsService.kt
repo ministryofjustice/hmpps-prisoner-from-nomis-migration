@@ -63,22 +63,23 @@ class CorePersonSynchronisationBeliefsService(
   }
 
   suspend fun offenderBeliefCreated(event: OffenderBeliefEvent) {
+    val telemetryName = "$TELEMETRY_PREFIX-created"
     val (offenderIdDisplay) = event
     val telemetry = telemetryOf(
       "prisonNumber" to offenderIdDisplay,
       "nomisId" to event.offenderBeliefId,
     )
     if (event.originatesInDpsOrHasMissingAudit) {
-      telemetryClient.trackEvent("$TELEMETRY_PREFIX-created-skipped", telemetry)
+      telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
     } else {
       val mapping = religionsMappingService.getReligionByNomisIdOrNull(event.offenderBeliefId)
       if (mapping != null) {
         telemetryClient.trackEvent(
-          "$TELEMETRY_PREFIX-created-ignored",
+          "$telemetryName-ignored",
           telemetry + ("cprId" to mapping.cprId),
         )
       } else {
-        track(TELEMETRY_PREFIX, telemetry) {
+        track(telemetryName, telemetry) {
           getNomisOffenderBelief(event).apply {
             corePersonCprApiService.syncCreateOffenderBelief(
               prisonNumber = offenderIdDisplay,
@@ -128,7 +129,7 @@ class CorePersonSynchronisationBeliefsService(
     createMapping(retryMessage.body)
       .also {
         telemetryClient.trackEvent(
-          "${TELEMETRY_PREFIX}-mapping-synchronisation-created",
+          "${TELEMETRY_PREFIX}-mapping-created",
           retryMessage.telemetryAttributes,
         )
       }
@@ -150,12 +151,9 @@ class CorePersonSynchronisationBeliefsService(
       )
     }
   }
-  private suspend fun createMapping(
-    mapping: ReligionMappingDto,
-  ) {
-    religionsMappingService.createReligionMapping(
-      mapping,
-    )
+
+  private suspend fun createMapping(mapping: ReligionMappingDto) {
+    religionsMappingService.createReligionMapping(mapping)
       .takeIf { it.isError }?.also {
         with(it.errorResponse!!.moreInfo) {
           telemetryClient.trackEvent(
