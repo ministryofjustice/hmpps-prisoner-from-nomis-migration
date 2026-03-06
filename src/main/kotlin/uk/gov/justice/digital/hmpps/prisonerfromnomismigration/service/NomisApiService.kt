@@ -31,9 +31,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GetAllocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.LocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MoveActivityEndDateRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RootOffenderIdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
 import java.time.LocalDate
@@ -235,11 +237,11 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .retrieve()
     .awaitBodilessEntityAsTrueNotFoundAsFalse()
 
-  suspend fun getAllPrisonersInRange(fromRootOffenderId: Long, toRootOffenderId: Long) = prisonersResourceApi
+  suspend fun getAllPrisonersInRange(fromRootOffenderId: Long, toRootOffenderId: Long): List<PrisonNumberAndRootOffenderId> = prisonersResourceApi
     .getAllPrisonersInRange1(fromRootOffenderId, toRootOffenderId)
     .awaitSingle()
 
-  suspend fun getAllPrisonersIdRanges(pageSize: Long) = prisonersResourceApi
+  suspend fun getAllPrisonersIdRanges(pageSize: Long): List<RootOffenderIdRange> = prisonersResourceApi
     .getAllPrisonersIdRanges1(pageSize.toInt())
     .awaitSingle()
 }

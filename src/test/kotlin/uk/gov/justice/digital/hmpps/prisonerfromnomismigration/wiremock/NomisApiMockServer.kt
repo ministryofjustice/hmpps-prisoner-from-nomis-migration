@@ -468,7 +468,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubGetPrisonerIds(totalElements: Long = 20, pageSize: Long = 20, firstOffenderNo: String = "A0001KT") {
     val content: List<PrisonerId> = (1..kotlin.math.min(pageSize, totalElements)).map {
       PrisonerId(
-        offenderNo = firstOffenderNo.replace("0001", "$it".padStart(4, '0')),
+        offenderNo = firstOffenderNo.replacePrisonNumber(it),
       )
     }
     nomisApi.stubFor(
@@ -537,21 +537,24 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubGetAllPrisonersInRange(fromRootOffenderId: Long = 1L, toRootOffenderId: Long = 20L, firstOffenderNo: String = "A0001KT") {
-    val content: List<PrisonNumberAndRootOffenderId> = (fromRootOffenderId..toRootOffenderId).map {
+    val content: List<PrisonNumberAndRootOffenderId> = (fromRootOffenderId..<toRootOffenderId).map {
       PrisonNumberAndRootOffenderId(
         rootOffenderId = it,
-        prisonNumber = firstOffenderNo.replace("0001", "$it".padStart(4, '0')),
+        prisonNumber = firstOffenderNo.replacePrisonNumber(it),
       )
     }
     nomisApi.stubFor(
-      get(urlPathEqualTo("/prisoners/ids-in-range")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(
-            jsonMapper.writeValueAsString(content),
-          ),
-      ),
+      get(urlPathEqualTo("/prisoners/ids-in-range"))
+        .withQueryParam("fromRootOffenderId", equalTo(fromRootOffenderId.toString()))
+        .withQueryParam("toRootOffenderId", equalTo(toRootOffenderId.toString()))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              jsonMapper.writeValueAsString(content),
+            ),
+        ),
     )
   }
 
@@ -571,6 +574,8 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 }
+
+fun String.replacePrisonNumber(newValue: Long): String = replace("0001", "$newValue".padStart(4, '0'))
 
 private fun visitResponse(visitId: Long) = """
               {
