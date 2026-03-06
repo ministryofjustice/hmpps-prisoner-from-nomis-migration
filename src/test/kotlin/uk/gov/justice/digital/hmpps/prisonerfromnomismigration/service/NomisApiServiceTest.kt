@@ -1182,11 +1182,11 @@ internal class NomisApiServiceTest {
   @Nested
   inner class GetAllPrisonersInRange {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       nomisApi.stubGetAllPrisonersInRange()
 
       nomisService.getAllPrisonersInRange(
-        fromRootOffenderId = 0,
+        fromRootOffenderId = 1,
         toRootOffenderId = 20,
       )
 
@@ -1197,7 +1197,7 @@ internal class NomisApiServiceTest {
 
     @Test
     internal fun `will pass params to service`() = runTest {
-      nomisApi.stubGetAllPrisonersInRange()
+      nomisApi.stubGetAllPrisonersInRange(5, 100)
 
       nomisService.getAllPrisonersInRange(
         fromRootOffenderId = 5,
@@ -1213,11 +1213,11 @@ internal class NomisApiServiceTest {
 
     @Test
     fun `will return a range of prisoners ids`() = runTest {
-      nomisApi.stubGetAllPrisonersInRange(fromRootOffenderId = 1, toRootOffenderId = 10, firstOffenderNo = "A0001BC")
+      nomisApi.stubGetAllPrisonersInRange(fromRootOffenderId = 1, toRootOffenderId = 11, firstOffenderNo = "A0001BC")
 
       val prisonerIds = nomisService.getAllPrisonersInRange(
         fromRootOffenderId = 1,
-        toRootOffenderId = 10,
+        toRootOffenderId = 11,
       )
 
       assertThat(prisonerIds).hasSize(10)

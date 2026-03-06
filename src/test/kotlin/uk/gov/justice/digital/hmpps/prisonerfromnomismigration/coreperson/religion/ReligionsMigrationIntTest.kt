@@ -3,15 +3,18 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.relig
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
@@ -39,6 +42,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestsAsString
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.replacePrisonNumber
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -97,7 +103,7 @@ class ReligionsMigrationIntTest(
 
       @BeforeEach
       fun setUp() {
-        nomisApiMock.stubGetPrisonerIds(1, 1, "A0001BC")
+        nomisApiMock.stubGetPrisonerIds(1, 1, "A0000BC")
         nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
         nomisApiMock.stubGetAllPrisonersInRange(0, 1)
         mappingApiMock.stubGetReligionsByNomisPrisonNumberOrNull(
@@ -145,14 +151,14 @@ class ReligionsMigrationIntTest(
     inner class HappyPath {
       private lateinit var migrationResult: MigrationResult
       private val cprReligionId: String = "abc-123456"
-      private val nomisPrisonNumber = "A0001BC"
+      private val nomisPrisonNumber = "A0000BC"
       private val nomisId = 2L
 
       @BeforeEach
       fun setUp() {
         nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
         nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisApiMock.stubGetAllPrisonersInRange(1, 1, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
         mappingApiMock.stubGetReligionsByNomisPrisonNumberOrNull(nomisPrisonNumber = nomisPrisonNumber, mapping = null)
         corePersonNomisApiMock.stubGetOffenderReligions(
           prisonNumber = nomisPrisonNumber,
@@ -233,17 +239,70 @@ class ReligionsMigrationIntTest(
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathLargeNumberOfPrisoners {
+      private lateinit var migrationResult: MigrationResult
+      private lateinit var migrationRequests: List<String>
+      private val nomisPrisonNumber = "A0001KT"
+      private val cprReligionId: String = "abc-123456"
+      private val nomisId = 1L
+
+      @BeforeAll
+      fun setUp() {
+        cprApiMock.resetAll()
+
+        // estimated count
+        nomisApiMock.stubGetPrisonerIds(81, 1, nomisPrisonNumber)
+
+        nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 10, totalElements = 81)
+        nomisApiMock.stubGetAllPrisonersInRange(0, 10, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersInRange(10, 20, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersInRange(20, 30, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersInRange(30, 40, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersInRange(40, 50, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersInRange(50, 60, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersInRange(60, 70, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersInRange(70, 80, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersInRange(80, 81, nomisPrisonNumber)
+
+        (0L..<81L)
+          .map { nomisPrisonNumber.replacePrisonNumber(it) }
+          .forEach {
+            mappingApiMock.stubGetReligionsByNomisPrisonNumberOrNull(nomisPrisonNumber = it, null)
+            corePersonNomisApiMock.stubGetOffenderReligions(prisonNumber = it)
+            cprApiMock.stubMigrateCorePersonReligion(nomisPrisonNumber = it, nomisId, cprReligionId)
+          }
+
+        mappingApiMock.stubCreateMappingsForMigration()
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 81)
+        // wait until all records have individually migrated since status check might finish just before some entities are still in flight due to the "big" numbers
+        migrationResult = performMigration {
+          verify(telemetryClient, times(80)).trackEvent(eq("core-person-religion-migration-entity-migrated"), any(), isNull())
+        }
+        migrationRequests = cprApiMock.getRequestsAsString(postRequestedFor(urlPathMatching("/syscon-sync/religion/.*")))
+      }
+
+      @Test
+      fun `will migrate 80 records exactly once`() {
+        assertThat(migrationRequests).hasSize(80)
+        assertThat(migrationRequests).containsExactlyInAnyOrderElementsOf(
+          (0L..<80L).map { "/syscon-sync/religion/${nomisPrisonNumber.replacePrisonNumber(it)}" },
+        )
+      }
+    }
+
+    @Nested
     inner class FailureWithRecoverPath {
       private lateinit var migrationResult: MigrationResult
       val nomisId = 2L
       val cprReligionId: UUID = UUID.fromString("e7c2a3cc-e5b2-48ff-9e8b-a5038355b36c")
-      val nomisPrisonNumber = "D0001BC"
+      val nomisPrisonNumber = "D0000BC"
 
       @BeforeEach
       fun setUp() {
         nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
         nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisApiMock.stubGetAllPrisonersInRange(1, 1, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
         mappingApiMock.stubGetReligionsByNomisPrisonNumberOrNull(
           nomisPrisonNumber = nomisPrisonNumber,
           mapping = null,
@@ -331,14 +390,14 @@ class ReligionsMigrationIntTest(
     inner class FailureWithDuplicate {
       private lateinit var migrationResult: MigrationResult
       val cprReligionId: UUID = UUID.fromString("e7c2a3cc-e5b2-48ff-9e8b-a5038355b36c")
-      val nomisPrisonNumber = "D0001BC"
+      val nomisPrisonNumber = "D0000BC"
       private val nomisId = 2L
 
       @BeforeEach
       fun setUp() {
         nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
         nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisApiMock.stubGetAllPrisonersInRange(1, 1, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
         mappingApiMock.stubGetReligionsByNomisPrisonNumberOrNull(
           nomisPrisonNumber = nomisPrisonNumber,
           mapping = null,
@@ -418,20 +477,24 @@ class ReligionsMigrationIntTest(
     }
   }
 
-  private fun performMigration(): MigrationResult = webTestClient.post().uri("/migrate/core-person/religion")
+  private fun performMigration(
+    waitUntilVerify: () -> Unit = {
+      verify(telemetryClient).trackEvent(
+        eq("core-person-religion-migration-completed"),
+        any(),
+        isNull(),
+      )
+    },
+  ): MigrationResult = webTestClient.post().uri("/migrate/core-person/religion")
     .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .exchange()
     .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
     .also {
-      waitUntilCompleted()
+      waitUntilCompleted(waitUntilVerify)
     }
 
-  private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
-    verify(telemetryClient).trackEvent(
-      eq("core-person-religion-migration-completed"),
-      any(),
-      isNull(),
-    )
+  private fun waitUntilCompleted(waitUntilVerify: () -> Unit) = await atMost Duration.ofSeconds(60) untilAsserted {
+    waitUntilVerify()
   }
 }
