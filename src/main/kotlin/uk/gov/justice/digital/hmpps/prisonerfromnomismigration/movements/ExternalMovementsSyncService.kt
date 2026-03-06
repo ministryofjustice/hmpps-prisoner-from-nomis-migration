@@ -5,10 +5,10 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.tryFetchParent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
@@ -115,14 +115,8 @@ class ExternalMovementsSyncService(
     } ?: run { telemetryClient.trackEvent("$TELEMETRY_PREFIX-application-deleted-ignored", telemetry) }
   }
 
-  private suspend fun requireParentApplicationExists(nomisApplicationId: Long): UUID = getParentApplicationId(nomisApplicationId)
-    ?: throw ParentEntityNotFoundRetry("Application $nomisApplicationId not created yet so children cannot be processed")
-
   private suspend fun getParentApplicationId(nomisApplicationId: Long): UUID? = mappingApiService.getApplicationMappingOrNull(nomisApplicationId)
     ?.dpsMovementApplicationId
-
-  private suspend fun requireParentScheduleExists(nomisEventId: Long) = getParentScheduledId(nomisEventId)
-    ?: throw ParentEntityNotFoundRetry("Scheduled event ID $nomisEventId not created yet so children cannot be processed")
 
   private suspend fun getParentScheduledId(nomisEventId: Long): UUID? = mappingApiService.getScheduledMovementMappingOrNull(nomisEventId)
     ?.dpsOccurrenceId
@@ -166,7 +160,7 @@ class ExternalMovementsSyncService(
     .takeIf { !onlyIfScheduled || it.eventStatus == "SCH" }
     ?.also { telemetry["nomisApplicationId"] = it.movementApplicationId }
     ?.let { nomisSchedule ->
-      val dpsAuthorisationId = requireParentApplicationExists(nomisSchedule.movementApplicationId)
+      val dpsAuthorisationId = tryFetchParent { getParentApplicationId(nomisSchedule.movementApplicationId) }
         .also { telemetry["dpsAuthorisationId"] = it }
 
       val dpsLocation = deriveDpsAddress(existingMapping, nomisSchedule)
@@ -431,11 +425,14 @@ class ExternalMovementsSyncService(
   ): ExternalMovementSyncMappingDto = nomisApiService.getTemporaryAbsenceMovement(prisonerNumber, bookingId, movementSeq)
     .also {
       it.scheduledTemporaryAbsenceId?.run { telemetry["nomisScheduledEventId"] = this }
-      it.movementApplicationId?.run { telemetry["nomisApplicationId"] = this }
-      it.movementApplicationId?.run { requireParentApplicationExists(it.movementApplicationId) }
+      it.movementApplicationId?.run {
+        telemetry["nomisApplicationId"] = this
+        tryFetchParent { getParentApplicationId(this) }
+          .also { telemetry["dpsAuthorisationId"] = it }
+      }
     }
     .let { nomisMovement ->
-      val dpsOccurrenceId = nomisMovement.scheduledTemporaryAbsenceId?.let { requireParentScheduleExists(it) }
+      val dpsOccurrenceId = nomisMovement.scheduledTemporaryAbsenceId?.let { tryFetchParent { getParentScheduledId(it) } }
         ?.also { telemetry["dpsOccurrenceId"] = it }
 
       val dpsLocation = deriveDpsAddress(existingMapping, nomisMovement.toAddressId, nomisMovement.toAddressOwnerClass, nomisMovement.toFullAddress, nomisMovement.toAddressDescription, nomisMovement.toAddressPostcode)
@@ -473,11 +470,14 @@ class ExternalMovementsSyncService(
     .also {
       it.scheduledTemporaryAbsenceId?.run { telemetry["nomisScheduledParentEventId"] = this }
       it.scheduledTemporaryAbsenceReturnId?.run { telemetry["nomisScheduledEventId"] = this }
-      it.movementApplicationId?.run { telemetry["nomisApplicationId"] = this }
-      it.movementApplicationId?.run { requireParentApplicationExists(it.movementApplicationId) }
+      it.movementApplicationId?.run {
+        telemetry["nomisApplicationId"] = this
+        tryFetchParent { getParentApplicationId(this) }
+          .also { telemetry["dpsAuthorisationId"] = it }
+      }
     }
     .let { nomisMovement ->
-      val dpsOccurrenceId = nomisMovement.scheduledTemporaryAbsenceId?.let { requireParentScheduleExists(it) }
+      val dpsOccurrenceId = nomisMovement.scheduledTemporaryAbsenceId?.let { tryFetchParent { getParentScheduledId(it) } }
         ?.also { telemetry["dpsOccurrenceId"] = it }
 
       val dpsLocation = deriveDpsAddress(existingMapping, nomisMovement.fromAddressId, nomisMovement.fromAddressOwnerClass, nomisMovement.fromFullAddress, nomisMovement.fromAddressDescription, nomisMovement.fromAddressPostcode)

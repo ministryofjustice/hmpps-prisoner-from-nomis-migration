@@ -895,7 +895,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
 
         sendMessage(scheduledMovementEvent("SCHEDULED_EXT_MOVE-INSERTED"))
-          .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-inserted-error") }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-inserted-awaiting-parent") }
       }
 
       @Test
@@ -911,13 +911,13 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should create error telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("temporary-absence-sync-scheduled-movement-inserted-error"),
+          eq("temporary-absence-sync-scheduled-movement-inserted-awaiting-parent"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisEventId"]).isEqualTo("45678")
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            assertThat(it["error"]).isEqualTo("Application 111 not created yet so children cannot be processed")
+            assertThat(it["error"]).isEqualTo("Expected parent entity not found, retrying")
           },
           isNull(),
         )
@@ -1832,7 +1832,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetScheduledMovementMapping(45678)
 
         sendMessage(externalMovementEvent(inserted = true, direction = "OUT"))
-          .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-error") }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-awaiting-parent") }
       }
 
       @Test
@@ -1848,10 +1848,10 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should create error telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("temporary-absence-sync-external-movement-inserted-error"),
+          eq("temporary-absence-sync-external-movement-inserted-awaiting-parent"),
           check {
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            assertThat(it["error"]).isEqualTo("Application 111 not created yet so children cannot be processed")
+            assertThat(it["error"]).isEqualTo("Expected parent entity not found, retrying")
           },
           isNull(),
         )
@@ -1878,7 +1878,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
 
         sendMessage(externalMovementEvent(inserted = true, direction = "OUT"))
-          .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-error") }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-awaiting-parent") }
       }
 
       @Test
@@ -1894,10 +1894,10 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should create error telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("temporary-absence-sync-external-movement-inserted-error"),
+          eq("temporary-absence-sync-external-movement-inserted-awaiting-parent"),
           check {
             assertThat(it["nomisScheduledEventId"]).isEqualTo("45678")
-            assertThat(it["error"]).isEqualTo("Scheduled event ID 45678 not created yet so children cannot be processed")
+            assertThat(it["error"]).isEqualTo("Expected parent entity not found, retrying")
           },
           isNull(),
         )
@@ -1924,7 +1924,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetScheduledMovementMapping(45678)
 
         sendMessage(externalMovementEvent(inserted = true, direction = "IN"))
-          .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-error") }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-awaiting-parent") }
       }
 
       @Test
@@ -1940,10 +1940,10 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should create error telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("temporary-absence-sync-external-movement-inserted-error"),
+          eq("temporary-absence-sync-external-movement-inserted-awaiting-parent"),
           check {
             assertThat(it["nomisApplicationId"]).isEqualTo("111")
-            assertThat(it["error"]).isEqualTo("Application 111 not created yet so children cannot be processed")
+            assertThat(it["error"]).isEqualTo("Expected parent entity not found, retrying")
           },
           isNull(),
         )
@@ -1970,7 +1970,7 @@ class ExternalMovementsSyncIntTest(
         mappingApi.stubGetScheduledMovementMapping(23456, NOT_FOUND)
 
         sendMessage(externalMovementEvent(inserted = true, direction = "IN"))
-          .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-error") }
+          .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-awaiting-parent") }
       }
 
       @Test
@@ -1986,11 +1986,11 @@ class ExternalMovementsSyncIntTest(
       @Test
       fun `should create error telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("temporary-absence-sync-external-movement-inserted-error"),
+          eq("temporary-absence-sync-external-movement-inserted-awaiting-parent"),
           check {
             assertThat(it["nomisScheduledParentEventId"]).isEqualTo("23456")
             assertThat(it["nomisScheduledEventId"]).isEqualTo("45678")
-            assertThat(it["error"]).isEqualTo("Scheduled event ID 23456 not created yet so children cannot be processed")
+            assertThat(it["error"]).isEqualTo("Expected parent entity not found, retrying")
           },
           isNull(),
         )
