@@ -18,7 +18,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
-import java.util.UUID
 
 private const val TELEMETRY_PREFIX = "coreperson-beliefs-synchronisation"
 
@@ -32,34 +31,6 @@ class CorePersonSynchronisationBeliefsService(
 ) : TelemetryEnabled {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
-  }
-
-  suspend fun offenderBeliefUpdated(event: OffenderBeliefEvent) {
-    val (offenderIdDisplay) = event
-    val telemetry = telemetryOf(
-      "offenderNo" to offenderIdDisplay,
-    )
-    track(TELEMETRY_PREFIX, telemetry) {
-      // TODO: work out if we need to grab all the religions or just the one we need
-      corePersonNomisApiService.getOffenderReligions(event.offenderIdDisplay).mapIndexed { i, r ->
-        PrisonReligionUpdateRequest(
-          nomisReligionId = r.beliefId.toString(),
-          current = i == 0,
-          comments = r.comments,
-          verified = r.verified,
-          endDate = r.endDate,
-          modifyDateTime = r.audit.modifyDatetime ?: r.audit.createDatetime,
-          modifyUserId = r.audit.modifyUserId ?: r.audit.createUsername,
-        )
-      }.first { it.nomisReligionId == event.offenderBeliefId.toString() }.apply {
-        corePersonCprApiService.syncUpdateOffenderBelief(
-          prisonNumber = offenderIdDisplay,
-          // TODO: grab the cpr religion id from the mapping service
-          cprReligionId = UUID.randomUUID().toString(),
-          religion = this,
-        )
-      }
-    }
   }
 
   suspend fun offenderBeliefCreated(event: OffenderBeliefEvent) {
@@ -101,6 +72,41 @@ class CorePersonSynchronisationBeliefsService(
     }
   }
 
+  suspend fun offenderBeliefUpdated(event: OffenderBeliefEvent) {
+    val telemetryName = "$TELEMETRY_PREFIX-updated"
+    val (offenderIdDisplay) = event
+    val telemetry = telemetryOf(
+      "prisonNumber" to offenderIdDisplay,
+      "nomisId" to event.offenderBeliefId,
+    )
+    if (event.originatesInDpsOrHasMissingAudit) {
+      telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
+    } else {
+      track(telemetryName, telemetry) {
+        religionsMappingService.getReligionByNomisId(nomisReligionId = event.offenderBeliefId)
+          .also { mapping ->
+            telemetry["cprId"] = mapping.cprId
+            event.toPrisonReligionUpdateRequest().apply {
+              corePersonCprApiService.syncUpdateOffenderBelief(
+                offenderIdDisplay,
+                mapping.cprId,
+                this,
+              )
+            }
+          }
+      }
+    }
+  }
+
+  suspend fun offenderBeliefDeleted(event: OffenderBeliefEvent) {
+    val telemetry = telemetryOf(
+      "prisonNumber" to event.offenderIdDisplay,
+      "rootOffenderId" to event.rootOffenderId,
+      "nomisOffenderBeliefId" to event.offenderBeliefId,
+    )
+    telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-notimplemented", telemetry)
+  }
+
   suspend fun getNomisOffenderBelief(event: OffenderBeliefEvent): PrisonReligion = corePersonNomisApiService.getOffenderReligions(event.offenderIdDisplay).mapIndexed { i, r ->
     PrisonReligion(
       nomisReligionId = r.beliefId.toString(),
@@ -116,14 +122,17 @@ class CorePersonSynchronisationBeliefsService(
     )
   }.first { it.nomisReligionId == event.offenderBeliefId.toString() }
 
-  suspend fun offenderBeliefDeleted(event: OffenderBeliefEvent) {
-    val telemetry = telemetryOf(
-      "prisonNumber" to event.offenderIdDisplay,
-      "rootOffenderId" to event.rootOffenderId,
-      "nomisOffenderBeliefId" to event.offenderBeliefId,
+  suspend fun OffenderBeliefEvent.toPrisonReligionUpdateRequest(): PrisonReligionUpdateRequest = corePersonNomisApiService.getOffenderReligions(offenderIdDisplay).mapIndexed { i, r ->
+    PrisonReligionUpdateRequest(
+      nomisReligionId = r.beliefId.toString(),
+      current = i == 0,
+      comments = r.comments,
+      verified = r.verified,
+      endDate = r.endDate,
+      modifyDateTime = r.audit.modifyDatetime ?: r.audit.createDatetime,
+      modifyUserId = r.audit.modifyUserId ?: r.audit.createUsername,
     )
-    telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-notimplemented", telemetry)
-  }
+  }.first { it.nomisReligionId == offenderBeliefId.toString() }
 
   suspend fun retryCreateMapping(retryMessage: InternalMessage<ReligionMappingDto>) {
     createMapping(retryMessage.body)
