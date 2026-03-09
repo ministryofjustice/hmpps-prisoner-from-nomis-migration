@@ -32,6 +32,8 @@ class CorePersonCprApiExtension :
   AfterAllCallback,
   BeforeEachCallback {
   companion object {
+    private var enableResetBeforeEach = true
+
     @JvmField
     val cprCorePersonServer = CorePersonCprApiMockServer()
     lateinit var jsonMapper: JsonMapper
@@ -39,6 +41,11 @@ class CorePersonCprApiExtension :
     @Suppress("unused")
     inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = cprCorePersonServer.getRequestBody(pattern, jsonMapper)
     inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = cprCorePersonServer.getRequestBodies(pattern, jsonMapper)
+
+    fun resetAndDisableResetBeforeEach() {
+      enableResetBeforeEach = false
+      cprCorePersonServer.resetAll()
+    }
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -47,11 +54,12 @@ class CorePersonCprApiExtension :
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    cprCorePersonServer.resetAll()
+    if (enableResetBeforeEach) cprCorePersonServer.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {
     cprCorePersonServer.stop()
+    enableResetBeforeEach = true
   }
 }
 

@@ -40,9 +40,16 @@ class NomisApiExtension :
     const val ALLOCATIONS_ID_URL = "/allocations/ids"
     const val COURT_SENTENCING_PRISONER_IDS = "/prisoners/ids/all"
 
+    private var enableResetBeforeEach = true
+
     @JvmField
     val nomisApi = NomisApiMockServer()
     lateinit var jsonMapper: JsonMapper
+
+    fun resetAndDisableResetBeforeEach() {
+      enableResetBeforeEach = false
+      nomisApi.resetAll()
+    }
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -51,11 +58,12 @@ class NomisApiExtension :
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    nomisApi.resetAll()
+    if (enableResetBeforeEach) nomisApi.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {
     nomisApi.stop()
+    enableResetBeforeEach = true
   }
 
   override fun afterEach(context: ExtensionContext) {

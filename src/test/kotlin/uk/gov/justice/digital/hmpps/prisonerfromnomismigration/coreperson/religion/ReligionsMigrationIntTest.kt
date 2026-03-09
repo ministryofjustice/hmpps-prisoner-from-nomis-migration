@@ -4,13 +4,11 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -22,7 +20,6 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension
@@ -30,7 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.beliefs
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.MigrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse.Status
@@ -39,10 +36,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderBelief
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestsAsString
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.replacePrisonNumber
 import java.time.Duration
@@ -51,19 +46,12 @@ import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.collections.forEach
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ReligionsMigrationIntTest(
-  @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
   @Autowired private val corePersonNomisApiMock: CorePersonNomisApiMockServer,
   @Autowired private val mappingApiMock: ReligionsMappingApiMockServer,
-) : SqsIntegrationTestBase() {
+) : MigrationTestBase() {
   private val nomisApiMock = NomisApiExtension.nomisApi
   private val cprApiMock = CorePersonCprApiExtension.cprCorePersonServer
-
-  @BeforeEach
-  internal fun setup() = runBlocking {
-    migrationHistoryRepository.deleteAll()
-  }
 
   @Nested
   @DisplayName("POST /migrate/core-person/religion")
@@ -98,11 +86,14 @@ class ReligionsMigrationIntTest(
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class EverythingAlreadyMigrated {
       private lateinit var migrationResult: MigrationResult
 
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisApiMock.stubGetPrisonerIds(1, 1, "A0000BC")
         nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
         nomisApiMock.stubGetAllPrisonersInRange(0, 1)
@@ -148,14 +139,17 @@ class ReligionsMigrationIntTest(
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPath {
       private lateinit var migrationResult: MigrationResult
       private val cprReligionId: String = "abc-123456"
       private val nomisPrisonNumber = "A0000BC"
       private val nomisId = 2L
 
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
         nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
         nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
@@ -242,14 +236,13 @@ class ReligionsMigrationIntTest(
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPathLargeNumberOfPrisoners {
       private lateinit var migrationResult: MigrationResult
-      private lateinit var migrationRequests: List<String>
       private val nomisPrisonNumber = "A0001KT"
       private val cprReligionId: String = "abc-123456"
       private val nomisId = 1L
 
       @BeforeAll
       fun setUp() {
-        cprApiMock.resetAll()
+        setupMigrationTest()
 
         // estimated count
         nomisApiMock.stubGetPrisonerIds(81, 1, nomisPrisonNumber)
@@ -279,11 +272,12 @@ class ReligionsMigrationIntTest(
         migrationResult = performMigration {
           verify(telemetryClient, times(80)).trackEvent(eq("core-person-religion-migration-entity-migrated"), any(), isNull())
         }
-        migrationRequests = cprApiMock.getRequestsAsString(postRequestedFor(urlPathMatching("/syscon-sync/religion/.*")))
       }
 
       @Test
       fun `will migrate 80 records exactly once`() {
+        val migrationRequests = cprApiMock.getRequestsAsString(postRequestedFor(urlPathMatching("/syscon-sync/religion/.*")))
+
         assertThat(migrationRequests).hasSize(80)
         assertThat(migrationRequests).containsExactlyInAnyOrderElementsOf(
           (0L..<80L).map { "/syscon-sync/religion/${nomisPrisonNumber.replacePrisonNumber(it)}" },
@@ -292,14 +286,17 @@ class ReligionsMigrationIntTest(
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class FailureWithRecoverPath {
       private lateinit var migrationResult: MigrationResult
       val nomisId = 2L
       val cprReligionId: UUID = UUID.fromString("e7c2a3cc-e5b2-48ff-9e8b-a5038355b36c")
       val nomisPrisonNumber = "D0000BC"
 
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
         nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
         nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
@@ -387,14 +384,17 @@ class ReligionsMigrationIntTest(
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class FailureWithDuplicate {
       private lateinit var migrationResult: MigrationResult
       val cprReligionId: UUID = UUID.fromString("e7c2a3cc-e5b2-48ff-9e8b-a5038355b36c")
       val nomisPrisonNumber = "D0000BC"
       private val nomisId = 2L
 
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
         nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
         nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)

@@ -36,6 +36,8 @@ class MappingApiExtension :
   BeforeEachCallback {
 
   companion object {
+    private var enableResetBeforeEach = true
+
     @JvmField
     val mappingApi = MappingApiMockServer()
     const val VISITS_CREATE_MAPPING_URL = "/mapping/visits"
@@ -58,6 +60,11 @@ class MappingApiExtension :
       pattern,
       jsonMapper,
     )
+
+    fun resetAndDisableResetBeforeEach() {
+      enableResetBeforeEach = false
+      mappingApi.resetAll()
+    }
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -66,11 +73,12 @@ class MappingApiExtension :
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    mappingApi.resetAll()
+    if (enableResetBeforeEach) mappingApi.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {
     mappingApi.stop()
+    enableResetBeforeEach = true
   }
 }
 

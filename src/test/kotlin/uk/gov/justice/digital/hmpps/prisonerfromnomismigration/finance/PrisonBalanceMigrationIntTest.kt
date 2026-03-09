@@ -21,13 +21,12 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.MigrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonBalanceMappingDto
@@ -35,7 +34,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonAccountBalanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonBalanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
@@ -45,30 +43,15 @@ import java.math.BigDecimal
 import java.time.Duration
 import java.time.LocalDateTime
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
-
-  @Autowired
-  private lateinit var nomisPrisonBalanceApiMock: FinanceNomisApiMockServer
-
+class PrisonBalanceMigrationIntTest(
+  @Autowired private val nomisPrisonBalanceApiMock: FinanceNomisApiMockServer,
+  @Autowired private val mappingApiMock: PrisonBalanceMappingApiMockServer,
+) : MigrationTestBase() {
   private val dpsApiMock = FinanceApiExtension.financeApi
-
-  @Autowired
-  private lateinit var mappingApiMock: PrisonBalanceMappingApiMockServer
-
-  @Autowired
-  private lateinit var migrationHistoryRepository: MigrationHistoryRepository
 
   @Nested
   @DisplayName("POST /migrate/prison-balance")
   inner class MigratePrisonBalance {
-    @BeforeEach
-    internal fun deleteHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-      }
-    }
-
     @Nested
     inner class Security {
       @Test
@@ -102,11 +85,14 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class EverythingAlreadyMigrated {
       private lateinit var migrationResult: MigrationResult
 
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisPrisonBalanceApiMock.stubGetPrisonBalanceIds(totalElements = 2, pageSize = 10)
         mappingApiMock.stubGetPrisonBalanceByNomisIdOrNull(
           nomisId = "MDI1",
@@ -150,11 +136,14 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPath {
       private lateinit var migrationResult: MigrationResult
 
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisPrisonBalanceApiMock.stubGetPrisonBalanceIds(totalElements = 2, pageSize = 10)
         mappingApiMock.stubGetPrisonBalanceByNomisIdOrNull(nomisId = "MDI1", mapping = null)
         mappingApiMock.stubGetPrisonBalanceByNomisIdOrNull(nomisId = "MDI2", mapping = null)
@@ -254,11 +243,14 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPathWithPrisonIdEmptyStringFilter {
       private lateinit var migrationResult: MigrationResult
 
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisPrisonBalanceApiMock.stubGetPrisonBalanceIds(totalElements = 2, pageSize = 10)
         mappingApiMock.stubGetPrisonBalanceByNomisIdOrNull(nomisId = "MDI1", mapping = null)
         mappingApiMock.stubGetPrisonBalanceByNomisIdOrNull(nomisId = "MDI2", mapping = null)
@@ -358,11 +350,14 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPathWithFilter {
       private lateinit var migrationResult: MigrationResult
 
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         mappingApiMock.stubGetPrisonBalanceByNomisIdOrNull(nomisId = "MDI", mapping = null)
 
         nomisPrisonBalanceApiMock.stubGetPrisonBalance(
@@ -433,13 +428,12 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPathNomisToDPSMapping {
-      private lateinit var dpsRequests: List<GeneralLedgerBalancesSyncRequest>
-      private lateinit var dpsRequests2: List<GeneralLedgerBalancesSyncRequest>
-      private lateinit var mappingRequests: List<PrisonBalanceMappingDto>
       private lateinit var migrationResult: MigrationResult
 
       @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         stubMigratePrisonBalances(
           listOf("MDI1", "MDI2"),
           PrisonBalanceDto(
@@ -465,16 +459,15 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
         )
 
         migrationResult = performMigration()
-        dpsRequests =
-          FinanceApiExtension.getRequestBodies(postRequestedFor(urlPathMatching("/migrate/general-ledger-balances/MDI")))
-        dpsRequests2 =
-          FinanceApiExtension.getRequestBodies(postRequestedFor(urlPathMatching("/migrate/general-ledger-balances/LEI")))
-        mappingRequests =
-          MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/prison-balance")))
       }
 
       @Test
       fun `will send prison balance data to Dps`() {
+        val dpsRequests: List<GeneralLedgerBalancesSyncRequest> =
+          FinanceApiExtension.getRequestBodies(postRequestedFor(urlPathMatching("/migrate/general-ledger-balances/MDI")))
+        val dpsRequests2: List<GeneralLedgerBalancesSyncRequest> =
+          FinanceApiExtension.getRequestBodies(postRequestedFor(urlPathMatching("/migrate/general-ledger-balances/LEI")))
+
         with(dpsRequests.find { it.accountBalances[0].accountCode == 2102 } ?: throw AssertionError("Request not found")) {
           assertThat(accountBalances[0].balance).isEqualTo(BigDecimal.valueOf(20.50))
           assertThat(accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-01T01:02:03"))
@@ -487,6 +480,9 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will create mappings for nomis id to dps prison balance`() {
+        val mappingRequests: List<PrisonBalanceMappingDto> =
+          MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/prison-balance")))
+
         with(mappingRequests.find { it.nomisId == "MDI1" } ?: throw AssertionError("Request not found")) {
           assertThat(mappingType).isEqualTo(MIGRATED)
           assertThat(label).isEqualTo(migrationResult.migrationId)
@@ -503,11 +499,14 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class MappingErrorRecovery {
       private lateinit var migrationResult: MigrationResult
 
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisPrisonBalanceApiMock.stubGetPrisonBalanceIds(totalElements = 1, pageSize = 10)
         mappingApiMock.stubGetPrisonBalanceByNomisIdOrNull(nomisId = "MDI1", mapping = null)
         nomisPrisonBalanceApiMock.stubGetPrisonBalance(
@@ -572,11 +571,14 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class DuplicateMappingErrorHandling {
       private lateinit var migrationResult: MigrationResult
 
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisPrisonBalanceApiMock.stubGetPrisonBalanceIds(totalElements = 1, pageSize = 10)
         mappingApiMock.stubGetPrisonBalanceByNomisIdOrNull(nomisId = "MDI1", mapping = null)
         nomisPrisonBalanceApiMock.stubGetPrisonBalance(
@@ -663,6 +665,9 @@ class PrisonBalanceMigrationIntTest : SqsIntegrationTestBase() {
 
     @Nested
     inner class PreventMultipleMigrations {
+      @BeforeEach
+      fun setup() = setupMigrationTest()
+
       @Test
       fun `will not run a new migration if existing is in progress`() {
         runBlocking {
