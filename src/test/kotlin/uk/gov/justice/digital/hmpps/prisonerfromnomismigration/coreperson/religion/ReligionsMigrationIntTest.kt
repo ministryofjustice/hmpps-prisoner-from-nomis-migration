@@ -234,6 +234,86 @@ class ReligionsMigrationIntTest(
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathNoReligions {
+      private lateinit var migrationResult: MigrationResult
+      private val cprReligionId: String = "abc-123456"
+      private val nomisPrisonNumber = "A0000BC"
+      private val nomisId = 2L
+
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
+        nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
+        mappingApiMock.stubGetReligionsByNomisPrisonNumberOrNull(nomisPrisonNumber = nomisPrisonNumber, mapping = null)
+        corePersonNomisApiMock.stubGetOffenderReligions(
+          prisonNumber = nomisPrisonNumber,
+          // no religions found in nomis
+          religions = emptyList(),
+        )
+        mappingApiMock.stubCreateMappingsForMigration()
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will retrieve religion details`() {
+        corePersonNomisApiMock.verify(getRequestedFor(urlPathEqualTo("/core-person/$nomisPrisonNumber/religions")))
+      }
+
+      @Test
+      fun `will transform and migrate religions into CPR`() {
+        val migrationRequests = CorePersonCprApiExtension.getRequestBodies<PrisonReligionRequest>(postRequestedFor(urlPathEqualTo("/syscon-sync/religion/$nomisPrisonNumber")))
+
+        // no religions migrated as none found
+        assertThat(migrationRequests).hasSize(0)
+      }
+
+      @Test
+      fun `will create mappings for religions`() {
+        val mappingRequests: List<ReligionsMigrationMappingDto> = MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/core-person-religion")))
+
+        assertThat(mappingRequests).hasSize(1)
+
+        with(mappingRequests.first()) {
+          assertThat(mappingType).isEqualTo(ReligionsMigrationMappingDto.MappingType.MIGRATED)
+          assertThat(label).isEqualTo(migrationResult.migrationId)
+          assertThat(nomisPrisonNumber).isEqualTo(nomisPrisonNumber)
+          assertThat(cprId).isEqualTo(nomisPrisonNumber)
+          assertThat(religions).hasSize(0)
+        }
+      }
+
+      @Test
+      fun `will track telemetry for each prisoner migrated`() {
+        verify(telemetryClient).trackEvent(
+          eq("core-person-religion-migration-entity-migrated"),
+          check {
+            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+            assertThat(it["cprId"]).isEqualTo(nomisPrisonNumber)
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will record the number of prisoners migrated`() {
+        webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+          .jsonPath("$.recordsMigrated").isEqualTo("1")
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPathLargeNumberOfPrisoners {
       private lateinit var migrationResult: MigrationResult
       private val nomisPrisonNumber = "A0001KT"
