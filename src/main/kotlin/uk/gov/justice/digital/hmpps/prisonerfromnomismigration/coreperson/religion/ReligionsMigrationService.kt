@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonNomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -77,10 +78,15 @@ class ReligionsMigrationService(
       log.info("Will not migrate the prisoner=$nomisPrisonNumber since it was already mapped to CPR $cprId during migration $label")
     } ?: run {
       val religions = corePersonNomisApiService.getOffenderReligions(nomisPrisonNumber = prisonNumber)
-      val cprReligions = cprApiService.migrateCorePersonReligion(
-        prisonNumber,
-        religions.toMigrateReligionsRequest(),
-      )
+      val cprReligions =
+        if (religions.isNotEmpty()) {
+          cprApiService.migrateCorePersonReligion(
+            prisonNumber,
+            religions.toMigrateReligionsRequest(),
+          )
+        } else {
+          SysconReligionResponseBody(prisonNumber = prisonNumber, emptyList())
+        }
 
       val mapping = ReligionsMigrationMappingDto(
         cprId = cprReligions.prisonNumber,
