@@ -6,6 +6,7 @@ import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.kotlin.any
@@ -22,6 +23,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.test.context.bean.override.mockito.MockReset
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.web.reactive.server.WebTestClient
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -243,7 +245,7 @@ class SqsIntegrationTestBase : TestBase() {
   @Autowired
   protected lateinit var jwtAuthHelper: JwtAuthorisationHelper
 
-  @MockitoSpyBean
+  @MockitoSpyBean(reset = MockReset.NONE)
   protected lateinit var telemetryClient: TelemetryClient
 
   @MockitoSpyBean
@@ -253,9 +255,13 @@ class SqsIntegrationTestBase : TestBase() {
   fun setUp() {
     Awaitility.setDefaultPollDelay(1, TimeUnit.MILLISECONDS)
     Awaitility.setDefaultPollInterval(10, TimeUnit.MILLISECONDS)
-    reset(telemetryClient)
     allQueues.forEach { it.purgeAndWait() }
     Awaitility.setDefaultPollInterval(50, TimeUnit.MILLISECONDS)
+  }
+
+  @AfterEach
+  fun resetTelemetryClient() {
+    reset(telemetryClient)
   }
 
   internal fun setAuthorisation(

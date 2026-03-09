@@ -30,6 +30,8 @@ class FinanceApiExtension :
   AfterAllCallback,
   BeforeEachCallback {
   companion object {
+    private var enableResetBeforeEach = true
+
     @JvmField
     val financeApi = FinanceApiMockServer()
     lateinit var jsonMapper: JsonMapper
@@ -43,6 +45,11 @@ class FinanceApiExtension :
       pattern,
       jsonMapper,
     )
+
+    fun resetAndDisableResetBeforeEach() {
+      enableResetBeforeEach = false
+      financeApi.resetAll()
+    }
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -51,11 +58,12 @@ class FinanceApiExtension :
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    financeApi.resetAll()
+    if (enableResetBeforeEach) financeApi.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {
     financeApi.stop()
+    enableResetBeforeEach = true
   }
 }
 
