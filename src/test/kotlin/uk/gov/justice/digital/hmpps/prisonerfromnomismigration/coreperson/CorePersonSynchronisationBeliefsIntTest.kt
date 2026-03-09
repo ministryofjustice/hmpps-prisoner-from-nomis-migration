@@ -20,6 +20,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion.ReligionsMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 
 class CorePersonSynchronisationBeliefsIntTest(
@@ -36,7 +39,7 @@ class CorePersonSynchronisationBeliefsIntTest(
   inner class OffenderBeliefs {
     @Nested
     @DisplayName("OFFENDER_BELIEFS-INSERTED")
-    inner class OfficialBeliefsCreated {
+    inner class OffenderBeliefsCreated {
 
       @Nested
       inner class WhenCreatedInDps {
@@ -111,13 +114,6 @@ class CorePersonSynchronisationBeliefsIntTest(
           @Nested
           inner class MappingFailures {
 
-            @BeforeEach
-            fun setUp() {
-              nomisApi.stubGetOffenderReligions(prisonNumber = "A1234AA", religions = multipleBeliefs())
-              mappingApiMock.stubGetReligionByNomisIdOrNull(nomisId = 1, nomisPrisonNumber = "A1234AA", mapping = null)
-              cprApi.stubSyncCreateOffenderBelief("A1234AA")
-            }
-
             @Nested
             inner class FailureAndRecovery {
               @BeforeEach
@@ -144,6 +140,74 @@ class CorePersonSynchronisationBeliefsIntTest(
                   check {
                     assertThat(it["prisonNumber"]).isEqualTo("A1234AA")
                     assertThat(it["nomisId"]).isEqualTo("1")
+                  },
+                  isNull(),
+                )
+              }
+            }
+
+            @Nested
+            inner class DuplicateDetected {
+              val cprExistingId = "existing"
+              val cprDuplicateId = "duplicate"
+
+              @BeforeEach
+              fun setUp() {
+                mappingApiMock.stubCreateReligionMapping(
+                  error = DuplicateMappingErrorResponse(
+                    moreInfo = DuplicateErrorContentObject(
+                      duplicate = ReligionMappingDto(
+                        nomisPrisonNumber = "A1234AA",
+                        cprId = cprDuplicateId,
+                        nomisId = 1,
+                        mappingType = ReligionMappingDto.MappingType.NOMIS_CREATED,
+                      ),
+                      existing = ReligionMappingDto(
+                        nomisPrisonNumber = "A1234AA",
+                        cprId = cprExistingId,
+                        nomisId = 1,
+                        mappingType = ReligionMappingDto.MappingType.NOMIS_CREATED,
+                      ),
+                    ),
+                    errorCode = 1409,
+                    status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+                    userMessage = "Duplicate mapping",
+                  ),
+                )
+
+                sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 1, eventType = "INSERTED")
+                  .also { waitForAnyProcessingToComplete("coreperson-beliefs-synchronisation-duplicate") }
+              }
+
+              @Test
+              fun `will create the religion in CPR only once`() {
+                verifyCpr(1)
+              }
+
+              @Test
+              fun `will not bother retrying mapping`() {
+                verifyMappingSaved(1)
+              }
+
+              @Test
+              fun `will track telemetry`() {
+                verify(telemetryClient).trackEvent(
+                  eq("coreperson-beliefs-synchronisation-created-success"),
+                  check {
+                    assertThat(it["prisonNumber"]).isEqualTo("A1234AA")
+                    assertThat(it["nomisId"]).isEqualTo("1")
+                  },
+                  isNull(),
+                )
+
+                verify(telemetryClient).trackEvent(
+                  eq("coreperson-beliefs-synchronisation-duplicate"),
+                  check {
+                    assertThat(it["nomisPrisonNumber"]).isEqualTo("A1234AA")
+                    assertThat(it["existingNomisId"]).isEqualTo("1")
+                    assertThat(it["existingCprId"]).isEqualTo(cprExistingId)
+                    assertThat(it["duplicateNomisId"]).isEqualTo("1")
+                    assertThat(it["duplicateCprId"]).isEqualTo(cprDuplicateId)
                   },
                   isNull(),
                 )
@@ -198,7 +262,7 @@ class CorePersonSynchronisationBeliefsIntTest(
 
     @Nested
     @DisplayName("OFFENDER_BELIEFS-UPDATED")
-    inner class OfficialBeliefsUpdated {
+    inner class OffenderBeliefsUpdated {
       @Nested
       inner class WhenUpdatedInDps {
         @BeforeEach

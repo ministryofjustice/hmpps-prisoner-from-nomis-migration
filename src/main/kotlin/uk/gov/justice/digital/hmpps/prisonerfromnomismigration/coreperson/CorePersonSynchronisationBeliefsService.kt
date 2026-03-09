@@ -173,7 +173,6 @@ class CorePersonSynchronisationBeliefsService(
               "existingCprId" to existing.cprId,
               "duplicateNomisId" to duplicate.nomisId,
               "duplicateCprId" to duplicate.cprId,
-              "type" to "RELIGION",
             ),
           )
         }
