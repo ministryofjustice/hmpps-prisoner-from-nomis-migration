@@ -24,7 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.CORE_PERSON_RELIGION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 
 @Service
@@ -41,7 +41,7 @@ class ReligionsMigrationService(
   @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
 ) : ByIdRangeMigrationService<Any, PrisonNumberAndRootOffenderId, ReligionsMigrationMappingDto>(
   mappingService = religionsMappingService,
-  migrationType = MigrationType.CORE_PERSON_RELIGION,
+  migrationType = CORE_PERSON_RELIGION,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckRetrySeconds,
@@ -126,7 +126,7 @@ class ReligionsMigrationService(
       if (it.isError) {
         val duplicateErrorDetails = it.errorResponse!!.moreInfo
         telemetryClient.trackEvent(
-          "core-person-religion-migration-duplicate",
+          "${CORE_PERSON_RELIGION.telemetryName}-migration-duplicate",
           mapOf(
             "duplicateCprId" to duplicateErrorDetails.duplicate.cprId,
             "duplicateNomisPrisonNumber" to duplicateErrorDetails.duplicate.nomisPrisonNumber,
@@ -137,7 +137,7 @@ class ReligionsMigrationService(
         )
       } else {
         telemetryClient.trackEvent(
-          "core-person-religion-migration-entity-migrated",
+          "${CORE_PERSON_RELIGION.telemetryName}-migration-entity-migrated",
           mapOf(
             "nomisPrisonNumber" to mapping.nomisPrisonNumber,
             "cprId" to mapping.cprId,

@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-03-02.2488.2d2902e"
+    "version" : "2026-03-10.2548.8044dcc"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -41,7 +41,8 @@
           "description" : "The identifier of the offender source system (NOMIS)",
           "required" : true,
           "schema" : {
-            "type" : "string"
+            "type" : "string",
+            "minLength" : 1
           }
         } ],
         "requestBody" : {
@@ -195,6 +196,41 @@
       }
     },
     "/person/prison/{prisonNumber}/religion/{cprReligionId}" : {
+      "get" : {
+        "tags" : [ "HMPPS Person API" ],
+        "description" : "Get prison religion record by Prison Number. Role required is **ROLE_CORE_PERSON_RECORD_API__SYSCON_SYNC_RW**.",
+        "operationId" : "get",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "cprReligionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonReligionGetResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "api-role" : [ ]
+        } ]
+      },
       "put" : {
         "tags" : [ "HMPPS Person API" ],
         "description" : "Update prison religion record by Prison Number. Role required is **ROLE_CORE_PERSON_RECORD_API__SYSCON_SYNC_RW**.",
@@ -230,7 +266,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/PrisonReligionResponseBody"
+                  "$ref" : "#/components/schemas/PrisonReligionResponse"
                 }
               }
             }
@@ -287,7 +323,6 @@
         "parameters" : [ {
           "name" : "prisonNumber",
           "in" : "path",
-          "description" : "The identifier of the offender source system (NOMIS)",
           "required" : true,
           "schema" : {
             "type" : "string"
@@ -460,7 +495,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/PrisonReligionResponseBody"
+                  "$ref" : "#/components/schemas/PrisonReligionResponse"
                 }
               }
             }
@@ -587,9 +622,9 @@
           "200" : {
             "description" : "OK",
             "content" : {
-              "application/json" : {
+              "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/CanonicalRecord"
+                  "$ref" : "#/components/schemas/PrisonCanonicalRecord"
                 }
               }
             }
@@ -711,7 +746,7 @@
           "buildingNumber" : {
             "type" : "string",
             "description" : "The address building number",
-            "example" : 102
+            "example" : "102"
           },
           "thoroughfareName" : {
             "type" : "string",
@@ -872,7 +907,7 @@
           "extension" : {
             "type" : "string",
             "description" : "The contact extension",
-            "example" : 235
+            "example" : "235"
           }
         },
         "required" : [ "type" ]
@@ -1308,7 +1343,7 @@
         },
         "required" : [ "cprReligionId", "nomisReligionId" ]
       },
-      "PrisonReligionResponseBody" : {
+      "PrisonReligionResponse" : {
         "type" : "object",
         "properties" : {
           "prisonNumber" : {
@@ -1332,12 +1367,14 @@
             "type" : "string",
             "format" : "date-time",
             "description" : "The sexual orientation modify date and time",
-            "example" : "2000-01-01 12:00:00"
+            "example" : "2000-01-01 12:00:00",
+            "minLength" : 1
           },
           "modifyUserId" : {
             "type" : "string",
             "description" : "The sexual orientation modify user id",
-            "example" : 12345
+            "example" : "12345",
+            "minLength" : 1
           }
         },
         "required" : [ "modifyDateTime", "modifyUserId" ]
@@ -1348,7 +1385,7 @@
           "nomisReligionId" : {
             "type" : "string",
             "description" : "The nomis religion id",
-            "example" : 1234
+            "example" : "1234"
           },
           "religionCode" : {
             "type" : "string",
@@ -1391,7 +1428,7 @@
           "modifyUserId" : {
             "type" : "string",
             "description" : "The religion modify user id",
-            "example" : 12345
+            "example" : "12345"
           },
           "current" : {
             "type" : "boolean",
@@ -1406,10 +1443,10 @@
         "properties" : {
           "religions" : {
             "type" : "array",
-            "description" : "The list of religions for a given prison number",
             "items" : {
               "$ref" : "#/components/schemas/PrisonReligion"
-            }
+            },
+            "minItems" : 1
           }
         },
         "required" : [ "religions" ]
@@ -1458,7 +1495,7 @@
           "modifyUserId" : {
             "type" : "string",
             "description" : "The nationality modify user id",
-            "example" : 12345
+            "example" : "12345"
           },
           "notes" : {
             "type" : "string",
@@ -1480,12 +1517,14 @@
             "type" : "string",
             "format" : "date-time",
             "description" : "The immigration status modify date and time",
-            "example" : "2000-01-01 12:00:00"
+            "example" : "2000-01-01 12:00:00",
+            "minLength" : 1
           },
           "modifyUserId" : {
             "type" : "string",
             "description" : "The immigration status modify user id",
-            "example" : 12345
+            "example" : "12345",
+            "minLength" : 1
           }
         },
         "required" : [ "interestToImmigration", "modifyDateTime", "modifyUserId" ]
@@ -1507,7 +1546,7 @@
           "modifyUserId" : {
             "type" : "string",
             "description" : "The disability modify user id",
-            "example" : 12345
+            "example" : "12345"
           }
         },
         "required" : [ "disability", "modifyDateTime", "modifyUserId" ]
@@ -1581,7 +1620,7 @@
           "buildingNumber" : {
             "type" : "string",
             "description" : "Person address building number",
-            "example" : 102
+            "example" : "102"
           },
           "thoroughfareName" : {
             "type" : "string",
@@ -1611,7 +1650,7 @@
           "uprn" : {
             "type" : "string",
             "description" : "Person address uprn",
-            "example" : 100120991537
+            "example" : "100120991537"
           }
         }
       },
@@ -1691,7 +1730,7 @@
             "items" : {
               "type" : "string",
               "description" : "List of C_IDs",
-              "example" : "1234567"
+              "example" : "\"1234567\""
             }
           },
           "pncs" : {
@@ -1897,6 +1936,148 @@
             "example" : "Mr"
           }
         }
+      },
+      "PrisonCanonicalRecord" : {
+        "type" : "object",
+        "properties" : {
+          "cprUUID" : {
+            "type" : "string",
+            "description" : "Person CPR uuid. **If the record has been merged, this will be the CPR uuid of the record it has been merged to**",
+            "example" : "f91ef118-a51f-4874-9409-c0538b4ca6fd"
+          },
+          "firstName" : {
+            "type" : "string",
+            "description" : "Person first name",
+            "example" : "John"
+          },
+          "middleNames" : {
+            "type" : "string",
+            "description" : "Person middle names",
+            "example" : "Morgan"
+          },
+          "lastName" : {
+            "type" : "string",
+            "description" : "Person last name",
+            "example" : "Doe"
+          },
+          "dateOfBirth" : {
+            "type" : "string",
+            "description" : "Person date of birth",
+            "example" : "1990-08-21"
+          },
+          "disability" : {
+            "type" : "boolean",
+            "description" : "Person disability",
+            "example" : true
+          },
+          "interestToImmigration" : {
+            "type" : "boolean",
+            "description" : "Person interest to immigration",
+            "example" : true
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/CanonicalTitle",
+            "description" : "Person title"
+          },
+          "sex" : {
+            "$ref" : "#/components/schemas/CanonicalSex",
+            "description" : "Person sex"
+          },
+          "sexualOrientation" : {
+            "$ref" : "#/components/schemas/CanonicalSexualOrientation",
+            "description" : "Person sexual orientation"
+          },
+          "religion" : {
+            "$ref" : "#/components/schemas/CanonicalReligion",
+            "description" : "Person religion"
+          },
+          "ethnicity" : {
+            "$ref" : "#/components/schemas/CanonicalEthnicity",
+            "description" : "Person ethnicity"
+          },
+          "aliases" : {
+            "type" : "array",
+            "description" : "List of person aliases",
+            "items" : {
+              "$ref" : "#/components/schemas/CanonicalAlias"
+            }
+          },
+          "nationalities" : {
+            "type" : "array",
+            "description" : "List of person nationalities",
+            "items" : {
+              "$ref" : "#/components/schemas/CanonicalNationality"
+            }
+          },
+          "addresses" : {
+            "type" : "array",
+            "description" : "List of person addresses",
+            "items" : {
+              "$ref" : "#/components/schemas/CanonicalAddress"
+            }
+          },
+          "identifiers" : {
+            "$ref" : "#/components/schemas/CanonicalIdentifiers",
+            "description" : "Person identifiers"
+          },
+          "religionHistory" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PrisonReligionGet"
+            }
+          }
+        },
+        "required" : [ "addresses", "aliases", "ethnicity", "identifiers", "nationalities", "religion", "religionHistory", "sex", "sexualOrientation", "title" ]
+      },
+      "PrisonReligionGet" : {
+        "type" : "object",
+        "properties" : {
+          "religionCode" : {
+            "type" : "string"
+          },
+          "religionDescription" : {
+            "type" : "string"
+          },
+          "changeReasonKnown" : {
+            "type" : "boolean"
+          },
+          "comments" : {
+            "type" : "string"
+          },
+          "verified" : {
+            "type" : "boolean"
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "endDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "modifyDateTime" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "modifyUserId" : {
+            "type" : "string"
+          },
+          "current" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PrisonReligionGetResponse" : {
+        "type" : "object",
+        "properties" : {
+          "prisonNumber" : {
+            "type" : "string"
+          },
+          "religion" : {
+            "$ref" : "#/components/schemas/PrisonReligionGet"
+          }
+        },
+        "required" : [ "prisonNumber", "religion" ]
       },
       "MatchDetailsResponse" : {
         "type" : "object",
