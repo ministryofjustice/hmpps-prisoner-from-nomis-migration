@@ -15,7 +15,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionResponseBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Sentence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionMapping
@@ -90,7 +90,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
     fun migrateCorePersonResponse(request: Prisoner = migrateCorePersonRequest()) = "OK"
 
-    fun syncCorePersonReligionResponse(prisonNumber: String, nomisId: Long) = PrisonReligionResponseBody(
+    fun syncCorePersonReligionResponse(prisonNumber: String, nomisId: Long) = PrisonReligionResponse(
       prisonNumber = prisonNumber,
       religionMappings = PrisonReligionMapping(nomisId.toString(), UUID.randomUUID().toString()),
     )
@@ -133,7 +133,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubSyncCreateOffenderBelief(
     prisonNumber: String = "A1234BC",
     status: HttpStatus = HttpStatus.OK,
-    response: PrisonReligionResponseBody = syncCorePersonReligionResponse(prisonNumber, 12345L),
+    response: PrisonReligionResponse = syncCorePersonReligionResponse(prisonNumber, 12345L),
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     stubFor(
@@ -151,7 +151,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     prisonNumber: String = "A1234BC",
     cprId: String = "cprId",
     status: HttpStatus = HttpStatus.OK,
-    response: PrisonReligionResponseBody = syncCorePersonReligionResponse(prisonNumber, 12345L),
+    response: PrisonReligionResponse = syncCorePersonReligionResponse(prisonNumber, 12345L),
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     stubFor(
