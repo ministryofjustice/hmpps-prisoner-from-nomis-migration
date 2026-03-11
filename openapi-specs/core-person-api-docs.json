@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-03-10.2548.8044dcc"
+    "version" : "2026-03-10.2595.dd78921"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -638,11 +638,41 @@
         } ]
       }
     },
+    "/person/libra/{cId}" : {
+      "get" : {
+        "tags" : [ "HMPPS Person API" ],
+        "description" : "Retrieve person record by C_ID coming from Libra. Role required is **ROLE_CORE_PERSON_RECORD_API__RO** . \n      For Identifiers the crn, prisonNumber, defendantId, cids come from all records related to this person.\n      The other Identifiers come from just this person\n      **cprUUID is not supplied on this endpoint.**",
+        "operationId" : "getRecord_2",
+        "parameters" : [ {
+          "name" : "cId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CanonicalRecord"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "api-role" : [ ]
+        } ]
+      }
+    },
     "/person/commonplatform/{defendantId}" : {
       "get" : {
         "tags" : [ "HMPPS Person API" ],
         "description" : "Retrieve person record by Defendant ID. Role required is **ROLE_CORE_PERSON_RECORD_API__RO** . \n      For Identifiers the crn, prisonNumber, defendantId, cids come from all records related to this person.\n      The other Identifiers come from just this person\n      **cprUUID is not supplied on this endpoint.**",
-        "operationId" : "getRecord_2",
+        "operationId" : "getRecord_3",
         "parameters" : [ {
           "name" : "defendantId",
           "in" : "path",
