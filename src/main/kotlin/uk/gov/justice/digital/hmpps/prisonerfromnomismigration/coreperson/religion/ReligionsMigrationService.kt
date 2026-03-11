@@ -9,15 +9,13 @@ import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonNomisApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligion
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.toMigrateReligionsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionsMigrationMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderBelief
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRangeMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
@@ -144,23 +142,6 @@ class ReligionsMigrationService(
   override suspend fun retryCreateMapping(context: MigrationContext<ReligionsMigrationMappingDto>) = createMappingOrOnFailureDo(context, context.body) {
     throw it
   }
-
-  private fun List<OffenderBelief>.toMigrateReligionsRequest(): PrisonReligionRequest = PrisonReligionRequest(
-    religions = this.mapIndexed { i, r ->
-      PrisonReligion(
-        nomisReligionId = r.beliefId.toString(),
-        current = i == 0,
-        religionCode = r.belief.code,
-        startDate = r.startDate,
-        endDate = r.endDate,
-        comments = r.comments,
-        verified = r.verified,
-        changeReasonKnown = r.changeReason,
-        modifyDateTime = r.audit.modifyDatetime ?: r.audit.createDatetime,
-        modifyUserId = r.audit.modifyUserId ?: r.audit.createUsername,
-      )
-    },
-  )
 
   override fun parseContextFilter(json: String): MigrationMessage<*, Any> = jsonMapper.readValue(json)
   override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<Any, ByLastId<PrisonNumberAndRootOffenderId>>> = jsonMapper.readValue(json)

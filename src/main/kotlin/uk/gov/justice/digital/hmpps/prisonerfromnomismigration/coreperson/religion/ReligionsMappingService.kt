@@ -38,4 +38,9 @@ class ReligionsMappingService(@Qualifier("mappingApiWebClient") webClient: WebCl
     .prepare(api.createReligionMappingRequestConfig(mapping))
     .retrieve()
     .awaitSuccessOrDuplicate()
+
+  suspend fun replaceMappings(mappings: ReligionsMigrationMappingDto) {
+    api.replaceMappings(mappings)
+      .awaitSingle()
+  }
 }

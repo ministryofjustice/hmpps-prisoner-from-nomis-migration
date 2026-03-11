@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CORE_PERSON_RELIGION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligion
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion.ReligionsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
@@ -15,6 +17,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionsMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderBelief
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -107,6 +112,26 @@ class CorePersonSynchronisationBeliefsService(
     telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-notimplemented", telemetry)
   }
 
+  suspend fun resynchroniseOffenderBelief(prisonNumber: String) {
+    val religions = corePersonNomisApiService.getOffenderReligions(nomisPrisonNumber = prisonNumber)
+    val mapping = corePersonCprApiService.migrateCorePersonReligion(prisonNumber, religions.toMigrateReligionsRequest())
+      .toReligionsMapping()
+    religionsMappingService.replaceMappings(mapping)
+  }
+
+  fun SysconReligionResponseBody.toReligionsMapping() = ReligionsMigrationMappingDto(
+    cprId = prisonNumber,
+    nomisPrisonNumber = prisonNumber,
+    religions = religionMappings.map {
+      ReligionMigrationMappingDto(
+        cprId = it.cprReligionId,
+        nomisId = it.nomisReligionId.toLong(),
+        nomisPrisonNumber = prisonNumber,
+      )
+    },
+    mappingType = ReligionsMigrationMappingDto.MappingType.NOMIS_CREATED,
+  )
+
   suspend fun getNomisOffenderBelief(event: OffenderBeliefEvent): PrisonReligion = corePersonNomisApiService.getOffenderReligions(event.offenderIdDisplay).mapIndexed { i, r ->
     PrisonReligion(
       nomisReligionId = r.beliefId.toString(),
@@ -179,3 +204,20 @@ class CorePersonSynchronisationBeliefsService(
       }
   }
 }
+
+fun List<OffenderBelief>.toMigrateReligionsRequest(): PrisonReligionRequest = PrisonReligionRequest(
+  religions = this.mapIndexed { i, r ->
+    PrisonReligion(
+      nomisReligionId = r.beliefId.toString(),
+      current = i == 0,
+      religionCode = r.belief.code,
+      startDate = r.startDate,
+      endDate = r.endDate,
+      comments = r.comments,
+      verified = r.verified,
+      changeReasonKnown = r.changeReason,
+      modifyDateTime = r.audit.modifyDatetime ?: r.audit.createDatetime,
+      modifyUserId = r.audit.modifyUserId ?: r.audit.createUsername,
+    )
+  },
+)
