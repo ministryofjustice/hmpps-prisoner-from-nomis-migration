@@ -8,6 +8,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -17,6 +18,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
@@ -46,12 +48,16 @@ import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.collections.forEach
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ReligionsMigrationIntTest(
   @Autowired private val corePersonNomisApiMock: CorePersonNomisApiMockServer,
   @Autowired private val mappingApiMock: ReligionsMappingApiMockServer,
 ) : MigrationTestBase() {
   private val nomisApiMock = NomisApiExtension.nomisApi
   private val cprApiMock = CorePersonCprApiExtension.cprCorePersonServer
+
+  @AfterAll
+  fun tearDownTelemetryClient() = reset(telemetryClient)
 
   @Nested
   @DisplayName("POST /migrate/core-person/religion")
@@ -209,7 +215,87 @@ class ReligionsMigrationIntTest(
       @Test
       fun `will track telemetry for each prisoner migrated`() {
         verify(telemetryClient).trackEvent(
-          eq("core-person-religion-migration-entity-migrated"),
+          eq("coreperson-religion-migration-entity-migrated"),
+          check {
+            assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
+            assertThat(it["cprId"]).isEqualTo(nomisPrisonNumber)
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will record the number of prisoners migrated`() {
+        webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+          .jsonPath("$.recordsMigrated").isEqualTo("1")
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathNoReligions {
+      private lateinit var migrationResult: MigrationResult
+      private val cprReligionId: String = "abc-123456"
+      private val nomisPrisonNumber = "A0000BC"
+      private val nomisId = 2L
+
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
+        nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
+        mappingApiMock.stubGetReligionsByNomisPrisonNumberOrNull(nomisPrisonNumber = nomisPrisonNumber, mapping = null)
+        corePersonNomisApiMock.stubGetOffenderReligions(
+          prisonNumber = nomisPrisonNumber,
+          // no religions found in nomis
+          religions = emptyList(),
+        )
+        mappingApiMock.stubCreateMappingsForMigration()
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will retrieve religion details`() {
+        corePersonNomisApiMock.verify(getRequestedFor(urlPathEqualTo("/core-person/$nomisPrisonNumber/religions")))
+      }
+
+      @Test
+      fun `will transform and migrate religions into CPR`() {
+        val migrationRequests = CorePersonCprApiExtension.getRequestBodies<PrisonReligionRequest>(postRequestedFor(urlPathEqualTo("/syscon-sync/religion/$nomisPrisonNumber")))
+
+        // no religions migrated as none found
+        assertThat(migrationRequests).hasSize(0)
+      }
+
+      @Test
+      fun `will create mappings for religions`() {
+        val mappingRequests: List<ReligionsMigrationMappingDto> = MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/core-person-religion")))
+
+        assertThat(mappingRequests).hasSize(1)
+
+        with(mappingRequests.first()) {
+          assertThat(mappingType).isEqualTo(ReligionsMigrationMappingDto.MappingType.MIGRATED)
+          assertThat(label).isEqualTo(migrationResult.migrationId)
+          assertThat(nomisPrisonNumber).isEqualTo(nomisPrisonNumber)
+          assertThat(cprId).isEqualTo(nomisPrisonNumber)
+          assertThat(religions).hasSize(0)
+        }
+      }
+
+      @Test
+      fun `will track telemetry for each prisoner migrated`() {
+        verify(telemetryClient).trackEvent(
+          eq("coreperson-religion-migration-entity-migrated"),
           check {
             assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
             assertThat(it["cprId"]).isEqualTo(nomisPrisonNumber)
@@ -270,7 +356,7 @@ class ReligionsMigrationIntTest(
         mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 81)
         // wait until all records have individually migrated since status check might finish just before some entities are still in flight due to the "big" numbers
         migrationResult = performMigration {
-          verify(telemetryClient, times(80)).trackEvent(eq("core-person-religion-migration-entity-migrated"), any(), isNull())
+          verify(telemetryClient, times(80)).trackEvent(eq("coreperson-religion-migration-entity-migrated"), any(), isNull())
         }
       }
 
@@ -359,7 +445,7 @@ class ReligionsMigrationIntTest(
       fun `will eventually track telemetry for each slot migrated`() {
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            eq("core-person-religion-migration-entity-migrated"),
+            eq("coreperson-religion-migration-entity-migrated"),
             check {
               assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
               assertThat(it["cprId"]).isEqualTo(nomisPrisonNumber)
@@ -457,7 +543,7 @@ class ReligionsMigrationIntTest(
       @Test
       fun `will never track telemetry for each slot migrated`() {
         verify(telemetryClient, times(0)).trackEvent(
-          eq("core-person-religion-migration-entity-migrated"),
+          eq("coreperson-religion-migration-entity-migrated"),
           any(),
           isNull(),
         )
@@ -480,7 +566,7 @@ class ReligionsMigrationIntTest(
   private fun performMigration(
     waitUntilVerify: () -> Unit = {
       verify(telemetryClient).trackEvent(
-        eq("core-person-religion-migration-completed"),
+        eq("coreperson-religion-migration-completed"),
         any(),
         isNull(),
       )
