@@ -185,6 +185,16 @@ class ReligionsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubReplaceMappings() {
+    mappingApi.stubFor(
+      post("/mapping/core-person-religion/replace").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(200),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
