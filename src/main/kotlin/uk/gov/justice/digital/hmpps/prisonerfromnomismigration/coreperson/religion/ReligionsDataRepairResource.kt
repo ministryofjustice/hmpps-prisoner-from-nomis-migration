@@ -20,7 +20,7 @@ class ReligionsDataRepairResource(
   private val synchronisationService: CorePersonSynchronisationBeliefsService,
   private val telemetryClient: TelemetryClient,
 ) {
-  @PostMapping("/prisoners/{prisonNumber}/religion/repair")
+  @PostMapping("/prisoners/{prisonNumber}/core-person/religion/repair")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @Operation(
     summary = "Resynchronises an offender's religion for the given prisoner from NOMIS to DPS",
