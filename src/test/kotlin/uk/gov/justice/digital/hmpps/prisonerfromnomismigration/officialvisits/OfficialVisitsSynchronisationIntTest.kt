@@ -1348,6 +1348,39 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    inner class WhenUpdatedInNomisByFlushSchedules {
+
+      @BeforeEach
+      fun setUp() {
+        officialVisitsOffenderEventsQueue.sendMessage(
+          officialVisitVisitorEvent(
+            eventType = "OFFENDER_OFFICIAL_VISIT_VISITORS-UPDATED",
+            offenderNo = offenderNo,
+            visitId = nomisVisitId,
+            bookingId = bookingId,
+            visitVisitorId = nomisVisitorId,
+            personId = nomisPersonId,
+            auditModuleName = "FLUSH_SCHEDULES",
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry for ignore`() {
+        verify(telemetryClient).trackEvent(
+          eq("officialvisits-visitor-synchronisation-updated-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisVisitId"]).isEqualTo(nomisVisitId.toString())
+            assertThat(it["nomisVisitorId"]).isEqualTo(nomisVisitorId.toString())
+            assertThat(it["reason"]).isEqualTo("Flush schedules")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
     inner class WhenPrisonerVisitorUpdatedInNomis {
       @BeforeEach
       fun setUp() {

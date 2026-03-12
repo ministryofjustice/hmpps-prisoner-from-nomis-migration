@@ -118,7 +118,7 @@ class OfficialVisitsSynchronisationService(
     }
   }
   suspend fun visitorAdded(event: VisitVisitorEvent) {
-    if (event.personId == null) {
+    if (event.isPrisonerVisitor()) {
       telemetryClient.trackEvent("officialvisits-visitor-synchronisation-created-ignored", event.asTelemetry())
     } else {
       val telemetryName = "officialvisits-visitor-synchronisation-created"
@@ -160,12 +160,14 @@ class OfficialVisitsSynchronisationService(
   }
   suspend fun visitorUpdated(event: VisitVisitorEvent) {
     val telemetryName = "officialvisits-visitor-synchronisation-updated"
-    if (event.personId == null) {
-      telemetryClient.trackEvent("$telemetryName-ignored", event.asTelemetry())
-    } else {
-      if (event.isFromDPSOfficialVisits()) {
-        telemetryClient.trackEvent("$telemetryName-skipped", event.asTelemetry())
-      } else {
+    when {
+      event.isPrisonerVisitor() -> telemetryClient.trackEvent("$telemetryName-ignored", event.asTelemetry())
+
+      event.isFromDPSOfficialVisits() -> telemetryClient.trackEvent("$telemetryName-skipped", event.asTelemetry())
+
+      event.isFromNOMISFlushSchedules() -> telemetryClient.trackEvent("$telemetryName-ignored", event.asTelemetry() + ("reason" to "Flush schedules"))
+
+      else -> {
         val telemetry = event.asTelemetry()
         track(telemetryName, telemetry) {
           nomisApiService.getOfficialVisit(
@@ -193,6 +195,7 @@ class OfficialVisitsSynchronisationService(
       }
     }
   }
+
   suspend fun visitorDeleted(event: VisitVisitorEvent) {
     val telemetryName = "officialvisits-visitor-synchronisation-deleted"
     val telemetry = event.asTelemetry()
@@ -413,3 +416,5 @@ fun VisitVisitorEvent.asTelemetry() = mutableMapOf<String, Any>(
 
 private fun String.asUUID() = UUID.fromString(this)
 private fun EventAudited.isFromDPSOfficialVisits() = this.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_OFFICIAL_VISITS")
+private fun EventAudited.isFromNOMISFlushSchedules() = this.auditExactMatchOrHasMissingAudit("FLUSH_SCHEDULES")
+private fun VisitVisitorEvent.isPrisonerVisitor() = this.personId == null
