@@ -42,7 +42,7 @@ class OfficialVisitsSynchronisationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  suspend fun visitAdded(event: VisitEvent) {
+  suspend fun visitAdded(event: VisitEvent): OfficialVisitResponse? {
     val telemetryName = "officialvisits-visit-synchronisation-created"
     if (event.isFromDPSOfficialVisits()) {
       telemetryClient.trackEvent("$telemetryName-skipped", event.asTelemetry())
@@ -57,7 +57,7 @@ class OfficialVisitsSynchronisationService(
         )
       } else {
         val telemetry = event.asTelemetry()
-        track(telemetryName, telemetry) {
+        return track(telemetryName, telemetry) {
           nomisApiService.getOfficialVisit(
             event.visitId,
           ).also { nomisVisit ->
@@ -76,6 +76,7 @@ class OfficialVisitsSynchronisationService(
         }
       }
     }
+    return null
   }
   suspend fun visitUpdated(event: VisitEvent) {
     val telemetryName = "officialvisits-visit-synchronisation-updated"
@@ -85,15 +86,41 @@ class OfficialVisitsSynchronisationService(
       telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
     } else {
       track(telemetryName, telemetry) {
-        mappingApiService.getByVisitNomisId(
+        mappingApiService.getByVisitNomisIdOrNull(
           nomisVisitId = event.visitId,
-        ).also { mapping ->
+        )?.also { mapping ->
           telemetry["dpsOfficialVisitId"] = mapping.dpsId
           nomisApiService.getOfficialVisit(event.visitId).also { nomisVisit ->
             dpsApiService.updateVisit(mapping.dpsId.toLong(), nomisVisit.toSyncUpdateOfficialVisitRequest())
           }
+        } ?: run {
+          // assume we never got the create event for this visit because it was a social visit converted to an official visit
+          socialVisitConvertedToOfficialVisit(event)
         }
       }
+    }
+  }
+  suspend fun socialVisitConvertedToOfficialVisit(event: VisitEvent) {
+    val telemetryName = "officialvisits-visit-synchronisation-social-visit-switched"
+    val telemetry = event.asTelemetry()
+    track(telemetryName, telemetry) {
+      visitAdded(event)?.also { nomisVisit ->
+        val nomisVisitorIds = nomisVisit.visitors.map { visitor ->
+          visitorAdded(
+            VisitVisitorEvent(
+              visitVisitorId = visitor.id,
+              visitId = event.visitId,
+              bookingId = event.bookingId,
+              personId = visitor.personId,
+              offenderIdDisplay = event.offenderIdDisplay,
+              auditModuleName = event.auditModuleName,
+            ),
+          )
+          visitor.id
+        }
+        telemetry["nomisVisitorIds"] = nomisVisitorIds.joinToString()
+        telemetry["reason"] = "Visit created. Assumed switched from social to official visit"
+      } ?: throw IllegalStateException("Assumed social visit converted to official visit but no visit created")
     }
   }
 

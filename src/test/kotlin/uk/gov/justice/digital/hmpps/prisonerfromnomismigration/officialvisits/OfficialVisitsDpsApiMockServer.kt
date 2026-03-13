@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
+import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -404,6 +405,34 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(201)
             .withBody(jsonMapper.writeValueAsString(response)),
         ),
+    )
+  }
+
+  fun stubCreateVisitors(officialVisitId: Long, response1: SyncOfficialVisitor, response2: SyncOfficialVisitor) {
+    stubFor(
+      post("/sync/official-visit/$officialVisitId/visitor")
+        .inScenario("Two Visitors Scenario")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(201)
+            .withBody(jsonMapper.writeValueAsString(response1)),
+        )
+        .willSetStateTo("2nd Visitor"),
+    )
+
+    stubFor(
+      post("/sync/official-visit/$officialVisitId/visitor")
+        .inScenario("Two Visitors Scenario")
+        .whenScenarioStateIs("2nd Visitor")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(201)
+            .withBody(jsonMapper.writeValueAsString(response2)),
+        )
+        .willSetStateTo(STARTED),
     )
   }
 
