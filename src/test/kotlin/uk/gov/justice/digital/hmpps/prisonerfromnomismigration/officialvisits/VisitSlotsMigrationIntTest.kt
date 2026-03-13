@@ -3,27 +3,28 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.MigrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse.Status
@@ -42,33 +43,25 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.Vi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.IdPair
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.IdPair.ElementType.PRISON_VISIT_SLOT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class VisitSlotsMigrationIntTest(
-  @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
-) : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var nomisApiMock: VisitSlotsNomisApiMockServer
+  @Autowired private val mappingApiMock: VisitSlotsMappingApiMockServer,
+  @Autowired private val nomisApiMock: VisitSlotsNomisApiMockServer,
+) : MigrationTestBase() {
   private val dpsApiMock = OfficialVisitsDpsApiExtension.dpsOfficialVisitsServer
 
-  @Autowired
-  private lateinit var mappingApiMock: VisitSlotsMappingApiMockServer
+  @AfterAll
+  fun tearDownTelemetryClient() = reset(telemetryClient)
 
   @Nested
   @DisplayName("POST /migrate/visitslots")
   inner class StartMigration {
-    @BeforeEach
-    internal fun deleteHistoryRecords() {
-      runBlocking {
-        migrationHistoryRepository.deleteAll()
-      }
-    }
 
     @Nested
     inner class Security {
@@ -100,11 +93,14 @@ class VisitSlotsMigrationIntTest(
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class EverythingAlreadyMigrated {
       private lateinit var migrationResult: MigrationResult
 
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisApiMock.stubGetVisitTimeSlotIds(
           content = listOf(
             VisitTimeSlotIdResponse(
@@ -150,6 +146,7 @@ class VisitSlotsMigrationIntTest(
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPath {
       private lateinit var migrationResult: MigrationResult
       val nomisLocationId = 12345L
@@ -160,8 +157,10 @@ class VisitSlotsMigrationIntTest(
       val dpsVisitSlotId = 45678L
       val nomisVisitSlotId = 876544L
 
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisApiMock.stubGetVisitTimeSlotIds(
           content = listOf(
             VisitTimeSlotIdResponse(
@@ -314,6 +313,7 @@ class VisitSlotsMigrationIntTest(
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class FailureWithRecoverPath {
       private lateinit var migrationResult: MigrationResult
       val nomisLocationId = 12345L
@@ -324,8 +324,10 @@ class VisitSlotsMigrationIntTest(
       val dpsVisitSlotId = 45678L
       val nomisVisitSlotId = 876544L
 
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisApiMock.stubGetVisitTimeSlotIds(
           content = listOf(
             VisitTimeSlotIdResponse(
@@ -433,6 +435,7 @@ class VisitSlotsMigrationIntTest(
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class FailureWithDuplicate {
       private lateinit var migrationResult: MigrationResult
       val nomisLocationId = 12345L
@@ -443,8 +446,10 @@ class VisitSlotsMigrationIntTest(
       val dpsVisitSlotId = 45678L
       val nomisVisitSlotId = 876544L
 
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisApiMock.stubGetVisitTimeSlotIds(
           content = listOf(
             VisitTimeSlotIdResponse(

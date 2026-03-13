@@ -18,9 +18,16 @@ class CsraApiExtension :
   AfterAllCallback,
   BeforeEachCallback {
   companion object {
+    private var enableResetBeforeEach = true
+
     @JvmField
     val csraApi = CsraApiMockServer()
     lateinit var jsonMapper: JsonMapper
+
+    fun resetAndDisableResetBeforeEach() {
+      enableResetBeforeEach = false
+      csraApi.resetAll()
+    }
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -29,11 +36,12 @@ class CsraApiExtension :
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    csraApi.resetAll()
+    if (enableResetBeforeEach) csraApi.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {
     csraApi.stop()
+    enableResetBeforeEach = true
   }
 }
 

@@ -37,9 +37,16 @@ class ExternalMovementsDpsApiExtension :
   AfterAllCallback,
   BeforeEachCallback {
   companion object {
+    private var enableResetBeforeEach = true
+
     @JvmField
     val dpsExtMovementsServer = ExternalMovementsDpsApiMockServer()
     lateinit var jsonMapper: JsonMapper
+
+    fun resetAndDisableResetBeforeEach() {
+      enableResetBeforeEach = false
+      dpsExtMovementsServer.resetAll()
+    }
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -48,11 +55,12 @@ class ExternalMovementsDpsApiExtension :
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    dpsExtMovementsServer.resetAll()
+    if (enableResetBeforeEach) dpsExtMovementsServer.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {
     dpsExtMovementsServer.stop()
+    enableResetBeforeEach = true
   }
 }
 
