@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Address
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Address.CountryCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.AddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.AddressUsage.AddressUsageCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Alias
@@ -72,6 +73,12 @@ private fun String.toBirthCountryCode(): BirthCountryCode = when (this) {
   else -> BirthCountryCode.valueOf(this)
 }
 
+private fun String.toCountryCode(): CountryCode = when (this) {
+  "IOM" -> CountryCode.IMN
+  "ROM" -> CountryCode.ROU
+  else -> CountryCode.valueOf(this)
+}
+
 private fun OffenderAddress.toCprAddress() = Address(
   nomisAddressId = addressId,
   fullAddress = buildFullAddress(),
@@ -86,7 +93,7 @@ private fun OffenderAddress.toCprAddress() = Address(
   dependentLocality = locality,
   postTown = city?.code,
   county = county?.description,
-  countryCode = country?.code,
+  countryCode = country?.code?.toCountryCode(),
   comment = comment,
   isPrimary = primaryAddress,
   isMail = mailAddress,
