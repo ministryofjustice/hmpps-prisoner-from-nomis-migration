@@ -6,6 +6,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Alias
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Contact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes.BirthCountryCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Identifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Sentence
@@ -54,7 +55,7 @@ private fun CoreOffender.toCprAlias() = Alias(
 
 private fun CorePerson.toDemographicAttributes(currentAlias: CoreOffender): DemographicAttributes = DemographicAttributes(
   birthPlace = currentAlias.birthPlace,
-  birthCountryCode = currentAlias.birthCountry?.code,
+  birthCountryCode = currentAlias.birthCountry?.code?.toBirthCountryCode(),
   ethnicityCode = currentAlias.ethnicity?.code,
   sexCode = currentAlias.sex?.code?.let { DemographicAttributes.SexCode.valueOf(it) },
   sexualOrientation = sexualOrientations?.firstOrNull()?.sexualOrientation?.code,
@@ -64,6 +65,12 @@ private fun CorePerson.toDemographicAttributes(currentAlias: CoreOffender): Demo
   nationalityNote = nationalityDetails?.firstOrNull()?.details,
   interestToImmigration = interestsToImmigration?.firstOrNull()?.interestToImmigration,
 )
+
+private fun String.toBirthCountryCode(): BirthCountryCode = when (this) {
+  "IOM" -> BirthCountryCode.IMN
+  "ROM" -> BirthCountryCode.ROU
+  else -> BirthCountryCode.valueOf(this)
+}
 
 private fun OffenderAddress.toCprAddress() = Address(
   nomisAddressId = addressId,
