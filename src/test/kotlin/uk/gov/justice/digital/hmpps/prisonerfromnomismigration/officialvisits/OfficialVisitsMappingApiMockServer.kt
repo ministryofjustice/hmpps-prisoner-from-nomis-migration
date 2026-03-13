@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
+import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
@@ -136,6 +137,47 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     ),
   ) = mappingApi.stubMappingGetNotFoundFollowedBySuccess(url = "/mapping/official-visits/visit/nomis-id/$nomisVisitId", mapping = jsonMapper.writeValueAsString(mapping))
 
+  fun stubGetByVisitNomisIdOrNullNotFoundTwiceFollowedBySuccessForever(
+    nomisVisitId: Long = 1234L,
+    mapping: OfficialVisitMappingDto,
+  ) {
+    val url = "/mapping/official-visits/visit/nomis-id/$nomisVisitId"
+    mappingApi.stubFor(
+      get(urlPathMatching(url))
+        .inScenario("stubGetByVisitNomisIdOrNullNotFoundTwiceFollowedBySuccessForever")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(
+          aResponse()
+            .withStatus(404)
+            .withHeader("Content-Type", "application/json"),
+        )
+        .willSetStateTo("2nd Not Found"),
+    )
+
+    mappingApi.stubFor(
+      get(urlPathMatching(url))
+        .inScenario("stubGetByVisitNomisIdOrNullNotFoundTwiceFollowedBySuccessForever")
+        .whenScenarioStateIs("2nd Not Found")
+        .willReturn(
+          aResponse()
+            .withStatus(404)
+            .withHeader("Content-Type", "application/json"),
+        )
+        .willSetStateTo("Success"),
+    )
+
+    mappingApi.stubFor(
+      get(urlPathMatching(url))
+        .inScenario("stubGetByVisitNomisIdOrNullNotFoundTwiceFollowedBySuccessForever")
+        .whenScenarioStateIs("Success")
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(jsonMapper.writeValueAsString(mapping)),
+        ).willSetStateTo("Success"),
+
+    )
+  }
   fun stubGetByVisitNomisId(
     nomisVisitId: Long = 1234L,
     mapping: OfficialVisitMappingDto = OfficialVisitMappingDto(

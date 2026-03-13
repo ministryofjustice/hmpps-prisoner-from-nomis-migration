@@ -35,10 +35,11 @@ interface TelemetryEnabled {
   val telemetryClient: TelemetryClient
 }
 
-inline fun TelemetryEnabled.track(name: String, telemetry: MutableMap<String, Any>, transform: () -> Unit) {
+inline fun <T> TelemetryEnabled.track(name: String, telemetry: MutableMap<String, Any>, transform: () -> T): T {
   try {
-    transform()
-    telemetryClient.trackEvent("$name-success", telemetry)
+    return transform().also {
+      telemetryClient.trackEvent("$name-success", telemetry)
+    }
   } catch (e: AwaitParentEntityRetry) {
     telemetry["error"] = e.message.toString()
     telemetryClient.trackEvent("$name-awaiting-parent", telemetry)
