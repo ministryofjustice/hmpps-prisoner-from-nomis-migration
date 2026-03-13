@@ -47,12 +47,19 @@ class OfficialVisitsDpsApiExtension :
   AfterAllCallback,
   BeforeEachCallback {
   companion object {
+    private var enableResetBeforeEach = true
+
     @JvmField
     val dpsOfficialVisitsServer = OfficialVisitsDpsApiMockServer()
     lateinit var jsonMapper: JsonMapper
 
     inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsOfficialVisitsServer.getRequestBody(pattern, jsonMapper)
     inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsOfficialVisitsServer.getRequestBodies(pattern, jsonMapper)
+
+    fun resetAndDisableResetBeforeEach() {
+      enableResetBeforeEach = false
+      dpsOfficialVisitsServer.resetAll()
+    }
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -61,11 +68,12 @@ class OfficialVisitsDpsApiExtension :
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    dpsOfficialVisitsServer.resetAll()
+    if (enableResetBeforeEach) dpsOfficialVisitsServer.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {
     dpsOfficialVisitsServer.stop()
+    enableResetBeforeEach = true
   }
 }
 

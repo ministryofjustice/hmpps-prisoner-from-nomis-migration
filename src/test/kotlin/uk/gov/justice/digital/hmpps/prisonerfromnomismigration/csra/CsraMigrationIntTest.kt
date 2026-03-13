@@ -2,23 +2,25 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra
 
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
-import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
@@ -28,8 +30,7 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExtension.Companion.csraApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiMockServer.Companion.WIREMOCK_PORT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.MigrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countMessagesOnQueue
@@ -38,28 +39,16 @@ import java.time.Duration
 private const val OFFENDER_NUMBER1 = "A0001KT"
 private const val OFFENDER_NUMBER2 = "A0002KT"
 
-class CsraMigrationIntTest : SqsIntegrationTestBase() {
-
-  private val csraQueueMigrationUrl by lazy { csraMigrationQueue.queueUrl }
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class CsraMigrationIntTest(
+  @Autowired private val csrasNomisApiMockServer: CsraNomisApiMockServer,
+  @Autowired private val csrasMappingApiMockServer: CsraMappingApiMockServer,
+) : MigrationTestBase() {
   private val csraQueueMigrationDlqUrl by lazy { csraMigrationQueue.dlqUrl as String }
-  private val awsSqsCsraMigrationClient by lazy { csraMigrationQueue.sqsClient }
   private val awsSqsCsraMigrationDlqClient by lazy { csraMigrationQueue.sqsDlqClient as SqsAsyncClient }
 
-  @Autowired
-  private lateinit var csrasNomisApiMockServer: CsraNomisApiMockServer
-
-  @Autowired
-  private lateinit var csrasMappingApiMockServer: CsraMappingApiMockServer
-
-  @Autowired
-  private lateinit var migrationHistoryRepository: MigrationHistoryRepository
-
-  @BeforeEach
-  internal fun deleteHistoryRecords() {
-    runBlocking {
-      migrationHistoryRepository.deleteAll()
-    }
-  }
+  @AfterAll
+  fun tearDownTelemetryClient() = reset(telemetryClient)
 
   @Nested
   @DisplayName("POST /migrate/csras")
@@ -97,11 +86,14 @@ class CsraMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPath {
       private lateinit var migrationResult: MigrationResult
 
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisApi.stubGetPrisonerIds(
           totalElements = 2,
           pageSize = 10,
@@ -257,9 +249,12 @@ class CsraMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class ErrorRecovery {
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisApi.stubGetPrisonerIds(
           totalElements = 1,
           pageSize = 10,
@@ -301,9 +296,12 @@ class CsraMigrationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class ErrorDpsFailure {
-      @BeforeEach
+      @BeforeAll
       fun setUp() {
+        setupMigrationTest()
+
         nomisApi.stubGetPrisonerIds(
           totalElements = 1,
           pageSize = 10,
@@ -315,6 +313,10 @@ class CsraMigrationIntTest : SqsIntegrationTestBase() {
         )
         csraApi.stubMigrateCsras(OFFENDER_NUMBER1, 400)
         performMigration()
+
+        await untilCallTo {
+          awsSqsCsraMigrationDlqClient.countMessagesOnQueue(csraQueueMigrationDlqUrl).get()
+        } matches { it == 1 }
       }
 
       @Test
@@ -347,13 +349,6 @@ class CsraMigrationIntTest : SqsIntegrationTestBase() {
           },
           isNull(),
         )
-      }
-
-      @Test
-      fun `message ends up on the dead letter queue`() {
-        await untilCallTo {
-          awsSqsCsraMigrationDlqClient.countMessagesOnQueue(csraQueueMigrationDlqUrl).get()
-        } matches { it == 1 }
       }
     }
   }
