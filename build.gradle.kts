@@ -26,7 +26,7 @@ configurations {
 
 dependencies {
   implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:2.0.2")
-  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:7.0.1")
+  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:7.1.0")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
   implementation("org.springframework.boot:spring-boot-starter-flyway")
   implementation("org.springframework.boot:spring-boot-starter-security")
@@ -39,10 +39,6 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk9")
 
-  // Needs to match this version https://github.com/microsoft/ApplicationInsights-Java/blob/<version>/dependencyManagement/build.gradle.kts#L16
-  // where <version> is the version of application insights pulled in by hmpps-gradle-spring-boot
-  // at https://github.com/ministryofjustice/hmpps-gradle-spring-boot/blob/main/src/main/kotlin/uk/gov/justice/digital/hmpps/gradle/configmanagers/AppInsightsConfigManager.kt#L7
-  implementation("io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations:2.21.0")
   implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.55.0")
 
   runtimeOnly("org.postgresql:r2dbc-postgresql:1.1.1.RELEASE")

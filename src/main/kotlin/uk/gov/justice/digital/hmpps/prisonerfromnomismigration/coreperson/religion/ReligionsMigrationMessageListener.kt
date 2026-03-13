@@ -1,8 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion
 
 import io.awspring.cloud.sqs.annotation.SqsListener
-import io.opentelemetry.api.trace.SpanKind
-import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import tools.jackson.databind.json.JsonMapper
@@ -25,6 +23,5 @@ class ReligionsMigrationMessageListener(
     maxConcurrentMessages = "8",
     maxMessagesPerPoll = "8",
   )
-  @WithSpan(value = "dps-syscon-migration_coreperson_queue", kind = SpanKind.SERVER)
   fun onMigrationMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
 }
