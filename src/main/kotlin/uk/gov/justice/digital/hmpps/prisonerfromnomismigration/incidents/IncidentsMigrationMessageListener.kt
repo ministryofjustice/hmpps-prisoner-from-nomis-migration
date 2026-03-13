@@ -1,8 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 
 import io.awspring.cloud.sqs.annotation.SqsListener
-import io.opentelemetry.api.trace.SpanKind
-import io.opentelemetry.instrumentation.annotations.WithSpan
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.sqs.model.Message
 import tools.jackson.databind.json.JsonMapper
@@ -20,6 +18,5 @@ class IncidentsMigrationMessageListener(
 ) {
 
   @SqsListener(INCIDENTS_QUEUE_ID, factory = "hmppsQueueContainerFactoryProxy", maxConcurrentMessages = "8", maxMessagesPerPoll = "8")
-  @WithSpan(value = "dps-syscon-migration_incidents_queue", kind = SpanKind.SERVER)
   fun onIncidentMessage(message: String, rawMessage: Message): CompletableFuture<Void?> = onMessage(message, rawMessage)
 }
