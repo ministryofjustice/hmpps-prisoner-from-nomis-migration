@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes.BirthCountryCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
@@ -70,7 +71,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun migrateCorePersonRequest() = Prisoner(
       demographicAttributes = DemographicAttributes(
         birthPlace = "LONDON",
-        birthCountryCode = "ENG",
+        birthCountryCode = BirthCountryCode.ENG,
         ethnicityCode = "BLACK",
         sexCode = DemographicAttributes.SexCode.valueOf("M"),
         sexualOrientation = "HET",
