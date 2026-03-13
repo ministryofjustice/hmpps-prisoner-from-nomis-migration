@@ -10,13 +10,17 @@ import org.assertj.core.api.Assertions.within
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
@@ -24,7 +28,7 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.MigrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.migrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.application
@@ -35,7 +39,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.M
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
@@ -44,11 +47,11 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.util.*
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ExternalMovementsMigrationIntTest(
-  @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
   @Autowired private val externalMovementsNomisApi: ExternalMovementsNomisApiMockServer,
   @Autowired private val mappingApi: ExternalMovementsMappingApiMockServer,
-) : SqsIntegrationTestBase() {
+) : MigrationTestBase() {
 
   private val dpsApi = dpsExtMovementsServer
 
@@ -64,10 +67,8 @@ class ExternalMovementsMigrationIntTest(
   private val dpsUnscheduledMovementOutId = UUID.randomUUID()
   private val dpsUnscheduledMovementInId = UUID.randomUUID()
 
-  @BeforeEach
-  fun deleteHistoryRecords() = runTest {
-    migrationHistoryRepository.deleteAll()
-  }
+  @AfterAll
+  fun tearDownTelemetryClient() = reset(telemetryClient)
 
   @Nested
   inner class Security {
@@ -117,9 +118,12 @@ class ExternalMovementsMigrationIntTest(
   }
 
   @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class HappyPath {
-    @BeforeEach
+    @BeforeAll
     fun setUp() = runTest {
+      setupMigrationTest()
+
       stubMigrationDependencies()
       migrationId = performMigration()
     }
@@ -406,12 +410,15 @@ class ExternalMovementsMigrationIntTest(
   }
 
   @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class HappyPathMovedInDifferentPrison {
     val prisonerNumber = "A0001KT"
     val movementPrison = "MDI"
 
-    @BeforeEach
+    @BeforeAll
     fun setUp() = runTest {
+      setupMigrationTest()
+
       nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = prisonerNumber)
       mappingApi.stubCreateTemporaryAbsenceMapping()
       mappingApi.stubGetTemporaryAbsenceMappingIds(prisonerNumber, idMappings = TemporaryAbsencesPrisonerMappingIdsDto(prisonerNumber, listOf(), listOf(), listOf()))
@@ -449,11 +456,14 @@ class ExternalMovementsMigrationIntTest(
   }
 
   @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class HappyPathOldBookingFutureApplication {
     val prisonerNumber = "A0001KT"
 
-    @BeforeEach
+    @BeforeAll
     fun setUp() = runTest {
+      setupMigrationTest()
+
       nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = prisonerNumber)
       mappingApi.stubCreateTemporaryAbsenceMapping()
       mappingApi.stubGetTemporaryAbsenceMappingIds(prisonerNumber, idMappings = TemporaryAbsencesPrisonerMappingIdsDto(prisonerNumber, listOf(), listOf(), listOf()))
@@ -487,9 +497,12 @@ class ExternalMovementsMigrationIntTest(
   }
 
   @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class MigrateEntityFailure {
-    @BeforeEach
+    @BeforeAll
     fun setUp() = runTest {
+      setupMigrationTest()
+
       stubMigrationDependencies(entities = 1)
       dpsApi.stubResyncPrisonerTapsError("A0001KT", 400)
       migrationId = performMigration()
@@ -510,9 +523,12 @@ class ExternalMovementsMigrationIntTest(
   }
 
   @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class MappingErrorRecovery {
-    @BeforeEach
+    @BeforeAll
     fun setUp() = runTest {
+      setupMigrationTest()
+
       stubMigrationDependencies(1)
       mappingApi.stubCreateTemporaryAbsenceMappingFailureFollowedBySuccess()
       migrationId = performMigration()
@@ -547,9 +563,12 @@ class ExternalMovementsMigrationIntTest(
   }
 
   @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class IgnoreOffendersWithNoMovements {
-    @BeforeEach
+    @BeforeAll
     fun setUp() = runTest {
+      setupMigrationTest()
+
       nomisApi.stubGetPrisonerIds(totalElements = 1, pageSize = 10, firstOffenderNo = "A0001KT")
       mappingApi.stubGetTemporaryAbsenceMappingIds("A0001KT", idMappings = TemporaryAbsencesPrisonerMappingIdsDto("A0001KT", listOf(), listOf(), listOf()))
       externalMovementsNomisApi.stubGetTemporaryAbsences("A0001KT", response = OffenderTemporaryAbsencesResponse(bookings = listOf()))
@@ -586,6 +605,7 @@ class ExternalMovementsMigrationIntTest(
     @BeforeEach
     fun setUp() = runTest {
       stubMigrationDependencies(entities = 1)
+      reset(telemetryClient)
     }
 
     @Nested
