@@ -5,9 +5,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.AddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.AddressUsage.AddressUsageCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Alias
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Alias.TitleCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Contact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes.BirthCountryCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes.EthnicityCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes.NationalityCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes.SexualOrientation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Identifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Sentence
@@ -35,7 +39,7 @@ fun CorePerson.toCprPrisoner(): Prisoner {
 private fun CoreOffender.toCprAlias() = Alias(
   nomisAliasId = offenderId,
   isPrimary = workingName,
-  titleCode = title?.code,
+  titleCode = title?.code?.toTitleCode(),
   firstName = firstName,
   middleNames = listOfNotNull(middleName1, middleName2).takeIf { it.isNotEmpty() }?.joinToString(" "),
   lastName = lastName,
@@ -57,15 +61,18 @@ private fun CoreOffender.toCprAlias() = Alias(
 private fun CorePerson.toDemographicAttributes(currentAlias: CoreOffender): DemographicAttributes = DemographicAttributes(
   birthPlace = currentAlias.birthPlace,
   birthCountryCode = currentAlias.birthCountry?.code?.toBirthCountryCode(),
-  ethnicityCode = currentAlias.ethnicity?.code,
+  ethnicityCode = currentAlias.ethnicity?.code?.toEthnicityCode(),
   sexCode = currentAlias.sex?.code?.let { DemographicAttributes.SexCode.valueOf(it) },
-  sexualOrientation = sexualOrientations?.firstOrNull()?.sexualOrientation?.code,
+  sexualOrientation = sexualOrientations?.firstOrNull()?.sexualOrientation?.code?.toSexualOrientation(),
   disability = disabilities?.firstOrNull()?.disability,
   religionCode = this.beliefs?.firstOrNull()?.belief?.code,
-  nationalityCode = nationalities?.firstOrNull()?.nationality?.code,
+  nationalityCode = nationalities?.firstOrNull()?.nationality?.code?.toNationalityCode(),
   nationalityNote = nationalityDetails?.firstOrNull()?.details,
   interestToImmigration = interestsToImmigration?.firstOrNull()?.interestToImmigration,
 )
+
+private fun String.toNationalityCode(): NationalityCode = NationalityCode.valueOf(this)
+private fun String.toSexualOrientation(): SexualOrientation = SexualOrientation.valueOf(this)
 
 private fun String.toBirthCountryCode(): BirthCountryCode = when (this) {
   "IOM" -> BirthCountryCode.IMN
@@ -77,6 +84,18 @@ private fun String.toCountryCode(): CountryCode = when (this) {
   "IOM" -> CountryCode.IMN
   "ROM" -> CountryCode.ROU
   else -> CountryCode.valueOf(this)
+}
+
+private fun String.toEthnicityCode(): EthnicityCode = when (this) {
+  "W10" -> EthnicityCode.W5
+  else -> EthnicityCode.valueOf(this)
+}
+
+private fun String.toTitleCode(): TitleCode = when (this) {
+  "DAME" -> TitleCode.DME
+  "LADY" -> TitleCode.LDY
+  "LORD" -> TitleCode.LRD
+  else -> TitleCode.valueOf(this)
 }
 
 private fun OffenderAddress.toCprAddress() = Address(
