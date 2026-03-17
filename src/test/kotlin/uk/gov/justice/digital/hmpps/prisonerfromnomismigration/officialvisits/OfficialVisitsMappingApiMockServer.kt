@@ -178,6 +178,35 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
     )
   }
+  fun stubGetByVisitNomisIdOrNullNotFoundOnceFollowedBySuccessForever(
+    nomisVisitId: Long = 1234L,
+    mapping: OfficialVisitMappingDto,
+  ) {
+    val url = "/mapping/official-visits/visit/nomis-id/$nomisVisitId"
+    mappingApi.stubFor(
+      get(urlPathMatching(url))
+        .inScenario("stubGetByVisitNomisIdOrNullNotFoundOnceFollowedBySuccessForever")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(
+          aResponse()
+            .withStatus(404)
+            .withHeader("Content-Type", "application/json"),
+        )
+        .willSetStateTo("Success"),
+    )
+
+    mappingApi.stubFor(
+      get(urlPathMatching(url))
+        .inScenario("stubGetByVisitNomisIdOrNullNotFoundOnceFollowedBySuccessForever")
+        .whenScenarioStateIs("Success")
+        .willReturn(
+          aResponse().withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(jsonMapper.writeValueAsString(mapping)),
+        ).willSetStateTo("Success"),
+
+    )
+  }
   fun stubGetByVisitNomisId(
     nomisVisitId: Long = 1234L,
     mapping: OfficialVisitMappingDto = OfficialVisitMappingDto(
