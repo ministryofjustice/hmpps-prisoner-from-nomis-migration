@@ -4,6 +4,7 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
@@ -121,6 +122,42 @@ class OfficialVisitsSynchronisationService(
         telemetry["nomisVisitorIds"] = nomisVisitorIds.joinToString()
         telemetry["reason"] = "Visit created. Assumed switched from social to official visit"
       } ?: throw IllegalStateException("Assumed social visit converted to official visit but no visit created")
+    }
+  }
+
+  suspend fun createVisitFromNomis(offenderNo: String, prisonId: String, nomisVisitId: Long): OfficialVisitResponse {
+    val telemetryName = "officialvisits-visit-create-repair"
+    val telemetry = mutableMapOf<String, Any>(
+      "nomisVisitId" to nomisVisitId.toString(),
+      "offenderNo" to offenderNo,
+      "prisonId" to prisonId,
+    )
+    return track(telemetryName, telemetry) {
+      visitAdded(
+        VisitEvent(
+          visitId = nomisVisitId,
+          bookingId = 0,
+          offenderIdDisplay = offenderNo,
+          agencyLocationId = prisonId,
+          auditModuleName = "REPAIR",
+        ),
+      )?.also { nomisVisit ->
+        val nomisVisitorIds = nomisVisit.visitors.map { visitor ->
+          visitorAdded(
+            VisitVisitorEvent(
+              visitVisitorId = visitor.id,
+              visitId = nomisVisitId,
+              bookingId = 0,
+              personId = visitor.personId,
+              offenderIdDisplay = offenderNo,
+              auditModuleName = "REPAIR",
+            ),
+          )
+          visitor.id
+        }
+        telemetry["nomisVisitorIds"] = nomisVisitorIds.joinToString()
+        telemetry["reason"] = "Visit created. Manual repair"
+      } ?: throw BadRequestException("Visit was not created since mapping already exists")
     }
   }
 
