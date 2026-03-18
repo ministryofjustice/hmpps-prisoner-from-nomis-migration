@@ -1464,7 +1464,7 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
       }
 
       @Test
-      fun `will create the official visitor in DPS`() {
+      fun `will update the official visitor in DPS`() {
         val request: SyncUpdateOfficialVisitorRequest = getRequestBody(putRequestedFor(urlPathEqualTo("/sync/official-visit/$dpsOfficialVisitId/visitor/$dpsOfficialVisitorId")))
         with(request) {
           assertThat(offenderVisitVisitorId).isEqualTo(nomisVisitorId)
