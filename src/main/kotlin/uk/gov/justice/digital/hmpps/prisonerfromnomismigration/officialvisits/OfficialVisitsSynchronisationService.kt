@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.VisitType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.time.format.DateTimeFormatter
@@ -79,17 +80,18 @@ class OfficialVisitsSynchronisationService(
     }
     return null
   }
-  suspend fun visitUpdated(event: VisitEvent) {
+  suspend fun visitUpdated(event: VisitEvent): OfficialVisitResponse? {
     val telemetryName = "officialvisits-visit-synchronisation-updated"
     val telemetry = event.asTelemetry()
 
-    if (event.isFromDPSOfficialVisits()) {
+    return if (event.isFromDPSOfficialVisits()) {
       telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
+      null
     } else {
       track(telemetryName, telemetry) {
         mappingApiService.getByVisitNomisIdOrNull(
           nomisVisitId = event.visitId,
-        )?.also { mapping ->
+        )?.let { mapping ->
           telemetry["dpsOfficialVisitId"] = mapping.dpsId
           nomisApiService.getOfficialVisit(event.visitId).also { nomisVisit ->
             dpsApiService.updateVisit(mapping.dpsId.toLong(), nomisVisit.toSyncUpdateOfficialVisitRequest())
@@ -101,10 +103,10 @@ class OfficialVisitsSynchronisationService(
       }
     }
   }
-  suspend fun socialVisitConvertedToOfficialVisit(event: VisitEvent) {
+  suspend fun socialVisitConvertedToOfficialVisit(event: VisitEvent): OfficialVisitResponse {
     val telemetryName = "officialvisits-visit-synchronisation-social-visit-switched"
     val telemetry = event.asTelemetry()
-    track(telemetryName, telemetry) {
+    return track(telemetryName, telemetry) {
       visitAdded(event)?.also { nomisVisit ->
         val nomisVisitorIds = nomisVisit.visitors.map { visitor ->
           visitorAdded(
@@ -158,6 +160,49 @@ class OfficialVisitsSynchronisationService(
         telemetry["nomisVisitorIds"] = nomisVisitorIds.joinToString()
         telemetry["reason"] = "Visit created. Manual repair"
       } ?: throw BadRequestException("Visit was not created since mapping already exists")
+    }
+  }
+  suspend fun updateVisitFromNomis(offenderNo: String, prisonId: String, nomisVisitId: Long) {
+    val telemetryName = "officialvisits-visit-update-repair"
+    val telemetry = mutableMapOf<String, Any>(
+      "nomisVisitId" to nomisVisitId.toString(),
+      "offenderNo" to offenderNo,
+      "prisonId" to prisonId,
+    )
+    if (!mappingApiService.hasVisitForNomisId(nomisVisitId)) {
+      throw NotFoundException("Visit $nomisVisitId not found")
+    }
+
+    track(telemetryName, telemetry) {
+      visitUpdated(
+        VisitEvent(
+          visitId = nomisVisitId,
+          bookingId = 0,
+          offenderIdDisplay = offenderNo,
+          agencyLocationId = prisonId,
+          auditModuleName = "REPAIR",
+        ),
+      )!!.also { nomisVisit ->
+        val nomisVisitorIds = nomisVisit.visitors.map { visitor ->
+          val visitorEvent = VisitVisitorEvent(
+            visitVisitorId = visitor.id,
+            visitId = nomisVisitId,
+            bookingId = 0,
+            personId = visitor.personId,
+            offenderIdDisplay = offenderNo,
+            auditModuleName = "REPAIR",
+          )
+          // either update visit or create visit
+          if (mappingApiService.hasVisitorForNomisId(nomisVisitorId = visitor.id)) {
+            visitorUpdated(visitorEvent)
+          } else {
+            visitorAdded(visitorEvent)
+          }
+          visitor.id
+        }
+        telemetry["nomisVisitorIds"] = nomisVisitorIds.joinToString()
+        telemetry["reason"] = "Visit updated. Manual repair"
+      }
     }
   }
 
