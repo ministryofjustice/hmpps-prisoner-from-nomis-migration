@@ -283,8 +283,6 @@ class OfficialVisitsRepairResourceIntTest(
                 audit = NomisAudit(
                   createDatetime = LocalDateTime.parse("2019-01-01T10:10:10"),
                   createUsername = "S.JOHN",
-                  modifyDatetime = LocalDateTime.parse("2019-02-02T11:10:10"),
-                  modifyUserId = "T.SMITH",
                 ),
               ),
               officialVisitor().copy(id = nomisVisitorId2),
