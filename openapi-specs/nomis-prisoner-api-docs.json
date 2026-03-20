@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-03-18.1217.dea00ca"
+    "version" : "2026-03-19.1219.c8c5595"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -31243,12 +31243,12 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "paged" : {
-            "type" : "boolean"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "paged" : {
+            "type" : "boolean"
           },
           "unpaged" : {
             "type" : "boolean"
@@ -37552,16 +37552,12 @@
             "type" : "string",
             "description" : "Comments describing reason for change of belief"
           },
-          "verified" : {
-            "type" : "boolean",
-            "description" : "Verified flag"
-          },
           "audit" : {
             "$ref" : "#/components/schemas/NomisAudit",
             "description" : "Audit data associated with the records"
           }
         },
-        "required" : [ "audit", "belief", "beliefId", "startDate", "verified" ]
+        "required" : [ "audit", "belief", "beliefId", "startDate" ]
       },
       "OffenderDisability" : {
         "type" : "object",

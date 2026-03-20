@@ -64,7 +64,7 @@ class ReligionsDataRepairResourceIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         nomisApiMockServer.stubGetOffenderReligions(prisonNumber)
-        CorePersonCprApiExtension.Companion.cprCorePersonServer.stubMigrateCorePersonReligion(prisonNumber)
+        CorePersonCprApiExtension.cprCorePersonServer.stubMigrateCorePersonReligion(prisonNumber)
         mappingApiMockServer.stubReplaceMappings()
 
         webTestClient.post().uri("/prisoners/$prisonNumber/core-person/religion/repair")
@@ -80,17 +80,18 @@ class ReligionsDataRepairResourceIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will send religion to CPR`() {
-        CorePersonCprApiExtension.Companion.cprCorePersonServer.verify(
+        CorePersonCprApiExtension.cprCorePersonServer.verify(
           WireMock.postRequestedFor(WireMock.urlPathEqualTo("/syscon-sync/religion/$prisonNumber"))
             .withRequestBodyJsonPath("religions[0].nomisReligionId", 2)
             .withRequestBodyJsonPath("religions[0].religionCode", "DRU")
             .withRequestBodyJsonPath("religions[0].startDate", LocalDate.parse("2016-08-02"))
             .withoutQueryParam("religions[0].endDate")
-            .withRequestBodyJsonPath("religions[0].verified", true)
             .withRequestBodyJsonPath("religions[0].changeReasonKnown", true)
             .withRequestBodyJsonPath("religions[0].comments", "No longer believes in Zoroastrianism")
-            .withRequestBodyJsonPath("religions[0].modifyUserId", "KOFEADDY")
-            .withRequestBodyJsonPath("religions[0].modifyDateTime", "2016-08-01T10:55:00"),
+            .withRequestBodyJsonPath("religions[0].createUserId", "KOFEADDY")
+            .withRequestBodyJsonPath("religions[0].createDateTime", "2016-08-01T10:55:00")
+            .withRequestBodyJsonPath("religions[0].modifyUserId", "KOFE_MOD")
+            .withRequestBodyJsonPath("religions[0].modifyDateTime", "2017-08-01T10:55:00"),
         )
       }
 
@@ -136,7 +137,7 @@ class ReligionsDataRepairResourceIntTest : SqsIntegrationTestBase() {
 
       @Test
       fun `will not send religion to CPR`() {
-        CorePersonCprApiExtension.Companion.cprCorePersonServer.verify(0, WireMock.getRequestedFor(WireMock.anyUrl()))
+        CorePersonCprApiExtension.cprCorePersonServer.verify(0, WireMock.getRequestedFor(WireMock.anyUrl()))
       }
 
       @Test

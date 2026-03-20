@@ -83,9 +83,10 @@ class CorePersonCprApiServiceTest {
           .withRequestBodyJsonPath("current", equalTo("true"))
           .withRequestBodyJsonPath("changeReasonKnown", equalTo("true"))
           .withRequestBodyJsonPath("comments", equalTo("This is a comment"))
-          .withRequestBodyJsonPath("verified", equalTo("true"))
           .withRequestBodyJsonPath("startDate", equalTo("2020-11-01"))
           .withRequestBodyJsonPath("endDate", equalTo("2022-07-19"))
+          .withRequestBodyJsonPath("createDateTime", equalTo("2019-11-01T04:05:00"))
+          .withRequestBodyJsonPath("createUserId", equalTo("FRED_GEN"))
           .withRequestBodyJsonPath("modifyDateTime", equalTo("2020-11-01T04:05:00"))
           .withRequestBodyJsonPath("modifyUserId", equalTo("FRED_ADM")),
       )
@@ -137,7 +138,6 @@ class CorePersonCprApiServiceTest {
           .withRequestBodyJsonPath("nomisReligionId", equalTo("1"))
           .withRequestBodyJsonPath("current", equalTo("true"))
           .withRequestBodyJsonPath("comments", equalTo("This is a comment"))
-          .withRequestBodyJsonPath("verified", equalTo("true"))
           .withRequestBodyJsonPath("endDate", equalTo("2022-07-19"))
           .withRequestBodyJsonPath("modifyDateTime", equalTo("2020-11-01T04:05:00"))
           .withRequestBodyJsonPath("modifyUserId", equalTo("FRED_ADM")),
@@ -171,9 +171,10 @@ class CorePersonCprApiServiceTest {
     current = true,
     changeReasonKnown = true,
     comments = "This is a comment",
-    verified = true,
     startDate = LocalDate.parse("2020-11-01"),
     endDate = LocalDate.parse("2022-07-19"),
+    createDateTime = LocalDateTime.parse("2019-11-01T04:05:00"),
+    createUserId = "FRED_GEN",
     modifyDateTime = LocalDateTime.parse("2020-11-01T04:05:00"),
     modifyUserId = "FRED_ADM",
   )
@@ -182,7 +183,6 @@ class CorePersonCprApiServiceTest {
     nomisReligionId = "1",
     current = true,
     comments = "This is a comment",
-    verified = true,
     endDate = LocalDate.parse("2022-07-19"),
     modifyDateTime = LocalDateTime.parse("2020-11-01T04:05:00"),
     modifyUserId = "FRED_ADM",

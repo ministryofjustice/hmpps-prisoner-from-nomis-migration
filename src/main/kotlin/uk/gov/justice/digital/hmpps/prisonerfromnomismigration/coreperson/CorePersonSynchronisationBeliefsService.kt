@@ -137,27 +137,31 @@ class CorePersonSynchronisationBeliefsService(
       nomisReligionId = r.beliefId.toString(),
       current = i == 0,
       comments = r.comments,
-      verified = r.verified,
       startDate = r.startDate,
       endDate = r.endDate,
       religionCode = r.belief.code,
       changeReasonKnown = r.changeReason,
-      modifyDateTime = r.audit.modifyDatetime ?: r.audit.createDatetime,
-      modifyUserId = r.audit.modifyUserId ?: r.audit.createUsername,
+      createDateTime = r.audit.createDatetime,
+      createUserId = r.audit.createUsername,
+      modifyDateTime = r.audit.modifyDatetime,
+      modifyUserId = r.audit.modifyUserId,
     )
   }.first { it.nomisReligionId == event.offenderBeliefId.toString() }
 
-  suspend fun OffenderBeliefEvent.toPrisonReligionUpdateRequest(): PrisonReligionUpdateRequest = corePersonNomisApiService.getOffenderReligions(offenderIdDisplay).mapIndexed { i, r ->
-    PrisonReligionUpdateRequest(
-      nomisReligionId = r.beliefId.toString(),
-      current = i == 0,
-      comments = r.comments,
-      verified = r.verified,
-      endDate = r.endDate,
-      modifyDateTime = r.audit.modifyDatetime ?: r.audit.createDatetime,
-      modifyUserId = r.audit.modifyUserId ?: r.audit.createUsername,
-    )
-  }.first { it.nomisReligionId == offenderBeliefId.toString() }
+  suspend fun OffenderBeliefEvent.toPrisonReligionUpdateRequest(): PrisonReligionUpdateRequest = corePersonNomisApiService.getOffenderReligions(offenderIdDisplay)
+    .mapIndexed { i, r -> Pair(i == 0, r) }
+    .first { it.second.beliefId == offenderBeliefId }
+    .let {
+      PrisonReligionUpdateRequest(
+        nomisReligionId = it.second.beliefId.toString(),
+        current = it.first,
+        comments = it.second.comments,
+        endDate = it.second.endDate,
+        // for an update we must have the modified by fields set
+        modifyDateTime = it.second.audit.modifyDatetime!!,
+        modifyUserId = it.second.audit.modifyUserId!!,
+      )
+    }
 
   suspend fun retryCreateMapping(retryMessage: InternalMessage<ReligionMappingDto>) {
     createMapping(retryMessage.body)
@@ -214,10 +218,11 @@ fun List<OffenderBelief>.toMigrateReligionsRequest(): PrisonReligionRequest = Pr
       startDate = r.startDate,
       endDate = r.endDate,
       comments = r.comments,
-      verified = r.verified,
       changeReasonKnown = r.changeReason,
-      modifyDateTime = r.audit.modifyDatetime ?: r.audit.createDatetime,
-      modifyUserId = r.audit.modifyUserId ?: r.audit.createUsername,
+      createDateTime = r.audit.createDatetime,
+      createUserId = r.audit.createUsername,
+      modifyDateTime = r.audit.modifyDatetime,
+      modifyUserId = r.audit.modifyUserId,
     )
   },
 )

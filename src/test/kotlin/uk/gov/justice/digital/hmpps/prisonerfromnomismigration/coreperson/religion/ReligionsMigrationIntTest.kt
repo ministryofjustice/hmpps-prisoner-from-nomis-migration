@@ -188,11 +188,12 @@ class ReligionsMigrationIntTest(
         assertThat(migrationRequest.religions[0].religionCode).isEqualTo("DRU")
         assertThat(migrationRequest.religions[0].startDate).isEqualTo(LocalDate.parse("2016-08-02"))
         assertThat(migrationRequest.religions[0].endDate).isNull()
-        assertThat(migrationRequest.religions[0].verified).isEqualTo(true)
         assertThat(migrationRequest.religions[0].changeReasonKnown).isEqualTo(true)
         assertThat(migrationRequest.religions[0].comments).isEqualTo("No longer believes in Zoroastrianism")
-        assertThat(migrationRequest.religions[0].modifyUserId).isEqualTo("KOFEADDY")
-        assertThat(migrationRequest.religions[0].modifyDateTime).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+        assertThat(migrationRequest.religions[0].createUserId).isEqualTo("KOFEADDY")
+        assertThat(migrationRequest.religions[0].createDateTime).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+        assertThat(migrationRequest.religions[0].modifyUserId).isEqualTo("KOFE_MOD")
+        assertThat(migrationRequest.religions[0].modifyDateTime).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
       }
 
       @Test
@@ -242,9 +243,7 @@ class ReligionsMigrationIntTest(
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPathNoReligions {
       private lateinit var migrationResult: MigrationResult
-      private val cprReligionId: String = "abc-123456"
       private val nomisPrisonNumber = "A0000BC"
-      private val nomisId = 2L
 
       @BeforeAll
       fun setUp() {
@@ -397,7 +396,6 @@ class ReligionsMigrationIntTest(
               beliefId = 2,
               belief = CodeDescription("DRU", "Druid"),
               startDate = LocalDate.parse("2016-08-02"),
-              verified = true,
               audit = NomisAudit(
                 createDatetime = LocalDateTime.parse("2016-08-01T10:55:00"),
                 createUsername = "KOFEADDY",
