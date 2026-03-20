@@ -94,10 +94,11 @@ class CorePersonSynchronisationBeliefsIntTest(
                 .withRequestBodyJsonPath("religionCode", "DRU")
                 .withRequestBodyJsonPath("changeReasonKnown", true)
                 .withRequestBodyJsonPath("comments", "No longer believes in Zoroastrianism")
-                .withRequestBodyJsonPath("verified", true)
                 .withRequestBodyJsonPath("startDate", "2016-08-02")
-                .withRequestBodyJsonPath("modifyUserId", "KOFEADDY")
-                .withRequestBodyJsonPath("modifyDateTime", "2016-08-01T10:55:00"),
+                .withRequestBodyJsonPath("createUserId", "KOFEADDY")
+                .withRequestBodyJsonPath("createDateTime", "2016-08-01T10:55:00")
+                .withRequestBodyJsonPath("modifyUserId", "KOFE_MOD")
+                .withRequestBodyJsonPath("modifyDateTime", "2017-08-01T10:55:00"),
             )
             verifyMappingSaved()
 
@@ -310,9 +311,8 @@ class CorePersonSynchronisationBeliefsIntTest(
               .withRequestBodyJsonPath("nomisReligionId", 2)
               .withRequestBodyJsonPath("current", false)
               .withRequestBodyJsonPath("comments", "No longer believes in Zoroastrianism")
-              .withRequestBodyJsonPath("verified", true)
-              .withRequestBodyJsonPath("modifyUserId", "KOFEADDY")
-              .withRequestBodyJsonPath("modifyDateTime", "2016-08-01T10:55:00"),
+              .withRequestBodyJsonPath("modifyUserId", "KOFE_MOD")
+              .withRequestBodyJsonPath("modifyDateTime", "2017-08-01T10:55:00"),
           )
           verifyMappingSaved(count = 0)
         }
