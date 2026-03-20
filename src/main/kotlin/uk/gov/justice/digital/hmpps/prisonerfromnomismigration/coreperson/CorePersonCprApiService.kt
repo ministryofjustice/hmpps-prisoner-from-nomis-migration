@@ -58,7 +58,7 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .awaitBodyOrLogAndRethrowBadRequest()
 
   suspend fun syncUpdateOffenderBelief(prisonNumber: String, cprReligionId: String, religion: PrisonReligionUpdateRequest): PrisonReligionResponse = personApi
-    .prepare(personApi.update1RequestConfig(prisonNumber, cprReligionId, religion))
+    .prepare(personApi.updatePrisonReligionRequestConfig(prisonNumber, cprReligionId, religion))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 }
