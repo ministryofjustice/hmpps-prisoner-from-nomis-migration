@@ -12,8 +12,8 @@ import kotlin.io.path.name
 import kotlin.io.path.Path as KotlinPath
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "10.0.6"
-  kotlin("plugin.spring") version "2.3.10"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "10.1.0"
+  kotlin("plugin.spring") version "2.3.20"
   id("org.openapi.generator") version "7.20.0"
 }
 
@@ -25,8 +25,8 @@ configurations {
 }
 
 dependencies {
-  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:2.0.2")
-  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:7.0.1")
+  implementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter:2.1.0")
+  implementation("uk.gov.justice.service.hmpps:hmpps-sqs-spring-boot-starter:7.2.0")
   implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
   implementation("org.springframework.boot:spring-boot-starter-flyway")
   implementation("org.springframework.boot:spring-boot-starter-security")
@@ -46,7 +46,7 @@ dependencies {
   runtimeOnly("org.postgresql:postgresql:42.7.10")
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
 
-  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.0.2")
+  testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.1.0")
   testImplementation("org.springframework.boot:spring-boot-starter-data-r2dbc-test")
   testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
   testImplementation("io.swagger.parser.v3:swagger-parser:2.1.37") {
