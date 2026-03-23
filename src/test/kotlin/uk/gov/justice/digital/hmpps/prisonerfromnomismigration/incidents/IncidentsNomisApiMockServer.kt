@@ -17,7 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.HistoryQuestion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.HistoryResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentStatusResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Offender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderParty
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Question
@@ -154,7 +154,7 @@ private fun incidentResponse(
   questionnaireId = 45456,
   title = "This is a test incident",
   description = "On 12/04/2023 approx 16:45 Mr Smith tried to escape.",
-  status = IncidentStatus(
+  status = IncidentStatusResponse(
     code = status,
     description = "Awaiting Analysis",
     listSequence = 1,

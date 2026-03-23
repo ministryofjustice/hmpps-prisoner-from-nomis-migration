@@ -58,7 +58,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IncidentStatusResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Staff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
@@ -1105,7 +1105,7 @@ fun aNomisIncidentResponse() = IncidentResponse(
   questionnaireId = 543,
   title = "There was a fight",
   description = "On 12/04/2023 approx 16:45 John Smith punched Fred Jones",
-  status = IncidentStatus(code = "AWAN", description = "Awaiting Analysis", standardUser = true, enhancedUser = false),
+  status = IncidentStatusResponse(code = "AWAN", description = "Awaiting Analysis", standardUser = true, enhancedUser = false),
   type = "ASSAULT",
   agency = CodeDescription(code = "BXI", description = "Brixton"),
   lockedResponse = false,
