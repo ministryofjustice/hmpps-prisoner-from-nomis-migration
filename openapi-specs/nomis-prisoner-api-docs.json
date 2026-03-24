@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-03-20.1229.0c3c45e"
+    "version" : "2026-03-23.1232.6c388f6"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -32866,10 +32866,6 @@
             "type" : "string",
             "description" : "The username of the person who recorded the decision"
           },
-          "recordedByDisplayName" : {
-            "type" : "string",
-            "description" : "Real name of who recorded the decision"
-          },
           "recordedDate" : {
             "type" : "string",
             "format" : "date",
@@ -33118,10 +33114,6 @@
             "type" : "string",
             "description" : "Who completed the referral"
           },
-          "referralCompletedByDisplayName" : {
-            "type" : "string",
-            "description" : "Real name of the person who completed the referral"
-          },
           "referralCompletedDate" : {
             "type" : "string",
             "format" : "date",
@@ -33193,10 +33185,6 @@
             "type" : "string",
             "description" : "The username of the person who recorded the review"
           },
-          "recordedByDisplayName" : {
-            "type" : "string",
-            "description" : "Real name of who recorded the review"
-          },
           "createDateTime" : {
             "type" : "string",
             "format" : "date-time",
@@ -33228,10 +33216,6 @@
           "recordedBy" : {
             "type" : "string",
             "description" : "The username of the person who recorded the data"
-          },
-          "recordedByDisplayName" : {
-            "type" : "string",
-            "description" : "Real name of who recorded the data"
           },
           "recordedDate" : {
             "type" : "string",
