@@ -81,7 +81,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
         nationalityCode = DemographicAttributes.NationalityCode.BRIT,
         nationalityNote = "NOT_ENG",
       ),
-      aliases = listOf(),
+      pseudonyms = listOf(),
       addresses = listOf(),
       personContacts = listOf(),
       sentences = listOf(
