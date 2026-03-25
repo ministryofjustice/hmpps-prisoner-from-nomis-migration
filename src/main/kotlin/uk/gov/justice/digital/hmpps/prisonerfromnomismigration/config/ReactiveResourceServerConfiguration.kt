@@ -11,7 +11,6 @@ class ReactiveResourceServerConfiguration {
   fun resourceServerCustomizer() = ResourceServerConfigurationCustomizer {
     unauthorizedRequestPaths {
       addPaths = setOf(
-        "/queue-admin/retry-all-dlqs",
         "/incidents/reports/reconciliation",
       )
     }
