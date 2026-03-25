@@ -31,7 +31,7 @@ fun CorePerson.toCprPrisoner(): Prisoner {
     personContacts = (phoneNumbers?.map { it.toCprContact() } ?: emptyList()) +
       (emailAddresses?.map { it.toCprContact() } ?: emptyList()) +
       (addresses?.flatMap { it.toCprContact() ?: emptyList() } ?: emptyList()),
-    aliases = offenders.filterNot { it.workingName }.map { it.toCprAlias() },
+    pseudonyms = offenders.filterNot { it.workingName }.map { it.toCprAlias() },
     sentences = sentenceStartDates?.map { Sentence(it) } ?: emptyList(),
   )
 }
