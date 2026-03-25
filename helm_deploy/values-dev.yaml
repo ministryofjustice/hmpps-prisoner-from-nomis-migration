@@ -135,6 +135,3 @@ generic-prometheus-alerts:
       - "syscon-devs-dev-migration_officialvisits_dlq"
       - "syscon-devs-dev-prisoner_from_nomis_officialvisits_queue"
       - "syscon-devs-dev-prisoner_from_nomis_officialvisits_dl_queue"
-
-cron:
-  retry_dlqs_schedule: "*/10 7-20 * * 1-5"
