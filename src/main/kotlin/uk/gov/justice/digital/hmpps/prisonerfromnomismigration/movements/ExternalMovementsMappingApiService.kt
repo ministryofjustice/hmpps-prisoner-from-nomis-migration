@@ -89,5 +89,5 @@ class ExternalMovementsMappingApiService(@Qualifier("extMovementsMappingApiWebCl
   suspend fun moveBookingMappings(bookingId: Long, fromOffenderNo: String, toOffenderNo: String): Unit = mappingApi.moveBookingMappings(bookingId, fromOffenderNo, toOffenderNo)
     .awaitSingle()
 
-  suspend fun getPrisonerMappingIds(prisoner: String): TemporaryAbsencesPrisonerMappingIdsDto = mappingApi.getMappings1(prisoner).awaitSingle()
+  suspend fun getPrisonerMappingIds(prisoner: String): TemporaryAbsencesPrisonerMappingIdsDto = mappingApi.getTemporaryAbsenceMappings(prisoner).awaitSingle()
 }

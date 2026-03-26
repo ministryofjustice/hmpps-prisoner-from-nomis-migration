@@ -18,7 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 class VisitBalanceMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<VisitBalanceAdjustmentMappingDto>(domainUrl = "/mapping/visit-balance", webClient) {
   private val adjustmentApi = VisitBalanceAdjustmentMappingResourceApi(webClient)
   suspend fun createVisitBalanceAdjustmentMapping(mapping: VisitBalanceAdjustmentMappingDto): CreateMappingResult<VisitBalanceAdjustmentMappingDto> = adjustmentApi
-    .prepare(adjustmentApi.createMapping2RequestConfig(mapping))
+    .prepare(adjustmentApi.createVisitBalanceAdjustmentMappingRequestConfig(mapping))
     .retrieve()
     .bodyToMono(Unit::class.java)
     .map { CreateMappingResult<VisitBalanceAdjustmentMappingDto>() }
@@ -28,7 +28,7 @@ class VisitBalanceMappingApiService(@Qualifier("mappingApiWebClient") webClient:
     .awaitFirstOrDefault(CreateMappingResult())
 
   suspend fun getByNomisVisitBalanceAdjustmentIdOrNull(nomisVisitBalanceAdjustmentId: Long): VisitBalanceAdjustmentMappingDto? = adjustmentApi
-    .prepare(adjustmentApi.getMappingByNomisId1RequestConfig(nomisVisitBalanceAdjustmentId))
+    .prepare(adjustmentApi.getVisitBalanceAdjustmentMappingByNomisIdRequestConfig(nomisVisitBalanceAdjustmentId))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 }
