@@ -52,7 +52,7 @@ class CsraMigrationResource(
       ),
     ],
   )
-  suspend fun startMigration(
+  suspend fun startCsraMigration(
     @RequestBody @Valid
     migrationFilter: PrisonerMigrationFilter,
   ) = migrationService.startMigration(migrationFilter)

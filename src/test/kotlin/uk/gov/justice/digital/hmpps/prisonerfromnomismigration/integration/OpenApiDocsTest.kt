@@ -11,6 +11,7 @@ import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTest
 import org.springframework.http.MediaType
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import kotlin.text.get
 
 @AutoConfigureWebTestClient(timeout = "PT60S")
 class OpenApiDocsTest : SqsIntegrationTestBase() {
@@ -117,6 +118,18 @@ class OpenApiDocsTest : SqsIntegrationTestBase() {
       .expectBody()
       .jsonPath("$.components.schemas.ErrorResponse.required").value<List<String>> {
         assertThat(it).containsExactly("status")
+      }
+  }
+
+  @Test
+  fun `the swagger json don't contain any duplicate methods`() {
+    webTestClient.get()
+      .uri("/v3/api-docs")
+      .accept(MediaType.APPLICATION_JSON)
+      .exchange()
+      .expectStatus().isOk
+      .expectBody().jsonPath("*..operationId").value<List<String>> { list ->
+        assertThat(list).filteredOn { it.contains("_") }.isEmpty()
       }
   }
 }
