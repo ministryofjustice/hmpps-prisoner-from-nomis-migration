@@ -36,7 +36,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import java.time.LocalDateTime
 import java.util.*
 
 @Service
@@ -288,7 +287,6 @@ fun OffenderTemporaryAbsencesResponse.toDpsRequest(oldMappingIds: TemporaryAbsen
         occurrences = application.absences.mapNotNull { absence ->
           absence.scheduledTemporaryAbsence?.let { scheduleOut ->
             scheduleOut.toDpsRequest(
-              returnTime = absence.scheduledTemporaryAbsenceReturn?.startTime ?: scheduleOut.returnTime,
               schedulePrison = scheduleOut.fromPrison ?: application.prisonId,
               bookingId = booking.bookingId,
               movementOut = absence.temporaryAbsence,
@@ -315,7 +313,6 @@ fun OffenderTemporaryAbsencesResponse.toDpsRequest(oldMappingIds: TemporaryAbsen
 private fun ScheduledTemporaryAbsence.toDpsRequest(
   temporaryAbsenceType: String?,
   temporaryAbsenceSubType: String?,
-  returnTime: LocalDateTime,
   schedulePrison: String,
   bookingId: Long,
   movementOut: TemporaryAbsence?,
