@@ -16,7 +16,7 @@ class CsraMappingService(
   private val api = CsraMappingResourceApi(webClient)
 
   suspend fun createMapping(dto: CsraMigrationMapping): SuccessOrDuplicate<CsraMappingDto> = api
-    .prepare(api.createMappingsForPrisoner1RequestConfig(dto.offenderNo, dto.prisonerMappings))
+    .prepare(api.createCsraMappingsForPrisonerRequestConfig(dto.offenderNo, dto.prisonerMappings))
     .retrieve()
     .awaitSuccessOrDuplicate()
 }

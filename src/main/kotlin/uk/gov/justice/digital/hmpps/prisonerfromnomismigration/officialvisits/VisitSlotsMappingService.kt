@@ -61,5 +61,5 @@ class VisitSlotsMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
   suspend fun createVisitSlotMapping(mapping: VisitSlotMappingDto): SuccessOrDuplicate<VisitSlotMappingDto> = api.prepare(api.createVisitSlotMappingRequestConfig(mapping))
     .retrieve()
     .awaitSuccessOrDuplicate()
-  suspend fun getInternalLocationByNomisId(nomisLocationId: Long): LocationMappingDto = locationApi.getMappingGivenNomisId1(nomisLocationId = nomisLocationId).awaitSingle()
+  suspend fun getInternalLocationByNomisId(nomisLocationId: Long): LocationMappingDto = locationApi.getLocationMappingGivenNomisId(nomisLocationId = nomisLocationId).awaitSingle()
 }

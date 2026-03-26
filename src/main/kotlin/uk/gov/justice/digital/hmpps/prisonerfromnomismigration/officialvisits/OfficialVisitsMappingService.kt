@@ -20,7 +20,7 @@ class OfficialVisitsMappingService(@Qualifier("mappingApiWebClient") webClient: 
   private val api = OfficialVisitsResourceApi(webClient)
   private val locationApi = LocationMappingResourceApi(webClient)
 
-  suspend fun createVisitMapping(mapping: OfficialVisitMappingDto): SuccessOrDuplicate<OfficialVisitMappingDto> = api.prepare(api.createVisitMappingRequestConfig(mapping))
+  suspend fun createVisitMapping(mapping: OfficialVisitMappingDto): SuccessOrDuplicate<OfficialVisitMappingDto> = api.prepare(api.createOfficialVisitMappingRequestConfig(mapping))
     .retrieve()
     .awaitSuccessOrDuplicate()
 
@@ -63,5 +63,5 @@ class OfficialVisitsMappingService(@Qualifier("mappingApiWebClient") webClient: 
     api.deleteOfficialVisitorMapping(nomisVisitorId = nomisVisitorId).awaitSingle()
   }
 
-  suspend fun getInternalLocationByNomisId(nomisLocationId: Long): LocationMappingDto = locationApi.getMappingGivenNomisId1(nomisLocationId = nomisLocationId).awaitSingle()
+  suspend fun getInternalLocationByNomisId(nomisLocationId: Long): LocationMappingDto = locationApi.getLocationMappingGivenNomisId(nomisLocationId = nomisLocationId).awaitSingle()
 }
