@@ -1,9 +1,9 @@
+# hmpps-prisoner-from-nomis-migration
+
 [![Runbook](https://img.shields.io/badge/runbook-view-172B4D.svg?logo=confluence)](https://dsdmoj.atlassian.net/wiki/spaces/NOM/pages/1739325587/DPS+Runbook)
 [![Ministry of Justice Repository Compliance Badge](https://github-community.service.justice.gov.uk/repository-standards/api/hmpps-prisoner-from-nomis-migration/badge?style=flat)](https://github-community.service.justice.gov.uk/repository-standards/hmpps-prisoner-from-nomis-migration)
 [![Docker Repository on ghcr](https://img.shields.io/badge/ghcr.io-repository-2496ED.svg?logo=docker)](https://ghcr.io/ministryofjustice/hmpps-prisoner-from-nomis-migration)
 [![API docs](https://img.shields.io/badge/API_docs_-view-85EA2D.svg?logo=swagger)](https://prisoner-nomis-migration-dev.hmpps.service.justice.gov.uk/swagger-ui/index.html)
-
-# hmpps-prisoner-from-nomis-migration
 
 **Handles the migration of data related to prisoners in NOMIS to the new services**
 
