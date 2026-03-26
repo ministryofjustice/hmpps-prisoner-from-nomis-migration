@@ -238,11 +238,11 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .awaitBodilessEntityAsTrueNotFoundAsFalse()
 
   suspend fun getAllPrisonersInRange(fromRootOffenderId: Long, toRootOffenderId: Long): List<PrisonNumberAndRootOffenderId> = prisonersResourceApi
-    .getAllPrisonersInRange1(fromRootOffenderId, toRootOffenderId)
+    .getAllPrisonersInRange(fromRootOffenderId, toRootOffenderId)
     .awaitSingle()
 
   suspend fun getAllPrisonersIdRanges(pageSize: Long): List<RootOffenderIdRange> = prisonersResourceApi
-    .getAllPrisonersIdRanges1(pageSize.toInt())
+    .getAllPrisonersIdRanges(pageSize.toInt())
     .awaitSingle()
 }
 
