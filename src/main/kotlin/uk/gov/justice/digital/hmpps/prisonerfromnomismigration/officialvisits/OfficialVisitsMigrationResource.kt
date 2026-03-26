@@ -60,7 +60,7 @@ class OfficialVisitsMigrationResource(
       ),
     ],
   )
-  suspend fun startMigration(
+  suspend fun startOfficialVisitsMigration(
     @RequestBody @Valid
     migrationFilter: OfficialVisitsMigrationFilter,
   ) = migrationService.startMigration(migrationFilter)

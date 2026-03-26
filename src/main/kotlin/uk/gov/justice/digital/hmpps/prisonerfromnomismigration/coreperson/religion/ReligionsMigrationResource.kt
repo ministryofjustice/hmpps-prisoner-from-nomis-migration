@@ -46,5 +46,5 @@ class ReligionsMigrationResource(private val migrationService: ReligionsMigratio
       ),
     ],
   )
-  suspend fun startMigration() = migrationService.startMigration("")
+  suspend fun startReligionsMigration() = migrationService.startMigration("")
 }

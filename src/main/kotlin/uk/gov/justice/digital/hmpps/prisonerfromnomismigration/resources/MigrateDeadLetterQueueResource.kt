@@ -58,7 +58,7 @@ class MigrateDeadLetterQueueResource(
       ),
     ],
   )
-  suspend fun getDlqMessages(
+  suspend fun getDlqMessagesByMigrationType(
     @PathVariable @Schema(description = "Migration Type") migrationType: MigrationType,
   ) = migrationType.getQueue().run {
     hmppsQueueService.getDlqMessages(GetDlqRequest(this, 100))
