@@ -15,6 +15,6 @@ class CorePersonNomisApiService(@Qualifier("nomisApiWebClient") private val webC
     .getOffender(prisonNumber = nomisPrisonNumber)
     .awaitSingle()
 
-  suspend fun getOffenderReligions(nomisPrisonNumber: String) = api.getOffenderReligions(nomisPrisonNumber)
+  suspend fun getOffenderReligions(nomisPrisonNumber: String) = api.getOffenderReligionsByPrisonNumber(nomisPrisonNumber)
     .awaitSingle()
 }
