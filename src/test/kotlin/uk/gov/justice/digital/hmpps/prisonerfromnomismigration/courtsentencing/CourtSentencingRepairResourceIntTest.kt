@@ -18,6 +18,7 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearanceResponse
@@ -29,9 +30,16 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
-import java.util.*
+import java.util.UUID
 
+private const val DPS_SENTENCE_ID = "c1c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3e"
+private const val DPS_TERM_ID = "d5c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3d"
+private const val DPS_CASE_ID = "c7c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3d"
+private const val DPS_APPEARANCE_ID = "d8c1e3e3-3e3e-3e3e-3e3e-3e3e3e3d7d7d"
 class CourtSentencingRepairResourceIntTest : SqsIntegrationTestBase() {
+  @Autowired
+  private lateinit var courtSentencingMappingApiService: CourtSentencingMappingApiService
+
   @Autowired
   private lateinit var courtSentencingMappingApiMockServer: CourtSentencingMappingApiMockServer
 
@@ -224,6 +232,125 @@ class CourtSentencingRepairResourceIntTest : SqsIntegrationTestBase() {
             assertThat(it["offenderNo"]).isEqualTo(offenderNo)
             assertThat(it["nomisBookingId"]).isEqualTo(bookingId.toString())
             assertThat(it["nomisCourtCaseId"]).isEqualTo(caseId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("POST /prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/sentences/{sentenceSeq}/terms/{termSeq}/repair")
+  inner class RepairSentenceTermInsert {
+    val offenderNo = "A1234KT"
+    val bookingId = 12344321L
+    val sentenceSeq = 3
+    val termSeq = 2
+
+    @Nested
+    inner class Security {
+
+      @Test
+      internal fun `must have valid token`() {
+        webTestClient.post().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/sentences/{sentenceSeq}/terms/{termSeq}/repair",
+          offenderNo,
+          bookingId,
+          sentenceSeq,
+          termSeq,
+        )
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      internal fun `must have correct role`() {
+        webTestClient.post().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/sentences/{sentenceSeq}/terms/{termSeq}/repair",
+          offenderNo,
+          bookingId,
+          sentenceSeq,
+          termSeq,
+        )
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isForbidden
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+
+      @BeforeEach
+      internal fun setup() {
+        courtSentencingNomisApiMockServer.stubGetSentenceTerm(
+          sentenceSequence = sentenceSeq,
+          termSequence = termSeq,
+          bookingId = bookingId,
+          offenderNo = offenderNo,
+        )
+
+        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+          nomisSentenceSequence = sentenceSeq,
+          nomisBookingId = bookingId,
+          dpsSentenceId = DPS_SENTENCE_ID,
+        )
+        courtSentencingMappingApiMockServer.stubGetSentenceTermByNomisId(status = NOT_FOUND)
+
+        dpsCourtSentencingServer.stubPostPeriodLengthForCreate(
+          periodLengthId = DPS_TERM_ID,
+          sentenceId = DPS_SENTENCE_ID,
+          appearanceId = DPS_APPEARANCE_ID,
+          caseId = DPS_CASE_ID,
+          prisonerId = offenderNo,
+        )
+
+        courtSentencingMappingApiMockServer.stubPostSentenceTermMapping()
+
+        webTestClient.post().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/sentences/{sentenceSeq}/terms/{termSeq}/repair",
+          offenderNo,
+          bookingId,
+          sentenceSeq,
+          termSeq,
+        )
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+      }
+
+      @Test
+      fun `will update DPS with the changes`() {
+        dpsCourtSentencingServer.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/legacy/period-length"))
+            .withRequestBody(matchingJsonPath("sentenceUuid", equalTo(DPS_SENTENCE_ID))),
+        )
+      }
+
+      @Test
+      fun `will track a telemetry event for success`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-sentencing-prisoner-sentence-term-repaired"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisBookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["nomisSentenceSequence"]).isEqualTo(sentenceSeq.toString())
+            assertThat(it["nomisTermSequence"]).isEqualTo(termSeq.toString())
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("sentence-term-synchronisation-created-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisBookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["nomisSentenceSequence"]).isEqualTo(sentenceSeq.toString())
+            assertThat(it["nomisTermSequence"]).isEqualTo(termSeq.toString())
+            assertThat(it["dpsTermId"]).isEqualTo(DPS_TERM_ID)
           },
           isNull(),
         )
