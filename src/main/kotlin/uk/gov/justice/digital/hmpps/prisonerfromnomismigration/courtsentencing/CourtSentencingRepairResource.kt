@@ -48,4 +48,27 @@ class CourtSentencingRepairResource(
       caseId = caseId,
     )
   }
+
+  @PostMapping("/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/sentences/{sentenceSeq}/terms/{termSeq}/repair")
+  @Operation(
+    summary = "Replicate a sentence term insert event from NOMIS to DPS for a specific sentence term",
+    description = "Used when a sentence term insert event has been missed (or the term has been mistakenly deleted) and the term is missing in DPS. Requires PRISONER_FROM_NOMIS__UPDATE__RW",
+  )
+  suspend fun prisonerSentenceTermInsertRepair(
+    @PathVariable
+    offenderNo: String,
+    @PathVariable
+    bookingId: Long,
+    @PathVariable
+    sentenceSeq: Int,
+    @PathVariable
+    termSeq: Int,
+  ) {
+    courtSentencingRepairService.resynchronisePrisonerSentenceTermInsert(
+      offenderNo = offenderNo,
+      bookingId = bookingId,
+      sentenceSeq = sentenceSeq,
+      termSeq = termSeq,
+    )
+  }
 }

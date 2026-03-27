@@ -7,7 +7,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import kotlin.String
 
 @Service
 class CourtSentencingRepairService(
@@ -54,6 +53,34 @@ class CourtSentencingRepairService(
         "offenderNo" to offenderNo,
         "nomisBookingId" to bookingId.toString(),
         "nomisCourtCaseId" to caseId.toString(),
+      ),
+      null,
+    )
+  }
+
+  suspend fun resynchronisePrisonerSentenceTermInsert(
+    offenderNo: String,
+    bookingId: Long,
+    sentenceSeq: Int,
+    termSeq: Int,
+  ) {
+    courtSentencingSynchronisationService.nomisSentenceTermInserted(
+      OffenderSentenceTermEvent(
+        sentenceSeq = sentenceSeq,
+        offenderIdDisplay = offenderNo,
+        bookingId = bookingId,
+        termSequence = termSeq,
+        auditModuleName = "NOMIS",
+      ),
+    )
+
+    telemetryClient.trackEvent(
+      "court-sentencing-prisoner-sentence-term-repaired",
+      mapOf(
+        "offenderNo" to offenderNo,
+        "nomisBookingId" to bookingId.toString(),
+        "nomisSentenceSequence" to sentenceSeq.toString(),
+        "nomisTermSequence" to termSeq.toString(),
       ),
       null,
     )
