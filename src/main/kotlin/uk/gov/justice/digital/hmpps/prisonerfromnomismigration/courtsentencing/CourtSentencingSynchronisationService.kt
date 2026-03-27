@@ -1712,12 +1712,13 @@ class CourtSentencingSynchronisationService(
       "bookingId" to prisonerMergeEvent.additionalInformation.bookingId,
       "removedOffenderNo" to removedOffenderNumber,
     )
-
-    val (courtCasesCreated, courtCasesDeactivated) = nomisApiService.getCourtCasesChangedByMerge(offenderNo = retainedOffenderNumber)
-      .also {
-        telemetry["courtCasesCreatedCount"] = it.courtCasesCreated.size
-        telemetry["courtCasesDeactivatedCount"] = it.courtCasesDeactivated.size
-      }
+    val response = nomisApiService.getCourtCasesChangedByMerge(offenderNo = retainedOffenderNumber)
+    val courtCasesCreated = response.courtCasesCreated
+    val courtCasesDeactivated = response.courtCasesDeactivated
+    val additionalSentencesDeactivated = response.sentencesDeactivated
+    telemetry["courtCasesCreatedCount"] = courtCasesCreated.size
+    telemetry["courtCasesDeactivatedCount"] = courtCasesDeactivated.size
+    telemetry["additionalSentencesDeactivated"] = additionalSentencesDeactivated.size
 
     val courtCasesDeactivatedMappings =
       if (courtCasesDeactivated.isNotEmpty()) {
@@ -1732,9 +1733,15 @@ class CourtSentencingSynchronisationService(
     val sentencesDeactivated = courtCasesDeactivated.flatMap { case ->
       case.sentences
     }.toSet()
-    val sentencesDeactivatedMappings = if (sentencesDeactivated.isNotEmpty()) {
+
+    // include sentences that have been deactivated by merge that are not
+    // in the cases that were deactivated. Typically, bad data with and old active
+    // sentence in an inactive case
+    val allSentencesDeactivated = sentencesDeactivated + additionalSentencesDeactivated
+
+    val sentencesDeactivatedMappings = if (allSentencesDeactivated.isNotEmpty()) {
       mappingApiService.getSentencesByNomisIds(
-        sentencesDeactivated.map {
+        allSentencesDeactivated.map {
           NomisSentenceId(
             nomisBookingId = it.bookingId,
             nomisSentenceSequence = it.sentenceSeq.toInt(),
@@ -1761,19 +1768,17 @@ class CourtSentencingSynchronisationService(
             active = ccd.caseStatus.code == "A",
           )
         },
-        sentencesDeactivated = courtCasesDeactivated.flatMap {
-          it.sentences.map { nomisSentence ->
-            DeactivatedSentence(
-              dpsSentenceUuid = UUID.fromString(
-                sentencesDeactivatedMappings.firstOrNull { mapping ->
-                  mapping.nomisBookingId == nomisSentence.bookingId &&
-                    mapping.nomisSentenceSequence == nomisSentence.sentenceSeq.toInt()
-                }?.dpsSentenceId
-                  ?: throw IllegalStateException("Received Prisoner merged event for offender $retainedOffenderNumber with missing deactivated sentence mapping - nomis sentence seq: ${nomisSentence.sentenceSeq} nomis booking id: ${nomisSentence.bookingId}"),
-              ),
-              active = nomisSentence.status == "A",
-            )
-          }
+        sentencesDeactivated = allSentencesDeactivated.map { nomisSentence ->
+          DeactivatedSentence(
+            dpsSentenceUuid = UUID.fromString(
+              sentencesDeactivatedMappings.firstOrNull { mapping ->
+                mapping.nomisBookingId == nomisSentence.bookingId &&
+                  mapping.nomisSentenceSequence == nomisSentence.sentenceSeq.toInt()
+              }?.dpsSentenceId
+                ?: throw IllegalStateException("Received Prisoner merged event for offender $retainedOffenderNumber with missing deactivated sentence mapping - nomis sentence seq: ${nomisSentence.sentenceSeq} nomis booking id: ${nomisSentence.bookingId}"),
+            ),
+            active = nomisSentence.status == "A",
+          )
         },
         removedPrisonerNumber = removedOffenderNumber,
       ),
