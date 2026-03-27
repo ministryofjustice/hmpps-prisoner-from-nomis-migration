@@ -1171,31 +1171,38 @@ class CourtSentencingSynchronisationService(
         "nomisSentenceLevel" to event.sentenceLevel,
         "nomisCaseId" to event.caseId.toString(),
       )
-    if (isSentenceInScope(event)) {
-      val mapping = mappingApiService.getSentenceOrNullByNomisId(
-        sentenceSequence = event.sentenceSeq,
-        bookingId = event.bookingId,
+    if (event.originatesInDps) {
+      telemetryClient.trackEvent(
+        "sentence-synchronisation-created-skipped",
+        telemetry + ("reason" to "created in dps"),
       )
-      if (mapping == null) {
+    } else {
+      if (isSentenceInScope(event)) {
+        val mapping = mappingApiService.getSentenceOrNullByNomisId(
+          sentenceSequence = event.sentenceSeq,
+          bookingId = event.bookingId,
+        )
+        if (mapping == null) {
+          telemetryClient.trackEvent(
+            "sentence-synchronisation-deleted-ignored",
+            telemetry,
+          )
+        } else {
+          trackIfFailure(name = "sentence-synchronisation-deleted", telemetry = telemetry) {
+            dpsApiService.deleteSentence(sentenceId = mapping.dpsSentenceId)
+          }
+          tryToDeleteSentenceMapping(mapping.dpsSentenceId)
+          telemetryClient.trackEvent(
+            "sentence-synchronisation-deleted-success",
+            telemetry + ("dpsSentenceId" to mapping.dpsSentenceId),
+          )
+        }
+      } else {
         telemetryClient.trackEvent(
           "sentence-synchronisation-deleted-ignored",
-          telemetry,
-        )
-      } else {
-        trackIfFailure(name = "sentence-synchronisation-deleted", telemetry = telemetry) {
-          dpsApiService.deleteSentence(sentenceId = mapping.dpsSentenceId)
-        }
-        tryToDeleteSentenceMapping(mapping.dpsSentenceId)
-        telemetryClient.trackEvent(
-          "sentence-synchronisation-deleted-success",
-          telemetry + ("dpsSentenceId" to mapping.dpsSentenceId),
+          telemetry + ("reason" to "sentence not in scope"),
         )
       }
-    } else {
-      telemetryClient.trackEvent(
-        "sentence-synchronisation-deleted-ignored",
-        telemetry + ("reason" to "sentence not in scope"),
-      )
     }
   }
 
@@ -1207,25 +1214,33 @@ class CourtSentencingSynchronisationService(
         "nomisBookingId" to event.bookingId.toString(),
         "nomisTermSequence" to event.termSequence.toString(),
       )
-    val mapping = mappingApiService.getSentenceTermOrNullByNomisId(
-      sentenceSequence = event.sentenceSeq,
-      termSequence = event.termSequence,
-      bookingId = event.bookingId,
-    )
-    if (mapping == null) {
+
+    if (event.originatesInDps) {
       telemetryClient.trackEvent(
-        "sentence-term-synchronisation-deleted-ignored",
-        telemetry,
+        "sentence-term-synchronisation-created-skipped",
+        telemetry + ("reason" to "created in dps"),
       )
     } else {
-      trackIfFailure(name = "sentence-term-synchronisation-deleted", telemetry = telemetry) {
-        dpsApiService.deletePeriodLength(periodLengthId = mapping.dpsTermId)
-      }
-      tryToDeleteSentenceTermMapping(mapping.dpsTermId)
-      telemetryClient.trackEvent(
-        "sentence-term-synchronisation-deleted-success",
-        telemetry + ("dpsTermId" to mapping.dpsTermId),
+      val mapping = mappingApiService.getSentenceTermOrNullByNomisId(
+        sentenceSequence = event.sentenceSeq,
+        termSequence = event.termSequence,
+        bookingId = event.bookingId,
       )
+      if (mapping == null) {
+        telemetryClient.trackEvent(
+          "sentence-term-synchronisation-deleted-ignored",
+          telemetry,
+        )
+      } else {
+        trackIfFailure(name = "sentence-term-synchronisation-deleted", telemetry = telemetry) {
+          dpsApiService.deletePeriodLength(periodLengthId = mapping.dpsTermId)
+        }
+        tryToDeleteSentenceTermMapping(mapping.dpsTermId)
+        telemetryClient.trackEvent(
+          "sentence-term-synchronisation-deleted-success",
+          telemetry + ("dpsTermId" to mapping.dpsTermId),
+        )
+      }
     }
   }
 
