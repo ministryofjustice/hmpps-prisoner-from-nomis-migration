@@ -247,6 +247,7 @@ class CourtSentencingNomisApiMockServer(private val jsonMapper: JsonMapper) {
                 PostPrisonerMergeCaseChanges(
                   courtCasesCreated = courtCasesCreated,
                   courtCasesDeactivated = courtCasesDeactivated,
+                  sentencesDeactivated = emptyList(),
                 ),
               ),
             ),
