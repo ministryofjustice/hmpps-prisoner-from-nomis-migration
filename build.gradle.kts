@@ -12,7 +12,7 @@ import kotlin.io.path.name
 import kotlin.io.path.Path as KotlinPath
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "10.1.1"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "10.1.2"
   kotlin("plugin.spring") version "2.3.20"
   id("org.openapi.generator") version "7.21.0"
 }
@@ -39,7 +39,7 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk9")
 
-  implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.55.0")
+  implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.60.1")
 
   runtimeOnly("org.postgresql:r2dbc-postgresql:1.1.1.RELEASE")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
