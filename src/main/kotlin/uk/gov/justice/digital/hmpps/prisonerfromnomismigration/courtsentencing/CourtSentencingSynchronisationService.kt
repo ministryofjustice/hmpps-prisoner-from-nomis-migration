@@ -1173,7 +1173,7 @@ class CourtSentencingSynchronisationService(
       )
     if (event.originatesInDps) {
       telemetryClient.trackEvent(
-        "sentence-synchronisation-created-skipped",
+        "sentence-synchronisation-deleted-skipped",
         telemetry + ("reason" to "created in dps"),
       )
     } else {
@@ -1217,7 +1217,7 @@ class CourtSentencingSynchronisationService(
 
     if (event.originatesInDps) {
       telemetryClient.trackEvent(
-        "sentence-term-synchronisation-created-skipped",
+        "sentence-term-synchronisation-deleted-skipped",
         telemetry + ("reason" to "created in dps"),
       )
     } else {
