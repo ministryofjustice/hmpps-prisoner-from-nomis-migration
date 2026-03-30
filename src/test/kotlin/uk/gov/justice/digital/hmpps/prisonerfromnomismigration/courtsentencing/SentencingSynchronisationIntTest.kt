@@ -1257,6 +1257,45 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         }
       }
     }
+
+    @Nested
+    @DisplayName("When sentence was deleted in DPS")
+    inner class DpsDeleted {
+
+      @Nested
+      @DisplayName("Sentences deleted in dps should be ignored")
+      inner class SentenceDeletedInDps {
+        @BeforeEach
+        fun setUp() {
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceEvent(
+              eventType = "OFFENDER_SENTENCES-DELETED",
+              auditModule = "DPS_SYNCHRONISATION",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `the event is ignored`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-synchronisation-created-skipped"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+              },
+              isNull(),
+            )
+          }
+          // will not delete a sentence in DPS
+          dpsCourtSentencingServer.verify(0, deleteRequestedFor(anyUrl()))
+        }
+      }
+    }
   }
 
   @Nested
@@ -2703,7 +2742,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class SentenceTermDeleted {
 
     @Nested
-    @DisplayName("When sentence was deleted in NOMIS")
+    @DisplayName("When sentence term was deleted in NOMIS")
     inner class NomisDeleted {
 
       @Nested
@@ -2882,6 +2921,46 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               isNull(),
             )
           }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("When sentence term was deleted in DPS")
+    inner class DpsDeleted {
+
+      @Nested
+      @DisplayName("Sentences term deleted in dps should be ignored")
+      inner class SentenceDeletedInDps {
+        @BeforeEach
+        fun setUp() {
+          awsSqsCourtSentencingOffenderEventsClient.sendMessage(
+            courtSentencingQueueOffenderEventsUrl,
+            sentenceTermEvent(
+              eventType = "OFFENDER_SENTENCE_TERMS-DELETED",
+              auditModule = "DPS_SYNCHRONISATION",
+            ),
+          ).also {
+            waitForTelemetry()
+          }
+        }
+
+        @Test
+        fun `the event is ignored`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("sentence-term-synchronisation-created-skipped"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
+                assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+                assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["nomisTermSequence"]).isEqualTo(NOMIS_TERM_SEQUENCE.toString())
+              },
+              isNull(),
+            )
+          }
+          // will not delete a sentence in DPS
+          dpsCourtSentencingServer.verify(0, deleteRequestedFor(anyUrl()))
         }
       }
     }
