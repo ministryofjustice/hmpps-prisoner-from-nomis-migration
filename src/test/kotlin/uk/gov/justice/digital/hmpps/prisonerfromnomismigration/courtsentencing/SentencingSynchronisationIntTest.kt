@@ -1282,7 +1282,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `the event is ignored`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("sentence-synchronisation-created-skipped"),
+              eq("sentence-synchronisation-deleted-skipped"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
@@ -2949,7 +2949,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         fun `the event is ignored`() {
           await untilAsserted {
             verify(telemetryClient).trackEvent(
-              eq("sentence-term-synchronisation-created-skipped"),
+              eq("sentence-term-synchronisation-deleted-skipped"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo("A3864DZ")
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
