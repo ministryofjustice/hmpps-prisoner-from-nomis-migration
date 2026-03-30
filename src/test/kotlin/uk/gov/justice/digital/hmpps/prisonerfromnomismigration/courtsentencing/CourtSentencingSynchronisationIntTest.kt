@@ -4128,6 +4128,7 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
       val dpsSentenceIdForSequence2 = "7b70c22c-a05b-4c78-8da3-c0d01f99400b"
       val dpsSentenceIdForSequence3 = "84430291-a381-4c99-acdb-102299324f2a"
       val dpsSentenceIdForSequence4 = "c0ba2706-6a89-4e64-ae84-a434472ca2ad"
+      val dpsSentenceIdForSequence5 = "f51e2726-ae47-4d6c-a6b6-f81740361975"
       val dpsSentenceTermIdForSequence1Term1 = "4487ee53-0529-423a-a14d-f340ede43922"
       val dpsSentenceTermIdForSequence1Term2 = "2b70c22c-a05b-4c78-8da3-c0d01f99400b"
       val dpsSentenceTermIdForSequence2Term1 = "23430291-a381-4c99-acdb-102299324f2a"
@@ -4207,6 +4208,9 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               ),
             ),
           ),
+          sentencesDeactivated = listOf(
+            sentenceResponse(bookingId = 201, sentenceSequence = 5, eventId = NOMIS_COURT_APPEARANCE_ID),
+          ),
         )
         courtSentencingMappingApiMockServer.stubGetCasesByNomisIds(
           listOf(
@@ -4241,6 +4245,11 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               nomisBookingId = 201,
               nomisSentenceSequence = 4,
               dpsSentenceId = dpsSentenceIdForSequence4,
+            ),
+            SentenceMappingDto(
+              nomisBookingId = 201,
+              nomisSentenceSequence = 5,
+              dpsSentenceId = dpsSentenceIdForSequence5,
             ),
           ),
         )
@@ -4332,15 +4341,24 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
 
         @Test
         fun `will call mapping service to get DPS ids for cases and sentences to updated`() {
-          courtSentencingMappingApiMockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/nomis-case-ids/get-list")))
-          courtSentencingMappingApiMockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-sentence-ids/get-list")))
+          courtSentencingMappingApiMockServer.verify(
+            postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/nomis-case-ids/get-list"))
+              .withRequestBody(matchingJsonPath("$.size()", equalTo("2"))),
+          )
+          courtSentencingMappingApiMockServer.verify(
+            postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/sentences/nomis-sentence-ids/get-list"))
+              .withRequestBody(matchingJsonPath("$.size()", equalTo("5"))),
+          )
         }
 
         @Test
         fun `will call DPS to synchronise any cases`() {
           dpsCourtSentencingServer.verify(
             postRequestedFor(urlPathEqualTo("/legacy/court-case/merge/person/$offenderNumberRetained"))
-              .withRequestBody(matchingJsonPath("casesDeactivated[0].active", equalTo("false"))),
+              .withRequestBody(matchingJsonPath("casesCreated.size()", equalTo("2")))
+              .withRequestBody(matchingJsonPath("casesDeactivated.size()", equalTo("2")))
+              .withRequestBody(matchingJsonPath("casesDeactivated[0].active", equalTo("false")))
+              .withRequestBody(matchingJsonPath("sentencesDeactivated.size()", equalTo("5"))),
           )
         }
 

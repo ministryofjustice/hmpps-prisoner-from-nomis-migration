@@ -236,6 +236,7 @@ class CourtSentencingNomisApiMockServer(private val jsonMapper: JsonMapper) {
     offenderNo: String = "AK000KT",
     courtCasesCreated: List<CourtCaseResponse> = emptyList(),
     courtCasesDeactivated: List<CourtCaseResponse> = emptyList(),
+    sentencesDeactivated: List<SentenceResponse> = emptyList(),
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/prisoners/$offenderNo/sentencing/court-cases/post-merge"))
@@ -247,7 +248,7 @@ class CourtSentencingNomisApiMockServer(private val jsonMapper: JsonMapper) {
                 PostPrisonerMergeCaseChanges(
                   courtCasesCreated = courtCasesCreated,
                   courtCasesDeactivated = courtCasesDeactivated,
-                  sentencesDeactivated = emptyList(),
+                  sentencesDeactivated = sentencesDeactivated,
                 ),
               ),
             ),
