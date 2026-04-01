@@ -138,7 +138,6 @@ fun CourtEventResponse.toDpsCourtAppearance(
   courtCode = this.courtId,
   courtCaseUuid = dpsCaseId,
   appearanceDate = this.eventDateTime.toLocalDate(),
-  appearanceTypeUuid = this.courtEventType.toDpsAppearanceTypeId(),
   legacyData =
   CourtAppearanceLegacyData(
     postedDate = LocalDate.now().toString(),
@@ -148,6 +147,7 @@ fun CourtEventResponse.toDpsCourtAppearance(
     nomisOutcomeCode = this.outcomeReasonCode?.code,
     nextEventDateTime = this.nextEventDateTime,
     appearanceTime = this.eventDateTime.toLocalTime().toString(),
+    nomisAppearanceTypeCode = this.courtEventType.code,
   ),
   performedByUser = this.modifiedByUsername ?: this.createdByUsername,
 )

@@ -1558,18 +1558,13 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("4506")))
               .withRequestBody(matchingJsonPath("legacyData.outcomeConvictionFlag", equalTo("false")))
               .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("I")))
+              .withRequestBody(matchingJsonPath("legacyData.nomisAppearanceTypeCode", equalTo("CRT")))
               .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Adjournment")))
               .withRequestBody(matchingJsonPath("legacyData.postedDate", not(WireMock.absent())))
               .withRequestBody(matchingJsonPath("legacyData.appearanceTime", equalTo("09:00")))
               .withRequestBody(matchingJsonPath("courtCode", equalTo("MDI")))
               .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_COURT_CASE_ID)))
-              .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02")))
-              .withRequestBody(
-                matchingJsonPath(
-                  "appearanceTypeUuid",
-                  equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
-                ),
-              ),
+              .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02"))),
           )
         }
 
@@ -1986,17 +1981,12 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
               .withRequestBody(matchingJsonPath("legacyData.outcomeConvictionFlag", equalTo("false")))
               .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("I")))
               .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Adjournment")))
+              .withRequestBody(matchingJsonPath("legacyData.nomisAppearanceTypeCode", equalTo("CRT")))
               .withRequestBody(matchingJsonPath("legacyData.postedDate", not(WireMock.absent())))
               .withRequestBody(matchingJsonPath("legacyData.appearanceTime", equalTo("09:00")))
               .withRequestBody(matchingJsonPath("courtCode", equalTo("MDI")))
               .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_COURT_CASE_ID)))
-              .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02")))
-              .withRequestBody(
-                matchingJsonPath(
-                  "appearanceTypeUuid",
-                  equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
-                ),
-              ),
+              .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02"))),
           )
         }
 
@@ -2305,8 +2295,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID"))
               .withRequestBody(
                 matchingJsonPath(
-                  "appearanceTypeUuid",
-                  equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
+                  "legacyData.nomisAppearanceTypeCode",
+                  equalTo("CRT"),
                 ),
               )
               .withRequestBody(
@@ -2460,8 +2450,8 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID"))
               .withRequestBody(
                 matchingJsonPath(
-                  "appearanceTypeUuid",
-                  equalTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID),
+                  "legacyData.nomisAppearanceTypeCode",
+                  equalTo("CRT"),
                 ),
               )
               .withRequestBody(
