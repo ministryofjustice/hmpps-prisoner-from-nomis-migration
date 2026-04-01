@@ -36,7 +36,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.PeriodLengthLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.SentenceLegacyData
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventResponse
@@ -157,7 +156,6 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance(
 ) = MigrationCreateCourtAppearance(
   courtCode = this.courtId,
   appearanceDate = this.eventDateTime.toLocalDate(),
-  appearanceTypeUuid = this.courtEventType.toDpsAppearanceTypeId(),
   eventId = this.id,
   legacyData =
   CourtAppearanceLegacyData(
@@ -168,6 +166,7 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance(
     outcomeDispositionCode = this.outcomeReasonCode?.dispositionCode,
     nextEventDateTime = this.nextEventDateTime,
     appearanceTime = this.eventDateTime.toLocalTime().toString(),
+    nomisAppearanceTypeCode = this.courtEventType.code,
   ),
 
   /* supporting sentences with multiple charges
@@ -186,7 +185,6 @@ fun CourtEventResponse.toBookingCloneDpsCourtAppearance(
 ) = BookingCreateCourtAppearance(
   courtCode = this.courtId,
   appearanceDate = this.eventDateTime.toLocalDate(),
-  appearanceTypeUuid = this.courtEventType.toDpsAppearanceTypeId(),
   eventId = this.id,
   legacyData =
   CourtAppearanceLegacyData(
@@ -197,6 +195,7 @@ fun CourtEventResponse.toBookingCloneDpsCourtAppearance(
     outcomeDispositionCode = this.outcomeReasonCode?.dispositionCode,
     nextEventDateTime = this.nextEventDateTime,
     appearanceTime = this.eventDateTime.toLocalTime().toString(),
+    nomisAppearanceTypeCode = this.courtEventType.code,
   ),
 
   /* supporting sentences with multiple charges
@@ -215,7 +214,6 @@ fun CourtEventResponse.toMergeDpsCourtAppearance(
 ) = MergeCreateCourtAppearance(
   courtCode = this.courtId,
   appearanceDate = this.eventDateTime.toLocalDate(),
-  appearanceTypeUuid = this.courtEventType.toDpsAppearanceTypeId(),
   eventId = this.id,
   legacyData =
   CourtAppearanceLegacyData(
@@ -226,6 +224,7 @@ fun CourtEventResponse.toMergeDpsCourtAppearance(
     outcomeDispositionCode = this.outcomeReasonCode?.dispositionCode,
     nextEventDateTime = this.nextEventDateTime,
     appearanceTime = this.eventDateTime.toLocalTime().toString(),
+    nomisAppearanceTypeCode = this.courtEventType.code,
   ),
 
   /* supporting sentences with multiple charges
@@ -485,12 +484,3 @@ fun SentenceTermResponse.toMergePeriodData(nomisSentence: SentenceResponse) = Me
 )
 
 fun CaseIdentifierResponse.toDpsCaseReference() = CaseReferenceLegacyData(offenderCaseReference = this.reference, updatedDate = this.createDateTime)
-
-const val VIDEO_LINK_DPS_APPEARANCE_TYPE_UUID = "1da09b6e-55cb-4838-a157-ee6944f2094c"
-const val COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID = "63e8fce0-033c-46ad-9edf-391b802d547a"
-
-private fun CodeDescription.toDpsAppearanceTypeId(): UUID = if (this.code.startsWith("VL")) {
-  UUID.fromString(VIDEO_LINK_DPS_APPEARANCE_TYPE_UUID)
-} else {
-  UUID.fromString(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID)
-}
