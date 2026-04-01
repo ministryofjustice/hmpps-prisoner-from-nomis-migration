@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-03-27.698.3352695"
+    "version" : "2026-03-31.709.ed017c7"
   },
   "servers" : [ {
     "url" : "https://prisoner-finance-sync-api-dev.hmpps.service.justice.gov.uk/",
@@ -1866,6 +1866,16 @@
             "type" : "string",
             "format" : "uuid"
           },
+          "transactionType" : {
+            "type" : "string"
+          },
+          "transactionTimestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "caseloadId" : {
+            "type" : "string"
+          },
           "requestTypeIdentifier" : {
             "type" : "string"
           },
@@ -1876,16 +1886,6 @@
           "legacyTransactionId" : {
             "type" : "integer",
             "format" : "int64"
-          },
-          "transactionTimestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "caseloadId" : {
-            "type" : "string"
-          },
-          "transactionType" : {
-            "type" : "string"
           }
         },
         "required" : [ "id", "requestId", "synchronizedTransactionId", "timestamp" ]
