@@ -271,7 +271,7 @@ class CourtSentencingMigrationIntTest(
           assertThat(legacyData.nextEventDateTime).isEqualTo("2020-02-01T00:00:00")
           assertThat(legacyData.appearanceTime).isEqualTo("12:00")
           assertThat(legacyData.postedDate).isNotNull
-          assertThat(appearanceTypeUuid.toString()).isEqualTo(COURT_APPEARANCE_DPS_APPEARANCE_TYPE_UUID)
+          assertThat(legacyData.nomisAppearanceTypeCode).isEqualTo("CRT")
           assertThat(charges).hasSize(1)
           with(charges.first()) {
             assertThat(offenceCode).isEqualTo("RR84027")
