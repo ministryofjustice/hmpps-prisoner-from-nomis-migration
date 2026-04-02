@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-03-31.639.8bc9540"
+    "version" : "2026-04-01.649.0918247"
   },
   "servers" : [ {
     "url" : "https://official-visits-api-dev.hmpps.service.justice.gov.uk",
@@ -2730,6 +2730,15 @@
           "required" : false,
           "schema" : {
             "type" : "boolean"
+          }
+        }, {
+          "name" : "existingOfficialVisitId",
+          "in" : "query",
+          "description" : "The unique identifier of the official visit to exclude from availability calculations. Would be provided for an amend check, otherwise null",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         } ],
         "responses" : {
