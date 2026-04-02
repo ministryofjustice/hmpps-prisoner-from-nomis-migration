@@ -23,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.Of
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncUpdateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncUpdateTimeSlotRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncUpdateVisitSlotRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.RepairPrisonerVisitsRequest
 
 @SpringAPIServiceTest
 @Import(OfficialVisitsDpsApiService::class, OfficialVisitsConfiguration::class)
@@ -234,6 +235,32 @@ class OfficialVisitsDpsApiServiceTest {
 
       dpsOfficialVisitsServer.verify(
         postRequestedFor(urlPathEqualTo("/migrate/visit")),
+      )
+    }
+  }
+
+  @Nested
+  inner class RepairVisits {
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubRepairVisits(offenderNo = "A1234KT")
+
+      apiService.repairVisits("A1234KT", RepairPrisonerVisitsRequest(emptyList()))
+
+      dpsOfficialVisitsServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the repair endpoint`() = runTest {
+      dpsOfficialVisitsServer.stubRepairVisits(offenderNo = "A1234KT")
+
+      apiService.repairVisits("A1234KT", RepairPrisonerVisitsRequest(emptyList()))
+
+      dpsOfficialVisitsServer.verify(
+        postRequestedFor(urlPathEqualTo("/repair/prisoner-visits/A1234KT")),
       )
     }
   }

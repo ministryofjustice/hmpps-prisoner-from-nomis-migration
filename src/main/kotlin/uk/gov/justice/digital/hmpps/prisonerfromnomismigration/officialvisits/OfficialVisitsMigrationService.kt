@@ -168,6 +168,7 @@ class OfficialVisitsMigrationService(
   }
 
   suspend fun OfficialVisitResponse.toMigrateVisitRequest() = this.toMigrateVisitRequest(prisonVisitSlotLookup = { it.lookUpDpsVisitSlotId() }, dpsLocationLookup = { it.lookUpDpsLocationId() })
+  suspend fun convertToMigrateVisitRequest(nomisVisit: OfficialVisitResponse) = nomisVisit.toMigrateVisitRequest()
 
   private suspend fun Long.lookUpDpsLocationId(): UUID = officialVisitsMappingService.getInternalLocationByNomisId(this).dpsLocationId.let { UUID.fromString(it) }
   private suspend fun Long.lookUpDpsVisitSlotId(): Long = visitSlotsMappingService.getVisitSlotByNomisId(this).dpsId.toLong()

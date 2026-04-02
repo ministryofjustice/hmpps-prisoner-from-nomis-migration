@@ -14,11 +14,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.tryFetchParent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitorMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitorMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OfficialVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OfficialVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsSynchronisationMessageType.RETRY_SYNCHRONISATION_OFFICIAL_VISITOR_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsSynchronisationMessageType.RETRY_SYNCHRONISATION_OFFICIAL_VISIT_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.RepairPrisonerVisitsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncUpdateOfficialVisitRequest
@@ -33,6 +36,7 @@ import java.util.*
 
 @Service
 class OfficialVisitsSynchronisationService(
+  private val migrationService: OfficialVisitsMigrationService,
   private val mappingApiService: OfficialVisitsMappingService,
   private val visitSlotsMappingApiService: VisitSlotsMappingService,
   private val nomisApiService: OfficialVisitsNomisApiService,
@@ -203,6 +207,38 @@ class OfficialVisitsSynchronisationService(
         telemetry["nomisVisitorIds"] = nomisVisitorIds.joinToString()
         telemetry["reason"] = "Visit updated. Manual repair"
       }
+    }
+  }
+  suspend fun recreateVisitsFromNomis(offenderNo: String): List<OfficialVisitResponse> {
+    val telemetryName = "officialvisits-visit-prisoner-repair"
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to offenderNo,
+      "reason" to "Visits recreated. Manual repair",
+    )
+    return track(telemetryName, telemetry) {
+      val nomisVisits = nomisApiService.getOfficialVisitsForPrisoner(offenderNo).also {
+        telemetry["nomisVisitIds"] = it.map { it.visitId }.joinToString()
+      }
+      val dpsVisitsRequests = nomisVisits.map {
+        migrationService.convertToMigrateVisitRequest(it)
+      }
+      val dpsVisitResponse = dpsApiService.repairVisits(offenderNo, RepairPrisonerVisitsRequest(dpsVisitsRequests))
+      mappingApiService.replaceMappingsByNomisId(
+        dpsVisitResponse.visits.map {
+          OfficialVisitMigrationMappingDto(
+            dpsId = it.visit.dpsId.toString(),
+            nomisId = it.visit.nomisId,
+            visitors = it.visitors.map { visitor ->
+              VisitorMigrationMappingDto(
+                dpsId = visitor.dpsId.toString(),
+                nomisId = visitor.nomisId,
+              )
+            },
+            mappingType = OfficialVisitMigrationMappingDto.MappingType.NOMIS_CREATED,
+          )
+        }.let { OfficialVisitReplaceMappingDto(it) },
+      )
+      nomisVisits
     }
   }
 
