@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-03-31.471.5bcde08"
+    "version" : "2026-04-02.473.414a07d"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -2682,6 +2682,50 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/official-visits/replace-by-nomis-ids" : {
+      "post" : {
+        "tags" : [ "official-visits-resource" ],
+        "summary" : "Creates a mini tree of visit mappings typically for a repair. Any existing mappings for the supplied NOMIS Ids will be deleted first, so this assumes the DPS Ids are all new",
+        "description" : "Requires ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
+        "operationId" : "recreateOfficialVisitsByNomisIdMappings",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/OfficialVisitReplaceMappingDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Mappings created",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Access forbidden for this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -21444,6 +21488,18 @@
         },
         "required" : [ "dpsId", "mappingType", "nomisId", "visitors" ]
       },
+      "OfficialVisitReplaceMappingDto" : {
+        "type" : "object",
+        "properties" : {
+          "mappings" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OfficialVisitMigrationMappingDto"
+            }
+          }
+        },
+        "required" : [ "mappings" ]
+      },
       "VisitorMigrationMappingDto" : {
         "type" : "object",
         "properties" : {
@@ -23497,15 +23553,15 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -23519,17 +23575,17 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "pageNumber" : {
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageSize" : {
             "type" : "integer",
             "format" : "int32"
           },
           "paged" : {
             "type" : "boolean"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
-          "pageSize" : {
+          "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
           },
@@ -23756,15 +23812,15 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -23874,15 +23930,15 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -23920,15 +23976,15 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24006,15 +24062,15 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24131,15 +24187,15 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24279,15 +24335,15 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24409,15 +24465,15 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24455,15 +24511,15 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24529,15 +24585,15 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24597,15 +24653,15 @@
           "last" : {
             "type" : "boolean"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
