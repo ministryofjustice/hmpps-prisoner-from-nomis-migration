@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-03-30.1270.395c538"
+    "version" : "2026-04-01.1286.0cf31be"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -10408,7 +10408,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/DuplicateErrorResponse"
+                  "$ref" : "#/components/schemas/DuplicateAlertErrorResponse"
                 }
               }
             }
@@ -28557,7 +28557,7 @@
         },
         "required" : [ "bookingId", "sequence" ]
       },
-      "DuplicateErrorResponse" : {
+      "DuplicateAlertErrorResponse" : {
         "type" : "object",
         "properties" : {
           "developerMessage" : {
@@ -31253,12 +31253,12 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "paged" : {
-            "type" : "boolean"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "paged" : {
+            "type" : "boolean"
           },
           "unpaged" : {
             "type" : "boolean"
