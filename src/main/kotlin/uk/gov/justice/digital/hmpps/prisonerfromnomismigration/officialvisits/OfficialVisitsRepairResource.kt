@@ -123,4 +123,41 @@ class OfficialVisitsRepairResource(
     prisonId = prisonId,
     nomisVisitId = nomisVisitId,
   )
+
+  @PutMapping("/prisoners/{offenderNo}/official-visits/repair")
+  @Operation(
+    summary = "Recreates a visit in DPS from the visit in NOMIS for the specified prisoner",
+    description = "Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW",
+    responses = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Visit details recreated",
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ErrorResponse::class),
+          ),
+        ],
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        content = [
+          Content(
+            mediaType = "application/json",
+            schema = Schema(implementation = ErrorResponse::class),
+          ),
+        ],
+      ),
+    ],
+  )
+  suspend fun repairVisitsFromNomis(
+    @PathVariable offenderNo: String,
+  ) = officialVisitsSynchronisationService.recreateVisitsFromNomis(
+    offenderNo = offenderNo,
+  )
 }

@@ -36,6 +36,17 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubReplaceMappingsByNomisId() {
+    // TODO: does not exist yet
+    mappingApi.stubFor(
+      post("/mapping/official-visits/replace-by-nomis-ids").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
   fun stubCreateMappingsForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/official-visits")
 
   fun stubCreateMappingsForMigration(error: DuplicateMappingErrorResponse) {

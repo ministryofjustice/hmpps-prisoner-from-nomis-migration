@@ -23,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitSlot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitor
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.RepairPrisonerVisitsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateTimeSlotRequest
@@ -201,6 +202,11 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       prisoner = IdPair(nomisId = 20, dpsId = 200, elementType = IdPair.ElementType.PRISONER_VISITED),
     )
 
+    fun repairPrisonerVisitsResponse() = RepairPrisonerVisitsResponse(
+      prisonerNumber = "A1234KT",
+      visits = listOf(migrateVisitResponse()),
+    )
+
     fun syncCreateOfficialVisitRequest() = SyncCreateOfficialVisitRequest(
       offenderVisitId = 1,
       prisonVisitSlotId = 10,
@@ -366,6 +372,18 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(201)
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubRepairVisits(offenderNo: String, response: RepairPrisonerVisitsResponse = repairPrisonerVisitsResponse()) {
+    stubFor(
+      post("/repair/prisoner-visits/$offenderNo")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(202)
             .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )

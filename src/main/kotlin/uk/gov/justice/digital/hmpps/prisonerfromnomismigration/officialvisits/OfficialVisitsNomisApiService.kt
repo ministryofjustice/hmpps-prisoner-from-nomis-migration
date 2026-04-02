@@ -47,4 +47,12 @@ class OfficialVisitsNomisApiService(@Qualifier("nomisApiWebClient") private val 
   ): OfficialVisitResponse = api.getOfficialVisit(
     visitId = visitId,
   ).awaitSingle()
+
+  suspend fun getOfficialVisitsForPrisoner(
+    offenderNo: String,
+  ): List<OfficialVisitResponse> = api.getOfficialVisitsForPrisoner(
+    offenderNo = offenderNo,
+    fromDate = null,
+    toDate = null,
+  ).awaitSingle()
 }

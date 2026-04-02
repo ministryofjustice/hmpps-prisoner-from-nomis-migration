@@ -60,6 +60,10 @@ class MappingApiExtension :
       pattern,
       jsonMapper,
     )
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = mappingApi.getRequestBody(
+      pattern,
+      jsonMapper,
+    )
 
     fun resetAndDisableResetBeforeEach() {
       enableResetBeforeEach = false
