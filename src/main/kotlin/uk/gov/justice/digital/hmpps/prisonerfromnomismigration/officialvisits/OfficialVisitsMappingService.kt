@@ -4,7 +4,6 @@ import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.SuccessOrDuplicate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitSuccessOrDuplicate
@@ -14,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitReplaceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitorMappingDto
 
 @Service
@@ -26,11 +26,7 @@ class OfficialVisitsMappingService(@Qualifier("mappingApiWebClient") webClient: 
     .awaitSuccessOrDuplicate()
 
   suspend fun replaceMappingsByNomisId(mappings: OfficialVisitReplaceMappingDto) {
-    // TODO: does not exist yet
-    webClient.post().uri("/mapping/official-visits/replace-by-nomis-ids")
-      .bodyValue(mappings)
-      .retrieve()
-      .awaitBodilessEntity()
+    api.recreateOfficialVisitsByNomisIdMappings(mappings).awaitSingle()
   }
 
   suspend fun getByVisitNomisIdOrNull(nomisVisitId: Long): OfficialVisitMappingDto? = api.prepare(
@@ -74,8 +70,3 @@ class OfficialVisitsMappingService(@Qualifier("mappingApiWebClient") webClient: 
 
   suspend fun getInternalLocationByNomisId(nomisLocationId: Long): LocationMappingDto = locationApi.getLocationMappingGivenNomisId(nomisLocationId = nomisLocationId).awaitSingle()
 }
-
-// TODO - does not exist yet
-data class OfficialVisitReplaceMappingDto(
-  val mappings: List<OfficialVisitMigrationMappingDto>,
-)

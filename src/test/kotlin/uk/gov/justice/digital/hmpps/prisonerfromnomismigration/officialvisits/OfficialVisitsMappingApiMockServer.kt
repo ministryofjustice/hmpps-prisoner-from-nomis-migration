@@ -37,7 +37,6 @@ class OfficialVisitsMappingApiMockServer(private val jsonMapper: JsonMapper) {
   }
 
   fun stubReplaceMappingsByNomisId() {
-    // TODO: does not exist yet
     mappingApi.stubFor(
       post("/mapping/official-visits/replace-by-nomis-ids").willReturn(
         aResponse()
