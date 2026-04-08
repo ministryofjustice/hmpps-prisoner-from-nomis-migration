@@ -32,7 +32,7 @@ class IncidentsSynchronisationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  suspend fun synchroniseIncidentInsert(event: IncidentsOffenderEvent) {
+  suspend fun synchroniseIncidentInsert(event: IncidentsOffenderEvent, overrideAgencySwitch: Boolean = false) {
     // two way sync so don't want to send an event to DPS that originated there
     if (event.originatesInDps) {
       telemetryClient.trackEvent("incidents-synchronisation-skipped", event.toTelemetryProperties())
@@ -40,8 +40,10 @@ class IncidentsSynchronisationService(
     }
     val nomisIncidentId = event.incidentCaseId
     val nomisIncident = incidentsNomisApiService.getIncident(nomisIncidentId)
-    // If DPS is in charge of incidents then don't want to sync NOMIS -> DPS
-    if (nomisApiService.isAgencySwitchOnForAgency("INCIDENTS", nomisIncident.agency.code)) {
+    // If DPS is in charge of incidents then don't want to sync NOMIS -> DPS - unless we have allowed override
+    if (overrideAgencySwitch) {
+      telemetryClient.trackEvent("incidents-synchronisation-created-overridden", event.toTelemetryProperties())
+    } else if (nomisApiService.isAgencySwitchOnForAgency("INCIDENTS", nomisIncident.agency.code)) {
       telemetryClient.trackEvent(
         "incidents-synchronisation-agency-skipped",
         event.toTelemetryProperties() + ("location" to nomisIncident.agency.code),
@@ -111,7 +113,7 @@ class IncidentsSynchronisationService(
     }
   }
 
-  suspend fun synchroniseIncidentUpdate(event: IncidentsOffenderEvent) {
+  suspend fun synchroniseIncidentUpdate(event: IncidentsOffenderEvent, overrideAgencySwitch: Boolean = false) {
     // two way sync so don't want to send an event to DPS that originated there
     if (event.originatesInDps) {
       telemetryClient.trackEvent("incidents-synchronisation-skipped", event.toTelemetryProperties())
@@ -119,7 +121,9 @@ class IncidentsSynchronisationService(
     }
     incidentsNomisApiService.getIncidentOrNull(event.incidentCaseId)?.let { nomisIncident ->
       // If DPS is in charge of incidents then don't want to sync NOMIS -> DPS
-      if (nomisApiService.isAgencySwitchOnForAgency("INCIDENTS", nomisIncident.agency.code)) {
+      if (overrideAgencySwitch) {
+        telemetryClient.trackEvent("incidents-synchronisation-updated-overridden", event.toTelemetryProperties())
+      } else if (nomisApiService.isAgencySwitchOnForAgency("INCIDENTS", nomisIncident.agency.code)) {
         telemetryClient.trackEvent(
           "incidents-synchronisation-agency-skipped",
           event.toTelemetryProperties() + ("location" to nomisIncident.agency.code),

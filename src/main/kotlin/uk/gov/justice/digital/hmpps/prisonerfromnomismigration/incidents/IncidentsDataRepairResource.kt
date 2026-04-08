@@ -29,6 +29,8 @@ class IncidentsDataRepairResource(
     @PathVariable incidentId: Long,
     @Schema(description = "if true, will attempt to create a new incident")
     @RequestParam(value = "createIncident", required = false, defaultValue = "false") createIncident: Boolean,
+    @Schema(description = "if true, will ignore the Nomis Agency Services Switch - so will always repair to DPS")
+    @RequestParam(value = "overrideAgencySwitch", required = false, defaultValue = "false") overrideAgencySwitch: Boolean,
   ) {
     if (createIncident) {
       incidentsSynchronisationService.synchroniseIncidentInsert(
@@ -36,6 +38,7 @@ class IncidentsDataRepairResource(
           incidentId,
           null,
         ),
+        overrideAgencySwitch,
       )
     } else {
       incidentsSynchronisationService.synchroniseIncidentUpdate(
@@ -43,6 +46,7 @@ class IncidentsDataRepairResource(
           incidentId,
           null,
         ),
+        overrideAgencySwitch,
       )
     }
     telemetryClient.trackEvent(
