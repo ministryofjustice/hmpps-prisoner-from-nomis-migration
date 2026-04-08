@@ -17,10 +17,12 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.incidentsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.util.UUID
 
 class IncidentDataRepairResourceIntTest : SqsIntegrationTestBase() {
+
   @Autowired
   private lateinit var incidentsNomisApiMockServer: IncidentsNomisApiMockServer
 
@@ -59,7 +61,7 @@ class IncidentDataRepairResourceIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
-    inner class HappyPath {
+    inner class HappyPathAgencySwitchOff {
       val offenderNo = "A1234KT"
       val bookingId = 1234L
       private val dpsIncidentId = UUID.randomUUID().toString()
@@ -84,6 +86,11 @@ class IncidentDataRepairResourceIntTest : SqsIntegrationTestBase() {
         @Test
         fun `will retrieve the incident details from Nomis`() {
           incidentsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/incidents/$nomisIncidentId")))
+        }
+
+        @Test
+        fun `will call Nomis to check agency switch`() {
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/agency-switches/INCIDENTS/agency/BXI")))
         }
 
         @Test
@@ -142,6 +149,11 @@ class IncidentDataRepairResourceIntTest : SqsIntegrationTestBase() {
         }
 
         @Test
+        fun `will call Nomis to check agency switch`() {
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/agency-switches/INCIDENTS/agency/BXI")))
+        }
+
+        @Test
         fun `will send the incident to DPS`() {
           incidentsApi.verify(
             postRequestedFor(urlPathEqualTo("/sync/upsert"))
@@ -177,6 +189,276 @@ class IncidentDataRepairResourceIntTest : SqsIntegrationTestBase() {
             },
             isNull(),
           )
+        }
+      }
+    }
+
+    @Nested
+    inner class HappyPathAgencySwitchOn {
+      val offenderNo = "A1234KT"
+      val bookingId = 1234L
+      private val dpsIncidentId = UUID.randomUUID().toString()
+
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubCheckAgencySwitchForAgency("INCIDENTS", "BXI")
+        incidentsNomisApiMockServer.stubGetIncident(nomisIncidentId = nomisIncidentId)
+        incidentsApi.stubIncidentUpsert(dpsIncidentId = dpsIncidentId)
+      }
+
+      @Nested
+      inner class HappyPathOverrideOn {
+        @Nested
+        inner class IncidentCreateRepair {
+          @BeforeEach
+          fun setUp() {
+            incidentsMappingApiMockServer.stubGetAnyIncidentNotFound()
+            webTestClient.post().uri("/incidents/$nomisIncidentId/repair?createIncident=true&overrideAgencySwitch=true")
+              .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
+              .exchange()
+              .expectStatus().isOk
+          }
+
+          @Test
+          fun `will retrieve the incident details from Nomis`() {
+            incidentsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/incidents/$nomisIncidentId")))
+          }
+
+          @Test
+          fun `will not call Nomis to check agency switch`() {
+            nomisApi.verify(0, getRequestedFor(urlPathEqualTo("/agency-switches/INCIDENTS/agency/BXI")))
+          }
+
+          @Test
+          fun `will send the incident to DPS`() {
+            incidentsApi.verify(
+              postRequestedFor(urlPathEqualTo("/sync/upsert"))
+                .withRequestBodyJsonPath("incidentReport.incidentId", equalTo("$nomisIncidentId"))
+                .withRequestBodyJsonPath("id", absent())
+                .withRequestBodyJsonPath("incidentReport.title", equalTo("This is a test incident")),
+            )
+          }
+
+          @Test
+          fun `will save mapping details`() {
+            incidentsMappingApiMockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/incidents")))
+          }
+
+          @Test
+          fun `will track telemetry for the resynchronise`() {
+            verify(telemetryClient).trackEvent(
+              eq("incidents-synchronisation-created-success"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
+                assertThat(it["dpsIncidentId"]).isEqualTo(dpsIncidentId)
+              },
+              isNull(),
+            )
+          }
+
+          @Test
+          fun `will track telemetry for the resynchronise override`() {
+            verify(telemetryClient).trackEvent(
+              eq("incidents-synchronisation-agency-overridden"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
+              },
+              isNull(),
+            )
+          }
+
+          @Test
+          fun `will track telemetry for the repair`() {
+            verify(telemetryClient).trackEvent(
+              eq("incidents-resynchronisation-repair"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Nested
+        inner class IncidentUpdateRepair {
+          @BeforeEach
+          fun setUp() {
+            incidentsMappingApiMockServer.stubGetIncident(nomisIncidentId, dpsIncidentId = dpsIncidentId)
+            webTestClient.post().uri("/incidents/$nomisIncidentId/repair?overrideAgencySwitch=true")
+              .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
+              .exchange()
+              .expectStatus().isOk
+          }
+
+          @Test
+          fun `will retrieve the incident details from Nomis`() {
+            incidentsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/incidents/$nomisIncidentId")))
+          }
+
+          @Test
+          fun `will not call Nomis to check agency switch`() {
+            nomisApi.verify(0, getRequestedFor(urlPathEqualTo("/agency-switches/INCIDENTS/agency/BXI")))
+          }
+
+          @Test
+          fun `will send the incident to DPS`() {
+            incidentsApi.verify(
+              postRequestedFor(urlPathEqualTo("/sync/upsert"))
+                .withRequestBodyJsonPath("incidentReport.incidentId", equalTo("$nomisIncidentId"))
+                .withRequestBodyJsonPath("id", equalTo(dpsIncidentId))
+                .withRequestBodyJsonPath("incidentReport.title", equalTo("This is a test incident")),
+            )
+          }
+
+          @Test
+          fun `will request mapping details`() {
+            incidentsMappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/incidents/nomis-incident-id/$nomisIncidentId")))
+          }
+
+          @Test
+          fun `will track telemetry for the resynchronise`() {
+            verify(telemetryClient).trackEvent(
+              eq("incidents-synchronisation-updated-success"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
+                assertThat(it["dpsIncidentId"]).isEqualTo(dpsIncidentId)
+              },
+              isNull(),
+            )
+          }
+
+          @Test
+          fun `will track telemetry for the resynchronise override`() {
+            verify(telemetryClient).trackEvent(
+              eq("incidents-synchronisation-agency-overridden"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
+              },
+              isNull(),
+            )
+          }
+
+          @Test
+          fun `will track telemetry for the repair`() {
+            verify(telemetryClient).trackEvent(
+              eq("incidents-resynchronisation-repair"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      inner class HappyPathOverrideOff {
+        @Nested
+        inner class IncidentCreateRepair {
+          @BeforeEach
+          fun setUp() {
+            incidentsMappingApiMockServer.stubGetAnyIncidentNotFound()
+            webTestClient.post().uri("/incidents/$nomisIncidentId/repair?createIncident=true")
+              .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
+              .exchange()
+              .expectStatus().isOk
+          }
+
+          @Test
+          fun `will retrieve the incident details from Nomis`() {
+            incidentsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/incidents/$nomisIncidentId")))
+          }
+
+          @Test
+          fun `will call Nomis to check agency switch`() {
+            nomisApi.verify(getRequestedFor(urlPathEqualTo("/agency-switches/INCIDENTS/agency/BXI")))
+          }
+
+          @Test
+          fun `will not send the incident to DPS`() {
+            incidentsApi.verify(0, postRequestedFor(urlPathEqualTo("/sync/upsert")))
+          }
+
+          @Test
+          fun `will not save mapping details`() {
+            incidentsMappingApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/mapping/incidents")))
+          }
+
+          @Test
+          fun `will track telemetry for the resynchronise skipped`() {
+            verify(telemetryClient).trackEvent(
+              eq("incidents-synchronisation-agency-skipped"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
+              },
+              isNull(),
+            )
+          }
+
+          @Test
+          fun `will track telemetry for the repair`() {
+            verify(telemetryClient).trackEvent(
+              eq("incidents-resynchronisation-repair"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Nested
+        inner class IncidentUpdateRepair {
+          @BeforeEach
+          fun setUp() {
+            incidentsMappingApiMockServer.stubGetIncident(nomisIncidentId, dpsIncidentId = dpsIncidentId)
+            webTestClient.post().uri("/incidents/$nomisIncidentId/repair")
+              .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
+              .exchange()
+              .expectStatus().isOk
+          }
+
+          @Test
+          fun `will retrieve the incident details from Nomis`() {
+            incidentsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/incidents/$nomisIncidentId")))
+          }
+
+          @Test
+          fun `will call Nomis to check agency switch`() {
+            nomisApi.verify(getRequestedFor(urlPathEqualTo("/agency-switches/INCIDENTS/agency/BXI")))
+          }
+
+          @Test
+          fun `will not send the incident to DPS`() {
+            incidentsApi.verify(0, postRequestedFor(urlPathEqualTo("/sync/upsert")))
+          }
+
+          @Test
+          fun `will not request mapping details`() {
+            incidentsMappingApiMockServer.verify(0, getRequestedFor(urlPathEqualTo("/mapping/incidents/nomis-incident-id/$nomisIncidentId")))
+          }
+
+          @Test
+          fun `will track telemetry for the resynchronise skipped`() {
+            verify(telemetryClient).trackEvent(
+              eq("incidents-synchronisation-agency-skipped"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
+              },
+              isNull(),
+            )
+          }
+
+          @Test
+          fun `will track telemetry for the repair`() {
+            verify(telemetryClient).trackEvent(
+              eq("incidents-resynchronisation-repair"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
+              },
+              isNull(),
+            )
+          }
         }
       }
     }
