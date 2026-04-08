@@ -257,6 +257,17 @@ class IncidentDataRepairResourceIntTest : SqsIntegrationTestBase() {
           }
 
           @Test
+          fun `will track telemetry for the resynchronise override`() {
+            verify(telemetryClient).trackEvent(
+              eq("incidents-synchronisation-agency-overridden"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
+              },
+              isNull(),
+            )
+          }
+
+          @Test
           fun `will track telemetry for the repair`() {
             verify(telemetryClient).trackEvent(
               eq("incidents-resynchronisation-repair"),
@@ -311,6 +322,17 @@ class IncidentDataRepairResourceIntTest : SqsIntegrationTestBase() {
               check {
                 assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
                 assertThat(it["dpsIncidentId"]).isEqualTo(dpsIncidentId)
+              },
+              isNull(),
+            )
+          }
+
+          @Test
+          fun `will track telemetry for the resynchronise override`() {
+            verify(telemetryClient).trackEvent(
+              eq("incidents-synchronisation-agency-overridden"),
+              check {
+                assertThat(it["nomisIncidentId"]).isEqualTo("$nomisIncidentId")
               },
               isNull(),
             )
