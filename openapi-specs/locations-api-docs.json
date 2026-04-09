@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-03-26.624.c7106b5"
+    "version" : "2026-04-08.650.a2fb8b1"
   },
   "servers" : [ {
     "url" : "/",
@@ -103,8 +103,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -113,8 +113,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -171,8 +171,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -181,8 +181,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -250,8 +250,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -260,8 +260,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -347,8 +347,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -357,8 +357,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -454,8 +454,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -464,8 +464,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -561,8 +561,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -571,8 +571,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -668,8 +668,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -678,8 +678,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -777,8 +777,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -787,8 +787,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -890,8 +890,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -900,8 +900,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1003,8 +1003,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1013,8 +1013,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1122,8 +1122,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1132,8 +1132,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1241,8 +1241,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1251,8 +1251,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1355,8 +1355,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1365,8 +1365,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1471,8 +1471,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1481,8 +1481,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1584,8 +1584,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1594,8 +1594,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1707,8 +1707,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1717,8 +1717,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1820,8 +1820,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1830,8 +1830,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1896,7 +1896,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/Capacity"
+                "$ref" : "#/components/schemas/CapacityChangeRequest"
               }
             }
           },
@@ -1933,8 +1933,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1943,8 +1943,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2046,8 +2046,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2056,8 +2056,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2169,8 +2169,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2179,8 +2179,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2282,8 +2282,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2292,8 +2292,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2393,8 +2393,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2403,8 +2403,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2514,8 +2514,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2524,8 +2524,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2624,8 +2624,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2634,8 +2634,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2734,8 +2734,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2744,8 +2744,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2837,8 +2837,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2847,8 +2847,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2940,8 +2940,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -2950,8 +2950,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3043,8 +3043,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3053,8 +3053,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3149,8 +3149,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3159,8 +3159,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3249,8 +3249,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3259,8 +3259,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3349,8 +3349,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3359,8 +3359,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3449,8 +3449,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3459,8 +3459,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3549,8 +3549,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3559,8 +3559,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3649,8 +3649,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3659,8 +3659,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3749,8 +3749,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3759,8 +3759,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3859,8 +3859,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3869,8 +3869,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3969,8 +3969,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -3979,8 +3979,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4079,8 +4079,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4089,8 +4089,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4204,8 +4204,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4214,8 +4214,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4319,8 +4319,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4329,8 +4329,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4415,8 +4415,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4425,8 +4425,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4518,8 +4518,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4528,8 +4528,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4618,8 +4618,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4628,8 +4628,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4723,8 +4723,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4733,8 +4733,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4828,8 +4828,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4838,8 +4838,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4950,8 +4950,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -4960,8 +4960,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -5072,8 +5072,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -5082,8 +5082,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -5185,8 +5185,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -5195,8 +5195,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -5296,8 +5296,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -5306,8 +5306,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -5401,8 +5401,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -5411,8 +5411,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -5565,8 +5565,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -5575,8 +5575,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -5727,8 +5727,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -5737,8 +5737,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -5852,8 +5852,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -5862,8 +5862,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6008,8 +6008,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6018,8 +6018,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6109,8 +6109,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6119,8 +6119,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6178,8 +6178,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6188,8 +6188,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6263,8 +6263,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6273,8 +6273,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6349,8 +6349,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6359,8 +6359,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6443,8 +6443,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6453,8 +6453,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6539,8 +6539,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6549,8 +6549,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6645,8 +6645,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6655,8 +6655,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6752,8 +6752,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6762,8 +6762,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6847,8 +6847,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6857,8 +6857,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6960,8 +6960,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -6970,8 +6970,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7080,8 +7080,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7090,8 +7090,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7210,8 +7210,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7220,8 +7220,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7348,8 +7348,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7358,8 +7358,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7449,8 +7449,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7459,8 +7459,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7545,8 +7545,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7555,8 +7555,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7676,8 +7676,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7686,8 +7686,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7781,8 +7781,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7791,8 +7791,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7925,8 +7925,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -7935,8 +7935,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8082,8 +8082,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8092,8 +8092,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8202,8 +8202,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8212,8 +8212,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8326,8 +8326,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8336,8 +8336,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8459,8 +8459,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8469,8 +8469,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8593,8 +8593,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8603,8 +8603,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8720,8 +8720,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8730,8 +8730,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8840,8 +8840,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8850,8 +8850,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8938,8 +8938,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -8948,8 +8948,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -9057,8 +9057,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -9067,8 +9067,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -9142,8 +9142,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -9152,8 +9152,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -9357,8 +9357,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -9367,8 +9367,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -9488,8 +9488,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -9498,8 +9498,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -9599,8 +9599,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -9609,8 +9609,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -9728,8 +9728,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -9738,8 +9738,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -9841,8 +9841,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -9851,8 +9851,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -9994,8 +9994,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10004,8 +10004,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10107,8 +10107,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10117,8 +10117,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10202,8 +10202,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10212,8 +10212,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10319,8 +10319,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10329,8 +10329,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10436,8 +10436,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10446,8 +10446,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10509,8 +10509,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10519,8 +10519,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10610,8 +10610,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10620,8 +10620,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10696,8 +10696,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10706,8 +10706,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10782,8 +10782,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10792,8 +10792,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10868,8 +10868,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10878,8 +10878,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10954,8 +10954,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -10964,8 +10964,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11040,8 +11040,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11050,8 +11050,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11126,8 +11126,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11136,8 +11136,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11212,8 +11212,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11222,8 +11222,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11298,8 +11298,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11308,8 +11308,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11384,8 +11384,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11394,8 +11394,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11470,8 +11470,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11480,8 +11480,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11567,8 +11567,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11577,8 +11577,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11681,8 +11681,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11691,8 +11691,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11770,8 +11770,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11780,8 +11780,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11863,8 +11863,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11873,8 +11873,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11950,8 +11950,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -11960,8 +11960,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -12045,8 +12045,8 @@
               }
             }
           },
-          "429" : {
-            "description" : "Too Many Requests",
+          "410" : {
+            "description" : "Gone",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -12055,8 +12055,8 @@
               }
             }
           },
-          "410" : {
-            "description" : "Gone",
+          "429" : {
+            "description" : "Too Many Requests",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -12352,7 +12352,7 @@
           "transactionType" : {
             "type" : "string",
             "description" : "Transaction type",
-            "enum" : [ "LOCATION_CREATE", "LOCATION_CREATE_NON_RESI", "LOCATION_UPDATE", "LOCATION_UPDATE_NON_RESI", "SYNC", "SYNC_NON_RESIDENTIAL", "DELETE", "CAPACITY_CHANGE", "CELL_TYPE_CHANGES", "DEACTIVATION", "PERMANENT_DEACTIVATION", "REACTIVATION", "CELL_CONVERTION_TO_ROOM", "ROOM_CONVERTION_TO_CELL", "SIGNED_OP_CAP", "RESI_SERVICE_ACTIVATION", "NON_RESI_SERVICE_ACTIVATION", "INCLUDE_SEG_IN_ROLL_COUNT_ACTIVATION", "APPROVAL_PROCESS_ACTIVATION", "PENDING_CELL_CHANGE", "REQUEST_CERTIFICATION_APPROVAL", "APPROVE_CERTIFICATION_REQUEST", "REJECT_CERTIFICATION_REQUEST", "WITHDRAW_CERTIFICATION_REQUEST", "CERTIFICATE_BASELINE" ],
+            "enum" : [ "LOCATION_CREATE", "LOCATION_CREATE_NON_RESI", "LOCATION_UPDATE", "LOCATION_UPDATE_NON_RESI", "SYNC", "SYNC_NON_RESIDENTIAL", "DELETE", "CAPACITY_CHANGE", "CELL_TYPE_CHANGES", "DEACTIVATION", "PERMANENT_DEACTIVATION", "REACTIVATION", "CELL_CONVERTION_TO_ROOM", "ROOM_CONVERTION_TO_CELL", "SIGNED_OP_CAP", "RESI_SERVICE_ACTIVATION", "NON_RESI_SERVICE_ACTIVATION", "INCLUDE_SEG_IN_ROLL_COUNT_ACTIVATION", "APPROVAL_PROCESS_ACTIVATION", "REQUEST_CERTIFICATION_APPROVAL", "APPROVE_CERTIFICATION_REQUEST", "REJECT_CERTIFICATION_REQUEST", "WITHDRAW_CERTIFICATION_REQUEST", "CERTIFICATE_BASELINE" ],
             "example" : "CAPACITY_CHANGE"
           },
           "attribute" : {
@@ -12828,7 +12828,7 @@
           "transactionType" : {
             "type" : "string",
             "description" : "Type of transaction",
-            "enum" : [ "LOCATION_CREATE", "LOCATION_CREATE_NON_RESI", "LOCATION_UPDATE", "LOCATION_UPDATE_NON_RESI", "SYNC", "SYNC_NON_RESIDENTIAL", "DELETE", "CAPACITY_CHANGE", "CELL_TYPE_CHANGES", "DEACTIVATION", "PERMANENT_DEACTIVATION", "REACTIVATION", "CELL_CONVERTION_TO_ROOM", "ROOM_CONVERTION_TO_CELL", "SIGNED_OP_CAP", "RESI_SERVICE_ACTIVATION", "NON_RESI_SERVICE_ACTIVATION", "INCLUDE_SEG_IN_ROLL_COUNT_ACTIVATION", "APPROVAL_PROCESS_ACTIVATION", "PENDING_CELL_CHANGE", "REQUEST_CERTIFICATION_APPROVAL", "APPROVE_CERTIFICATION_REQUEST", "REJECT_CERTIFICATION_REQUEST", "WITHDRAW_CERTIFICATION_REQUEST", "CERTIFICATE_BASELINE" ],
+            "enum" : [ "LOCATION_CREATE", "LOCATION_CREATE_NON_RESI", "LOCATION_UPDATE", "LOCATION_UPDATE_NON_RESI", "SYNC", "SYNC_NON_RESIDENTIAL", "DELETE", "CAPACITY_CHANGE", "CELL_TYPE_CHANGES", "DEACTIVATION", "PERMANENT_DEACTIVATION", "REACTIVATION", "CELL_CONVERTION_TO_ROOM", "ROOM_CONVERTION_TO_CELL", "SIGNED_OP_CAP", "RESI_SERVICE_ACTIVATION", "NON_RESI_SERVICE_ACTIVATION", "INCLUDE_SEG_IN_ROLL_COUNT_ACTIVATION", "APPROVAL_PROCESS_ACTIVATION", "REQUEST_CERTIFICATION_APPROVAL", "APPROVE_CERTIFICATION_REQUEST", "REJECT_CERTIFICATION_REQUEST", "WITHDRAW_CERTIFICATION_REQUEST", "CERTIFICATE_BASELINE" ],
             "example" : "CAPACITY_CHANGE"
           },
           "prisonId" : {
@@ -13032,6 +13032,40 @@
             "description" : "Username of the staff updating the location"
           }
         }
+      },
+      "CapacityChangeRequest" : {
+        "type" : "object",
+        "description" : "Capacity change request",
+        "properties" : {
+          "temporaryWorkingCapacityChange" : {
+            "type" : "boolean",
+            "default" : false,
+            "description" : "Temporary w/c change",
+            "example" : false
+          },
+          "maxCapacity" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Max capacity of the cell",
+            "example" : 2,
+            "maximum" : 99
+          },
+          "workingCapacity" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Working capacity of the cell",
+            "example" : 1,
+            "maximum" : 99
+          },
+          "certifiedNormalAccommodation" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "CNA of the cell",
+            "example" : 2,
+            "maximum" : 99
+          }
+        },
+        "required" : [ "maxCapacity", "workingCapacity" ]
       },
       "CellSanitationChangeRequest" : {
         "type" : "object",
@@ -13333,8 +13367,10 @@
                 "cascadeReactivation" : false,
                 "capacity" : {
                   "workingCapacity" : 1,
-                  "maxCapacity" : 2
-                }
+                  "maxCapacity" : 2,
+                  "certifiedNormalAccommodation" : 2
+                },
+                "specialistCellTypes" : [ "ACCESSIBLE_CELL", "ESCAPE_LIST" ]
               }
             }
           },
@@ -13362,7 +13398,8 @@
             "description" : "New capacity of the location, if null the old values are used",
             "example" : {
               "workingCapacity" : 1,
-              "maxCapacity" : 2
+              "maxCapacity" : 2,
+              "certifiedNormalAccommodation" : 2
             }
           },
           "specialistCellTypes" : {
@@ -13874,6 +13911,15 @@
               "enum" : [ "CARE_AND_SEPARATION", "HEALTHCARE_INPATIENTS", "NORMAL_ACCOMMODATION", "OTHER_NON_RESIDENTIAL" ]
             }
           },
+          "currentSpecialistCellTypes" : {
+            "type" : "array",
+            "description" : "Current specialist Cell Types",
+            "items" : {
+              "type" : "string",
+              "description" : "Specialist Cell Types",
+              "enum" : [ "ACCESSIBLE_CELL", "BIOHAZARD_DIRTY_PROTEST", "CSU", "CAT_A", "CONSTANT_SUPERVISION", "DRY", "ESCAPE_LIST", "ISOLATION_DISEASES", "LISTENER_CRISIS", "LOCATE_FLAT_CELL", "MEDICAL", "MOTHER_AND_BABY", "SAFE_CELL", "UNFURNISHED" ]
+            }
+          },
           "specialistCellTypes" : {
             "type" : "array",
             "description" : "Specialist Cell Types",
@@ -14002,12 +14048,21 @@
             },
             "description" : "List of cells below the locationId to reactivate, with capacity and ttype details, missing cells will not be reactivated",
             "example" : {
-              "de91dfa7-821f-4552-a427-bf2f32eafeb0" : {
-                "cascadeReactivation" : false,
+              "0199e835-9eb8-7183-ab7e-f79149e5c1f8" : {
                 "capacity" : {
                   "workingCapacity" : 1,
-                  "maxCapacity" : 2
-                }
+                  "maxCapacity" : 2,
+                  "certifiedNormalAccommodation" : 2
+                },
+                "specialistCellTypes" : [ "ACCESSIBLE_CELL", "ESCAPE_LIST" ]
+              },
+              "0199e345-f9f1-7961-a4dc-39fed02b66ab" : {
+                "capacity" : {
+                  "workingCapacity" : 1,
+                  "maxCapacity" : 2,
+                  "certifiedNormalAccommodation" : 1
+                },
+                "specialistCellTypes" : [ "ESCAPE_LIST" ]
               }
             }
           }
