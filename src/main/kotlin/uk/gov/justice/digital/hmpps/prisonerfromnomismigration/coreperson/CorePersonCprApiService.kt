@@ -8,9 +8,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.Sy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDisabilityStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonNationality
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligion
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionSaveResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSexualOrientation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
@@ -52,12 +52,12 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncCreateOffenderBelief(prisonNumber: String, religion: PrisonReligion): PrisonReligionResponse = personApi
+  suspend fun syncCreateOffenderBelief(prisonNumber: String, religion: PrisonReligionHistory): PrisonReligionSaveResponse = personApi
     .prepare(personApi.savePrisonReligionRequestConfig(prisonNumber, religion))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncUpdateOffenderBelief(prisonNumber: String, cprReligionId: String, religion: PrisonReligionUpdateRequest): PrisonReligionResponse = personApi
+  suspend fun syncUpdateOffenderBelief(prisonNumber: String, cprReligionId: String, religion: PrisonReligionUpdateRequest): PrisonReligionSaveResponse = personApi
     .prepare(personApi.updatePrisonReligionRequestConfig(prisonNumber, cprReligionId, religion))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
