@@ -134,56 +134,61 @@ class CourtSentencingSynchronisationService(
             offenderNo = event.offenderIdDisplay,
             courtAppearanceId = event.eventId,
           )
-        mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)?.let { mapping ->
-          telemetryClient.trackEvent(
-            "court-appearance-synchronisation-created-ignored",
-            telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId) + ("reason" to "appearance already mapped"),
-          )
-        } ?: let {
-          mappingApiService.getCourtCaseOrNullByNomisId(nomisCourtAppearance.caseId!!)?.let { courtCaseMapping ->
-            telemetry["nomisCourtCaseId"] = courtCaseMapping.nomisCourtCaseId.toString()
-            telemetry["dpsCourtCaseId"] = courtCaseMapping.dpsCourtCaseId
-            trackIfFailure(name = "court-appearance-synchronisation-created", telemetry = telemetry.toMutableMap()) {
-              dpsApiService.createCourtAppearance(
-                nomisCourtAppearance.toDpsCourtAppearance(dpsCaseId = courtCaseMapping.dpsCourtCaseId),
-              )
-            }.run {
-              telemetry["dpsCourtAppearanceId"] = this.lifetimeUuid.toString()
-              tryToCreateCourtAppearanceMapping(
-                nomisCourtAppearance = nomisCourtAppearance,
-                dpsCourtAppearanceResponse = this,
-                telemetry,
-              ).also { mappingCreateResult ->
-                if (mappingCreateResult == MappingResponse.MAPPING_FAILED) telemetry["mapping"] = "initial-failure"
-              }
-            }
+
+        if (nomisCourtAppearance.isClone && event.isBreachHearing) {
+          telemetryClient.trackEvent("court-appearance-synchronisation-created-skipped", telemetry + ("reason" to "appearance is a clone of a breach hearing"))
+        } else {
+          mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)?.let { mapping ->
             telemetryClient.trackEvent(
-              "court-appearance-synchronisation-created-success",
-              telemetry,
+              "court-appearance-synchronisation-created-ignored",
+              telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId) + ("reason" to "appearance already mapped"),
             )
-            // this is a breach court event created by DPS so all charges events will be ignored
-            // so add them now via an event
-            if (event.originatesInDps) {
-              nomisCourtAppearance.courtEventCharges.forEach {
-                queueService.sendMessage(
-                  messageType = RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED,
-                  synchronisationType = SynchronisationType.COURT_SENTENCING,
-                  message = RecallBreachCourtEventCharge(
-                    eventId = event.eventId,
-                    chargeId = it.offenderCharge.id,
-                    offenderIdDisplay = event.offenderIdDisplay,
-                    bookingId = event.bookingId,
-                  ),
-                  telemetryAttributes = emptyMap(),
-                )
-              }
-            }
           } ?: let {
-            telemetryClient.trackEvent(
-              "court-appearance-synchronisation-created-failed",
-              telemetry + ("nomisCourtCaseId" to nomisCourtAppearance.caseId.toString()) + ("reason" to "associated court case is not mapped"),
-            )
-            throw ParentEntityNotFoundRetry("Received COURT_EVENTS_INSERTED for court case ${nomisCourtAppearance.caseId} that has never been created/mapped")
+            mappingApiService.getCourtCaseOrNullByNomisId(nomisCourtAppearance.caseId!!)?.let { courtCaseMapping ->
+              telemetry["nomisCourtCaseId"] = courtCaseMapping.nomisCourtCaseId.toString()
+              telemetry["dpsCourtCaseId"] = courtCaseMapping.dpsCourtCaseId
+              trackIfFailure(name = "court-appearance-synchronisation-created", telemetry = telemetry.toMutableMap()) {
+                dpsApiService.createCourtAppearance(
+                  nomisCourtAppearance.toDpsCourtAppearance(dpsCaseId = courtCaseMapping.dpsCourtCaseId),
+                )
+              }.run {
+                telemetry["dpsCourtAppearanceId"] = this.lifetimeUuid.toString()
+                tryToCreateCourtAppearanceMapping(
+                  nomisCourtAppearance = nomisCourtAppearance,
+                  dpsCourtAppearanceResponse = this,
+                  telemetry,
+                ).also { mappingCreateResult ->
+                  if (mappingCreateResult == MappingResponse.MAPPING_FAILED) telemetry["mapping"] = "initial-failure"
+                }
+              }
+              telemetryClient.trackEvent(
+                "court-appearance-synchronisation-created-success",
+                telemetry,
+              )
+              // this is a breach court event created by DPS so all charges events will be ignored
+              // so add them now via an event
+              if (event.originatesInDps) {
+                nomisCourtAppearance.courtEventCharges.forEach {
+                  queueService.sendMessage(
+                    messageType = RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED,
+                    synchronisationType = SynchronisationType.COURT_SENTENCING,
+                    message = RecallBreachCourtEventCharge(
+                      eventId = event.eventId,
+                      chargeId = it.offenderCharge.id,
+                      offenderIdDisplay = event.offenderIdDisplay,
+                      bookingId = event.bookingId,
+                    ),
+                    telemetryAttributes = emptyMap(),
+                  )
+                }
+              }
+            } ?: let {
+              telemetryClient.trackEvent(
+                "court-appearance-synchronisation-created-failed",
+                telemetry + ("nomisCourtCaseId" to nomisCourtAppearance.caseId.toString()) + ("reason" to "associated court case is not mapped"),
+              )
+              throw ParentEntityNotFoundRetry("Received COURT_EVENTS_INSERTED for court case ${nomisCourtAppearance.caseId} that has never been created/mapped")
+            }
           }
         }
       }

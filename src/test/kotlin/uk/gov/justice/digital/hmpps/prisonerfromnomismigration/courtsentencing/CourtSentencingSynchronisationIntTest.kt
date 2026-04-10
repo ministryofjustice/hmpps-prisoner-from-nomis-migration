@@ -2071,6 +2071,76 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     }
 
     @Nested
+    @DisplayName("When court appearance was cloned by DPS for a previous recall")
+    inner class DpsClonedRecallBreachHearing {
+      @Nested
+      @DisplayName("When happy path")
+      inner class HappyPath {
+        val chargeIds =
+          listOf((101L to "e94eea10-dfd1-43c2-b43c-56e8650f8ae7"), (102L to "e94eea10-dfd1-43c2-b43c-56e8650f8ae7"))
+
+        @BeforeEach
+        fun setUp() {
+          courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+            courtCaseId = NOMIS_COURT_CASE_ID,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            eventDateTime = LocalDateTime.parse("2020-01-02T09:00:00"),
+            courtId = "MDI",
+            isClone = true,
+            courtEventCharges = listOf(
+              courtEventChargeResponse(
+                eventId = NOMIS_COURT_APPEARANCE_ID,
+                offenderChargeId = chargeIds[0].first,
+              ),
+              courtEventChargeResponse(
+                eventId = NOMIS_COURT_APPEARANCE_ID,
+                offenderChargeId = chargeIds[1].first,
+              ),
+            ),
+          )
+
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisIdNotFoundFollowedBySuccess(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+          )
+          courtSentencingOffenderEventsQueue.sendMessage(
+
+            courtAppearanceEvent(
+              eventType = "COURT_EVENTS-INSERTED",
+              auditModule = "DPS_SYNCHRONISATION",
+              courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+              isBreachHearing = true,
+            ),
+          ).also { waitForAnyProcessingToComplete(name = "court-appearance-synchronisation-created-skipped") }
+        }
+
+        @Test
+        fun `will not create a court appearance in DPS`() {
+          dpsCourtSentencingServer.verify(
+            0,
+            postRequestedFor(urlPathEqualTo("/legacy/court-appearance")),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for court appearance skipped`() {
+          verify(telemetryClient).trackEvent(
+            eq("court-appearance-synchronisation-created-skipped"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["isBreachHearing"]).isEqualTo("true")
+              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+              assertThat(it["reason"]).isEqualTo("appearance is a clone of a breach hearing")
+            },
+            isNull(),
+          )
+        }
+      }
+    }
+
+    @Nested
     @DisplayName("duplicate mapping - two messages received at the same time")
     inner class WhenDuplicate {
 
