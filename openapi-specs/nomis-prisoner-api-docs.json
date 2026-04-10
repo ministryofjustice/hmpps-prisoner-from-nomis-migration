@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-04-08.1307.9fe4877"
+    "version" : "2026-04-09.1311.fc00baf"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -27554,9 +27554,12 @@
             "items" : {
               "$ref" : "#/components/schemas/CourtOrderResponse"
             }
+          },
+          "isClone" : {
+            "type" : "boolean"
           }
         },
-        "required" : [ "courtEventCharges", "courtEventType", "courtId", "courtOrders", "createdByUsername", "createdDateTime", "eventDateTime", "eventStatus", "id", "offenderNo" ]
+        "required" : [ "courtEventCharges", "courtEventType", "courtId", "courtOrders", "createdByUsername", "createdDateTime", "eventDateTime", "eventStatus", "id", "isClone", "offenderNo" ]
       },
       "CourtOrderResponse" : {
         "type" : "object",
