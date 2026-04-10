@@ -935,4 +935,5 @@ fun buildCourtEventResponse(
   eventDateTime = eventDateTime,
   courtOrders = emptyList(),
   nextEventDateTime = nextEventDateTime,
+  isClone = false,
 )

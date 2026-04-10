@@ -168,6 +168,7 @@ class CourtSentencingTransformerTest {
               createdByUsername = "msmith",
             ),
           ),
+          isClone = false,
           courtOrders = listOf(
             CourtOrderResponse(
               id = 1343548,
@@ -300,6 +301,7 @@ class CourtSentencingTransformerTest {
               createdByUsername = "msmith",
             ),
           ),
+          isClone = false,
           courtOrders = listOf(
             CourtOrderResponse(
               id = 1346801,

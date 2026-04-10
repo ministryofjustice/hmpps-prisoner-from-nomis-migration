@@ -281,6 +281,7 @@ class CourtSentencingNomisApiMockServer(private val jsonMapper: JsonMapper) {
     eventDateTime: LocalDateTime = LocalDateTime.now(),
     nextEventDateTime: LocalDateTime = LocalDateTime.now(),
     courtEventCharges: List<CourtEventChargeResponse> = emptyList(),
+    isClone: Boolean = false,
     response: CourtEventResponse = CourtEventResponse(
       id = courtAppearanceId,
       offenderNo = offenderNo,
@@ -296,6 +297,7 @@ class CourtSentencingNomisApiMockServer(private val jsonMapper: JsonMapper) {
       eventDateTime = eventDateTime,
       courtOrders = emptyList(),
       nextEventDateTime = nextEventDateTime,
+      isClone = isClone,
     ),
   ) {
     nomisApi.stubFor(
@@ -653,6 +655,7 @@ class CourtSentencingNomisApiMockServer(private val jsonMapper: JsonMapper) {
         outcomeReasonCode = OffenceResultCodeResponse(chargeStatus = "A", code = "4506", description = "Adjournment", dispositionCode = "I", conviction = false),
         createdDateTime = LocalDateTime.parse("2024-02-08T14:36:16.485181"),
         createdByUsername = "PRISONER_MANAGER_API",
+        isClone = false,
         courtEventCharges = listOf(
           CourtEventChargeResponse(
             eventId = eventId,
@@ -790,6 +793,7 @@ fun courtEventResponse(eventId: Long) = CourtEventResponse(
   createdDateTime = LocalDateTime.parse("2024-02-08T14:36:16.485181"),
   createdByUsername = "PRISONER_MANAGER_API",
   modifiedByUsername = "jbell",
+  isClone = false,
   courtEventCharges = listOf(
     CourtEventChargeResponse(
       eventId = eventId,
