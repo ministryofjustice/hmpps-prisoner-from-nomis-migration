@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CORE_PERSON_RELIGION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligion
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
@@ -132,8 +132,8 @@ class CorePersonSynchronisationBeliefsService(
     mappingType = ReligionsMigrationMappingDto.MappingType.NOMIS_CREATED,
   )
 
-  suspend fun getNomisOffenderBelief(event: OffenderBeliefEvent): PrisonReligion = corePersonNomisApiService.getOffenderReligions(event.offenderIdDisplay).mapIndexed { i, r ->
-    PrisonReligion(
+  suspend fun getNomisOffenderBelief(event: OffenderBeliefEvent): PrisonReligionHistory = corePersonNomisApiService.getOffenderReligions(event.offenderIdDisplay).mapIndexed { i, r ->
+    PrisonReligionHistory(
       nomisReligionId = r.beliefId.toString(),
       current = i == 0,
       comments = r.comments,
@@ -211,7 +211,7 @@ class CorePersonSynchronisationBeliefsService(
 
 fun List<OffenderBelief>.toMigrateReligionsRequest(): PrisonReligionRequest = PrisonReligionRequest(
   religions = this.mapIndexed { i, r ->
-    PrisonReligion(
+    PrisonReligionHistory(
       nomisReligionId = r.beliefId.toString(),
       current = i == 0,
       religionCode = r.belief.code,
