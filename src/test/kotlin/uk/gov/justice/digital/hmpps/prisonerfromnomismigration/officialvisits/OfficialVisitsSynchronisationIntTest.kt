@@ -15,6 +15,7 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -25,6 +26,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactRelationship
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitOrder
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.dpsOfficialVisitsServer
@@ -614,6 +616,67 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
             assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
             assertThat(it["prisonId"]).isEqualTo(prisonId)
             assertThat(it["dpsOfficialVisitId"]).isEqualTo(dpsOfficialVisitId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenSwitchedFromOfficialVisitInNomis {
+      val dpsOfficialVisitId = 8549934L
+
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByVisitNomisIdOrNull(
+          nomisVisitId,
+          OfficialVisitMappingDto(
+            dpsId = dpsOfficialVisitId.toString(),
+            nomisId = nomisVisitId,
+            mappingType = OfficialVisitMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        nomisApiMock.stubGetOfficialVisit(
+          visitId = nomisVisitId,
+          errorStatus = HttpStatus.BAD_REQUEST,
+          response = ErrorResponse(
+            status = 400,
+            developerMessage = "Visit with id $nomisVisitId is not an official visit",
+          ),
+        )
+        dpsApiMock.stubDeleteVisit(dpsOfficialVisitId)
+        mappingApiMock.stubDeleteByVisitNomisId(nomisVisitId)
+
+        officialVisitsOffenderEventsQueue.sendMessage(
+          officialVisitEvent(
+            eventType = "OFFENDER_OFFICIAL_VISIT-UPDATED",
+            offenderNo = offenderNo,
+            visitId = nomisVisitId,
+            agencyLocationId = prisonId,
+            bookingId = bookingId,
+          ),
+        ).also { waitForAnyProcessingToComplete("officialvisits-visit-synchronisation-official-visit-switched-success") }
+      }
+
+      @Test
+      fun `will delete visit from DPS`() {
+        dpsApiMock.verify(deleteRequestedFor(urlPathEqualTo("/sync/official-visit/id/$dpsOfficialVisitId")))
+      }
+
+      @Test
+      fun `will delete the visit mapping`() {
+        mappingApiMock.verify(deleteRequestedFor(urlPathEqualTo("/mapping/official-visits/visit/nomis-id/$nomisVisitId")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("officialvisits-visit-synchronisation-official-visit-switched-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisVisitId"]).isEqualTo("$nomisVisitId")
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["prisonId"]).isEqualTo(prisonId)
           },
           isNull(),
         )

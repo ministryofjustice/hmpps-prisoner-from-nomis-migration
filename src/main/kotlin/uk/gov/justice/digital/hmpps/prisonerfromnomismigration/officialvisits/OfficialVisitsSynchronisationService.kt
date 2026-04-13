@@ -8,6 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.SuccessOrBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -98,8 +99,18 @@ class OfficialVisitsSynchronisationService(
           nomisVisitId = event.visitId,
         )?.let { mapping ->
           telemetry["dpsOfficialVisitId"] = mapping.dpsId
-          nomisApiService.getOfficialVisit(event.visitId).also { nomisVisit ->
-            dpsApiService.updateVisit(mapping.dpsId.toLong(), nomisVisit.toSyncUpdateOfficialVisitRequest())
+          track(telemetryName, telemetry) {
+            val nomisVisitResult = nomisApiService.getOfficialVisitOrBadRequestErrorMessage(event.visitId)
+            if (nomisVisitResult.isError) {
+              nomisVisitResult.assertNoLongerOfficialVisitOrThrow()
+              officialVisitConvertedToSocialVisit(event)
+            } else {
+              dpsApiService.updateVisit(
+                mapping.dpsId.toLong(),
+                nomisVisitResult.successResponse!!.toSyncUpdateOfficialVisitRequest(),
+              )
+            }
+            nomisVisitResult.successResponse
           }
         } ?: run {
           // assume we never got the create event for this visit because it was a social visit converted to an official visit
@@ -108,6 +119,34 @@ class OfficialVisitsSynchronisationService(
       }
     }
   }
+
+  fun <T> SuccessOrBadRequest<T>.assertNoLongerOfficialVisitOrThrow() {
+    if (!this.errorResponse!!.contains("not an official visit")) {
+      throw IllegalStateException("Got 400 bad request trying to get visit details. Was expecting it to be a social visit")
+    }
+  }
+
+  suspend fun officialVisitConvertedToSocialVisit(event: VisitEvent) {
+    val telemetryName = "officialvisits-visit-synchronisation-official-visit-switched"
+    val telemetry = event.asTelemetry()
+    mappingApiService.getByVisitNomisIdOrNull(
+      nomisVisitId = event.visitId,
+    )?.also { mapping ->
+      telemetry["dpsOfficialVisitId"] = mapping.dpsId
+      track(telemetryName, telemetry) {
+        dpsApiService.deleteVisit(mapping.dpsId.toLong())
+        mappingApiService.deleteByVisitNomisId(
+          nomisVisitId = event.visitId,
+        )
+      }
+    } ?: run {
+      telemetryClient.trackEvent(
+        "$telemetryName-ignored",
+        telemetry,
+      )
+    }
+  }
+
   suspend fun socialVisitConvertedToOfficialVisit(event: VisitEvent): OfficialVisitResponse {
     val telemetryName = "officialvisits-visit-synchronisation-social-visit-switched"
     val telemetry = event.asTelemetry()
