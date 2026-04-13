@@ -3,12 +3,15 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers
 import kotlinx.coroutines.reactive.awaitFirstOrDefault
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.openapitools.client.infrastructure.ApiClient
+import org.openapitools.client.infrastructure.RequestConfig
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import reactor.util.retry.Retry
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 
 suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenNotFound(): T? = this.bodyToMono<T>()
   .onErrorResume(WebClientResponseException.NotFound::class.java) { Mono.empty() }
@@ -58,6 +61,15 @@ suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitSuccessOrDuplic
   }
   .awaitFirstOrDefault(SuccessOrDuplicate())
 
+suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitSuccessOrBadRequestErrorMessage(): SuccessOrBadRequest<T> = this.bodyToMono<T>()
+  .map { SuccessOrBadRequest(successResponse = it) }
+  .onErrorResume(WebClientResponseException.BadRequest::class.java) {
+    Mono.just(SuccessOrBadRequest(errorResponse = it.getResponseBodyAs(object : ParameterizedTypeReference<ErrorResponse>() {})?.developerMessage ?: "Unknown 400 error"))
+  }
+  .awaitSingle()
+
+suspend inline fun <reified T : Any, reified C : Any> ApiClient.awaitSuccessOrBadRequestErrorMessage(requestConfig: RequestConfig<C>): SuccessOrBadRequest<T> = this.prepare(requestConfig).retrieve().awaitSuccessOrBadRequestErrorMessage()
+
 data class SuccessOrDuplicate<T>(
   val errorResponse: DuplicateError<T>? = null,
 ) {
@@ -73,6 +85,14 @@ data class DuplicateDetails<MAPPING>(
   val duplicate: MAPPING,
   val existing: MAPPING?,
 )
+
+data class SuccessOrBadRequest<T>(
+  val errorResponse: String? = null,
+  val successResponse: T? = null,
+) {
+  val isError
+    get() = errorResponse != null
+}
 
 open class ParentEntityNotFoundRetry(message: String) : RuntimeException(message)
 
