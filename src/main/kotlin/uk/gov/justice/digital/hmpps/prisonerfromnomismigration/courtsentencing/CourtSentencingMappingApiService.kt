@@ -17,7 +17,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
@@ -118,26 +117,26 @@ class CourtSentencingMappingApiService(
     .awaitBody()
 
   suspend fun createCourtAppearanceMapping(
-    mapping: CourtAppearanceAllMappingDto,
-  ): CreateMappingResult<CourtAppearanceAllMappingDto> = webClient.post()
+    mapping: CourtAppearanceMappingDto,
+  ): CreateMappingResult<CourtAppearanceMappingDto> = webClient.post()
     .uri("/mapping/court-sentencing/court-appearances")
     .bodyValue(
       mapping,
     )
     .retrieve()
     .bodyToMono(Unit::class.java)
-    .map { CreateMappingResult<CourtAppearanceAllMappingDto>() }
+    .map { CreateMappingResult<CourtAppearanceMappingDto>() }
     .onErrorResume(WebClientResponseException.Conflict::class.java) {
       Mono.just(
         CreateMappingResult(
           it.getResponseBodyAs(
             object :
-              ParameterizedTypeReference<DuplicateErrorResponse<CourtAppearanceAllMappingDto>>() {},
+              ParameterizedTypeReference<DuplicateErrorResponse<CourtAppearanceMappingDto>>() {},
           ),
         ),
       )
     }
-    .awaitFirstOrDefault(CreateMappingResult<CourtAppearanceAllMappingDto>())
+    .awaitFirstOrDefault(CreateMappingResult<CourtAppearanceMappingDto>())
 
   suspend fun deleteCourtAppearanceMappingByDpsId(courtAppearanceId: String) = webClient.delete()
     .uri(

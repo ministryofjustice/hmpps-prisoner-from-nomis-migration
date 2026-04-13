@@ -36,7 +36,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackIfFailure
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
@@ -402,11 +401,10 @@ class CourtSentencingSynchronisationService(
     dpsCourtAppearanceResponse: LegacyCourtAppearanceCreatedResponse,
     telemetry: Map<String, Any>,
   ): MappingResponse {
-    val mapping = CourtAppearanceAllMappingDto(
+    val mapping = CourtAppearanceMappingDto(
       dpsCourtAppearanceId = dpsCourtAppearanceResponse.lifetimeUuid.toString(),
       nomisCourtAppearanceId = nomisCourtAppearance.id,
-      mappingType = CourtAppearanceAllMappingDto.MappingType.NOMIS_CREATED,
-      courtCharges = emptyList(),
+      mappingType = CourtAppearanceMappingDto.MappingType.NOMIS_CREATED,
     )
     try {
       mappingApiService.createCourtAppearanceMapping(
@@ -975,7 +973,7 @@ class CourtSentencingSynchronisationService(
     }
   }
 
-  suspend fun retryCreateCourtAppearanceMapping(retryMessage: InternalMessage<CourtAppearanceAllMappingDto>) {
+  suspend fun retryCreateCourtAppearanceMapping(retryMessage: InternalMessage<CourtAppearanceMappingDto>) {
     mappingApiService.createCourtAppearanceMapping(
       retryMessage.body,
     ).also {
