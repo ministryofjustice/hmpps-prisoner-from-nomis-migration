@@ -95,24 +95,21 @@ class OfficialVisitsSynchronisationService(
       null
     } else {
       track(telemetryName, telemetry) {
-        mappingApiService.getByVisitNomisIdOrNull(
-          nomisVisitId = event.visitId,
-        )?.let { mapping ->
+        val mapping = mappingApiService.getByVisitNomisIdOrNull(nomisVisitId = event.visitId)
+        if (mapping != null) {
           telemetry["dpsOfficialVisitId"] = mapping.dpsId
-          track(telemetryName, telemetry) {
-            val nomisVisitResult = nomisApiService.getOfficialVisitOrBadRequestErrorMessage(event.visitId)
-            if (nomisVisitResult.isError) {
-              nomisVisitResult.assertNoLongerOfficialVisitOrThrow()
-              officialVisitConvertedToSocialVisit(event)
-            } else {
-              dpsApiService.updateVisit(
-                mapping.dpsId.toLong(),
-                nomisVisitResult.successResponse!!.toSyncUpdateOfficialVisitRequest(),
-              )
-            }
-            nomisVisitResult.successResponse
+          val nomisVisitResult = nomisApiService.getOfficialVisitOrBadRequestErrorMessage(event.visitId)
+          if (nomisVisitResult.isError) {
+            nomisVisitResult.assertNoLongerOfficialVisitOrThrow()
+            officialVisitConvertedToSocialVisit(event, mapping.dpsId)
+          } else {
+            dpsApiService.updateVisit(
+              mapping.dpsId.toLong(),
+              nomisVisitResult.successResponse!!.toSyncUpdateOfficialVisitRequest(),
+            )
           }
-        } ?: run {
+          nomisVisitResult.successResponse
+        } else {
           // assume we never got the create event for this visit because it was a social visit converted to an official visit
           socialVisitConvertedToOfficialVisit(event)
         }
@@ -126,24 +123,13 @@ class OfficialVisitsSynchronisationService(
     }
   }
 
-  suspend fun officialVisitConvertedToSocialVisit(event: VisitEvent) {
+  suspend fun officialVisitConvertedToSocialVisit(event: VisitEvent, dpsVisitId: String) {
     val telemetryName = "officialvisits-visit-synchronisation-official-visit-switched"
     val telemetry = event.asTelemetry()
-    mappingApiService.getByVisitNomisIdOrNull(
-      nomisVisitId = event.visitId,
-    )?.also { mapping ->
-      telemetry["dpsOfficialVisitId"] = mapping.dpsId
-      track(telemetryName, telemetry) {
-        dpsApiService.deleteVisit(mapping.dpsId.toLong())
-        mappingApiService.deleteByVisitNomisId(
-          nomisVisitId = event.visitId,
-        )
-      }
-    } ?: run {
-      telemetryClient.trackEvent(
-        "$telemetryName-ignored",
-        telemetry,
-      )
+    telemetry["dpsOfficialVisitId"] = dpsVisitId
+    track(telemetryName, telemetry) {
+      dpsApiService.deleteVisit(dpsVisitId.toLong())
+      mappingApiService.deleteByVisitNomisId(nomisVisitId = event.visitId)
     }
   }
 

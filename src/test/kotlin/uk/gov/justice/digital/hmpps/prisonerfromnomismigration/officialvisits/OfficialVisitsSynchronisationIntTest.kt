@@ -655,7 +655,7 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
             agencyLocationId = prisonId,
             bookingId = bookingId,
           ),
-        ).also { waitForAnyProcessingToComplete("officialvisits-visit-synchronisation-official-visit-switched-success") }
+        ).also { waitForAnyProcessingToComplete("officialvisits-visit-synchronisation-updated-success") }
       }
 
       @Test
