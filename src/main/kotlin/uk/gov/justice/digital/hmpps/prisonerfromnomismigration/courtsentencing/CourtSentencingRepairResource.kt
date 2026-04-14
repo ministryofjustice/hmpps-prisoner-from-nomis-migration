@@ -71,4 +71,27 @@ class CourtSentencingRepairResource(
       termSeq = termSeq,
     )
   }
+
+  @PutMapping("/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/sentences/{sentenceSeq}/repair")
+  @Operation(
+    summary = "Replicate a sentence update event from NOMIS to DPS for a specific sentence",
+    description = "Used when a sentence update event has been missed. Requires PRISONER_FROM_NOMIS__UPDATE__RW",
+  )
+  suspend fun prisonerSentenceUpdateRepair(
+    @PathVariable
+    offenderNo: String,
+    @PathVariable
+    bookingId: Long,
+    @PathVariable
+    caseId: Long,
+    @PathVariable
+    sentenceSeq: Int,
+  ) {
+    courtSentencingRepairService.resynchronisePrisonerSentenceUpdated(
+      offenderNo = offenderNo,
+      bookingId = bookingId,
+      sentenceSeq = sentenceSeq,
+      caseId = caseId,
+    )
+  }
 }

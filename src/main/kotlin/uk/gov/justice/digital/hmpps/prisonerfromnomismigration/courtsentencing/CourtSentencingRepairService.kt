@@ -85,4 +85,34 @@ class CourtSentencingRepairService(
       null,
     )
   }
+
+  suspend fun resynchronisePrisonerSentenceUpdated(
+    offenderNo: String,
+    bookingId: Long,
+    caseId: Long,
+    sentenceSeq: Int,
+  ) {
+    courtSentencingSynchronisationService.nomisSentenceUpdated(
+      OffenderSentenceEvent(
+        sentenceSeq = sentenceSeq,
+        offenderIdDisplay = offenderNo,
+        bookingId = bookingId,
+        sentenceLevel = "IND",
+        sentenceCategory = "220",
+        caseId = caseId,
+        auditModuleName = "NOMIS",
+      ),
+    )
+
+    telemetryClient.trackEvent(
+      "court-sentencing-prisoner-sentence-update-repaired",
+      mapOf(
+        "offenderNo" to offenderNo,
+        "nomisBookingId" to bookingId.toString(),
+        "nomisCaseId" to caseId.toString(),
+        "nomisSentenceSequence" to sentenceSeq.toString(),
+      ),
+      null,
+    )
+  }
 }

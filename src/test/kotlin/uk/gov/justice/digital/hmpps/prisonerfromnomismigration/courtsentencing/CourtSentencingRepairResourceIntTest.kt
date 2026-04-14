@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.eq
 import org.mockito.kotlin.check
+import org.mockito.kotlin.isNotNull
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
@@ -30,12 +31,20 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtOrderResponse
+import java.time.LocalDate
 import java.util.UUID
 
 private const val DPS_SENTENCE_ID = "c1c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3e"
 private const val DPS_TERM_ID = "d5c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3d"
 private const val DPS_CASE_ID = "c7c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3d"
 private const val DPS_APPEARANCE_ID = "d8c1e3e3-3e3e-3e3e-3e3e-3e3e3e3d7d7d"
+private const val NOMIS_COURT_CASE_ID = 1234L
+private const val NOMIS_COURT_APPEARANCE_ID = 5555L
+private const val NOMIS_BOOKING_ID = 12344321L
+private const val DPS_CHARGE_ID = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"
+private const val DPS_CHARGE_2_ID = "d1c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3e"
+
 class CourtSentencingRepairResourceIntTest : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var courtSentencingMappingApiService: CourtSentencingMappingApiService
@@ -351,6 +360,148 @@ class CourtSentencingRepairResourceIntTest : SqsIntegrationTestBase() {
             assertThat(it["nomisSentenceSequence"]).isEqualTo(sentenceSeq.toString())
             assertThat(it["nomisTermSequence"]).isEqualTo(termSeq.toString())
             assertThat(it["dpsTermId"]).isEqualTo(DPS_TERM_ID)
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("PUT /prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/sentences/{sentenceSeq}/repair")
+  inner class RepairSentenceUpdate {
+    val offenderNo = "A1234KT"
+    val bookingId = NOMIS_BOOKING_ID
+    val caseId = NOMIS_COURT_CASE_ID
+    val sentenceSeq = 3
+
+    @Nested
+    inner class Security {
+
+      @Test
+      internal fun `must have valid token`() {
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/sentences/{sentenceSeq}/repair",
+          offenderNo,
+          bookingId,
+          caseId,
+          sentenceSeq,
+        )
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      internal fun `must have correct role`() {
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/sentences/{sentenceSeq}/repair",
+          offenderNo,
+          bookingId,
+          caseId,
+          sentenceSeq,
+        )
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isForbidden
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+
+      @BeforeEach
+      internal fun setup() {
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+        )
+
+        courtSentencingNomisApiMockServer.stubGetSentence(
+          sentenceSequence = sentenceSeq,
+          caseId = caseId,
+          bookingId = bookingId,
+          offenderNo = offenderNo,
+          courtOrder = CourtOrderResponse(
+            eventId = NOMIS_COURT_APPEARANCE_ID,
+            id = 2,
+            courtDate = LocalDate.of(2020, 4, 4),
+            issuingCourt = "MDI",
+            orderType = "IMP",
+            orderStatus = "Active",
+            sentencePurposes = emptyList(),
+          ),
+        )
+
+        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+          nomisSentenceSequence = sentenceSeq,
+          nomisBookingId = bookingId,
+          dpsSentenceId = DPS_SENTENCE_ID,
+        )
+
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+          nomisCourtChargeId = 101,
+          dpsCourtChargeId = DPS_CHARGE_ID,
+        )
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+          nomisCourtChargeId = 102,
+          dpsCourtChargeId = DPS_CHARGE_2_ID,
+        )
+
+        dpsCourtSentencingServer.stubPutSentenceForUpdate(
+          sentenceId = DPS_SENTENCE_ID,
+        )
+
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/sentences/{sentenceSeq}/repair",
+          offenderNo,
+          bookingId,
+          caseId,
+          sentenceSeq,
+        )
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+      }
+
+      @Test
+      fun `will update DPS with the changes`() {
+        await untilAsserted {
+          dpsCourtSentencingServer.verify(
+            1,
+            putRequestedFor(urlPathEqualTo("/legacy/sentence/$DPS_SENTENCE_ID"))
+              .withRequestBody(matchingJsonPath("chargeUuids[0]", equalTo(DPS_CHARGE_ID)))
+              .withRequestBody(matchingJsonPath("chargeUuids[1]", equalTo(DPS_CHARGE_2_ID)))
+              .withRequestBody(matchingJsonPath("legacyData.postedDate", isNotNull()))
+              .withRequestBody(matchingJsonPath("legacyData.sentenceCalcType", equalTo("ADIMP_ORA")))
+              .withRequestBody(matchingJsonPath("legacyData.sentenceTypeDesc", equalTo("ADIMP_ORA description")))
+              .withRequestBody(matchingJsonPath("legacyData.sentenceCategory", equalTo("2003")))
+              .withRequestBody(matchingJsonPath("legacyData.bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
+          )
+        }
+      }
+
+      @Test
+      fun `will track a telemetry event for success`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-sentencing-prisoner-sentence-update-repaired"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisBookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["nomisSentenceSequence"]).isEqualTo(sentenceSeq.toString())
+            assertThat(it["nomisCaseId"]).isEqualTo(caseId.toString())
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("sentence-synchronisation-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisBookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["nomisSentenceSequence"]).isEqualTo(sentenceSeq.toString())
+            assertThat(it["nomisCaseId"]).isEqualTo(caseId.toString())
           },
           isNull(),
         )
