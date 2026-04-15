@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-04-14.1191.3178135"
+    "version" : "2026-04-15.1194.048d4bb"
   },
   "servers" : [ {
     "url" : "https://external-movements-api-dev.hmpps.service.justice.gov.uk",
@@ -1065,13 +1065,6 @@
       "CancelOccurrence" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/OccurrenceAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "ChangeOccurrenceAccompaniment" : {
@@ -1082,9 +1075,6 @@
           "properties" : {
             "accompaniedByCode" : {
               "type" : "string"
-            },
-            "reason" : {
-              "type" : [ "string", "null" ]
             }
           }
         } ],
@@ -1098,9 +1088,6 @@
           "properties" : {
             "comments" : {
               "type" : [ "string", "null" ]
-            },
-            "reason" : {
-              "type" : [ "string", "null" ]
             }
           }
         } ]
@@ -1113,9 +1100,6 @@
           "properties" : {
             "information" : {
               "type" : "string"
-            },
-            "reason" : {
-              "type" : [ "string", "null" ]
             }
           }
         } ],
@@ -1129,9 +1113,6 @@
           "properties" : {
             "location" : {
               "$ref" : "#/components/schemas/Location"
-            },
-            "reason" : {
-              "type" : [ "string", "null" ]
             }
           }
         } ],
@@ -1145,9 +1126,6 @@
           "properties" : {
             "transportCode" : {
               "type" : "string"
-            },
-            "reason" : {
-              "type" : [ "string", "null" ]
             }
           }
         } ],
@@ -1156,49 +1134,21 @@
       "CommenceOccurrence" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/OccurrenceAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "CompleteOccurrence" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/OccurrenceAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "DenyOccurrence" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/OccurrenceAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "ExpireOccurrence" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/OccurrenceAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "Location" : {
@@ -1222,13 +1172,6 @@
       "MarkOccurrenceOverdue" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/OccurrenceAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "OccurrenceAction" : {
@@ -1238,7 +1181,7 @@
         },
         "properties" : {
           "reason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "type" : {
             "type" : "string"
@@ -1249,13 +1192,6 @@
       "PauseOccurrence" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/OccurrenceAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "RecategoriseOccurrence" : {
@@ -1275,9 +1211,6 @@
             },
             "absenceReasonCode" : {
               "type" : [ "string", "null" ]
-            },
-            "reason" : {
-              "type" : [ "string", "null" ]
             }
           }
         } ]
@@ -1295,9 +1228,6 @@
             "end" : {
               "type" : [ "string", "null" ],
               "format" : "date-time"
-            },
-            "reason" : {
-              "type" : [ "string", "null" ]
             }
           }
         } ]
@@ -1305,25 +1235,11 @@
       "ResumeOccurrence" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/OccurrenceAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "ScheduleOccurrence" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/OccurrenceAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "AuditHistory" : {
@@ -1373,10 +1289,10 @@
             "type" : "string"
           },
           "previous" : {
-            "type" : "null"
+            "type" : [ "string", "null" ]
           },
           "change" : {
-            "type" : "null"
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "propertyName" ]
@@ -1396,13 +1312,6 @@
       "ApproveAuthorisation" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/AuthorisationAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "AuthorisationAction" : {
@@ -1412,7 +1321,7 @@
         },
         "properties" : {
           "reason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "type" : {
             "type" : "string"
@@ -1423,13 +1332,6 @@
       "CancelAuthorisation" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/AuthorisationAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "ChangeAuthorisationAccompaniment" : {
@@ -1440,9 +1342,6 @@
           "properties" : {
             "accompaniedByCode" : {
               "type" : "string"
-            },
-            "reason" : {
-              "type" : [ "string", "null" ]
             }
           }
         } ],
@@ -1455,9 +1354,6 @@
           "type" : "object",
           "properties" : {
             "comments" : {
-              "type" : [ "string", "null" ]
-            },
-            "reason" : {
               "type" : [ "string", "null" ]
             }
           }
@@ -1476,9 +1372,6 @@
             "end" : {
               "type" : "string",
               "format" : "date"
-            },
-            "reason" : {
-              "type" : [ "string", "null" ]
             }
           }
         } ],
@@ -1492,9 +1385,6 @@
           "properties" : {
             "location" : {
               "$ref" : "#/components/schemas/Location"
-            },
-            "reason" : {
-              "type" : [ "string", "null" ]
             }
           }
         } ],
@@ -1512,9 +1402,6 @@
                 "$ref" : "#/components/schemas/Location"
               },
               "uniqueItems" : true
-            },
-            "reason" : {
-              "type" : [ "string", "null" ]
             }
           }
         } ],
@@ -1528,9 +1415,6 @@
           "properties" : {
             "transportCode" : {
               "type" : "string"
-            },
-            "reason" : {
-              "type" : [ "string", "null" ]
             }
           }
         } ],
@@ -1547,9 +1431,6 @@
             },
             "prisonCode" : {
               "type" : "string"
-            },
-            "reason" : {
-              "type" : [ "string", "null" ]
             }
           }
         } ],
@@ -1558,61 +1439,26 @@
       "ClearAuthorisationSchedule" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/AuthorisationAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "DeferAuthorisation" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/AuthorisationAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "DenyAuthorisation" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/AuthorisationAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "ExpireAuthorisation" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/AuthorisationAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "PauseAuthorisation" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/AuthorisationAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "RecategoriseAuthorisation" : {
@@ -1632,9 +1478,6 @@
             },
             "absenceReasonCode" : {
               "type" : [ "string", "null" ]
-            },
-            "reason" : {
-              "type" : [ "string", "null" ]
             }
           }
         } ]
@@ -1642,13 +1485,6 @@
       "ResumeAuthorisation" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/AuthorisationAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "reason" : {
-              "type" : [ "string", "null" ]
-            }
-          }
         } ]
       },
       "SyncAtAndBy" : {
