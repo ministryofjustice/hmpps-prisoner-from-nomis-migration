@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-04-09.655.cdbb9a3"
+    "version" : "2026-04-13.663.ca01413"
   },
   "servers" : [ {
     "url" : "/",
@@ -199,8 +199,7 @@
                 "type" : "array",
                 "description" : "List of question and responses to add or update in place",
                 "items" : {
-                  "$ref" : "#/components/schemas/AddOrUpdateQuestionWithResponses",
-                  "minItems" : 1
+                  "$ref" : "#/components/schemas/AddOrUpdateQuestionWithResponses"
                 },
                 "minItems" : 1
               }
@@ -290,7 +289,7 @@
             "type" : "array",
             "items" : {
               "type" : "string",
-              "example" : "40102",
+              "example" : 40102,
               "minLength" : 1
             },
             "maxItems" : 2147483647,
@@ -455,7 +454,7 @@
           "description" : "Filter by given human-readable report reference",
           "required" : false,
           "schema" : {
-            "type" : "string",
+            "type" : "null",
             "description" : "Filter by given human-readable report reference",
             "example" : "\"11124143\"",
             "maxLength" : 25,
@@ -485,7 +484,7 @@
           "description" : "Filter by given information source",
           "required" : false,
           "schema" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Filter by given information source",
             "enum" : [ "DPS", "NOMIS" ],
             "example" : "DPS"
@@ -525,11 +524,11 @@
           "description" : "Filter for incidents occurring since this date (inclusive)",
           "required" : false,
           "schema" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date",
-            "default" : null,
             "description" : "Filter for incidents occurring since this date (inclusive)",
-            "example" : "2024-01-01"
+            "example" : "2024-01-01",
+            "default" : null
           },
           "example" : "2024-01-01"
         }, {
@@ -538,11 +537,11 @@
           "description" : "Filter for incidents occurring until this date (inclusive)",
           "required" : false,
           "schema" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date",
-            "default" : null,
             "description" : "Filter for incidents occurring until this date (inclusive)",
-            "example" : "2024-05-31"
+            "example" : "2024-05-31",
+            "default" : null
           },
           "example" : "2024-05-31"
         }, {
@@ -551,11 +550,11 @@
           "description" : "Filter for incidents reported since this date (inclusive)",
           "required" : false,
           "schema" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date",
-            "default" : null,
             "description" : "Filter for incidents reported since this date (inclusive)",
-            "example" : "2024-01-01"
+            "example" : "2024-01-01",
+            "default" : null
           },
           "example" : "2024-01-01"
         }, {
@@ -564,11 +563,11 @@
           "description" : "Filter for incidents reported until this date (inclusive)",
           "required" : false,
           "schema" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date",
-            "default" : null,
             "description" : "Filter for incidents reported until this date (inclusive)",
-            "example" : "2024-05-31"
+            "example" : "2024-05-31",
+            "default" : null
           },
           "example" : "2024-05-31"
         }, {
@@ -577,7 +576,7 @@
           "description" : "Filter for incidents reported by username",
           "required" : false,
           "schema" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Filter for incidents reported by username",
             "example" : "abc12a",
             "maxLength" : 2147483647,
@@ -590,7 +589,7 @@
           "description" : "Filter for incidents involving staff identified by username",
           "required" : false,
           "schema" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Filter for incidents involving staff identified by username",
             "example" : "abc12a",
             "maxLength" : 2147483647,
@@ -603,7 +602,7 @@
           "description" : "Filter for incidents involving prisoners identified by prisoner number",
           "required" : false,
           "schema" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Filter for incidents involving prisoners identified by prisoner number",
             "example" : "A1234AA",
             "maxLength" : 10,
@@ -3120,17 +3119,17 @@
             "example" : "Details, sometimes a stack trace"
           },
           "errorCode" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int32",
-            "default" : "null",
             "description" : "When present, uniquely identifies the type of error making it easier for clients to discriminate without relying on error description or HTTP status code; see ` uk.gov.justice.digital.hmpps.incidentreporting.resource.ErrorCode` enumeration in hmpps-incident-reporting-api",
-            "example" : 101
+            "example" : 101,
+            "default" : null
           },
           "moreInfo" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "More information about the error",
-            "example" : "[Rarely used, error-specific]"
+            "example" : "[Rarely used, error-specific]",
+            "default" : null
           }
         },
         "readOnly" : true,
@@ -3159,16 +3158,16 @@
             "minLength" : 1
           },
           "responseDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date",
-            "default" : "null",
             "description" : "Optional response as a date",
-            "example" : "2024-04-29"
+            "example" : "2024-04-29",
+            "default" : null
           },
           "additionalInformation" : {
-            "type" : "string",
-            "default" : "null",
-            "description" : "Optional additional information"
+            "type" : [ "string", "null" ],
+            "description" : "Optional additional information",
+            "default" : null
           }
         },
         "required" : [ "label", "response" ],
@@ -3207,9 +3206,9 @@
             "minLength" : 1
           },
           "additionalInformation" : {
-            "type" : "string",
-            "default" : "null",
-            "description" : "Optional additional information"
+            "type" : [ "string", "null" ],
+            "description" : "Optional additional information",
+            "default" : null
           }
         },
         "required" : [ "code", "label", "question", "responses" ],
@@ -3245,7 +3244,7 @@
             }
           },
           "additionalInformation" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Optional additional information"
           }
         },
@@ -3257,7 +3256,7 @@
         "description" : "Response to a question making up an incident report",
         "properties" : {
           "code" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Unique identifier for a response to a question"
           },
           "response" : {
@@ -3275,15 +3274,15 @@
             "description" : "Sequence of the responses"
           },
           "responseDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date",
             "description" : "Optional response as a date",
             "example" : "2024-04-29"
           },
           "additionalInformation" : {
-            "type" : "string",
-            "default" : "null",
-            "description" : "Optional additional information"
+            "type" : [ "string", "null" ],
+            "description" : "Optional additional information",
+            "default" : null
           },
           "recordedBy" : {
             "type" : "string",
@@ -3365,7 +3364,7 @@
             "description" : "The questionnaire type"
           },
           "description" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "The questionnaire description"
           },
           "questions" : {
@@ -3376,7 +3375,7 @@
             }
           },
           "incidentChangeDateTime" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "When the questionnaire was changed with time"
           },
@@ -3427,7 +3426,7 @@
         "type" : "object",
         "properties" : {
           "questionResponseId" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64",
             "description" : "The id of the questionnaire question answer"
           },
@@ -3437,16 +3436,16 @@
             "description" : "The sequence number of the response for this incident"
           },
           "answer" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "The answer text"
           },
           "responseDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date",
             "description" : "Response date added to the response by recording staff"
           },
           "comment" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Comment added to the response by recording staff"
           },
           "recordingStaff" : {
@@ -3491,11 +3490,14 @@
             "description" : "Offender role in the incident"
           },
           "outcome" : {
-            "$ref" : "#/components/schemas/NomisCode",
-            "description" : "The outcome of the incident"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/NomisCode"
+            }, {
+              "type" : "null"
+            } ]
           },
           "comment" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "General information about the incident"
           },
           "createDateTime" : {
@@ -3508,12 +3510,12 @@
             "description" : "The username of the person who created the offender party"
           },
           "lastModifiedDateTime" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "The date and time the offender party was last updated"
           },
           "lastModifiedBy" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "The username of the person who last updated the offender party"
           }
         },
@@ -3570,11 +3572,11 @@
             "description" : "The id of the questionnaire associated with this incident"
           },
           "title" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "A summary of the incident"
           },
           "description" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "The incident details"
           },
           "prison" : {
@@ -3617,16 +3619,16 @@
             "description" : "The username of the person who created the incident"
           },
           "lastModifiedDateTime" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "The date and time the incident was last updated"
           },
           "lastModifiedBy" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "The username of the person who last updated the incident"
           },
           "followUpDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date",
             "description" : "The follow up date for the incident"
           },
@@ -3680,7 +3682,7 @@
             "description" : "The sequence number providing an order for a list of requirements"
           },
           "comment" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "The update required to the incident report"
           },
           "recordedDate" : {
@@ -3706,12 +3708,12 @@
             "description" : "The username of the person who created the requirement"
           },
           "lastModifiedDateTime" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "The date and time the requirement was last updated"
           },
           "lastModifiedBy" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "The username of the person who last updated the requirement"
           }
         },
@@ -3721,7 +3723,7 @@
         "type" : "object",
         "properties" : {
           "questionResponseId" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64",
             "description" : "The id of the questionnaire question answer"
           },
@@ -3731,16 +3733,16 @@
             "description" : "The sequence number of the response for this incident"
           },
           "answer" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "The answer text"
           },
           "responseDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date",
             "description" : "Response date added to the response by recording staff"
           },
           "comment" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Comment added to the response by recording staff"
           },
           "recordingStaff" : {
@@ -3757,12 +3759,12 @@
             "description" : "The username of the person who created the response"
           },
           "lastModifiedDateTime" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "The date and time the response was last updated"
           },
           "lastModifiedBy" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "The username of the person who last updated the response"
           }
         },
@@ -3808,7 +3810,7 @@
             "description" : "Staff role in the incident"
           },
           "comment" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "General information about the incident"
           },
           "createDateTime" : {
@@ -3821,12 +3823,12 @@
             "description" : "The username of the person who created the staff party"
           },
           "lastModifiedDateTime" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "The date and time the staff party was last updated"
           },
           "lastModifiedBy" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "The username of the person who last updated the staff party"
           }
         },
@@ -3851,7 +3853,7 @@
         "description" : "Incident report created or updated in NOMIS",
         "properties" : {
           "id" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "uuid",
             "description" : "Incident report ID, required for updates and must be omitted for initial migration",
             "example" : "123e4567-e89b-12d3-a456-426614174000"
@@ -4002,20 +4004,20 @@
             "example" : "2024-04-29T12:34:56.789012"
           },
           "location" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "The reporting location of the staff"
           },
           "userAction" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Action taken by the user on the report",
             "enum" : [ "REQUEST_REVIEW", "REQUEST_DUPLICATE", "REQUEST_NOT_REPORTABLE", "REQUEST_CORRECTION", "RECALL", "CLOSE", "MARK_DUPLICATE", "MARK_NOT_REPORTABLE", "HOLD" ]
           },
           "originalReportReference" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Reference number of the original report of which this report is a duplicate of"
           },
           "userType" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Type of user that submitted this action on the report",
             "enum" : [ "REPORTING_OFFICER", "DATA_WARDEN" ]
           }
@@ -4053,7 +4055,7 @@
             }
           },
           "additionalInformation" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Optional additional information"
           }
         },
@@ -4065,7 +4067,7 @@
         "description" : "Previous response to a question making up a previous version of an incident report",
         "properties" : {
           "code" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Unique identifier for a response to a question"
           },
           "response" : {
@@ -4083,13 +4085,13 @@
             "description" : "Sequence of the responses"
           },
           "responseDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date",
             "description" : "Optional response as a date",
             "example" : "2024-04-29"
           },
           "additionalInformation" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Optional additional information"
           },
           "recordedBy" : {
@@ -4133,7 +4135,7 @@
             }
           },
           "nomisType" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "deprecated" : true,
             "description" : "Previous NOMIS incident report type code, which may be null for newer incident types"
           }
@@ -4192,12 +4194,12 @@
             "enum" : [ "ABSCONDER", "ACTIVE_INVOLVEMENT", "ASSAILANT", "ASSISTED_STAFF", "DECEASED", "ESCAPE", "FIGHTER", "HOSTAGE", "IMPEDED_STAFF", "IN_POSSESSION", "INTENDED_RECIPIENT", "LICENSE_FAILURE", "PERPETRATOR", "PRESENT_AT_SCENE", "SUSPECTED_ASSAILANT", "SUSPECTED_INVOLVED", "TEMPORARY_RELEASE_FAILURE", "VICTIM" ]
           },
           "outcome" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Optional outcome of prisoner’s involvement",
             "enum" : [ "ACCT", "CHARGED_BY_POLICE", "CONVICTED", "CORONER_INFORMED", "DEATH", "FURTHER_CHARGES", "LOCAL_INVESTIGATION", "NEXT_OF_KIN_INFORMED", "PLACED_ON_REPORT", "POLICE_INVESTIGATION", "REMAND", "SEEN_DUTY_GOV", "SEEN_HEALTHCARE", "SEEN_IMB", "SEEN_OUTSIDE_HOSP", "TRANSFER", "TRIAL" ]
           },
           "comment" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Optional comment on prisoner’s involvement"
           }
         },
@@ -4268,11 +4270,11 @@
             "type" : "boolean"
           },
           "duplicatedReportId" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "uuid"
           },
           "latestUserAction" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "enum" : [ "REQUEST_REVIEW", "REQUEST_DUPLICATE", "REQUEST_NOT_REPORTABLE", "REQUEST_CORRECTION", "RECALL", "CLOSE", "MARK_DUPLICATE", "MARK_NOT_REPORTABLE", "HOLD" ]
           },
           "questions" : {
@@ -4333,12 +4335,12 @@
             "description" : "Internal flag which, if false, is used to indicate that addition of prisoner involvements is unfinished"
           },
           "nomisStatus" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "deprecated" : true,
             "description" : "Previous NOMIS incident report status code, which may be null for statuses that cannot be mapped"
           },
           "nomisType" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "deprecated" : true,
             "description" : "NOMIS incident report type code, which may be null for newer incident types"
           }
@@ -4357,7 +4359,7 @@
             "description" : "Sequence of the staff involvement for this report"
           },
           "staffUsername" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Username, absent for manually-added staff or those without NOMIS/DPS accounts"
           },
           "firstName" : {
@@ -4374,7 +4376,7 @@
             "enum" : [ "ACTIVELY_INVOLVED", "AUTHORISING_OFFICER", "CR_HEAD", "CR_LEFT_ARM", "CR_LEGS", "CR_RIGHT_ARM", "CR_SUPERVISOR", "DECEASED", "FIRST_ON_SCENE", "HEALTHCARE", "HOSTAGE", "IN_POSSESSION", "NEGOTIATOR", "PRESENT_AT_SCENE", "SUSPECTED_INVOLVEMENT", "VICTIM", "WITNESS" ]
           },
           "comment" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Optional comment on staff member involvement"
           }
         },
@@ -4401,7 +4403,7 @@
             "description" : "The member of staff who changed the report status"
           },
           "nomisStatus" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "deprecated" : true,
             "description" : "Previous NOMIS incident report status code, which may be null for statuses that cannot be mapped"
           }
@@ -4414,7 +4416,7 @@
         "description" : "Add an involved member of staff to an incident report",
         "properties" : {
           "staffUsername" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Username, absent for manually-added staff or those without NOMIS/DPS accounts",
             "maxLength" : 120,
             "minLength" : 3
@@ -4437,9 +4439,9 @@
             "enum" : [ "ACTIVELY_INVOLVED", "AUTHORISING_OFFICER", "CR_HEAD", "CR_LEFT_ARM", "CR_LEGS", "CR_RIGHT_ARM", "CR_SUPERVISOR", "DECEASED", "FIRST_ON_SCENE", "HEALTHCARE", "HOSTAGE", "IN_POSSESSION", "NEGOTIATOR", "PRESENT_AT_SCENE", "SUSPECTED_INVOLVEMENT", "VICTIM", "WITNESS" ]
           },
           "comment" : {
-            "type" : "string",
-            "default" : "null",
-            "description" : "Optional comment on staff member involvement"
+            "type" : [ "string", "null" ],
+            "description" : "Optional comment on staff member involvement",
+            "default" : null
           }
         },
         "required" : [ "firstName", "lastName", "staffRole" ],
@@ -4473,15 +4475,15 @@
             "enum" : [ "ABSCONDER", "ACTIVE_INVOLVEMENT", "ASSAILANT", "ASSISTED_STAFF", "DECEASED", "ESCAPE", "FIGHTER", "HOSTAGE", "IMPEDED_STAFF", "IN_POSSESSION", "INTENDED_RECIPIENT", "LICENSE_FAILURE", "PERPETRATOR", "PRESENT_AT_SCENE", "SUSPECTED_ASSAILANT", "SUSPECTED_INVOLVED", "TEMPORARY_RELEASE_FAILURE", "VICTIM" ]
           },
           "outcome" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "Optional outcome of prisoner’s involvement",
-            "enum" : [ "ACCT", "CHARGED_BY_POLICE", "CONVICTED", "CORONER_INFORMED", "DEATH", "FURTHER_CHARGES", "LOCAL_INVESTIGATION", "NEXT_OF_KIN_INFORMED", "PLACED_ON_REPORT", "POLICE_INVESTIGATION", "REMAND", "SEEN_DUTY_GOV", "SEEN_HEALTHCARE", "SEEN_IMB", "SEEN_OUTSIDE_HOSP", "TRANSFER", "TRIAL" ]
+            "enum" : [ "ACCT", "CHARGED_BY_POLICE", "CONVICTED", "CORONER_INFORMED", "DEATH", "FURTHER_CHARGES", "LOCAL_INVESTIGATION", "NEXT_OF_KIN_INFORMED", "PLACED_ON_REPORT", "POLICE_INVESTIGATION", "REMAND", "SEEN_DUTY_GOV", "SEEN_HEALTHCARE", "SEEN_IMB", "SEEN_OUTSIDE_HOSP", "TRANSFER", "TRIAL" ],
+            "default" : null
           },
           "comment" : {
-            "type" : "string",
-            "default" : "null",
-            "description" : "Optional comment on prisoner’s involvement"
+            "type" : [ "string", "null" ],
+            "description" : "Optional comment on prisoner’s involvement",
+            "default" : null
           }
         },
         "required" : [ "firstName", "lastName", "prisonerNumber", "prisonerRole" ],
@@ -4492,14 +4494,14 @@
         "description" : "Add to the description of an incident report by appending an addendum",
         "properties" : {
           "createdBy" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Username of user who added this addendum, defaulting to request token user",
             "example" : "USER_1",
             "maxLength" : 120,
             "minLength" : 3
           },
           "createdAt" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "When addendum was added, defaulting to “now”",
             "example" : "2024-04-29T12:34:56.789012"
@@ -4540,26 +4542,26 @@
             "minLength" : 1
           },
           "location" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "The location where the staff member is raising the correction",
             "maxLength" : 20,
-            "minLength" : 2
+            "minLength" : 2,
+            "default" : null
           },
           "userAction" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Action taken by the user on the report",
             "enum" : [ "REQUEST_REVIEW", "REQUEST_DUPLICATE", "REQUEST_NOT_REPORTABLE", "REQUEST_CORRECTION", "RECALL", "CLOSE", "MARK_DUPLICATE", "MARK_NOT_REPORTABLE", "HOLD" ]
           },
           "originalReportReference" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "Reference number of the original report of which this report is a duplicate of",
             "maxLength" : 25,
-            "minLength" : 1
+            "minLength" : 1,
+            "default" : null
           },
           "userType" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Type of user that submitted this action on the report",
             "enum" : [ "REPORTING_OFFICER", "DATA_WARDEN" ]
           }
@@ -4572,33 +4574,33 @@
         "description" : "Update an involved member of staff in an incident report",
         "properties" : {
           "staffUsername" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Username, absent for manually-added staff or those without NOMIS/DPS accounts– omit to preserve existing username, provide null to clear it",
             "maxLength" : 120,
             "minLength" : 3
           },
           "firstName" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "First name",
             "maxLength" : 255,
-            "minLength" : 1
+            "minLength" : 1,
+            "default" : null
           },
           "lastName" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "Surname",
             "maxLength" : 255,
-            "minLength" : 1
+            "minLength" : 1,
+            "default" : null
           },
           "staffRole" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "Their role",
-            "enum" : [ "ACTIVELY_INVOLVED", "AUTHORISING_OFFICER", "CR_HEAD", "CR_LEFT_ARM", "CR_LEGS", "CR_RIGHT_ARM", "CR_SUPERVISOR", "DECEASED", "FIRST_ON_SCENE", "HEALTHCARE", "HOSTAGE", "IN_POSSESSION", "NEGOTIATOR", "PRESENT_AT_SCENE", "SUSPECTED_INVOLVEMENT", "VICTIM", "WITNESS" ]
+            "enum" : [ "ACTIVELY_INVOLVED", "AUTHORISING_OFFICER", "CR_HEAD", "CR_LEFT_ARM", "CR_LEGS", "CR_RIGHT_ARM", "CR_SUPERVISOR", "DECEASED", "FIRST_ON_SCENE", "HEALTHCARE", "HOSTAGE", "IN_POSSESSION", "NEGOTIATOR", "PRESENT_AT_SCENE", "SUSPECTED_INVOLVEMENT", "VICTIM", "WITNESS" ],
+            "default" : null
           },
           "comment" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Optional comment on staff member involvement – omit to preserve existing comment, provide null to clear it"
           }
         },
@@ -4609,39 +4611,39 @@
         "description" : "Update an involved prisoner in an incident report",
         "properties" : {
           "prisonerNumber" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "Prisoner’s NOMIS number",
             "maxLength" : 10,
-            "minLength" : 7
+            "minLength" : 7,
+            "default" : null
           },
           "firstName" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "First name",
             "maxLength" : 255,
-            "minLength" : 1
+            "minLength" : 1,
+            "default" : null
           },
           "lastName" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "Surname",
             "maxLength" : 255,
-            "minLength" : 1
+            "minLength" : 1,
+            "default" : null
           },
           "prisonerRole" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "Their role",
-            "enum" : [ "ABSCONDER", "ACTIVE_INVOLVEMENT", "ASSAILANT", "ASSISTED_STAFF", "DECEASED", "ESCAPE", "FIGHTER", "HOSTAGE", "IMPEDED_STAFF", "IN_POSSESSION", "INTENDED_RECIPIENT", "LICENSE_FAILURE", "PERPETRATOR", "PRESENT_AT_SCENE", "SUSPECTED_ASSAILANT", "SUSPECTED_INVOLVED", "TEMPORARY_RELEASE_FAILURE", "VICTIM" ]
+            "enum" : [ "ABSCONDER", "ACTIVE_INVOLVEMENT", "ASSAILANT", "ASSISTED_STAFF", "DECEASED", "ESCAPE", "FIGHTER", "HOSTAGE", "IMPEDED_STAFF", "IN_POSSESSION", "INTENDED_RECIPIENT", "LICENSE_FAILURE", "PERPETRATOR", "PRESENT_AT_SCENE", "SUSPECTED_ASSAILANT", "SUSPECTED_INVOLVED", "TEMPORARY_RELEASE_FAILURE", "VICTIM" ],
+            "default" : null
           },
           "outcome" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Optional outcome of prisoner’s involvement – omit to preserve existing outcome, provide null to clear it",
             "enum" : [ "ACCT", "CHARGED_BY_POLICE", "CONVICTED", "CORONER_INFORMED", "DEATH", "FURTHER_CHARGES", "LOCAL_INVESTIGATION", "NEXT_OF_KIN_INFORMED", "PLACED_ON_REPORT", "POLICE_INVESTIGATION", "REMAND", "SEEN_DUTY_GOV", "SEEN_HEALTHCARE", "SEEN_IMB", "SEEN_OUTSIDE_HOSP", "TRANSFER", "TRIAL" ]
           },
           "comment" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Optional comment on prisoner’s involvement – omit to preserve existing comment, provide null to clear it"
           }
         },
@@ -4652,34 +4654,34 @@
         "description" : "Update a description addendum in an incident report",
         "properties" : {
           "createdBy" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Username of user who added this addendum",
             "example" : "USER_1",
             "maxLength" : 120,
             "minLength" : 3
           },
           "createdAt" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "When addendum was added – omit to preserve existing date, provide null to set it to “now”",
             "example" : "2024-04-29T12:34:56.789012"
           },
           "firstName" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "First name of person that added this addendum",
             "example" : "John",
             "maxLength" : 255,
             "minLength" : 1
           },
           "lastName" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Last name of person that added this addendum",
             "example" : "Doe",
             "maxLength" : 255,
             "minLength" : 1
           },
           "text" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Addendum text",
             "example" : "Correction made to the report",
             "maxLength" : 2147483647,
@@ -4693,32 +4695,32 @@
         "description" : "Update a correction request in an incident report",
         "properties" : {
           "descriptionOfChange" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "The changes being requested",
             "maxLength" : 2147483647,
-            "minLength" : 1
+            "minLength" : 1,
+            "default" : null
           },
           "location" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "The location where the staff member is raising the correction",
             "maxLength" : 20,
             "minLength" : 2
           },
           "userAction" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "Action taken by the user on the report",
-            "enum" : [ "REQUEST_REVIEW", "REQUEST_DUPLICATE", "REQUEST_NOT_REPORTABLE", "REQUEST_CORRECTION", "RECALL", "CLOSE", "MARK_DUPLICATE", "MARK_NOT_REPORTABLE", "HOLD" ]
+            "enum" : [ "REQUEST_REVIEW", "REQUEST_DUPLICATE", "REQUEST_NOT_REPORTABLE", "REQUEST_CORRECTION", "RECALL", "CLOSE", "MARK_DUPLICATE", "MARK_NOT_REPORTABLE", "HOLD" ],
+            "default" : null
           },
           "originalReportReference" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Reference number of the original report of which this report is a duplicate of",
             "maxLength" : 25,
             "minLength" : 1
           },
           "userType" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Type of user that submitted this action on the report",
             "enum" : [ "REPORTING_OFFICER", "DATA_WARDEN" ]
           }
@@ -4731,46 +4733,46 @@
         "description" : "Payload to update key properties of an incident report",
         "properties" : {
           "incidentDateAndTime" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
-            "default" : "null",
             "description" : "When the incident took place",
-            "example" : "2024-04-29T12:34:56.789012"
+            "example" : "2024-04-29T12:34:56.789012",
+            "default" : null
           },
           "location" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "The location where incident took place, typically a NOMIS prison ID",
             "example" : "MDI",
             "maxLength" : 20,
-            "minLength" : 2
+            "minLength" : 2,
+            "default" : null
           },
           "title" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "Brief title describing the incident",
             "maxLength" : 255,
-            "minLength" : 5
+            "minLength" : 5,
+            "default" : null
           },
           "description" : {
-            "type" : "string",
-            "default" : "null",
+            "type" : [ "string", "null" ],
             "description" : "Longer summary of the incident",
             "maxLength" : 2147483647,
-            "minLength" : 1
+            "minLength" : 1,
+            "default" : null
           },
           "staffInvolvementDone" : {
-            "type" : "boolean",
-            "default" : false,
-            "description" : "Internal flag which, if false, is used to indicate that addition of staff involvements is unfinished"
+            "type" : [ "boolean", "null" ],
+            "description" : "Internal flag which, if false, is used to indicate that addition of staff involvements is unfinished",
+            "default" : null
           },
           "prisonerInvolvementDone" : {
-            "type" : "boolean",
-            "default" : false,
-            "description" : "Internal flag which, if false, is used to indicate that addition of prisoner involvements is unfinished"
+            "type" : [ "boolean", "null" ],
+            "description" : "Internal flag which, if false, is used to indicate that addition of prisoner involvements is unfinished",
+            "default" : null
           },
           "duplicatedReportId" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "uuid",
             "description" : "ID of the original report of which this report is a duplicate of"
           }
@@ -4853,12 +4855,12 @@
             "type" : "boolean"
           },
           "duplicatedReportId" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "uuid",
             "description" : "ID of the original report of which this report is a duplicate of"
           },
           "latestUserAction" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Latest user action from the most recent correction request",
             "enum" : [ "REQUEST_REVIEW", "REQUEST_DUPLICATE", "REQUEST_NOT_REPORTABLE", "REQUEST_CORRECTION", "RECALL", "CLOSE", "MARK_DUPLICATE", "MARK_NOT_REPORTABLE", "HOLD" ]
           }
@@ -4891,9 +4893,11 @@
             "example" : "CLOSED"
           },
           "correctionRequest" : {
-            "$ref" : "#/components/schemas/AddCorrectionRequest",
-            "description" : "The associated correction request associated with the status change",
-            "writeOnly" : true
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AddCorrectionRequest"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
         "required" : [ "newStatus" ],
@@ -4938,7 +4942,7 @@
             "description" : "The content of the subject access request response"
           },
           "attachments" : {
-            "type" : "array",
+            "type" : [ "array", "null" ],
             "description" : "The details of any attachments for the subject access request response",
             "items" : {
               "$ref" : "#/components/schemas/Attachment"
@@ -5095,7 +5099,7 @@
             "example" : true
           },
           "nomisCode" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "deprecated" : true,
             "description" : "Machine-readable NOMIS identifier of this incident type, which may be null for newer ones",
             "example" : "DISORDER1"
@@ -5142,7 +5146,7 @@
             "example" : false
           },
           "nomisCode" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "deprecated" : true,
             "description" : "Machine-readable NOMIS identifier of this value, which may be null for statuses that cannot be mapped",
             "example" : "INAN"
@@ -5193,7 +5197,7 @@
             "example" : "Impeded staff"
           },
           "nomisCode" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "deprecated" : true,
             "description" : "Machine-readable NOMIS identifier of this value, which may be null for newer prisoner roles",
             "example" : "IMPED"
@@ -5217,7 +5221,7 @@
             "example" : "Investigation (Police)"
           },
           "nomisCode" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "deprecated" : true,
             "description" : "Machine-readable NOMIS identifier of this value, which may be null for newer prisoner outcomes",
             "example" : "IPOL"
