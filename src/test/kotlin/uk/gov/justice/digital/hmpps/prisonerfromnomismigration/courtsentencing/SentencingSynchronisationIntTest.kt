@@ -1505,6 +1505,7 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
                 assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["nomisSentenceCalc"]).isEqualTo("ADIMP_ORA")
                 assertThat(it["dpsSentenceId"]).isEqualTo(DPS_SENTENCE_ID)
               },
               isNull(),

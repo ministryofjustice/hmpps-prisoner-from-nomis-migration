@@ -1329,7 +1329,7 @@ class CourtSentencingSynchronisationService(
         track(
           "sentence-synchronisation-updated",
           telemetry = (
-            telemetry + ("dpsSentenceId" to mapping.dpsSentenceId) +
+            telemetry + ("dpsSentenceId" to mapping.dpsSentenceId) + ("nomisSentenceCalc" to nomisSentence.calculationType.code) +
               ("nomisCourtAppearanceId" to eventId) + ("dpsCourtAppearanceId" to courtAppearanceMapping.dpsCourtAppearanceId) + ("nomisOrderId" to nomisSentence.courtOrder.id) +
               ("dpsChargeIds" to getDpsChargeMappings(nomisSentence).joinToString()) + ("nomisChargeIds" to nomisSentence.offenderCharges.joinToString { it.id.toString() })
             ).toMutableMap(),
