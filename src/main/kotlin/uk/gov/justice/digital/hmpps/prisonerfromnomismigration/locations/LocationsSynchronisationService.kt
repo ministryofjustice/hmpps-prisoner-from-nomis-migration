@@ -291,17 +291,23 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse, parentId: Strin
   parentId = parentId?.let { UUID.fromString(parentId) },
   capacity = if (nomisLocationResponse.capacity != null || nomisLocationResponse.operationalCapacity != null) {
     Capacity(
-      nomisLocationResponse.capacity ?: 0,
-      nomisLocationResponse.operationalCapacity ?: 0,
+      maxCapacity = nomisLocationResponse.capacity ?: 0,
+      workingCapacity = nomisLocationResponse.operationalCapacity ?: 0,
+      certifiedNormalAccommodation = nomisLocationResponse.cnaCapacity,
     )
   } else {
     null
   },
   certification = if (nomisLocationResponse.certified != null || nomisLocationResponse.cnaCapacity != null) {
-    Certification(nomisLocationResponse.certified == true, nomisLocationResponse.cnaCapacity ?: 0)
+    Certification(
+      certified = nomisLocationResponse.certified == true,
+      capacityOfCertifiedCell = nomisLocationResponse.cnaCapacity ?: 0,
+      certifiedNormalAccommodation = nomisLocationResponse.cnaCapacity,
+    )
   } else {
     null
   },
+  certifiedCell = nomisLocationResponse.certified,
   attributes = nomisLocationResponse.profiles
     ?.mapNotNull { toAttribute(it.profileType.name, it.profileCode) }
     ?.toSet(),
