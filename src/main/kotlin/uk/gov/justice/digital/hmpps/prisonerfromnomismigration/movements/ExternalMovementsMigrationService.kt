@@ -19,6 +19,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.M
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.DEFAULT_ESCORT_CODE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.DEFAULT_TRANSPORT_TYPE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.toDpsAuthorisationStatusCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationMappingDto
@@ -267,7 +270,7 @@ fun OffenderTemporaryAbsencesResponse.toDpsRequest(oldMappingIds: TemporaryAbsen
     booking.temporaryAbsenceApplications.map { application ->
       MigrateTapAuthorisation(
         prisonCode = application.prisonId,
-        statusCode = toDpsAuthorisationStatusCode(application.applicationStatus, application.toDate, booking.latestBooking),
+        statusCode = application.applicationStatus.toDpsAuthorisationStatusCode(application.toDate, booking.latestBooking),
         absenceTypeCode = application.temporaryAbsenceType,
         absenceSubTypeCode = application.temporaryAbsenceSubType,
         absenceReasonCode = application.eventSubType,

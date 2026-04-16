@@ -1,6 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
 
 import com.microsoft.applicationinsights.TelemetryClient
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.BookingMovedAdditionalInformationEvent
@@ -9,7 +11,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.Telemetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsSyncService.Companion.log
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MoveTemporaryAbsencesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMovementIdMapping
@@ -28,6 +29,9 @@ class ExternalMovementsMoveBookingService(
   private val migrationService: ExternalMovementsMigrationService,
   override val telemetryClient: TelemetryClient,
 ) : TelemetryEnabled {
+  companion object {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
 
   suspend fun moveBooking(request: PrisonerBookingMovedDomainEvent) {
     val (toOffender, fromOffender, bookingId) = request.additionalInformation
