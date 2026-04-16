@@ -16,14 +16,22 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_TEMPORARY_ABSENCE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapAddressService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapApplicationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMovementService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapScheduleService
 import java.util.concurrent.CompletableFuture
 
 @Service
 class ExternalMovementsEventListener(
   private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
-  private val syncService: ExternalMovementsSyncService,
   private val moveBookingService: ExternalMovementsMoveBookingService,
+  private val tapApplicationService: TapApplicationService,
+  private val tapScheduleService: TapScheduleService,
+  private val movementService: ExternalMovementsMovementRouter,
+  private val tapAddressService: TapAddressService,
+  private val tapMovementService: TapMovementService,
 ) {
 
   private companion object {
@@ -41,16 +49,16 @@ class ExternalMovementsEventListener(
           if (eventFeatureSwitch.isEnabled(eventType, "externalmovements")) {
             @Suppress("UNUSED_EXPRESSION")
             when (eventType) {
-              "MOVEMENT_APPLICATION-INSERTED" -> syncService.movementApplicationInserted(sqsMessage.Message.fromJson())
-              "MOVEMENT_APPLICATION-UPDATED" -> syncService.movementApplicationUpdated(sqsMessage.Message.fromJson())
-              "MOVEMENT_APPLICATION-DELETED" -> syncService.movementApplicationDeleted(sqsMessage.Message.fromJson())
-              "SCHEDULED_EXT_MOVE-INSERTED" -> syncService.scheduledMovementInserted(sqsMessage.Message.fromJson())
-              "SCHEDULED_EXT_MOVE-UPDATED" -> syncService.scheduledMovementUpdated(sqsMessage.Message.fromJson())
-              "SCHEDULED_EXT_MOVE-DELETED" -> syncService.scheduledMovementDeleted(sqsMessage.Message.fromJson())
-              "EXTERNAL_MOVEMENT-CHANGED" -> syncService.externalMovementChanged(sqsMessage.Message.fromJson())
-              "ADDRESSES_OFFENDER-UPDATED" -> syncService.offenderAddressUpdated(sqsMessage.Message.fromJson())
-              "ADDRESSES_CORPORATE-UPDATED" -> syncService.corporateAddressUpdated(sqsMessage.Message.fromJson())
-              "ADDRESSES_AGENCY-UPDATED" -> syncService.agencyAddressUpdated(sqsMessage.Message.fromJson())
+              "MOVEMENT_APPLICATION-INSERTED" -> tapApplicationService.movementApplicationInserted(sqsMessage.Message.fromJson())
+              "MOVEMENT_APPLICATION-UPDATED" -> tapApplicationService.movementApplicationUpdated(sqsMessage.Message.fromJson())
+              "MOVEMENT_APPLICATION-DELETED" -> tapApplicationService.movementApplicationDeleted(sqsMessage.Message.fromJson())
+              "SCHEDULED_EXT_MOVE-INSERTED" -> tapScheduleService.scheduledMovementInserted(sqsMessage.Message.fromJson())
+              "SCHEDULED_EXT_MOVE-UPDATED" -> tapScheduleService.scheduledMovementUpdated(sqsMessage.Message.fromJson())
+              "SCHEDULED_EXT_MOVE-DELETED" -> tapScheduleService.scheduledMovementDeleted(sqsMessage.Message.fromJson())
+              "EXTERNAL_MOVEMENT-CHANGED" -> movementService.externalMovementChanged(sqsMessage.Message.fromJson())
+              "ADDRESSES_OFFENDER-UPDATED" -> tapAddressService.offenderAddressUpdated(sqsMessage.Message.fromJson())
+              "ADDRESSES_CORPORATE-UPDATED" -> tapAddressService.corporateAddressUpdated(sqsMessage.Message.fromJson())
+              "ADDRESSES_AGENCY-UPDATED" -> tapAddressService.agencyAddressUpdated(sqsMessage.Message.fromJson())
               "prison-offender-events.prisoner.booking.moved" -> moveBookingService.moveBooking(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
@@ -64,11 +72,11 @@ class ExternalMovementsEventListener(
   }
 
   private suspend fun retryMapping(type: String, message: String) = when (ExternalMovementRetryMappingMessageTypes.valueOf(type)) {
-    RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION -> syncService.retryCreateApplicationMapping(message.fromJson())
-    RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT -> syncService.retryCreateScheduledMovementMapping(message.fromJson())
-    RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT -> syncService.retryCreateExternalMovementMapping(message.fromJson())
-    RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT -> syncService.retryUpdateExternalMovementMapping(message.fromJson())
-    RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT -> syncService.retryUpdateScheduledMovementMapping(message.fromJson())
+    RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION -> tapApplicationService.retryCreateApplicationMapping(message.fromJson())
+    RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT -> tapScheduleService.retryCreateScheduledMovementMapping(message.fromJson())
+    RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT -> tapMovementService.retryCreateExternalMovementMapping(message.fromJson())
+    RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT -> tapMovementService.retryUpdateExternalMovementMapping(message.fromJson())
+    RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT -> tapScheduleService.retryUpdateScheduledMovementMapping(message.fromJson())
     RETRY_MOVE_BOOKING_MAPPING_TEMPORARY_ABSENCE -> moveBookingService.retryMoveBookingMapping(message.fromJson())
   }
 

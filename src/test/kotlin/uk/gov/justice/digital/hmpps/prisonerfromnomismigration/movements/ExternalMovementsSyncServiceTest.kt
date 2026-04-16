@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.scheduledTemporaryAbsenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.temporaryAbsenceApplicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.toDpsRequest
 import java.time.LocalDate
 
 class ExternalMovementsSyncServiceTest {
