@@ -43,8 +43,8 @@ class ExternalMovementsMoveBookingService(
 
     track("temporary-absence-move-booking", telemetry) {
       val booking = getNomisBooking(toOffender, bookingId)
-      if (booking.isEmpty()) {
-        telemetry["reason"] = "No application or unscheduled mappings to move for booking=$bookingId"
+      if (booking == null || booking.isEmpty()) {
+        telemetry["reason"] = "No TAPs to move for booking=$bookingId"
         telemetryClient.trackEvent("temporary-absence-move-booking-ignored", telemetry)
         return
       }
@@ -68,7 +68,6 @@ class ExternalMovementsMoveBookingService(
   private suspend fun getNomisBooking(offenderNo: String, bookingId: Long) = nomisApi.getTemporaryAbsencesOrNull(offenderNo)
     ?.bookings
     ?.firstOrNull { it.bookingId == bookingId }
-    ?: throw TapMoveBookingException("No booking found in NOMIS for bookingId=$bookingId")
 
   private fun BookingTemporaryAbsences.findDpsAuthorisationIds(
     mappings: List<TemporaryAbsenceApplicationIdMapping>,
