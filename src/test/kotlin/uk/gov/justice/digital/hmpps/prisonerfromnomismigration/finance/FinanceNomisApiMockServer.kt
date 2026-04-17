@@ -38,17 +38,6 @@ class FinanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetPrisonTransaction(
-    transactionId: Long = 1001,
-    response: List<GeneralLedgerTransactionDto> = nomisGLTransactions(transactionId),
-  ) {
-    nomisApi.stubFor(
-      get(urlEqualTo("/transactions/$transactionId/general-ledger")).willReturn(
-        okJson(jsonMapper.writeValueAsString(response)),
-      ),
-    )
-  }
-
   fun stubGetPrisonBalanceIds(totalElements: Long = 20, pageSize: Long = 20, firstPrisonBalanceId: String = "MDI") {
     val content: List<String> = (1..min(pageSize, totalElements)).map {
       "$firstPrisonBalanceId$it"

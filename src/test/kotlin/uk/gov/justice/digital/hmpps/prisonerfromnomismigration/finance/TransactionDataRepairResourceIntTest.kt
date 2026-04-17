@@ -63,137 +63,6 @@ class TransactionDataRepairResourceIntTest : SqsIntegrationTestBase() {
     @Nested
     inner class HappyPath {
       @Nested
-      inner class HappyPathPrisonTransaction {
-        val transactionId = 1234L
-        val dpsTransactionId = UUID.randomUUID()
-
-        val receipt = SyncTransactionReceipt(
-          synchronizedTransactionId = dpsTransactionId,
-          requestId = dpsTransactionId,
-          action = SyncTransactionReceipt.Action.UPDATED,
-        )
-
-        @BeforeEach
-        fun setUp() {
-          nomisApiMockServer.stubGetPrisonerTransaction(transactionId = transactionId, response = emptyList())
-          nomisApiMockServer.stubGetPrisonTransaction(transactionId = transactionId)
-          mappingApiMockServer.stubGetByNomisId(transactionId = transactionId)
-          financeApi.stubPostPrisonTransaction(receipt)
-
-          webTestClient.post().uri("/transactions/$transactionId/repair")
-            .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
-            .exchange()
-            .expectStatus().isNoContent
-        }
-
-        @Test
-        fun `will attempt to retrieve prisoner transactions`() {
-          nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/transactions/$transactionId")))
-        }
-
-        @Test
-        fun `will retrieve prison transactions`() {
-          nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/transactions/$transactionId/general-ledger")))
-        }
-
-        @Test
-        fun `will retrieve mapping for the transaction`() {
-          mappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/transactions/nomis-transaction-id/$transactionId")))
-        }
-
-        @Test
-        fun `will send the transaction to DPS`() {
-          financeApi.verify(
-            postRequestedFor(urlPathEqualTo("/sync/general-ledger-transactions"))
-              .withRequestBodyJsonPath("transactionId", transactionId)
-              .withRequestBodyJsonPath("generalLedgerEntries.size()", 1),
-          )
-        }
-
-        @Test
-        fun `will not attempt to save mapping for the transaction`() {
-          mappingApiMockServer.verify(0, postRequestedFor(urlEqualTo("/mapping/transactions")))
-        }
-
-        @Test
-        fun `will track telemetry for the repair`() {
-          verify(telemetryClient).trackEvent(
-            eq("transaction-resynchronisation-repair"),
-            check {
-              assertThat(it["transactionId"]).isEqualTo(transactionId.toString())
-            },
-            isNull(),
-          )
-        }
-      }
-
-      @Nested
-      inner class HappyPathPrisonTransactionNoMapping {
-        val transactionId = 1234L
-        val dpsTransactionId = UUID.randomUUID()
-
-        val receipt = SyncTransactionReceipt(
-          synchronizedTransactionId = dpsTransactionId,
-          requestId = dpsTransactionId,
-          action = SyncTransactionReceipt.Action.UPDATED,
-        )
-
-        @BeforeEach
-        fun setUp() {
-          nomisApiMockServer.stubGetPrisonerTransaction(transactionId = transactionId, response = emptyList())
-          nomisApiMockServer.stubGetPrisonTransaction(transactionId = transactionId)
-          mappingApiMockServer.stubGetByNomisId(transactionId = transactionId, mapping = null)
-          financeApi.stubPostPrisonTransaction(receipt)
-          mappingApiMockServer.stubPostMapping()
-
-          webTestClient.post().uri("/transactions/$transactionId/repair")
-            .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
-            .exchange()
-            .expectStatus().isNoContent
-        }
-
-        @Test
-        fun `will attempt to retrieve prisoner transactions`() {
-          nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/transactions/$transactionId")))
-        }
-
-        @Test
-        fun `will retrieve prison transactions`() {
-          nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/transactions/$transactionId/general-ledger")))
-        }
-
-        @Test
-        fun `will attempt to retrieve mapping for the transaction`() {
-          mappingApiMockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/transactions/nomis-transaction-id/$transactionId")))
-        }
-
-        @Test
-        fun `will send the transaction to DPS`() {
-          financeApi.verify(
-            postRequestedFor(urlPathEqualTo("/sync/general-ledger-transactions"))
-              .withRequestBodyJsonPath("transactionId", transactionId)
-              .withRequestBodyJsonPath("generalLedgerEntries.size()", 1),
-          )
-        }
-
-        @Test
-        fun `will save mapping for the transaction`() {
-          mappingApiMockServer.verify(postRequestedFor(urlEqualTo("/mapping/transactions")))
-        }
-
-        @Test
-        fun `will track telemetry for the repair`() {
-          verify(telemetryClient).trackEvent(
-            eq("transaction-resynchronisation-repair"),
-            check {
-              assertThat(it["transactionId"]).isEqualTo(transactionId.toString())
-            },
-            isNull(),
-          )
-        }
-      }
-
-      @Nested
       inner class HappyPathPrisonerTransaction {
         val transactionId = 1234L
         val dpsTransactionId = UUID.randomUUID()
@@ -265,7 +134,6 @@ class TransactionDataRepairResourceIntTest : SqsIntegrationTestBase() {
       @BeforeEach
       fun setUp() {
         nomisApiMockServer.stubGetPrisonerTransaction(transactionId = transactionId, response = emptyList())
-        nomisApiMockServer.stubGetPrisonTransaction(transactionId = transactionId, response = emptyList())
         mappingApiMockServer.stubGetByNomisId(transactionId = transactionId)
 
         webTestClient.post().uri("/transactions/$transactionId/repair")
@@ -273,17 +141,12 @@ class TransactionDataRepairResourceIntTest : SqsIntegrationTestBase() {
           .exchange()
           .expectStatus().isNotFound
           .expectBody()
-          .jsonPath("userMessage").isEqualTo("Not Found: No transaction found in nomis for transactionId=1234")
+          .jsonPath("userMessage").isEqualTo("Not Found: No prisoner transaction found in nomis for transactionId=1234")
       }
 
       @Test
       fun `will attempt to retrieve prisoner transaction`() {
         nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/transactions/$transactionId")))
-      }
-
-      @Test
-      fun `will attempt to retrieve prison transaction`() {
-        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/transactions/$transactionId/general-ledger")))
       }
 
       @Test
