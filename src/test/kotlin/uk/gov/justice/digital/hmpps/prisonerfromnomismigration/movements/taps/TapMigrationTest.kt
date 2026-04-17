@@ -1,15 +1,15 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.application
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.temporaryAbsencesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingIdsDto
 import java.time.LocalDate
-import kotlin.collections.listOf
 
-class ExternalMovementsMigrationTest {
+class TapMigrationTest {
 
   private val someMappingIds = TemporaryAbsencesPrisonerMappingIdsDto("any", listOf(), listOf(), listOf())
 
@@ -31,7 +31,7 @@ class ExternalMovementsMigrationTest {
 
       val dpsRequest = nomisResponse.toDpsRequest(someMappingIds)
 
-      assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("EXPIRED")
+      Assertions.assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("EXPIRED")
     }
 
     @Test
@@ -50,7 +50,7 @@ class ExternalMovementsMigrationTest {
 
       val dpsRequest = nomisResponse.toDpsRequest(someMappingIds)
 
-      assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("EXPIRED")
+      Assertions.assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("EXPIRED")
     }
 
     @Test
@@ -68,7 +68,7 @@ class ExternalMovementsMigrationTest {
 
       val dpsRequest = nomisResponse.toDpsRequest(someMappingIds)
 
-      assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("APPROVED")
+      Assertions.assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("APPROVED")
     }
 
     @Test
@@ -86,7 +86,7 @@ class ExternalMovementsMigrationTest {
 
       val dpsRequest = nomisResponse.toDpsRequest(someMappingIds)
 
-      assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("APPROVED")
+      Assertions.assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("APPROVED")
     }
 
     @Test
@@ -104,7 +104,7 @@ class ExternalMovementsMigrationTest {
 
       val dpsRequest = nomisResponse.toDpsRequest(someMappingIds)
 
-      assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("PENDING")
+      Assertions.assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("PENDING")
     }
   }
 }

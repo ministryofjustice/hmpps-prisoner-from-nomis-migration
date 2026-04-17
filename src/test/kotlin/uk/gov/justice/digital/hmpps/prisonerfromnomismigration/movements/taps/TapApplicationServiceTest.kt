@@ -1,54 +1,12 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.DisplayName
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.scheduledTemporaryAbsenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.temporaryAbsenceApplicationResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.toDpsRequest
 import java.time.LocalDate
 
-class ExternalMovementsSyncServiceTest {
-
-  @Nested
-  @DisplayName("Transform scheduled movement to DPS Occurrence")
-  inner class TransformToSyncWriteTapOccurrence {
-
-    @Test
-    fun `should default escort code if null`() {
-      val nomis = scheduledTemporaryAbsenceResponse().copy(
-        escort = null,
-      )
-
-      with(nomis.toDpsRequest(dpsLocation = Location(address = "any"))) {
-        assertThat(accompaniedByCode).isEqualTo("NOT_PROVIDED")
-      }
-    }
-
-    @Test
-    fun `should default transport type code if null`() {
-      val nomis = scheduledTemporaryAbsenceResponse().copy(
-        transportType = null,
-      )
-
-      with(nomis.toDpsRequest(dpsLocation = Location(address = "any"))) {
-        assertThat(transportCode).isEqualTo("TNR")
-      }
-    }
-  }
-
-  @Test
-  fun `should send cancelled flag`() {
-    val nomis = scheduledTemporaryAbsenceResponse().copy(
-      eventStatus = "CANC",
-    )
-
-    with(nomis.toDpsRequest(dpsLocation = Location(address = "any"))) {
-      assertThat(isCancelled).isTrue
-    }
-  }
+class TapApplicationServiceTest {
 
   @Nested
   inner class ApplicationStatusExpired {
@@ -64,7 +22,7 @@ class ExternalMovementsSyncServiceTest {
 
       val dpsRequest = nomisResponse.toDpsRequest()
 
-      assertThat(dpsRequest.statusCode).isEqualTo("EXPIRED")
+      Assertions.assertThat(dpsRequest.statusCode).isEqualTo("EXPIRED")
     }
 
     @Test
@@ -79,7 +37,7 @@ class ExternalMovementsSyncServiceTest {
 
       val dpsRequest = nomisResponse.toDpsRequest()
 
-      assertThat(dpsRequest.statusCode).isEqualTo("EXPIRED")
+      Assertions.assertThat(dpsRequest.statusCode).isEqualTo("EXPIRED")
     }
 
     @Test
@@ -93,7 +51,7 @@ class ExternalMovementsSyncServiceTest {
 
       val dpsRequest = nomisResponse.toDpsRequest()
 
-      assertThat(dpsRequest.statusCode).isEqualTo("APPROVED")
+      Assertions.assertThat(dpsRequest.statusCode).isEqualTo("APPROVED")
     }
 
     @Test
@@ -107,7 +65,7 @@ class ExternalMovementsSyncServiceTest {
 
       val dpsRequest = nomisResponse.toDpsRequest()
 
-      assertThat(dpsRequest.statusCode).isEqualTo("PENDING")
+      Assertions.assertThat(dpsRequest.statusCode).isEqualTo("PENDING")
     }
 
     @Test
@@ -121,7 +79,7 @@ class ExternalMovementsSyncServiceTest {
 
       val dpsRequest = nomisResponse.toDpsRequest()
 
-      assertThat(dpsRequest.statusCode).isEqualTo("APPROVED")
+      Assertions.assertThat(dpsRequest.statusCode).isEqualTo("APPROVED")
     }
   }
 }
