@@ -5,6 +5,8 @@ import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -30,6 +32,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.M
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMovementIdMapping
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.util.*
 
 class ExternalMovementsMoveBookingIntTest(
@@ -168,7 +171,7 @@ class ExternalMovementsMoveBookingIntTest(
   }
 
   @Nested
-  inner class FailToFindNomisMappings {
+  inner class FailToFindNomisBookingTaps {
     @BeforeEach
     fun setUp() {
       externalMovementsNomisApi.stubGetTemporaryAbsences(status = HttpStatus.NOT_FOUND)
@@ -180,7 +183,7 @@ class ExternalMovementsMoveBookingIntTest(
           movedFromNomsNumber = "A1000KT",
         ),
       )
-        .also { waitForAnyProcessingToComplete("temporary-absence-move-booking-error") }
+        .also { waitForAnyProcessingToComplete("temporary-absence-move-booking-ignored") }
     }
 
     @Test
@@ -189,17 +192,25 @@ class ExternalMovementsMoveBookingIntTest(
     }
 
     @Test
-    fun `should publish error telemetry`() {
+    fun `should publish ignore telemetry`() {
       verify(telemetryClient).trackEvent(
-        eq("temporary-absence-move-booking-error"),
+        eq("temporary-absence-move-booking-ignored"),
         check {
           assertThat(it["bookingId"]).isEqualTo("1234567")
           assertThat(it["fromOffenderNo"]).isEqualTo("A1000KT")
           assertThat(it["toOffenderNo"]).isEqualTo("A1234KT")
-          assertThat(it["error"]).isEqualTo("No booking found in NOMIS for bookingId=1234567")
+          assertThat(it["reason"]).isEqualTo("No TAPs to move for booking=1234567")
         },
         isNull(),
       )
+    }
+
+    @Test
+    fun `should not send message to DLQ`() {
+      await untilAsserted {
+        assertThat(awsSqsExternalMovementsOffenderEventsDlqClient.countAllMessagesOnQueue(externalMovementsQueueOffenderEventsDlqUrl).get())
+          .isEqualTo(0)
+      }
     }
   }
 
@@ -250,7 +261,7 @@ class ExternalMovementsMoveBookingIntTest(
           assertThat(it["bookingId"]).isEqualTo("1234567")
           assertThat(it["fromOffenderNo"]).isEqualTo("A1000KT")
           assertThat(it["toOffenderNo"]).isEqualTo("A1234KT")
-          assertThat(it["reason"]).contains("No application or unscheduled mappings to move for booking=1234567")
+          assertThat(it["reason"]).contains("No TAPs to move for booking=1234567")
         },
         isNull(),
       )
