@@ -74,7 +74,7 @@ class ExternalMovementsMigrationIntTest(
   inner class Security {
     @Test
     fun `access forbidden when no role`() {
-      webTestClient.post().uri("/migrate/external-movements")
+      webTestClient.post().uri("/migrate/taps")
         .headers(setAuthorisation(roles = listOf()))
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(ExternalMovementsMigrationFilter())
@@ -84,7 +84,7 @@ class ExternalMovementsMigrationIntTest(
 
     @Test
     fun `access forbidden with wrong role`() {
-      webTestClient.post().uri("/migrate/external-movements")
+      webTestClient.post().uri("/migrate/taps")
         .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(ExternalMovementsMigrationFilter())
@@ -94,7 +94,7 @@ class ExternalMovementsMigrationIntTest(
 
     @Test
     fun `access unauthorised with no auth token`() {
-      webTestClient.post().uri("/migrate/external-movements")
+      webTestClient.post().uri("/migrate/taps")
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(ExternalMovementsMigrationFilter())
         .exchange()
@@ -734,7 +734,7 @@ class ExternalMovementsMigrationIntTest(
 
       @Test
       fun `access forbidden when no role`() {
-        webTestClient.put().uri("/migrate/external-movements/repair/$prisonerNumber")
+        webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
           .headers(setAuthorisation(roles = listOf()))
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(ExternalMovementsMigrationFilter())
@@ -744,7 +744,7 @@ class ExternalMovementsMigrationIntTest(
 
       @Test
       fun `access forbidden with wrong role`() {
-        webTestClient.put().uri("/migrate/external-movements/repair/$prisonerNumber")
+        webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
           .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(ExternalMovementsMigrationFilter())
@@ -754,7 +754,7 @@ class ExternalMovementsMigrationIntTest(
 
       @Test
       fun `access unauthorised with no auth token`() {
-        webTestClient.put().uri("/migrate/external-movements/repair/$prisonerNumber")
+        webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(ExternalMovementsMigrationFilter())
           .exchange()
@@ -763,7 +763,7 @@ class ExternalMovementsMigrationIntTest(
 
       @Test
       fun `access allowed with temporary role`() {
-        webTestClient.put().uri("/migrate/external-movements/repair/$prisonerNumber")
+        webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__REPAIR_MOVEMENTS__RW")))
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(ExternalMovementsMigrationFilter())
@@ -774,7 +774,7 @@ class ExternalMovementsMigrationIntTest(
 
     private fun repairPrisoner(prisonerNumber: String) = webTestClient.put()
       .uri {
-        it.path("/migrate/external-movements/repair/$prisonerNumber")
+        it.path("/migrate/taps/repair/$prisonerNumber")
           .build(prisonerNumber)
       }
       .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
@@ -785,7 +785,7 @@ class ExternalMovementsMigrationIntTest(
   }
 
   private fun performMigration(prisonerNumber: String? = null): String = webTestClient.post()
-    .uri("/migrate/external-movements")
+    .uri("/migrate/taps")
     .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .apply { prisonerNumber?.let { bodyValue("""{"prisonerNumber":"$prisonerNumber"}""") } ?: bodyValue("{}") }
