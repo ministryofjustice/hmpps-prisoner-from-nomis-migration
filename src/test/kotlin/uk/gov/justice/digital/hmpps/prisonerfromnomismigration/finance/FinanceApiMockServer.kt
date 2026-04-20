@@ -148,36 +148,6 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubPostPrisonTransaction(response: SyncTransactionReceipt) {
-    stubFor(
-      post("/sync/general-ledger-transactions").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(CREATED.value())
-          .withBody(jsonMapper.writeValueAsString(response)),
-      ),
-    )
-  }
-
-  fun stubPostGLTransactionFailure() {
-    stubFor(
-      post("/sync/general-ledger-transactions").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(INTERNAL_SERVER_ERROR.value())
-          .withBody(
-            jsonMapper.writeValueAsString(
-              ErrorResponse(
-                status = 500,
-                userMessage = "test message",
-                developerMessage = "dev message",
-              ),
-            ),
-          ),
-      ),
-    )
-  }
-
   fun stubMigratePrisonerBalance(prisonNumber: String = "A1234BC") {
     stubFor(
       post("/migrate/prisoner-balances/$prisonNumber")
