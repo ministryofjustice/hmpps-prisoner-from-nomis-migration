@@ -18,7 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.S
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto.MappingType.NOMIS_CREATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceApplicationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapApplication
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -55,7 +55,7 @@ class TapApplicationService(
       ?.also { telemetryClient.trackEvent("${TELEMETRY_PREFIX}-inserted-ignored", telemetry) }
       ?: run {
         track("${TELEMETRY_PREFIX}-inserted", telemetry) {
-          nomisApiService.getTemporaryAbsenceApplication(prisonerNumber, nomisApplicationId)
+          nomisApiService.getTapApplication(prisonerNumber, nomisApplicationId)
             .also {
               val dpsApplicationId = dpsApiService.syncTapAuthorisation(prisonerNumber, it.toDpsRequest())
                 .id
@@ -85,7 +85,7 @@ class TapApplicationService(
         ?.also { telemetry["dpsAuthorisationId"] = it }
         ?: throw IllegalStateException("No mapping found when handling an update event for TAP application $nomisApplicationId - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
 
-      val nomisApplication = nomisApiService.getTemporaryAbsenceApplication(prisonerNumber, nomisApplicationId)
+      val nomisApplication = nomisApiService.getTapApplication(prisonerNumber, nomisApplicationId)
       dpsApiService.syncTapAuthorisation(prisonerNumber, nomisApplication.toDpsRequest(dpsApplicationId))
     }
   }
@@ -147,12 +147,12 @@ class TapApplicationService(
   }
 }
 
-fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) = SyncWriteTapAuthorisation(
+fun TapApplication.toDpsRequest(id: UUID? = null) = SyncWriteTapAuthorisation(
   id = id,
   prisonCode = prisonId,
   statusCode = applicationStatus.toDpsAuthorisationStatusCode(toDate, latestBooking),
-  absenceTypeCode = temporaryAbsenceType,
-  absenceSubTypeCode = temporaryAbsenceSubType,
+  absenceTypeCode = tapType,
+  absenceSubTypeCode = tapSubType,
   absenceReasonCode = eventSubType,
   accompaniedByCode = escortCode ?: DEFAULT_ESCORT_CODE,
   repeat = applicationType == "REPEATING",
@@ -161,7 +161,7 @@ fun TemporaryAbsenceApplicationResponse.toDpsRequest(id: UUID? = null) = SyncWri
   comments = comment,
   created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
   updated = audit.modifyDatetime?.let { SyncAtAndBy(audit.modifyDatetime, audit.modifyUserId!!) },
-  legacyId = movementApplicationId,
+  legacyId = tapApplicationId,
   transportCode = transportType ?: DEFAULT_TRANSPORT_TYPE,
   startTime = "${releaseTime.toLocalTime()}",
   endTime = "${returnTime.toLocalTime()}",

@@ -26,7 +26,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.temporaryAbsenceApplicationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.tapApplication
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
@@ -59,7 +59,7 @@ class TapApplicationIntTest(
       fun setUp() {
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
         mappingApi.stubCreateTemporaryAbsenceApplicationMapping()
-        nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
+        nomisApi.stubGetTapApplication(applicationId = 111)
         dpsApi.stubSyncTapAuthorisation(response = SyncResponse(dpsId))
 
         sendMessage(tapApplicationEvent("MOVEMENT_APPLICATION-INSERTED"))
@@ -73,7 +73,7 @@ class TapApplicationIntTest(
 
       @Test
       fun `should get NOMIS application`() {
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/application/111")))
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/taps/application/111")))
       }
 
       @Test
@@ -210,7 +210,7 @@ class TapApplicationIntTest(
       fun setUp() {
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
         mappingApi.stubCreateTemporaryAbsenceApplicationMapping()
-        nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
+        nomisApi.stubGetTapApplication(applicationId = 111)
         dpsApi.stubSyncTapAuthorisationError()
 
         sendMessage(tapApplicationEvent("MOVEMENT_APPLICATION-INSERTED"))
@@ -249,7 +249,7 @@ class TapApplicationIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
-        nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
+        nomisApi.stubGetTapApplication(applicationId = 111)
         dpsApi.stubSyncTapAuthorisation(response = SyncResponse(dpsId))
         mappingApi.stubCreateTemporaryAbsenceApplicationMappingConflict(
           error = DuplicateMappingErrorResponse(
@@ -330,7 +330,7 @@ class TapApplicationIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
-        nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
+        nomisApi.stubGetTapApplication(applicationId = 111)
         dpsApi.stubSyncTapAuthorisation(response = SyncResponse(dpsId))
         mappingApi.stubCreateTemporaryAbsenceApplicationMappingFailureFollowedBySuccess()
 
@@ -396,7 +396,7 @@ class TapApplicationIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsId)
-        nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
+        nomisApi.stubGetTapApplication(applicationId = 111)
         dpsApi.stubSyncTapAuthorisation(response = SyncResponse(dpsId))
 
         sendMessage(tapApplicationEvent("MOVEMENT_APPLICATION-UPDATED"))
@@ -410,7 +410,7 @@ class TapApplicationIntTest(
 
       @Test
       fun `should get NOMIS application`() {
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/application/111")))
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/taps/application/111")))
       }
 
       @Test
@@ -487,7 +487,7 @@ class TapApplicationIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsId)
-        nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
+        nomisApi.stubGetTapApplication(applicationId = 111)
         dpsApi.stubSyncTapAuthorisationError()
 
         sendMessage(tapApplicationEvent("MOVEMENT_APPLICATION-UPDATED"))
@@ -519,9 +519,9 @@ class TapApplicationIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsId)
-        nomisApi.stubGetTemporaryAbsenceApplication(
+        nomisApi.stubGetTapApplication(
           applicationId = 111,
-          response = temporaryAbsenceApplicationResponse(
+          response = tapApplication(
             activeBooking = true,
             latestBooking = false,
             status = "APP-SCH",
@@ -555,7 +555,7 @@ class TapApplicationIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
-        nomisApi.stubGetTemporaryAbsenceApplication(applicationId = 111)
+        nomisApi.stubGetTapApplication(applicationId = 111)
         mappingApi.stubDeleteTemporaryAbsenceApplicationMapping(nomisApplicationId = 111)
         dpsApi.stubDeleteTapAuthorisation(dpsAuthorisationId)
 

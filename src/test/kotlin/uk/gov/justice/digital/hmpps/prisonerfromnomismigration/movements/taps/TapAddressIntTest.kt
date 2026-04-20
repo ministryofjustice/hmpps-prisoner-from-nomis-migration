@@ -58,8 +58,8 @@ class TapAddressIntTest(
 
         @Test
         fun `should get NOMIS scheduled movements`() {
-          nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234AA/temporary-absences/scheduled-temporary-absence/1")))
-          nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/B1234BB/temporary-absences/scheduled-temporary-absence/2")))
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234AA/taps/schedule/out/1")))
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/B1234BB/taps/schedule/out/2")))
         }
 
         @Test
@@ -303,7 +303,7 @@ class TapAddressIntTest(
       fun setUp() {
         createStubs("OFF")
         scheduleMappings.forEach {
-          nomisApi.stubGetTemporaryAbsenceScheduledMovement(
+          nomisApi.stubGetTapScheduleOut(
             offenderNo = it.mapping.prisonerNumber,
             eventId = it.mapping.nomisEventId,
             applicationId = it.nomisApplicationId,
@@ -490,7 +490,7 @@ class TapAddressIntTest(
       mappingApi.stubFindScheduledMovementsForAddressMappings(321, scheduleMappings.map { it.mapping })
       scheduleMappings.forEach {
         mappingApi.stubGetTemporaryAbsenceApplicationMapping(it.nomisApplicationId, it.dpsAuthorisationId)
-        nomisApi.stubGetTemporaryAbsenceScheduledMovement(
+        nomisApi.stubGetTapScheduleOut(
           offenderNo = it.mapping.prisonerNumber,
           eventId = it.mapping.nomisEventId,
           applicationId = it.nomisApplicationId,
