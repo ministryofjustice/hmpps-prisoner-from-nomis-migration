@@ -1,8 +1,11 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
 import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
@@ -30,15 +33,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.migrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMigrationFilter
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.application
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.temporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.application
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.temporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingIdsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTapsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
@@ -49,7 +51,7 @@ import java.util.*
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TapMigrationIntTest(
-  @Autowired private val externalMovementsNomisApi: ExternalMovementsNomisApiMockServer,
+  @Autowired private val externalMovementsNomisApi: TapNomisApiMockServer,
   @Autowired private val mappingApi: ExternalMovementsMappingApiMockServer,
 ) : MigrationTestBase() {
 
@@ -109,7 +111,7 @@ class TapMigrationIntTest(
       .map { index -> "A%04dKT".format(index) }
       .forEach { prisonerNumber ->
         mappingApi.stubGetTemporaryAbsenceMappingIds(prisonerNumber, 12345L, 1, dpsAuthorisationId, 1, dpsOccurrenceId, 3, dpsScheduledMovementOutId, 4, dpsScheduledMovementInId, 1, dpsUnscheduledMovementOutId, 2, dpsUnscheduledMovementInId)
-        externalMovementsNomisApi.stubGetTemporaryAbsences(prisonerNumber)
+        externalMovementsNomisApi.stubGetAllOffenderTaps(prisonerNumber)
         dpsApi.stubResyncPrisonerTaps(
           personIdentifier = prisonerNumber,
           response = migrateResponse(
@@ -142,19 +144,19 @@ class TapMigrationIntTest(
 
     @Test
     fun `will request temporary absences for each prisoner`() {
-      externalMovementsNomisApi.verifyGetTemporaryAbsences(offenderNo = "A0001KT")
-      externalMovementsNomisApi.verifyGetTemporaryAbsences(offenderNo = "A0002KT")
+      externalMovementsNomisApi.verifyGetAllOffenderTaps(offenderNo = "A0001KT")
+      externalMovementsNomisApi.verifyGetAllOffenderTaps(offenderNo = "A0002KT")
     }
 
     @Test
     fun `will create mappings`() {
       mappingApi.verify(
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/mapping/temporary-absence/migrate"))
+        putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
           .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
           .withRequestBodyJsonPath("migrationId", migrationId),
       )
       mappingApi.verify(
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/mapping/temporary-absence/migrate"))
+        putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
           .withRequestBodyJsonPath("prisonerNumber", "A0002KT")
           .withRequestBodyJsonPath("migrationId", migrationId),
       )
@@ -163,43 +165,43 @@ class TapMigrationIntTest(
     @Test
     fun `will call DPS for each offender`() {
       dpsApi.verify(
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/resync/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       )
       dpsApi.verify(
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/resync/temporary-absences/A0002KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0002KT")),
       )
     }
 
     @Test
     fun `will populate DPS TAP authorisation`() {
       getRequestBody<MigrateTapRequest>(
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/resync/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(temporaryAbsences[0]) {
-          Assertions.assertThat(prisonCode).isEqualTo("LEI")
-          Assertions.assertThat(statusCode).isEqualTo("APPROVED")
-          Assertions.assertThat(absenceTypeCode).isEqualTo("RR")
-          Assertions.assertThat(absenceSubTypeCode).isEqualTo("SPL")
-          Assertions.assertThat(accompaniedByCode).isEqualTo("U")
-          Assertions.assertThat(transportCode).isEqualTo("VAN")
-          Assertions.assertThat(repeat).isEqualTo(false)
-          Assertions.assertThat(start).isEqualTo(today)
-          Assertions.assertThat(end).isEqualTo(tomorrow)
-          Assertions.assertThat(comments).isEqualTo("application comment")
-          Assertions.assertThat(created.at.toLocalDate()).isEqualTo(today)
-          Assertions.assertThat(created.by).isEqualTo("USER")
-          Assertions.assertThat(updated).isNull()
-          Assertions.assertThat(legacyId).isEqualTo(1)
-          Assertions.assertThat(occurrences.size).isEqualTo(1)
-          Assertions.assertThat(LocalTime.parse(startTime))
+          assertThat(prisonCode).isEqualTo("LEI")
+          assertThat(statusCode).isEqualTo("APPROVED")
+          assertThat(absenceTypeCode).isEqualTo("RR")
+          assertThat(absenceSubTypeCode).isEqualTo("SPL")
+          assertThat(accompaniedByCode).isEqualTo("U")
+          assertThat(transportCode).isEqualTo("VAN")
+          assertThat(repeat).isEqualTo(false)
+          assertThat(start).isEqualTo(today)
+          assertThat(end).isEqualTo(tomorrow)
+          assertThat(comments).isEqualTo("application comment")
+          assertThat(created.at.toLocalDate()).isEqualTo(today)
+          assertThat(created.by).isEqualTo("USER")
+          assertThat(updated).isNull()
+          assertThat(legacyId).isEqualTo(1)
+          assertThat(occurrences.size).isEqualTo(1)
+          assertThat(LocalTime.parse(startTime))
             .isCloseTo(now.minusDays(1).toLocalTime(), Assertions.within(Duration.ofMinutes(5)))
-          Assertions.assertThat(LocalTime.parse(endTime))
+          assertThat(LocalTime.parse(endTime))
             .isCloseTo(now.toLocalTime(), Assertions.within(Duration.ofMinutes(5)))
-          Assertions.assertThat(location!!.uprn).isNull()
-          Assertions.assertThat(location.address).isEqualTo("some full address")
-          Assertions.assertThat(location.description).isEqualTo("some address description")
-          Assertions.assertThat(location.postcode).isEqualTo("S1 1AA")
-          Assertions.assertThat(id).isEqualTo(dpsAuthorisationId)
+          assertThat(location!!.uprn).isNull()
+          assertThat(location.address).isEqualTo("some full address")
+          assertThat(location.description).isEqualTo("some address description")
+          assertThat(location.postcode).isEqualTo("S1 1AA")
+          assertThat(id).isEqualTo(dpsAuthorisationId)
         }
       }
     }
@@ -207,29 +209,29 @@ class TapMigrationIntTest(
     @Test
     fun `will populate DPS TAP occurrence`() {
       getRequestBody<MigrateTapRequest>(
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/resync/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(temporaryAbsences[0].occurrences[0]) {
-          Assertions.assertThat(isCancelled).isFalse
-          Assertions.assertThat(start).isCloseTo(now.minusDays(1), Assertions.within(Duration.ofMinutes(5)))
-          Assertions.assertThat(end).isCloseTo(now.plusDays(1), Assertions.within(Duration.ofMinutes(5)))
-          Assertions.assertThat(location.address).isEqualTo("Schedule full address")
-          Assertions.assertThat(location.description).isEqualTo("Schedule address description")
-          Assertions.assertThat(location.postcode).isEqualTo("S1 1AA")
-          Assertions.assertThat(location.uprn).isNull()
-          Assertions.assertThat(absenceTypeCode).isEqualTo("RR")
-          Assertions.assertThat(absenceSubTypeCode).isEqualTo("SPL")
-          Assertions.assertThat(absenceReasonCode).isEqualTo("C5")
-          Assertions.assertThat(accompaniedByCode).isEqualTo("PECS")
-          Assertions.assertThat(transportCode).isEqualTo("VAN")
-          Assertions.assertThat(contactInformation).isEqualTo("Derek")
-          Assertions.assertThat(comments).isEqualTo("scheduled absence comment")
-          Assertions.assertThat(created.at.toLocalDate()).isEqualTo(today)
-          Assertions.assertThat(created.by).isEqualTo("USER")
-          Assertions.assertThat(updated).isNull()
-          Assertions.assertThat(legacyId).isEqualTo(1)
-          Assertions.assertThat(movements.size).isEqualTo(2)
-          Assertions.assertThat(id).isEqualTo(dpsOccurrenceId)
+          assertThat(isCancelled).isFalse
+          assertThat(start).isCloseTo(now.minusDays(1), Assertions.within(Duration.ofMinutes(5)))
+          assertThat(end).isCloseTo(now.plusDays(1), Assertions.within(Duration.ofMinutes(5)))
+          assertThat(location.address).isEqualTo("Schedule full address")
+          assertThat(location.description).isEqualTo("Schedule address description")
+          assertThat(location.postcode).isEqualTo("S1 1AA")
+          assertThat(location.uprn).isNull()
+          assertThat(absenceTypeCode).isEqualTo("RR")
+          assertThat(absenceSubTypeCode).isEqualTo("SPL")
+          assertThat(absenceReasonCode).isEqualTo("C5")
+          assertThat(accompaniedByCode).isEqualTo("PECS")
+          assertThat(transportCode).isEqualTo("VAN")
+          assertThat(contactInformation).isEqualTo("Derek")
+          assertThat(comments).isEqualTo("scheduled absence comment")
+          assertThat(created.at.toLocalDate()).isEqualTo(today)
+          assertThat(created.by).isEqualTo("USER")
+          assertThat(updated).isNull()
+          assertThat(legacyId).isEqualTo(1)
+          assertThat(movements.size).isEqualTo(2)
+          assertThat(id).isEqualTo(dpsOccurrenceId)
         }
       }
     }
@@ -237,24 +239,24 @@ class TapMigrationIntTest(
     @Test
     fun `will populate DPS TAP OUT movement`() {
       getRequestBody<MigrateTapRequest>(
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/resync/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(temporaryAbsences[0].occurrences[0].movements[0]) {
-          Assertions.assertThat(occurredAt).isCloseTo(now.minusDays(1), Assertions.within(Duration.ofMinutes(5)))
-          Assertions.assertThat(direction).isEqualTo(MigrateTapMovement.Direction.OUT)
-          Assertions.assertThat(absenceReasonCode).isEqualTo("C6")
-          Assertions.assertThat(location.address).isEqualTo("Absence full address")
-          Assertions.assertThat(location.description).isEqualTo("Absence address description")
-          Assertions.assertThat(location.postcode).isEqualTo("S1 1AA")
-          Assertions.assertThat(location.uprn).isNull()
-          Assertions.assertThat(accompaniedByCode).isEqualTo("U")
-          Assertions.assertThat(created.at.toLocalDate()).isEqualTo(today)
-          Assertions.assertThat(created.by).isEqualTo("USER")
-          Assertions.assertThat(legacyId).isEqualTo("12345_3")
-          Assertions.assertThat(accompaniedByComments).isEqualTo("Absence escort text")
-          Assertions.assertThat(comments).isEqualTo("Absence comment text")
-          Assertions.assertThat(updated).isNull()
-          Assertions.assertThat(id).isEqualTo(dpsScheduledMovementOutId)
+          assertThat(occurredAt).isCloseTo(now.minusDays(1), Assertions.within(Duration.ofMinutes(5)))
+          assertThat(direction).isEqualTo(MigrateTapMovement.Direction.OUT)
+          assertThat(absenceReasonCode).isEqualTo("C6")
+          assertThat(location.address).isEqualTo("Absence full address")
+          assertThat(location.description).isEqualTo("Absence address description")
+          assertThat(location.postcode).isEqualTo("S1 1AA")
+          assertThat(location.uprn).isNull()
+          assertThat(accompaniedByCode).isEqualTo("U")
+          assertThat(created.at.toLocalDate()).isEqualTo(today)
+          assertThat(created.by).isEqualTo("USER")
+          assertThat(legacyId).isEqualTo("12345_3")
+          assertThat(accompaniedByComments).isEqualTo("Absence escort text")
+          assertThat(comments).isEqualTo("Absence comment text")
+          assertThat(updated).isNull()
+          assertThat(id).isEqualTo(dpsScheduledMovementOutId)
         }
       }
     }
@@ -262,24 +264,24 @@ class TapMigrationIntTest(
     @Test
     fun `will populate DPS TAP IN movement`() {
       getRequestBody<MigrateTapRequest>(
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/resync/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(temporaryAbsences[0].occurrences[0].movements[1]) {
-          Assertions.assertThat(occurredAt).isCloseTo(now, Assertions.within(Duration.ofMinutes(5)))
-          Assertions.assertThat(direction).isEqualTo(MigrateTapMovement.Direction.IN)
-          Assertions.assertThat(absenceReasonCode).isEqualTo("C5")
-          Assertions.assertThat(location.address).isEqualTo("Absence return full address")
-          Assertions.assertThat(location.description).isEqualTo("Absence return address description")
-          Assertions.assertThat(location.postcode).isEqualTo("S2 2AA")
-          Assertions.assertThat(location.uprn).isNull()
-          Assertions.assertThat(accompaniedByCode).isEqualTo("PECS")
-          Assertions.assertThat(created.at.toLocalDate()).isEqualTo(today)
-          Assertions.assertThat(created.by).isEqualTo("USER")
-          Assertions.assertThat(legacyId).isEqualTo("12345_4")
-          Assertions.assertThat(accompaniedByComments).isEqualTo("Return escort text")
-          Assertions.assertThat(comments).isEqualTo("Return comment text")
-          Assertions.assertThat(updated).isNull()
-          Assertions.assertThat(id).isEqualTo(dpsScheduledMovementInId)
+          assertThat(occurredAt).isCloseTo(now, Assertions.within(Duration.ofMinutes(5)))
+          assertThat(direction).isEqualTo(MigrateTapMovement.Direction.IN)
+          assertThat(absenceReasonCode).isEqualTo("C5")
+          assertThat(location.address).isEqualTo("Absence return full address")
+          assertThat(location.description).isEqualTo("Absence return address description")
+          assertThat(location.postcode).isEqualTo("S2 2AA")
+          assertThat(location.uprn).isNull()
+          assertThat(accompaniedByCode).isEqualTo("PECS")
+          assertThat(created.at.toLocalDate()).isEqualTo(today)
+          assertThat(created.by).isEqualTo("USER")
+          assertThat(legacyId).isEqualTo("12345_4")
+          assertThat(accompaniedByComments).isEqualTo("Return escort text")
+          assertThat(comments).isEqualTo("Return comment text")
+          assertThat(updated).isNull()
+          assertThat(id).isEqualTo(dpsScheduledMovementInId)
         }
       }
     }
@@ -287,24 +289,24 @@ class TapMigrationIntTest(
     @Test
     fun `will populate unscheduled DPS TAP OUT movement`() {
       getRequestBody<MigrateTapRequest>(
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/resync/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(unscheduledMovements[0]) {
-          Assertions.assertThat(occurredAt).isCloseTo(now.minusDays(1), Assertions.within(Duration.ofMinutes(5)))
-          Assertions.assertThat(direction).isEqualTo(MigrateTapMovement.Direction.OUT)
-          Assertions.assertThat(absenceReasonCode).isEqualTo("C6")
-          Assertions.assertThat(location.address).isEqualTo("Absence full address")
-          Assertions.assertThat(location.description).isEqualTo("Absence address description")
-          Assertions.assertThat(location.postcode).isEqualTo("S1 1AA")
-          Assertions.assertThat(location.uprn).isNull()
-          Assertions.assertThat(accompaniedByCode).isEqualTo("U")
-          Assertions.assertThat(created.at.toLocalDate()).isEqualTo(today)
-          Assertions.assertThat(created.by).isEqualTo("USER")
-          Assertions.assertThat(legacyId).isEqualTo("12345_1")
-          Assertions.assertThat(accompaniedByComments).isEqualTo("Absence escort text")
-          Assertions.assertThat(comments).isEqualTo("Absence comment text")
-          Assertions.assertThat(updated).isNull()
-          Assertions.assertThat(id).isEqualTo(dpsUnscheduledMovementOutId)
+          assertThat(occurredAt).isCloseTo(now.minusDays(1), Assertions.within(Duration.ofMinutes(5)))
+          assertThat(direction).isEqualTo(MigrateTapMovement.Direction.OUT)
+          assertThat(absenceReasonCode).isEqualTo("C6")
+          assertThat(location.address).isEqualTo("Absence full address")
+          assertThat(location.description).isEqualTo("Absence address description")
+          assertThat(location.postcode).isEqualTo("S1 1AA")
+          assertThat(location.uprn).isNull()
+          assertThat(accompaniedByCode).isEqualTo("U")
+          assertThat(created.at.toLocalDate()).isEqualTo(today)
+          assertThat(created.by).isEqualTo("USER")
+          assertThat(legacyId).isEqualTo("12345_1")
+          assertThat(accompaniedByComments).isEqualTo("Absence escort text")
+          assertThat(comments).isEqualTo("Absence comment text")
+          assertThat(updated).isNull()
+          assertThat(id).isEqualTo(dpsUnscheduledMovementOutId)
         }
       }
     }
@@ -312,24 +314,24 @@ class TapMigrationIntTest(
     @Test
     fun `will populate unscheduled DPS TAP IN movement`() {
       getRequestBody<MigrateTapRequest>(
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/resync/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(unscheduledMovements[1]) {
-          Assertions.assertThat(occurredAt).isCloseTo(now.minusDays(1), Assertions.within(Duration.ofMinutes(5)))
-          Assertions.assertThat(direction).isEqualTo(MigrateTapMovement.Direction.IN)
-          Assertions.assertThat(absenceReasonCode).isEqualTo("C5")
-          Assertions.assertThat(location.address).isEqualTo("Absence return full address")
-          Assertions.assertThat(location.description).isEqualTo("Absence return address description")
-          Assertions.assertThat(location.postcode).isEqualTo("S2 2AA")
-          Assertions.assertThat(location.uprn).isNull()
-          Assertions.assertThat(accompaniedByCode).isEqualTo("PECS")
-          Assertions.assertThat(created.at.toLocalDate()).isEqualTo(today)
-          Assertions.assertThat(created.by).isEqualTo("USER")
-          Assertions.assertThat(legacyId).isEqualTo("12345_2")
-          Assertions.assertThat(accompaniedByComments).isEqualTo("Return escort text")
-          Assertions.assertThat(comments).isEqualTo("Return comment text")
-          Assertions.assertThat(updated).isNull()
-          Assertions.assertThat(id).isEqualTo(dpsUnscheduledMovementInId)
+          assertThat(occurredAt).isCloseTo(now.minusDays(1), Assertions.within(Duration.ofMinutes(5)))
+          assertThat(direction).isEqualTo(MigrateTapMovement.Direction.IN)
+          assertThat(absenceReasonCode).isEqualTo("C5")
+          assertThat(location.address).isEqualTo("Absence return full address")
+          assertThat(location.description).isEqualTo("Absence return address description")
+          assertThat(location.postcode).isEqualTo("S2 2AA")
+          assertThat(location.uprn).isNull()
+          assertThat(accompaniedByCode).isEqualTo("PECS")
+          assertThat(created.at.toLocalDate()).isEqualTo(today)
+          assertThat(created.by).isEqualTo("USER")
+          assertThat(legacyId).isEqualTo("12345_2")
+          assertThat(accompaniedByComments).isEqualTo("Return escort text")
+          assertThat(comments).isEqualTo("Return comment text")
+          assertThat(updated).isNull()
+          assertThat(id).isEqualTo(dpsUnscheduledMovementInId)
         }
       }
     }
@@ -337,62 +339,62 @@ class TapMigrationIntTest(
     @Test
     fun `will populate correct mapping details`() {
       ExternalMovementsMappingApiMockServer.getRequestBody<TemporaryAbsencesPrisonerMappingDto>(
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/mapping/temporary-absence/migrate")),
+        putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate")),
       )
         .apply {
-          Assertions.assertThat(bookings[0].bookingId).isEqualTo(12345)
+          assertThat(bookings[0].bookingId).isEqualTo(12345)
 
-          Assertions.assertThat(bookings[0].applications[0].nomisMovementApplicationId).isEqualTo(1)
-          Assertions.assertThat(bookings[0].applications[0].dpsMovementApplicationId).isEqualTo(dpsAuthorisationId)
+          assertThat(bookings[0].applications[0].nomisMovementApplicationId).isEqualTo(1)
+          assertThat(bookings[0].applications[0].dpsMovementApplicationId).isEqualTo(dpsAuthorisationId)
 
           with(bookings[0].applications[0].schedules[0]) {
-            Assertions.assertThat(nomisEventId).isEqualTo(1)
-            Assertions.assertThat(dpsOccurrenceId).isEqualTo(dpsOccurrenceId)
-            Assertions.assertThat(nomisAddressId).isEqualTo(543)
-            Assertions.assertThat(nomisAddressOwnerClass).isEqualTo("CORP")
-            Assertions.assertThat(dpsAddressText).isEqualTo("Schedule full address")
-            Assertions.assertThat(dpsDescription).isEqualTo("Schedule address description")
-            Assertions.assertThat(dpsPostcode).isEqualTo("S1 1AA")
-            Assertions.assertThat(eventTime).contains("${today.minusDays(1)}")
+            assertThat(nomisEventId).isEqualTo(1)
+            assertThat(dpsOccurrenceId).isEqualTo(dpsOccurrenceId)
+            assertThat(nomisAddressId).isEqualTo(543)
+            assertThat(nomisAddressOwnerClass).isEqualTo("CORP")
+            assertThat(dpsAddressText).isEqualTo("Schedule full address")
+            assertThat(dpsDescription).isEqualTo("Schedule address description")
+            assertThat(dpsPostcode).isEqualTo("S1 1AA")
+            assertThat(eventTime).contains("${today.minusDays(1)}")
           }
 
           // We don't map the scheduled return because they don't exist in DPS
-          Assertions.assertThat(bookings[0].applications[0].schedules.size).isEqualTo(1)
+          assertThat(bookings[0].applications[0].schedules.size).isEqualTo(1)
 
           with(bookings[0].applications[0].movements[0]) {
-            Assertions.assertThat(nomisMovementSeq).isEqualTo(3)
-            Assertions.assertThat(dpsMovementId).isEqualTo(dpsScheduledMovementOutId)
-            Assertions.assertThat(nomisAddressId).isEqualTo(432)
-            Assertions.assertThat(nomisAddressOwnerClass).isEqualTo("AGY")
-            Assertions.assertThat(dpsAddressText).isEqualTo("Absence full address")
-            Assertions.assertThat(dpsDescription).isEqualTo("Absence address description")
-            Assertions.assertThat(dpsPostcode).isEqualTo("S1 1AA")
+            assertThat(nomisMovementSeq).isEqualTo(3)
+            assertThat(dpsMovementId).isEqualTo(dpsScheduledMovementOutId)
+            assertThat(nomisAddressId).isEqualTo(432)
+            assertThat(nomisAddressOwnerClass).isEqualTo("AGY")
+            assertThat(dpsAddressText).isEqualTo("Absence full address")
+            assertThat(dpsDescription).isEqualTo("Absence address description")
+            assertThat(dpsPostcode).isEqualTo("S1 1AA")
           }
 
           with(bookings[0].applications[0].movements[1]) {
-            Assertions.assertThat(nomisMovementSeq).isEqualTo(4)
-            Assertions.assertThat(dpsMovementId).isEqualTo(dpsScheduledMovementInId)
-            Assertions.assertThat(nomisAddressId).isEqualTo(321)
-            Assertions.assertThat(nomisAddressOwnerClass).isEqualTo("CORP")
-            Assertions.assertThat(dpsAddressText).isEqualTo("Absence return full address")
+            assertThat(nomisMovementSeq).isEqualTo(4)
+            assertThat(dpsMovementId).isEqualTo(dpsScheduledMovementInId)
+            assertThat(nomisAddressId).isEqualTo(321)
+            assertThat(nomisAddressOwnerClass).isEqualTo("CORP")
+            assertThat(dpsAddressText).isEqualTo("Absence return full address")
           }
 
           with(bookings[0].unscheduledMovements[0]) {
-            Assertions.assertThat(nomisMovementSeq).isEqualTo(1)
-            Assertions.assertThat(dpsMovementId).isEqualTo(dpsUnscheduledMovementOutId)
-            Assertions.assertThat(nomisAddressId).isEqualTo(432)
-            Assertions.assertThat(nomisAddressOwnerClass).isEqualTo("AGY")
-            Assertions.assertThat(dpsAddressText).isEqualTo("Absence full address")
+            assertThat(nomisMovementSeq).isEqualTo(1)
+            assertThat(dpsMovementId).isEqualTo(dpsUnscheduledMovementOutId)
+            assertThat(nomisAddressId).isEqualTo(432)
+            assertThat(nomisAddressOwnerClass).isEqualTo("AGY")
+            assertThat(dpsAddressText).isEqualTo("Absence full address")
           }
 
           with(bookings[0].unscheduledMovements[1]) {
-            Assertions.assertThat(nomisMovementSeq).isEqualTo(2)
-            Assertions.assertThat(dpsMovementId).isEqualTo(dpsUnscheduledMovementInId)
-            Assertions.assertThat(nomisAddressId).isEqualTo(321)
-            Assertions.assertThat(nomisAddressOwnerClass).isEqualTo("CORP")
-            Assertions.assertThat(dpsAddressText).isEqualTo("Absence return full address")
-            Assertions.assertThat(dpsDescription).isEqualTo("Absence return address description")
-            Assertions.assertThat(dpsPostcode).isEqualTo("S2 2AA")
+            assertThat(nomisMovementSeq).isEqualTo(2)
+            assertThat(dpsMovementId).isEqualTo(dpsUnscheduledMovementInId)
+            assertThat(nomisAddressId).isEqualTo(321)
+            assertThat(nomisAddressOwnerClass).isEqualTo("CORP")
+            assertThat(dpsAddressText).isEqualTo("Absence return full address")
+            assertThat(dpsDescription).isEqualTo("Absence return address description")
+            assertThat(dpsPostcode).isEqualTo("S2 2AA")
           }
         }
     }
@@ -402,16 +404,16 @@ class TapMigrationIntTest(
       verify(telemetryClient).trackEvent(
         eq("temporary-absences-migration-entity-migrated"),
         check {
-          Assertions.assertThat(it["offenderNo"]).isEqualTo("A0001KT")
-          Assertions.assertThat(it["migrationId"]).isEqualTo(migrationId)
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
         },
         isNull(),
       )
       verify(telemetryClient).trackEvent(
         eq("temporary-absences-migration-entity-migrated"),
         check {
-          Assertions.assertThat(it["offenderNo"]).isEqualTo("A0002KT")
-          Assertions.assertThat(it["migrationId"]).isEqualTo(migrationId)
+          assertThat(it["offenderNo"]).isEqualTo("A0002KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
         },
         isNull(),
       )
@@ -439,7 +441,7 @@ class TapMigrationIntTest(
         idMappings = TemporaryAbsencesPrisonerMappingIdsDto(prisonerNumber, listOf(), listOf(), listOf()),
       )
       // The prison on the application and schedules is LEI
-      externalMovementsNomisApi.stubGetTemporaryAbsences(
+      externalMovementsNomisApi.stubGetAllOffenderTaps(
         prisonerNumber,
         response = temporaryAbsencesResponse(movementPrison = movementPrison),
       )
@@ -461,10 +463,10 @@ class TapMigrationIntTest(
     @Test
     fun `will populate DPS TAP OUT movement prison`() {
       getRequestBody<MigrateTapRequest>(
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/resync/temporary-absences/$prisonerNumber")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/$prisonerNumber")),
       ).apply {
         with(temporaryAbsences[0].occurrences[0].movements[0]) {
-          Assertions.assertThat(this.prisonCode).isEqualTo(movementPrison)
+          assertThat(this.prisonCode).isEqualTo(movementPrison)
         }
       }
     }
@@ -472,10 +474,10 @@ class TapMigrationIntTest(
     @Test
     fun `will populate DPS TAP IN movement prison`() {
       getRequestBody<MigrateTapRequest>(
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/resync/temporary-absences/$prisonerNumber")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/$prisonerNumber")),
       ).apply {
         with(temporaryAbsences[0].occurrences[0].movements[1]) {
-          Assertions.assertThat(prisonCode).isEqualTo(movementPrison)
+          assertThat(prisonCode).isEqualTo(movementPrison)
         }
       }
     }
@@ -501,12 +503,12 @@ class TapMigrationIntTest(
         idMappings = TemporaryAbsencesPrisonerMappingIdsDto(prisonerNumber, listOf(), listOf(), listOf()),
       )
       // The application is approved, on an inactive booking, and is not active
-      externalMovementsNomisApi.stubGetTemporaryAbsences(
+      externalMovementsNomisApi.stubGetAllOffenderTaps(
         prisonerNumber,
         response = temporaryAbsencesResponse(
           activeBooking = true,
           latestBooking = false,
-          applications = listOf(
+          tapApplications = listOf(
             application(
               status = "APP-SCH",
               toDate = LocalDate.now(),
@@ -532,10 +534,10 @@ class TapMigrationIntTest(
     @Test
     fun `will set application status to expired`() {
       getRequestBody<MigrateTapRequest>(
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/resync/temporary-absences/$prisonerNumber")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/$prisonerNumber")),
       ).apply {
         with(temporaryAbsences[0]) {
-          Assertions.assertThat(statusCode).isEqualTo("EXPIRED")
+          assertThat(statusCode).isEqualTo("EXPIRED")
         }
       }
     }
@@ -558,9 +560,9 @@ class TapMigrationIntTest(
       verify(telemetryClient).trackEvent(
         eq("temporary-absences-migration-entity-failed"),
         check {
-          Assertions.assertThat(it["offenderNo"]).isEqualTo("A0001KT")
-          Assertions.assertThat(it["migrationId"]).isEqualTo(migrationId)
-          Assertions.assertThat(it["reason"])
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+          assertThat(it["reason"])
             .isEqualTo("400 Bad Request from PUT http://localhost:8103/resync/temporary-absences/A0001KT")
         },
         isNull(),
@@ -582,14 +584,14 @@ class TapMigrationIntTest(
 
     @Test
     fun `will request temporary absences only once`() {
-      externalMovementsNomisApi.verifyGetTemporaryAbsences(offenderNo = "A0001KT")
+      externalMovementsNomisApi.verifyGetAllOffenderTaps(offenderNo = "A0001KT")
     }
 
     @Test
     fun `will create mappings twice before succeeding`() {
       mappingApi.verify(
         2,
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/mapping/temporary-absence/migrate"))
+        putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
           .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
           .withRequestBodyJsonPath("migrationId", migrationId),
       )
@@ -600,8 +602,8 @@ class TapMigrationIntTest(
       verify(telemetryClient, times(1)).trackEvent(
         eq("temporary-absences-migration-entity-migrated"),
         check {
-          Assertions.assertThat(it["offenderNo"]).isEqualTo("A0001KT")
-          Assertions.assertThat(it["migrationId"]).isEqualTo(migrationId)
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
         },
         isNull(),
       )
@@ -624,9 +626,9 @@ class TapMigrationIntTest(
         "A0001KT",
         idMappings = TemporaryAbsencesPrisonerMappingIdsDto("A0001KT", listOf(), listOf(), listOf()),
       )
-      externalMovementsNomisApi.stubGetTemporaryAbsences(
+      externalMovementsNomisApi.stubGetAllOffenderTaps(
         "A0001KT",
-        response = OffenderTemporaryAbsencesResponse(bookings = listOf()),
+        response = OffenderTapsResponse(bookings = listOf()),
       )
 
       migrationId = performMigration()
@@ -636,7 +638,7 @@ class TapMigrationIntTest(
     fun `will not migrate to DPS`() {
       dpsApi.verify(
         0,
-        WireMock.putRequestedFor(WireMock.urlEqualTo("/resync/temporary-absences/A0001KT")),
+        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       )
     }
 
@@ -645,9 +647,9 @@ class TapMigrationIntTest(
       verify(telemetryClient).trackEvent(
         eq("temporary-absences-migration-entity-ignored"),
         check {
-          Assertions.assertThat(it["offenderNo"]).isEqualTo("A0001KT")
-          Assertions.assertThat(it["migrationId"]).isEqualTo(migrationId)
-          Assertions.assertThat(it["reason"]).isEqualTo("The offender has no TAPs")
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+          assertThat(it["reason"]).isEqualTo("The offender has no TAPs")
         },
         isNull(),
       )
@@ -673,20 +675,20 @@ class TapMigrationIntTest(
 
       @Test
       fun `will request temporary absences from NOMIS`() {
-        externalMovementsNomisApi.verifyGetTemporaryAbsences(offenderNo = "A0001KT")
+        externalMovementsNomisApi.verifyGetAllOffenderTaps(offenderNo = "A0001KT")
       }
 
       @Test
       fun `will create mappings`() {
         mappingApi.verify(
-          WireMock.putRequestedFor(WireMock.urlEqualTo("/mapping/temporary-absence/migrate"))
+          putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
             .withRequestBodyJsonPath("prisonerNumber", "A0001KT"),
         )
       }
 
       @Test
       fun `will migrate to DPS`() {
-        dpsApi.verify(WireMock.putRequestedFor(WireMock.urlEqualTo("/resync/temporary-absences/A0001KT")))
+        dpsApi.verify(putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")))
       }
 
       @Test
@@ -694,14 +696,14 @@ class TapMigrationIntTest(
         verify(telemetryClient).trackEvent(
           eq("temporary-absences-migration-entity-repair-requested"),
           check {
-            Assertions.assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           },
           isNull(),
         )
         verify(telemetryClient).trackEvent(
           eq("temporary-absences-migration-entity-migrated"),
           check {
-            Assertions.assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           },
           isNull(),
         )
@@ -712,9 +714,9 @@ class TapMigrationIntTest(
     inner class DontIgnoreOffendersWithNoMovements {
       @BeforeEach
       fun setUp() = runTest {
-        externalMovementsNomisApi.stubGetTemporaryAbsences(
+        externalMovementsNomisApi.stubGetAllOffenderTaps(
           "A0001KT",
-          response = OffenderTemporaryAbsencesResponse(bookings = listOf()),
+          response = OffenderTapsResponse(bookings = listOf()),
         )
         dpsApi.stubResyncPrisonerTaps("A0001KT", response = MigrateTapResponse(listOf(), listOf()))
 
@@ -723,7 +725,7 @@ class TapMigrationIntTest(
 
       @Test
       fun `will migrate to DPS`() {
-        dpsApi.verify(WireMock.putRequestedFor(WireMock.urlEqualTo("/resync/temporary-absences/A0001KT")))
+        dpsApi.verify(putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")))
       }
 
       @Test
@@ -731,14 +733,14 @@ class TapMigrationIntTest(
         verify(telemetryClient).trackEvent(
           eq("temporary-absences-migration-entity-repair-requested"),
           check {
-            Assertions.assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           },
           isNull(),
         )
         verify(telemetryClient).trackEvent(
           eq("temporary-absences-migration-entity-migrated"),
           check {
-            Assertions.assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           },
           isNull(),
         )
@@ -749,7 +751,7 @@ class TapMigrationIntTest(
     inner class DontIgnoreOffendersNotInNomis {
       @BeforeEach
       fun setUp() = runTest {
-        externalMovementsNomisApi.stubGetTemporaryAbsences(status = HttpStatus.NOT_FOUND)
+        externalMovementsNomisApi.stubGetAllOffenderTaps(status = HttpStatus.NOT_FOUND)
         dpsApi.stubResyncPrisonerTapsError("A0001KT", status = 404)
 
         repairPrisonerOk(prisonerNumber)
@@ -757,13 +759,13 @@ class TapMigrationIntTest(
 
       @Test
       fun `will migrate to DPS`() {
-        dpsApi.verify(WireMock.putRequestedFor(WireMock.urlEqualTo("/resync/temporary-absences/A0001KT")))
+        dpsApi.verify(putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")))
       }
 
       @Test
       fun `will update mappings`() {
         mappingApi.verify(
-          WireMock.putRequestedFor(WireMock.urlEqualTo("/mapping/temporary-absence/migrate"))
+          putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
             .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
             .withRequestBodyJsonPath("bookings.length()", 0),
         )
@@ -774,14 +776,14 @@ class TapMigrationIntTest(
         verify(telemetryClient).trackEvent(
           eq("temporary-absences-migration-entity-repair-requested"),
           check {
-            Assertions.assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           },
           isNull(),
         )
         verify(telemetryClient).trackEvent(
           eq("temporary-absences-migration-entity-migrated"),
           check {
-            Assertions.assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           },
           isNull(),
         )

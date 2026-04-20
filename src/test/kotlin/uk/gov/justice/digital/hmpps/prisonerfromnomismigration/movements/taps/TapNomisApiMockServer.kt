@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -10,33 +10,33 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Absence
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTemporaryAbsences
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTap
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTapApplication
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTapMovementIn
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTapMovementOut
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTapScheduleIn
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTapScheduleOut
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTaps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTapsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsenceResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsenceReturn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsenceReturnResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsence
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceApplication
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceApplicationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceReturn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceReturnResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Component
-class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
+class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
 
-  fun stubGetTemporaryAbsences(
+  fun stubGetAllOffenderTaps(
     offenderNo: String = "A1234BC",
-    response: OffenderTemporaryAbsencesResponse = temporaryAbsencesResponse(),
+    response: OffenderTapsResponse = temporaryAbsencesResponse(),
   ) {
     nomisApi.stubFor(
-      get(urlPathEqualTo("/movements/$offenderNo/temporary-absences")).willReturn(
+      get(urlPathEqualTo("/movements/$offenderNo/taps")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
@@ -45,16 +45,16 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun verifyGetTemporaryAbsences(offenderNo: String = "A1234BC", count: Int = 1) {
+  fun verifyGetAllOffenderTaps(offenderNo: String = "A1234BC", count: Int = 1) {
     nomisApi.verify(
       count,
-      getRequestedFor(urlPathEqualTo("/movements/$offenderNo/temporary-absences")),
+      getRequestedFor(urlPathEqualTo("/movements/$offenderNo/taps")),
     )
   }
 
-  fun stubGetTemporaryAbsences(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubGetAllOffenderTaps(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
-      get(urlPathMatching("/movements/.*/temporary-absences")).willReturn(
+      get(urlPathMatching("/movements/.*/taps")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -277,19 +277,19 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
       bookingId: Long = 12345L,
       activeBooking: Boolean = true,
       latestBooking: Boolean = true,
-      absences: List<Absence> = listOf(absence(movementPrison = movementPrison)),
-      applications: List<TemporaryAbsenceApplication> = listOf(application(absences = absences)),
-      unscheduledTemporaryAbsences: List<TemporaryAbsence> = listOf(temporaryAbsence(seq = 1).copy(movementDate = yesterday.toLocalDate(), movementTime = yesterday)),
-      unscheduledTemporaryAbsenceReturns: List<TemporaryAbsenceReturn> = listOf(temporaryAbsenceReturn(seq = 2).copy(movementDate = yesterday.toLocalDate(), movementTime = yesterday)),
-    ): OffenderTemporaryAbsencesResponse = OffenderTemporaryAbsencesResponse(
+      taps: List<BookingTap> = listOf(taps(movementPrison = movementPrison)),
+      tapApplications: List<BookingTapApplication> = listOf(application(taps = taps)),
+      unscheduledTapMovementOuts: List<BookingTapMovementOut> = listOf(tapMovementOut(seq = 1).copy(movementDate = yesterday.toLocalDate(), movementTime = yesterday)),
+      unscheduledTapMovementIns: List<BookingTapMovementIn> = listOf(tapMovementIn(seq = 2).copy(movementDate = yesterday.toLocalDate(), movementTime = yesterday)),
+    ): OffenderTapsResponse = OffenderTapsResponse(
       bookings = listOf(
-        BookingTemporaryAbsences(
+        BookingTaps(
           bookingId = bookingId,
           activeBooking = activeBooking,
           latestBooking = latestBooking,
-          temporaryAbsenceApplications = applications,
-          unscheduledTemporaryAbsences = unscheduledTemporaryAbsences,
-          unscheduledTemporaryAbsenceReturns = unscheduledTemporaryAbsenceReturns,
+          tapApplications = tapApplications,
+          unscheduledTapMovementOuts = unscheduledTapMovementOuts,
+          unscheduledTapMovementIns = unscheduledTapMovementIns,
         ),
       ),
     )
@@ -299,9 +299,9 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
       fromDate: LocalDate = now.toLocalDate(),
       toDate: LocalDate = tomorrow.toLocalDate(),
       status: String = "APP-SCH",
-      absences: List<Absence> = listOf(absence(movementPrison = "LEI")),
-    ) = TemporaryAbsenceApplication(
-      movementApplicationId = id,
+      taps: List<BookingTap> = listOf(taps(movementPrison = "LEI")),
+    ) = BookingTapApplication(
+      tapApplicationId = id,
       eventSubType = "C5",
       applicationDate = now.toLocalDate(),
       fromDate = fromDate,
@@ -321,32 +321,32 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
       toFullAddress = "some full address",
       toAddressPostcode = "S1 1AA",
       contactPersonName = "Jeff",
-      temporaryAbsenceType = "RR",
-      temporaryAbsenceSubType = "SPL",
-      absences = absences,
+      tapType = "RR",
+      tapSubType = "SPL",
+      taps = taps,
       audit = NomisAudit(
         createDatetime = now,
         createUsername = "USER",
       ),
     )
 
-    fun absence(
+    fun taps(
       movementPrison: String = "LEI",
-      scheduledAbsence: ScheduledTemporaryAbsence = scheduledAbsence(),
-      scheduledAbsenceReturn: ScheduledTemporaryAbsenceReturn = scheduledAbsenceReturn(),
-      temporaryAbsence: TemporaryAbsence = temporaryAbsence(seq = 3).copy(
+      tapScheduleOut: BookingTapScheduleOut = tapScheduleOut(),
+      tapScheduleIn: BookingTapScheduleIn = tapScheduleIn(),
+      tapMovementOut: BookingTapMovementOut = tapMovementOut(seq = 3).copy(
         movementDate = yesterday.toLocalDate(),
         movementTime = yesterday,
         fromPrison = movementPrison,
       ),
-      temporaryAbsenceReturn: TemporaryAbsenceReturn = temporaryAbsenceReturn(seq = 4).copy(
+      tapMovementIn: BookingTapMovementIn = tapMovementIn(seq = 4).copy(
         movementDate = now.toLocalDate(),
         movementTime = now,
         toPrison = movementPrison,
       ),
-    ) = Absence(scheduledAbsence, scheduledAbsenceReturn, temporaryAbsence, temporaryAbsenceReturn)
+    ) = BookingTap(tapScheduleOut, tapScheduleIn, tapMovementOut, tapMovementIn)
 
-    fun temporaryAbsenceReturn(seq: Int = 2) = TemporaryAbsenceReturn(
+    fun tapMovementIn(seq: Int = 2) = BookingTapMovementIn(
       sequence = seq,
       movementDate = now.toLocalDate(),
       movementTime = now,
@@ -367,7 +367,7 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
 
-    fun temporaryAbsence(seq: Int = 1) = TemporaryAbsence(
+    fun tapMovementOut(seq: Int = 1) = BookingTapMovementOut(
       sequence = seq,
       movementDate = now.toLocalDate(),
       movementTime = now,
@@ -389,7 +389,7 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
 
-    fun scheduledAbsenceReturn(id: Long = 2) = ScheduledTemporaryAbsenceReturn(
+    fun tapScheduleIn(id: Long = 2) = BookingTapScheduleIn(
       eventId = id,
       eventSubType = "C5",
       eventStatus = "SCH",
@@ -405,7 +405,7 @@ class ExternalMovementsNomisApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
 
-    fun scheduledAbsence(id: Long = 1): ScheduledTemporaryAbsence = ScheduledTemporaryAbsence(
+    fun tapScheduleOut(id: Long = 1): BookingTapScheduleOut = BookingTapScheduleOut(
       eventId = id,
       eventSubType = "C5",
       eventStatus = "SCH",

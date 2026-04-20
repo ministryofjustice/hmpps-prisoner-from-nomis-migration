@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.M
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.DEFAULT_ESCORT_CODE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.DEFAULT_TRANSPORT_TYPE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapsNomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.toDpsAuthorisationStatusCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementMappingDto
@@ -28,11 +29,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingIdsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTemporaryAbsencesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTapMovementIn
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTapMovementOut
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTapScheduleOut
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTapsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsence
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsence
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceReturn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumberMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
@@ -45,7 +46,7 @@ import java.util.*
 class ExternalMovementsMigrationService(
   val migrationMappingService: ExternalMovementsMappingApiService,
   val nomisIdsApiService: NomisApiService,
-  val nomisApiService: ExternalMovementsNomisApiService,
+  val nomisApiService: TapsNomisApiService,
   val dpsApiService: ExternalMovementsDpsApiService,
   jsonMapper: JsonMapper,
   @Value($$"${externalmovements.page.size:1000}") pageSize: Long,
@@ -105,18 +106,18 @@ class ExternalMovementsMigrationService(
     val ignoreMissingTaps = context.properties["ignoreMissingTaps"] as Boolean? ?: true
 
     runCatching {
-      val temporaryAbsences = nomisApiService.getTemporaryAbsencesOrNull(offenderNo)
+      val taps = nomisApiService.getAllOffenderTapsOrNull(offenderNo)
         // carry on even if there is no offender in NOMIS - this could be for a merged prisoner and we still need to update the mappings etc.
-        ?: OffenderTemporaryAbsencesResponse(bookings = emptyList())
-      if (ignoreMissingTaps && temporaryAbsences.bookings.isEmpty()) {
+        ?: OffenderTapsResponse(bookings = emptyList())
+      if (ignoreMissingTaps && taps.bookings.isEmpty()) {
         publishTelemetry("ignored", telemetry.apply { this["reason"] = "The offender has no TAPs" })
         return
       }
       val oldMappingIds = migrationMappingService.getPrisonerMappingIds(offenderNo)
       // Note that we're not expecting to perform a clean migration again so we're calling the DPS /resync endpoint which performs "patch migrations"
-      val dpsResponse = dpsApiService.resyncPrisonerTaps(offenderNo, temporaryAbsences.toDpsRequest(oldMappingIds))
+      val dpsResponse = dpsApiService.resyncPrisonerTaps(offenderNo, taps.toDpsRequest(oldMappingIds))
         ?: MigrateTapResponse(temporaryAbsences = emptyList(), unscheduledMovements = emptyList())
-      val mappings = temporaryAbsences.buildMappings(offenderNo, migrationId, dpsResponse)
+      val mappings = taps.buildMappings(offenderNo, migrationId, dpsResponse)
 
       createMappingOrOnFailureDo(mappings) {
         requeueCreateMapping(mappings, context)
@@ -179,28 +180,28 @@ class ExternalMovementsMigrationService(
     )
   }
 
-  private fun OffenderTemporaryAbsencesResponse.buildMappings(prisonerNumber: String, migrationId: String, dpsResponse: MigrateTapResponse) = TemporaryAbsencesPrisonerMappingDto(
+  private fun OffenderTapsResponse.buildMappings(prisonerNumber: String, migrationId: String, dpsResponse: MigrateTapResponse) = TemporaryAbsencesPrisonerMappingDto(
     prisonerNumber = prisonerNumber,
     migrationId = migrationId,
     bookings = bookings.map { booking ->
       TemporaryAbsenceBookingMappingDto(
         bookingId = booking.bookingId,
-        applications = booking.temporaryAbsenceApplications.map { application ->
+        applications = booking.tapApplications.map { application ->
           TemporaryAbsenceApplicationMappingDto(
-            nomisMovementApplicationId = application.movementApplicationId,
-            dpsMovementApplicationId = dpsResponse.findDpsAuthorisationId(application.movementApplicationId),
-            schedules = application.absences.mapNotNull { it.scheduledTemporaryAbsence }.map { it.toMappingDto(dpsResponse) },
-            movements = application.absences.mapNotNull { it.temporaryAbsence }.map { it.toMappingDto(booking.bookingId, dpsResponse) } +
-              application.absences.mapNotNull { it.temporaryAbsenceReturn }.map { it.toMappingDto(booking.bookingId, dpsResponse) },
+            nomisMovementApplicationId = application.tapApplicationId,
+            dpsMovementApplicationId = dpsResponse.findDpsAuthorisationId(application.tapApplicationId),
+            schedules = application.taps.mapNotNull { it.tapScheduleOut }.map { it.toMappingDto(dpsResponse) },
+            movements = application.taps.mapNotNull { it.tapMovementOut }.map { it.toMappingDto(booking.bookingId, dpsResponse) } +
+              application.taps.mapNotNull { it.tapMovementIn }.map { it.toMappingDto(booking.bookingId, dpsResponse) },
           )
         },
-        unscheduledMovements = booking.unscheduledTemporaryAbsences.map { it.toMappingDto(booking.bookingId, dpsResponse) } +
-          booking.unscheduledTemporaryAbsenceReturns.map { it.toMappingDto(booking.bookingId, dpsResponse) },
+        unscheduledMovements = booking.unscheduledTapMovementOuts.map { it.toMappingDto(booking.bookingId, dpsResponse) } +
+          booking.unscheduledTapMovementIns.map { it.toMappingDto(booking.bookingId, dpsResponse) },
       )
     },
   )
 
-  private fun ScheduledTemporaryAbsence.toMappingDto(dpsResponse: MigrateTapResponse): ScheduledMovementMappingDto = ScheduledMovementMappingDto(
+  private fun BookingTapScheduleOut.toMappingDto(dpsResponse: MigrateTapResponse): ScheduledMovementMappingDto = ScheduledMovementMappingDto(
     nomisEventId = this.eventId,
     dpsOccurrenceId = dpsResponse.findDpsScheduleId(this.eventId),
     nomisAddressId = this.toAddressId,
@@ -211,7 +212,7 @@ class ExternalMovementsMigrationService(
     eventTime = "${this.startTime}",
   )
 
-  private fun TemporaryAbsence.toMappingDto(bookingId: Long, dpsResponse: MigrateTapResponse): ExternalMovementMappingDto = ExternalMovementMappingDto(
+  private fun BookingTapMovementOut.toMappingDto(bookingId: Long, dpsResponse: MigrateTapResponse): ExternalMovementMappingDto = ExternalMovementMappingDto(
     nomisMovementSeq = this.sequence,
     dpsMovementId = dpsResponse.findDpsMovementId(bookingId, this.sequence),
     nomisAddressId = this.toAddressId,
@@ -221,7 +222,7 @@ class ExternalMovementsMigrationService(
     dpsPostcode = this.toAddressPostcode,
   )
 
-  private fun TemporaryAbsenceReturn.toMappingDto(bookingId: Long, dpsResponse: MigrateTapResponse): ExternalMovementMappingDto = ExternalMovementMappingDto(
+  private fun BookingTapMovementIn.toMappingDto(bookingId: Long, dpsResponse: MigrateTapResponse): ExternalMovementMappingDto = ExternalMovementMappingDto(
     nomisMovementSeq = this.sequence,
     dpsMovementId = dpsResponse.findDpsMovementId(bookingId, this.sequence),
     nomisAddressId = this.fromAddressId,
@@ -265,14 +266,14 @@ class ExternalMovementsMigrationService(
   override fun parseContextMapping(json: String): MigrationMessage<*, TemporaryAbsencesPrisonerMappingDto> = jsonMapper.readValue(json)
 }
 
-fun OffenderTemporaryAbsencesResponse.toDpsRequest(oldMappingIds: TemporaryAbsencesPrisonerMappingIdsDto) = MigrateTapRequest(
+fun OffenderTapsResponse.toDpsRequest(oldMappingIds: TemporaryAbsencesPrisonerMappingIdsDto) = MigrateTapRequest(
   temporaryAbsences = this.bookings.flatMap { booking ->
-    booking.temporaryAbsenceApplications.map { application ->
+    booking.tapApplications.map { application ->
       MigrateTapAuthorisation(
         prisonCode = application.prisonId,
         statusCode = application.applicationStatus.toDpsAuthorisationStatusCode(application.toDate, booking.latestBooking),
-        absenceTypeCode = application.temporaryAbsenceType,
-        absenceSubTypeCode = application.temporaryAbsenceSubType,
+        absenceTypeCode = application.tapType,
+        absenceSubTypeCode = application.tapSubType,
         absenceReasonCode = application.eventSubType,
         accompaniedByCode = application.escortCode ?: DEFAULT_ESCORT_CODE,
         transportCode = application.transportType ?: DEFAULT_TRANSPORT_TYPE,
@@ -282,20 +283,20 @@ fun OffenderTemporaryAbsencesResponse.toDpsRequest(oldMappingIds: TemporaryAbsen
         comments = application.comment,
         created = SyncAtAndBy(application.audit.createDatetime, application.audit.createUsername),
         updated = application.audit.modifyDatetime?.let { SyncAtAndBy(application.audit.modifyDatetime, application.audit.modifyUserId ?: "") },
-        legacyId = application.movementApplicationId,
+        legacyId = application.tapApplicationId,
         startTime = "${application.releaseTime.toLocalTime()}",
         endTime = "${application.returnTime.toLocalTime()}",
         location = Location(description = application.toAddressDescription, address = application.toFullAddress, postcode = application.toAddressPostcode),
-        id = oldMappingIds.applications.find { it.nomisMovementApplicationId == application.movementApplicationId }?.dpsMovementApplicationId,
-        occurrences = application.absences.mapNotNull { absence ->
-          absence.scheduledTemporaryAbsence?.let { scheduleOut ->
+        id = oldMappingIds.applications.find { it.nomisMovementApplicationId == application.tapApplicationId }?.dpsMovementApplicationId,
+        occurrences = application.taps.mapNotNull { tap ->
+          tap.tapScheduleOut?.let { scheduleOut ->
             scheduleOut.toDpsRequest(
               schedulePrison = scheduleOut.fromPrison ?: application.prisonId,
               bookingId = booking.bookingId,
-              movementOut = absence.temporaryAbsence,
-              movementIn = absence.temporaryAbsenceReturn,
-              temporaryAbsenceType = application.temporaryAbsenceType,
-              temporaryAbsenceSubType = application.temporaryAbsenceSubType,
+              movementOut = tap.tapMovementOut,
+              movementIn = tap.tapMovementIn,
+              tapType = application.tapType,
+              tapSubType = application.tapSubType,
               oldMappingIds = oldMappingIds,
             )
           }
@@ -304,30 +305,30 @@ fun OffenderTemporaryAbsencesResponse.toDpsRequest(oldMappingIds: TemporaryAbsen
     }
   },
   unscheduledMovements = this.bookings.flatMap { booking ->
-    booking.unscheduledTemporaryAbsences.map { movementOut ->
+    booking.unscheduledTapMovementOuts.map { movementOut ->
       movementOut.toDpsRequest(booking.bookingId, movementOut.fromPrison ?: "", oldMappingIds)
     } +
-      booking.unscheduledTemporaryAbsenceReturns.map { movementIn ->
+      booking.unscheduledTapMovementIns.map { movementIn ->
         movementIn.toDpsRequest(booking.bookingId, movementIn.toPrison ?: "", oldMappingIds)
       }
   },
 )
 
-private fun ScheduledTemporaryAbsence.toDpsRequest(
-  temporaryAbsenceType: String?,
-  temporaryAbsenceSubType: String?,
+private fun BookingTapScheduleOut.toDpsRequest(
+  tapType: String?,
+  tapSubType: String?,
   schedulePrison: String,
   bookingId: Long,
-  movementOut: TemporaryAbsence?,
-  movementIn: TemporaryAbsenceReturn?,
+  movementOut: BookingTapMovementOut?,
+  movementIn: BookingTapMovementIn?,
   oldMappingIds: TemporaryAbsencesPrisonerMappingIdsDto,
 ): MigrateTapOccurrence = MigrateTapOccurrence(
   isCancelled = eventStatus == "CANC",
   start = startTime,
   end = returnTime,
   location = Location(description = toAddressDescription, address = toFullAddress, postcode = toAddressPostcode),
-  absenceTypeCode = temporaryAbsenceType,
-  absenceSubTypeCode = temporaryAbsenceSubType,
+  absenceTypeCode = tapType,
+  absenceSubTypeCode = tapSubType,
   absenceReasonCode = eventSubType,
   accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
   transportCode = transportType ?: DEFAULT_TRANSPORT_TYPE,
@@ -340,7 +341,7 @@ private fun ScheduledTemporaryAbsence.toDpsRequest(
   id = oldMappingIds.schedules.find { it.nomisEventId == eventId }?.dpsOccurrenceId,
 )
 
-private fun TemporaryAbsenceReturn.toDpsRequest(
+private fun BookingTapMovementIn.toDpsRequest(
   bookingId: Long,
   schedulePrison: String,
   oldMappingIds: TemporaryAbsencesPrisonerMappingIdsDto,
@@ -359,7 +360,7 @@ private fun TemporaryAbsenceReturn.toDpsRequest(
   id = oldMappingIds.movements.find { it.nomisBookingId == bookingId && it.nomisMovementSeq == sequence }?.dpsMovementId,
 )
 
-private fun TemporaryAbsence.toDpsRequest(
+private fun BookingTapMovementOut.toDpsRequest(
   bookingId: Long,
   schedulePrison: String,
   oldMappingIds: TemporaryAbsencesPrisonerMappingIdsDto,

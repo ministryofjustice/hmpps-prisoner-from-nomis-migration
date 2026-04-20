@@ -23,12 +23,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMov
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.absence
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.application
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.temporaryAbsence
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.temporaryAbsenceReturn
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer.Companion.temporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MoveTemporaryAbsencesRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.application
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.tapMovementIn
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.tapMovementOut
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.taps
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.temporaryAbsencesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMovementIdMapping
@@ -37,7 +38,7 @@ import java.util.*
 
 class ExternalMovementsMoveBookingIntTest(
   @Autowired private val mappingApi: ExternalMovementsMappingApiMockServer,
-  @Autowired private val externalMovementsNomisApi: ExternalMovementsNomisApiMockServer,
+  @Autowired private val externalMovementsNomisApi: TapNomisApiMockServer,
 ) : SqsIntegrationTestBase() {
 
   private val dpsApi = dpsExtMovementsServer
@@ -72,28 +73,28 @@ class ExternalMovementsMoveBookingIntTest(
 
     private val nomisData = temporaryAbsencesResponse(
       bookingId = 1234567L,
-      applications = listOf(
+      tapApplications = listOf(
         application(
           id = applicationId1,
-          absences = listOf(
-            absence(
-              temporaryAbsence = temporaryAbsence(seq = scheduledMovementSeq1),
-              temporaryAbsenceReturn = temporaryAbsenceReturn(seq = scheduledMovementSeq2),
+          taps = listOf(
+            taps(
+              tapMovementOut = tapMovementOut(seq = scheduledMovementSeq1),
+              tapMovementIn = tapMovementIn(seq = scheduledMovementSeq2),
             ),
           ),
         ),
         application(
           id = applicationId2,
-          absences = listOf(absence()),
+          taps = listOf(taps()),
         ),
       ),
-      unscheduledTemporaryAbsences = listOf(temporaryAbsence(seq = movementSeq1)),
-      unscheduledTemporaryAbsenceReturns = listOf(temporaryAbsenceReturn(seq = movementSeq2)),
+      unscheduledTapMovementOuts = listOf(tapMovementOut(seq = movementSeq1)),
+      unscheduledTapMovementIns = listOf(tapMovementIn(seq = movementSeq2)),
     )
 
     @BeforeEach
     fun setUp() = runTest {
-      externalMovementsNomisApi.stubGetTemporaryAbsences("A1234KT", nomisData)
+      externalMovementsNomisApi.stubGetAllOffenderTaps("A1234KT", nomisData)
       mappingApi.stubGetMoveBookingMappings(1234567L, moveBookingMappings)
       dpsApi.stubMoveBooking()
       mappingApi.stubMoveBookingMappings(bookingId = 1234567L, fromOffenderNo = "A1000KT", toOffenderNo = "A1234KT")
@@ -113,7 +114,7 @@ class ExternalMovementsMoveBookingIntTest(
 
     @Test
     fun `should get all movements from NOMIS`() {
-      externalMovementsNomisApi.verifyGetTemporaryAbsences(offenderNo = "A1234KT")
+      externalMovementsNomisApi.verifyGetAllOffenderTaps(offenderNo = "A1234KT")
     }
 
     @Test
@@ -174,7 +175,7 @@ class ExternalMovementsMoveBookingIntTest(
   inner class FailToFindNomisBookingTaps {
     @BeforeEach
     fun setUp() {
-      externalMovementsNomisApi.stubGetTemporaryAbsences(status = HttpStatus.NOT_FOUND)
+      externalMovementsNomisApi.stubGetAllOffenderTaps(status = HttpStatus.NOT_FOUND)
 
       sendMessage(
         bookingMovedDomainEvent(
@@ -188,7 +189,7 @@ class ExternalMovementsMoveBookingIntTest(
 
     @Test
     fun `should get all movements from NOMIS`() {
-      externalMovementsNomisApi.verifyGetTemporaryAbsences(offenderNo = "A1234KT")
+      externalMovementsNomisApi.verifyGetAllOffenderTaps(offenderNo = "A1234KT")
     }
 
     @Test
@@ -223,14 +224,14 @@ class ExternalMovementsMoveBookingIntTest(
 
     private val nomisData = temporaryAbsencesResponse(
       bookingId = 1234567L,
-      applications = listOf(),
-      unscheduledTemporaryAbsences = listOf(),
-      unscheduledTemporaryAbsenceReturns = listOf(),
+      tapApplications = listOf(),
+      unscheduledTapMovementOuts = listOf(),
+      unscheduledTapMovementIns = listOf(),
     )
 
     @BeforeEach
     fun setUp() {
-      externalMovementsNomisApi.stubGetTemporaryAbsences("A1234KT", nomisData)
+      externalMovementsNomisApi.stubGetAllOffenderTaps("A1234KT", nomisData)
       mappingApi.stubGetMoveBookingMappings(1234567L, moveBookingMappings)
 
       sendMessage(
@@ -279,14 +280,14 @@ class ExternalMovementsMoveBookingIntTest(
 
     private val nomisData = temporaryAbsencesResponse(
       bookingId = 1234567L,
-      applications = listOf(),
-      unscheduledTemporaryAbsences = listOf(temporaryAbsence(seq = movementSeq1)),
-      unscheduledTemporaryAbsenceReturns = listOf(),
+      tapApplications = listOf(),
+      unscheduledTapMovementOuts = listOf(tapMovementOut(seq = movementSeq1)),
+      unscheduledTapMovementIns = listOf(),
     )
 
     @BeforeEach
     fun setUp() {
-      externalMovementsNomisApi.stubGetTemporaryAbsences("A1234KT", nomisData)
+      externalMovementsNomisApi.stubGetAllOffenderTaps("A1234KT", nomisData)
       mappingApi.stubGetMoveBookingMappings(1234567L, moveBookingMappings)
 
       sendMessage(
@@ -338,14 +339,14 @@ class ExternalMovementsMoveBookingIntTest(
 
     private val nomisData = temporaryAbsencesResponse(
       bookingId = 1234567L,
-      applications = listOf(application(id = applicationId1)),
-      unscheduledTemporaryAbsences = listOf(),
-      unscheduledTemporaryAbsenceReturns = listOf(),
+      tapApplications = listOf(application(id = applicationId1)),
+      unscheduledTapMovementOuts = listOf(),
+      unscheduledTapMovementIns = listOf(),
     )
 
     @BeforeEach
     fun setUp() {
-      externalMovementsNomisApi.stubGetTemporaryAbsences("A1234KT", nomisData)
+      externalMovementsNomisApi.stubGetAllOffenderTaps("A1234KT", nomisData)
       mappingApi.stubGetMoveBookingMappings(1234567L, moveBookingMappings)
 
       sendMessage(
@@ -398,19 +399,19 @@ class ExternalMovementsMoveBookingIntTest(
 
     private val nomisData = temporaryAbsencesResponse(
       bookingId = 1234567L,
-      applications = listOf(
+      tapApplications = listOf(
         application(
           id = applicationId1,
-          absences = listOf(),
+          taps = listOf(),
         ),
       ),
-      unscheduledTemporaryAbsences = listOf(),
-      unscheduledTemporaryAbsenceReturns = listOf(),
+      unscheduledTapMovementOuts = listOf(),
+      unscheduledTapMovementIns = listOf(),
     )
 
     @BeforeEach
     fun setUp() {
-      externalMovementsNomisApi.stubGetTemporaryAbsences("A1234KT", nomisData)
+      externalMovementsNomisApi.stubGetAllOffenderTaps("A1234KT", nomisData)
       mappingApi.stubGetMoveBookingMappings(1234567L, moveBookingMappings)
       dpsApi.stubMoveBookingError(status = 500)
 
@@ -462,19 +463,19 @@ class ExternalMovementsMoveBookingIntTest(
 
     private val nomisData = temporaryAbsencesResponse(
       bookingId = 1234567L,
-      applications = listOf(
+      tapApplications = listOf(
         application(
           id = applicationId1,
-          absences = listOf(),
+          taps = listOf(),
         ),
       ),
-      unscheduledTemporaryAbsences = listOf(),
-      unscheduledTemporaryAbsenceReturns = listOf(),
+      unscheduledTapMovementOuts = listOf(),
+      unscheduledTapMovementIns = listOf(),
     )
 
     @BeforeEach
     fun setUp() = runTest {
-      externalMovementsNomisApi.stubGetTemporaryAbsences("A1234KT", nomisData)
+      externalMovementsNomisApi.stubGetAllOffenderTaps("A1234KT", nomisData)
       mappingApi.stubGetMoveBookingMappings(1234567L, moveBookingMappings)
       dpsApi.stubMoveBooking()
       mappingApi.stubMoveBookingMappingsFailureFollowedBySuccess(1234567L, "A1000KT", "A1234KT")
