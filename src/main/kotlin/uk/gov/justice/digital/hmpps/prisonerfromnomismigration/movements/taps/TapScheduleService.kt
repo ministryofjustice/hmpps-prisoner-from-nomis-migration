@@ -15,7 +15,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType.TAP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ScheduledMovementEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
@@ -36,7 +35,7 @@ class TapScheduleService(
   override val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
   private val mappingApiService: ExternalMovementsMappingApiService,
-  private val nomisApiService: ExternalMovementsNomisApiService,
+  private val nomisApiService: TapsNomisApiService,
   private val dpsApiService: ExternalMovementsDpsApiService,
 ) : TelemetryEnabled {
   companion object {

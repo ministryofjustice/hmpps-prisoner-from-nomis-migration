@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
@@ -20,13 +20,13 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
 @SpringAPIServiceTest
-@Import(ExternalMovementsNomisApiService::class, ExternalMovementsNomisApiMockServer::class)
-class ExternalMovementsNomisApiServiceTest {
+@Import(TapsNomisApiService::class, TapNomisApiMockServer::class)
+class TapNomisApiServiceTest {
   @Autowired
-  private lateinit var apiService: ExternalMovementsNomisApiService
+  private lateinit var apiService: TapsNomisApiService
 
   @Autowired
-  private lateinit var externalMovementsNomisApiMockServer: ExternalMovementsNomisApiMockServer
+  private lateinit var tapNomisApiMockServer: TapNomisApiMockServer
 
   private val now = LocalDateTime.now()
   private val today = now.toLocalDate()
@@ -34,59 +34,59 @@ class ExternalMovementsNomisApiServiceTest {
   private val tomorrow = now.plusDays(1)
 
   @Nested
-  inner class GetTemporaryAbsences {
+  inner class GetOffenderAllTapsTest {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsences(offenderNo = "A1234BC")
+      tapNomisApiMockServer.stubGetAllOffenderTaps(offenderNo = "A1234BC")
 
-      apiService.getTemporaryAbsencesOrNull(offenderNo = "A1234BC")
+      apiService.getAllOffenderTapsOrNull(offenderNo = "A1234BC")
 
-      externalMovementsNomisApiMockServer.verify(
+      tapNomisApiMockServer.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
     @Test
     internal fun `will pass offender number to service`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsences(offenderNo = "A1234BC")
+      tapNomisApiMockServer.stubGetAllOffenderTaps(offenderNo = "A1234BC")
 
-      apiService.getTemporaryAbsencesOrNull(offenderNo = "A1234BC")
+      apiService.getAllOffenderTapsOrNull(offenderNo = "A1234BC")
 
-      externalMovementsNomisApiMockServer.verify(
-        getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences")),
+      tapNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/movements/A1234BC/taps")),
       )
     }
 
     @Test
     fun `will return temporary absences`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsences(offenderNo = "A1234BC")
+      tapNomisApiMockServer.stubGetAllOffenderTaps(offenderNo = "A1234BC")
 
-      val result = apiService.getTemporaryAbsencesOrNull(offenderNo = "A1234BC")!!
+      val result = apiService.getAllOffenderTapsOrNull(offenderNo = "A1234BC")!!
 
       assertThat(result.bookings).hasSize(1)
       assertThat(result.bookings[0].bookingId).isEqualTo(12345)
-      assertThat(result.bookings[0].temporaryAbsenceApplications).hasSize(1)
-      assertThat(result.bookings[0].temporaryAbsenceApplications[0].absences[0].scheduledTemporaryAbsence?.eventId).isEqualTo(1)
-      assertThat(result.bookings[0].temporaryAbsenceApplications[0].absences[0].scheduledTemporaryAbsenceReturn?.eventId).isEqualTo(2)
-      assertThat(result.bookings[0].temporaryAbsenceApplications[0].absences[0].temporaryAbsence?.sequence).isEqualTo(3)
-      assertThat(result.bookings[0].temporaryAbsenceApplications[0].absences[0].temporaryAbsenceReturn?.sequence).isEqualTo(4)
-      assertThat(result.bookings[0].unscheduledTemporaryAbsences[0].sequence).isEqualTo(1)
-      assertThat(result.bookings[0].unscheduledTemporaryAbsenceReturns[0].sequence).isEqualTo(2)
+      assertThat(result.bookings[0].tapApplications).hasSize(1)
+      assertThat(result.bookings[0].tapApplications[0].taps[0].tapScheduleOut?.eventId).isEqualTo(1)
+      assertThat(result.bookings[0].tapApplications[0].taps[0].tapScheduleIn?.eventId).isEqualTo(2)
+      assertThat(result.bookings[0].tapApplications[0].taps[0].tapMovementOut?.sequence).isEqualTo(3)
+      assertThat(result.bookings[0].tapApplications[0].taps[0].tapMovementIn?.sequence).isEqualTo(4)
+      assertThat(result.bookings[0].unscheduledTapMovementOuts[0].sequence).isEqualTo(1)
+      assertThat(result.bookings[0].unscheduledTapMovementIns[0].sequence).isEqualTo(2)
     }
 
     @Test
     fun `will return null when offender does not exist`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsences(NOT_FOUND)
+      tapNomisApiMockServer.stubGetAllOffenderTaps(NOT_FOUND)
 
-      assertThat(apiService.getTemporaryAbsencesOrNull(offenderNo = "A1234BC")).isNull()
+      assertThat(apiService.getAllOffenderTapsOrNull(offenderNo = "A1234BC")).isNull()
     }
 
     @Test
     fun `will throw error when API returns an error`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsences(INTERNAL_SERVER_ERROR)
+      tapNomisApiMockServer.stubGetAllOffenderTaps(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.getTemporaryAbsencesOrNull(offenderNo = "A1234BC")
+        apiService.getAllOffenderTapsOrNull(offenderNo = "A1234BC")
       }
     }
   }
@@ -95,29 +95,29 @@ class ExternalMovementsNomisApiServiceTest {
   inner class GetTemporaryAbsenceApplication {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceApplication(offenderNo = "A1234BC", applicationId = 111)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceApplication(offenderNo = "A1234BC", applicationId = 111)
 
       apiService.getTemporaryAbsenceApplication(offenderNo = "A1234BC", applicationId = 111)
 
-      externalMovementsNomisApiMockServer.verify(
+      tapNomisApiMockServer.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
     @Test
     internal fun `will pass offender number and application ID to service`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceApplication(offenderNo = "A1234BC", applicationId = 111)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceApplication(offenderNo = "A1234BC", applicationId = 111)
 
       apiService.getTemporaryAbsenceApplication(offenderNo = "A1234BC", applicationId = 111)
 
-      externalMovementsNomisApiMockServer.verify(
+      tapNomisApiMockServer.verify(
         getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/application/111")),
       )
     }
 
     @Test
     fun `will return temporary absence application`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceApplication(offenderNo = "A1234BC", applicationId = 111)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceApplication(offenderNo = "A1234BC", applicationId = 111)
 
       apiService.getTemporaryAbsenceApplication(offenderNo = "A1234BC", applicationId = 111)
         .apply {
@@ -133,7 +133,7 @@ class ExternalMovementsNomisApiServiceTest {
 
     @Test
     fun `will throw error when offender does not exist`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceApplication(status = NOT_FOUND)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceApplication(status = NOT_FOUND)
 
       assertThrows<WebClientResponseException.NotFound> {
         apiService.getTemporaryAbsenceApplication(offenderNo = "A1234BC", applicationId = 111)
@@ -142,7 +142,7 @@ class ExternalMovementsNomisApiServiceTest {
 
     @Test
     fun `will throw error when API returns an error`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceApplication(status = INTERNAL_SERVER_ERROR)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceApplication(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getTemporaryAbsenceApplication(offenderNo = "A1234BC", applicationId = 111)
@@ -154,29 +154,29 @@ class ExternalMovementsNomisApiServiceTest {
   inner class GetTemporaryAbsenceScheduledMovement {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceScheduledMovement(offenderNo = "A1234BC", eventId = 1)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceScheduledMovement(offenderNo = "A1234BC", eventId = 1)
 
       apiService.getTemporaryAbsenceScheduledMovement(offenderNo = "A1234BC", eventId = 1)
 
-      externalMovementsNomisApiMockServer.verify(
+      tapNomisApiMockServer.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
     @Test
     internal fun `will pass offender number and event ID to service`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceScheduledMovement(offenderNo = "A1234BC", eventId = 1)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceScheduledMovement(offenderNo = "A1234BC", eventId = 1)
 
       apiService.getTemporaryAbsenceScheduledMovement(offenderNo = "A1234BC", eventId = 1)
 
-      externalMovementsNomisApiMockServer.verify(
+      tapNomisApiMockServer.verify(
         getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence/1")),
       )
     }
 
     @Test
     fun `will return scheduled temporary absence`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceScheduledMovement(offenderNo = "A1234BC", eventId = 1)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceScheduledMovement(offenderNo = "A1234BC", eventId = 1)
 
       apiService.getTemporaryAbsenceScheduledMovement(offenderNo = "A1234BC", eventId = 1)
         .apply {
@@ -194,7 +194,7 @@ class ExternalMovementsNomisApiServiceTest {
 
     @Test
     fun `will throw error when offender does not exist`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceScheduledMovement(NOT_FOUND)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceScheduledMovement(NOT_FOUND)
 
       assertThrows<WebClientResponseException.NotFound> {
         apiService.getTemporaryAbsenceScheduledMovement(offenderNo = "A1234BC", eventId = 1)
@@ -203,7 +203,7 @@ class ExternalMovementsNomisApiServiceTest {
 
     @Test
     fun `will throw error when API returns an error`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceScheduledMovement(INTERNAL_SERVER_ERROR)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceScheduledMovement(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getTemporaryAbsenceScheduledMovement(offenderNo = "A1234BC", eventId = 1)
@@ -215,29 +215,29 @@ class ExternalMovementsNomisApiServiceTest {
   inner class GetTemporaryAbsenceScheduledReturnMovement {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceScheduledReturnMovement(offenderNo = "A1234BC", eventId = 2)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceScheduledReturnMovement(offenderNo = "A1234BC", eventId = 2)
 
       apiService.getTemporaryAbsenceScheduledReturnMovement(offenderNo = "A1234BC", eventId = 2)
 
-      externalMovementsNomisApiMockServer.verify(
+      tapNomisApiMockServer.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
     @Test
     internal fun `will pass offender number and event ID to service`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceScheduledReturnMovement(offenderNo = "A1234BC", eventId = 2)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceScheduledReturnMovement(offenderNo = "A1234BC", eventId = 2)
 
       apiService.getTemporaryAbsenceScheduledReturnMovement(offenderNo = "A1234BC", eventId = 2)
 
-      externalMovementsNomisApiMockServer.verify(
+      tapNomisApiMockServer.verify(
         getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/scheduled-temporary-absence-return/2")),
       )
     }
 
     @Test
     fun `will return scheduled temporary absence return`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceScheduledReturnMovement(offenderNo = "A1234BC", eventId = 2)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceScheduledReturnMovement(offenderNo = "A1234BC", eventId = 2)
 
       apiService.getTemporaryAbsenceScheduledReturnMovement(offenderNo = "A1234BC", eventId = 2)
         .apply {
@@ -256,7 +256,7 @@ class ExternalMovementsNomisApiServiceTest {
 
     @Test
     fun `will throw error when offender does not exist`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceScheduledReturnMovement(NOT_FOUND)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceScheduledReturnMovement(NOT_FOUND)
 
       assertThrows<WebClientResponseException.NotFound> {
         apiService.getTemporaryAbsenceScheduledReturnMovement(offenderNo = "A1234BC", eventId = 2)
@@ -265,7 +265,7 @@ class ExternalMovementsNomisApiServiceTest {
 
     @Test
     fun `will throw error when API returns an error`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceScheduledReturnMovement(INTERNAL_SERVER_ERROR)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceScheduledReturnMovement(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getTemporaryAbsenceScheduledReturnMovement(offenderNo = "A1234BC", eventId = 2)
@@ -277,29 +277,29 @@ class ExternalMovementsNomisApiServiceTest {
   inner class GetTemporaryAbsenceMovement {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
 
       apiService.getTemporaryAbsenceMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
 
-      externalMovementsNomisApiMockServer.verify(
+      tapNomisApiMockServer.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
     @Test
     internal fun `will pass offender number, booking ID and movement sequence to service`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
 
       apiService.getTemporaryAbsenceMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
 
-      externalMovementsNomisApiMockServer.verify(
+      tapNomisApiMockServer.verify(
         getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/temporary-absence/12345/1")),
       )
     }
 
     @Test
     fun `will return temporary absence`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
 
       apiService.getTemporaryAbsenceMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
         .apply {
@@ -326,7 +326,7 @@ class ExternalMovementsNomisApiServiceTest {
 
     @Test
     fun `will return unscheduled temporary absence`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceMovement(
+      tapNomisApiMockServer.stubGetTemporaryAbsenceMovement(
         offenderNo = "A1234BC",
         bookingId = 12345,
         movementSeq = 1,
@@ -345,7 +345,7 @@ class ExternalMovementsNomisApiServiceTest {
 
     @Test
     fun `will throw error when offender does not exist`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceMovement(NOT_FOUND)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceMovement(NOT_FOUND)
 
       assertThrows<WebClientResponseException.NotFound> {
         apiService.getTemporaryAbsenceMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
@@ -354,7 +354,7 @@ class ExternalMovementsNomisApiServiceTest {
 
     @Test
     fun `will throw error when API returns an error`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceMovement(INTERNAL_SERVER_ERROR)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceMovement(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getTemporaryAbsenceMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
@@ -366,18 +366,18 @@ class ExternalMovementsNomisApiServiceTest {
   inner class TemporaryAbsenceReturnMovementTest {
     @Test
     fun `will call the correct endpoint`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceReturnMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceReturnMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
 
       apiService.getTemporaryAbsenceReturnMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
 
-      externalMovementsNomisApiMockServer.verify(
+      tapNomisApiMockServer.verify(
         getRequestedFor(urlPathEqualTo("/movements/A1234BC/temporary-absences/temporary-absence-return/12345/1")),
       )
     }
 
     @Test
     fun `will return temporary absence return`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceReturnMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceReturnMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
 
       apiService.getTemporaryAbsenceReturnMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
         .apply {
@@ -401,7 +401,7 @@ class ExternalMovementsNomisApiServiceTest {
 
     @Test
     fun `will return unscheduled temporary absence return`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceReturnMovement(
+      tapNomisApiMockServer.stubGetTemporaryAbsenceReturnMovement(
         offenderNo = "A1234BC",
         bookingId = 12345,
         movementSeq = 1,
@@ -420,7 +420,7 @@ class ExternalMovementsNomisApiServiceTest {
 
     @Test
     fun `will throw error when offender does not exist`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceReturnMovement(NOT_FOUND)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceReturnMovement(NOT_FOUND)
 
       assertThrows<WebClientResponseException.NotFound> {
         apiService.getTemporaryAbsenceReturnMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
@@ -429,7 +429,7 @@ class ExternalMovementsNomisApiServiceTest {
 
     @Test
     fun `will throw error when API returns an error`() = runTest {
-      externalMovementsNomisApiMockServer.stubGetTemporaryAbsenceReturnMovement(INTERNAL_SERVER_ERROR)
+      tapNomisApiMockServer.stubGetTemporaryAbsenceReturnMovement(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getTemporaryAbsenceReturnMovement(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)

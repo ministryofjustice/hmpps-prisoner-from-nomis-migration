@@ -25,7 +25,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiMockServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsNomisApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -36,7 +35,7 @@ import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.util.*
 
 class TapMovementIntTest(
-  @Autowired private val nomisApi: ExternalMovementsNomisApiMockServer,
+  @Autowired private val nomisApi: TapNomisApiMockServer,
   @Autowired private val mappingApi: ExternalMovementsMappingApiMockServer,
 ) : SqsIntegrationTestBase() {
 

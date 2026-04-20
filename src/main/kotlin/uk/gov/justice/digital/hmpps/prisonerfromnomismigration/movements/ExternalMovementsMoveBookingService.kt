@@ -12,18 +12,18 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MoveTemporaryAbsencesRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapsNomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMovementIdMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTemporaryAbsences
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTaps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
-import kotlin.String
 
 @Service
 class ExternalMovementsMoveBookingService(
   private val dpsApi: ExternalMovementsDpsApiService,
-  private val nomisApi: ExternalMovementsNomisApiService,
+  private val nomisApi: TapsNomisApiService,
   private val mappingApi: ExternalMovementsMappingApiService,
   private val queueService: SynchronisationQueueService,
   private val migrationService: ExternalMovementsMigrationService,
@@ -65,15 +65,15 @@ class ExternalMovementsMoveBookingService(
     }
   }
 
-  private suspend fun getNomisBooking(offenderNo: String, bookingId: Long) = nomisApi.getTemporaryAbsencesOrNull(offenderNo)
+  private suspend fun getNomisBooking(offenderNo: String, bookingId: Long) = nomisApi.getAllOffenderTapsOrNull(offenderNo)
     ?.bookings
     ?.firstOrNull { it.bookingId == bookingId }
 
-  private fun BookingTemporaryAbsences.findDpsAuthorisationIds(
+  private fun BookingTaps.findDpsAuthorisationIds(
     mappings: List<TemporaryAbsenceApplicationIdMapping>,
     telemetry: MutableMap<String, Any>,
-  ) = temporaryAbsenceApplications
-    .map { it.movementApplicationId }
+  ) = tapApplications
+    .map { it.tapApplicationId }
     .also { telemetry["nomisApplicationIds"] = "$it" }
     .map { nomisApplicationId ->
       mappings.find { it.applicationId == nomisApplicationId }
@@ -82,10 +82,10 @@ class ExternalMovementsMoveBookingService(
     }
     .also { telemetry["dpsAuthorisationIds"] = "$it" }
 
-  private fun BookingTemporaryAbsences.findDpsMovementIds(
+  private fun BookingTaps.findDpsMovementIds(
     mappings: List<TemporaryAbsenceMovementIdMapping>,
     telemetry: MutableMap<String, Any>,
-  ) = (unscheduledTemporaryAbsences.map { it.sequence } + unscheduledTemporaryAbsenceReturns.map { it.sequence })
+  ) = (unscheduledTapMovementOuts.map { it.sequence } + unscheduledTapMovementIns.map { it.sequence })
     .also { telemetry["nomisUnscheduledMovementSeqs"] = "$it" }
     .map { nomisMovementSeq ->
       mappings.find { it.movementSeq == nomisMovementSeq }
@@ -125,9 +125,9 @@ class ExternalMovementsMoveBookingService(
     migrationService.resyncPrisonerTaps(toOffenderNo)
   }
 
-  private fun BookingTemporaryAbsences.isEmpty() = this.temporaryAbsenceApplications.isEmpty() &&
-    this.unscheduledTemporaryAbsences.isEmpty() &&
-    this.unscheduledTemporaryAbsenceReturns.isEmpty()
+  private fun BookingTaps.isEmpty() = this.tapApplications.isEmpty() &&
+    this.unscheduledTapMovementOuts.isEmpty() &&
+    this.unscheduledTapMovementIns.isEmpty()
 }
 
 class TapMoveBookingException(message: String) : RuntimeException(message)
