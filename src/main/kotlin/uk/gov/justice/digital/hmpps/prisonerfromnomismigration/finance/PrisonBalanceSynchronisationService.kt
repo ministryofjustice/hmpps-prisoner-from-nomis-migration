@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service
 @Service
 class PrisonBalanceSynchronisationService(
   private val nomisApiService: FinanceNomisApiService,
-  private val dpsApiService: FinanceApiService,
+  private val dpsApiService: FinanceDpsApiService,
 ) {
   suspend fun resynchronisePrisonBalance(prisonId: String) {
     val prisonBalance = nomisApiService.getPrisonBalance(prisonId)

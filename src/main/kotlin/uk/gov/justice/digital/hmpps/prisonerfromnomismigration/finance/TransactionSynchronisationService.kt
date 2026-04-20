@@ -25,7 +25,7 @@ import java.util.UUID
 class TransactionSynchronisationService(
   private val nomisApiService: FinanceNomisApiService,
   private val transactionMappingService: TransactionMappingApiService,
-  private val financeService: FinanceApiService,
+  private val financeService: FinanceDpsApiService,
   private val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
   private val transactionIdBufferRepository: TransactionIdBufferRepository,
@@ -86,7 +86,7 @@ class TransactionSynchronisationService(
       }
   }
 
-  suspend fun resynchroniseTransaction(nomisTransactionId: Long) {
+  suspend fun resynchronisePrisonerTransaction(nomisTransactionId: Long) {
     val transactionEvent = nomisApiService.getPrisonerTransactions(nomisTransactionId).firstOrNull()
       ?.toTransactionEvent()
       ?: throw NotFoundException("No prisoner transaction found in nomis for transactionId=$nomisTransactionId")
@@ -116,7 +116,7 @@ class TransactionSynchronisationService(
     if (nomisTransactions.isEmpty()) {
       throw NotFoundException("No Prisoner transactions found in nomis for transactionId=$nomisTransactionId")
     } else {
-      financeService.syncTransactions(
+      financeService.syncPrisonerTransactions(
         nomisTransactions.toSyncOffenderTransactionRequest(requestId),
       )
         .also { financeResponse ->

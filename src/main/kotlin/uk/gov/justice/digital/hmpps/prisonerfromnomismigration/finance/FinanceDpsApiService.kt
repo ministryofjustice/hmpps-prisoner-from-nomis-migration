@@ -12,10 +12,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 
 @Service
-class FinanceApiService(@Qualifier("financeApiWebClient") webClient: WebClient) {
+class FinanceDpsApiService(@Qualifier("financeApiWebClient") webClient: WebClient) {
   private val syncApi = NOMISSyncApi(webClient)
 
-  suspend fun syncTransactions(request: SyncOffenderTransactionRequest): SyncTransactionReceipt = syncApi
+  suspend fun syncPrisonerTransactions(request: SyncOffenderTransactionRequest): SyncTransactionReceipt = syncApi
     .prepare(syncApi.postOffenderTransactionRequestConfig(request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()

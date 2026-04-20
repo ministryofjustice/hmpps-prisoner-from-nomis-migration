@@ -22,7 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.util.UUID
 
-class TransactionDataRepairResourceIntTest : SqsIntegrationTestBase() {
+class PrisonerTransactionDataRepairResourceIntTest : SqsIntegrationTestBase() {
   @Autowired
   private lateinit var nomisApiMockServer: FinanceNomisApiMockServer
 
