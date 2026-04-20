@@ -29,7 +29,7 @@ class PrisonBalanceMigrationService(
   val nomisApiService: NomisApiService,
   val prisonBalanceMappingService: PrisonBalanceMappingApiService,
   val prisonBalanceNomisApiService: FinanceNomisApiService,
-  val dpsApiService: FinanceApiService,
+  val dpsApiService: FinanceDpsApiService,
   jsonMapper: JsonMapper,
   @Value($$"${prisonBalance.page.size:1000}") pageSize: Long,
   @Value($$"${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,

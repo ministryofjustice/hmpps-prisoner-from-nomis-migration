@@ -16,10 +16,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 
 @SpringAPIServiceTest
-@Import(FinanceApiService::class, FinanceConfiguration::class)
-class FinanceApiServiceTest {
+@Import(FinanceDpsApiService::class, FinanceConfiguration::class)
+class FinanceDpsApiServiceTest {
   @Autowired
-  private lateinit var apiService: FinanceApiService
+  private lateinit var apiService: FinanceDpsApiService
 
   @Nested
   inner class MigratePrisonerBalance {

@@ -15,7 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundE
 @RestController
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__UPDATE__RW')")
 @Tag(name = "Finance Migration Resource")
-class TransactionDataRepairResource(
+class PrisonerTransactionDataRepairResource(
   private val transactionSynchronisationService: TransactionSynchronisationService,
   private val telemetryClient: TelemetryClient,
 ) {
@@ -24,16 +24,16 @@ class TransactionDataRepairResource(
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @Operation(
     summary = """Resynchronises all associated transactions for the given transaction from NOMIS to DPS.
-        This is for prison (GL) or prisoner (offender) transactions.
+        This is for prisoner (offender) transactions.
         It will create the transaction in dps if it doesn't exist, or update it if it already exists.""",
     description = """Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS,
        so emergency use only.
        Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW
        """,
   )
-  suspend fun repairTransaction(@PathVariable transactionId: Long) {
+  suspend fun repairPrisonerTransaction(@PathVariable transactionId: Long) {
     try {
-      transactionSynchronisationService.resynchroniseTransaction(transactionId)
+      transactionSynchronisationService.resynchronisePrisonerTransaction(transactionId)
       telemetryClient.trackEvent(
         "transaction-resynchronisation-repair",
         mapOf(

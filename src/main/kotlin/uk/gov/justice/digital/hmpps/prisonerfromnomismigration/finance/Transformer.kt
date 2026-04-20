@@ -2,11 +2,10 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerEntry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.OffenderTransaction
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncGeneralLedgerTransactionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncOffenderTransactionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GeneralLedgerTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
-import java.util.*
+import java.util.UUID
 
 fun List<OffenderTransactionDto>.toSyncOffenderTransactionRequest(requestId: UUID): SyncOffenderTransactionRequest = first()
   .run {
@@ -24,28 +23,6 @@ fun List<OffenderTransactionDto>.toSyncOffenderTransactionRequest(requestId: UUI
       lastModifiedByDisplayName = lastModifiedByDisplayName,
       offenderTransactions = this@toSyncOffenderTransactionRequest.map {
         it.toDPSSyncTransaction()
-      },
-    )
-  }
-
-fun List<GeneralLedgerTransactionDto>.toSyncGeneralLedgerTransactionRequest(requestId: UUID): SyncGeneralLedgerTransactionRequest = first()
-  .run {
-    SyncGeneralLedgerTransactionRequest(
-      transactionId = transactionId,
-      requestId = requestId,
-      caseloadId = caseloadId,
-      transactionType = type,
-      reference = reference,
-      transactionTimestamp = transactionTimestamp,
-      description = description,
-      createdAt = createdAt,
-      createdBy = createdBy,
-      createdByDisplayName = createdByDisplayName,
-      lastModifiedAt = lastModifiedAt,
-      lastModifiedBy = lastModifiedBy,
-      lastModifiedByDisplayName = lastModifiedByDisplayName,
-      generalLedgerEntries = this@toSyncGeneralLedgerTransactionRequest.map {
-        it.toDPSSyncGLTransaction()
       },
     )
   }

@@ -8,7 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundE
 class PrisonerBalanceSynchronisationService(
   private val prisonerBalanceNomisApiService: PrisonerBalanceNomisApiService,
   private val nomisApiService: NomisApiService,
-  private val dpsApiService: FinanceApiService,
+  private val dpsApiService: FinanceDpsApiService,
 ) {
   suspend fun resynchronisePrisonerBalance(nomisRootOffenderId: Long) {
     val prisonerBalance = prisonerBalanceNomisApiService.getPrisonerBalance(nomisRootOffenderId)
