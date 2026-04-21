@@ -39,7 +39,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequ
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
-import java.util.UUID
+import java.util.*
 
 class TapScheduleIntTest(
   @Autowired private val nomisApi: TapNomisApiMockServer,

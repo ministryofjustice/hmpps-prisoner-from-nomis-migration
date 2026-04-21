@@ -10,7 +10,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementApplicationEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
@@ -32,7 +31,7 @@ class TapApplicationService(
   private val queueService: SynchronisationQueueService,
   private val mappingApiService: ExternalMovementsMappingApiService,
   private val nomisApiService: TapsNomisApiService,
-  private val dpsApiService: ExternalMovementsDpsApiService,
+  private val dpsApiService: TapDpsApiService,
 ) : TelemetryEnabled {
   companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)

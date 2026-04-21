@@ -12,7 +12,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapAuthorisation
@@ -45,7 +44,7 @@ class TapMigrationService(
   val migrationMappingService: ExternalMovementsMappingApiService,
   val nomisIdsApiService: NomisApiService,
   val nomisApiService: TapsNomisApiService,
-  val dpsApiService: ExternalMovementsDpsApiService,
+  val dpsApiService: TapDpsApiService,
   jsonMapper: JsonMapper,
   @Value($$"${externalmovements.page.size:1000}") pageSize: Long,
   @Value($$"${externalmovements.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,

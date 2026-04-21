@@ -35,7 +35,7 @@ import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.util.UUID
+import java.util.*
 
 class TapApplicationIntTest(
   @Autowired private val nomisApi: TapNomisApiMockServer,

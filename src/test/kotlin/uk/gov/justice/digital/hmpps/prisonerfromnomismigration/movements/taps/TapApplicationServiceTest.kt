@@ -1,6 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.tapApplication
@@ -22,7 +22,7 @@ class TapApplicationServiceTest {
 
       val dpsRequest = nomisResponse.toDpsRequest()
 
-      Assertions.assertThat(dpsRequest.statusCode).isEqualTo("EXPIRED")
+      assertThat(dpsRequest.statusCode).isEqualTo("EXPIRED")
     }
 
     @Test
@@ -37,7 +37,7 @@ class TapApplicationServiceTest {
 
       val dpsRequest = nomisResponse.toDpsRequest()
 
-      Assertions.assertThat(dpsRequest.statusCode).isEqualTo("EXPIRED")
+      assertThat(dpsRequest.statusCode).isEqualTo("EXPIRED")
     }
 
     @Test
@@ -51,7 +51,7 @@ class TapApplicationServiceTest {
 
       val dpsRequest = nomisResponse.toDpsRequest()
 
-      Assertions.assertThat(dpsRequest.statusCode).isEqualTo("APPROVED")
+      assertThat(dpsRequest.statusCode).isEqualTo("APPROVED")
     }
 
     @Test
@@ -65,7 +65,7 @@ class TapApplicationServiceTest {
 
       val dpsRequest = nomisResponse.toDpsRequest()
 
-      Assertions.assertThat(dpsRequest.statusCode).isEqualTo("PENDING")
+      assertThat(dpsRequest.statusCode).isEqualTo("PENDING")
     }
 
     @Test
@@ -79,7 +79,7 @@ class TapApplicationServiceTest {
 
       val dpsRequest = nomisResponse.toDpsRequest()
 
-      Assertions.assertThat(dpsRequest.statusCode).isEqualTo("APPROVED")
+      assertThat(dpsRequest.statusCode).isEqualTo("APPROVED")
     }
   }
 }

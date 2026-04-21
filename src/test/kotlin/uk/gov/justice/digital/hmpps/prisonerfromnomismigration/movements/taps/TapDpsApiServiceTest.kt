@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
@@ -15,7 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsConfiguration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.moveBookingRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.syncTapMovement
@@ -26,10 +28,10 @@ import java.time.LocalDate
 import java.util.*
 
 @SpringAPIServiceTest
-@Import(ExternalMovementsDpsApiService::class, ExternalMovementsConfiguration::class, ExternalMovementsDpsApiMockServer::class)
-class ExternalMovementsDpsApiServiceTest {
+@Import(TapDpsApiService::class, ExternalMovementsConfiguration::class, ExternalMovementsDpsApiMockServer::class)
+class TapDpsApiServiceTest {
   @Autowired
-  private lateinit var apiService: ExternalMovementsDpsApiService
+  private lateinit var apiService: TapDpsApiService
 
   @Nested
   inner class SyncTapApplication {
@@ -62,9 +64,18 @@ class ExternalMovementsDpsApiServiceTest {
     @Test
     fun `should parse the response`() = runTest {
       val dpsId = UUID.randomUUID()
-      dpsExtMovementsServer.stubSyncTapAuthorisation(response = SyncResponse(dpsId))
+      dpsExtMovementsServer.stubSyncTapAuthorisation(
+        response = SyncResponse(
+          dpsId,
+        ),
+      )
 
-      assertThat(apiService.syncTapAuthorisation("A1234BC", syncTapAuthorisation()).id)
+      assertThat(
+        apiService.syncTapAuthorisation(
+          "A1234BC",
+          syncTapAuthorisation(),
+        ).id,
+      )
         .isEqualTo(dpsId)
     }
 
@@ -151,9 +162,17 @@ class ExternalMovementsDpsApiServiceTest {
     @Test
     fun `should parse the response`() = runTest {
       val dpsId = UUID.randomUUID()
-      dpsExtMovementsServer.stubSyncTapOccurrence(parentId, response = SyncResponse(dpsId))
+      dpsExtMovementsServer.stubSyncTapOccurrence(
+        parentId,
+        response = SyncResponse(dpsId),
+      )
 
-      assertThat(apiService.syncTapOccurrence(parentId, syncTapOccurrence()).id)
+      assertThat(
+        apiService.syncTapOccurrence(
+          parentId,
+          syncTapOccurrence(),
+        ).id,
+      )
         .isEqualTo(dpsId)
     }
 
@@ -215,7 +234,10 @@ class ExternalMovementsDpsApiServiceTest {
     internal fun `should pass oath2 token`() = runTest {
       dpsExtMovementsServer.stubSyncTapMovement()
 
-      apiService.syncTapMovement(prisonerNumber, syncTapMovement(occurrenceId))
+      apiService.syncTapMovement(
+        prisonerNumber,
+        syncTapMovement(occurrenceId),
+      )
 
       dpsExtMovementsServer.verify(
         putRequestedFor(anyUrl())
@@ -227,7 +249,10 @@ class ExternalMovementsDpsApiServiceTest {
     fun `should call the sync endpoint`() = runTest {
       dpsExtMovementsServer.stubSyncTapMovement()
 
-      apiService.syncTapMovement(prisonerNumber, syncTapMovement(occurrenceId))
+      apiService.syncTapMovement(
+        prisonerNumber,
+        syncTapMovement(occurrenceId),
+      )
 
       dpsExtMovementsServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/$prisonerNumber"))
@@ -242,7 +267,12 @@ class ExternalMovementsDpsApiServiceTest {
       val dpsId = UUID.randomUUID()
       dpsExtMovementsServer.stubSyncTapMovement(response = SyncResponse(dpsId))
 
-      assertThat(apiService.syncTapMovement(prisonerNumber, syncTapMovement(occurrenceId)).id)
+      assertThat(
+        apiService.syncTapMovement(
+          prisonerNumber,
+          syncTapMovement(occurrenceId),
+        ).id,
+      )
         .isEqualTo(dpsId)
     }
 
@@ -251,7 +281,10 @@ class ExternalMovementsDpsApiServiceTest {
       dpsExtMovementsServer.stubSyncTapMovementError()
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.syncTapMovement(prisonerNumber, syncTapMovement(occurrenceId))
+        apiService.syncTapMovement(
+          prisonerNumber,
+          syncTapMovement(occurrenceId),
+        )
       }
     }
   }
@@ -319,12 +352,32 @@ class ExternalMovementsDpsApiServiceTest {
 
       dpsExtMovementsServer.verify(
         putRequestedFor(urlPathEqualTo("/move/temporary-absences"))
-          .withRequestBody(matchingJsonPath("fromPersonIdentifier", equalTo(request.fromPersonIdentifier)))
-          .withRequestBody(matchingJsonPath("toPersonIdentifier", equalTo(request.toPersonIdentifier)))
+          .withRequestBody(
+            matchingJsonPath(
+              "fromPersonIdentifier",
+              equalTo(request.fromPersonIdentifier),
+            ),
+          )
+          .withRequestBody(
+            matchingJsonPath(
+              "toPersonIdentifier",
+              equalTo(request.toPersonIdentifier),
+            ),
+          )
           .withRequestBody(matchingJsonPath("authorisationIds.size()", equalTo("1")))
-          .withRequestBody(matchingJsonPath("authorisationIds[0]", equalTo("${request.authorisationIds.first()}")))
+          .withRequestBody(
+            matchingJsonPath(
+              "authorisationIds[0]",
+              equalTo("${request.authorisationIds.first()}"),
+            ),
+          )
           .withRequestBody(matchingJsonPath("unscheduledMovementIds.size()", equalTo("1")))
-          .withRequestBody(matchingJsonPath("unscheduledMovementIds[0]", equalTo("${request.unscheduledMovementIds.first()}"))),
+          .withRequestBody(
+            matchingJsonPath(
+              "unscheduledMovementIds[0]",
+              equalTo("${request.unscheduledMovementIds.first()}"),
+            ),
+          ),
       )
     }
 

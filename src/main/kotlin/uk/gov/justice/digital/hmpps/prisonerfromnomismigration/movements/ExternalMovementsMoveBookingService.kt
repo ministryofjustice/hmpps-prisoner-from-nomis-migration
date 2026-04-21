@@ -12,6 +12,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MoveTemporaryAbsencesRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapsNomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMovementIdMapping
@@ -22,11 +24,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 
 @Service
 class ExternalMovementsMoveBookingService(
-  private val dpsApi: ExternalMovementsDpsApiService,
+  private val dpsApi: TapDpsApiService,
   private val nomisApi: TapsNomisApiService,
   private val mappingApi: ExternalMovementsMappingApiService,
   private val queueService: SynchronisationQueueService,
-  private val migrationService: ExternalMovementsMigrationService,
+  private val migrationService: TapMigrationService,
   override val telemetryClient: TelemetryClient,
 ) : TelemetryEnabled {
   companion object {

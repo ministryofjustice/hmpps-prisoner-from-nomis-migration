@@ -38,7 +38,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceAp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension
@@ -249,7 +249,7 @@ class SqsIntegrationTestBase : TestBase() {
   protected lateinit var telemetryClient: TelemetryClient
 
   @MockitoSpyBean
-  protected lateinit var externalMovementsMigrationService: ExternalMovementsMigrationService
+  protected lateinit var externalMovementsMigrationService: TapMigrationService
 
   @BeforeEach
   fun setUp() {
