@@ -4,10 +4,7 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.AgencyAddressUpdatedEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.CorporateAddressUpdatedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.OffenderAddressUpdatedEvent
 
 @Service
 class TapAddressService(

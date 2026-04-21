@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
 import io.awspring.cloud.sqs.annotation.SqsListener
 import org.slf4j.Logger
@@ -10,26 +10,21 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_TEMPORARY_ABSENCE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapAddressService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapApplicationService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMovementService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapScheduleService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_TEMPORARY_ABSENCE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
 import java.util.concurrent.CompletableFuture
 
 @Service
-class ExternalMovementsEventListener(
+class TapEventListener(
   private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
-  private val moveBookingService: ExternalMovementsMoveBookingService,
+  private val moveBookingService: TapMoveBookingService,
   private val tapApplicationService: TapApplicationService,
   private val tapScheduleService: TapScheduleService,
-  private val movementService: ExternalMovementsMovementRouter,
   private val tapAddressService: TapAddressService,
   private val tapMovementService: TapMovementService,
 ) {
@@ -55,7 +50,7 @@ class ExternalMovementsEventListener(
               "SCHEDULED_EXT_MOVE-INSERTED" -> tapScheduleService.scheduledMovementInserted(sqsMessage.Message.fromJson())
               "SCHEDULED_EXT_MOVE-UPDATED" -> tapScheduleService.scheduledMovementUpdated(sqsMessage.Message.fromJson())
               "SCHEDULED_EXT_MOVE-DELETED" -> tapScheduleService.scheduledMovementDeleted(sqsMessage.Message.fromJson())
-              "EXTERNAL_MOVEMENT-CHANGED" -> movementService.externalMovementChanged(sqsMessage.Message.fromJson())
+              "EXTERNAL_MOVEMENT-CHANGED" -> tapMovementService.tapMovementChanged(sqsMessage.Message.fromJson())
               "ADDRESSES_OFFENDER-UPDATED" -> tapAddressService.offenderAddressUpdated(sqsMessage.Message.fromJson())
               "ADDRESSES_CORPORATE-UPDATED" -> tapAddressService.corporateAddressUpdated(sqsMessage.Message.fromJson())
               "ADDRESSES_AGENCY-UPDATED" -> tapAddressService.agencyAddressUpdated(sqsMessage.Message.fromJson())

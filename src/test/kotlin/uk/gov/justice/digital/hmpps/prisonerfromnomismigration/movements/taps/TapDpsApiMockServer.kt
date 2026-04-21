@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
@@ -13,7 +13,6 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.stereotype.Component
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigratedAuthorisation
@@ -25,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.S
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
@@ -32,7 +32,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getReque
 import java.time.LocalDateTime
 import java.util.*
 
-class ExternalMovementsDpsApiExtension :
+class TapDpsApiExtension :
   BeforeAllCallback,
   AfterAllCallback,
   BeforeEachCallback {
@@ -40,7 +40,7 @@ class ExternalMovementsDpsApiExtension :
     private var enableResetBeforeEach = true
 
     @JvmField
-    val dpsExtMovementsServer = ExternalMovementsDpsApiMockServer()
+    val dpsExtMovementsServer = TapDpsApiMockServer()
     lateinit var jsonMapper: JsonMapper
 
     fun resetAndDisableResetBeforeEach() {
@@ -65,16 +65,15 @@ class ExternalMovementsDpsApiExtension :
 }
 
 @Component
-class ExternalMovementsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
+class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8103
     private val today = LocalDateTime.now()
     private val tomorrow = today.plusDays(1)
-    private val yesterday = today.minusDays(1)
 
     @Suppress("unused")
-    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsExtMovementsServer.getRequestBody(pattern, ExternalMovementsDpsApiExtension.Companion.jsonMapper)
-    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsExtMovementsServer.getRequestBodies(pattern, ExternalMovementsDpsApiExtension.Companion.jsonMapper)
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsExtMovementsServer.getRequestBody(pattern, TapDpsApiExtension.jsonMapper)
+    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsExtMovementsServer.getRequestBodies(pattern, TapDpsApiExtension.jsonMapper)
 
     fun syncTapAuthorisation() = SyncWriteTapAuthorisation(
       prisonCode = "LEI",

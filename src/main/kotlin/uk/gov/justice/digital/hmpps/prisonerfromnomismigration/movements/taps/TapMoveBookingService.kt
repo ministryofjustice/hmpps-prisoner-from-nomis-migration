@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
 import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
@@ -11,10 +11,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.Telemetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MoveTemporaryAbsencesRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMigrationService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapsNomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMovementIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTaps
@@ -23,7 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
 @Service
-class ExternalMovementsMoveBookingService(
+class TapMoveBookingService(
   private val dpsApi: TapDpsApiService,
   private val nomisApi: TapsNomisApiService,
   private val mappingApi: ExternalMovementsMappingApiService,
