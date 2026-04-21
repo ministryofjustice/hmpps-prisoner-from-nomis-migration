@@ -19,8 +19,8 @@ import java.util.UUID
 
 @Service
 class TapDpsApiService(
-  @Qualifier("extMovementsDpsApiWebClient") private val webClient: WebClient,
-  @Qualifier("extMovementsDpsApiResyncWebClient") private val resyncWebClient: WebClient,
+  @Qualifier("tapsDpsApiWebClient") private val webClient: WebClient,
+  @Qualifier("tapsDpsApiResyncWebClient") private val resyncWebClient: WebClient,
 ) {
 
   private val syncApi = SyncApi(webClient)

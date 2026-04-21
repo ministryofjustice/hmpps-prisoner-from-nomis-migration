@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsConfiguration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsExtMovementsServer
@@ -27,7 +26,7 @@ import java.time.LocalDate
 import java.util.*
 
 @SpringAPIServiceTest
-@Import(TapDpsApiService::class, ExternalMovementsConfiguration::class, TapDpsApiMockServer::class)
+@Import(TapDpsApiService::class, TapConfiguration::class, TapDpsApiMockServer::class)
 class TapDpsApiServiceTest {
   @Autowired
   private lateinit var apiService: TapDpsApiService
