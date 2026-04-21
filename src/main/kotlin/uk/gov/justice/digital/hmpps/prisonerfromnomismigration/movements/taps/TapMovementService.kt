@@ -20,8 +20,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.L
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceReturnResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapMovementIn
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapMovementOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -83,10 +83,10 @@ class TapMovementService(
     movementSeq: Int,
     telemetry: MutableMap<String, Any>,
     existingMapping: ExternalMovementSyncMappingDto? = null,
-  ): ExternalMovementSyncMappingDto = nomisApiService.getTemporaryAbsenceMovement(prisonerNumber, bookingId, movementSeq)
+  ): ExternalMovementSyncMappingDto = nomisApiService.getTapMovementOut(prisonerNumber, bookingId, movementSeq)
     .also {
-      it.scheduledTemporaryAbsenceId?.run { telemetry["nomisScheduledEventId"] = this }
-      it.movementApplicationId?.run {
+      it.tapScheduleOutId?.run { telemetry["nomisScheduledEventId"] = this }
+      it.tapApplicationId?.run {
         telemetry["nomisApplicationId"] = this
         tryFetchParent { getParentApplicationId(this) }
           .also { telemetry["dpsAuthorisationId"] = it }
@@ -94,7 +94,7 @@ class TapMovementService(
     }
     .let { nomisMovement ->
       val dpsOccurrenceId =
-        nomisMovement.scheduledTemporaryAbsenceId?.let { tryFetchParent { getParentScheduledId(it) } }
+        nomisMovement.tapScheduleOutId?.let { tryFetchParent { getParentScheduledId(it) } }
           ?.also { telemetry["dpsOccurrenceId"] = it }
 
       val dpsLocation = deriveDpsAddress(
@@ -138,11 +138,11 @@ class TapMovementService(
     movementSeq: Int,
     telemetry: MutableMap<String, Any>,
     existingMapping: ExternalMovementSyncMappingDto? = null,
-  ): ExternalMovementSyncMappingDto = nomisApiService.getTemporaryAbsenceReturnMovement(prisonerNumber, bookingId, movementSeq)
+  ): ExternalMovementSyncMappingDto = nomisApiService.getTapMovementIn(prisonerNumber, bookingId, movementSeq)
     .also {
-      it.scheduledTemporaryAbsenceId?.run { telemetry["nomisScheduledParentEventId"] = this }
-      it.scheduledTemporaryAbsenceReturnId?.run { telemetry["nomisScheduledEventId"] = this }
-      it.movementApplicationId?.run {
+      it.tapScheduleOutId?.run { telemetry["nomisScheduledParentEventId"] = this }
+      it.tapScheduleInId?.run { telemetry["nomisScheduledEventId"] = this }
+      it.tapApplicationId?.run {
         telemetry["nomisApplicationId"] = this
         tryFetchParent { getParentApplicationId(this) }
           .also { telemetry["dpsAuthorisationId"] = it }
@@ -150,7 +150,7 @@ class TapMovementService(
     }
     .let { nomisMovement ->
       val dpsOccurrenceId =
-        nomisMovement.scheduledTemporaryAbsenceId?.let { tryFetchParent { getParentScheduledId(it) } }
+        nomisMovement.tapScheduleOutId?.let { tryFetchParent { getParentScheduledId(it) } }
           ?.also { telemetry["dpsOccurrenceId"] = it }
 
       val dpsLocation = deriveDpsAddress(
@@ -361,7 +361,7 @@ class TapMovementService(
     }
   }
 
-  private fun TemporaryAbsenceResponse.toDpsRequest(
+  private fun TapMovementOut.toDpsRequest(
     id: UUID? = null,
     occurrenceId: UUID? = null,
     dpsLocation: Location,
@@ -381,7 +381,7 @@ class TapMovementService(
     prisonCode = fromPrison,
   )
 
-  private fun TemporaryAbsenceReturnResponse.toDpsRequest(
+  private fun TapMovementIn.toDpsRequest(
     id: UUID? = null,
     occurrenceId: UUID? = null,
     dpsLocation: Location,

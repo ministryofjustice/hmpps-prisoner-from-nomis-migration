@@ -32,7 +32,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer.Companion.migrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiMockServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapResponse
@@ -79,7 +78,7 @@ class TapMigrationIntTest(
       webTestClient.post().uri("/migrate/taps")
         .headers(setAuthorisation(roles = listOf()))
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(ExternalMovementsMigrationFilter())
+        .bodyValue(TapMigrationFilter())
         .exchange()
         .expectStatus().isForbidden
     }
@@ -89,7 +88,7 @@ class TapMigrationIntTest(
       webTestClient.post().uri("/migrate/taps")
         .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(ExternalMovementsMigrationFilter())
+        .bodyValue(TapMigrationFilter())
         .exchange()
         .expectStatus().isForbidden
     }
@@ -98,7 +97,7 @@ class TapMigrationIntTest(
     fun `access unauthorised with no auth token`() {
       webTestClient.post().uri("/migrate/taps")
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(ExternalMovementsMigrationFilter())
+        .bodyValue(TapMigrationFilter())
         .exchange()
         .expectStatus().isUnauthorized
     }
@@ -798,7 +797,7 @@ class TapMigrationIntTest(
         webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
           .headers(setAuthorisation(roles = listOf()))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(ExternalMovementsMigrationFilter())
+          .bodyValue(TapMigrationFilter())
           .exchange()
           .expectStatus().isForbidden
       }
@@ -808,7 +807,7 @@ class TapMigrationIntTest(
         webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
           .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(ExternalMovementsMigrationFilter())
+          .bodyValue(TapMigrationFilter())
           .exchange()
           .expectStatus().isForbidden
       }
@@ -817,7 +816,7 @@ class TapMigrationIntTest(
       fun `access unauthorised with no auth token`() {
         webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(ExternalMovementsMigrationFilter())
+          .bodyValue(TapMigrationFilter())
           .exchange()
           .expectStatus().isUnauthorized
       }
@@ -827,7 +826,7 @@ class TapMigrationIntTest(
         webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__REPAIR_MOVEMENTS__RW")))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(ExternalMovementsMigrationFilter())
+          .bodyValue(TapMigrationFilter())
           .exchange()
           .expectStatus().isOk
       }
