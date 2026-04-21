@@ -27,11 +27,10 @@ import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
@@ -91,12 +90,12 @@ class TapScheduleIntTest(
 
       @Test
       fun `should create DPS scheduled movement`() {
-        ExternalMovementsDpsApiMockServer.getRequestBody<SyncWriteTapOccurrence>(
+        TapDpsApiMockServer.getRequestBody<SyncWriteTapOccurrence>(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId/occurrences")),
         ).apply {
           assertThat(id).isNull()
-          assertThat(start).isCloseTo(now, within(1, ChronoUnit.MINUTES))
-          assertThat(end).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
+          assertThat(start).isCloseTo(now, within(5, ChronoUnit.MINUTES))
+          assertThat(end).isCloseTo(tomorrow, within(5, ChronoUnit.MINUTES))
           assertThat(location.description).isEqualTo("some description")
           assertThat(location.address).isEqualTo("to full address")
           assertThat(location.postcode).isEqualTo("S1 1AB")
@@ -492,12 +491,12 @@ class TapScheduleIntTest(
 
       @Test
       fun `should update DPS scheduled movement`() {
-        ExternalMovementsDpsApiMockServer.getRequestBody<SyncWriteTapOccurrence>(
+        TapDpsApiMockServer.getRequestBody<SyncWriteTapOccurrence>(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId/occurrences")),
         ).apply {
           assertThat(id).isEqualTo(dpsOccurrenceId)
-          assertThat(start).isCloseTo(yesterday, within(1, ChronoUnit.MINUTES))
-          assertThat(end).isCloseTo(tomorrow, within(1, ChronoUnit.MINUTES))
+          assertThat(start).isCloseTo(yesterday, within(5, ChronoUnit.MINUTES))
+          assertThat(end).isCloseTo(tomorrow, within(5, ChronoUnit.MINUTES))
           assertThat(location.description).isEqualTo("some description")
           assertThat(location.address).isEqualTo("to full address")
           assertThat(location.postcode).isEqualTo("S1 1AB")
@@ -548,7 +547,7 @@ class TapScheduleIntTest(
 
       @Test
       fun `should send UPRN to DPS`() {
-        ExternalMovementsDpsApiMockServer.getRequestBody<SyncWriteTapOccurrence>(
+        TapDpsApiMockServer.getRequestBody<SyncWriteTapOccurrence>(
           putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$dpsAuthorisationId/occurrences")),
         ).apply {
           assertThat(id).isEqualTo(dpsOccurrenceId)

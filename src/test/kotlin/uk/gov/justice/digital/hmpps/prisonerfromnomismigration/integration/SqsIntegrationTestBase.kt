@@ -37,7 +37,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExten
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension
@@ -102,7 +102,7 @@ import java.util.concurrent.TimeUnit
   OrganisationsDpsApiExtension::class,
   VisitBalanceDpsApiExtension::class,
   NomisSyncApiExtension::class,
-  ExternalMovementsDpsApiExtension::class,
+  TapDpsApiExtension::class,
   OfficialVisitsDpsApiExtension::class,
 )
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)

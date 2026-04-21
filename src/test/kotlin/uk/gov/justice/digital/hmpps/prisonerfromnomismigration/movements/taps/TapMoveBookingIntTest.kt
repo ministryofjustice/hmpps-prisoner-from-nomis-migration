@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -22,9 +22,10 @@ import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsDpsApiExtension.Companion.dpsExtMovementsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MoveTemporaryAbsencesRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsExtMovementsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiMockServer.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.application
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.tapMovementIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.tapMovementOut
@@ -36,7 +37,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.util.*
 
-class ExternalMovementsMoveBookingIntTest(
+class TapMoveBookingIntTest(
   @Autowired private val mappingApi: ExternalMovementsMappingApiMockServer,
   @Autowired private val externalMovementsNomisApi: TapNomisApiMockServer,
 ) : SqsIntegrationTestBase() {
@@ -124,7 +125,7 @@ class ExternalMovementsMoveBookingIntTest(
 
     @Test
     fun `should move DPS IDs for applications and unscheduled movements`() {
-      ExternalMovementsDpsApiMockServer.getRequestBody<MoveTemporaryAbsencesRequest>(
+      getRequestBody<MoveTemporaryAbsencesRequest>(
         putRequestedFor(urlEqualTo("/move/temporary-absences")),
       ).apply {
         assertThat(fromPersonIdentifier).isEqualTo("A1000KT")
@@ -209,7 +210,11 @@ class ExternalMovementsMoveBookingIntTest(
     @Test
     fun `should not send message to DLQ`() {
       await untilAsserted {
-        assertThat(awsSqsExternalMovementsOffenderEventsDlqClient.countAllMessagesOnQueue(externalMovementsQueueOffenderEventsDlqUrl).get())
+        assertThat(
+          awsSqsExternalMovementsOffenderEventsDlqClient.countAllMessagesOnQueue(
+            externalMovementsQueueOffenderEventsDlqUrl,
+          ).get(),
+        )
           .isEqualTo(0)
       }
     }
@@ -251,7 +256,10 @@ class ExternalMovementsMoveBookingIntTest(
 
     @Test
     fun `should NOT move mappings to the new offender no`() {
-      mappingApi.verify(0, putRequestedFor(urlEqualTo("/mapping/temporary-absence/move-booking/1234567/from/A1000KT/to/A1234KT")))
+      mappingApi.verify(
+        0,
+        putRequestedFor(urlEqualTo("/mapping/temporary-absence/move-booking/1234567/from/A1000KT/to/A1234KT")),
+      )
     }
 
     @Test
@@ -307,7 +315,10 @@ class ExternalMovementsMoveBookingIntTest(
 
     @Test
     fun `should NOT move mappings to the new offender no`() {
-      mappingApi.verify(0, putRequestedFor(urlEqualTo("/mapping/temporary-absence/move-booking/1234567/from/A1000KT/to/A1234KT")))
+      mappingApi.verify(
+        0,
+        putRequestedFor(urlEqualTo("/mapping/temporary-absence/move-booking/1234567/from/A1000KT/to/A1234KT")),
+      )
     }
 
     @Test
@@ -366,7 +377,10 @@ class ExternalMovementsMoveBookingIntTest(
 
     @Test
     fun `should NOT move mappings to the new offender no`() {
-      mappingApi.verify(0, putRequestedFor(urlEqualTo("/mapping/temporary-absence/move-booking/1234567/from/A1000KT/to/A1234KT")))
+      mappingApi.verify(
+        0,
+        putRequestedFor(urlEqualTo("/mapping/temporary-absence/move-booking/1234567/from/A1000KT/to/A1234KT")),
+      )
     }
 
     @Test
@@ -378,7 +392,8 @@ class ExternalMovementsMoveBookingIntTest(
           assertThat(it["fromOffenderNo"]).isEqualTo("A1000KT")
           assertThat(it["toOffenderNo"]).isEqualTo("A1234KT")
           assertThat(it["nomisApplicationIds"]).isEqualTo("[$applicationId1]")
-          assertThat(it["error"]).isEqualTo("No mapping found for bookingId=1234567, movementApplicationId=1234")
+          assertThat(it["error"])
+            .isEqualTo("No mapping found for bookingId=1234567, movementApplicationId=1234")
         },
         isNull(),
       )
@@ -442,7 +457,8 @@ class ExternalMovementsMoveBookingIntTest(
           assertThat(it["nomisUnscheduledMovementSeqs"]).isEqualTo("[]")
           assertThat(it["dpsAuthorisationIds"]).isEqualTo("[$authorisationId1]")
           assertThat(it["dpsUnscheduledMovementIds"]).isEqualTo("[]")
-          assertThat(it["error"]).isEqualTo("500 Internal Server Error from PUT http://localhost:8103/move/temporary-absences")
+          assertThat(it["error"])
+            .isEqualTo("500 Internal Server Error from PUT http://localhost:8103/move/temporary-absences")
         },
         isNull(),
       )
@@ -500,7 +516,10 @@ class ExternalMovementsMoveBookingIntTest(
 
     @Test
     fun `should move mappings to the new offender twice`() {
-      mappingApi.verify(2, putRequestedFor(urlEqualTo("/mapping/temporary-absence/move-booking/1234567/from/A1000KT/to/A1234KT")))
+      mappingApi.verify(
+        2,
+        putRequestedFor(urlEqualTo("/mapping/temporary-absence/move-booking/1234567/from/A1000KT/to/A1234KT")),
+      )
     }
 
     @Test
