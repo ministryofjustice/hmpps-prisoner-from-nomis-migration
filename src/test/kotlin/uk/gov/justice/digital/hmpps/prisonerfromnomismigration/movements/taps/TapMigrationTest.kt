@@ -1,11 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.application
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.temporaryAbsencesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingIdsDto
 import java.time.LocalDate
 
@@ -31,7 +30,7 @@ class TapMigrationTest {
 
       val dpsRequest = nomisResponse.toDpsRequest(someMappingIds)
 
-      Assertions.assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("EXPIRED")
+      assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("EXPIRED")
     }
 
     @Test
@@ -50,7 +49,7 @@ class TapMigrationTest {
 
       val dpsRequest = nomisResponse.toDpsRequest(someMappingIds)
 
-      Assertions.assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("EXPIRED")
+      assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("EXPIRED")
     }
 
     @Test
@@ -68,7 +67,7 @@ class TapMigrationTest {
 
       val dpsRequest = nomisResponse.toDpsRequest(someMappingIds)
 
-      Assertions.assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("APPROVED")
+      assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("APPROVED")
     }
 
     @Test
@@ -86,7 +85,7 @@ class TapMigrationTest {
 
       val dpsRequest = nomisResponse.toDpsRequest(someMappingIds)
 
-      Assertions.assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("APPROVED")
+      assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("APPROVED")
     }
 
     @Test
@@ -104,7 +103,7 @@ class TapMigrationTest {
 
       val dpsRequest = nomisResponse.toDpsRequest(someMappingIds)
 
-      Assertions.assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("PENDING")
+      assertThat(dpsRequest.temporaryAbsences.first().statusCode).isEqualTo("PENDING")
     }
   }
 }

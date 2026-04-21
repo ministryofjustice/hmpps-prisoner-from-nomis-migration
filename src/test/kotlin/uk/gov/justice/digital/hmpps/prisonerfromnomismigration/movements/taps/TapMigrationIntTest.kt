@@ -1,11 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
-import com.github.tomakehurst.wiremock.client.WireMock
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.within
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
@@ -138,7 +139,7 @@ class TapMigrationIntTest(
 
     @Test
     fun `will request all prisoner ids`() {
-      nomisApi.verify(WireMock.getRequestedFor(WireMock.urlPathEqualTo("/prisoners/ids/all")))
+      nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/ids/all")))
     }
 
     @Test
@@ -193,9 +194,9 @@ class TapMigrationIntTest(
           assertThat(legacyId).isEqualTo(1)
           assertThat(occurrences.size).isEqualTo(1)
           assertThat(LocalTime.parse(startTime))
-            .isCloseTo(now.minusDays(1).toLocalTime(), Assertions.within(Duration.ofMinutes(5)))
+            .isCloseTo(now.minusDays(1).toLocalTime(), within(Duration.ofMinutes(5)))
           assertThat(LocalTime.parse(endTime))
-            .isCloseTo(now.toLocalTime(), Assertions.within(Duration.ofMinutes(5)))
+            .isCloseTo(now.toLocalTime(), within(Duration.ofMinutes(5)))
           assertThat(location!!.uprn).isNull()
           assertThat(location.address).isEqualTo("some full address")
           assertThat(location.description).isEqualTo("some address description")
@@ -212,8 +213,8 @@ class TapMigrationIntTest(
       ).apply {
         with(temporaryAbsences[0].occurrences[0]) {
           assertThat(isCancelled).isFalse
-          assertThat(start).isCloseTo(now.minusDays(1), Assertions.within(Duration.ofMinutes(5)))
-          assertThat(end).isCloseTo(now.plusDays(1), Assertions.within(Duration.ofMinutes(5)))
+          assertThat(start).isCloseTo(now.minusDays(1), within(Duration.ofMinutes(5)))
+          assertThat(end).isCloseTo(now.plusDays(1), within(Duration.ofMinutes(5)))
           assertThat(location.address).isEqualTo("Schedule full address")
           assertThat(location.description).isEqualTo("Schedule address description")
           assertThat(location.postcode).isEqualTo("S1 1AA")
@@ -241,7 +242,7 @@ class TapMigrationIntTest(
         putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(temporaryAbsences[0].occurrences[0].movements[0]) {
-          assertThat(occurredAt).isCloseTo(now.minusDays(1), Assertions.within(Duration.ofMinutes(5)))
+          assertThat(occurredAt).isCloseTo(now.minusDays(1), within(Duration.ofMinutes(5)))
           assertThat(direction).isEqualTo(MigrateTapMovement.Direction.OUT)
           assertThat(absenceReasonCode).isEqualTo("C6")
           assertThat(location.address).isEqualTo("Absence full address")
@@ -266,7 +267,7 @@ class TapMigrationIntTest(
         putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(temporaryAbsences[0].occurrences[0].movements[1]) {
-          assertThat(occurredAt).isCloseTo(now, Assertions.within(Duration.ofMinutes(5)))
+          assertThat(occurredAt).isCloseTo(now, within(Duration.ofMinutes(5)))
           assertThat(direction).isEqualTo(MigrateTapMovement.Direction.IN)
           assertThat(absenceReasonCode).isEqualTo("C5")
           assertThat(location.address).isEqualTo("Absence return full address")
@@ -291,7 +292,7 @@ class TapMigrationIntTest(
         putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(unscheduledMovements[0]) {
-          assertThat(occurredAt).isCloseTo(now.minusDays(1), Assertions.within(Duration.ofMinutes(5)))
+          assertThat(occurredAt).isCloseTo(now.minusDays(1), within(Duration.ofMinutes(5)))
           assertThat(direction).isEqualTo(MigrateTapMovement.Direction.OUT)
           assertThat(absenceReasonCode).isEqualTo("C6")
           assertThat(location.address).isEqualTo("Absence full address")
@@ -316,7 +317,7 @@ class TapMigrationIntTest(
         putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
       ).apply {
         with(unscheduledMovements[1]) {
-          assertThat(occurredAt).isCloseTo(now.minusDays(1), Assertions.within(Duration.ofMinutes(5)))
+          assertThat(occurredAt).isCloseTo(now.minusDays(1), within(Duration.ofMinutes(5)))
           assertThat(direction).isEqualTo(MigrateTapMovement.Direction.IN)
           assertThat(absenceReasonCode).isEqualTo("C5")
           assertThat(location.address).isEqualTo("Absence return full address")

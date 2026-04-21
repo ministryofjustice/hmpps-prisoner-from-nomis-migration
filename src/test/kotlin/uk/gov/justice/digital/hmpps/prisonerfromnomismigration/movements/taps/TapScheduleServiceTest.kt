@@ -1,6 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -20,7 +20,7 @@ class TapScheduleServiceTest {
       )
 
       with(nomis.toDpsRequest(dpsLocation = Location(address = "any"))) {
-        Assertions.assertThat(accompaniedByCode).isEqualTo("NOT_PROVIDED")
+        assertThat(accompaniedByCode).isEqualTo("NOT_PROVIDED")
       }
     }
 
@@ -31,7 +31,7 @@ class TapScheduleServiceTest {
       )
 
       with(nomis.toDpsRequest(dpsLocation = Location(address = "any"))) {
-        Assertions.assertThat(transportCode).isEqualTo("TNR")
+        assertThat(transportCode).isEqualTo("TNR")
       }
     }
   }
@@ -43,7 +43,7 @@ class TapScheduleServiceTest {
     )
 
     with(nomis.toDpsRequest(dpsLocation = Location(address = "any"))) {
-      Assertions.assertThat(isCancelled).isTrue
+      assertThat(isCancelled).isTrue
     }
   }
 
@@ -58,7 +58,7 @@ class TapScheduleServiceTest {
       )
 
       with(nomis.toDpsRequest(dpsLocation = Location(address = "any"))) {
-        Assertions.assertThat(isCancelled).isTrue
+        assertThat(isCancelled).isTrue
       }
     }
   }

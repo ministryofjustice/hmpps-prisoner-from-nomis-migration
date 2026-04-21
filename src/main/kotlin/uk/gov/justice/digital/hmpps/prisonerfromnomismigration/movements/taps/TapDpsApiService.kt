@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
@@ -15,10 +15,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.S
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
-import java.util.*
+import java.util.UUID
 
 @Service
-class ExternalMovementsDpsApiService(
+class TapDpsApiService(
   @Qualifier("extMovementsDpsApiWebClient") private val webClient: WebClient,
   @Qualifier("extMovementsDpsApiResyncWebClient") private val resyncWebClient: WebClient,
 ) {

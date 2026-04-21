@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
 import io.awspring.cloud.sqs.annotation.SqsListener
 import org.springframework.stereotype.Service
@@ -9,9 +9,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.EXTERNAL_
 import java.util.concurrent.CompletableFuture
 
 @Service
-class ExternalMovementsMigrationMessageListener(
+class TapMigrationMessageListener(
   jsonMapper: JsonMapper,
-  migrationService: ExternalMovementsMigrationService,
+  migrationService: TapMigrationService,
 ) : MigrationMessageListener(
   jsonMapper,
   migrationService,
