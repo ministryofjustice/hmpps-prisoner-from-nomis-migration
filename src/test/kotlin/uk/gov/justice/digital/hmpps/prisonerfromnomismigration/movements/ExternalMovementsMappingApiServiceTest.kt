@@ -22,6 +22,7 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapConfiguration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
@@ -34,7 +35,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import java.util.*
 
 @SpringAPIServiceTest
-@Import(ExternalMovementsMappingApiService::class, ExternalMovementsMappingApiMockServer::class, ExternalMovementsConfiguration::class)
+@Import(ExternalMovementsMappingApiService::class, ExternalMovementsMappingApiMockServer::class, TapConfiguration::class)
 class ExternalMovementsMappingApiServiceTest {
   @Autowired
   private lateinit var apiService: ExternalMovementsMappingApiService
