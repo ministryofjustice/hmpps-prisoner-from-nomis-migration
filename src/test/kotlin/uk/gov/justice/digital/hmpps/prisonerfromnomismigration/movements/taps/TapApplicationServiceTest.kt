@@ -3,7 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.temporaryAbsenceApplicationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.tapApplication
 import java.time.LocalDate
 
 class TapApplicationServiceTest {
@@ -12,7 +12,7 @@ class TapApplicationServiceTest {
   inner class ApplicationStatusExpired {
     @Test
     fun `should set expired if approved scheduled, inactive booking not ended yet`() {
-      val nomisResponse = temporaryAbsenceApplicationResponse(
+      val nomisResponse = tapApplication(
         activeBooking = true,
         latestBooking = false,
         status = "APP-SCH",
@@ -27,7 +27,7 @@ class TapApplicationServiceTest {
 
     @Test
     fun `should set expired if approved unscheduled, inactive booking not ended yet`() {
-      val nomisResponse = temporaryAbsenceApplicationResponse(
+      val nomisResponse = tapApplication(
         activeBooking = true,
         latestBooking = false,
         status = "APP-UNSCH",
@@ -42,7 +42,7 @@ class TapApplicationServiceTest {
 
     @Test
     fun `should NOT set expired if active booking`() {
-      val nomisResponse = temporaryAbsenceApplicationResponse(
+      val nomisResponse = tapApplication(
         activeBooking = true,
         status = "APP-SCH",
         fromDate = LocalDate.now().minusDays(1),
@@ -56,7 +56,7 @@ class TapApplicationServiceTest {
 
     @Test
     fun `should set expired if status not approved`() {
-      val nomisResponse = temporaryAbsenceApplicationResponse(
+      val nomisResponse = tapApplication(
         activeBooking = false,
         status = "PEN",
         fromDate = LocalDate.now().minusDays(1),
@@ -70,7 +70,7 @@ class TapApplicationServiceTest {
 
     @Test
     fun `should NOT set expired if application has ended`() {
-      val nomisResponse = temporaryAbsenceApplicationResponse(
+      val nomisResponse = tapApplication(
         activeBooking = false,
         status = "APP-SCH",
         fromDate = LocalDate.now().minusDays(2),

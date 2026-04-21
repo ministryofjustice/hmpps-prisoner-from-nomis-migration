@@ -19,9 +19,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTaps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTapsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsenceReturnResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceApplicationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapApplication
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapScheduleOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TemporaryAbsenceReturnResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -63,13 +63,13 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetTemporaryAbsenceApplication(
+  fun stubGetTapApplication(
     offenderNo: String = "A1234BC",
     applicationId: Long = 12345L,
-    response: TemporaryAbsenceApplicationResponse = temporaryAbsenceApplicationResponse(),
+    response: TapApplication = tapApplication(),
   ) {
     nomisApi.stubFor(
-      get(urlPathEqualTo("/movements/$offenderNo/temporary-absences/application/$applicationId")).willReturn(
+      get(urlPathEqualTo("/movements/$offenderNo/taps/application/$applicationId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
@@ -78,12 +78,12 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetTemporaryAbsenceApplication(
+  fun stubGetTapApplication(
     status: HttpStatus,
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     nomisApi.stubFor(
-      get(urlPathMatching("/movements/.*/temporary-absences/application/.*")).willReturn(
+      get(urlPathMatching("/movements/.*/taps/application/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -92,7 +92,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetTemporaryAbsenceScheduledMovement(
+  fun stubGetTapScheduleOut(
     offenderNo: String = "A1234BC",
     eventId: Long = 12345L,
     eventTime: LocalDateTime = yesterday,
@@ -101,7 +101,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
     eventStatus: String = "COMP",
     toAddress: String = "to full address",
     toAddressId: Long = 321,
-    response: ScheduledTemporaryAbsenceResponse = scheduledTemporaryAbsenceResponse(
+    response: TapScheduleOut = scheduledTemporaryAbsenceResponse(
       startTime = eventTime,
       applicationId = applicationId,
       eventId = eventId,
@@ -112,7 +112,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
     ),
   ) {
     nomisApi.stubFor(
-      get(urlPathEqualTo("/movements/$offenderNo/temporary-absences/scheduled-temporary-absence/$eventId")).willReturn(
+      get(urlPathEqualTo("/movements/$offenderNo/taps/schedule/out/$eventId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
@@ -121,9 +121,9 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetTemporaryAbsenceScheduledMovement(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubGetTapScheduleOut(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
-      get(urlPathMatching("/movements/.*/temporary-absences/scheduled-temporary-absence/.*")).willReturn(
+      get(urlPathMatching("/movements/.*/taps/schedule/out/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -240,9 +240,9 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
       eventStatus: String = "COMP",
       toAddress: String = "to full address",
       toAddressId: Long = 321,
-    ) = ScheduledTemporaryAbsenceResponse(
+    ) = TapScheduleOut(
       bookingId = 12345,
-      movementApplicationId = applicationId,
+      tapApplicationId = applicationId,
       eventId = eventId,
       eventSubType = "C5",
       eventStatus = eventStatus,
@@ -258,8 +258,8 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
       fromPrison = "LEI",
       toAgency = "COURT1",
       transportType = "VAN",
-      temporaryAbsenceType = "RDR",
-      temporaryAbsenceSubType = "RR",
+      tapAbsenceType = "RDR",
+      tapSubType = "RR",
       toAddressId = toAddressId,
       toAddressOwnerClass = addressOwnerClass,
       toFullAddress = toAddress,
@@ -432,17 +432,17 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
 
-    fun temporaryAbsenceApplicationResponse(
+    fun tapApplication(
       activeBooking: Boolean = true,
       latestBooking: Boolean = true,
       status: String = "APP-SCH",
       fromDate: LocalDate = now.toLocalDate(),
       toDate: LocalDate = tomorrow.toLocalDate(),
-    ) = TemporaryAbsenceApplicationResponse(
+    ) = TapApplication(
       bookingId = 12345,
       activeBooking = activeBooking,
       latestBooking = latestBooking,
-      movementApplicationId = 111,
+      tapApplicationId = 111,
       eventSubType = "C5",
       applicationDate = now.toLocalDate(),
       fromDate = fromDate,
@@ -462,8 +462,8 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
       toFullAddress = "some full address",
       toAddressPostcode = "S1 1AA",
       contactPersonName = "Jeff",
-      temporaryAbsenceType = "RR",
-      temporaryAbsenceSubType = "SPL",
+      tapType = "RR",
+      tapSubType = "SPL",
       audit = NomisAudit(
         createDatetime = now,
         createUsername = "USER",

@@ -22,7 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.S
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledTemporaryAbsenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapScheduleOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -77,11 +77,11 @@ class TapScheduleService(
     telemetry: MutableMap<String, Any>,
     existingMapping: ScheduledMovementSyncMappingDto? = null,
     onlyIfScheduled: Boolean = false,
-  ): ScheduledMovementSyncMappingDto? = nomisApiService.getTemporaryAbsenceScheduledMovement(prisonerNumber, eventId)
+  ): ScheduledMovementSyncMappingDto? = nomisApiService.getTapScheduleOut(prisonerNumber, eventId)
     .takeIf { !onlyIfScheduled || it.eventStatus == "SCH" }
-    ?.also { telemetry["nomisApplicationId"] = it.movementApplicationId }
+    ?.also { telemetry["nomisApplicationId"] = it.tapApplicationId }
     ?.let { nomisSchedule ->
-      val dpsAuthorisationId = tryFetchParent { getParentApplicationId(nomisSchedule.movementApplicationId) }
+      val dpsAuthorisationId = tryFetchParent { getParentApplicationId(nomisSchedule.tapApplicationId) }
         .also { telemetry["dpsAuthorisationId"] = it }
 
       val dpsLocation = deriveDpsAddress(existingMapping, nomisSchedule)
@@ -235,7 +235,7 @@ class TapScheduleService(
 
   private suspend fun deriveDpsAddress(
     existingScheduleMapping: ScheduledMovementSyncMappingDto?,
-    nomisSchedule: ScheduledTemporaryAbsenceResponse,
+    nomisSchedule: TapScheduleOut,
   ): Location {
     val hasNomisAddress = nomisSchedule.toAddressId != null && nomisSchedule.toAddressOwnerClass != null
     val newAddress = existingScheduleMapping == null ||
@@ -271,13 +271,13 @@ class TapScheduleService(
     this.eventTime != original.eventTime
 }
 
-fun ScheduledTemporaryAbsenceResponse.toDpsRequest(id: UUID? = null, dpsLocation: Location) = SyncWriteTapOccurrence(
+fun TapScheduleOut.toDpsRequest(id: UUID? = null, dpsLocation: Location) = SyncWriteTapOccurrence(
   id = id,
   start = startTime,
   end = returnTime,
   location = dpsLocation,
-  absenceTypeCode = temporaryAbsenceType,
-  absenceSubTypeCode = temporaryAbsenceSubType,
+  absenceTypeCode = tapAbsenceType,
+  absenceSubTypeCode = tapSubType,
   absenceReasonCode = eventSubType,
   accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
   transportCode = transportType ?: DEFAULT_TRANSPORT_TYPE,
