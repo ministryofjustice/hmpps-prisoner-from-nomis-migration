@@ -14,11 +14,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TapApplicationResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TapMovementResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TapScheduleResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TemporaryAbsenceResourceApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.FindTapScheduleMappingsForAddressResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
@@ -30,6 +31,7 @@ class ExternalMovementsMappingApiService(@Qualifier("tapsMappingApiWebClient") w
   private val mappingApi = TemporaryAbsenceResourceApi(webClient)
   private val applicationApi = TapApplicationResourceApi(webClient)
   private val scheduleApi = TapScheduleResourceApi(webClient)
+  private val movementApi = TapMovementResourceApi(webClient)
 
   override suspend fun createMapping(
     mapping: TemporaryAbsencesPrisonerMappingDto,
@@ -71,18 +73,18 @@ class ExternalMovementsMappingApiService(@Qualifier("tapsMappingApiWebClient") w
   suspend fun deleteTapScheduleMapping(nomisEventId: Long): Unit = scheduleApi.deleteTapScheduleMappingByNomisId(nomisEventId)
     .awaitSingle()
 
-  suspend fun createExternalMovementMapping(mapping: ExternalMovementSyncMappingDto) = mappingApi.prepare(mappingApi.createExternalMovementSyncMappingRequestConfig(mapping))
+  suspend fun createTapMovementMapping(mapping: TapMovementMappingDto) = movementApi.prepare(movementApi.createTapMovementMappingRequestConfig(mapping))
     .retrieve()
-    .awaitSuccessOrDuplicate<ExternalMovementSyncMappingDto>()
+    .awaitSuccessOrDuplicate<TapMovementMappingDto>()
 
-  suspend fun updateExternalMovementMapping(mapping: ExternalMovementSyncMappingDto) = mappingApi.updateExternalMovementSyncMapping(mapping)
+  suspend fun updateTapMovementMapping(mapping: TapMovementMappingDto) = movementApi.updateTapMovementMapping(mapping)
     .awaitSingle()
 
-  suspend fun getExternalMovementMappingOrNull(bookingId: Long, movementSeq: Int): ExternalMovementSyncMappingDto? = mappingApi.prepare(mappingApi.getExternalMovementSyncMappingByNomisIdRequestConfig(bookingId, movementSeq))
+  suspend fun getTapMovementMappingOrNull(bookingId: Long, movementSeq: Int): TapMovementMappingDto? = movementApi.prepare(movementApi.getTapMovementMappingByNomisIdRequestConfig(bookingId, movementSeq))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-  suspend fun deleteExternalMovementMapping(bookingId: Long, movementSeq: Int): Unit = mappingApi.deleteExternalMovementSyncMappingByNomisId(bookingId, movementSeq)
+  suspend fun deleteTapMovementMapping(bookingId: Long, movementSeq: Int): Unit = movementApi.deleteTapMovementMappingByNomisId(bookingId, movementSeq)
     .awaitSingle()
 
   suspend fun findTapScheduleMappingsForAddress(nomisAddressId: Long): FindTapScheduleMappingsForAddressResponse = scheduleApi.findTapScheduleMappingsByNomisAddressId(nomisAddressId)

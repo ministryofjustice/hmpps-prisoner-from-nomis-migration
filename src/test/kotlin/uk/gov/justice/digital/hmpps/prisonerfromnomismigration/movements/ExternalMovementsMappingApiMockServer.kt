@@ -16,11 +16,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementMappingIdsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.FindTapScheduleMappingsForAddressResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationMappingIdsDto
@@ -281,9 +281,9 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubCreateExternalMovementMapping() {
+  fun stubCreateTapMovementMapping() {
     mappingApi.stubFor(
-      post("/mapping/temporary-absence/external-movement")
+      post("/mapping/taps/movement")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -292,9 +292,9 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubCreateExternalMovementMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubCreateTapMovementMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      post("/mapping/temporary-absence/external-movement").willReturn(
+      post("/mapping/taps/movement").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -303,9 +303,9 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubCreateExternalMovementMappingConflict(error: DuplicateMappingErrorResponse) {
+  fun stubCreateTapMovementMappingConflict(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(
-      post("/mapping/temporary-absence/external-movement").willReturn(
+      post("/mapping/taps/movement").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
@@ -314,11 +314,11 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubCreateExternalMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/temporary-absence/external-movement")
+  fun stubCreateTapMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/taps/movement")
 
-  fun stubUpdateExternalMovementMapping() {
+  fun stubUpdateTapMovementMapping() {
     mappingApi.stubFor(
-      put("/mapping/temporary-absence/external-movement")
+      put("/mapping/taps/movement")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -327,9 +327,9 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubUpdateExternalMovementMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubUpdateTapMovementMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      put("/mapping/temporary-absence/external-movement").willReturn(
+      put("/mapping/taps/movement").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -338,21 +338,21 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubUpdateExternalMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingUpdateFailureFollowedBySuccess("/mapping/temporary-absence/external-movement")
+  fun stubUpdateTapMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingUpdateFailureFollowedBySuccess("/mapping/taps/movement")
 
-  fun stubGetExternalMovementMapping(
+  fun stubGetTapMovementMapping(
     bookingId: Long = 12345L,
     movementSeq: Int = 1,
     dpsMovementId: UUID = UUID.randomUUID(),
     city: String? = null,
   ) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/temporary-absence/external-movement/nomis-movement-id/$bookingId/$movementSeq")).willReturn(
+      get(urlPathMatching("/mapping/taps/movement/nomis-id/$bookingId/$movementSeq")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(
             jsonMapper.writeValueAsString(
-              temporaryAbsenceExternalMovementMapping(
+              tapMovementMapping(
                 bookingId = bookingId,
                 movementSeq = movementSeq,
                 dpsMovementId = dpsMovementId,
@@ -364,9 +364,9 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubGetExternalMovementMapping(bookingId: Long = 12345L, movementSeq: Int = 1, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubGetTapMovementMapping(bookingId: Long = 12345L, movementSeq: Int = 1, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/temporary-absence/external-movement/nomis-movement-id/$bookingId/$movementSeq")).willReturn(
+      get(urlPathMatching("/mapping/taps/movement/nomis-id/$bookingId/$movementSeq")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -375,9 +375,9 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubDeleteExternalMovementMapping(bookingId: Long = 12345L, movementSeq: Int = 1) {
+  fun stubDeleteTapMovementMapping(bookingId: Long = 12345L, movementSeq: Int = 1) {
     mappingApi.stubFor(
-      delete(urlPathMatching("/mapping/temporary-absence/external-movement/nomis-movement-id/$bookingId/$movementSeq")).willReturn(
+      delete(urlPathMatching("/mapping/taps/movement/nomis-id/$bookingId/$movementSeq")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(204),
@@ -385,9 +385,9 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubDeleteExternalMovementMapping(bookingId: Long = 12345L, movementSeq: Int = 1, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubDeleteTapMovementMapping(bookingId: Long = 12345L, movementSeq: Int = 1, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      delete(urlPathMatching("/mapping/temporary-absence/external-movement/nomis-movement-id/$bookingId/$movementSeq")).willReturn(
+      delete(urlPathMatching("/mapping/taps/movement/nomis-id/$bookingId/$movementSeq")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -598,18 +598,18 @@ fun tapScheduleMapping(
   eventTime = "$eventTime",
 )
 
-fun temporaryAbsenceExternalMovementMapping(
+fun tapMovementMapping(
   bookingId: Long = 12345L,
   movementSeq: Int = 1,
   prisonerNumber: String = "A1234BC",
   dpsMovementId: UUID = UUID.randomUUID(),
   city: String? = null,
-) = ExternalMovementSyncMappingDto(
+) = TapMovementMappingDto(
   prisonerNumber = prisonerNumber,
   bookingId = bookingId,
   nomisMovementSeq = movementSeq,
   dpsMovementId = dpsMovementId,
-  mappingType = ExternalMovementSyncMappingDto.MappingType.MIGRATED,
+  mappingType = TapMovementMappingDto.MappingType.MIGRATED,
   nomisAddressId = if (city == null) 321 else null,
   nomisAddressOwnerClass = if (city == null) "OFF" else null,
   dpsAddressText = city ?: "full address",

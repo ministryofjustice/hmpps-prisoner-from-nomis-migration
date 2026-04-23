@@ -28,7 +28,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.S
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.util.*
@@ -51,11 +51,11 @@ class TapMovementIntTest(
     inner class HappyPathOutbound {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
+        mappingApi.stubGetTapMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = 111, tapScheduleOutId = 45678)
         mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId)
-        mappingApi.stubCreateExternalMovementMapping()
+        mappingApi.stubCreateTapMovementMapping()
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(tapMovementEvent(inserted = true, direction = "OUT"))
@@ -64,7 +64,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")))
       }
 
       @Test
@@ -107,7 +107,7 @@ class TapMovementIntTest(
       @Test
       fun `should create mapping`() {
         mappingApi.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
+          postRequestedFor(urlPathEqualTo("/mapping/taps/movement"))
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisMovementSeq", 154)
@@ -145,11 +145,11 @@ class TapMovementIntTest(
     inner class HappyPathInbound {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
+        mappingApi.stubGetTapMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = 111, tapScheduleMovementInId = 45678, tapScheduleMovementOutId = 23456)
         mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetTapScheduleMapping(23456)
-        mappingApi.stubCreateExternalMovementMapping()
+        mappingApi.stubCreateTapMovementMapping()
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(tapMovementEvent(inserted = true, direction = "IN"))
@@ -187,7 +187,7 @@ class TapMovementIntTest(
       @Test
       fun `should create mapping`() {
         mappingApi.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
+          postRequestedFor(urlPathEqualTo("/mapping/taps/movement"))
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisMovementSeq", 154)
@@ -241,7 +241,7 @@ class TapMovementIntTest(
       fun `should NOT create mapping`() {
         mappingApi.verify(
           count = 0,
-          getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")),
+          getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")),
         )
       }
 
@@ -265,7 +265,7 @@ class TapMovementIntTest(
 
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsId)
+        mappingApi.stubGetTapMovementMapping(12345, 154, dpsId)
 
         sendMessage(tapMovementEvent(inserted = true))
           .also { waitForAnyProcessingToComplete() }
@@ -283,7 +283,7 @@ class TapMovementIntTest(
       fun `should NOT create mapping`() {
         mappingApi.verify(
           count = 0,
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement")),
+          postRequestedFor(urlPathEqualTo("/mapping/taps/movement")),
         )
       }
 
@@ -308,7 +308,7 @@ class TapMovementIntTest(
     inner class WhenApplicationMappingNotCreatedYetScheduledOutboundMovement {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
+        mappingApi.stubGetTapMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = 111, tapScheduleOutId = 45678)
         mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetTapScheduleMapping(45678)
@@ -319,7 +319,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")))
       }
 
       @Test
@@ -354,7 +354,7 @@ class TapMovementIntTest(
     inner class WhenScheduleMappingNotCreatedYetScheduledOutboundMovement {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
+        mappingApi.stubGetTapMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = 111, tapScheduleOutId = 45678)
         mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetTapScheduleMapping(45678, NOT_FOUND)
@@ -365,7 +365,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")))
       }
 
       @Test
@@ -400,7 +400,7 @@ class TapMovementIntTest(
     inner class ApplicationMappingNotCreatedYetScheduledInboundMovement {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
+        mappingApi.stubGetTapMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = 111, tapScheduleMovementInId = 45678)
         mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetTapScheduleMapping(45678)
@@ -411,7 +411,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")))
       }
 
       @Test
@@ -446,7 +446,7 @@ class TapMovementIntTest(
     inner class ScheduleMappingNotCreatedYetScheduledInboundMovement {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
+        mappingApi.stubGetTapMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = 111, tapScheduleMovementInId = 45678, tapScheduleMovementOutId = 23456)
         mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetTapScheduleMapping(23456, NOT_FOUND)
@@ -457,7 +457,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")))
       }
 
       @Test
@@ -499,9 +499,9 @@ class TapMovementIntTest(
     inner class HappyPathUnscheduledOutboundMovement {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
+        mappingApi.stubGetTapMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = null, tapScheduleOutId = null, city = "Sheffield")
-        mappingApi.stubCreateExternalMovementMapping()
+        mappingApi.stubCreateTapMovementMapping()
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(tapMovementEvent(inserted = true, direction = "OUT"))
@@ -510,7 +510,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")))
       }
 
       @Test
@@ -546,7 +546,7 @@ class TapMovementIntTest(
       @Test
       fun `should create mapping`() {
         mappingApi.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
+          postRequestedFor(urlPathEqualTo("/mapping/taps/movement"))
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisMovementSeq", 154)
@@ -582,9 +582,9 @@ class TapMovementIntTest(
     inner class HappyPathInbound {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
+        mappingApi.stubGetTapMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = null, tapScheduleMovementInId = null, tapScheduleMovementOutId = null, city = "Sheffield")
-        mappingApi.stubCreateExternalMovementMapping()
+        mappingApi.stubCreateTapMovementMapping()
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(tapMovementEvent(inserted = true, direction = "IN"))
@@ -593,7 +593,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")))
       }
 
       @Test
@@ -629,7 +629,7 @@ class TapMovementIntTest(
       @Test
       fun `should create mapping`() {
         mappingApi.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
+          postRequestedFor(urlPathEqualTo("/mapping/taps/movement"))
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisMovementSeq", 154)
@@ -665,30 +665,30 @@ class TapMovementIntTest(
     inner class WhenDuplicateMapping {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
+        mappingApi.stubGetTapMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = 111, tapScheduleOutId = 45678)
         mappingApi.stubGetTapApplicationMapping(nomisApplicationId = 111)
         mappingApi.stubGetTapScheduleMapping(nomisEventId = 45678)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
-        mappingApi.stubCreateExternalMovementMappingConflict(
+        mappingApi.stubCreateTapMovementMappingConflict(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
-              existing = ExternalMovementSyncMappingDto(
+              existing = TapMovementMappingDto(
                 prisonerNumber = "A1234BC",
                 bookingId = 12345,
                 nomisMovementSeq = 444,
                 dpsMovementId = dpsMovementId,
-                mappingType = ExternalMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = TapMovementMappingDto.MappingType.NOMIS_CREATED,
                 "",
                 0,
                 "",
               ),
-              duplicate = ExternalMovementSyncMappingDto(
+              duplicate = TapMovementMappingDto(
                 prisonerNumber = "A1234BC",
                 bookingId = 12345,
                 nomisMovementSeq = 154,
                 dpsMovementId = dpsMovementId,
-                mappingType = ExternalMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = TapMovementMappingDto.MappingType.NOMIS_CREATED,
                 "",
                 0,
                 "",
@@ -719,7 +719,7 @@ class TapMovementIntTest(
       @Test
       fun `should try to create mapping`() {
         mappingApi.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
+          postRequestedFor(urlPathEqualTo("/mapping/taps/movement"))
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisMovementSeq", 154)
@@ -765,11 +765,11 @@ class TapMovementIntTest(
 
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
+        mappingApi.stubGetTapMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = 111, tapScheduleOutId = 45678)
         mappingApi.stubGetTapApplicationMapping(nomisApplicationId = 111)
         mappingApi.stubGetTapScheduleMapping(nomisEventId = 45678)
-        mappingApi.stubCreateExternalMovementMappingFailureFollowedBySuccess()
+        mappingApi.stubCreateTapMovementMappingFailureFollowedBySuccess()
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(tapMovementEvent(inserted = true))
@@ -792,7 +792,7 @@ class TapMovementIntTest(
       fun `should create mapping on 2nd call`() {
         mappingApi.verify(
           count = 2,
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
+          postRequestedFor(urlPathEqualTo("/mapping/taps/movement"))
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisMovementSeq", 154)
@@ -846,7 +846,7 @@ class TapMovementIntTest(
     inner class HappyPathOutboundMovement {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
+        mappingApi.stubGetTapMovementMapping(12345, 154, dpsMovementId)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapScheduleOutId = 45678)
         mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId)
@@ -858,7 +858,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")))
       }
 
       @Test
@@ -908,12 +908,12 @@ class TapMovementIntTest(
 
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
+        mappingApi.stubGetTapMovementMapping(12345, 154, dpsMovementId)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapScheduleOutId = 45678, address = newAddress, addressId = newAddressId)
         mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
-        mappingApi.stubUpdateExternalMovementMapping()
+        mappingApi.stubUpdateTapMovementMapping()
 
         sendMessage(tapMovementEvent(direction = "OUT"))
           .also { waitForAnyProcessingToComplete() }
@@ -935,7 +935,7 @@ class TapMovementIntTest(
       @Test
       fun `should update mapping`() {
         mappingApi.verify(
-          putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
+          putRequestedFor(urlPathEqualTo("/mapping/taps/movement"))
             .withRequestBodyJsonPath("dpsMovementId", dpsMovementId)
             .withRequestBodyJsonPath("dpsAddressText", newAddress)
             .withRequestBodyJsonPath("nomisAddressId", newAddressId),
@@ -968,12 +968,12 @@ class TapMovementIntTest(
 
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
+        mappingApi.stubGetTapMovementMapping(12345, 154, dpsMovementId)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapScheduleOutId = 45678, address = newAddress, addressId = newAddressId)
         mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
-        mappingApi.stubUpdateExternalMovementMappingFailureFollowedBySuccess()
+        mappingApi.stubUpdateTapMovementMappingFailureFollowedBySuccess()
 
         sendMessage(tapMovementEvent(direction = "OUT"))
           .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-mapping-updated") }
@@ -993,7 +993,7 @@ class TapMovementIntTest(
       fun `should update mapping`() {
         mappingApi.verify(
           count = 2,
-          putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
+          putRequestedFor(urlPathEqualTo("/mapping/taps/movement"))
             .withRequestBodyJsonPath("dpsMovementId", dpsMovementId)
             .withRequestBodyJsonPath("dpsAddressText", newAddress)
             .withRequestBodyJsonPath("nomisAddressId", newAddressId),
@@ -1024,7 +1024,7 @@ class TapMovementIntTest(
     inner class HappyPathUnscheduledOutboundMovement {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
+        mappingApi.stubGetTapMovementMapping(12345, 154, dpsMovementId, "Sheffield")
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = null, tapScheduleOutId = null, city = "Sheffield")
         mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetTapScheduleMapping(45678, NOT_FOUND)
@@ -1036,7 +1036,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")))
       }
 
       @Test
@@ -1081,7 +1081,7 @@ class TapMovementIntTest(
     inner class HappyPathInboundMovement {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
+        mappingApi.stubGetTapMovementMapping(12345, 154, dpsMovementId)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapScheduleMovementInId = 45678, tapScheduleMovementOutId = 23456)
         mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetTapScheduleMapping(23456, dpsOccurrenceId)
@@ -1093,7 +1093,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")))
       }
 
       @Test
@@ -1141,12 +1141,12 @@ class TapMovementIntTest(
 
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
+        mappingApi.stubGetTapMovementMapping(12345, 154, dpsMovementId)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapScheduleMovementInId = 45678, tapScheduleMovementOutId = 23456, address = newAddress, addressId = newAddressId)
         mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetTapScheduleMapping(23456, dpsOccurrenceId)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
-        mappingApi.stubUpdateExternalMovementMapping()
+        mappingApi.stubUpdateTapMovementMapping()
 
         sendMessage(tapMovementEvent(direction = "IN"))
           .also { waitForAnyProcessingToComplete() }
@@ -1169,7 +1169,7 @@ class TapMovementIntTest(
       @Test
       fun `should update mapping`() {
         mappingApi.verify(
-          putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
+          putRequestedFor(urlPathEqualTo("/mapping/taps/movement"))
             .withRequestBodyJsonPath("dpsMovementId", dpsMovementId)
             .withRequestBodyJsonPath("dpsAddressText", newAddress)
             .withRequestBodyJsonPath("nomisAddressId", newAddressId),
@@ -1201,7 +1201,7 @@ class TapMovementIntTest(
     inner class HappyPathUnscheduledInboundMovement {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
+        mappingApi.stubGetTapMovementMapping(12345, 154, dpsMovementId, "Sheffield")
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = null, tapScheduleMovementInId = null, tapScheduleMovementOutId = null, city = "Sheffield")
         mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetTapScheduleMapping(45678, NOT_FOUND)
@@ -1213,7 +1213,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")))
       }
 
       @Test
@@ -1262,12 +1262,12 @@ class TapMovementIntTest(
 
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
+        mappingApi.stubGetTapMovementMapping(12345, 154, dpsMovementId, "Sheffield")
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = null, tapScheduleMovementInId = null, tapScheduleMovementOutId = null, city = newCity)
         mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetTapScheduleMapping(45678, NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
-        mappingApi.stubUpdateExternalMovementMapping()
+        mappingApi.stubUpdateTapMovementMapping()
 
         sendMessage(tapMovementEvent(direction = "IN"))
           .also { waitForAnyProcessingToComplete() }
@@ -1291,7 +1291,7 @@ class TapMovementIntTest(
       @Test
       fun `should update mapping`() {
         mappingApi.verify(
-          putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
+          putRequestedFor(urlPathEqualTo("/mapping/taps/movement"))
             .withRequestBodyJsonPath("dpsMovementId", dpsMovementId)
             .withRequestBodyJsonPath("dpsOccurrenceId", absent())
             .withRequestBodyJsonPath("dpsAddressText", newCity),
@@ -1324,12 +1324,12 @@ class TapMovementIntTest(
 
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
+        mappingApi.stubGetTapMovementMapping(12345, 154, dpsMovementId, "Sheffield")
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = null, tapScheduleMovementInId = null, tapScheduleMovementOutId = null, city = newCity)
         mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetTapScheduleMapping(45678, NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
-        mappingApi.stubUpdateExternalMovementMappingFailureFollowedBySuccess()
+        mappingApi.stubUpdateTapMovementMappingFailureFollowedBySuccess()
 
         sendMessage(tapMovementEvent(direction = "IN"))
           .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-mapping-updated") }
@@ -1354,7 +1354,7 @@ class TapMovementIntTest(
       fun `should update mapping`() {
         mappingApi.verify(
           count = 2,
-          putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement"))
+          putRequestedFor(urlPathEqualTo("/mapping/taps/movement"))
             .withRequestBodyJsonPath("dpsMovementId", dpsMovementId)
             .withRequestBodyJsonPath("dpsOccurrenceId", absent())
             .withRequestBodyJsonPath("dpsAddressText", newCity),
@@ -1400,7 +1400,7 @@ class TapMovementIntTest(
       fun `should NOT get mapping`() {
         mappingApi.verify(
           count = 0,
-          getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")),
+          getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")),
         )
       }
 
@@ -1429,8 +1429,8 @@ class TapMovementIntTest(
     inner class HappyPathOutboundMovement {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
-        mappingApi.stubDeleteExternalMovementMapping(12345, 154)
+        mappingApi.stubGetTapMovementMapping(12345, 154, dpsMovementId)
+        mappingApi.stubDeleteTapMovementMapping(12345, 154)
         dpsApi.stubDeleteTapMovement(dpsMovementId)
 
         sendMessage(tapMovementEvent(deleted = true, direction = "OUT"))
@@ -1439,12 +1439,12 @@ class TapMovementIntTest(
 
       @Test
       fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")))
       }
 
       @Test
       fun `should delete mapping`() {
-        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")))
       }
 
       @Test
@@ -1472,8 +1472,8 @@ class TapMovementIntTest(
     inner class HappyPathInboundMovement {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
-        mappingApi.stubDeleteExternalMovementMapping(12345, 154)
+        mappingApi.stubGetTapMovementMapping(12345, 154, dpsMovementId)
+        mappingApi.stubDeleteTapMovementMapping(12345, 154)
         dpsApi.stubDeleteTapMovement(dpsMovementId)
 
         sendMessage(tapMovementEvent(deleted = true, direction = "IN"))
@@ -1482,12 +1482,12 @@ class TapMovementIntTest(
 
       @Test
       fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")))
       }
 
       @Test
       fun `should delete mapping`() {
-        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")))
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")))
       }
 
       @Test
@@ -1515,7 +1515,7 @@ class TapMovementIntTest(
     inner class WhenMappingDoesNotExist {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
+        mappingApi.stubGetTapMovementMapping(12345, 154, NOT_FOUND)
 
         sendMessage(tapMovementEvent(deleted = true))
           .also { waitForAnyProcessingToComplete() }
@@ -1532,7 +1532,7 @@ class TapMovementIntTest(
       @Test
       fun `should get mapping`() {
         mappingApi.verify(
-          getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/external-movement/nomis-movement-id/12345/154")),
+          getRequestedFor(urlPathEqualTo("/mapping/taps/movement/nomis-id/12345/154")),
         )
       }
 
