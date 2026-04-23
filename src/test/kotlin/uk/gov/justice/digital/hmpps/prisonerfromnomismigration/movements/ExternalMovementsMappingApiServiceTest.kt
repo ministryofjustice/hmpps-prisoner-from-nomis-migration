@@ -25,8 +25,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapConfiguration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMoveBookingMappingDto
@@ -426,9 +426,9 @@ class ExternalMovementsMappingApiServiceTest {
   inner class CreateExternalMovementMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubCreateExternalMovementMapping()
+      mappingApi.stubCreateTapMovementMapping()
 
-      apiService.createExternalMovementMapping(temporaryAbsenceExternalMovementMapping())
+      apiService.createTapMovementMapping(tapMovementMapping())
 
       mappingApi.verify(
         postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -437,9 +437,9 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     internal fun `should pass data to service`() = runTest {
-      mappingApi.stubCreateExternalMovementMapping()
+      mappingApi.stubCreateTapMovementMapping()
 
-      apiService.createExternalMovementMapping(temporaryAbsenceExternalMovementMapping())
+      apiService.createTapMovementMapping(tapMovementMapping())
 
       mappingApi.verify(
         postRequestedFor(anyUrl())
@@ -454,25 +454,25 @@ class ExternalMovementsMappingApiServiceTest {
     @Test
     fun `should return error for 409 conflict`() = runTest {
       val dpsMovementId = UUID.randomUUID()
-      mappingApi.stubCreateExternalMovementMappingConflict(
+      mappingApi.stubCreateTapMovementMappingConflict(
         error = DuplicateMappingErrorResponse(
           moreInfo = DuplicateErrorContentObject(
-            existing = ExternalMovementSyncMappingDto(
+            existing = TapMovementMappingDto(
               prisonerNumber = "A1234BC",
               bookingId = 12345L,
               nomisMovementSeq = 1,
               dpsMovementId = dpsMovementId,
-              mappingType = ExternalMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+              mappingType = TapMovementMappingDto.MappingType.NOMIS_CREATED,
               "",
               0,
               "",
             ),
-            duplicate = ExternalMovementSyncMappingDto(
+            duplicate = TapMovementMappingDto(
               prisonerNumber = "A1234BC",
               bookingId = 12345L,
               nomisMovementSeq = 2,
               dpsMovementId = dpsMovementId,
-              mappingType = ExternalMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+              mappingType = TapMovementMappingDto.MappingType.NOMIS_CREATED,
               "",
               0,
               "",
@@ -484,7 +484,7 @@ class ExternalMovementsMappingApiServiceTest {
         ),
       )
 
-      apiService.createExternalMovementMapping(temporaryAbsenceExternalMovementMapping())
+      apiService.createTapMovementMapping(tapMovementMapping())
         .apply {
           assertThat(isError).isTrue
           assertThat(errorResponse!!.moreInfo.existing!!.nomisMovementSeq).isEqualTo(1)
@@ -494,10 +494,10 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubCreateExternalMovementMapping(status = INTERNAL_SERVER_ERROR)
+      mappingApi.stubCreateTapMovementMapping(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.createExternalMovementMapping(temporaryAbsenceExternalMovementMapping())
+        apiService.createTapMovementMapping(tapMovementMapping())
       }
     }
   }
@@ -506,9 +506,9 @@ class ExternalMovementsMappingApiServiceTest {
   inner class UpdateExternalMovementMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubUpdateExternalMovementMapping()
+      mappingApi.stubUpdateTapMovementMapping()
 
-      apiService.updateExternalMovementMapping(temporaryAbsenceExternalMovementMapping())
+      apiService.updateTapMovementMapping(tapMovementMapping())
 
       mappingApi.verify(
         putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -517,9 +517,9 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     internal fun `should pass data to service`() = runTest {
-      mappingApi.stubUpdateExternalMovementMapping()
+      mappingApi.stubUpdateTapMovementMapping()
 
-      apiService.updateExternalMovementMapping(temporaryAbsenceExternalMovementMapping())
+      apiService.updateTapMovementMapping(tapMovementMapping())
 
       mappingApi.verify(
         putRequestedFor(anyUrl())
@@ -536,10 +536,10 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubUpdateExternalMovementMapping(status = INTERNAL_SERVER_ERROR)
+      mappingApi.stubUpdateTapMovementMapping(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.updateExternalMovementMapping(temporaryAbsenceExternalMovementMapping())
+        apiService.updateTapMovementMapping(tapMovementMapping())
       }
     }
   }
@@ -548,9 +548,9 @@ class ExternalMovementsMappingApiServiceTest {
   inner class GetExternalMovementMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubGetExternalMovementMapping()
+      mappingApi.stubGetTapMovementMapping()
 
-      apiService.getExternalMovementMappingOrNull(12345L, 1)
+      apiService.getTapMovementMappingOrNull(12345L, 1)
 
       mappingApi.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -559,18 +559,18 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     fun `should return null if not found`() = runTest {
-      mappingApi.stubGetExternalMovementMapping(status = NOT_FOUND)
+      mappingApi.stubGetTapMovementMapping(status = NOT_FOUND)
 
-      apiService.getExternalMovementMappingOrNull(12345L, 1)
+      apiService.getTapMovementMappingOrNull(12345L, 1)
         .also { assertThat(it).isNull() }
     }
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubGetExternalMovementMapping(status = INTERNAL_SERVER_ERROR)
+      mappingApi.stubGetTapMovementMapping(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.getExternalMovementMappingOrNull(12345L, 1)
+        apiService.getTapMovementMappingOrNull(12345L, 1)
       }
     }
   }
@@ -579,9 +579,9 @@ class ExternalMovementsMappingApiServiceTest {
   inner class DeleteExternalMovementMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubDeleteExternalMovementMapping()
+      mappingApi.stubDeleteTapMovementMapping()
 
-      apiService.deleteExternalMovementMapping(12345L, 1)
+      apiService.deleteTapMovementMapping(12345L, 1)
 
       mappingApi.verify(
         deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -590,10 +590,10 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubDeleteExternalMovementMapping(status = INTERNAL_SERVER_ERROR)
+      mappingApi.stubDeleteTapMovementMapping(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.deleteExternalMovementMapping(12345L, 1)
+        apiService.deleteTapMovementMapping(12345L, 1)
       }
     }
   }

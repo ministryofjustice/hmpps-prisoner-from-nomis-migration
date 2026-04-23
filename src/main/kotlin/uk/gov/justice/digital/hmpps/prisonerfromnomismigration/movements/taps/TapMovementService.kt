@@ -17,7 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.S
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.MovementType.TAP
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapMovementIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapMovementOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -60,7 +60,7 @@ class TapMovementService(
       return
     }
 
-    mappingApiService.getExternalMovementMappingOrNull(bookingId, movementSeq)
+    mappingApiService.getTapMovementMappingOrNull(bookingId, movementSeq)
       ?.also {
         telemetry["dpsMovementId"] = it.dpsMovementId
         telemetryClient.trackEvent("${TELEMETRY_PREFIX}-inserted-ignored", telemetry)
@@ -81,8 +81,8 @@ class TapMovementService(
     bookingId: Long,
     movementSeq: Int,
     telemetry: MutableMap<String, Any>,
-    existingMapping: ExternalMovementSyncMappingDto? = null,
-  ): ExternalMovementSyncMappingDto = nomisApiService.getTapMovementOut(prisonerNumber, bookingId, movementSeq)
+    existingMapping: TapMovementMappingDto? = null,
+  ): TapMovementMappingDto = nomisApiService.getTapMovementOut(prisonerNumber, bookingId, movementSeq)
     .also {
       it.tapScheduleOutId?.run { telemetry["nomisScheduledEventId"] = this }
       it.tapApplicationId?.run {
@@ -109,12 +109,12 @@ class TapMovementService(
       val dpsMovementId = dpsApiService.syncTapMovement(prisonerNumber, dpsMovement).id
         .also { telemetry["dpsMovementId"] = it }
 
-      ExternalMovementSyncMappingDto(
+      TapMovementMappingDto(
         prisonerNumber = prisonerNumber,
         bookingId = bookingId,
         nomisMovementSeq = movementSeq,
         dpsMovementId = dpsMovementId,
-        mappingType = ExternalMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+        mappingType = TapMovementMappingDto.MappingType.NOMIS_CREATED,
         dpsAddressText = dpsLocation.address ?: "",
         dpsUprn = dpsLocation.uprn,
         dpsDescription = dpsLocation.description,
@@ -136,8 +136,8 @@ class TapMovementService(
     bookingId: Long,
     movementSeq: Int,
     telemetry: MutableMap<String, Any>,
-    existingMapping: ExternalMovementSyncMappingDto? = null,
-  ): ExternalMovementSyncMappingDto = nomisApiService.getTapMovementIn(prisonerNumber, bookingId, movementSeq)
+    existingMapping: TapMovementMappingDto? = null,
+  ): TapMovementMappingDto = nomisApiService.getTapMovementIn(prisonerNumber, bookingId, movementSeq)
     .also {
       it.tapScheduleOutId?.run { telemetry["nomisScheduledParentEventId"] = this }
       it.tapScheduleInId?.run { telemetry["nomisScheduledEventId"] = this }
@@ -165,12 +165,12 @@ class TapMovementService(
       val dpsMovementId = dpsApiService.syncTapMovement(prisonerNumber, dpsMovement).id
         .also { telemetry["dpsMovementId"] = it }
 
-      ExternalMovementSyncMappingDto(
+      TapMovementMappingDto(
         prisonerNumber = prisonerNumber,
         bookingId = bookingId,
         nomisMovementSeq = movementSeq,
         dpsMovementId = dpsMovementId,
-        mappingType = ExternalMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+        mappingType = TapMovementMappingDto.MappingType.NOMIS_CREATED,
         dpsAddressText = dpsLocation.address ?: "",
         dpsUprn = dpsLocation.uprn,
         dpsDescription = dpsLocation.description,
@@ -202,7 +202,7 @@ class TapMovementService(
     }
 
     track("${TELEMETRY_PREFIX}-updated", telemetry) {
-      val existingMapping = mappingApiService.getExternalMovementMappingOrNull(bookingId, movementSeq)
+      val existingMapping = mappingApiService.getTapMovementMappingOrNull(bookingId, movementSeq)
         ?.also { telemetry["dpsMovementId"] = it.dpsMovementId }
         ?: throw IllegalStateException("No mapping found when handling an update event for movement $bookingId/$movementSeq - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
 
@@ -238,21 +238,21 @@ class TapMovementService(
       "movementSeq" to movementSeq,
       "directionCode" to directionCode,
     )
-    mappingApiService.getExternalMovementMappingOrNull(bookingId, movementSeq)?.also {
+    mappingApiService.getTapMovementMappingOrNull(bookingId, movementSeq)?.also {
       track("${TELEMETRY_PREFIX}-deleted", telemetry) {
         telemetry["dpsMovementId"] = it.dpsMovementId
         dpsApiService.deleteTapMovement(it.dpsMovementId)
-        mappingApiService.deleteExternalMovementMapping(bookingId, movementSeq)
+        mappingApiService.deleteTapMovementMapping(bookingId, movementSeq)
       }
     } ?: run { telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-ignored", telemetry) }
   }
 
   private suspend fun tryToCreateExternalMovementMapping(
-    mapping: ExternalMovementSyncMappingDto,
+    mapping: TapMovementMappingDto,
     telemetry: MutableMap<String, Any>,
   ) {
     try {
-      mappingApiService.createExternalMovementMapping(mapping).takeIf { it.isError }?.also {
+      mappingApiService.createTapMovementMapping(mapping).takeIf { it.isError }?.also {
         with(it.errorResponse!!.moreInfo) {
           telemetryClient.trackEvent(
             "${TELEMETRY_PREFIX}-inserted-duplicate",
@@ -283,8 +283,8 @@ class TapMovementService(
     }
   }
 
-  suspend fun retryCreateExternalMovementMapping(retryMessage: InternalMessage<ExternalMovementSyncMappingDto>) {
-    mappingApiService.createExternalMovementMapping(
+  suspend fun retryCreateExternalMovementMapping(retryMessage: InternalMessage<TapMovementMappingDto>) {
+    mappingApiService.createTapMovementMapping(
       retryMessage.body,
     ).also {
       telemetryClient.trackEvent(
@@ -294,8 +294,8 @@ class TapMovementService(
     }
   }
 
-  suspend fun retryUpdateExternalMovementMapping(retryMessage: InternalMessage<ExternalMovementSyncMappingDto>) {
-    mappingApiService.updateExternalMovementMapping(
+  suspend fun retryUpdateExternalMovementMapping(retryMessage: InternalMessage<TapMovementMappingDto>) {
+    mappingApiService.updateTapMovementMapping(
       retryMessage.body,
     ).also {
       telemetryClient.trackEvent(
@@ -306,7 +306,7 @@ class TapMovementService(
   }
 
   private suspend fun deriveDpsAddress(
-    existingMovementMapping: ExternalMovementSyncMappingDto?,
+    existingMovementMapping: TapMovementMappingDto?,
     nomisAddressId: Long?,
     nomisAddressOwnerClass: String?,
     nomisAddress: String?,
@@ -341,11 +341,11 @@ class TapMovementService(
     ?.dpsOccurrenceId
 
   private suspend fun tryToUpdateExternalMovementMapping(
-    mapping: ExternalMovementSyncMappingDto,
+    mapping: TapMovementMappingDto,
     telemetry: MutableMap<String, Any>,
   ) {
     try {
-      mappingApiService.updateExternalMovementMapping(mapping)
+      mappingApiService.updateTapMovementMapping(mapping)
     } catch (e: Exception) {
       log.error(
         "Failed to update mapping for temporary absence external movement NOMIS id ${mapping.bookingId}/${mapping.nomisMovementSeq}",
@@ -400,7 +400,7 @@ class TapMovementService(
     prisonCode = toPrison,
   )
 
-  private fun ExternalMovementSyncMappingDto.hasChanged(original: ExternalMovementSyncMappingDto) = this.prisonerNumber != original.prisonerNumber ||
+  private fun TapMovementMappingDto.hasChanged(original: TapMovementMappingDto) = this.prisonerNumber != original.prisonerNumber ||
     this.bookingId != original.bookingId ||
     this.nomisMovementSeq != original.nomisMovementSeq ||
     this.dpsMovementId != original.dpsMovementId ||
