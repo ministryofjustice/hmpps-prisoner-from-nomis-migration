@@ -551,6 +551,7 @@ class OfficialVisitsSynchronisationService(
     prisonCode = prisonId,
     offenderBookId = bookingId,
     prisonerNumber = offenderNo,
+    currentTerm = currentTerm,
     visitDate = startDateTime.toLocalDate(),
     startTime = startDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),
     endTime = endDateTime.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")),

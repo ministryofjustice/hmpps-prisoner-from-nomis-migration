@@ -227,6 +227,7 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       prisonVisitSlotId = 10,
       prisonCode = "MDI",
       offenderBookId = 100,
+      currentTerm = true,
       prisonerNumber = "A1234KT",
       visitDate = LocalDate.parse("2020-01-01"),
       startTime = "10:00",
