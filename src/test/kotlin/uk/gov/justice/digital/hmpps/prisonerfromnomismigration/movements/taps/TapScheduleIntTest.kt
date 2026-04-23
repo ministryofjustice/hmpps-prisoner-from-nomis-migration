@@ -64,7 +64,7 @@ class TapScheduleIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsApplicationId = dpsAuthorisationId)
+        mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId = dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678, eventTime = eventTime)
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
         mappingApi.stubCreateScheduledMovementMapping()
@@ -80,7 +80,7 @@ class TapScheduleIntTest(
 
       @Test
       fun `should check parent mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/application/nomis-id/111")))
       }
 
       @Test
@@ -258,7 +258,7 @@ class TapScheduleIntTest(
       fun setUp() {
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
         nomisApi.stubGetTapScheduleOut(eventId = 45678)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
+        mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
 
         sendMessage(tapScheduleEvent("SCHEDULED_EXT_MOVE-INSERTED"))
           .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-inserted-awaiting-parent") }
@@ -271,7 +271,7 @@ class TapScheduleIntTest(
 
       @Test
       fun `should check parent mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/application/nomis-id/111")))
       }
 
       @Test
@@ -306,7 +306,7 @@ class TapScheduleIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
+        mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678)
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
         mappingApi.stubCreateScheduledMovementMappingConflict(
@@ -400,7 +400,7 @@ class TapScheduleIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsApplicationId = dpsAuthorisationId)
+        mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId = dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678)
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
         mappingApi.stubCreateScheduledMovementMappingFailureFollowedBySuccess()
@@ -470,7 +470,7 @@ class TapScheduleIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
+        mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678, eventTime = eventTime)
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
         mappingApi.stubUpdateScheduledMovementMapping()
@@ -536,7 +536,7 @@ class TapScheduleIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime, dpsUprn = 987L)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
+        mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678, eventTime = eventTime)
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
         mappingApi.stubUpdateScheduledMovementMapping()
@@ -566,7 +566,7 @@ class TapScheduleIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
+        mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678, eventTime = newEventTime)
         mappingApi.stubUpdateScheduledMovementMapping()
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
@@ -628,7 +628,7 @@ class TapScheduleIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
+        mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678, toAddress = "new address", toAddressId = 654)
         mappingApi.stubUpdateScheduledMovementMapping()
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
@@ -676,7 +676,7 @@ class TapScheduleIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
+        mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678, eventTime = newEventTime)
         mappingApi.stubUpdateScheduledMovementMappingFailureFollowedBySuccess()
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
@@ -768,7 +768,7 @@ class TapScheduleIntTest(
       @BeforeEach
       fun setUp() {
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId = dpsOccurrenceId)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, dpsAuthorisationId)
+        mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678)
         dpsApi.stubSyncTapOccurrenceError(authorisationId = dpsAuthorisationId, status = 500)
 

@@ -254,8 +254,8 @@ class TapScheduleService(
     }
   }
 
-  private suspend fun getParentApplicationId(nomisApplicationId: Long): UUID? = mappingApiService.getApplicationMappingOrNull(nomisApplicationId)
-    ?.dpsMovementApplicationId
+  private suspend fun getParentApplicationId(nomisApplicationId: Long): UUID? = mappingApiService.getTapApplicationMappingOrNull(nomisApplicationId)
+    ?.dpsAuthorisationId
 
   private fun ScheduledMovementSyncMappingDto.hasChanged(original: ScheduledMovementSyncMappingDto) = this.prisonerNumber != original.prisonerNumber ||
     this.bookingId != original.bookingId ||

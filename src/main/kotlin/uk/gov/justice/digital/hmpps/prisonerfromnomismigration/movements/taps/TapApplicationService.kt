@@ -14,8 +14,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.L
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto.MappingType.NOMIS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapApplication
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -49,7 +49,7 @@ class TapApplicationService(
       return
     }
 
-    mappingApiService.getApplicationMappingOrNull(nomisApplicationId)
+    mappingApiService.getTapApplicationMappingOrNull(nomisApplicationId)
       ?.also { telemetryClient.trackEvent("${TELEMETRY_PREFIX}-inserted-ignored", telemetry) }
       ?: run {
         track("${TELEMETRY_PREFIX}-inserted", telemetry) {
@@ -58,7 +58,7 @@ class TapApplicationService(
               val dpsApplicationId = dpsApiService.syncTapAuthorisation(prisonerNumber, it.toDpsRequest())
                 .id
                 .also { telemetry["dpsAuthorisationId"] = it }
-              val mapping = TemporaryAbsenceApplicationSyncMappingDto(prisonerNumber, bookingId, nomisApplicationId, dpsApplicationId, NOMIS_CREATED)
+              val mapping = TapApplicationMappingDto(prisonerNumber, bookingId, nomisApplicationId, dpsApplicationId, NOMIS_CREATED)
               tryToCreateApplicationMapping(mapping, telemetry)
             }
         }
@@ -79,7 +79,7 @@ class TapApplicationService(
     }
 
     track("${TELEMETRY_PREFIX}-updated", telemetry) {
-      val dpsApplicationId = mappingApiService.getApplicationMappingOrNull(nomisApplicationId)?.dpsMovementApplicationId
+      val dpsApplicationId = mappingApiService.getTapApplicationMappingOrNull(nomisApplicationId)?.dpsAuthorisationId
         ?.also { telemetry["dpsAuthorisationId"] = it }
         ?: throw IllegalStateException("No mapping found when handling an update event for TAP application $nomisApplicationId - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
 
@@ -95,35 +95,35 @@ class TapApplicationService(
       "bookingId" to bookingId,
       "nomisApplicationId" to nomisApplicationId,
     )
-    mappingApiService.getApplicationMappingOrNull(nomisApplicationId)?.also {
+    mappingApiService.getTapApplicationMappingOrNull(nomisApplicationId)?.also {
       track("${TELEMETRY_PREFIX}-deleted", telemetry) {
-        telemetry["dpsAuthorisationId"] = it.dpsMovementApplicationId
-        dpsApiService.deleteTapAuthorisation(it.dpsMovementApplicationId)
-        mappingApiService.deleteApplicationMapping(nomisApplicationId)
+        telemetry["dpsAuthorisationId"] = it.dpsAuthorisationId
+        dpsApiService.deleteTapAuthorisation(it.dpsAuthorisationId)
+        mappingApiService.deleteTapApplicationMapping(nomisApplicationId)
       }
     } ?: run { telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-ignored", telemetry) }
   }
-  private suspend fun tryToCreateApplicationMapping(mapping: TemporaryAbsenceApplicationSyncMappingDto, telemetry: MutableMap<String, Any>) {
+  private suspend fun tryToCreateApplicationMapping(mapping: TapApplicationMappingDto, telemetry: MutableMap<String, Any>) {
     try {
-      mappingApiService.createApplicationMapping(mapping).takeIf { it.isError }?.also {
+      mappingApiService.createTapApplicationMapping(mapping).takeIf { it.isError }?.also {
         with(it.errorResponse!!.moreInfo) {
           telemetryClient.trackEvent(
             "${TELEMETRY_PREFIX}-inserted-duplicate",
             mapOf(
               "existingOffenderNo" to existing!!.prisonerNumber,
               "existingBookingId" to existing.bookingId,
-              "existingNomisApplicationId" to existing.nomisMovementApplicationId,
-              "existingDpsApplicationId" to existing.dpsMovementApplicationId,
+              "existingNomisApplicationId" to existing.nomisApplicationId,
+              "existingDpsApplicationId" to existing.dpsAuthorisationId,
               "duplicateOffenderNo" to duplicate.prisonerNumber,
               "duplicateBookingId" to duplicate.bookingId,
-              "duplicateNomisApplicationId" to duplicate.nomisMovementApplicationId,
-              "duplicateDpsApplicationId" to duplicate.dpsMovementApplicationId,
+              "duplicateNomisApplicationId" to duplicate.nomisApplicationId,
+              "duplicateDpsApplicationId" to duplicate.dpsAuthorisationId,
             ),
           )
         }
       }
     } catch (e: Exception) {
-      log.error("Failed to create mapping for temporary absence application NOMIS id ${mapping.nomisMovementApplicationId}", e)
+      log.error("Failed to create mapping for temporary absence application NOMIS id ${mapping.nomisApplicationId}", e)
       queueService.sendMessage(
         messageType = RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION.name,
         synchronisationType = SynchronisationType.EXTERNAL_MOVEMENTS,
@@ -133,8 +133,8 @@ class TapApplicationService(
     }
   }
 
-  suspend fun retryCreateApplicationMapping(retryMessage: InternalMessage<TemporaryAbsenceApplicationSyncMappingDto>) {
-    mappingApiService.createApplicationMapping(
+  suspend fun retryCreateApplicationMapping(retryMessage: InternalMessage<TapApplicationMappingDto>) {
+    mappingApiService.createTapApplicationMapping(
       retryMessage.body,
     ).also {
       telemetryClient.trackEvent(

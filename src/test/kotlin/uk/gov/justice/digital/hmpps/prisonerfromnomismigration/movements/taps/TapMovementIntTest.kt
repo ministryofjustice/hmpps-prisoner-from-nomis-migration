@@ -53,7 +53,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = 111, tapScheduleOutId = 45678)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
         mappingApi.stubCreateExternalMovementMapping()
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
@@ -69,7 +69,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should check application mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/application/nomis-id/111")))
       }
 
       @Test
@@ -147,7 +147,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = 111, tapScheduleMovementInId = 45678, tapScheduleMovementOutId = 23456)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(23456)
         mappingApi.stubCreateExternalMovementMapping()
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
@@ -163,7 +163,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should check application mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/application/nomis-id/111")))
       }
 
       @Test
@@ -310,7 +310,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = 111, tapScheduleOutId = 45678)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
+        mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetScheduledMovementMapping(45678)
 
         sendMessage(tapMovementEvent(inserted = true, direction = "OUT"))
@@ -324,7 +324,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should check application mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/application/nomis-id/111")))
       }
 
       @Test
@@ -356,7 +356,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = 111, tapScheduleOutId = 45678)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
 
         sendMessage(tapMovementEvent(inserted = true, direction = "OUT"))
@@ -402,7 +402,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = 111, tapScheduleMovementInId = 45678)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
+        mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetScheduledMovementMapping(45678)
 
         sendMessage(tapMovementEvent(inserted = true, direction = "IN"))
@@ -416,7 +416,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should check application mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application/nomis-application-id/111")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/application/nomis-id/111")))
       }
 
       @Test
@@ -448,7 +448,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = 111, tapScheduleMovementInId = 45678, tapScheduleMovementOutId = 23456)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(23456, NOT_FOUND)
 
         sendMessage(tapMovementEvent(inserted = true, direction = "IN"))
@@ -517,7 +517,7 @@ class TapMovementIntTest(
       fun `should NOT check application mapping`() {
         mappingApi.verify(
           count = 0,
-          getRequestedFor(urlPathMatching("/mapping/temporary-absence/application/nomis-application-id/.*")),
+          getRequestedFor(urlPathMatching("/mapping/taps/application/nomis-id/.*")),
         )
       }
 
@@ -600,7 +600,7 @@ class TapMovementIntTest(
       fun `should NOT check application mapping`() {
         mappingApi.verify(
           count = 0,
-          getRequestedFor(urlPathMatching("/mapping/temporary-absence/application/nomis-application-id/.*")),
+          getRequestedFor(urlPathMatching("/mapping/taps/application/nomis-id/.*")),
         )
       }
 
@@ -667,7 +667,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = 111, tapScheduleOutId = 45678)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(nomisApplicationId = 111)
+        mappingApi.stubGetTapApplicationMapping(nomisApplicationId = 111)
         mappingApi.stubGetScheduledMovementMapping(nomisEventId = 45678)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubCreateExternalMovementMappingConflict(
@@ -767,7 +767,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = 111, tapScheduleOutId = 45678)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(nomisApplicationId = 111)
+        mappingApi.stubGetTapApplicationMapping(nomisApplicationId = 111)
         mappingApi.stubGetScheduledMovementMapping(nomisEventId = 45678)
         mappingApi.stubCreateExternalMovementMappingFailureFollowedBySuccess()
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
@@ -848,7 +848,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapScheduleOutId = 45678)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
@@ -910,7 +910,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapScheduleOutId = 45678, address = newAddress, addressId = newAddressId)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMapping()
@@ -970,7 +970,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapScheduleOutId = 45678, address = newAddress, addressId = newAddressId)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMappingFailureFollowedBySuccess()
@@ -1026,7 +1026,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = null, tapScheduleOutId = null, city = "Sheffield")
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
+        mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
@@ -1083,7 +1083,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapScheduleMovementInId = 45678, tapScheduleMovementOutId = 23456)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(23456, dpsOccurrenceId)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
@@ -1143,7 +1143,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapScheduleMovementInId = 45678, tapScheduleMovementOutId = 23456, address = newAddress, addressId = newAddressId)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111)
+        mappingApi.stubGetTapApplicationMapping(111)
         mappingApi.stubGetScheduledMovementMapping(23456, dpsOccurrenceId)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMapping()
@@ -1203,7 +1203,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = null, tapScheduleMovementInId = null, tapScheduleMovementOutId = null, city = "Sheffield")
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
+        mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
@@ -1264,7 +1264,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = null, tapScheduleMovementInId = null, tapScheduleMovementOutId = null, city = newCity)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
+        mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMapping()
@@ -1326,7 +1326,7 @@ class TapMovementIntTest(
       fun setUp() {
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = null, tapScheduleMovementInId = null, tapScheduleMovementOutId = null, city = newCity)
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(111, NOT_FOUND)
+        mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
         mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMappingFailureFollowedBySuccess()
