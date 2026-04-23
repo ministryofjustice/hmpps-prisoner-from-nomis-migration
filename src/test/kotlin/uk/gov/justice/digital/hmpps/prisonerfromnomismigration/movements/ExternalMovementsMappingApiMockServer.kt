@@ -21,9 +21,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationMappingIdsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
@@ -103,9 +103,9 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubCreateTemporaryAbsenceApplicationMapping() {
+  fun stubCreateTapApplicationMapping() {
     mappingApi.stubFor(
-      post("/mapping/temporary-absence/application")
+      post("/mapping/taps/application")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -114,9 +114,9 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubCreateTemporaryAbsenceApplicationMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubCreateTapApplicationMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      post("/mapping/temporary-absence/application").willReturn(
+      post("/mapping/taps/application").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -125,9 +125,9 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubCreateTemporaryAbsenceApplicationMappingConflict(error: DuplicateMappingErrorResponse) {
+  fun stubCreateTapApplicationMappingConflict(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(
-      post("/mapping/temporary-absence/application").willReturn(
+      post("/mapping/taps/application").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
@@ -136,21 +136,21 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubCreateTemporaryAbsenceApplicationMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/temporary-absence/application")
+  fun stubCreateTapApplicationMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/taps/application")
 
-  fun stubGetTemporaryAbsenceApplicationMapping(nomisApplicationId: Long = 1L, dpsApplicationId: UUID = UUID.randomUUID()) {
+  fun stubGetTapApplicationMapping(nomisApplicationId: Long = 1L, dpsAuthorisationId: UUID = UUID.randomUUID()) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/temporary-absence/application/nomis-application-id/$nomisApplicationId")).willReturn(
+      get(urlPathMatching("/mapping/taps/application/nomis-id/$nomisApplicationId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withBody(jsonMapper.writeValueAsString(temporaryAbsenceApplicationMapping(nomisApplicationId, dpsApplicationId))),
+          .withBody(jsonMapper.writeValueAsString(tapApplicationMapping(nomisApplicationId, dpsAuthorisationId))),
       ),
     )
   }
 
-  fun stubGetTemporaryAbsenceApplicationMapping(nomisApplicationId: Long = 1L, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubGetTapApplicationMapping(nomisApplicationId: Long = 1L, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/temporary-absence/application/nomis-application-id/$nomisApplicationId")).willReturn(
+      get(urlPathMatching("/mapping/taps/application/nomis-id/$nomisApplicationId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -159,9 +159,9 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubDeleteTemporaryAbsenceApplicationMapping(nomisApplicationId: Long = 1L) {
+  fun stubDeleteTapApplicationMapping(nomisApplicationId: Long = 1L) {
     mappingApi.stubFor(
-      delete(urlPathMatching("/mapping/temporary-absence/application/nomis-application-id/$nomisApplicationId")).willReturn(
+      delete(urlPathMatching("/mapping/taps/application/nomis-id/$nomisApplicationId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(204),
@@ -169,9 +169,9 @@ class ExternalMovementsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
-  fun stubDeleteTemporaryAbsenceApplicationMapping(nomisApplicationId: Long = 1L, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+  fun stubDeleteTapApplicationMapping(nomisApplicationId: Long = 1L, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      delete(urlPathMatching("/mapping/temporary-absence/application/nomis-application-id/$nomisApplicationId")).willReturn(
+      delete(urlPathMatching("/mapping/taps/application/nomis-id/$nomisApplicationId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -564,16 +564,16 @@ fun temporaryAbsencePrisonerMappings(prisonerNumber: String = "A1234BC") = Tempo
   ),
 )
 
-fun temporaryAbsenceApplicationMapping(
+fun tapApplicationMapping(
   nomisApplicationId: Long = 1L,
-  dpsApplicationId: UUID = UUID.randomUUID(),
+  dpsAuthorisationId: UUID = UUID.randomUUID(),
   prisonerNumber: String = "A1234BC",
-) = TemporaryAbsenceApplicationSyncMappingDto(
+) = TapApplicationMappingDto(
   prisonerNumber = prisonerNumber,
   bookingId = 12345,
-  nomisMovementApplicationId = nomisApplicationId,
-  dpsMovementApplicationId = dpsApplicationId,
-  mappingType = TemporaryAbsenceApplicationSyncMappingDto.MappingType.MIGRATED,
+  nomisApplicationId = nomisApplicationId,
+  dpsAuthorisationId = dpsAuthorisationId,
+  mappingType = TapApplicationMappingDto.MappingType.MIGRATED,
 )
 
 fun temporaryAbsenceScheduledMovementMapping(

@@ -489,7 +489,7 @@ class TapAddressIntTest(
       ).take(mappings)
       mappingApi.stubFindScheduledMovementsForAddressMappings(321, scheduleMappings.map { it.mapping })
       scheduleMappings.forEach {
-        mappingApi.stubGetTemporaryAbsenceApplicationMapping(it.nomisApplicationId, it.dpsAuthorisationId)
+        mappingApi.stubGetTapApplicationMapping(it.nomisApplicationId, it.dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(
           offenderNo = it.mapping.prisonerNumber,
           eventId = it.mapping.nomisEventId,

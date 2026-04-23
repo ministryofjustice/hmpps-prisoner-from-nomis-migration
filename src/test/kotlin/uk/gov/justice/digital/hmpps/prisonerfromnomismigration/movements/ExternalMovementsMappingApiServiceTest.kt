@@ -27,8 +27,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationIdMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMovementIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
@@ -95,10 +95,10 @@ class ExternalMovementsMappingApiServiceTest {
   inner class CreateApplicationMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubCreateTemporaryAbsenceApplicationMapping()
+      mappingApi.stubCreateTapApplicationMapping()
 
-      apiService.createApplicationMapping(
-        temporaryAbsenceApplicationMapping(),
+      apiService.createTapApplicationMapping(
+        tapApplicationMapping(),
       )
 
       mappingApi.verify(
@@ -108,41 +108,41 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     internal fun `should pass data to service`() = runTest {
-      mappingApi.stubCreateTemporaryAbsenceApplicationMapping()
+      mappingApi.stubCreateTapApplicationMapping()
 
-      apiService.createApplicationMapping(
-        temporaryAbsenceApplicationMapping(),
+      apiService.createTapApplicationMapping(
+        tapApplicationMapping(),
       )
 
       mappingApi.verify(
         postRequestedFor(anyUrl())
           .withRequestBody(matchingJsonPath("prisonerNumber", equalTo("A1234BC")))
           .withRequestBody(matchingJsonPath("bookingId", equalTo("12345")))
-          .withRequestBody(matchingJsonPath("nomisMovementApplicationId", equalTo("1")))
-          .withRequestBody(matchingJsonPath("dpsMovementApplicationId", not(absent())))
+          .withRequestBody(matchingJsonPath("nomisApplicationId", equalTo("1")))
+          .withRequestBody(matchingJsonPath("dpsAuthorisationId", not(absent())))
           .withRequestBody(matchingJsonPath("mappingType", equalTo("MIGRATED"))),
       )
     }
 
     @Test
     fun `should return error for 409 conflict`() = runTest {
-      val dpsMovementApplicationId = UUID.randomUUID()
-      mappingApi.stubCreateTemporaryAbsenceApplicationMappingConflict(
+      val dpsAuthorisationId = UUID.randomUUID()
+      mappingApi.stubCreateTapApplicationMappingConflict(
         error = DuplicateMappingErrorResponse(
           moreInfo = DuplicateErrorContentObject(
-            existing = TemporaryAbsenceApplicationSyncMappingDto(
+            existing = TapApplicationMappingDto(
               prisonerNumber = "A1234BC",
               bookingId = 12345L,
-              nomisMovementApplicationId = 1L,
-              dpsMovementApplicationId = dpsMovementApplicationId,
-              mappingType = TemporaryAbsenceApplicationSyncMappingDto.MappingType.NOMIS_CREATED,
+              nomisApplicationId = 1L,
+              dpsAuthorisationId = dpsAuthorisationId,
+              mappingType = TapApplicationMappingDto.MappingType.NOMIS_CREATED,
             ),
-            duplicate = TemporaryAbsenceApplicationSyncMappingDto(
+            duplicate = TapApplicationMappingDto(
               prisonerNumber = "A1234BC",
               bookingId = 12345L,
-              nomisMovementApplicationId = 2L,
-              dpsMovementApplicationId = dpsMovementApplicationId,
-              mappingType = TemporaryAbsenceApplicationSyncMappingDto.MappingType.NOMIS_CREATED,
+              nomisApplicationId = 2L,
+              dpsAuthorisationId = dpsAuthorisationId,
+              mappingType = TapApplicationMappingDto.MappingType.NOMIS_CREATED,
             ),
           ),
           errorCode = 1409,
@@ -151,23 +151,23 @@ class ExternalMovementsMappingApiServiceTest {
         ),
       )
 
-      apiService.createApplicationMapping(
-        temporaryAbsenceApplicationMapping(),
+      apiService.createTapApplicationMapping(
+        tapApplicationMapping(),
       )
         .apply {
           assertThat(isError).isTrue
-          assertThat(errorResponse!!.moreInfo.existing!!.nomisMovementApplicationId).isEqualTo(1L)
-          assertThat(errorResponse.moreInfo.duplicate.nomisMovementApplicationId).isEqualTo(2L)
+          assertThat(errorResponse!!.moreInfo.existing!!.nomisApplicationId).isEqualTo(1L)
+          assertThat(errorResponse.moreInfo.duplicate.nomisApplicationId).isEqualTo(2L)
         }
     }
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubCreateTemporaryAbsenceApplicationMapping(status = INTERNAL_SERVER_ERROR)
+      mappingApi.stubCreateTapApplicationMapping(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.createApplicationMapping(
-          temporaryAbsenceApplicationMapping(),
+        apiService.createTapApplicationMapping(
+          tapApplicationMapping(),
         )
       }
     }
@@ -177,9 +177,9 @@ class ExternalMovementsMappingApiServiceTest {
   inner class GetApplicationMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubGetTemporaryAbsenceApplicationMapping()
+      mappingApi.stubGetTapApplicationMapping()
 
-      apiService.getApplicationMappingOrNull(1L)
+      apiService.getTapApplicationMappingOrNull(1L)
 
       mappingApi.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -188,18 +188,18 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     fun `should return null if not found`() = runTest {
-      mappingApi.stubGetTemporaryAbsenceApplicationMapping(status = NOT_FOUND)
+      mappingApi.stubGetTapApplicationMapping(status = NOT_FOUND)
 
-      apiService.getApplicationMappingOrNull(1L)
+      apiService.getTapApplicationMappingOrNull(1L)
         .also { assertThat(it).isNull() }
     }
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubGetTemporaryAbsenceApplicationMapping(status = INTERNAL_SERVER_ERROR)
+      mappingApi.stubGetTapApplicationMapping(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.getApplicationMappingOrNull(1L)
+        apiService.getTapApplicationMappingOrNull(1L)
       }
     }
   }
@@ -208,9 +208,9 @@ class ExternalMovementsMappingApiServiceTest {
   inner class DeleteApplicationMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubDeleteTemporaryAbsenceApplicationMapping()
+      mappingApi.stubDeleteTapApplicationMapping()
 
-      apiService.deleteApplicationMapping(1L)
+      apiService.deleteTapApplicationMapping(1L)
 
       mappingApi.verify(
         deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -219,10 +219,10 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubDeleteTemporaryAbsenceApplicationMapping(status = INTERNAL_SERVER_ERROR)
+      mappingApi.stubDeleteTapApplicationMapping(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.deleteApplicationMapping(1L)
+        apiService.deleteTapApplicationMapping(1L)
       }
     }
   }
