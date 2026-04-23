@@ -26,8 +26,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.Ta
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ExternalMovementSyncMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMovementIdMapping
@@ -231,10 +231,10 @@ class ExternalMovementsMappingApiServiceTest {
   inner class CreateScheduledMovementMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubCreateScheduledMovementMapping()
+      mappingApi.stubCreateTapScheduleMapping()
 
-      apiService.createScheduledMovementMapping(
-        temporaryAbsenceScheduledMovementMapping(),
+      apiService.createTapScheduleMapping(
+        tapScheduleMapping(),
       )
 
       mappingApi.verify(
@@ -244,10 +244,10 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     internal fun `should pass data to service`() = runTest {
-      mappingApi.stubCreateScheduledMovementMapping()
+      mappingApi.stubCreateTapScheduleMapping()
 
-      apiService.createScheduledMovementMapping(
-        temporaryAbsenceScheduledMovementMapping(),
+      apiService.createTapScheduleMapping(
+        tapScheduleMapping(),
       )
 
       mappingApi.verify(
@@ -266,26 +266,26 @@ class ExternalMovementsMappingApiServiceTest {
     @Test
     fun `should return error for 409 conflict`() = runTest {
       val dpsOccurrenceId = UUID.randomUUID()
-      mappingApi.stubCreateScheduledMovementMappingConflict(
+      mappingApi.stubCreateTapScheduleMappingConflict(
         error = DuplicateMappingErrorResponse(
           moreInfo = DuplicateErrorContentObject(
-            existing = ScheduledMovementSyncMappingDto(
+            existing = TapScheduleMappingDto(
               prisonerNumber = "A1234BC",
               bookingId = 12345L,
               nomisEventId = 1L,
               dpsOccurrenceId = dpsOccurrenceId,
-              mappingType = ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+              mappingType = TapScheduleMappingDto.MappingType.NOMIS_CREATED,
               nomisAddressId = 0,
               nomisAddressOwnerClass = "",
               dpsAddressText = "",
               eventTime = "",
             ),
-            duplicate = ScheduledMovementSyncMappingDto(
+            duplicate = TapScheduleMappingDto(
               prisonerNumber = "A1234BC",
               bookingId = 12345L,
               nomisEventId = 2L,
               dpsOccurrenceId = dpsOccurrenceId,
-              mappingType = ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+              mappingType = TapScheduleMappingDto.MappingType.NOMIS_CREATED,
               nomisAddressId = 0,
               nomisAddressOwnerClass = "",
               dpsAddressText = "",
@@ -298,8 +298,8 @@ class ExternalMovementsMappingApiServiceTest {
         ),
       )
 
-      apiService.createScheduledMovementMapping(
-        temporaryAbsenceScheduledMovementMapping(),
+      apiService.createTapScheduleMapping(
+        tapScheduleMapping(),
       )
         .apply {
           assertThat(isError).isTrue
@@ -310,11 +310,11 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubCreateScheduledMovementMapping(status = INTERNAL_SERVER_ERROR)
+      mappingApi.stubCreateTapScheduleMapping(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.createScheduledMovementMapping(
-          temporaryAbsenceScheduledMovementMapping(),
+        apiService.createTapScheduleMapping(
+          tapScheduleMapping(),
         )
       }
     }
@@ -324,10 +324,10 @@ class ExternalMovementsMappingApiServiceTest {
   inner class UpdateScheduledMovementMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubUpdateScheduledMovementMapping()
+      mappingApi.stubUpdateTapScheduleMapping()
 
-      apiService.updateScheduledMovementMapping(
-        temporaryAbsenceScheduledMovementMapping(),
+      apiService.updateTapScheduleMapping(
+        tapScheduleMapping(),
       )
 
       mappingApi.verify(
@@ -337,10 +337,10 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     internal fun `should pass data to service`() = runTest {
-      mappingApi.stubUpdateScheduledMovementMapping()
+      mappingApi.stubUpdateTapScheduleMapping()
 
-      apiService.updateScheduledMovementMapping(
-        temporaryAbsenceScheduledMovementMapping(),
+      apiService.updateTapScheduleMapping(
+        tapScheduleMapping(),
       )
 
       mappingApi.verify(
@@ -358,11 +358,11 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubUpdateScheduledMovementMapping(status = INTERNAL_SERVER_ERROR)
+      mappingApi.stubUpdateTapScheduleMapping(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.updateScheduledMovementMapping(
-          temporaryAbsenceScheduledMovementMapping(),
+        apiService.updateTapScheduleMapping(
+          tapScheduleMapping(),
         )
       }
     }
@@ -372,9 +372,9 @@ class ExternalMovementsMappingApiServiceTest {
   inner class GetScheduledMovementMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubGetScheduledMovementMapping()
+      mappingApi.stubGetTapScheduleMapping()
 
-      apiService.getScheduledMovementMappingOrNull(1L)
+      apiService.getTapScheduleMappingOrNull(1L)
 
       mappingApi.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -383,18 +383,18 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     fun `should return null if not found`() = runTest {
-      mappingApi.stubGetScheduledMovementMapping(status = NOT_FOUND)
+      mappingApi.stubGetTapScheduleMapping(status = NOT_FOUND)
 
-      apiService.getScheduledMovementMappingOrNull(1L)
+      apiService.getTapScheduleMappingOrNull(1L)
         .also { assertThat(it).isNull() }
     }
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubGetScheduledMovementMapping(status = INTERNAL_SERVER_ERROR)
+      mappingApi.stubGetTapScheduleMapping(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.getScheduledMovementMappingOrNull(1L)
+        apiService.getTapScheduleMappingOrNull(1L)
       }
     }
   }
@@ -403,9 +403,9 @@ class ExternalMovementsMappingApiServiceTest {
   inner class DeleteScheduledMovementMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubDeleteScheduledMovementMapping()
+      mappingApi.stubDeleteTapScheduleMapping()
 
-      apiService.deleteScheduledMovementMapping(1L)
+      apiService.deleteTapScheduleMapping(1L)
 
       mappingApi.verify(
         deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -414,10 +414,10 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubDeleteScheduledMovementMapping(status = INTERNAL_SERVER_ERROR)
+      mappingApi.stubDeleteTapScheduleMapping(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.deleteScheduledMovementMapping(1L)
+        apiService.deleteTapScheduleMapping(1L)
       }
     }
   }
@@ -604,7 +604,7 @@ class ExternalMovementsMappingApiServiceTest {
     internal fun `should pass oath2 token to service`() = runTest {
       mappingApi.stubFindScheduledMovementsForAddress()
 
-      apiService.findScheduledMovementMappingsForAddress(123L)
+      apiService.findTapScheduleMappingsForAddress(123L)
 
       mappingApi.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -615,7 +615,7 @@ class ExternalMovementsMappingApiServiceTest {
     fun `should return list of schedule mappings`() = runTest {
       mappingApi.stubFindScheduledMovementsForAddress()
 
-      with(apiService.findScheduledMovementMappingsForAddress(123L)) {
+      with(apiService.findTapScheduleMappingsForAddress(123L)) {
         assertThat(scheduleMappings).extracting("prisonerNumber").containsExactlyInAnyOrder("A1234AA", "B1234BB")
       }
     }
@@ -624,7 +624,7 @@ class ExternalMovementsMappingApiServiceTest {
     fun `should handle empty list if none found`() = runTest {
       mappingApi.stubFindScheduledMovementsForAddress(prisoners = listOf())
 
-      with(apiService.findScheduledMovementMappingsForAddress(123L)) {
+      with(apiService.findTapScheduleMappingsForAddress(123L)) {
         assertThat(scheduleMappings.size).isEqualTo(0)
       }
     }
@@ -634,7 +634,7 @@ class ExternalMovementsMappingApiServiceTest {
       mappingApi.stubFindScheduledMovementsForAddressError(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.findScheduledMovementMappingsForAddress(123L)
+        apiService.findTapScheduleMappingsForAddress(123L)
       }
     }
   }

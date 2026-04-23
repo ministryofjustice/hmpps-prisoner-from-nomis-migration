@@ -33,7 +33,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.S
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDateTime
@@ -63,11 +63,11 @@ class TapScheduleIntTest(
     inner class HappyPathOutbound {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubGetTapScheduleMapping(45678, NOT_FOUND)
         mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId = dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678, eventTime = eventTime)
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
-        mappingApi.stubCreateScheduledMovementMapping()
+        mappingApi.stubCreateTapScheduleMapping()
 
         sendMessage(tapScheduleEvent("SCHEDULED_EXT_MOVE-INSERTED"))
           .also { waitForAnyProcessingToComplete() }
@@ -75,7 +75,7 @@ class TapScheduleIntTest(
 
       @Test
       fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/45678")))
       }
 
       @Test
@@ -115,7 +115,7 @@ class TapScheduleIntTest(
       @Test
       fun `should create mapping`() {
         mappingApi.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+          postRequestedFor(urlPathEqualTo("/mapping/taps/schedule"))
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisEventId", 45678)
@@ -167,7 +167,7 @@ class TapScheduleIntTest(
       fun `should NOT create mapping`() {
         mappingApi.verify(
           count = 0,
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")),
+          postRequestedFor(urlPathEqualTo("/mapping/taps/schedule")),
         )
       }
     }
@@ -176,7 +176,7 @@ class TapScheduleIntTest(
     inner class WhenCreatedInDps {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678)
+        mappingApi.stubGetTapScheduleMapping(45678)
 
         sendMessage(tapScheduleEvent("SCHEDULED_EXT_MOVE-INSERTED", "DPS_SYNCHRONISATION"))
           .also { waitForAnyProcessingToComplete() }
@@ -194,7 +194,7 @@ class TapScheduleIntTest(
       fun `should NOT create mapping`() {
         mappingApi.verify(
           count = 0,
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")),
+          postRequestedFor(urlPathEqualTo("/mapping/taps/schedule")),
         )
       }
 
@@ -216,7 +216,7 @@ class TapScheduleIntTest(
     inner class WhenAlreadyCreated {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
+        mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId)
 
         sendMessage(tapScheduleEvent("SCHEDULED_EXT_MOVE-INSERTED"))
           .also { waitForAnyProcessingToComplete() }
@@ -234,7 +234,7 @@ class TapScheduleIntTest(
       fun `should NOT create mapping`() {
         mappingApi.verify(
           count = 0,
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")),
+          postRequestedFor(urlPathEqualTo("/mapping/taps/schedule")),
         )
       }
 
@@ -256,7 +256,7 @@ class TapScheduleIntTest(
     inner class WhenParentApplicationNotCreatedYet {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubGetTapScheduleMapping(45678, NOT_FOUND)
         nomisApi.stubGetTapScheduleOut(eventId = 45678)
         mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
 
@@ -266,7 +266,7 @@ class TapScheduleIntTest(
 
       @Test
       fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/45678")))
       }
 
       @Test
@@ -305,30 +305,30 @@ class TapScheduleIntTest(
 
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubGetTapScheduleMapping(45678, NOT_FOUND)
         mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678)
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
-        mappingApi.stubCreateScheduledMovementMappingConflict(
+        mappingApi.stubCreateTapScheduleMappingConflict(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
-              existing = ScheduledMovementSyncMappingDto(
+              existing = TapScheduleMappingDto(
                 prisonerNumber = "A1234BC",
                 bookingId = 12345L,
                 nomisEventId = 222L,
                 dpsOccurrenceId = dpsOccurrenceId,
-                mappingType = ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = TapScheduleMappingDto.MappingType.NOMIS_CREATED,
                 nomisAddressId = 321,
                 nomisAddressOwnerClass = "OFF",
                 dpsAddressText = "to full address",
                 eventTime = "$eventTime",
               ),
-              duplicate = ScheduledMovementSyncMappingDto(
+              duplicate = TapScheduleMappingDto(
                 prisonerNumber = "A1234BC",
                 bookingId = 12345L,
                 nomisEventId = 45678L,
                 dpsOccurrenceId = dpsOccurrenceId,
-                mappingType = ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED,
+                mappingType = TapScheduleMappingDto.MappingType.NOMIS_CREATED,
                 nomisAddressId = 321,
                 nomisAddressOwnerClass = "OFF",
                 dpsAddressText = "to full address",
@@ -353,7 +353,7 @@ class TapScheduleIntTest(
       @Test
       fun `should create mapping only once`() {
         mappingApi.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+          postRequestedFor(urlPathEqualTo("/mapping/taps/schedule"))
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisEventId", 45678)
@@ -399,11 +399,11 @@ class TapScheduleIntTest(
     inner class WhenMappingCreateFailsOnce {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubGetTapScheduleMapping(45678, NOT_FOUND)
         mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId = dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678)
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
-        mappingApi.stubCreateScheduledMovementMappingFailureFollowedBySuccess()
+        mappingApi.stubCreateTapScheduleMappingFailureFollowedBySuccess()
 
         sendMessage(tapScheduleEvent("SCHEDULED_EXT_MOVE-INSERTED"))
           .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-mapping-retry-created") }
@@ -418,7 +418,7 @@ class TapScheduleIntTest(
       fun `should create mapping on 2nd call`() {
         mappingApi.verify(
           count = 2,
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+          postRequestedFor(urlPathEqualTo("/mapping/taps/schedule"))
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisEventId", 45678)
@@ -469,11 +469,11 @@ class TapScheduleIntTest(
     inner class HappyPathOutbound {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime)
+        mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId, eventTime)
         mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678, eventTime = eventTime)
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
-        mappingApi.stubUpdateScheduledMovementMapping()
+        mappingApi.stubUpdateTapScheduleMapping()
 
         sendMessage(tapScheduleEvent("SCHEDULED_EXT_MOVE-UPDATED"))
           .also { waitForAnyProcessingToComplete() }
@@ -481,7 +481,7 @@ class TapScheduleIntTest(
 
       @Test
       fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/45678")))
       }
 
       @Test
@@ -535,11 +535,11 @@ class TapScheduleIntTest(
     inner class WhenMappingHasDpsUprn {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime, dpsUprn = 987L)
+        mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId, eventTime, dpsUprn = 987L)
         mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678, eventTime = eventTime)
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
-        mappingApi.stubUpdateScheduledMovementMapping()
+        mappingApi.stubUpdateTapScheduleMapping()
 
         sendMessage(tapScheduleEvent("SCHEDULED_EXT_MOVE-UPDATED"))
           .also { waitForAnyProcessingToComplete() }
@@ -565,10 +565,10 @@ class TapScheduleIntTest(
 
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime)
+        mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId, eventTime)
         mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678, eventTime = newEventTime)
-        mappingApi.stubUpdateScheduledMovementMapping()
+        mappingApi.stubUpdateTapScheduleMapping()
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
 
         sendMessage(tapScheduleEvent("SCHEDULED_EXT_MOVE-UPDATED"))
@@ -577,7 +577,7 @@ class TapScheduleIntTest(
 
       @Test
       fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/45678")))
       }
 
       @Test
@@ -597,7 +597,7 @@ class TapScheduleIntTest(
       @Test
       fun `should update mapping`() {
         mappingApi.verify(
-          putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+          putRequestedFor(urlPathEqualTo("/mapping/taps/schedule"))
             .withRequestBodyJsonPath("dpsOccurrenceId", "$dpsOccurrenceId")
             .withRequestBodyJsonPath("nomisEventId", "45678")
             .withRequestBodyJsonPath("eventTime", "$newEventTime"),
@@ -627,10 +627,10 @@ class TapScheduleIntTest(
     inner class WhenAddressChanges {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime)
+        mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId, eventTime)
         mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678, toAddress = "new address", toAddressId = 654)
-        mappingApi.stubUpdateScheduledMovementMapping()
+        mappingApi.stubUpdateTapScheduleMapping()
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
 
         sendMessage(tapScheduleEvent("SCHEDULED_EXT_MOVE-UPDATED"))
@@ -649,7 +649,7 @@ class TapScheduleIntTest(
       @Test
       fun `should update mapping`() {
         mappingApi.verify(
-          putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+          putRequestedFor(urlPathEqualTo("/mapping/taps/schedule"))
             .withRequestBodyJsonPath("dpsAddressText", "new address")
             .withRequestBodyJsonPath("nomisAddressId", 654)
             .withRequestBodyJsonPath("dpsUprn", absent()),
@@ -675,10 +675,10 @@ class TapScheduleIntTest(
 
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId, eventTime)
+        mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId, eventTime)
         mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678, eventTime = newEventTime)
-        mappingApi.stubUpdateScheduledMovementMappingFailureFollowedBySuccess()
+        mappingApi.stubUpdateTapScheduleMappingFailureFollowedBySuccess()
         dpsApi.stubSyncTapOccurrence(authorisationId = dpsAuthorisationId, response = SyncResponse(dpsOccurrenceId))
 
         sendMessage(tapScheduleEvent("SCHEDULED_EXT_MOVE-UPDATED"))
@@ -698,7 +698,7 @@ class TapScheduleIntTest(
       fun `should update mapping on 2nd call`() {
         mappingApi.verify(
           count = 2,
-          putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+          putRequestedFor(urlPathEqualTo("/mapping/taps/schedule"))
             .withRequestBodyJsonPath("nomisEventId", 45678)
             .withRequestBodyJsonPath("dpsOccurrenceId", dpsOccurrenceId)
             .withRequestBodyJsonPath("eventTime", "$newEventTime"),
@@ -744,7 +744,7 @@ class TapScheduleIntTest(
       fun `should NOT get mapping`() {
         mappingApi.verify(
           count = 0,
-          getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")),
+          getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/45678")),
         )
       }
 
@@ -767,7 +767,7 @@ class TapScheduleIntTest(
     inner class WhenDpsUpdateFails {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId = dpsOccurrenceId)
+        mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId = dpsOccurrenceId)
         mappingApi.stubGetTapApplicationMapping(111, dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(eventId = 45678)
         dpsApi.stubSyncTapOccurrenceError(authorisationId = dpsAuthorisationId, status = 500)
@@ -810,8 +810,8 @@ class TapScheduleIntTest(
     inner class HappyPath {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
-        mappingApi.stubDeleteScheduledMovementMapping(nomisEventId = 45678)
+        mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId)
+        mappingApi.stubDeleteTapScheduleMapping(nomisEventId = 45678)
         dpsApi.stubDeleteTapOccurrence(dpsOccurrenceId)
 
         sendMessage(tapScheduleEvent("SCHEDULED_EXT_MOVE-DELETED"))
@@ -820,12 +820,12 @@ class TapScheduleIntTest(
 
       @Test
       fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/45678")))
       }
 
       @Test
       fun `should delete mapping`() {
-        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/45678")))
       }
 
       @Test
@@ -852,7 +852,7 @@ class TapScheduleIntTest(
     inner class WhenMappingDoesNotExist {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubGetTapScheduleMapping(45678, NOT_FOUND)
 
         sendMessage(tapScheduleEvent("SCHEDULED_EXT_MOVE-DELETED"))
           .also { waitForAnyProcessingToComplete() }
@@ -866,7 +866,7 @@ class TapScheduleIntTest(
       @Test
       fun `should get mapping`() {
         mappingApi.verify(
-          getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")),
+          getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/45678")),
         )
       }
 
@@ -888,7 +888,7 @@ class TapScheduleIntTest(
     inner class WhenDpsDeleteFails {
       @BeforeEach
       fun setUp() {
-        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
+        mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId)
         dpsApi.stubDeleteTapOccurrenceError(dpsOccurrenceId, status = 500)
 
         sendMessage(tapScheduleEvent("SCHEDULED_EXT_MOVE-DELETED"))
@@ -918,7 +918,7 @@ class TapScheduleIntTest(
       fun `should not delete mapping`() {
         mappingApi.verify(
           count = 0,
-          deleteRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")),
+          deleteRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/45678")),
         )
       }
     }

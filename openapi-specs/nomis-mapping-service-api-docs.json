@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-04-22.503.25767ff"
+    "version" : "2026-04-23.506.557aced"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -8886,6 +8886,73 @@
           },
           "403" : {
             "description" : "Access forbidden for this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/taps/schedule/nomis-address-id/{nomisAddressId}" : {
+      "get" : {
+        "tags" : [ "tap-schedule-resource" ],
+        "summary" : "Finds tap schedules by NOMIS address ID",
+        "description" : "Finds tap schedules by NOMIS address ID after the passed date. If no date is passed the default value is today. Requires ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
+        "operationId" : "findTapScheduleMappingsByNomisAddressId",
+        "parameters" : [ {
+          "name" : "nomisAddressId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "fromDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "List of tap schedules returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FindTapScheduleMappingsForAddressResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Access forbidden for this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The mapping does not exist.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -24528,12 +24595,12 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "paged" : {
-            "type" : "boolean"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "paged" : {
+            "type" : "boolean"
           },
           "unpaged" : {
             "type" : "boolean"
@@ -24795,6 +24862,20 @@
           }
         },
         "required" : [ "prisonerNumber" ]
+      },
+      "FindTapScheduleMappingsForAddressResponse" : {
+        "type" : "object",
+        "description" : "Tap schedule mappings affected by a change of address",
+        "properties" : {
+          "scheduleMappings" : {
+            "type" : "array",
+            "description" : "All tap schedule mappings related to the passed NOMIS address ID and date. Note historical sync mappings are not included by default.",
+            "items" : {
+              "$ref" : "#/components/schemas/TapScheduleMappingDto"
+            }
+          }
+        },
+        "required" : [ "scheduleMappings" ]
       },
       "PageMetadata" : {
         "type" : "object",
