@@ -23,7 +23,7 @@ class TapAddressService(
     val addressUpdateTelemetry = mutableMapOf<String, Any>("nomisAddressId" to "$addressId", "nomisAddressOwnerClass" to addressOwnerClass)
 
     track("${TAP_TELEMETRY_PREFIX}-address-updated", addressUpdateTelemetry) {
-      val affectedSchedules = mappingApiService.findScheduledMovementMappingsForAddress(addressId)
+      val affectedSchedules = mappingApiService.findTapScheduleMappingsForAddress(addressId)
         .also { addressUpdateTelemetry["nomisEventIds"] = it.scheduleMappings.map { it.nomisEventId }.toString() }
         .also { addressUpdateTelemetry["dpsOccurrenceIds"] = it.scheduleMappings.map { it.dpsOccurrenceId }.toString() }
 

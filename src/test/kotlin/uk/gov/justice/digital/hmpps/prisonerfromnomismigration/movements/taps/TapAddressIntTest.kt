@@ -19,9 +19,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.tapScheduleMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsExtMovementsServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.temporaryAbsenceScheduledMovementMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.util.*
 
@@ -34,7 +34,7 @@ class TapAddressIntTest(
 
   @Nested
   inner class AddressUpdated {
-    private inner class TestData(val dpsAuthorisationId: UUID, val nomisApplicationId: Long, val mapping: ScheduledMovementSyncMappingDto)
+    private inner class TestData(val dpsAuthorisationId: UUID, val nomisApplicationId: Long, val mapping: TapScheduleMappingDto)
     private lateinit var scheduleMappings: List<TestData>
 
     @Nested
@@ -53,7 +53,7 @@ class TapAddressIntTest(
 
         @Test
         fun `should get mappings`() {
-          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movements/nomis-address-id/321")))
+          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-address-id/321")))
         }
 
         @Test
@@ -79,14 +79,14 @@ class TapAddressIntTest(
         @Test
         fun `should update mappings`() {
           mappingApi.verify(
-            putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+            putRequestedFor(urlPathEqualTo("/mapping/taps/schedule"))
               .withRequestBodyJsonPath("dpsOccurrenceId", "${scheduleMappings[0].mapping.dpsOccurrenceId}")
               .withRequestBodyJsonPath("nomisEventId", "1")
               .withRequestBodyJsonPath("dpsAddressText", "to full address"),
           )
 
           mappingApi.verify(
-            putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+            putRequestedFor(urlPathEqualTo("/mapping/taps/schedule"))
               .withRequestBodyJsonPath("dpsOccurrenceId", "${scheduleMappings[1].mapping.dpsOccurrenceId}")
               .withRequestBodyJsonPath("nomisEventId", "2")
               .withRequestBodyJsonPath("dpsAddressText", "to full address"),
@@ -146,8 +146,8 @@ class TapAddressIntTest(
 
         @Test
         fun `should update mappings`() {
-          mappingApi.verify(putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")))
-          mappingApi.verify(putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")))
+          mappingApi.verify(putRequestedFor(urlPathEqualTo("/mapping/taps/schedule")))
+          mappingApi.verify(putRequestedFor(urlPathEqualTo("/mapping/taps/schedule")))
         }
 
         @Test
@@ -195,8 +195,8 @@ class TapAddressIntTest(
 
         @Test
         fun `should update mappings`() {
-          mappingApi.verify(putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")))
-          mappingApi.verify(putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")))
+          mappingApi.verify(putRequestedFor(urlPathEqualTo("/mapping/taps/schedule")))
+          mappingApi.verify(putRequestedFor(urlPathEqualTo("/mapping/taps/schedule")))
         }
 
         @Test
@@ -259,7 +259,7 @@ class TapAddressIntTest(
         @Test
         fun `should update mappings`() {
           mappingApi.verify(
-            putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+            putRequestedFor(urlPathEqualTo("/mapping/taps/schedule"))
               .withRequestBodyJsonPath("dpsOccurrenceId", "${scheduleMappings[0].mapping.dpsOccurrenceId}")
               .withRequestBodyJsonPath("nomisEventId", "1")
               .withRequestBodyJsonPath("dpsAddressText", "updated address")
@@ -267,7 +267,7 @@ class TapAddressIntTest(
           )
 
           mappingApi.verify(
-            putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+            putRequestedFor(urlPathEqualTo("/mapping/taps/schedule"))
               .withRequestBodyJsonPath("dpsOccurrenceId", "${scheduleMappings[1].mapping.dpsOccurrenceId}")
               .withRequestBodyJsonPath("nomisEventId", "2")
               .withRequestBodyJsonPath("dpsAddressText", "updated address")
@@ -323,7 +323,7 @@ class TapAddressIntTest(
 
       @Test
       fun `should NOT update mappings`() {
-        mappingApi.verify(0, putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement")))
+        mappingApi.verify(0, putRequestedFor(urlPathEqualTo("/mapping/taps/schedule")))
       }
 
       @Test
@@ -414,7 +414,7 @@ class TapAddressIntTest(
       @BeforeEach
       fun setUp() {
         createStubs("OFF", mappings = 1)
-        mappingApi.stubUpdateScheduledMovementMappingFailureFollowedBySuccess()
+        mappingApi.stubUpdateTapScheduleMappingFailureFollowedBySuccess()
 
         sendMessage(tapAddressUpdatedEvent(321, "OFFENDER"))
           .also { waitForAnyProcessingToComplete("temporary-absence-sync-scheduled-movement-mapping-retry-updated") }
@@ -433,7 +433,7 @@ class TapAddressIntTest(
       fun `should update mapping`() {
         mappingApi.verify(
           2,
-          putRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement"))
+          putRequestedFor(urlPathEqualTo("/mapping/taps/schedule"))
             .withRequestBodyJsonPath("dpsOccurrenceId", "${scheduleMappings[0].mapping.dpsOccurrenceId}")
             .withRequestBodyJsonPath("nomisEventId", "1")
             .withRequestBodyJsonPath("dpsAddressText", "to full address"),
@@ -479,12 +479,12 @@ class TapAddressIntTest(
         TestData(
           UUID.randomUUID(),
           111,
-          temporaryAbsenceScheduledMovementMapping(1L, "A1234AA", UUID.randomUUID(), nomisAddressOwnerClass = addressOwnerClass),
+          tapScheduleMapping(1L, "A1234AA", UUID.randomUUID(), nomisAddressOwnerClass = addressOwnerClass),
         ),
         TestData(
           UUID.randomUUID(),
           222,
-          temporaryAbsenceScheduledMovementMapping(2L, "B1234BB", UUID.randomUUID(), nomisAddressOwnerClass = addressOwnerClass),
+          tapScheduleMapping(2L, "B1234BB", UUID.randomUUID(), nomisAddressOwnerClass = addressOwnerClass),
         ),
       ).take(mappings)
       mappingApi.stubFindScheduledMovementsForAddressMappings(321, scheduleMappings.map { it.mapping })
@@ -503,7 +503,7 @@ class TapAddressIntTest(
           response = SyncResponse(it.mapping.dpsOccurrenceId),
         )
       }
-      mappingApi.stubUpdateScheduledMovementMapping()
+      mappingApi.stubUpdateTapScheduleMapping()
     }
   }
 

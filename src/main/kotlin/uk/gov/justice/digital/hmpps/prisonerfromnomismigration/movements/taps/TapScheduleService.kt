@@ -16,8 +16,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.S
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.MovementType.TAP
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledMovementSyncMappingDto.MappingType.NOMIS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapScheduleOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -57,7 +57,7 @@ class TapScheduleService(
       return
     }
 
-    mappingApiService.getScheduledMovementMappingOrNull(eventId)
+    mappingApiService.getTapScheduleMappingOrNull(eventId)
       ?.also { telemetryClient.trackEvent("${TELEMETRY_PREFIX}-inserted-ignored", telemetry) }
       ?: run {
         track("${TELEMETRY_PREFIX}-inserted", telemetry) {
@@ -71,9 +71,9 @@ class TapScheduleService(
     prisonerNumber: String,
     eventId: Long,
     telemetry: MutableMap<String, Any>,
-    existingMapping: ScheduledMovementSyncMappingDto? = null,
+    existingMapping: TapScheduleMappingDto? = null,
     onlyIfScheduled: Boolean = false,
-  ): ScheduledMovementSyncMappingDto? = nomisApiService.getTapScheduleOut(prisonerNumber, eventId)
+  ): TapScheduleMappingDto? = nomisApiService.getTapScheduleOut(prisonerNumber, eventId)
     .takeIf { !onlyIfScheduled || it.eventStatus == "SCH" }
     ?.also { telemetry["nomisApplicationId"] = it.tapApplicationId }
     ?.let { nomisSchedule ->
@@ -86,7 +86,7 @@ class TapScheduleService(
       val dpsOccurrenceId = dpsApiService.syncTapOccurrence(dpsAuthorisationId, dpsOccurrence).id
         .also { telemetry["dpsOccurrenceId"] = it }
 
-      ScheduledMovementSyncMappingDto(
+      TapScheduleMappingDto(
         prisonerNumber = prisonerNumber,
         bookingId = nomisSchedule.bookingId,
         nomisEventId = eventId,
@@ -129,7 +129,7 @@ class TapScheduleService(
 
   suspend fun scheduledMovementTapOutUpdated(eventId: Long, prisonerNumber: String, telemetry: MutableMap<String, Any>) {
     track("${TELEMETRY_PREFIX}-updated", telemetry) {
-      val existingScheduleMapping = mappingApiService.getScheduledMovementMappingOrNull(eventId)
+      val existingScheduleMapping = mappingApiService.getTapScheduleMappingOrNull(eventId)
         ?.also { telemetry["dpsOccurrenceId"] = it.dpsOccurrenceId }
         ?: throw IllegalStateException("No mapping found when handling an update event for scheduled movement $eventId - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
 
@@ -154,18 +154,18 @@ class TapScheduleService(
       "nomisEventId" to eventId,
       "directionCode" to directionCode,
     )
-    mappingApiService.getScheduledMovementMappingOrNull(eventId)?.also {
+    mappingApiService.getTapScheduleMappingOrNull(eventId)?.also {
       track("${TELEMETRY_PREFIX}-deleted", telemetry) {
         telemetry["dpsOccurrenceId"] = it.dpsOccurrenceId
         dpsApiService.deleteTapOccurrence(it.dpsOccurrenceId)
-        mappingApiService.deleteScheduledMovementMapping(eventId)
+        mappingApiService.deleteTapScheduleMapping(eventId)
       }
     } ?: run { telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-ignored", telemetry) }
   }
 
-  private suspend fun tryToCreateScheduledMovementMapping(mapping: ScheduledMovementSyncMappingDto, telemetry: MutableMap<String, Any>) {
+  private suspend fun tryToCreateScheduledMovementMapping(mapping: TapScheduleMappingDto, telemetry: MutableMap<String, Any>) {
     try {
-      mappingApiService.createScheduledMovementMapping(mapping).takeIf { it.isError }?.also {
+      mappingApiService.createTapScheduleMapping(mapping).takeIf { it.isError }?.also {
         with(it.errorResponse!!.moreInfo) {
           telemetryClient.trackEvent(
             "${TELEMETRY_PREFIX}-inserted-duplicate",
@@ -193,9 +193,9 @@ class TapScheduleService(
     }
   }
 
-  suspend fun tryToUpdateScheduledMovementMapping(mapping: ScheduledMovementSyncMappingDto, telemetry: MutableMap<String, Any>) {
+  suspend fun tryToUpdateScheduledMovementMapping(mapping: TapScheduleMappingDto, telemetry: MutableMap<String, Any>) {
     try {
-      mappingApiService.updateScheduledMovementMapping(mapping)
+      mappingApiService.updateTapScheduleMapping(mapping)
     } catch (e: Exception) {
       log.error("Failed to update mapping for temporary absence scheduled movement NOMIS id ${mapping.nomisEventId}", e)
       queueService.sendMessage(
@@ -207,8 +207,8 @@ class TapScheduleService(
     }
   }
 
-  suspend fun retryCreateScheduledMovementMapping(retryMessage: InternalMessage<ScheduledMovementSyncMappingDto>) {
-    mappingApiService.createScheduledMovementMapping(
+  suspend fun retryCreateScheduledMovementMapping(retryMessage: InternalMessage<TapScheduleMappingDto>) {
+    mappingApiService.createTapScheduleMapping(
       retryMessage.body,
     ).also {
       telemetryClient.trackEvent(
@@ -218,8 +218,8 @@ class TapScheduleService(
     }
   }
 
-  suspend fun retryUpdateScheduledMovementMapping(retryMessage: InternalMessage<ScheduledMovementSyncMappingDto>) {
-    mappingApiService.updateScheduledMovementMapping(
+  suspend fun retryUpdateScheduledMovementMapping(retryMessage: InternalMessage<TapScheduleMappingDto>) {
+    mappingApiService.updateTapScheduleMapping(
       retryMessage.body,
     ).also {
       telemetryClient.trackEvent(
@@ -230,7 +230,7 @@ class TapScheduleService(
   }
 
   private suspend fun deriveDpsAddress(
-    existingScheduleMapping: ScheduledMovementSyncMappingDto?,
+    existingScheduleMapping: TapScheduleMappingDto?,
     nomisSchedule: TapScheduleOut,
   ): Location {
     val hasNomisAddress = nomisSchedule.toAddressId != null && nomisSchedule.toAddressOwnerClass != null
@@ -257,7 +257,7 @@ class TapScheduleService(
   private suspend fun getParentApplicationId(nomisApplicationId: Long): UUID? = mappingApiService.getTapApplicationMappingOrNull(nomisApplicationId)
     ?.dpsAuthorisationId
 
-  private fun ScheduledMovementSyncMappingDto.hasChanged(original: ScheduledMovementSyncMappingDto) = this.prisonerNumber != original.prisonerNumber ||
+  private fun TapScheduleMappingDto.hasChanged(original: TapScheduleMappingDto) = this.prisonerNumber != original.prisonerNumber ||
     this.bookingId != original.bookingId ||
     this.nomisEventId != original.nomisEventId ||
     this.dpsOccurrenceId != original.dpsOccurrenceId ||

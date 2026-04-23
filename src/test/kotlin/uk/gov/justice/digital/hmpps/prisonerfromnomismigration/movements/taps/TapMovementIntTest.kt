@@ -54,7 +54,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = 111, tapScheduleOutId = 45678)
         mappingApi.stubGetTapApplicationMapping(111)
-        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
+        mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId)
         mappingApi.stubCreateExternalMovementMapping()
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
@@ -74,7 +74,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should check scheduled movement mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/45678")))
       }
 
       @Test
@@ -148,7 +148,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = 111, tapScheduleMovementInId = 45678, tapScheduleMovementOutId = 23456)
         mappingApi.stubGetTapApplicationMapping(111)
-        mappingApi.stubGetScheduledMovementMapping(23456)
+        mappingApi.stubGetTapScheduleMapping(23456)
         mappingApi.stubCreateExternalMovementMapping()
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
@@ -168,7 +168,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should check scheduled movement mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/23456")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/23456")))
       }
 
       @Test
@@ -311,7 +311,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = 111, tapScheduleOutId = 45678)
         mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
-        mappingApi.stubGetScheduledMovementMapping(45678)
+        mappingApi.stubGetTapScheduleMapping(45678)
 
         sendMessage(tapMovementEvent(inserted = true, direction = "OUT"))
           .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-awaiting-parent") }
@@ -357,7 +357,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = 111, tapScheduleOutId = 45678)
         mappingApi.stubGetTapApplicationMapping(111)
-        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubGetTapScheduleMapping(45678, NOT_FOUND)
 
         sendMessage(tapMovementEvent(inserted = true, direction = "OUT"))
           .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-awaiting-parent") }
@@ -370,7 +370,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should check schedule mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/45678")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/45678")))
       }
 
       @Test
@@ -403,7 +403,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = 111, tapScheduleMovementInId = 45678)
         mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
-        mappingApi.stubGetScheduledMovementMapping(45678)
+        mappingApi.stubGetTapScheduleMapping(45678)
 
         sendMessage(tapMovementEvent(inserted = true, direction = "IN"))
           .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-awaiting-parent") }
@@ -449,7 +449,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = 111, tapScheduleMovementInId = 45678, tapScheduleMovementOutId = 23456)
         mappingApi.stubGetTapApplicationMapping(111)
-        mappingApi.stubGetScheduledMovementMapping(23456, NOT_FOUND)
+        mappingApi.stubGetTapScheduleMapping(23456, NOT_FOUND)
 
         sendMessage(tapMovementEvent(inserted = true, direction = "IN"))
           .also { waitForAnyProcessingToComplete("temporary-absence-sync-external-movement-inserted-awaiting-parent") }
@@ -462,7 +462,7 @@ class TapMovementIntTest(
 
       @Test
       fun `should check schedule mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/23456")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/23456")))
       }
 
       @Test
@@ -525,7 +525,7 @@ class TapMovementIntTest(
       fun `should NOT check scheduled movement mapping`() {
         mappingApi.verify(
           count = 0,
-          getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/.*")),
+          getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/.*")),
         )
       }
 
@@ -608,7 +608,7 @@ class TapMovementIntTest(
       fun `should NOT check scheduled movement mapping`() {
         mappingApi.verify(
           count = 0,
-          getRequestedFor(urlPathEqualTo("/mapping/temporary-absence/scheduled-movement/nomis-event-id/.*")),
+          getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/.*")),
         )
       }
 
@@ -668,7 +668,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = 111, tapScheduleOutId = 45678)
         mappingApi.stubGetTapApplicationMapping(nomisApplicationId = 111)
-        mappingApi.stubGetScheduledMovementMapping(nomisEventId = 45678)
+        mappingApi.stubGetTapScheduleMapping(nomisEventId = 45678)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubCreateExternalMovementMappingConflict(
           error = DuplicateMappingErrorResponse(
@@ -768,7 +768,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, NOT_FOUND)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = 111, tapScheduleOutId = 45678)
         mappingApi.stubGetTapApplicationMapping(nomisApplicationId = 111)
-        mappingApi.stubGetScheduledMovementMapping(nomisEventId = 45678)
+        mappingApi.stubGetTapScheduleMapping(nomisEventId = 45678)
         mappingApi.stubCreateExternalMovementMappingFailureFollowedBySuccess()
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
@@ -849,7 +849,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapScheduleOutId = 45678)
         mappingApi.stubGetTapApplicationMapping(111)
-        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
+        mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(tapMovementEvent(direction = "OUT"))
@@ -911,7 +911,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapScheduleOutId = 45678, address = newAddress, addressId = newAddressId)
         mappingApi.stubGetTapApplicationMapping(111)
-        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
+        mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMapping()
 
@@ -971,7 +971,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapScheduleOutId = 45678, address = newAddress, addressId = newAddressId)
         mappingApi.stubGetTapApplicationMapping(111)
-        mappingApi.stubGetScheduledMovementMapping(45678, dpsOccurrenceId)
+        mappingApi.stubGetTapScheduleMapping(45678, dpsOccurrenceId)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMappingFailureFollowedBySuccess()
 
@@ -1027,7 +1027,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
         nomisApi.stubGetTapMovementOut(movementSeq = 154, tapApplicationId = null, tapScheduleOutId = null, city = "Sheffield")
         mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
-        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubGetTapScheduleMapping(45678, NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(tapMovementEvent(direction = "OUT"))
@@ -1084,7 +1084,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapScheduleMovementInId = 45678, tapScheduleMovementOutId = 23456)
         mappingApi.stubGetTapApplicationMapping(111)
-        mappingApi.stubGetScheduledMovementMapping(23456, dpsOccurrenceId)
+        mappingApi.stubGetTapScheduleMapping(23456, dpsOccurrenceId)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(tapMovementEvent(direction = "IN"))
@@ -1144,7 +1144,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId)
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapScheduleMovementInId = 45678, tapScheduleMovementOutId = 23456, address = newAddress, addressId = newAddressId)
         mappingApi.stubGetTapApplicationMapping(111)
-        mappingApi.stubGetScheduledMovementMapping(23456, dpsOccurrenceId)
+        mappingApi.stubGetTapScheduleMapping(23456, dpsOccurrenceId)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMapping()
 
@@ -1204,7 +1204,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = null, tapScheduleMovementInId = null, tapScheduleMovementOutId = null, city = "Sheffield")
         mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
-        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubGetTapScheduleMapping(45678, NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
 
         sendMessage(tapMovementEvent(direction = "IN"))
@@ -1265,7 +1265,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = null, tapScheduleMovementInId = null, tapScheduleMovementOutId = null, city = newCity)
         mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
-        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubGetTapScheduleMapping(45678, NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMapping()
 
@@ -1327,7 +1327,7 @@ class TapMovementIntTest(
         mappingApi.stubGetExternalMovementMapping(12345, 154, dpsMovementId, "Sheffield")
         nomisApi.stubGetTapMovementIn(movementSeq = 154, tapApplicationId = null, tapScheduleMovementInId = null, tapScheduleMovementOutId = null, city = newCity)
         mappingApi.stubGetTapApplicationMapping(111, NOT_FOUND)
-        mappingApi.stubGetScheduledMovementMapping(45678, NOT_FOUND)
+        mappingApi.stubGetTapScheduleMapping(45678, NOT_FOUND)
         dpsApi.stubSyncTapMovement(response = SyncResponse(dpsMovementId))
         mappingApi.stubUpdateExternalMovementMappingFailureFollowedBySuccess()
 

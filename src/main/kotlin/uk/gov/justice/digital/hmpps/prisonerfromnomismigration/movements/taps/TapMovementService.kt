@@ -337,7 +337,7 @@ class TapMovementService(
   private suspend fun getParentApplicationId(nomisApplicationId: Long): UUID? = mappingApiService.getTapApplicationMappingOrNull(nomisApplicationId)
     ?.dpsAuthorisationId
 
-  private suspend fun getParentScheduledId(nomisEventId: Long): UUID? = mappingApiService.getScheduledMovementMappingOrNull(nomisEventId)
+  private suspend fun getParentScheduledId(nomisEventId: Long): UUID? = mappingApiService.getTapScheduleMappingOrNull(nomisEventId)
     ?.dpsOccurrenceId
 
   private suspend fun tryToUpdateExternalMovementMapping(
