@@ -599,6 +599,7 @@ class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
           assertThat(visitOrderNumber).isEqualTo(654321)
           assertThat(prisonerNumber).isEqualTo("A1234KT")
           assertThat(offenderBookId).isEqualTo(1234L)
+          assertThat(currentTerm).isTrue
           assertThat(visitStatusCode).isEqualTo(VisitStatusType.SCHEDULED)
           assertThat(visitCompletionCode).isNull()
           assertThat(updateUsername).isEqualTo("T.SMITH")
