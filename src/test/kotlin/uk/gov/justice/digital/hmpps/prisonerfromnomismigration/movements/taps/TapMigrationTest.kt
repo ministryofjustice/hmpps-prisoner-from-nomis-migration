@@ -4,19 +4,19 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.application
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.temporaryAbsencesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingIdsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.offenderTapsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapPrisonerMappingIdsDto
 import java.time.LocalDate
 
 class TapMigrationTest {
 
-  private val someMappingIds = TemporaryAbsencesPrisonerMappingIdsDto("any", listOf(), listOf(), listOf())
+  private val someMappingIds = TapPrisonerMappingIdsDto("any", listOf(), listOf(), listOf())
 
   @Nested
   inner class ApplicationStatus {
     @Test
     fun `should set expired if approved scheduled, old booking not ended yet`() {
-      val nomisResponse = temporaryAbsencesResponse(
+      val nomisResponse = offenderTapsResponse(
         activeBooking = true,
         latestBooking = false,
         tapApplications = listOf(
@@ -35,7 +35,7 @@ class TapMigrationTest {
 
     @Test
     fun `should set expired if approved unscheduled, old booking not ended yet`() {
-      val nomisResponse = temporaryAbsencesResponse(
+      val nomisResponse = offenderTapsResponse(
         activeBooking = true,
         latestBooking = false,
         tapApplications = listOf(
@@ -54,7 +54,7 @@ class TapMigrationTest {
 
     @Test
     fun `should NOT set expired if active booking is true`() {
-      val nomisResponse = temporaryAbsencesResponse(
+      val nomisResponse = offenderTapsResponse(
         activeBooking = true,
         tapApplications = listOf(
           application(
@@ -72,7 +72,7 @@ class TapMigrationTest {
 
     @Test
     fun `should NOT set expired if application ended`() {
-      val nomisResponse = temporaryAbsencesResponse(
+      val nomisResponse = offenderTapsResponse(
         activeBooking = false,
         tapApplications = listOf(
           application(
@@ -90,7 +90,7 @@ class TapMigrationTest {
 
     @Test
     fun `should NOT set expired if application not approved`() {
-      val nomisResponse = temporaryAbsencesResponse(
+      val nomisResponse = offenderTapsResponse(
         activeBooking = false,
         tapApplications = listOf(
           application(

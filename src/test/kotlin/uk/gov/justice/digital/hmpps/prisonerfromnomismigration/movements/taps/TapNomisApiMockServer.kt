@@ -32,7 +32,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubGetAllOffenderTaps(
     offenderNo: String = "A1234BC",
-    response: OffenderTapsResponse = temporaryAbsencesResponse(),
+    response: OffenderTapsResponse = offenderTapsResponse(),
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/movements/$offenderNo/taps")).willReturn(
@@ -100,7 +100,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
     eventStatus: String = "COMP",
     toAddress: String = "to full address",
     toAddressId: Long = 321,
-    response: TapScheduleOut = scheduledTemporaryAbsenceResponse(
+    response: TapScheduleOut = tapScheduleOutResponse(
       startTime = eventTime,
       applicationId = applicationId,
       eventId = eventId,
@@ -204,7 +204,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
     private val yesterday = now.minusDays(1)
     private val tomorrow = now.plusDays(1)
 
-    fun scheduledTemporaryAbsenceResponse(
+    fun tapScheduleOutResponse(
       startTime: LocalDateTime = now,
       applicationId: Long = 111,
       eventId: Long = 1,
@@ -244,7 +244,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
 
-    fun temporaryAbsencesResponse(
+    fun offenderTapsResponse(
       movementPrison: String = "LEI",
       bookingId: Long = 12345L,
       activeBooking: Boolean = true,

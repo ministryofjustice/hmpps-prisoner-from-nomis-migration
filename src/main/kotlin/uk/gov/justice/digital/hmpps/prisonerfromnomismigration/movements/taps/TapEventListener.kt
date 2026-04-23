@@ -10,12 +10,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_TEMPORARY_ABSENCE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TAP_APPLICATION
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TAP_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TAP_SCHEDULE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_TAP
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TAP_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TAP_SCHEDULE
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -67,12 +67,12 @@ class TapEventListener(
   }
 
   private suspend fun retryMapping(type: String, message: String) = when (ExternalMovementRetryMappingMessageTypes.valueOf(type)) {
-    RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION -> tapApplicationService.retryCreateApplicationMapping(message.fromJson())
-    RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT -> tapScheduleService.retryCreateScheduledMovementMapping(message.fromJson())
-    RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT -> tapMovementService.retryCreateExternalMovementMapping(message.fromJson())
-    RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT -> tapMovementService.retryUpdateExternalMovementMapping(message.fromJson())
-    RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT -> tapScheduleService.retryUpdateScheduledMovementMapping(message.fromJson())
-    RETRY_MOVE_BOOKING_MAPPING_TEMPORARY_ABSENCE -> moveBookingService.retryMoveBookingMapping(message.fromJson())
+    RETRY_MAPPING_TAP_APPLICATION -> tapApplicationService.retryCreateApplicationMapping(message.fromJson())
+    RETRY_MAPPING_TAP_SCHEDULE -> tapScheduleService.retryCreateScheduledMovementMapping(message.fromJson())
+    RETRY_MAPPING_TAP_MOVEMENT -> tapMovementService.retryCreateExternalMovementMapping(message.fromJson())
+    RETRY_UPDATE_MAPPING_TAP_MOVEMENT -> tapMovementService.retryUpdateExternalMovementMapping(message.fromJson())
+    RETRY_UPDATE_MAPPING_TAP_SCHEDULE -> tapScheduleService.retryUpdateScheduledMovementMapping(message.fromJson())
+    RETRY_MOVE_BOOKING_MAPPING_TAP -> moveBookingService.retryMoveBookingMapping(message.fromJson())
   }
 
   private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
@@ -134,10 +134,10 @@ enum class DirectionCode { IN, OUT }
 enum class MovementType { ADM, CRT, REL, TAP, TRN, }
 
 enum class ExternalMovementRetryMappingMessageTypes {
-  RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION,
-  RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT,
-  RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT,
-  RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT,
-  RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT,
-  RETRY_MOVE_BOOKING_MAPPING_TEMPORARY_ABSENCE,
+  RETRY_MAPPING_TAP_APPLICATION,
+  RETRY_MAPPING_TAP_SCHEDULE,
+  RETRY_MAPPING_TAP_MOVEMENT,
+  RETRY_UPDATE_MAPPING_TAP_SCHEDULE,
+  RETRY_UPDATE_MAPPING_TAP_MOVEMENT,
+  RETRY_MOVE_BOOKING_MAPPING_TAP,
 }

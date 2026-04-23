@@ -11,10 +11,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.Telemetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MoveTemporaryAbsencesRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationIdMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMovementIdMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationIdMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTaps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -24,7 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 class TapMoveBookingService(
   private val dpsApi: TapDpsApiService,
   private val nomisApi: TapsNomisApiService,
-  private val mappingApi: ExternalMovementsMappingApiService,
+  private val mappingApi: TapMappingApiService,
   private val queueService: SynchronisationQueueService,
   private val migrationService: TapMigrationService,
   override val telemetryClient: TelemetryClient,
@@ -49,7 +48,7 @@ class TapMoveBookingService(
         return
       }
 
-      val mappings = mappingApi.getMoveBookingMappings(bookingId)
+      val mappings = mappingApi.getTapMoveBookingMappings(bookingId)
 
       val dpsAuthorisationIds = booking.findDpsAuthorisationIds(mappings.applicationIds, telemetry)
       val dpsUnscheduleMovementIds = booking.findDpsMovementIds(mappings.movementIds, telemetry)
@@ -70,7 +69,7 @@ class TapMoveBookingService(
     ?.firstOrNull { it.bookingId == bookingId }
 
   private fun BookingTaps.findDpsAuthorisationIds(
-    mappings: List<TemporaryAbsenceApplicationIdMapping>,
+    mappings: List<TapApplicationIdMapping>,
     telemetry: MutableMap<String, Any>,
   ) = tapApplications
     .map { it.tapApplicationId }
@@ -83,7 +82,7 @@ class TapMoveBookingService(
     .also { telemetry["dpsAuthorisationIds"] = "$it" }
 
   private fun BookingTaps.findDpsMovementIds(
-    mappings: List<TemporaryAbsenceMovementIdMapping>,
+    mappings: List<TapMovementIdMapping>,
     telemetry: MutableMap<String, Any>,
   ) = (unscheduledTapMovementOuts.map { it.sequence } + unscheduledTapMovementIns.map { it.sequence })
     .also { telemetry["nomisUnscheduledMovementSeqs"] = "$it" }
@@ -100,7 +99,7 @@ class TapMoveBookingService(
     } catch (e: Exception) {
       log.error("Failed to move booking mappings for bookingId=$bookingId", e)
       queueService.sendMessage(
-        messageType = ExternalMovementRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_TEMPORARY_ABSENCE.name,
+        messageType = ExternalMovementRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_TAP.name,
         synchronisationType = SynchronisationType.EXTERNAL_MOVEMENTS,
         message = BookingMovedAdditionalInformationEvent(toOffenderNo, fromOffenderNo, bookingId),
         telemetryAttributes = telemetry.valuesAsStrings(),
@@ -120,7 +119,7 @@ class TapMoveBookingService(
   }
 
   suspend fun moveMappingsAndResync(bookingId: Long, fromOffenderNo: String, toOffenderNo: String) {
-    mappingApi.moveBookingMappings(bookingId, fromOffenderNo, toOffenderNo)
+    mappingApi.moveTapBookingMappings(bookingId, fromOffenderNo, toOffenderNo)
     migrationService.resyncPrisonerTaps(fromOffenderNo)
     migrationService.resyncPrisonerTaps(toOffenderNo)
   }

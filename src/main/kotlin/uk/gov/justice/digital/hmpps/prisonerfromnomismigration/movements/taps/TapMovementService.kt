@@ -10,12 +10,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.tryFetchParent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TAP_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TAP_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.MovementType.TAP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapMovementIn
@@ -31,7 +30,7 @@ private const val TELEMETRY_PREFIX: String = "${TAP_TELEMETRY_PREFIX}-external-m
 class TapMovementService(
   override val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
-  private val mappingApiService: ExternalMovementsMappingApiService,
+  private val mappingApiService: TapMappingApiService,
   private val nomisApiService: TapsNomisApiService,
   private val dpsApiService: TapDpsApiService,
 ) : TelemetryEnabled {
@@ -275,7 +274,7 @@ class TapMovementService(
         e,
       )
       queueService.sendMessage(
-        messageType = RETRY_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT.name,
+        messageType = RETRY_MAPPING_TAP_MOVEMENT.name,
         synchronisationType = SynchronisationType.EXTERNAL_MOVEMENTS,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
@@ -352,7 +351,7 @@ class TapMovementService(
         e,
       )
       queueService.sendMessage(
-        messageType = RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_EXTERNAL_MOVEMENT.name,
+        messageType = RETRY_UPDATE_MAPPING_TAP_MOVEMENT.name,
         synchronisationType = SynchronisationType.EXTERNAL_MOVEMENTS,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),

@@ -17,9 +17,7 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.tapScheduleMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
@@ -27,7 +25,7 @@ import java.util.*
 
 class TapAddressIntTest(
   @Autowired private val nomisApi: TapNomisApiMockServer,
-  @Autowired private val mappingApi: ExternalMovementsMappingApiMockServer,
+  @Autowired private val mappingApi: TapMappingApiMockServer,
 ) : SqsIntegrationTestBase() {
 
   private val dpsApi = dpsExtMovementsServer
@@ -487,7 +485,7 @@ class TapAddressIntTest(
           tapScheduleMapping(2L, "B1234BB", UUID.randomUUID(), nomisAddressOwnerClass = addressOwnerClass),
         ),
       ).take(mappings)
-      mappingApi.stubFindScheduledMovementsForAddressMappings(321, scheduleMappings.map { it.mapping })
+      mappingApi.stubFindTapScheduleMappingsForAddressForMappings(321, scheduleMappings.map { it.mapping })
       scheduleMappings.forEach {
         mappingApi.stubGetTapApplicationMapping(it.nomisApplicationId, it.dpsAuthorisationId)
         nomisApi.stubGetTapScheduleOut(

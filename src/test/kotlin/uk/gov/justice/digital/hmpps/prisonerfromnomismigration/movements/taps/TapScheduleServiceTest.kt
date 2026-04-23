@@ -5,7 +5,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.scheduledTemporaryAbsenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.tapScheduleOutResponse
 
 class TapScheduleServiceTest {
 
@@ -15,7 +15,7 @@ class TapScheduleServiceTest {
 
     @Test
     fun `should default escort code if null`() {
-      val nomis = scheduledTemporaryAbsenceResponse().copy(
+      val nomis = tapScheduleOutResponse().copy(
         escort = null,
       )
 
@@ -26,7 +26,7 @@ class TapScheduleServiceTest {
 
     @Test
     fun `should default transport type code if null`() {
-      val nomis = scheduledTemporaryAbsenceResponse().copy(
+      val nomis = tapScheduleOutResponse().copy(
         transportType = null,
       )
 
@@ -38,7 +38,7 @@ class TapScheduleServiceTest {
 
   @Test
   fun `should send cancelled flag`() {
-    val nomis = scheduledTemporaryAbsenceResponse().copy(
+    val nomis = tapScheduleOutResponse().copy(
       eventStatus = "CANC",
     )
 
@@ -53,7 +53,7 @@ class TapScheduleServiceTest {
 
     @Test
     fun `should send cancelled flag`() {
-      val nomis = scheduledTemporaryAbsenceResponse().copy(
+      val nomis = tapScheduleOutResponse().copy(
         eventStatus = "CANC",
       )
 
