@@ -10,4 +10,4 @@
 **/src/test/
 **/api/*
 !**/SysconSyncApi.kt
-!**/HMPPSPersonAPIApi.kt
+!**/PrisonApi.kt
