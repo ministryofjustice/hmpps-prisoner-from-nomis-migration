@@ -4,6 +4,7 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
@@ -24,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.util.*
+import kotlin.collections.plus
 
 @Service
 class VisitSlotsSynchronisationService(
@@ -78,6 +80,26 @@ class VisitSlotsSynchronisationService(
       }
     }
   }
+
+  suspend fun createVisitTimeslot(prisonTd: String, dayOfWeek: String, timeSlotSequence: Int) {
+    val mapping = mappingApiService.getTimeSlotByNomisIdsOrNull(
+      nomisPrisonId = prisonTd,
+      nomisDayOfWeek = dayOfWeek,
+      nomisSlotSequence = timeSlotSequence,
+    )
+    if (mapping != null) {
+      throw BadRequestException("Time slot mapping already exists; dpsId = ${mapping.dpsId}")
+    }
+    visitTimeslotAdded(
+      AgencyVisitTimeEvent(
+        agencyLocationId = prisonTd,
+        timeslotSequence = timeSlotSequence,
+        weekDay = dayOfWeek,
+        auditModuleName = "REPAIR",
+      ),
+    )
+  }
+
   suspend fun visitTimeslotUpdated(event: AgencyVisitTimeEvent) {
     val telemetryName = "officialvisits-timeslot-synchronisation-updated"
     if (event.isFromDPSOfficialVisits()) {
@@ -181,6 +203,24 @@ class VisitSlotsSynchronisationService(
       }
     }
   }
+
+  suspend fun createVisitSlot(prisonTd: String, dayOfWeek: String, timeSlotSequence: Int, visitSlotId: Long) {
+    val mapping = mappingApiService.getVisitSlotByNomisIdOrNull(visitSlotId)
+    if (mapping != null) {
+      throw BadRequestException("Visit slot mapping already exists; dpsId = ${mapping.dpsId}")
+    }
+
+    visitSlotAdded(
+      AgencyVisitSlotEvent(
+        agencyLocationId = prisonTd,
+        weekDay = dayOfWeek,
+        timeslotSequence = timeSlotSequence,
+        agencyVisitSlotId = visitSlotId,
+        auditModuleName = "REPAIR",
+      ),
+    )
+  }
+
   suspend fun visitSlotUpdated(event: AgencyVisitSlotEvent) {
     val telemetryName = "officialvisits-visitslot-synchronisation-updated"
     if (event.isFromDPSOfficialVisits()) {
