@@ -3,7 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.HMPPSPersonAPIApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.PrisonApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.SysconSyncApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDisabilityStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatus
@@ -20,7 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 @Service
 class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val webClient: WebClient) {
   private val api = SysconSyncApi(webClient)
-  private val personApi = HMPPSPersonAPIApi(webClient)
+  private val personApi = PrisonApi(webClient)
 
   suspend fun migrateCorePerson(prisonNumber: String, corePerson: Prisoner): String = api
     .prepare(api.updateRequestConfig(prisonNumber, corePerson))
