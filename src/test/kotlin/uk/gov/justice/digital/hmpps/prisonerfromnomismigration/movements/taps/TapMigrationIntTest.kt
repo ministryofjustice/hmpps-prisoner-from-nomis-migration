@@ -29,7 +29,6 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.MigrationTestBase
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapResponse
@@ -37,9 +36,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.Ta
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiMockServer.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiMockServer.Companion.migrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.application
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.temporaryAbsencesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingIdsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.offenderTapsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapPrisonerMappingIdsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTapsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
@@ -52,7 +51,7 @@ import java.util.*
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TapMigrationIntTest(
   @Autowired private val externalMovementsNomisApi: TapNomisApiMockServer,
-  @Autowired private val mappingApi: ExternalMovementsMappingApiMockServer,
+  @Autowired private val mappingApi: TapMappingApiMockServer,
 ) : MigrationTestBase() {
 
   private val dpsApi = dpsExtMovementsServer
@@ -106,11 +105,11 @@ class TapMigrationIntTest(
 
   private fun stubMigrationDependencies(entities: Int = 2) {
     nomisApi.stubGetPrisonerIds(totalElements = entities.toLong(), pageSize = 10, firstOffenderNo = "A0001KT")
-    mappingApi.stubCreateTemporaryAbsenceMapping()
+    mappingApi.stubCreateTapPrisonerMappings()
     (1..entities)
       .map { index -> "A%04dKT".format(index) }
       .forEach { prisonerNumber ->
-        mappingApi.stubGetTemporaryAbsenceMappingIds(prisonerNumber, 12345L, 1, dpsAuthorisationId, 1, dpsOccurrenceId, 3, dpsScheduledMovementOutId, 4, dpsScheduledMovementInId, 1, dpsUnscheduledMovementOutId, 2, dpsUnscheduledMovementInId)
+        mappingApi.stubGetTapPrisonerMappingIds(prisonerNumber, 12345L, 1, dpsAuthorisationId, 1, dpsOccurrenceId, 3, dpsScheduledMovementOutId, 4, dpsScheduledMovementInId, 1, dpsUnscheduledMovementOutId, 2, dpsUnscheduledMovementInId)
         externalMovementsNomisApi.stubGetAllOffenderTaps(prisonerNumber)
         dpsApi.stubResyncPrisonerTaps(
           personIdentifier = prisonerNumber,
@@ -151,12 +150,12 @@ class TapMigrationIntTest(
     @Test
     fun `will create mappings`() {
       mappingApi.verify(
-        putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
+        putRequestedFor(urlEqualTo("/mapping/taps/migrate"))
           .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
           .withRequestBodyJsonPath("migrationId", migrationId),
       )
       mappingApi.verify(
-        putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
+        putRequestedFor(urlEqualTo("/mapping/taps/migrate"))
           .withRequestBodyJsonPath("prisonerNumber", "A0002KT")
           .withRequestBodyJsonPath("migrationId", migrationId),
       )
@@ -338,14 +337,14 @@ class TapMigrationIntTest(
 
     @Test
     fun `will populate correct mapping details`() {
-      ExternalMovementsMappingApiMockServer.getRequestBody<TemporaryAbsencesPrisonerMappingDto>(
-        putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate")),
+      TapMappingApiMockServer.getRequestBody<TapPrisonerMappingsDto>(
+        putRequestedFor(urlEqualTo("/mapping/taps/migrate")),
       )
         .apply {
           assertThat(bookings[0].bookingId).isEqualTo(12345)
 
-          assertThat(bookings[0].applications[0].nomisMovementApplicationId).isEqualTo(1)
-          assertThat(bookings[0].applications[0].dpsMovementApplicationId).isEqualTo(dpsAuthorisationId)
+          assertThat(bookings[0].applications[0].nomisApplicationId).isEqualTo(1)
+          assertThat(bookings[0].applications[0].dpsAuthorisationId).isEqualTo(dpsAuthorisationId)
 
           with(bookings[0].applications[0].schedules[0]) {
             assertThat(nomisEventId).isEqualTo(1)
@@ -435,15 +434,15 @@ class TapMigrationIntTest(
         pageSize = 10,
         firstOffenderNo = prisonerNumber,
       )
-      mappingApi.stubCreateTemporaryAbsenceMapping()
-      mappingApi.stubGetTemporaryAbsenceMappingIds(
+      mappingApi.stubCreateTapPrisonerMappings()
+      mappingApi.stubGetTapPrisonerMappingIds(
         prisonerNumber,
-        idMappings = TemporaryAbsencesPrisonerMappingIdsDto(prisonerNumber, listOf(), listOf(), listOf()),
+        idMappings = TapPrisonerMappingIdsDto(prisonerNumber, listOf(), listOf(), listOf()),
       )
       // The prison on the application and schedules is LEI
       externalMovementsNomisApi.stubGetAllOffenderTaps(
         prisonerNumber,
-        response = temporaryAbsencesResponse(movementPrison = movementPrison),
+        response = offenderTapsResponse(movementPrison = movementPrison),
       )
       dpsApi.stubResyncPrisonerTaps(
         personIdentifier = prisonerNumber,
@@ -497,15 +496,15 @@ class TapMigrationIntTest(
         pageSize = 10,
         firstOffenderNo = prisonerNumber,
       )
-      mappingApi.stubCreateTemporaryAbsenceMapping()
-      mappingApi.stubGetTemporaryAbsenceMappingIds(
+      mappingApi.stubCreateTapPrisonerMappings()
+      mappingApi.stubGetTapPrisonerMappingIds(
         prisonerNumber,
-        idMappings = TemporaryAbsencesPrisonerMappingIdsDto(prisonerNumber, listOf(), listOf(), listOf()),
+        idMappings = TapPrisonerMappingIdsDto(prisonerNumber, listOf(), listOf(), listOf()),
       )
       // The application is approved, on an inactive booking, and is not active
       externalMovementsNomisApi.stubGetAllOffenderTaps(
         prisonerNumber,
-        response = temporaryAbsencesResponse(
+        response = offenderTapsResponse(
           activeBooking = true,
           latestBooking = false,
           tapApplications = listOf(
@@ -578,7 +577,7 @@ class TapMigrationIntTest(
       setupMigrationTest()
 
       stubMigrationDependencies(1)
-      mappingApi.stubCreateTemporaryAbsenceMappingFailureFollowedBySuccess()
+      mappingApi.stubCreateTapPrisonerMappingsFailureFollowedBySuccess()
       migrationId = performMigration()
     }
 
@@ -591,7 +590,7 @@ class TapMigrationIntTest(
     fun `will create mappings twice before succeeding`() {
       mappingApi.verify(
         2,
-        putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
+        putRequestedFor(urlEqualTo("/mapping/taps/migrate"))
           .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
           .withRequestBodyJsonPath("migrationId", migrationId),
       )
@@ -622,9 +621,9 @@ class TapMigrationIntTest(
         pageSize = 10,
         firstOffenderNo = "A0001KT",
       )
-      mappingApi.stubGetTemporaryAbsenceMappingIds(
+      mappingApi.stubGetTapPrisonerMappingIds(
         "A0001KT",
-        idMappings = TemporaryAbsencesPrisonerMappingIdsDto("A0001KT", listOf(), listOf(), listOf()),
+        idMappings = TapPrisonerMappingIdsDto("A0001KT", listOf(), listOf(), listOf()),
       )
       externalMovementsNomisApi.stubGetAllOffenderTaps(
         "A0001KT",
@@ -681,7 +680,7 @@ class TapMigrationIntTest(
       @Test
       fun `will create mappings`() {
         mappingApi.verify(
-          putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
+          putRequestedFor(urlEqualTo("/mapping/taps/migrate"))
             .withRequestBodyJsonPath("prisonerNumber", "A0001KT"),
         )
       }
@@ -765,7 +764,7 @@ class TapMigrationIntTest(
       @Test
       fun `will update mappings`() {
         mappingApi.verify(
-          putRequestedFor(urlEqualTo("/mapping/temporary-absence/migrate"))
+          putRequestedFor(urlEqualTo("/mapping/taps/migrate"))
             .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
             .withRequestBodyJsonPath("bookings.length()", 0),
         )

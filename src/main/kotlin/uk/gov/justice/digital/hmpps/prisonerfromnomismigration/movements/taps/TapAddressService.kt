@@ -4,12 +4,11 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
 
 @Service
 class TapAddressService(
   override val telemetryClient: TelemetryClient,
-  private val mappingApiService: ExternalMovementsMappingApiService,
+  private val mappingApiService: TapMappingApiService,
   private val tapScheduleService: TapScheduleService,
 ) : TelemetryEnabled {
 

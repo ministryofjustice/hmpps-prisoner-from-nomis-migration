@@ -10,11 +10,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.tryFetchParent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TAP_SCHEDULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.MovementType.TAP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto.MappingType.NOMIS_CREATED
@@ -30,7 +29,7 @@ private const val TELEMETRY_PREFIX: String = "${TAP_TELEMETRY_PREFIX}-scheduled-
 class TapScheduleService(
   override val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
-  private val mappingApiService: ExternalMovementsMappingApiService,
+  private val mappingApiService: TapMappingApiService,
   private val nomisApiService: TapsNomisApiService,
   private val dpsApiService: TapDpsApiService,
 ) : TelemetryEnabled {
@@ -185,7 +184,7 @@ class TapScheduleService(
     } catch (e: Exception) {
       log.error("Failed to create mapping for temporary absence scheduled movement NOMIS id ${mapping.nomisEventId}", e)
       queueService.sendMessage(
-        messageType = RETRY_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT.name,
+        messageType = RETRY_MAPPING_TAP_SCHEDULE.name,
         synchronisationType = SynchronisationType.EXTERNAL_MOVEMENTS,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
@@ -199,7 +198,7 @@ class TapScheduleService(
     } catch (e: Exception) {
       log.error("Failed to update mapping for temporary absence scheduled movement NOMIS id ${mapping.nomisEventId}", e)
       queueService.sendMessage(
-        messageType = ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TEMPORARY_ABSENCE_SCHEDULED_MOVEMENT.name,
+        messageType = ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TAP_SCHEDULE.name,
         synchronisationType = SynchronisationType.EXTERNAL_MOVEMENTS,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),

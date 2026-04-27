@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
 import kotlinx.coroutines.reactive.awaitFirstOrDefault
 import kotlinx.coroutines.reactive.awaitSingle
@@ -15,33 +15,33 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TapApplicationResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TapMovementResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TapPrisonerResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TapScheduleResourceApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TemporaryAbsenceResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.FindTapScheduleMappingsForAddressResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapPrisonerMappingIdsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMoveBookingMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingIdsDto
 
 @Service
-class ExternalMovementsMappingApiService(@Qualifier("tapsMappingApiWebClient") webClient: WebClient) : MigrationMapping<TemporaryAbsencesPrisonerMappingDto>(domainUrl = "/mapping/temporary-absence", webClient) {
+class TapMappingApiService(@Qualifier("tapsMappingApiWebClient") webClient: WebClient) : MigrationMapping<TapPrisonerMappingsDto>(domainUrl = "/mapping/taps", webClient) {
 
-  private val mappingApi = TemporaryAbsenceResourceApi(webClient)
   private val applicationApi = TapApplicationResourceApi(webClient)
   private val scheduleApi = TapScheduleResourceApi(webClient)
   private val movementApi = TapMovementResourceApi(webClient)
+  private val prisonerApi = TapPrisonerResourceApi(webClient)
 
   override suspend fun createMapping(
-    mapping: TemporaryAbsencesPrisonerMappingDto,
-    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsencesPrisonerMappingDto>>,
-  ): CreateMappingResult<TemporaryAbsencesPrisonerMappingDto> = webClient.put()
+    mapping: TapPrisonerMappingsDto,
+    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<TapPrisonerMappingsDto>>,
+  ): CreateMappingResult<TapPrisonerMappingsDto> = webClient.put()
     .uri(createMappingUrl())
     .bodyValue(mapping)
     .retrieve()
     .bodyToMono(Unit::class.java)
-    .map { CreateMappingResult<TemporaryAbsencesPrisonerMappingDto>() }
+    .map { CreateMappingResult<TapPrisonerMappingsDto>() }
     .onErrorResume(WebClientResponseException.Conflict::class.java) {
       Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
     }
@@ -90,10 +90,10 @@ class ExternalMovementsMappingApiService(@Qualifier("tapsMappingApiWebClient") w
   suspend fun findTapScheduleMappingsForAddress(nomisAddressId: Long): FindTapScheduleMappingsForAddressResponse = scheduleApi.findTapScheduleMappingsByNomisAddressId(nomisAddressId)
     .awaitSingle()
 
-  suspend fun getMoveBookingMappings(bookingId: Long): TemporaryAbsenceMoveBookingMappingDto = mappingApi.getMoveBookingMappings(bookingId).awaitSingle()
+  suspend fun getTapMoveBookingMappings(bookingId: Long): TapMoveBookingMappingDto = prisonerApi.getPrisonerBookingMappings(bookingId).awaitSingle()
 
-  suspend fun moveBookingMappings(bookingId: Long, fromOffenderNo: String, toOffenderNo: String): Unit = mappingApi.moveBookingMappings(bookingId, fromOffenderNo, toOffenderNo)
+  suspend fun moveTapBookingMappings(bookingId: Long, fromOffenderNo: String, toOffenderNo: String): Unit = prisonerApi.movePrisonerBookingMappings(bookingId, fromOffenderNo, toOffenderNo)
     .awaitSingle()
 
-  suspend fun getPrisonerMappingIds(prisoner: String): TemporaryAbsencesPrisonerMappingIdsDto = mappingApi.getTemporaryAbsenceMappings(prisoner).awaitSingle()
+  suspend fun getTapPrisonerMappingIds(prisoner: String): TapPrisonerMappingIdsDto = prisonerApi.getAllPrisonerMappingIds(prisoner).awaitSingle()
 }

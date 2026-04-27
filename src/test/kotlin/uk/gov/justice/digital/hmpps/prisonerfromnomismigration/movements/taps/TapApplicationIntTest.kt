@@ -21,7 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsExtMovementsServer
@@ -38,7 +37,7 @@ import java.util.*
 
 class TapApplicationIntTest(
   @Autowired private val nomisApi: TapNomisApiMockServer,
-  @Autowired private val mappingApi: ExternalMovementsMappingApiMockServer,
+  @Autowired private val mappingApi: TapMappingApiMockServer,
 ) : SqsIntegrationTestBase() {
 
   private val dpsApi = dpsExtMovementsServer
@@ -148,7 +147,7 @@ class TapApplicationIntTest(
       fun `should NOT create mapping`() {
         mappingApi.verify(
           count = 0,
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application")),
+          postRequestedFor(urlPathEqualTo("/mapping/taps/application")),
         )
       }
 
@@ -185,7 +184,7 @@ class TapApplicationIntTest(
       fun `should NOT create mapping`() {
         mappingApi.verify(
           count = 0,
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application")),
+          postRequestedFor(urlPathEqualTo("/mapping/taps/application")),
         )
       }
 
@@ -225,7 +224,7 @@ class TapApplicationIntTest(
       fun `should NOT create mapping`() {
         mappingApi.verify(
           count = 0,
-          postRequestedFor(urlPathEqualTo("/mapping/temporary-absence/application")),
+          postRequestedFor(urlPathEqualTo("/mapping/taps/application")),
         )
       }
 

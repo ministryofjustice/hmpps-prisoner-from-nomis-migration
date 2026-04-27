@@ -57,7 +57,7 @@ class TapNomisApiServiceTest {
     }
 
     @Test
-    fun `will return temporary absences`() = runTest {
+    fun `will return offender taps`() = runTest {
       tapNomisApiMockServer.stubGetAllOffenderTaps(offenderNo = "A1234BC")
 
       val result = apiService.getAllOffenderTapsOrNull(offenderNo = "A1234BC")!!
@@ -91,7 +91,7 @@ class TapNomisApiServiceTest {
   }
 
   @Nested
-  inner class GetTemporaryAbsenceApplication {
+  inner class GetTapApplication {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
       tapNomisApiMockServer.stubGetTapApplication(offenderNo = "A1234BC", applicationId = 111)
@@ -115,7 +115,7 @@ class TapNomisApiServiceTest {
     }
 
     @Test
-    fun `will return temporary absence application`() = runTest {
+    fun `will return tap application`() = runTest {
       tapNomisApiMockServer.stubGetTapApplication(offenderNo = "A1234BC", applicationId = 111)
 
       apiService.getTapApplication(offenderNo = "A1234BC", applicationId = 111)
@@ -150,7 +150,7 @@ class TapNomisApiServiceTest {
   }
 
   @Nested
-  inner class GetTemporaryAbsenceScheduledMovement {
+  inner class GetTapSchedule {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
       tapNomisApiMockServer.stubGetTapScheduleOut(offenderNo = "A1234BC", eventId = 1)
@@ -174,7 +174,7 @@ class TapNomisApiServiceTest {
     }
 
     @Test
-    fun `will return scheduled temporary absence`() = runTest {
+    fun `will return tap schedule out`() = runTest {
       tapNomisApiMockServer.stubGetTapScheduleOut(offenderNo = "A1234BC", eventId = 1)
 
       apiService.getTapScheduleOut(offenderNo = "A1234BC", eventId = 1)
@@ -211,7 +211,7 @@ class TapNomisApiServiceTest {
   }
 
   @Nested
-  inner class GetTemporaryAbsenceMovement {
+  inner class GetTapMovement {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
       tapNomisApiMockServer.stubGetTapMovementOut(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
@@ -235,7 +235,7 @@ class TapNomisApiServiceTest {
     }
 
     @Test
-    fun `will return temporary absence`() = runTest {
+    fun `will return tap movement out`() = runTest {
       tapNomisApiMockServer.stubGetTapMovementOut(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
 
       apiService.getTapMovementOut(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
@@ -262,7 +262,7 @@ class TapNomisApiServiceTest {
     }
 
     @Test
-    fun `will return unscheduled temporary absence`() = runTest {
+    fun `will return unscheduled tap movement out`() = runTest {
       tapNomisApiMockServer.stubGetTapMovementOut(
         offenderNo = "A1234BC",
         bookingId = 12345,
@@ -300,7 +300,7 @@ class TapNomisApiServiceTest {
   }
 
   @Nested
-  inner class TemporaryAbsenceReturnMovementTest {
+  inner class TapMovementInTest {
     @Test
     fun `will call the correct endpoint`() = runTest {
       tapNomisApiMockServer.stubGetTapMovementIn(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
@@ -313,7 +313,7 @@ class TapNomisApiServiceTest {
     }
 
     @Test
-    fun `will return temporary absence return`() = runTest {
+    fun `will return tap movement in`() = runTest {
       tapNomisApiMockServer.stubGetTapMovementIn(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
 
       apiService.getTapMovementIn(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
@@ -337,7 +337,7 @@ class TapNomisApiServiceTest {
     }
 
     @Test
-    fun `will return unscheduled temporary absence return`() = runTest {
+    fun `will return unscheduled tap movement in`() = runTest {
       tapNomisApiMockServer.stubGetTapMovementIn(
         offenderNo = "A1234BC",
         bookingId = 12345,

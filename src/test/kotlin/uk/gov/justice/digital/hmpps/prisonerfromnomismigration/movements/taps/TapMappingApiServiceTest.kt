@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
 import com.github.tomakehurst.wiremock.client.WireMock.absent
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
@@ -22,36 +22,35 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapConfiguration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMoveBookingMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationIdMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMoveBookingMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMovementIdMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsencesPrisonerMappingDto
 import java.util.*
 
 @SpringAPIServiceTest
-@Import(ExternalMovementsMappingApiService::class, ExternalMovementsMappingApiMockServer::class, TapConfiguration::class)
-class ExternalMovementsMappingApiServiceTest {
+@Import(TapMappingApiService::class, TapMappingApiMockServer::class, TapConfiguration::class)
+class TapMappingApiServiceTest {
   @Autowired
-  private lateinit var apiService: ExternalMovementsMappingApiService
+  private lateinit var apiService: TapMappingApiService
 
   @Autowired
-  private lateinit var mappingApi: ExternalMovementsMappingApiMockServer
+  private lateinit var mappingApi: TapMappingApiMockServer
 
   @Nested
   inner class CreateMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubCreateTemporaryAbsenceMapping()
+      mappingApi.stubCreateTapPrisonerMappings()
 
       apiService.createMapping(
-        temporaryAbsencePrisonerMappings(),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsencesPrisonerMappingDto>>() {},
+        tapPrisonerMappings(),
+        object : ParameterizedTypeReference<DuplicateErrorResponse<TapPrisonerMappingsDto>>() {},
       )
 
       mappingApi.verify(
@@ -61,31 +60,31 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     internal fun `should pass data to service`() = runTest {
-      mappingApi.stubCreateTemporaryAbsenceMapping()
+      mappingApi.stubCreateTapPrisonerMappings()
 
       apiService.createMapping(
-        temporaryAbsencePrisonerMappings(),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsencesPrisonerMappingDto>>() {},
+        tapPrisonerMappings(),
+        object : ParameterizedTypeReference<DuplicateErrorResponse<TapPrisonerMappingsDto>>() {},
       )
 
       mappingApi.verify(
         putRequestedFor(anyUrl())
           .withRequestBody(matchingJsonPath("prisonerNumber", equalTo("A1234BC")))
           .withRequestBody(matchingJsonPath("bookings[0].bookingId", equalTo("12345")))
-          .withRequestBody(matchingJsonPath("bookings[0].applications[0].nomisMovementApplicationId", equalTo("1")))
-          .withRequestBody(matchingJsonPath("bookings[0].applications[0].dpsMovementApplicationId", not(absent())))
+          .withRequestBody(matchingJsonPath("bookings[0].applications[0].nomisApplicationId", equalTo("1")))
+          .withRequestBody(matchingJsonPath("bookings[0].applications[0].dpsAuthorisationId", not(absent())))
           .withRequestBody(matchingJsonPath("migrationId", equalTo("2020-01-01T11:10:00"))),
       )
     }
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubCreateTemporaryAbsenceMapping(status = INTERNAL_SERVER_ERROR)
+      mappingApi.stubCreateTapPrisonerMappings(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.createMapping(
-          temporaryAbsencePrisonerMappings(),
-          object : ParameterizedTypeReference<DuplicateErrorResponse<TemporaryAbsencesPrisonerMappingDto>>() {},
+          tapPrisonerMappings(),
+          object : ParameterizedTypeReference<DuplicateErrorResponse<TapPrisonerMappingsDto>>() {},
         )
       }
     }
@@ -423,7 +422,7 @@ class ExternalMovementsMappingApiServiceTest {
   }
 
   @Nested
-  inner class CreateExternalMovementMappings {
+  inner class CreateTapMovementMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
       mappingApi.stubCreateTapMovementMapping()
@@ -503,7 +502,7 @@ class ExternalMovementsMappingApiServiceTest {
   }
 
   @Nested
-  inner class UpdateExternalMovementMappings {
+  inner class UpdateTapMovementMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
       mappingApi.stubUpdateTapMovementMapping()
@@ -545,7 +544,7 @@ class ExternalMovementsMappingApiServiceTest {
   }
 
   @Nested
-  inner class GetExternalMovementMappings {
+  inner class GetTapMovementMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
       mappingApi.stubGetTapMovementMapping()
@@ -576,7 +575,7 @@ class ExternalMovementsMappingApiServiceTest {
   }
 
   @Nested
-  inner class DeleteExternalMovementMappings {
+  inner class DeleteTapMovementMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
       mappingApi.stubDeleteTapMovementMapping()
@@ -599,10 +598,10 @@ class ExternalMovementsMappingApiServiceTest {
   }
 
   @Nested
-  inner class FindScheduledMovementsForAddresses {
+  inner class FindTapScheduleMappingsForAddresses {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubFindScheduledMovementsForAddress()
+      mappingApi.stubFindTapScheduleMappingsForAddressForPrisoners()
 
       apiService.findTapScheduleMappingsForAddress(123L)
 
@@ -613,7 +612,7 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     fun `should return list of schedule mappings`() = runTest {
-      mappingApi.stubFindScheduledMovementsForAddress()
+      mappingApi.stubFindTapScheduleMappingsForAddressForPrisoners()
 
       with(apiService.findTapScheduleMappingsForAddress(123L)) {
         assertThat(scheduleMappings).extracting("prisonerNumber").containsExactlyInAnyOrder("A1234AA", "B1234BB")
@@ -622,7 +621,7 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     fun `should handle empty list if none found`() = runTest {
-      mappingApi.stubFindScheduledMovementsForAddress(prisoners = listOf())
+      mappingApi.stubFindTapScheduleMappingsForAddressForPrisoners(prisoners = listOf())
 
       with(apiService.findTapScheduleMappingsForAddress(123L)) {
         assertThat(scheduleMappings.size).isEqualTo(0)
@@ -631,7 +630,7 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubFindScheduledMovementsForAddressError(status = INTERNAL_SERVER_ERROR)
+      mappingApi.stubFindTapScheduleMappingsForAddressError(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.findTapScheduleMappingsForAddress(123L)
@@ -641,16 +640,16 @@ class ExternalMovementsMappingApiServiceTest {
 
   @Nested
   inner class GetMoveBookingMappings {
-    val response = TemporaryAbsenceMoveBookingMappingDto(
-      applicationIds = listOf(TemporaryAbsenceApplicationIdMapping(777L, UUID.randomUUID())),
-      movementIds = listOf(TemporaryAbsenceMovementIdMapping(77, UUID.randomUUID())),
+    val response = TapMoveBookingMappingDto(
+      applicationIds = listOf(TapApplicationIdMapping(777L, UUID.randomUUID())),
+      movementIds = listOf(TapMovementIdMapping(77, UUID.randomUUID())),
     )
 
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
       mappingApi.stubGetMoveBookingMappings(12345L, response)
 
-      apiService.getMoveBookingMappings(12345L)
+      apiService.getTapMoveBookingMappings(12345L)
 
       mappingApi.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -661,9 +660,9 @@ class ExternalMovementsMappingApiServiceTest {
     fun `should return mappings`() = runTest {
       mappingApi.stubGetMoveBookingMappings(12345L, response)
 
-      with(apiService.getMoveBookingMappings(12345L)) {
-        assertThat(applicationIds).containsExactly(TemporaryAbsenceApplicationIdMapping(777, response.applicationIds.first().authorisationId))
-        assertThat(movementIds).containsExactly(TemporaryAbsenceMovementIdMapping(77, response.movementIds.first().dpsMovementId))
+      with(apiService.getTapMoveBookingMappings(12345L)) {
+        assertThat(applicationIds).containsExactly(TapApplicationIdMapping(777, response.applicationIds.first().authorisationId))
+        assertThat(movementIds).containsExactly(TapMovementIdMapping(77, response.movementIds.first().dpsMovementId))
       }
     }
 
@@ -672,7 +671,7 @@ class ExternalMovementsMappingApiServiceTest {
       mappingApi.stubGetMoveBookingMappingsError(12345L)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.getMoveBookingMappings(12345L)
+        apiService.getTapMoveBookingMappings(12345L)
       }
     }
   }
@@ -683,7 +682,7 @@ class ExternalMovementsMappingApiServiceTest {
     fun `should pass oath2 token to service`() = runTest {
       mappingApi.stubMoveBookingMappings()
 
-      apiService.moveBookingMappings(12345L, "A1234AA", "B1234BB")
+      apiService.moveTapBookingMappings(12345L, "A1234AA", "B1234BB")
 
       mappingApi.verify(
         putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -695,23 +694,23 @@ class ExternalMovementsMappingApiServiceTest {
       mappingApi.stubMoveBookingMappingsError(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.moveBookingMappings(12345L, "A1234AA", "B1234BB")
+        apiService.moveTapBookingMappings(12345L, "A1234AA", "B1234BB")
       }
     }
   }
 
   @Nested
   inner class GetPrisonerMappingIds {
-    val response = TemporaryAbsenceMoveBookingMappingDto(
-      applicationIds = listOf(TemporaryAbsenceApplicationIdMapping(777L, UUID.randomUUID())),
-      movementIds = listOf(TemporaryAbsenceMovementIdMapping(77, UUID.randomUUID())),
+    val response = TapMoveBookingMappingDto(
+      applicationIds = listOf(TapApplicationIdMapping(777L, UUID.randomUUID())),
+      movementIds = listOf(TapMovementIdMapping(77, UUID.randomUUID())),
     )
 
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
-      mappingApi.stubGetTemporaryAbsenceMappingIds()
+      mappingApi.stubGetTapPrisonerMappingIds()
 
-      apiService.getPrisonerMappingIds("A1234BC")
+      apiService.getTapPrisonerMappingIds("A1234BC")
 
       mappingApi.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -720,10 +719,10 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     fun `should return mappings`() = runTest {
-      mappingApi.stubGetTemporaryAbsenceMappingIds()
+      mappingApi.stubGetTapPrisonerMappingIds()
 
-      with(apiService.getPrisonerMappingIds("A1234BC")) {
-        assertThat(applications[0].nomisMovementApplicationId).isEqualTo(1)
+      with(apiService.getTapPrisonerMappingIds("A1234BC")) {
+        assertThat(applications[0].nomisApplicationId).isEqualTo(1)
         assertThat(schedules[0].nomisEventId).isEqualTo(2)
         assertThat(movements[0].nomisMovementSeq).isEqualTo(3)
       }
@@ -731,10 +730,10 @@ class ExternalMovementsMappingApiServiceTest {
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubGetTemporaryAbsenceMappingIds("A1234BC", status = INTERNAL_SERVER_ERROR)
+      mappingApi.stubGetTapPrisonerMappingIds("A1234BC", status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.getPrisonerMappingIds("A1234BC")
+        apiService.getTapPrisonerMappingIds("A1234BC")
       }
     }
   }

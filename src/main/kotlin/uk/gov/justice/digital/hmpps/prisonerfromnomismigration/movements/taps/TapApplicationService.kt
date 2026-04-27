@@ -9,11 +9,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.Telemetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TAP_APPLICATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapApplication
@@ -28,7 +27,7 @@ private const val TELEMETRY_PREFIX: String = "${TAP_TELEMETRY_PREFIX}-applicatio
 class TapApplicationService(
   override val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
-  private val mappingApiService: ExternalMovementsMappingApiService,
+  private val mappingApiService: TapMappingApiService,
   private val nomisApiService: TapsNomisApiService,
   private val dpsApiService: TapDpsApiService,
 ) : TelemetryEnabled {
@@ -125,7 +124,7 @@ class TapApplicationService(
     } catch (e: Exception) {
       log.error("Failed to create mapping for temporary absence application NOMIS id ${mapping.nomisApplicationId}", e)
       queueService.sendMessage(
-        messageType = RETRY_MAPPING_TEMPORARY_ABSENCE_APPLICATION.name,
+        messageType = RETRY_MAPPING_TAP_APPLICATION.name,
         synchronisationType = SynchronisationType.EXTERNAL_MOVEMENTS,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),

@@ -22,23 +22,22 @@ import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MoveTemporaryAbsencesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsExtMovementsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiMockServer.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.application
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.offenderTapsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.tapMovementIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.tapMovementOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.taps
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.temporaryAbsencesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceApplicationIdMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMoveBookingMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TemporaryAbsenceMovementIdMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationIdMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMoveBookingMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementIdMapping
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.util.*
 
 class TapMoveBookingIntTest(
-  @Autowired private val mappingApi: ExternalMovementsMappingApiMockServer,
+  @Autowired private val mappingApi: TapMappingApiMockServer,
   @Autowired private val externalMovementsNomisApi: TapNomisApiMockServer,
 ) : SqsIntegrationTestBase() {
 
@@ -59,20 +58,20 @@ class TapMoveBookingIntTest(
     private val scheduledMovementId1 = UUID.randomUUID()
     private val scheduledMovementId2 = UUID.randomUUID()
 
-    private val moveBookingMappings = TemporaryAbsenceMoveBookingMappingDto(
+    private val moveBookingMappings = TapMoveBookingMappingDto(
       applicationIds = listOf(
-        TemporaryAbsenceApplicationIdMapping(applicationId1, authorisationId1),
-        TemporaryAbsenceApplicationIdMapping(applicationId2, authorisationId2),
+        TapApplicationIdMapping(applicationId1, authorisationId1),
+        TapApplicationIdMapping(applicationId2, authorisationId2),
       ),
       movementIds = listOf(
-        TemporaryAbsenceMovementIdMapping(movementSeq1, movementId1),
-        TemporaryAbsenceMovementIdMapping(movementSeq2, movementId2),
-        TemporaryAbsenceMovementIdMapping(scheduledMovementSeq1, scheduledMovementId1),
-        TemporaryAbsenceMovementIdMapping(scheduledMovementSeq2, scheduledMovementId2),
+        TapMovementIdMapping(movementSeq1, movementId1),
+        TapMovementIdMapping(movementSeq2, movementId2),
+        TapMovementIdMapping(scheduledMovementSeq1, scheduledMovementId1),
+        TapMovementIdMapping(scheduledMovementSeq2, scheduledMovementId2),
       ),
     )
 
-    private val nomisData = temporaryAbsencesResponse(
+    private val nomisData = offenderTapsResponse(
       bookingId = 1234567L,
       tapApplications = listOf(
         application(
@@ -120,7 +119,7 @@ class TapMoveBookingIntTest(
 
     @Test
     fun `should get move booking mappings`() {
-      mappingApi.verify(getRequestedFor(urlEqualTo("/mapping/temporary-absence/move-booking/1234567")))
+      mappingApi.verify(getRequestedFor(urlEqualTo("/mapping/taps/move-booking/1234567")))
     }
 
     @Test
@@ -137,7 +136,7 @@ class TapMoveBookingIntTest(
 
     @Test
     fun `should move mappings to the new offender no`() {
-      mappingApi.verify(putRequestedFor(urlEqualTo("/mapping/temporary-absence/move-booking/1234567/from/A1000KT/to/A1234KT")))
+      mappingApi.verify(putRequestedFor(urlEqualTo("/mapping/taps/move-booking/1234567/from/A1000KT/to/A1234KT")))
     }
 
     @Test
@@ -222,12 +221,12 @@ class TapMoveBookingIntTest(
 
   @Nested
   inner class NoMappingsExist {
-    private val moveBookingMappings = TemporaryAbsenceMoveBookingMappingDto(
+    private val moveBookingMappings = TapMoveBookingMappingDto(
       applicationIds = listOf(),
       movementIds = listOf(),
     )
 
-    private val nomisData = temporaryAbsencesResponse(
+    private val nomisData = offenderTapsResponse(
       bookingId = 1234567L,
       tapApplications = listOf(),
       unscheduledTapMovementOuts = listOf(),
@@ -258,7 +257,7 @@ class TapMoveBookingIntTest(
     fun `should NOT move mappings to the new offender no`() {
       mappingApi.verify(
         0,
-        putRequestedFor(urlEqualTo("/mapping/temporary-absence/move-booking/1234567/from/A1000KT/to/A1234KT")),
+        putRequestedFor(urlEqualTo("/mapping/taps/move-booking/1234567/from/A1000KT/to/A1234KT")),
       )
     }
 
@@ -281,12 +280,12 @@ class TapMoveBookingIntTest(
   inner class NomisMovementNotFoundInMappings {
     private val movementSeq1 = 1
 
-    private val moveBookingMappings = TemporaryAbsenceMoveBookingMappingDto(
+    private val moveBookingMappings = TapMoveBookingMappingDto(
       applicationIds = listOf(),
       movementIds = listOf(),
     )
 
-    private val nomisData = temporaryAbsencesResponse(
+    private val nomisData = offenderTapsResponse(
       bookingId = 1234567L,
       tapApplications = listOf(),
       unscheduledTapMovementOuts = listOf(tapMovementOut(seq = movementSeq1)),
@@ -317,7 +316,7 @@ class TapMoveBookingIntTest(
     fun `should NOT move mappings to the new offender no`() {
       mappingApi.verify(
         0,
-        putRequestedFor(urlEqualTo("/mapping/temporary-absence/move-booking/1234567/from/A1000KT/to/A1234KT")),
+        putRequestedFor(urlEqualTo("/mapping/taps/move-booking/1234567/from/A1000KT/to/A1234KT")),
       )
     }
 
@@ -343,12 +342,12 @@ class TapMoveBookingIntTest(
   inner class NomisApplicationNotFoundInMappings {
     private val applicationId1 = 1234L
 
-    private val moveBookingMappings = TemporaryAbsenceMoveBookingMappingDto(
+    private val moveBookingMappings = TapMoveBookingMappingDto(
       applicationIds = listOf(),
       movementIds = listOf(),
     )
 
-    private val nomisData = temporaryAbsencesResponse(
+    private val nomisData = offenderTapsResponse(
       bookingId = 1234567L,
       tapApplications = listOf(application(id = applicationId1)),
       unscheduledTapMovementOuts = listOf(),
@@ -379,7 +378,7 @@ class TapMoveBookingIntTest(
     fun `should NOT move mappings to the new offender no`() {
       mappingApi.verify(
         0,
-        putRequestedFor(urlEqualTo("/mapping/temporary-absence/move-booking/1234567/from/A1000KT/to/A1234KT")),
+        putRequestedFor(urlEqualTo("/mapping/taps/move-booking/1234567/from/A1000KT/to/A1234KT")),
       )
     }
 
@@ -405,14 +404,14 @@ class TapMoveBookingIntTest(
     private val applicationId1 = 1234L
     private val authorisationId1 = UUID.randomUUID()
 
-    private val moveBookingMappings = TemporaryAbsenceMoveBookingMappingDto(
+    private val moveBookingMappings = TapMoveBookingMappingDto(
       applicationIds = listOf(
-        TemporaryAbsenceApplicationIdMapping(applicationId1, authorisationId1),
+        TapApplicationIdMapping(applicationId1, authorisationId1),
       ),
       movementIds = listOf(),
     )
 
-    private val nomisData = temporaryAbsencesResponse(
+    private val nomisData = offenderTapsResponse(
       bookingId = 1234567L,
       tapApplications = listOf(
         application(
@@ -470,14 +469,14 @@ class TapMoveBookingIntTest(
     private val applicationId1 = 1234L
     private val authorisationId1 = UUID.randomUUID()
 
-    private val moveBookingMappings = TemporaryAbsenceMoveBookingMappingDto(
+    private val moveBookingMappings = TapMoveBookingMappingDto(
       applicationIds = listOf(
-        TemporaryAbsenceApplicationIdMapping(applicationId1, authorisationId1),
+        TapApplicationIdMapping(applicationId1, authorisationId1),
       ),
       movementIds = listOf(),
     )
 
-    private val nomisData = temporaryAbsencesResponse(
+    private val nomisData = offenderTapsResponse(
       bookingId = 1234567L,
       tapApplications = listOf(
         application(
@@ -518,7 +517,7 @@ class TapMoveBookingIntTest(
     fun `should move mappings to the new offender twice`() {
       mappingApi.verify(
         2,
-        putRequestedFor(urlEqualTo("/mapping/temporary-absence/move-booking/1234567/from/A1000KT/to/A1234KT")),
+        putRequestedFor(urlEqualTo("/mapping/taps/move-booking/1234567/from/A1000KT/to/A1234KT")),
       )
     }
 

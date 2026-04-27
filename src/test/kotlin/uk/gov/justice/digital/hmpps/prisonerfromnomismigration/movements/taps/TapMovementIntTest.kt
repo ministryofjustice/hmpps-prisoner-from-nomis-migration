@@ -22,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementsMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsExtMovementsServer
@@ -35,14 +34,14 @@ import java.util.*
 
 class TapMovementIntTest(
   @Autowired private val nomisApi: TapNomisApiMockServer,
-  @Autowired private val mappingApi: ExternalMovementsMappingApiMockServer,
+  @Autowired private val mappingApi: TapMappingApiMockServer,
 ) : SqsIntegrationTestBase() {
 
   private val dpsApi = dpsExtMovementsServer
 
   @Nested
   @DisplayName("EXTERNAL_MOVEMENT-CHANGED (inserted, scheduled)")
-  inner class TemporaryAbsenceScheduledExternalMovementCreated {
+  inner class TapOccurrenceCreated {
     private val dpsMovementId = UUID.randomUUID()
     private val dpsOccurrenceId = UUID.randomUUID()
 
