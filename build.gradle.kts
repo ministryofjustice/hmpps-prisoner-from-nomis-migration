@@ -44,6 +44,10 @@ dependencies {
 
   implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.60.1")
 
+  val appinsightsCore = "core:2.6.4"
+  implementation("io.micrometer:micrometer-registry-azure-monitor:1.16.5")
+  implementation("com.microsoft.azure:applicationinsights-$appinsightsCore")
+
   runtimeOnly("org.postgresql:r2dbc-postgresql:1.1.1.RELEASE")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
   runtimeOnly("org.postgresql:postgresql:42.7.10")
