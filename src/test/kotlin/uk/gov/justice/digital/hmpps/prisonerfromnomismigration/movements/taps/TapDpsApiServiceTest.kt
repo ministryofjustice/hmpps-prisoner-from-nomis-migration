@@ -17,7 +17,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsExtMovementsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsTapsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiMockServer.Companion.moveBookingRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiMockServer.Companion.syncTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiMockServer.Companion.syncTapMovement
@@ -35,11 +35,11 @@ class TapDpsApiServiceTest {
   inner class SyncTapApplication {
     @Test
     internal fun `should pass oath2 token`() = runTest {
-      dpsExtMovementsServer.stubSyncTapAuthorisation()
+      dpsTapsServer.stubSyncTapAuthorisation()
 
       apiService.syncTapAuthorisation("A1234BC", syncTapAuthorisation())
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         putRequestedFor(anyUrl())
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -47,11 +47,11 @@ class TapDpsApiServiceTest {
 
     @Test
     fun `should call the sync endpoint`() = runTest {
-      dpsExtMovementsServer.stubSyncTapAuthorisation()
+      dpsTapsServer.stubSyncTapAuthorisation()
 
       apiService.syncTapAuthorisation("A1234BC", syncTapAuthorisation())
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/A1234BC"))
           .withRequestBody(matchingJsonPath("legacyId", equalTo("1234")))
           .withRequestBody(matchingJsonPath("start", equalTo("${LocalDate.now()}")))
@@ -62,7 +62,7 @@ class TapDpsApiServiceTest {
     @Test
     fun `should parse the response`() = runTest {
       val dpsId = UUID.randomUUID()
-      dpsExtMovementsServer.stubSyncTapAuthorisation(
+      dpsTapsServer.stubSyncTapAuthorisation(
         response = SyncResponse(
           dpsId,
         ),
@@ -79,7 +79,7 @@ class TapDpsApiServiceTest {
 
     @Test
     fun `should throw if error`() = runTest {
-      dpsExtMovementsServer.stubSyncTapAuthorisationError()
+      dpsTapsServer.stubSyncTapAuthorisationError()
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.syncTapAuthorisation("A1234BC", syncTapAuthorisation())
@@ -93,11 +93,11 @@ class TapDpsApiServiceTest {
     @Test
     internal fun `should pass oath2 token`() = runTest {
       val authorisationId = UUID.randomUUID()
-      dpsExtMovementsServer.stubDeleteTapAuthorisation(authorisationId)
+      dpsTapsServer.stubDeleteTapAuthorisation(authorisationId)
 
       apiService.deleteTapAuthorisation(authorisationId)
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         deleteRequestedFor(anyUrl())
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -106,11 +106,11 @@ class TapDpsApiServiceTest {
     @Test
     internal fun `should call the endpoint`() = runTest {
       val authorisationId = UUID.randomUUID()
-      dpsExtMovementsServer.stubDeleteTapAuthorisation(authorisationId)
+      dpsTapsServer.stubDeleteTapAuthorisation(authorisationId)
 
       apiService.deleteTapAuthorisation(authorisationId)
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         deleteRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$authorisationId")),
       )
     }
@@ -118,7 +118,7 @@ class TapDpsApiServiceTest {
     @Test
     fun `should throw if error`() = runTest {
       val authorisationId = UUID.randomUUID()
-      dpsExtMovementsServer.stubDeleteTapAuthorisationError(authorisationId)
+      dpsTapsServer.stubDeleteTapAuthorisationError(authorisationId)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.deleteTapAuthorisation(authorisationId)
@@ -132,11 +132,11 @@ class TapDpsApiServiceTest {
 
     @Test
     internal fun `should pass oath2 token`() = runTest {
-      dpsExtMovementsServer.stubSyncTapOccurrence(parentId)
+      dpsTapsServer.stubSyncTapOccurrence(parentId)
 
       apiService.syncTapOccurrence(parentId, syncTapOccurrence())
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         putRequestedFor(anyUrl())
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -144,11 +144,11 @@ class TapDpsApiServiceTest {
 
     @Test
     fun `should call the sync endpoint`() = runTest {
-      dpsExtMovementsServer.stubSyncTapOccurrence(parentId)
+      dpsTapsServer.stubSyncTapOccurrence(parentId)
 
       apiService.syncTapOccurrence(parentId, syncTapOccurrence())
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/temporary-absence-authorisations/$parentId/occurrences"))
           .withRequestBody(matchingJsonPath("legacyId", equalTo("1234")))
           .withRequestBody(matchingJsonPath("isCancelled", equalTo("false")))
@@ -160,7 +160,7 @@ class TapDpsApiServiceTest {
     @Test
     fun `should parse the response`() = runTest {
       val dpsId = UUID.randomUUID()
-      dpsExtMovementsServer.stubSyncTapOccurrence(
+      dpsTapsServer.stubSyncTapOccurrence(
         parentId,
         response = SyncResponse(dpsId),
       )
@@ -176,7 +176,7 @@ class TapDpsApiServiceTest {
 
     @Test
     fun `should throw if error`() = runTest {
-      dpsExtMovementsServer.stubSyncTapOccurrenceError(parentId)
+      dpsTapsServer.stubSyncTapOccurrenceError(parentId)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.syncTapOccurrence(parentId, syncTapOccurrence())
@@ -190,11 +190,11 @@ class TapDpsApiServiceTest {
     @Test
     internal fun `should pass oath2 token`() = runTest {
       val occurrenceId = UUID.randomUUID()
-      dpsExtMovementsServer.stubDeleteTapOccurrence(occurrenceId)
+      dpsTapsServer.stubDeleteTapOccurrence(occurrenceId)
 
       apiService.deleteTapOccurrence(occurrenceId)
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         deleteRequestedFor(anyUrl())
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -203,11 +203,11 @@ class TapDpsApiServiceTest {
     @Test
     internal fun `should call the endpoint`() = runTest {
       val occurrenceId = UUID.randomUUID()
-      dpsExtMovementsServer.stubDeleteTapOccurrence(occurrenceId)
+      dpsTapsServer.stubDeleteTapOccurrence(occurrenceId)
 
       apiService.deleteTapOccurrence(occurrenceId)
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         deleteRequestedFor(urlPathEqualTo("/sync/temporary-absence-occurrences/$occurrenceId")),
       )
     }
@@ -215,7 +215,7 @@ class TapDpsApiServiceTest {
     @Test
     fun `should throw if error`() = runTest {
       val occurrenceId = UUID.randomUUID()
-      dpsExtMovementsServer.stubDeleteTapOccurrenceError(occurrenceId)
+      dpsTapsServer.stubDeleteTapOccurrenceError(occurrenceId)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.deleteTapOccurrence(occurrenceId)
@@ -230,14 +230,14 @@ class TapDpsApiServiceTest {
 
     @Test
     internal fun `should pass oath2 token`() = runTest {
-      dpsExtMovementsServer.stubSyncTapMovement()
+      dpsTapsServer.stubSyncTapMovement()
 
       apiService.syncTapMovement(
         prisonerNumber,
         syncTapMovement(occurrenceId),
       )
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         putRequestedFor(anyUrl())
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -245,14 +245,14 @@ class TapDpsApiServiceTest {
 
     @Test
     fun `should call the sync endpoint`() = runTest {
-      dpsExtMovementsServer.stubSyncTapMovement()
+      dpsTapsServer.stubSyncTapMovement()
 
       apiService.syncTapMovement(
         prisonerNumber,
         syncTapMovement(occurrenceId),
       )
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/$prisonerNumber"))
           .withRequestBody(matchingJsonPath("occurrenceId", equalTo("$occurrenceId")))
           .withRequestBody(matchingJsonPath("legacyId", equalTo("12345_6")))
@@ -263,7 +263,7 @@ class TapDpsApiServiceTest {
     @Test
     fun `should parse the response`() = runTest {
       val dpsId = UUID.randomUUID()
-      dpsExtMovementsServer.stubSyncTapMovement(response = SyncResponse(dpsId))
+      dpsTapsServer.stubSyncTapMovement(response = SyncResponse(dpsId))
 
       assertThat(
         apiService.syncTapMovement(
@@ -276,7 +276,7 @@ class TapDpsApiServiceTest {
 
     @Test
     fun `should throw if error`() = runTest {
-      dpsExtMovementsServer.stubSyncTapMovementError()
+      dpsTapsServer.stubSyncTapMovementError()
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.syncTapMovement(
@@ -293,11 +293,11 @@ class TapDpsApiServiceTest {
     @Test
     internal fun `should pass oath2 token`() = runTest {
       val movementId = UUID.randomUUID()
-      dpsExtMovementsServer.stubDeleteTapMovement(movementId)
+      dpsTapsServer.stubDeleteTapMovement(movementId)
 
       apiService.deleteTapMovement(movementId)
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         deleteRequestedFor(anyUrl())
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -306,11 +306,11 @@ class TapDpsApiServiceTest {
     @Test
     internal fun `should call the endpoint`() = runTest {
       val movementId = UUID.randomUUID()
-      dpsExtMovementsServer.stubDeleteTapMovement(movementId)
+      dpsTapsServer.stubDeleteTapMovement(movementId)
 
       apiService.deleteTapMovement(movementId)
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         deleteRequestedFor(urlPathEqualTo("/sync/temporary-absence-movements/$movementId")),
       )
     }
@@ -318,7 +318,7 @@ class TapDpsApiServiceTest {
     @Test
     fun `should throw if error`() = runTest {
       val movementId = UUID.randomUUID()
-      dpsExtMovementsServer.stubDeleteTapMovementError(movementId)
+      dpsTapsServer.stubDeleteTapMovementError(movementId)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.deleteTapMovement(movementId)
@@ -332,11 +332,11 @@ class TapDpsApiServiceTest {
 
     @Test
     internal fun `should pass oath2 token`() = runTest {
-      dpsExtMovementsServer.stubMoveBooking()
+      dpsTapsServer.stubMoveBooking()
 
       apiService.moveBooking(request)
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         putRequestedFor(anyUrl())
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -344,11 +344,11 @@ class TapDpsApiServiceTest {
 
     @Test
     fun `should call the move endpoint`() = runTest {
-      dpsExtMovementsServer.stubMoveBooking()
+      dpsTapsServer.stubMoveBooking()
 
       apiService.moveBooking(request)
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         putRequestedFor(urlPathEqualTo("/move/temporary-absences"))
           .withRequestBody(
             matchingJsonPath(
@@ -381,7 +381,7 @@ class TapDpsApiServiceTest {
 
     @Test
     fun `should throw if error`() = runTest {
-      dpsExtMovementsServer.stubMoveBookingError()
+      dpsTapsServer.stubMoveBookingError()
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.moveBooking(request)
@@ -395,11 +395,11 @@ class TapDpsApiServiceTest {
 
     @Test
     internal fun `should pass oath2 token`() = runTest {
-      dpsExtMovementsServer.stubResyncPrisonerTaps()
+      dpsTapsServer.stubResyncPrisonerTaps()
 
       apiService.resyncPrisonerTaps("A1234BC", request)
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         putRequestedFor(anyUrl())
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -407,18 +407,18 @@ class TapDpsApiServiceTest {
 
     @Test
     fun `should call the move endpoint`() = runTest {
-      dpsExtMovementsServer.stubResyncPrisonerTaps()
+      dpsTapsServer.stubResyncPrisonerTaps()
 
       apiService.resyncPrisonerTaps("A1234BC", request)
 
-      dpsExtMovementsServer.verify(
+      dpsTapsServer.verify(
         putRequestedFor(urlPathEqualTo("/resync/temporary-absences/A1234BC")),
       )
     }
 
     @Test
     fun `should throw if error`() = runTest {
-      dpsExtMovementsServer.stubResyncPrisonerTapsError()
+      dpsTapsServer.stubResyncPrisonerTapsError()
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.resyncPrisonerTaps("A1234BC", request)
@@ -427,7 +427,7 @@ class TapDpsApiServiceTest {
 
     @Test
     fun `should return null if not found`() = runTest {
-      dpsExtMovementsServer.stubResyncPrisonerTapsError(status = 404)
+      dpsTapsServer.stubResyncPrisonerTapsError(status = 404)
 
       assertThat(apiService.resyncPrisonerTaps("A1234BC", request)).isNull()
     }

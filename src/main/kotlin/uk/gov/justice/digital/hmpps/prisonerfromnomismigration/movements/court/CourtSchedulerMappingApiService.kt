@@ -9,7 +9,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
 
 @Service
-class CourtMappingApiService(@Qualifier("courtMappingApiWebClient") webClient: WebClient) {
+class CourtSchedulerMappingApiService(@Qualifier("courtSchedulerMappingApiWebClient") webClient: WebClient) {
 
   private val scheduleApi = CourtScheduleResourceApi(webClient)
 

@@ -24,7 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.S
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsExtMovementsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsTapsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
@@ -40,26 +40,26 @@ class TapDpsApiExtension :
     private var enableResetBeforeEach = true
 
     @JvmField
-    val dpsExtMovementsServer = TapDpsApiMockServer()
+    val dpsTapsServer = TapDpsApiMockServer()
     lateinit var jsonMapper: JsonMapper
 
     fun resetAndDisableResetBeforeEach() {
       enableResetBeforeEach = false
-      dpsExtMovementsServer.resetAll()
+      dpsTapsServer.resetAll()
     }
   }
 
   override fun beforeAll(context: ExtensionContext) {
-    dpsExtMovementsServer.start()
+    dpsTapsServer.start()
     jsonMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonJsonMapper") as JsonMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    if (enableResetBeforeEach) dpsExtMovementsServer.resetAll()
+    if (enableResetBeforeEach) dpsTapsServer.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {
-    dpsExtMovementsServer.stop()
+    dpsTapsServer.stop()
     enableResetBeforeEach = true
   }
 }
@@ -72,8 +72,8 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     private val tomorrow = today.plusDays(1)
 
     @Suppress("unused")
-    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsExtMovementsServer.getRequestBody(pattern, TapDpsApiExtension.jsonMapper)
-    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsExtMovementsServer.getRequestBodies(pattern, TapDpsApiExtension.jsonMapper)
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsTapsServer.getRequestBody(pattern, TapDpsApiExtension.jsonMapper)
+    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsTapsServer.getRequestBodies(pattern, TapDpsApiExtension.jsonMapper)
 
     fun syncTapAuthorisation() = SyncWriteTapAuthorisation(
       prisonCode = "LEI",
@@ -204,7 +204,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubSyncTapAuthorisation(personIdentifier: String = "A1234BC", response: SyncResponse = syncResponse()) {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       put("/sync/temporary-absence-authorisations/$personIdentifier")
         .willReturn(
           aResponse()
@@ -220,7 +220,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     status: Int = 500,
     error: ErrorResponse = ErrorResponse(status = status),
   ) {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       put("/sync/temporary-absence-authorisations/$personIdentifier")
         .willReturn(
           aResponse()
@@ -232,7 +232,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubDeleteTapAuthorisation(authorisationId: UUID) {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       delete("/sync/temporary-absence-authorisations/$authorisationId")
         .willReturn(
           aResponse()
@@ -246,7 +246,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     status: Int = 500,
     error: ErrorResponse = ErrorResponse(status = status),
   ) {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       delete("/sync/temporary-absence-authorisations/$authorisationId")
         .willReturn(
           aResponse()
@@ -258,7 +258,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubSyncTapOccurrence(authorisationId: UUID, response: SyncResponse = syncResponse()) {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       put("/sync/temporary-absence-authorisations/$authorisationId/occurrences")
         .willReturn(
           aResponse()
@@ -274,7 +274,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     status: Int = 500,
     error: ErrorResponse = ErrorResponse(status = status),
   ) {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       put("/sync/temporary-absence-authorisations/$authorisationId/occurrences")
         .willReturn(
           aResponse()
@@ -286,7 +286,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubDeleteTapOccurrence(occurrenceId: UUID) {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       delete("/sync/temporary-absence-occurrences/$occurrenceId")
         .willReturn(
           aResponse()
@@ -300,7 +300,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     status: Int = 500,
     error: ErrorResponse = ErrorResponse(status = status),
   ) {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       delete("/sync/temporary-absence-occurrences/$occurrenceId")
         .willReturn(
           aResponse()
@@ -312,7 +312,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubSyncTapMovement(personIdentifier: String = "A1234BC", response: SyncResponse = syncResponse()) {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       put("/sync/temporary-absence-movements/$personIdentifier")
         .willReturn(
           aResponse()
@@ -328,7 +328,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     status: Int = 500,
     error: ErrorResponse = ErrorResponse(status = status),
   ) {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       put("/sync/temporary-absence-movements/$personIdentifier")
         .willReturn(
           aResponse()
@@ -340,7 +340,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubDeleteTapMovement(movementId: UUID) {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       delete("/sync/temporary-absence-movements/$movementId")
         .willReturn(
           aResponse()
@@ -354,7 +354,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     status: Int = 500,
     error: ErrorResponse = ErrorResponse(status = status),
   ) {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       delete("/sync/temporary-absence-movements/$movementId")
         .willReturn(
           aResponse()
@@ -366,7 +366,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubResyncPrisonerTaps(personIdentifier: String = "A1234BC", response: MigrateTapResponse = migrateResponse()) {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       put("/resync/temporary-absences/$personIdentifier")
         .willReturn(
           aResponse()
@@ -382,7 +382,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     status: Int = 500,
     error: ErrorResponse = ErrorResponse(status = status),
   ) {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       put("/resync/temporary-absences/$personIdentifier")
         .willReturn(
           aResponse()
@@ -394,7 +394,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubMoveBooking() {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       put("/move/temporary-absences")
         .willReturn(
           aResponse()
@@ -408,7 +408,7 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     status: Int = 500,
     error: ErrorResponse = ErrorResponse(status = status),
   ) {
-    dpsExtMovementsServer.stubFor(
+    dpsTapsServer.stubFor(
       put("/move/temporary-absences")
         .willReturn(
           aResponse()

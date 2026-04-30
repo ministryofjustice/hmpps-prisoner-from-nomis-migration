@@ -121,7 +121,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     OrganisationsDpsApiExtension.dpsOrganisationsServer.stubHealthPing(status)
     VisitBalanceDpsApiExtension.dpsVisitBalanceServer.stubHealthPing(status)
     NomisSyncApiExtension.nomisSyncApi.stubHealthPing(status)
-    TapDpsApiExtension.dpsExtMovementsServer.stubHealthPing(status)
+    TapDpsApiExtension.dpsTapsServer.stubHealthPing(status)
     OfficialVisitsDpsApiExtension.dpsOfficialVisitsServer.stubHealthPing(status)
   }
 }
