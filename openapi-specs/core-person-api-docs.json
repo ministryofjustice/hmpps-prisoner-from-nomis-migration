@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-04-28.3221.13acf4d"
+    "version" : "2026-04-29.3266.ec4dcfc"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -1882,7 +1882,7 @@
           },
           "postTown" : {
             "type" : [ "string", "null" ],
-            "description" : "Person address postTown",
+            "description" : "Person address post town",
             "example" : "London"
           },
           "county" : {
@@ -1891,8 +1891,14 @@
             "example" : "Greater London"
           },
           "country" : {
-            "$ref" : "#/components/schemas/CanonicalCountry",
-            "description" : "Person address country"
+            "type" : [ "string", "null" ],
+            "description" : "Person address country",
+            "example" : "United Kingdom of Great Britain and Northern Ireland (the)"
+          },
+          "countryCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Person address country code",
+            "example" : "GBR"
           },
           "uprn" : {
             "type" : [ "string", "null" ],
@@ -1906,7 +1912,7 @@
           "comment" : {
             "type" : [ "string", "null" ],
             "description" : "Person address comment",
-            "example" : "United Kingdom"
+            "example" : "Some comment"
           },
           "usages" : {
             "type" : "array",
@@ -1916,7 +1922,7 @@
             }
           }
         },
-        "required" : [ "country", "cprAddressId", "status", "usages" ]
+        "required" : [ "cprAddressId", "status", "usages" ]
       },
       "CanonicalAddressStatus" : {
         "type" : "object",
@@ -1982,21 +1988,6 @@
           }
         },
         "required" : [ "sex", "title" ]
-      },
-      "CanonicalCountry" : {
-        "type" : "object",
-        "properties" : {
-          "code" : {
-            "type" : [ "string", "null" ],
-            "description" : "Country code",
-            "example" : "GBR"
-          },
-          "description" : {
-            "type" : [ "string", "null" ],
-            "description" : "Country description",
-            "example" : "United Kingdom of Great Britain and Northern Ireland (the)"
-          }
-        }
       },
       "CanonicalEthnicity" : {
         "type" : "object",
