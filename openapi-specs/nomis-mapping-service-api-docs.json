@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-04-27.516.a548bdd"
+    "version" : "2026-04-29.520.771c038"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -23507,12 +23507,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -23529,19 +23529,19 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "paged" : {
-            "type" : "boolean"
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "unpaged" : {
+          "paged" : {
             "type" : "boolean"
           },
-          "pageSize" : {
-            "type" : "integer",
-            "format" : "int32"
+          "unpaged" : {
+            "type" : "boolean"
           }
         }
       },
@@ -23766,12 +23766,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -23884,12 +23884,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -23930,12 +23930,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24016,12 +24016,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24098,12 +24098,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24246,12 +24246,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24376,12 +24376,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24422,12 +24422,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24496,12 +24496,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -24564,12 +24564,12 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
