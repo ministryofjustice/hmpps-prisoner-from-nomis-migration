@@ -112,7 +112,7 @@ class PrisonBalanceMigrationIntTest(
             label = "2020-01-01T00:00:00",
           ),
         )
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
         migrationResult = performMigration()
       }
 
@@ -175,7 +175,7 @@ class PrisonBalanceMigrationIntTest(
         dpsApiMock.stubMigratePrisonBalance(prisonId = "MDI")
         dpsApiMock.stubMigratePrisonBalance(prisonId = "LEI")
         mappingApiMock.stubCreateMappingsForMigration()
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 2)
         migrationResult = performMigration()
       }
 
@@ -282,7 +282,7 @@ class PrisonBalanceMigrationIntTest(
         dpsApiMock.stubMigratePrisonBalance(prisonId = "MDI")
         dpsApiMock.stubMigratePrisonBalance(prisonId = "LEI")
         mappingApiMock.stubCreateMappingsForMigration()
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 2)
         migrationResult = performMigration(PrisonBalanceMigrationFilter(prisonId = ""))
       }
 
@@ -374,7 +374,7 @@ class PrisonBalanceMigrationIntTest(
         )
         dpsApiMock.stubMigratePrisonBalance(prisonId = "MDI")
         mappingApiMock.stubCreateMappingsForMigration()
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 1)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
         migrationResult = performMigration(PrisonBalanceMigrationFilter("MDI"))
       }
 
@@ -523,7 +523,7 @@ class PrisonBalanceMigrationIntTest(
         )
         dpsApiMock.stubMigratePrisonBalance(prisonId = "MDI")
         mappingApiMock.stubCreateMappingsForMigrationFailureFollowedBySuccess()
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 1)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
         migrationResult = performMigration()
       }
 
@@ -614,7 +614,7 @@ class PrisonBalanceMigrationIntTest(
             userMessage = "Duplicate mapping",
           ),
         )
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
         migrationResult = performMigration()
       }
 
@@ -745,7 +745,7 @@ class PrisonBalanceMigrationIntTest(
             label = "2020-01-01T00:00:00",
           ),
         )
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
         performMigration()
       }
 
@@ -776,7 +776,7 @@ class PrisonBalanceMigrationIntTest(
             label = "2020-01-01T00:00:00",
           ),
         )
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
         performMigration()
       }
 
@@ -807,7 +807,7 @@ class PrisonBalanceMigrationIntTest(
             label = "2020-01-01T00:00:00",
           ),
         )
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
         performMigration()
       }
     }
@@ -844,6 +844,6 @@ class PrisonBalanceMigrationIntTest(
       dpsApiMock.stubMigratePrisonBalance("LEI")
     }
     mappingApiMock.stubCreateMappingsForMigration()
-    mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = prisonAccounts.size)
+    mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = prisonAccounts.size)
   }
 }

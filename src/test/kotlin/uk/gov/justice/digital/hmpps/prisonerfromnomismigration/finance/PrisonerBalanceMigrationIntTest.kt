@@ -94,7 +94,11 @@ class PrisonerBalanceMigrationIntTest(
       fun setUp() {
         setupMigrationTest()
 
-        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(totalElements = 2, pageSize = 10, firstRootOffenderId = 10000)
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 2,
+          pageSize = 10,
+          firstRootOffenderId = 10000,
+        )
         mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
           nomisRootOffenderId = 10000,
           mapping = PrisonerBalanceMappingDto(
@@ -113,7 +117,7 @@ class PrisonerBalanceMigrationIntTest(
             label = "2020-01-01T00:00:00",
           ),
         )
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
         migrationResult = performMigration()
       }
 
@@ -145,9 +149,21 @@ class PrisonerBalanceMigrationIntTest(
       fun setUp() {
         setupMigrationTest()
 
-        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(totalElements = 2, pageSize = 10, firstRootOffenderId = 10000L)
-        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = 10000, dpsId = "A0001BC", mapping = null)
-        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = 10001, dpsId = "A0002BC", mapping = null)
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 2,
+          pageSize = 10,
+          firstRootOffenderId = 10000L,
+        )
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
+          nomisRootOffenderId = 10000,
+          dpsId = "A0001BC",
+          mapping = null,
+        )
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
+          nomisRootOffenderId = 10001,
+          dpsId = "A0002BC",
+          mapping = null,
+        )
 
         nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(
           rootOffenderId = 10000,
@@ -182,7 +198,7 @@ class PrisonerBalanceMigrationIntTest(
         dpsApiMock.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
         dpsApiMock.stubMigratePrisonerBalance(prisonNumber = "A0002BC")
         mappingApiMock.stubCreateMappingsForMigration()
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 2)
         migrationResult = performMigration()
       }
 
@@ -259,9 +275,21 @@ class PrisonerBalanceMigrationIntTest(
         setupMigrationTest()
 
         val prisonId = "ASI"
-        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(totalElements = 2, pageSize = 10, firstRootOffenderId = 10000L)
-        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = 10000, dpsId = "A0001BC", mapping = null)
-        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = 10001, dpsId = "A0002BC", mapping = null)
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 2,
+          pageSize = 10,
+          firstRootOffenderId = 10000L,
+        )
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
+          nomisRootOffenderId = 10000,
+          dpsId = "A0001BC",
+          mapping = null,
+        )
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
+          nomisRootOffenderId = 10001,
+          dpsId = "A0002BC",
+          mapping = null,
+        )
 
         nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(
           rootOffenderId = 10000,
@@ -296,7 +324,7 @@ class PrisonerBalanceMigrationIntTest(
         dpsApiMock.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
         dpsApiMock.stubMigratePrisonerBalance(prisonNumber = "A0002BC")
         mappingApiMock.stubCreateMappingsForMigration()
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 2)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 2)
         migrationResult = performMigration(PrisonerBalanceMigrationFilter(prisonId = prisonId))
       }
 
@@ -413,18 +441,25 @@ class PrisonerBalanceMigrationIntTest(
 
       @Test
       fun `will send prisoner balance data to Dps`() {
-        val dpsRequests: List<PrisonerBalancesSyncRequest> = FinanceApiExtension.Companion.getRequestBodies(postRequestedFor(urlPathMatching("/migrate/prisoner-balances/A0001BC")))
+        val dpsRequests: List<PrisonerBalancesSyncRequest> =
+          FinanceApiExtension.Companion.getRequestBodies(postRequestedFor(urlPathMatching("/migrate/prisoner-balances/A0001BC")))
         val dpsRequests2: List<PrisonerBalancesSyncRequest> =
           FinanceApiExtension.Companion.getRequestBodies(postRequestedFor(urlPathMatching("/migrate/prisoner-balances/A0002BC")))
 
-        with(dpsRequests.find { it.accountBalances[0].accountCode == 2102 } ?: throw AssertionError("Request not found")) {
+        with(
+          dpsRequests.find { it.accountBalances[0].accountCode == 2102 }
+            ?: throw AssertionError("Request not found"),
+        ) {
           assertThat(accountBalances[0].balance).isEqualTo(BigDecimal.valueOf(20.50))
           assertThat(accountBalances[0].holdBalance).isEqualTo(BigDecimal.valueOf(2.15))
           assertThat(accountBalances[0].prisonId).isEqualTo("ASI")
           assertThat(accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-02T02:02:03"))
           assertThat(accountBalances[0].transactionId).isEqualTo(175)
         }
-        with(dpsRequests2.find { it.accountBalances[0].accountCode == 2103 } ?: throw AssertionError("Request not found")) {
+        with(
+          dpsRequests2.find { it.accountBalances[0].accountCode == 2103 }
+            ?: throw AssertionError("Request not found"),
+        ) {
           assertThat(accountBalances[0].balance).isEqualTo(BigDecimal.valueOf(25.50))
           assertThat(accountBalances[0].holdBalance).isEqualTo(BigDecimal.valueOf(1.15))
           assertThat(accountBalances[0].prisonId).isEqualTo("ASI")
@@ -435,7 +470,8 @@ class PrisonerBalanceMigrationIntTest(
 
       @Test
       fun `will create mappings for nomis rootOffender to dps prisoner balance`() {
-        val mappingRequests: List<PrisonerBalanceMappingDto> = MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/prisoner-balance")))
+        val mappingRequests: List<PrisonerBalanceMappingDto> =
+          MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/prisoner-balance")))
 
         with(mappingRequests.find { it.nomisRootOffenderId == 10000L } ?: throw AssertionError("Request not found")) {
           assertThat(mappingType).isEqualTo(MIGRATED)
@@ -461,7 +497,11 @@ class PrisonerBalanceMigrationIntTest(
       fun setUp() {
         setupMigrationTest()
 
-        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(totalElements = 1, pageSize = 10, firstRootOffenderId = 10000)
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 1,
+          pageSize = 10,
+          firstRootOffenderId = 10000,
+        )
         mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = 10000, mapping = null)
         nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(
           rootOffenderId = 10000,
@@ -481,7 +521,7 @@ class PrisonerBalanceMigrationIntTest(
         )
         dpsApiMock.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
         mappingApiMock.stubCreateMappingsForMigrationFailureFollowedBySuccess()
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 1)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
         migrationResult = performMigration()
       }
 
@@ -537,7 +577,11 @@ class PrisonerBalanceMigrationIntTest(
       fun setUp() {
         setupMigrationTest()
 
-        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(totalElements = 1, pageSize = 10, firstRootOffenderId = 10000)
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 1,
+          pageSize = 10,
+          firstRootOffenderId = 10000,
+        )
         mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = 10000, mapping = null)
         nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(
           rootOffenderId = 10000,
@@ -576,7 +620,7 @@ class PrisonerBalanceMigrationIntTest(
             userMessage = "Duplicate mapping",
           ),
         )
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
         migrationResult = performMigration()
       }
 
@@ -697,7 +741,11 @@ class PrisonerBalanceMigrationIntTest(
             ),
           )
         }
-        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(totalElements = 1, pageSize = 10, firstRootOffenderId = 10000)
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 1,
+          pageSize = 10,
+          firstRootOffenderId = 10000,
+        )
         mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
           nomisRootOffenderId = 10000,
           mapping = PrisonerBalanceMappingDto(
@@ -707,7 +755,7 @@ class PrisonerBalanceMigrationIntTest(
             label = "2020-01-01T00:00:00",
           ),
         )
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
         performMigration()
       }
 
@@ -728,7 +776,11 @@ class PrisonerBalanceMigrationIntTest(
             ),
           )
         }
-        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(totalElements = 1, pageSize = 10, firstRootOffenderId = 10000)
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 1,
+          pageSize = 10,
+          firstRootOffenderId = 10000,
+        )
         mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
           nomisRootOffenderId = 10000,
           mapping = PrisonerBalanceMappingDto(
@@ -738,7 +790,7 @@ class PrisonerBalanceMigrationIntTest(
             label = "2020-01-01T00:00:00",
           ),
         )
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
         performMigration()
       }
 
@@ -759,7 +811,11 @@ class PrisonerBalanceMigrationIntTest(
             ),
           )
         }
-        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(totalElements = 1, pageSize = 10, firstRootOffenderId = 10000)
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 1,
+          pageSize = 10,
+          firstRootOffenderId = 10000,
+        )
         mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
           nomisRootOffenderId = 10000,
           mapping = PrisonerBalanceMappingDto(
@@ -769,7 +825,7 @@ class PrisonerBalanceMigrationIntTest(
             label = "2020-01-01T00:00:00",
           ),
         )
-        mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
         performMigration()
       }
     }
@@ -806,6 +862,6 @@ class PrisonerBalanceMigrationIntTest(
       dpsApiMock.stubMigratePrisonerBalance("A0002BC")
     }
     mappingApiMock.stubCreateMappingsForMigration()
-    mappingApiMock.stubGetMigrationDetails(migrationId = ".*", count = prisonerAccounts.size)
+    mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = prisonerAccounts.size)
   }
 }
