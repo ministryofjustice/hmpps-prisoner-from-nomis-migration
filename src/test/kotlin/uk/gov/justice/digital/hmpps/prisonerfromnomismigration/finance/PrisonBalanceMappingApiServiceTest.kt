@@ -138,7 +138,7 @@ class PrisonBalanceMappingApiServiceTest {
     inner class GetMigrationCount {
       @BeforeEach
       internal fun setUp() {
-        mockServer.stubGetMigrationCount(count = 56_766)
+        mockServer.stubGetMigrationCount(count = 54_766)
       }
 
       @Test
