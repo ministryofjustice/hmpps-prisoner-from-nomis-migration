@@ -23,7 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMov
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MoveTemporaryAbsencesRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsExtMovementsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsTapsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiMockServer.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.application
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.offenderTapsResponse
@@ -41,7 +41,7 @@ class TapMoveBookingIntTest(
   @Autowired private val externalMovementsNomisApi: TapNomisApiMockServer,
 ) : SqsIntegrationTestBase() {
 
-  private val dpsApi = dpsExtMovementsServer
+  private val dpsApi = dpsTapsServer
 
   @Nested
   inner class HappyPath {

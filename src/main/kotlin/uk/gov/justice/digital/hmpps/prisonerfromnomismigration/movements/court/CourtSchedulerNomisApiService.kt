@@ -8,7 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtScheduleOut
 
 @Service
-class CourtNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
+class CourtSchedulerNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
 
   private val scheduleApi = CourtScheduleResourceApi(webClient)
 

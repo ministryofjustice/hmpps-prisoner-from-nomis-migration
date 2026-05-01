@@ -25,6 +25,7 @@ api.base.url:
   organisations: http://localhost:8100
   visit.balance: http://localhost:8101
   movements-taps: http://localhost:8103
+  movements-court: http://localhost:8106
   officialvisits: http://localhost:8104
   csra: http://localhost:8105
 

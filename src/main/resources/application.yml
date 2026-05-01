@@ -114,6 +114,11 @@ spring:
             client-id: ${ext.movements.client.id}
             client-secret: ${ext.movements.client.secret}
             authorization-grant-type: client_credentials
+          movements-court-api:
+            provider: hmpps-auth
+            client-id: ${movements.court.client.id}
+            client-secret: ${movements.court.client.secret}
+            authorization-grant-type: client_credentials
           officialvisits-api:
             provider: hmpps-auth
             client-id: ${officialvisits.client.id}

@@ -20,13 +20,13 @@ import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
 @SpringAPIServiceTest
-@Import(CourtNomisApiService::class, CourtNomisApiMockServer::class)
-class CourtNomisApiServiceTest {
+@Import(CourtSchedulerNomisApiService::class, CourtSchedulerNomisApiMockServer::class)
+class CourtSchedulerNomisApiServiceTest {
   @Autowired
-  private lateinit var apiService: CourtNomisApiService
+  private lateinit var apiService: CourtSchedulerNomisApiService
 
   @Autowired
-  private lateinit var courtNomisApiMockServer: CourtNomisApiMockServer
+  private lateinit var courtSchedulerNomisApiMockServer: CourtSchedulerNomisApiMockServer
 
   private val now = LocalDateTime.now()
   private val yesterday = now.minusDays(1)
@@ -35,29 +35,29 @@ class CourtNomisApiServiceTest {
   inner class GetCourtSchedule {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      courtNomisApiMockServer.stubGetCourtScheduleOut(offenderNo = "A1234BC", eventId = 1)
+      courtSchedulerNomisApiMockServer.stubGetCourtScheduleOut(offenderNo = "A1234BC", eventId = 1)
 
       apiService.getCourtScheduleOut(offenderNo = "A1234BC", eventId = 1)
 
-      courtNomisApiMockServer.verify(
+      courtSchedulerNomisApiMockServer.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
     }
 
     @Test
     internal fun `will pass offender number and event ID to service`() = runTest {
-      courtNomisApiMockServer.stubGetCourtScheduleOut(offenderNo = "A1234BC", eventId = 1)
+      courtSchedulerNomisApiMockServer.stubGetCourtScheduleOut(offenderNo = "A1234BC", eventId = 1)
 
       apiService.getCourtScheduleOut(offenderNo = "A1234BC", eventId = 1)
 
-      courtNomisApiMockServer.verify(
+      courtSchedulerNomisApiMockServer.verify(
         getRequestedFor(urlPathEqualTo("/movements/A1234BC/court/schedule/out/1")),
       )
     }
 
     @Test
     fun `will return tap schedule out`() = runTest {
-      courtNomisApiMockServer.stubGetCourtScheduleOut(offenderNo = "A1234BC", eventId = 1)
+      courtSchedulerNomisApiMockServer.stubGetCourtScheduleOut(offenderNo = "A1234BC", eventId = 1)
 
       apiService.getCourtScheduleOut(offenderNo = "A1234BC", eventId = 1)
         .apply {
@@ -71,7 +71,7 @@ class CourtNomisApiServiceTest {
 
     @Test
     fun `will throw error when offender does not exist`() = runTest {
-      courtNomisApiMockServer.stubGetCourtScheduleOut(NOT_FOUND)
+      courtSchedulerNomisApiMockServer.stubGetCourtScheduleOut(NOT_FOUND)
 
       assertThrows<WebClientResponseException.NotFound> {
         apiService.getCourtScheduleOut(offenderNo = "A1234BC", eventId = 1)
@@ -80,7 +80,7 @@ class CourtNomisApiServiceTest {
 
     @Test
     fun `will throw error when API returns an error`() = runTest {
-      courtNomisApiMockServer.stubGetCourtScheduleOut(INTERNAL_SERVER_ERROR)
+      courtSchedulerNomisApiMockServer.stubGetCourtScheduleOut(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getCourtScheduleOut(offenderNo = "A1234BC", eventId = 1)

@@ -15,7 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApi
 import java.time.LocalDateTime
 
 @Component
-class CourtNomisApiMockServer(private val jsonMapper: JsonMapper) {
+class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubGetCourtScheduleOut(
     offenderNo: String = "A1234BC",

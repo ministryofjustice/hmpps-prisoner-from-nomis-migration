@@ -24,10 +24,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import java.util.*
 
 @SpringAPIServiceTest
-@Import(CourtMappingApiService::class, CourtMappingApiMockServer::class, CourtConfiguration::class)
-class CourtMappingApiServiceTest {
+@Import(CourtSchedulerMappingApiService::class, CourtMappingApiMockServer::class, CourtSchedulerConfiguration::class)
+class CourtSchedulerMappingApiServiceTest {
   @Autowired
-  private lateinit var apiService: CourtMappingApiService
+  private lateinit var apiService: CourtSchedulerMappingApiService
 
   @Autowired
   private lateinit var mappingApi: CourtMappingApiMockServer

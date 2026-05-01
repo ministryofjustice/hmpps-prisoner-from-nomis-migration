@@ -32,7 +32,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.Migra
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsExtMovementsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsTapsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiMockServer.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiMockServer.Companion.migrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapNomisApiMockServer.Companion.application
@@ -54,7 +54,7 @@ class TapMigrationIntTest(
   @Autowired private val mappingApi: TapMappingApiMockServer,
 ) : MigrationTestBase() {
 
-  private val dpsApi = dpsExtMovementsServer
+  private val dpsApi = dpsTapsServer
 
   private lateinit var migrationId: String
   private val now = LocalDateTime.now()
