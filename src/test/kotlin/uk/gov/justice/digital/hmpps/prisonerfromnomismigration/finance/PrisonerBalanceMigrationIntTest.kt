@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.MigrationTestBase
@@ -48,7 +49,6 @@ class PrisonerBalanceMigrationIntTest(
   @Autowired private val nomisPrisonerBalanceApiMock: PrisonerBalanceNomisApiMockServer,
   @Autowired private val mappingApiMock: PrisonerBalanceMappingApiMockServer,
 ) : MigrationTestBase() {
-  private val dpsApiMock = FinanceApiExtension.financeApi
 
   @Nested
   @DisplayName("POST /migrate/prisoner-balance")
@@ -195,8 +195,8 @@ class PrisonerBalanceMigrationIntTest(
             ),
           ),
         )
-        dpsApiMock.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
-        dpsApiMock.stubMigratePrisonerBalance(prisonNumber = "A0002BC")
+        financeApi.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
+        financeApi.stubMigratePrisonerBalance(prisonNumber = "A0002BC")
         mappingApiMock.stubCreateMappingsForMigration()
         mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 2)
         migrationResult = performMigration()
@@ -321,8 +321,8 @@ class PrisonerBalanceMigrationIntTest(
             ),
           ),
         )
-        dpsApiMock.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
-        dpsApiMock.stubMigratePrisonerBalance(prisonNumber = "A0002BC")
+        financeApi.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
+        financeApi.stubMigratePrisonerBalance(prisonNumber = "A0002BC")
         mappingApiMock.stubCreateMappingsForMigration()
         mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 2)
         migrationResult = performMigration(PrisonerBalanceMigrationFilter(prisonId = prisonId))
@@ -519,7 +519,7 @@ class PrisonerBalanceMigrationIntTest(
             ),
           ),
         )
-        dpsApiMock.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
+        financeApi.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
         mappingApiMock.stubCreateMappingsForMigrationFailureFollowedBySuccess()
         mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
         migrationResult = performMigration()
@@ -600,7 +600,7 @@ class PrisonerBalanceMigrationIntTest(
           ),
         )
 
-        dpsApiMock.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
+        financeApi.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
         mappingApiMock.stubCreateMappingsForMigration(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
@@ -851,15 +851,15 @@ class PrisonerBalanceMigrationIntTest(
 
   private fun stubMigratePrisonerBalances(nomisRootOffenderIds: List<Long>, vararg prisonerAccounts: PrisonerBalanceDto) {
     nomisApi.resetAll()
-    dpsApiMock.resetAll()
+    financeApi.resetAll()
     mappingApiMock.resetAll()
     nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(totalElements = 2, pageSize = 10, firstRootOffenderId = 10000)
     prisonerAccounts.forEachIndexed { index, nomisPrisonerBalance ->
       nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(rootOffenderId = nomisRootOffenderIds[index], prisonerBalance = nomisPrisonerBalance)
       mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = nomisRootOffenderIds[index], mapping = null, dpsId = "A0001BC")
       mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = nomisRootOffenderIds[index], mapping = null, dpsId = "A0002BC")
-      dpsApiMock.stubMigratePrisonerBalance("A0001BC")
-      dpsApiMock.stubMigratePrisonerBalance("A0002BC")
+      financeApi.stubMigratePrisonerBalance("A0001BC")
+      financeApi.stubMigratePrisonerBalance("A0002BC")
     }
     mappingApiMock.stubCreateMappingsForMigration()
     mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = prisonerAccounts.size)

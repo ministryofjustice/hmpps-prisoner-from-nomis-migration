@@ -17,29 +17,30 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerBalanceMappingApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerBalanceMigrationFilter
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerBalanceNomisApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.prisonerBalance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.incidentsApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMappingApiMockServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsMigrationFilter
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsNomisApiMockServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsNomisApiMockServer.Companion.INCIDENTS_ID_URL
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.incidentIdsPagedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAccountDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import java.math.BigDecimal
 import java.time.Duration
 import java.time.LocalDateTime
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class MigrateIntTest : SqsIntegrationTestBase() {
   @Autowired
-  private lateinit var nomisApiMock: IncidentsNomisApiMockServer
+  private lateinit var nomisApiMock: PrisonerBalanceNomisApiMockServer
 
   @Autowired
-  private lateinit var mappingApiMock: IncidentsMappingApiMockServer
+  private lateinit var mappingApiMock: PrisonerBalanceMappingApiMockServer
 
   @Autowired
   private lateinit var migrationHistoryRepository: MigrationHistoryRepository
@@ -90,19 +91,64 @@ class MigrateIntTest : SqsIntegrationTestBase() {
         .expectStatus().isNotFound
     }
 
+    internal fun setUpMigrationStubs() {
+      nomisApiMock.stubGetRootOffenderIdsToMigrate(
+        totalElements = 2,
+        pageSize = 10,
+        firstRootOffenderId = 10000L,
+      )
+      mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
+        nomisRootOffenderId = 10000,
+        dpsId = "A0001BC",
+        mapping = null,
+      )
+      mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
+        nomisRootOffenderId = 10001,
+        dpsId = "A0002BC",
+        mapping = null,
+      )
+
+      nomisApiMock.stubGetPrisonerBalance(
+        rootOffenderId = 10000,
+        prisonerBalance = prisonerBalance(prisonNumber = "A0001BC").copy(
+          accounts = listOf(
+            PrisonerAccountDto(
+              prisonId = "ASI",
+              lastTransactionId = 175,
+              accountCode = 2102,
+              balance = BigDecimal.valueOf(24.50),
+              holdBalance = BigDecimal.valueOf(2.25),
+              transactionDate = LocalDateTime.parse("2025-06-02T02:02:03"),
+            ),
+          ),
+        ),
+      )
+      nomisApiMock.stubGetPrisonerBalance(
+        rootOffenderId = 10001,
+        prisonerBalance = prisonerBalance(prisonNumber = "A0002BC").copy(
+          accounts = listOf(
+            PrisonerAccountDto(
+              prisonId = "ASI",
+              lastTransactionId = 176,
+              accountCode = 2103,
+              balance = BigDecimal.valueOf(25.50),
+              holdBalance = BigDecimal.valueOf(2.15),
+              transactionDate = LocalDateTime.parse("2025-07-02T01:02:05"),
+            ),
+          ),
+        ),
+      )
+      financeApi.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
+      financeApi.stubMigratePrisonerBalance(prisonNumber = "A0002BC")
+      mappingApiMock.stubCreateMappingsForMigration()
+      mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 2)
+    }
+
     @Test
     internal fun `will terminate a running migration`() {
       // slow the API calls so there is time to cancel before it completes
       nomisApi.setGlobalFixedDelay(1000)
-      nomisApi.stubGetInitialCount(INCIDENTS_ID_URL, 86) { incidentIdsPagedResponse(it) }
-      nomisApiMock.stubMultipleGetIncidentIdCounts(totalElements = 86, pageSize = 10)
-      nomisApiMock.stubMultipleGetIncidents(1..86)
-
-      mappingApiMock.stubGetAnyIncidentNotFound()
-      mappingApiMock.stubMappingCreate()
-
-      incidentsApi.stubIncidentUpsert()
-      mappingApiMock.stubIncidentsMappingByMigrationId(count = 86)
+      setUpMigrationStubs()
 
       val migrationId = performMigration().migrationId
 
@@ -193,7 +239,7 @@ class MigrateIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 0,
-            migrationType = MigrationType.INCIDENTS,
+            migrationType = MigrationType.PRISONER_BALANCE,
           ),
         )
       }
@@ -219,11 +265,11 @@ class MigrateIntTest : SqsIntegrationTestBase() {
             filter = "",
             recordsMigrated = 123_567,
             recordsFailed = 123,
-            migrationType = MigrationType.INCIDENTS,
+            migrationType = MigrationType.PRISONER_BALANCE,
           ),
         )
       }
-      mappingApiMock.stubIncidentsMappingByMigrationId(count = 4)
+      mappingApiMock.stubGetMigrationCount(count = 4)
 
       webTestClient.post().uri("/migrate/refresh/{migrationId}", migrationId)
         .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
@@ -245,7 +291,7 @@ class MigrateIntTest : SqsIntegrationTestBase() {
     }
   }
 
-  private fun performMigration(body: IncidentsMigrationFilter = IncidentsMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/incidents")
+  private fun performMigration(body: PrisonerBalanceMigrationFilter = PrisonerBalanceMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/prisoner-balance")
     .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .bodyValue(body)
@@ -257,7 +303,7 @@ class MigrateIntTest : SqsIntegrationTestBase() {
 
   private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
     verify(telemetryClient).trackEvent(
-      eq("incidents-migration-completed"),
+      eq("prisonerbalance-migration-completed"),
       any(),
       isNull(),
     )

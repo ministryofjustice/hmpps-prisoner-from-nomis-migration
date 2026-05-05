@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
@@ -26,16 +25,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Staff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffParty
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
-import java.lang.Long.min
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Component
 class IncidentsNomisApiMockServer(private val jsonMapper: JsonMapper) {
-  companion object {
-    const val INCIDENTS_ID_URL = "/incidents/ids"
-  }
+
   fun stubHealthPing(status: Int) {
     nomisApi.stubFor(
       get("/health/ping").willReturn(
@@ -43,31 +38,6 @@ class IncidentsNomisApiMockServer(private val jsonMapper: JsonMapper) {
           .withStatus(status),
       ),
     )
-  }
-
-  fun stubMultipleGetIncidentIdCounts(totalElements: Long, pageSize: Long) {
-    // for each page create a response for each incident id starting from 1 up to `totalElements`
-
-    val pages = (totalElements / pageSize) + 1
-    (0..pages).forEach { page ->
-      val startIncidentId = (page * pageSize) + 1
-      val endIncidentId = min((page * pageSize) + pageSize, totalElements)
-      nomisApi.stubFor(
-        get(urlPathEqualTo("/incidents/ids"))
-          .withQueryParam("page", equalTo(page.toString()))
-          .willReturn(
-            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(
-                incidentIdsPagedResponse(
-                  totalElements = totalElements,
-                  ids = (startIncidentId..endIncidentId).map { it },
-                  pageNumber = page,
-                  pageSize = pageSize,
-                ),
-              ),
-          ),
-      )
-    }
   }
 
   fun stubGetIncident(
@@ -114,33 +84,11 @@ class IncidentsNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubMultipleGetIncidents(intProgression: IntProgression) {
-    (intProgression).forEach {
-      nomisApi.stubFor(
-        get(urlPathEqualTo("/incidents/$it"))
-          .willReturn(
-            aResponse().withHeader("Content-Type", "application/json").withStatus(HttpStatus.OK.value())
-              .withBody(incidentResponse().copy(incidentId = it.toLong())),
-          ),
-      )
-    }
-  }
-
   fun ResponseDefinitionBuilder.withBody(body: Any): ResponseDefinitionBuilder = this.withBody(jsonMapper.writeValueAsString(body))
 
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
   fun verify(countMatchingStrategy: CountMatchingStrategy, requestPatternBuilder: RequestPatternBuilder) = nomisApi.verify(countMatchingStrategy, requestPatternBuilder)
-}
-
-fun incidentIdsPagedResponse(
-  totalElements: Long = 10,
-  ids: List<Long> = (0L..10L).toList(),
-  pageSize: Long = 10,
-  pageNumber: Long = 0,
-): String {
-  val content = ids.map { """{ "incidentId": $it }""" }.joinToString { it }
-  return pageContent(content, pageSize, pageNumber, totalElements, ids.size)
 }
 
 private fun incidentResponse(

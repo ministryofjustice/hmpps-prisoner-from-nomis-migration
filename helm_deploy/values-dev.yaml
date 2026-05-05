@@ -72,8 +72,6 @@ generic-prometheus-alerts:
     incidents:
       - "syscon-devs-dev-prisoner_from_nomis_incidents_queue"
       - "syscon-devs-dev-prisoner_from_nomis_incidents_dl_queue"
-      - "syscon-devs-dev-migration_incidents_queue"
-      - "syscon-devs-dev-migration_incidents_dlq"
     locations:
       - "syscon-devs-dev-prisoner_from_nomis_locations_queue"
       - "syscon-devs-dev-prisoner_from_nomis_locations_dl_queue"
