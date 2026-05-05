@@ -256,9 +256,6 @@ hmpps.sqs:
     migrationappointments:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
-    migrationincidents:
-      errorVisibilityTimeout: 1, 1, 1, 10
-      propagateTracing: false
     migrationcourtsentencing:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false

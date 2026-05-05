@@ -187,8 +187,6 @@ hmpps.sqs:
       errorVisibilityTimeout: 0
     migrationappointments:
       errorVisibilityTimeout: 0
-    migrationincidents:
-      errorVisibilityTimeout: 0
     migrationcourtsentencing:
       errorVisibilityTimeout: 0
     migrationcoreperson:

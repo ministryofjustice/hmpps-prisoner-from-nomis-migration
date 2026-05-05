@@ -101,10 +101,6 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONALLOCATIONS_QUEUE_NAME: "sqs_name"
     sqs-migration-allocations-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONALLOCATIONS_DLQ_NAME: "sqs_name"
-    sqs-migration-incidents-queue:
-      HMPPS_SQS_QUEUES_MIGRATIONINCIDENTS_QUEUE_NAME: "sqs_name"
-    sqs-migration-incidents-dlq:
-      HMPPS_SQS_QUEUES_MIGRATIONINCIDENTS_DLQ_NAME: "sqs_name"
     sqs-migration-courtsentencing-queue:
       HMPPS_SQS_QUEUES_MIGRATIONCOURTSENTENCING_QUEUE_NAME: "sqs_name"
     sqs-migration-courtsentencing-dlq:
