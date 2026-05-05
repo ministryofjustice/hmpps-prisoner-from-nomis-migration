@@ -10,12 +10,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.tryFetchParent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode.IN
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode.OUT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType.TAP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TAP_MOVEMENT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TAP_MOVEMENT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.MovementType.TAP
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_MAPPING_TAP_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TAP_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapMovementIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapMovementOut
@@ -67,8 +69,8 @@ class TapMovementService(
       ?: run {
         track("${TELEMETRY_PREFIX}-inserted", telemetry) {
           val mapping = when (directionCode) {
-            DirectionCode.OUT -> syncExternalMovementTapOut(prisonerNumber, bookingId, movementSeq, telemetry)
-            DirectionCode.IN -> syncExternalMovementTapIn(prisonerNumber, bookingId, movementSeq, telemetry)
+            OUT -> syncExternalMovementTapOut(prisonerNumber, bookingId, movementSeq, telemetry)
+            IN -> syncExternalMovementTapIn(prisonerNumber, bookingId, movementSeq, telemetry)
           }
           tryToCreateExternalMovementMapping(mapping, telemetry)
         }
@@ -206,7 +208,7 @@ class TapMovementService(
         ?: throw IllegalStateException("No mapping found when handling an update event for movement $bookingId/$movementSeq - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
 
       val newMapping = when (directionCode) {
-        DirectionCode.OUT -> syncExternalMovementTapOut(
+        OUT -> syncExternalMovementTapOut(
           prisonerNumber,
           bookingId,
           movementSeq,
@@ -214,7 +216,7 @@ class TapMovementService(
           existingMapping,
         )
 
-        DirectionCode.IN -> syncExternalMovementTapIn(
+        IN -> syncExternalMovementTapIn(
           prisonerNumber,
           bookingId,
           movementSeq,

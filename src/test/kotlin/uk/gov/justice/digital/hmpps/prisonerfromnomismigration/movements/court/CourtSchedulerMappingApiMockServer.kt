@@ -19,7 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getReque
 import java.util.*
 
 @Component
-class CourtMappingApiMockServer(private val jsonMapper: JsonMapper) {
+class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
   companion object {
     inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = mappingApi.getRequestBody(pattern, jsonMapper = jsonMapper)
   }

@@ -6,13 +6,13 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType.CRT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.MovementType.CRT
 
 private const val TELEMETRY_PREFIX: String = "${CRT_TELEMETRY_PREFIX}-movement"
 
 @Service
-class CourtSchedulerMovementService(
+class CourtSchedulerSyncMovementService(
   override val telemetryClient: TelemetryClient,
 ) : TelemetryEnabled {
 

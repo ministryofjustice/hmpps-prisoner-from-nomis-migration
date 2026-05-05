@@ -38,8 +38,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceAp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMovementService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerScheduleService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerSyncMovementService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerSyncScheduleService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension
@@ -262,11 +262,11 @@ class SqsIntegrationTestBase : TestBase() {
 
   // TODO remove when real tests are in place
   @MockitoSpyBean
-  protected lateinit var courtSchedulerScheduleService: CourtSchedulerScheduleService
+  protected lateinit var courtSchedulerSyncScheduleService: CourtSchedulerSyncScheduleService
 
   // TODO remove when real tests are in place
   @MockitoSpyBean
-  protected lateinit var courtSchedulerMovementService: CourtSchedulerMovementService
+  protected lateinit var courtSchedulerSyncMovementService: CourtSchedulerSyncMovementService
 
   @BeforeEach
   fun setUp() {

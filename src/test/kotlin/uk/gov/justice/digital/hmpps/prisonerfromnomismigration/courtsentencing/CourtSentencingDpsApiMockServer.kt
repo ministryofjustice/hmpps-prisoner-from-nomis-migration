@@ -28,15 +28,18 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeCreateCourtCasesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension.Companion.dpsCourtSchedulerServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
-import java.util.UUID
+import java.util.*
 
 class CourtSentencingDpsApiExtension :
   BeforeAllCallback,
   AfterAllCallback,
   BeforeEachCallback {
   companion object {
+    private var enableResetBeforeEach = true
+
     @JvmField
     val dpsCourtSentencingServer = CourtSentencingDpsApiMockServer()
     lateinit var jsonMapper: JsonMapper
@@ -44,6 +47,11 @@ class CourtSentencingDpsApiExtension :
       pattern,
       jsonMapper,
     )
+
+    fun resetAndDisableResetBeforeEach() {
+      enableResetBeforeEach = false
+      dpsCourtSchedulerServer.resetAll()
+    }
   }
 
   override fun beforeAll(context: ExtensionContext) {

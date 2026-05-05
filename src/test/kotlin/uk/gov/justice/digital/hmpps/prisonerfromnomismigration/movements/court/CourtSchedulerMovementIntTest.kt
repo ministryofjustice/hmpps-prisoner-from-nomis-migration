@@ -19,7 +19,7 @@ class CourtSchedulerMovementIntTest : SqsIntegrationTestBase() {
       sendMessage(courtMovementEvent(inserted = true))
         .also { waitForAnyProcessingToComplete() }
 
-      verify(courtSchedulerMovementService).courtMovementInserted(any())
+      verify(courtSchedulerSyncMovementService).courtMovementInserted(any())
     }
   }
 
@@ -31,7 +31,7 @@ class CourtSchedulerMovementIntTest : SqsIntegrationTestBase() {
       sendMessage(courtMovementEvent(inserted = false, deleted = false))
         .also { waitForAnyProcessingToComplete() }
 
-      verify(courtSchedulerMovementService).courtMovementUpdated(any())
+      verify(courtSchedulerSyncMovementService).courtMovementUpdated(any())
     }
   }
 
@@ -43,7 +43,7 @@ class CourtSchedulerMovementIntTest : SqsIntegrationTestBase() {
       sendMessage(courtMovementEvent(deleted = true))
         .also { waitForAnyProcessingToComplete() }
 
-      verify(courtSchedulerMovementService).courtMovementDeleted(any())
+      verify(courtSchedulerSyncMovementService).courtMovementDeleted(any())
     }
   }
 

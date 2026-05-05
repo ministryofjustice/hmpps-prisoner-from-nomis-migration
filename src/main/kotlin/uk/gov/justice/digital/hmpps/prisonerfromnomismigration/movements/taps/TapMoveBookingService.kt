@@ -99,7 +99,7 @@ class TapMoveBookingService(
     } catch (e: Exception) {
       log.error("Failed to move booking mappings for bookingId=$bookingId", e)
       queueService.sendMessage(
-        messageType = ExternalMovementRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_TAP.name,
+        messageType = TapRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_TAP.name,
         synchronisationType = SynchronisationType.EXTERNAL_MOVEMENTS,
         message = BookingMovedAdditionalInformationEvent(toOffenderNo, fromOffenderNo, bookingId),
         telemetryAttributes = telemetry.valuesAsStrings(),
