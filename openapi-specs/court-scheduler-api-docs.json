@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-04-30.106.8e6e027"
+    "version" : "2026-05-01.111.7726740"
   },
   "servers" : [ {
     "url" : "https://court-appearance-scheduler-api-dev.hmpps.service.justice.gov.uk",
@@ -417,6 +417,100 @@
         }
       }
     },
+    "/sync/court-appearances/{id}" : {
+      "get" : {
+        "tags" : [ "Sync" ],
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__SYNC__RW",
+        "operationId" : "getCourtAppearance_1",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtEvent"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "Sync" ],
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__SYNC__RW",
+        "operationId" : "deleteCourtAppearance",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/sync/court-appearance-movements/{id}" : {
+      "get" : {
+        "tags" : [ "Sync" ],
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__SYNC__RW",
+        "operationId" : "getCourtAppearanceMovement",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtEventMovement"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "Sync" ],
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__SYNC__RW",
+        "operationId" : "deleteCourtAppearanceMovement",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        }
+      }
+    },
     "/reconciliation/court-appearances/{personIdentifier}" : {
       "get" : {
         "tags" : [ "Sync" ],
@@ -490,48 +584,6 @@
           }
         }
       }
-    },
-    "/sync/court-appearances/{id}" : {
-      "delete" : {
-        "tags" : [ "Sync" ],
-        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__SYNC__RW",
-        "operationId" : "deleteCourtAppearance",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "No Content"
-          }
-        }
-      }
-    },
-    "/sync/court-appearance-movements/{id}" : {
-      "delete" : {
-        "tags" : [ "Sync" ],
-        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__SYNC__RW",
-        "operationId" : "deleteCourtAppearanceMovement",
-        "parameters" : [ {
-          "name" : "id",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid"
-          }
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "No Content"
-          }
-        }
-      }
     }
   },
   "components" : {
@@ -586,7 +638,7 @@
           "occurredAt" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-01T09:01:53"
+            "example" : "2026-05-05T08:51:04"
           },
           "user" : {
             "$ref" : "#/components/schemas/SyncUser"
@@ -672,7 +724,7 @@
           "occurredAt" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-01T09:01:53"
+            "example" : "2026-05-05T08:51:04"
           },
           "user" : {
             "$ref" : "#/components/schemas/SyncUser"
@@ -689,7 +741,7 @@
           "at" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-01T09:01:53"
+            "example" : "2026-05-05T08:51:04"
           },
           "by" : {
             "type" : "string"
@@ -1028,7 +1080,7 @@
           "occurredAt" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-01T09:01:53"
+            "example" : "2026-05-05T08:51:04"
           },
           "domainEvents" : {
             "type" : "array",
@@ -1222,13 +1274,13 @@
           "start" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-01T09:01:53"
+            "example" : "2026-05-05T08:51:04"
           },
           "end" : {
             "type" : "string",
             "format" : "date-time",
             "nullable" : true,
-            "example" : "2026-05-01T09:01:53"
+            "example" : "2026-05-05T08:51:04"
           },
           "comments" : {
             "type" : "string",
@@ -1382,13 +1434,13 @@
           "start" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-01T09:01:53"
+            "example" : "2026-05-05T08:51:04"
           },
           "end" : {
             "type" : "string",
             "format" : "date-time",
             "nullable" : true,
-            "example" : "2026-05-01T09:01:53"
+            "example" : "2026-05-05T08:51:04"
           },
           "status" : {
             "$ref" : "#/components/schemas/AppearanceStatus"
@@ -1497,13 +1549,13 @@
           "start" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-01T09:01:53"
+            "example" : "2026-05-05T08:51:04"
           },
           "end" : {
             "type" : "string",
             "format" : "date-time",
             "nullable" : true,
-            "example" : "2026-05-01T09:01:53"
+            "example" : "2026-05-05T08:51:04"
           },
           "comments" : {
             "type" : "string",
@@ -1570,13 +1622,13 @@
           "start" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-01T09:01:53"
+            "example" : "2026-05-05T08:51:04"
           },
           "end" : {
             "type" : "string",
             "format" : "date-time",
             "nullable" : true,
-            "example" : "2026-05-01T09:01:53"
+            "example" : "2026-05-05T08:51:04"
           },
           "comments" : {
             "type" : "string",
