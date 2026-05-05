@@ -44,9 +44,9 @@ class PrisonerBalanceMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetMigrationDetails(migrationId: String = "2020-01-01T11:10:00", count: Int = 1) {
+  fun stubGetMigrationCount(migrationId: String = "2020-01-01T11:10:00", count: Int = 1) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/prisoner-balance/migration-id/$migrationId")).willReturn(
+      get(urlPathMatching("/mapping/prisoner-balance/migration-id/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(
