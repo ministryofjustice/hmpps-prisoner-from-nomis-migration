@@ -134,37 +134,4 @@ class IncidentsNomisApiServiceTest {
       }
     }
   }
-
-  @Nested
-  @DisplayName("GET /incidents/ids")
-  inner class GetIncidentsToMigrate {
-    @Test
-    internal fun `will pass oath2 token to service`() = runTest {
-      incidentsNomisApiMockServer.stubMultipleGetIncidentIdCounts(1, 20)
-
-      nomisApiService.getIncidentIds(fromDate = null, toDate = null, pageNumber = 0, pageSize = 20)
-
-      incidentsNomisApiMockServer.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `will call the Nomis endpoint`() = runTest {
-      incidentsNomisApiMockServer.stubMultipleGetIncidentIdCounts(1, 20)
-
-      nomisApiService.getIncidentIds(fromDate = null, toDate = null, pageNumber = 0, pageSize = 20)
-
-      incidentsNomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/incidents/ids")))
-    }
-
-    @Test
-    fun `will return incidentIds`() = runTest {
-      incidentsNomisApiMockServer.stubMultipleGetIncidentIdCounts(3, 10)
-
-      val incidents = nomisApiService.getIncidentIds(fromDate = null, toDate = null, pageNumber = 0, pageSize = 20)
-
-      assertThat(incidents).hasSize(3)
-    }
-  }
 }

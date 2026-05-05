@@ -16,7 +16,15 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension.Companion.incidentsApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisReport
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisStaff
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.NomisSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.PairStringListDescriptionAddendum
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.model.ReportBasic
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 
 private const val NOMIS_INCIDENT_ID = 1234L
@@ -31,13 +39,13 @@ internal class IncidentsServiceTest {
 
   @Nested
   @DisplayName("POST /sync/upsert")
-  inner class CreateIncidentForMigration {
+  inner class UpsertIncident {
     @BeforeEach
     internal fun setUp() {
       incidentsApi.stubIncidentUpsert()
 
       runBlocking {
-        incidentsService.upsertIncident(aMigrationRequest())
+        incidentsService.upsertIncident(aSyncRequest())
       }
     }
 
@@ -142,3 +150,30 @@ internal class IncidentsServiceTest {
     }
   }
 }
+
+fun aSyncRequest() = NomisSyncRequest(
+  id = null,
+  initialMigration = true,
+  incidentReport = NomisReport(
+    incidentId = NOMIS_INCIDENT_ID,
+    questionnaireId = 543,
+    title = "There was a fight",
+    description = "On 12/04/2023 approx 16:45 John Smith punched Fred Jones",
+    status = NomisStatus(code = "AWAN", description = "Awaiting Analysis"),
+    type = "ASSAULT",
+    prison = NomisCode(code = "BXI", description = "Brixton"),
+    lockedResponse = false,
+    incidentDateTime = LocalDateTime.parse("2023-04-12T16:45:00"),
+    reportedDateTime = LocalDateTime.parse("2023-04-14T17:55:00"),
+    reportingStaff = NomisStaff(username = "BQL16C", staffId = 16288, firstName = "JANE", lastName = "BAKER"),
+    history = listOf(),
+    offenderParties = listOf(),
+    staffParties = listOf(),
+    questions = listOf(),
+    requirements = listOf(),
+    followUpDate = LocalDate.parse("2023-05-16"),
+    createdBy = "JSMITH",
+    createDateTime = LocalDateTime.parse("2024-07-15T18:35:00"),
+    descriptionParts = PairStringListDescriptionAddendum("first", listOf()),
+  ),
+)

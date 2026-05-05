@@ -15,9 +15,7 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IncidentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 
 @Component
 class IncidentsMappingApiMockServer(private val jsonMapper: JsonMapper) {
@@ -96,26 +94,6 @@ class IncidentsMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubIncidentsLatestMigration(migrationId: String) {
-    mappingApi.stubFor(
-      get(urlEqualTo("/mapping/incidents/migrated/latest")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(
-            """
-            {
-              "dpsIncidentId": "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
-              "nomisIncidentId": 1234,                                       
-              "label": "$migrationId",
-              "whenCreated": "2020-01-01T11:10:00",
-              "mappingType": "MIGRATED"
-            }              
-            """,
-          ),
-      ),
-    )
-  }
-
   fun stubIncidentMappingDelete(dpsIncidentId: String = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42") {
     mappingApi.stubFor(
       delete(urlEqualTo("/mapping/incidents/dps-incident-id/$dpsIncidentId"))
@@ -129,33 +107,6 @@ class IncidentsMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubMappingCreate() {
     mappingApi.stubMappingCreate(INCIDENTS_CREATE_MAPPING_URL)
-  }
-
-  fun stubIncidentsMappingByMigrationId(whenCreated: String = "2020-01-01T11:10:00", count: Int = 54327) {
-    mappingApi.stubFor(
-      get(urlPathMatching("/mapping/incidents/migration-id/.*")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(
-            pageContent(
-              jsonMapper = jsonMapper,
-              content = listOf(
-                IncidentMappingDto(
-                  nomisIncidentId = 1234,
-                  dpsIncidentId = "fb4b2e91-91e7-457b-aa17-797f8c5c2f42",
-                  mappingType = IncidentMappingDto.MappingType.MIGRATED,
-                  label = "2022-02-14T09:58:45",
-                  whenCreated = whenCreated,
-                ),
-              ),
-              pageSize = 1L,
-              pageNumber = 0L,
-              totalElements = count.toLong(),
-              size = 1,
-            ),
-          ),
-      ),
-    )
   }
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)

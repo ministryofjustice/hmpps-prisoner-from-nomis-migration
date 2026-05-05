@@ -4,7 +4,6 @@ import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
 import com.github.tomakehurst.wiremock.client.WireMock.get
-import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -231,69 +230,6 @@ internal class IncidentsMappingServiceTest {
           urlPathEqualTo("/mapping/incidents/dps-incident-id/$DPS_INCIDENT_ID"),
         ).withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
-    }
-  }
-
-  @Nested
-  @DisplayName("getMigrationCount")
-  inner class GetMigrationCount {
-    @BeforeEach
-    internal fun setUp() {
-      incidentsMappingApi.stubIncidentsMappingByMigrationId(count = 56_766)
-    }
-
-    @Test
-    internal fun `will supply authentication token`(): Unit = runBlocking {
-      incidentsMappingService.getMigrationCount("2020-01-01T10:00:00")
-
-      mappingApi.verify(
-        getRequestedFor(
-          urlPathMatching("/mapping/incidents/migration-id/.*"),
-        )
-          .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `will return zero when not found`(): Unit = runBlocking {
-      mappingApi.stubFor(
-        get(urlPathMatching("/mapping/incidents/migration-id/.*")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody("""{"message":"Not found"}"""),
-        ),
-      )
-
-      assertThat(incidentsMappingService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(0)
-    }
-
-    @Test
-    internal fun `will return the mapping count when found`(): Unit = runBlocking {
-      incidentsMappingApi.stubIncidentsMappingByMigrationId(
-        whenCreated = "2020-01-01T11:10:00",
-        count = 54_766,
-      )
-
-      assertThat(incidentsMappingService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(54_766)
-    }
-
-    @Test
-    internal fun `will throw exception for any other error`() {
-      mappingApi.stubFor(
-        get(urlPathMatching("/mapping/incidents/migration-id/.*")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())
-            .withBody("""{"message":"Tea"}"""),
-        ),
-      )
-
-      assertThatThrownBy {
-        runBlocking {
-          incidentsMappingService.getMigrationCount("2020-01-01T10:00:00")
-        }
-      }.isInstanceOf(WebClientResponseException.InternalServerError::class.java)
     }
   }
 }
