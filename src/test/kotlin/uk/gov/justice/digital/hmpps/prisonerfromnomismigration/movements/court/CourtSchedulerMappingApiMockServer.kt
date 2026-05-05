@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
@@ -86,6 +87,70 @@ class CourtMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubCreateCourtMovementMapping() {
+    mappingApi.stubFor(
+      post("/mapping/court/movement")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(201),
+        ),
+    )
+  }
+
+  fun stubCreateCourtMovementMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      post("/mapping/court/movement").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubCreateCourtMovementMappingConflict(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/court/movement").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubCreateCourtMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/court/movement")
+
+  fun stubGetCourtMovementMapping(nomisBookingId: Long = 12345L, nomisMovementSeq: Int = 3, dpsCourtMovementId: UUID = UUID.randomUUID()) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/court/movement/nomis-id/$nomisBookingId/$nomisMovementSeq")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(
+            jsonMapper.writeValueAsString(
+              courtMovementMapping(
+                nomisBookingId = nomisBookingId,
+                nomisMovementSeq = nomisMovementSeq,
+                dpsCourtMovementId = dpsCourtMovementId,
+              ),
+            ),
+          ),
+      ),
+    )
+  }
+
+  fun stubGetCourtMovementMapping(nomisBookingId: Long = 12345L, nomisMovementSeq: Int = 3, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/court/movement/nomis-id/$nomisBookingId/$nomisMovementSeq")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
@@ -101,4 +166,17 @@ fun courtScheduleMapping(
   nomisEventId = nomisEventId,
   dpsCourtAppearanceId = dpsCourtAppearanceId,
   mappingType = CourtScheduleMappingDto.MappingType.MIGRATED,
+)
+
+fun courtMovementMapping(
+  nomisBookingId: Long = 12345L,
+  nomisMovementSeq: Int = 3,
+  prisonerNumber: String = "A1234BC",
+  dpsCourtMovementId: UUID = UUID.randomUUID(),
+) = CourtMovementMappingDto(
+  prisonerNumber = prisonerNumber,
+  nomisBookingId = nomisBookingId,
+  nomisMovementSeq = nomisMovementSeq,
+  dpsCourtMovementId = dpsCourtMovementId,
+  mappingType = CourtMovementMappingDto.MappingType.MIGRATED,
 )
