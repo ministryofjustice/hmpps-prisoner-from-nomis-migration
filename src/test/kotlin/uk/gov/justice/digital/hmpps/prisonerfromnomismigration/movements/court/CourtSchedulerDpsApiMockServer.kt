@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
@@ -14,8 +15,10 @@ import org.springframework.stereotype.Component
 import org.springframework.test.context.junit.jupiter.SpringExtension.getApplicationContext
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtEventMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.ReferenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEventMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension.Companion.dpsCourtSchedulerServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension.Companion.jsonMapper
@@ -88,6 +91,29 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
 
+    fun syncCourtMovement(
+      id: UUID? = null,
+      scheduleId: UUID? = null,
+    ) = SyncCourtEventMovement(
+      occurredAt = LocalDateTime.now(),
+      user = SyncUser(
+        username = "USER",
+        activeCaseloadId = "MDI",
+      ),
+      movement = CourtEventMovement(
+        dpsId = id ?: UUID.randomUUID(),
+        dpsCourtAppearanceScheduleId = scheduleId,
+        offenderBookId = 12345L,
+        movementSeq = 3,
+        movementDate = LocalDate.now(),
+        movementTime = "${LocalDateTime.now()}",
+        movementReasonCode = "CRT",
+        directionCode = "OUT",
+        fromAgencyId = "BXI",
+        toAgencyId = "LEEDMC",
+      ),
+    )
+
     fun referenceId(id: UUID = UUID.randomUUID()) = ReferenceId(id)
 
     fun stubHealthPing(status: Int) {
@@ -126,6 +152,86 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(status)
             .withHeader("Content-Type", "application/json")
             .withBody(jsonMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubDeleteCourtEvent(courtAppearanceId: UUID) {
+    dpsCourtSchedulerServer.stubFor(
+      delete("/sync/court-appearances/$courtAppearanceId")
+        .willReturn(
+          aResponse()
+            .withStatus(204),
+        ),
+    )
+  }
+
+  fun stubDeleteCourtEventError(
+    courtAppearanceId: UUID,
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsCourtSchedulerServer.stubFor(
+      delete("/sync/court-appearances/$courtAppearanceId")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(OrganisationsDpsApiExtension.jsonMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubSyncCourtMovement(personIdentifier: String, response: ReferenceId = referenceId()) {
+    dpsCourtSchedulerServer.stubFor(
+      put("/sync/court-appearance-movements/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(OrganisationsDpsApiExtension.jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubSyncCourtMovementError(
+    personIdentifier: String,
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsCourtSchedulerServer.stubFor(
+      put("/sync/court-appearance-movements/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubDeleteCourtMovement(courtMovementId: UUID) {
+    dpsCourtSchedulerServer.stubFor(
+      delete("/sync/court-appearance-movements/$courtMovementId")
+        .willReturn(
+          aResponse()
+            .withStatus(204),
+        ),
+    )
+  }
+
+  fun stubDeleteCourtMovementError(
+    courtMovementId: UUID,
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsCourtSchedulerServer.stubFor(
+      delete("/sync/court-appearance-movements/$courtMovementId")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(OrganisationsDpsApiExtension.jsonMapper.writeValueAsString(error)),
         ),
     )
   }
