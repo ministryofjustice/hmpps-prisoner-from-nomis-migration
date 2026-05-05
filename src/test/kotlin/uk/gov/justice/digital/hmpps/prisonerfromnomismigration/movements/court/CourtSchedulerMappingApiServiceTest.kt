@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
@@ -133,6 +134,111 @@ class CourtSchedulerMappingApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getCourtScheduleMappingOrNull(1L)
+      }
+    }
+  }
+
+  @Nested
+  inner class CreateCourtMovementMappings {
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubCreateCourtMovementMapping()
+
+      apiService.createCourtMovementMapping(courtMovementMapping())
+
+      mappingApi.verify(
+        postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should pass data to service`() = runTest {
+      mappingApi.stubCreateCourtMovementMapping()
+
+      apiService.createCourtMovementMapping(courtMovementMapping())
+
+      mappingApi.verify(
+        postRequestedFor(anyUrl())
+          .withRequestBody(matchingJsonPath("prisonerNumber", equalTo("A1234BC")))
+          .withRequestBody(matchingJsonPath("nomisBookingId", equalTo("12345")))
+          .withRequestBody(matchingJsonPath("nomisMovementSeq", equalTo("3")))
+          .withRequestBody(matchingJsonPath("dpsCourtMovementId", not(absent())))
+          .withRequestBody(matchingJsonPath("mappingType", equalTo("MIGRATED"))),
+      )
+    }
+
+    @Test
+    fun `should return error for 409 conflict`() = runTest {
+      val dpsCourtMovementId = UUID.randomUUID()
+      mappingApi.stubCreateCourtMovementMappingConflict(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            existing = CourtMovementMappingDto(
+              prisonerNumber = "A1234BC",
+              nomisBookingId = 12345L,
+              nomisMovementSeq = 3,
+              dpsCourtMovementId = dpsCourtMovementId,
+              mappingType = CourtMovementMappingDto.MappingType.NOMIS_CREATED,
+            ),
+            duplicate = CourtMovementMappingDto(
+              prisonerNumber = "A1234BC",
+              nomisBookingId = 12345L,
+              nomisMovementSeq = 3,
+              dpsCourtMovementId = dpsCourtMovementId,
+              mappingType = CourtMovementMappingDto.MappingType.NOMIS_CREATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      apiService.createCourtMovementMapping(courtMovementMapping())
+        .apply {
+          assertThat(isError).isTrue
+          assertThat(errorResponse!!.moreInfo.existing!!.nomisBookingId).isEqualTo(12345L)
+          assertThat(errorResponse.moreInfo.duplicate.nomisMovementSeq).isEqualTo(3)
+        }
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubCreateCourtMovementMapping(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.createCourtMovementMapping(courtMovementMapping())
+      }
+    }
+  }
+
+  @Nested
+  inner class GetCourtMovementMappings {
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubGetCourtMovementMapping()
+
+      apiService.getCourtMovementMappingOrNull(12345L, 3)
+
+      mappingApi.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should return null if not found`() = runTest {
+      mappingApi.stubGetCourtMovementMapping(status = NOT_FOUND)
+
+      apiService.getCourtMovementMappingOrNull(12345L, 3)
+        .also { assertThat(it).isNull() }
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubGetCourtMovementMapping(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.getCourtMovementMappingOrNull(12345L, 3)
       }
     }
   }
