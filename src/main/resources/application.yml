@@ -242,6 +242,8 @@ hmpps.sqs:
       errorVisibilityTimeout: 1, 1, 1, 1, 1, 1, 5, 5, 60, 1, 1, 1, 1, 1, 1, 5, 5, 60
     eventexternalmovements:
       errorVisibilityTimeout: 1, 1, 1, 10, 60, 600
+    eventcourtmovements:
+      errorVisibilityTimeout: 1, 1, 1, 10, 60, 600
     migrationvisits:
       errorVisibilityTimeout: 1, 1, 1, 1
       propagateTracing: false

@@ -38,6 +38,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceAp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMovementService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerScheduleService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension
@@ -49,6 +51,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ALLOCATIO
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.APPOINTMENTS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CASENOTES_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CORE_PERSON_SYNC_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.COURTMOVMENTS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.COURT_SENTENCING_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.COURT_SENTENCING_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSRA_QUEUE_ID
@@ -208,6 +211,12 @@ class SqsIntegrationTestBase : TestBase() {
   internal val externalMovementsQueueOffenderEventsUrl by lazy { externalMovementsOffenderEventsQueue.queueUrl }
   internal val externalMovementsQueueOffenderEventsDlqUrl by lazy { externalMovementsOffenderEventsQueue.dlqUrl as String }
 
+  internal val courtMovementsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(COURTMOVMENTS_SYNC_QUEUE_ID) as HmppsQueue }
+  internal val awsSqsCourtMovementsOffenderEventsClient by lazy { courtMovementsOffenderEventsQueue.sqsClient }
+  internal val awsSqsCourtMovementsOffenderEventsDlqClient by lazy { courtMovementsOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
+  internal val courtMovementsQueueOffenderEventsUrl by lazy { courtMovementsOffenderEventsQueue.queueUrl }
+  internal val courtMovementsQueueOffenderEventsDlqUrl by lazy { courtMovementsOffenderEventsQueue.dlqUrl as String }
+
   internal val officialVisitsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(OFFICIAL_VISITS_SYNC_QUEUE_ID) as HmppsQueue }
   internal val csraOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(CSRA_SYNC_QUEUE_ID) as HmppsQueue }
 
@@ -252,6 +261,14 @@ class SqsIntegrationTestBase : TestBase() {
 
   @MockitoSpyBean
   protected lateinit var externalMovementsMigrationService: TapMigrationService
+
+  // TODO remove when real tests are in place
+  @MockitoSpyBean
+  protected lateinit var courtSchedulerScheduleService: CourtSchedulerScheduleService
+
+  // TODO remove when real tests are in place
+  @MockitoSpyBean
+  protected lateinit var courtSchedulerMovementService: CourtSchedulerMovementService
 
   @BeforeEach
   fun setUp() {

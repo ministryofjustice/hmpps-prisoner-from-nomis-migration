@@ -89,6 +89,9 @@ hmpps.sqs:
     eventexternalmovements:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventcourtmovements:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     eventofficialvisits:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
