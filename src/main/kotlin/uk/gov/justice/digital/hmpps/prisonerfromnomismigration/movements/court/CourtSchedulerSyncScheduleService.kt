@@ -20,11 +20,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtMovementRetryMappingMessageTypes.RETRY_MAPPING_COURT_SCHEDULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtScheduleOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import java.util.*
 
 private const val TELEMETRY_PREFIX: String = "${CRT_TELEMETRY_PREFIX}-schedule"
 
@@ -76,7 +76,7 @@ class CourtSchedulerSyncScheduleService(
     prisonerNumber: String,
     eventId: Long,
     telemetry: MutableMap<String, Any>,
-    existingMapping: TapScheduleMappingDto? = null,
+    existingMapping: CourtScheduleMappingDto? = null,
   ): CourtScheduleMappingDto? = try {
     nomisApi.getCourtScheduleOut(prisonerNumber, eventId)
   } catch (e: WebClientResponseException.NotFound) {
@@ -94,7 +94,7 @@ class CourtSchedulerSyncScheduleService(
       }
       telemetry["dpsSentencingCourtAppearanceId"] = "$dpsSentencingId"
 
-      val dpsCourtAppearanceId = dpsApi.syncCourtEvent(prisonerNumber, nomisSchedule.toDpsRequest(dpsSentencingId)).id
+      val dpsCourtAppearanceId = dpsApi.syncCourtEvent(prisonerNumber, nomisSchedule.toDpsRequest(existingMapping?.dpsCourtAppearanceId, dpsSentencingId)).id
         .also { telemetry["dpsCourtAppearanceId"] = it }
 
       CourtScheduleMappingDto(
@@ -114,7 +114,25 @@ class CourtSchedulerSyncScheduleService(
   }
 
   suspend fun syncCourtScheduleOutUpdated(event: CourtScheduleEvent) {
-    track("${TELEMETRY_PREFIX}-udpated", mutableMapOf()) {}
+    val (eventId, bookingId, prisonerNumber) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber,
+      "bookingId" to bookingId,
+      "nomisEventId" to eventId,
+    )
+
+    if (event.isFromDPSCourtScheduler()) {
+      telemetryClient.trackEvent("${TELEMETRY_PREFIX}-updated-ignored", telemetry)
+      return
+    }
+
+    track("${TELEMETRY_PREFIX}-updated", telemetry) {
+      val existingMapping = mappingApi.getCourtScheduleMappingOrNull(eventId)
+        ?.also { telemetry["dpsCourtAppearanceId"] = it.dpsCourtAppearanceId }
+        ?: throw IllegalStateException("No mapping found when handling an update event for court schedule $eventId - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
+
+      syncScheduleOut(prisonerNumber, eventId, telemetry, existingMapping)
+    }
   }
 
   suspend fun courtScheduleDeleted(event: CourtScheduleEvent) = when (event.directionCode) {
@@ -160,7 +178,7 @@ class CourtSchedulerSyncScheduleService(
     }
   }
 
-  suspend fun retryCreateSchedulMapping(retryMessage: InternalMessage<CourtScheduleMappingDto>) {
+  suspend fun retryCreateScheduleMapping(retryMessage: InternalMessage<CourtScheduleMappingDto>) {
     mappingApi.createCourtScheduleMapping(
       retryMessage.body,
     ).also {
@@ -172,7 +190,7 @@ class CourtSchedulerSyncScheduleService(
   }
 }
 
-private fun CourtScheduleOut.toDpsRequest(sentencingCourtAppearanceId: String?) = SyncCourtEvent(
+private fun CourtScheduleOut.toDpsRequest(courtAppearanceId: UUID?, sentencingCourtAppearanceId: String?) = SyncCourtEvent(
   courtEvent = CourtEvent(
     prisonCodeAtTimeOfScheduling = this.prison,
     agyLocId = court,
@@ -180,7 +198,7 @@ private fun CourtScheduleOut.toDpsRequest(sentencingCourtAppearanceId: String?) 
     startTime = "$startTime",
     courtEventType = eventType,
     eventStatus = eventStatus,
-    dpsId = null,
+    dpsId = courtAppearanceId,
     eventId = eventId,
     commentText = comment,
     externalReferenceUrn = sentencingCourtAppearanceId,

@@ -53,7 +53,7 @@ class CourtSchedulerEventListener(
   }
 
   private suspend fun retryMapping(type: String, message: String) = when (CourtMovementRetryMappingMessageTypes.valueOf(type)) {
-    RETRY_MAPPING_COURT_SCHEDULE -> courtScheduleService.retryCreateSchedulMapping(message.fromJson())
+    RETRY_MAPPING_COURT_SCHEDULE -> courtScheduleService.retryCreateScheduleMapping(message.fromJson())
   }
 
   private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
