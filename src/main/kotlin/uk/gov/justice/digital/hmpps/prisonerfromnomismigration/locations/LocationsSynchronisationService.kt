@@ -12,7 +12,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Capacity
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.Certification
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NomisSyncLocationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.NonResidentialUsageDto
@@ -293,15 +292,6 @@ fun toUpsertSyncRequest(nomisLocationResponse: LocationResponse, parentId: Strin
     Capacity(
       maxCapacity = nomisLocationResponse.capacity ?: 0,
       workingCapacity = nomisLocationResponse.operationalCapacity ?: 0,
-      certifiedNormalAccommodation = nomisLocationResponse.cnaCapacity,
-    )
-  } else {
-    null
-  },
-  certification = if (nomisLocationResponse.certified != null || nomisLocationResponse.cnaCapacity != null) {
-    Certification(
-      certified = nomisLocationResponse.certified == true,
-      capacityOfCertifiedCell = nomisLocationResponse.cnaCapacity ?: 0,
       certifiedNormalAccommodation = nomisLocationResponse.cnaCapacity,
     )
   } else {
