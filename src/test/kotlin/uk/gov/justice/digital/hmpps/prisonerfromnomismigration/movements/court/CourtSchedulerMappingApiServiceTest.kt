@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court
 
 import com.github.tomakehurst.wiremock.client.WireMock.absent
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
@@ -139,6 +140,29 @@ class CourtSchedulerMappingApiServiceTest {
   }
 
   @Nested
+  inner class DeleteCourtScheduleMappings {
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubDeleteCourtScheduleMapping()
+
+      apiService.deleteCourtScheduleMapping(1L)
+
+      mappingApi.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubDeleteCourtScheduleMapping(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.deleteCourtScheduleMapping(1L)
+      }
+    }
+  }
+
+  @Nested
   inner class CreateCourtMovementMappings {
     @Test
     internal fun `should pass oath2 token to service`() = runTest {
@@ -239,6 +263,29 @@ class CourtSchedulerMappingApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getCourtMovementMappingOrNull(12345L, 3)
+      }
+    }
+  }
+
+  @Nested
+  inner class DeleteCourtMovementMappings {
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubDeleteCourtMovementMapping()
+
+      apiService.deleteCourtMovementMapping(12345L, 1)
+
+      mappingApi.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubDeleteCourtMovementMapping(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.deleteCourtMovementMapping(12345L, 1)
       }
     }
   }

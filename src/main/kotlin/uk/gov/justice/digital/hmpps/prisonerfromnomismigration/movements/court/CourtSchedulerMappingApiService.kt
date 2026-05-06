@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court
 
+import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
@@ -24,6 +25,9 @@ class CourtSchedulerMappingApiService(@Qualifier("courtSchedulerMappingApiWebCli
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
+  suspend fun deleteCourtScheduleMapping(nomisEventId: Long): Unit = scheduleApi.deleteCourtScheduleMappingByNomisId(nomisEventId)
+    .awaitSingle()
+
   suspend fun createCourtMovementMapping(mapping: CourtMovementMappingDto) = movementApi.prepare(movementApi.createCourtMovementMappingRequestConfig(mapping))
     .retrieve()
     .awaitSuccessOrDuplicate<CourtMovementMappingDto>()
@@ -31,4 +35,7 @@ class CourtSchedulerMappingApiService(@Qualifier("courtSchedulerMappingApiWebCli
   suspend fun getCourtMovementMappingOrNull(nomisBookingId: Long, nomisMovementSeq: Int): CourtMovementMappingDto? = movementApi.prepare(movementApi.getCourtMovementMappingByNomisIdRequestConfig(nomisBookingId, nomisMovementSeq))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun deleteCourtMovementMapping(nomisBookingId: Long, nomisMovementSeq: Int): Unit = movementApi.deleteCourtMovementMappingByNomisId(nomisBookingId, nomisMovementSeq)
+    .awaitSingle()
 }
