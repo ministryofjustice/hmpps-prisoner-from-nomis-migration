@@ -6,6 +6,9 @@ import org.jlleitschuh.gradle.ktlint.tasks.KtLintFormatTask
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 import tools.jackson.databind.json.JsonMapper
 import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 import kotlin.io.path.exists
 import kotlin.io.path.pathString
 import kotlin.io.path.Path as KotlinPath
@@ -86,18 +89,33 @@ abstract class WriteJsonTask : DefaultTask() {
   @get:Input
   abstract val url: Property<String>
 
+  @get:Input
+  abstract val http2Client: Property<Boolean>
+
   @get:OutputFile
   abstract val outputFile: RegularFileProperty
 
   @TaskAction
   fun run() {
-    val json = URI.create(url.get()).toURL().readText()
+    val json = url.get().getResponse(if (http2Client.get()) "HTTP_2" else "HTTP_1_1")
     val formattedJson = mapper.let { mapper ->
       mapper.writerWithDefaultPrettyPrinter().writeValueAsString(mapper.readTree(json))
     }
     outputFile.get().asFile.writeText(formattedJson)
     logger.lifecycle("Written ${outputFile.get()} from ${url.get()}")
   }
+
+  private fun String.getResponse(httpVersion: String) = HttpClient.newBuilder()
+    .version(HttpClient.Version.valueOf(httpVersion))
+    .build()
+    .send(
+      HttpRequest.newBuilder()
+        .uri(URI.create(this))
+        .GET()
+        .build(),
+      HttpResponse.BodyHandlers.ofString(),
+    )
+    .body()
 }
 
 @CacheableTask
@@ -109,18 +127,41 @@ abstract class ReadProductionVersionTask : DefaultTask() {
   @get:Input
   abstract val url: Property<String>
 
+  @get:Input
+  abstract val http2Client: Property<Boolean>
+
   @TaskAction
   fun run() {
     val productionUrl = url.get().replace("-dev".toRegex(), "")
       .replace("dev.".toRegex(), "")
       .replace("/v3/api-docs".toRegex(), "/info")
-    val json = URI.create(productionUrl).toURL().readText()
+    val json = url.get().getResponse(if (http2Client.get()) "HTTP_2" else "HTTP_1_1")
+
     val version = mapper.readTree(json).at("/build/version").asString()
     println(version)
   }
+
+  private fun String.getResponse(httpVersion: String) = HttpClient.newBuilder()
+    .version(HttpClient.Version.valueOf(httpVersion))
+    .build()
+    .send(
+      HttpRequest.newBuilder()
+        .uri(URI.create(this))
+        .GET()
+        .build(),
+      HttpResponse.BodyHandlers.ofString(),
+    )
+    .body()
 }
 
-data class ModelConfiguration(val name: String, val packageName: String, val testPackageName: String? = null, val url: String, val models: String = "") {
+data class ModelConfiguration(
+  val name: String,
+  val packageName: String,
+  val testPackageName: String? = null,
+  val url: String,
+  val models: String = "",
+  val http2Client: Boolean = false,
+) {
   fun toBuildModelTaskName(): String = "build${nameToCamel()}ApiModel"
   fun toWriteJsonTaskName(): String = "write${nameToCamel()}Json"
   fun toReadProductionVersionTaskName(): String = "read${nameToCamel()}ProductionVersion"
@@ -208,6 +249,7 @@ val models = listOf(
     testPackageName = "movements",
     url = "https://external-movements-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
     models = "Address,NomisAudit,ScheduledTemporaryAbsenceRequest,SyncResponse,TapApplicationRequest,TapLocation,TapMovementRequest",
+    http2Client = true,
   ),
   ModelConfiguration(
     name = "nomis-prisoner",
@@ -291,6 +333,7 @@ models.forEachIndexed { i, model ->
     group = "Write JSON"
     description = "Write JSON for ${model.name}"
     url.set(model.url)
+    http2Client.set(model.http2Client)
     outputFile.set(buildDirectory.file(model.input))
     // ensure that the write task happens every time
     outputs.upToDateWhen { false }
@@ -299,6 +342,7 @@ models.forEachIndexed { i, model ->
     group = "Read current production version"
     description = "Read current production version for ${model.name}"
     url.set(model.url)
+    http2Client.set(model.http2Client)
   }
   if (model.testPackageName != null) {
     separateTestPackages.add(model.testPackageName)

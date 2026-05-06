@@ -4,11 +4,13 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.netty.http.HttpProtocol
+import reactor.netty.http.client.HttpClient
 import uk.gov.justice.hmpps.kotlin.auth.reactiveAuthorisedWebClient
-import uk.gov.justice.hmpps.kotlin.auth.reactiveHealthWebClient
 import uk.gov.justice.hmpps.kotlin.health.ReactiveHealthPingCheck
 import java.time.Duration
 
@@ -17,6 +19,7 @@ class TapConfiguration(
   @Value("\${api.base.url.movements-taps}") val tapsUrl: String,
   @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
   @Value("\${api.movements-taps-timeout:10s}") val tapsTimeout: Duration,
+  @Value("\${api.movements-taps-http2:false}") val tapsHttp2: Boolean,
   @Value("\${api.movments-taps-resync-timeout:60s}") val tapsResyncTimeout: Duration,
   @Value("\${api.movements-taps-mapping-timeout:60s}") val tapsMappingTimeout: Duration,
   @Value("\${api.base.url.mapping}") val mappingApiBaseUri: String,
@@ -34,8 +37,17 @@ class TapConfiguration(
     builder: WebClient.Builder,
   ): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "movements-taps-api", url = tapsUrl, tapsResyncTimeout)
 
+  //  fun tapsApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.reactiveHealthWebClient(tapsUrl, healthTimeout)
   @Bean
-  fun tapsApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.reactiveHealthWebClient(tapsUrl, healthTimeout)
+  fun tapsApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.baseUrl(tapsUrl)
+    .clientConnector(
+      ReactorClientHttpConnector(
+        HttpClient.create()
+          .protocol(if (tapsHttp2) HttpProtocol.H2 else HttpProtocol.HTTP11)
+          .responseTimeout(healthTimeout),
+      ),
+    )
+    .build()
 
   @Bean
   fun tapsMappingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "nomis-mapping-api", url = mappingApiBaseUri, tapsMappingTimeout)
