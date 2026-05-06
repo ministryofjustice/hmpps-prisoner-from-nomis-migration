@@ -4,10 +4,14 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.WebClientResponseException
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -18,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtScheduleOut
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
@@ -52,6 +57,11 @@ class CourtSchedulerSyncScheduleService(
       "nomisEventId" to eventId,
     )
 
+    if (event.isFromDPSCourtScheduler()) {
+      telemetryClient.trackEvent("${TELEMETRY_PREFIX}-inserted-ignored", telemetry)
+      return
+    }
+
     mappingApi.getCourtScheduleMappingOrNull(eventId)
       ?.also { telemetryClient.trackEvent("${TELEMETRY_PREFIX}-inserted-ignored", telemetry) }
       ?: run {
@@ -67,9 +77,15 @@ class CourtSchedulerSyncScheduleService(
     eventId: Long,
     telemetry: MutableMap<String, Any>,
     existingMapping: TapScheduleMappingDto? = null,
-  ): CourtScheduleMappingDto? = nomisApi.getCourtScheduleOut(prisonerNumber, eventId)
-    .also { telemetry["directionCode"] = "OUT" }
-    .let { nomisSchedule ->
+  ): CourtScheduleMappingDto? = try {
+    nomisApi.getCourtScheduleOut(prisonerNumber, eventId)
+  } catch (e: WebClientResponseException.NotFound) {
+    // TODO When direction is added to the event we can remove this try/catch and quietly ignore IN events, but for now we assume NOT FOUND means an IN schedule (otherwise we'd have to call the court schedule IN endpoint too to be sure)
+    log.info("Ignoring insert of court schedule with event ID $eventId because we can't find it in NOMIS - maybe this is a schedule IN?")
+    null
+  }
+    ?.also { telemetry["directionCode"] = "OUT" }
+    ?.let { nomisSchedule ->
       val dpsSentencingId = if (nomisSchedule.courtCaseId != null) {
         tryFetchParent { sentencingMappingApi.getCourtAppearanceOrNullByNomisId(eventId)?.dpsCourtAppearanceId }
           .also { telemetry["dpsAuthorisationId"] = it }
@@ -115,13 +131,42 @@ class CourtSchedulerSyncScheduleService(
   private suspend fun tryToCreateScheduleMapping(mapping: CourtScheduleMappingDto, telemetry: MutableMap<String, Any>) {
     try {
       mappingApi.createCourtScheduleMapping(mapping)
+        .takeIf { it.isError }
+        ?.also {
+          with(it.errorResponse!!.moreInfo) {
+            telemetryClient.trackEvent(
+              "${TELEMETRY_PREFIX}-inserted-duplicate",
+              mapOf(
+                "existingOffenderNo" to existing!!.prisonerNumber,
+                "existingBookingId" to existing.bookingId,
+                "existingNomisEventId" to existing.nomisEventId,
+                "existingDpsCourtAppearanceId" to existing.dpsCourtAppearanceId,
+                "duplicateOffenderNo" to duplicate.prisonerNumber,
+                "duplicateBookingId" to duplicate.bookingId,
+                "duplicateNomisEventId" to duplicate.nomisEventId,
+                "duplicateDpsCourtAppearanceId" to duplicate.dpsCourtAppearanceId,
+              ),
+            )
+          }
+        }
     } catch (e: Exception) {
       log.error("Failed to create mapping for court schedule with NOMIS id ${mapping.nomisEventId}", e)
       queueService.sendMessage(
         messageType = RETRY_MAPPING_COURT_SCHEDULE.name,
-        synchronisationType = SynchronisationType.EXTERNAL_MOVEMENTS,
+        synchronisationType = SynchronisationType.COURT_MOVEMENTS,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+
+  suspend fun retryCreateSchedulMapping(retryMessage: InternalMessage<CourtScheduleMappingDto>) {
+    mappingApi.createCourtScheduleMapping(
+      retryMessage.body,
+    ).also {
+      telemetryClient.trackEvent(
+        "${TELEMETRY_PREFIX}-mapping-retry-created",
+        retryMessage.telemetryAttributes,
       )
     }
   }
@@ -147,3 +192,5 @@ private fun CourtScheduleOut.toDpsRequest(sentencingCourtAppearanceId: String?) 
     activeCaseloadId = null,
   ),
 )
+
+private fun EventAudited.isFromDPSCourtScheduler() = this.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_COURT_SCHEDULER")

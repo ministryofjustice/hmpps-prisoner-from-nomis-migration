@@ -23,9 +23,11 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
     offenderNo: String = "A1234BC",
     eventId: Long = 12345L,
     eventTime: LocalDateTime = yesterday,
+    courtCaseId: Long? = null,
     response: CourtScheduleOut = courtScheduleOutResponse(
       startTime = eventTime,
       eventId = eventId,
+      courtCaseId = courtCaseId,
     ),
   ) {
     nomisApi.stubFor(
@@ -122,8 +124,11 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       eventId: Long = 1,
       eventStatus: String = "SCH",
       startTime: LocalDateTime = now,
+      auditModuleName: String? = "OCCCDCASE",
+      courtCaseId: Long? = null,
     ) = CourtScheduleOut(
       bookingId = 12345,
+      courtCaseId = courtCaseId,
       eventId = eventId,
       eventDate = startTime.toLocalDate(),
       startTime = startTime,
@@ -135,6 +140,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       audit = NomisAudit(
         createDatetime = now,
         createUsername = "USER",
+        auditModuleName = auditModuleName,
       ),
     )
 
