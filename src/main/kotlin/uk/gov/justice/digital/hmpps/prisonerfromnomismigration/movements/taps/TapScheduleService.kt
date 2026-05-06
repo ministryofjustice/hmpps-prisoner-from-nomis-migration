@@ -10,11 +10,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.tryFetchParent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode.OUT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType.TAP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TAP_SCHEDULE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.MovementType.TAP
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_MAPPING_TAP_SCHEDULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapScheduleOut
@@ -38,7 +39,7 @@ class TapScheduleService(
   }
 
   suspend fun scheduledMovementInserted(event: ScheduledMovementEvent) = when (event.eventMovementType) {
-    TAP if (event.directionCode == DirectionCode.OUT) -> syncScheduledMovementTapOutInserted(event)
+    TAP if (event.directionCode == OUT) -> syncScheduledMovementTapOutInserted(event)
     else -> log.info("Ignoring insert of scheduled movement event ID ${event.eventId} with type ${event.eventMovementType} and direction ${event.directionCode} ")
   }
 
@@ -105,7 +106,7 @@ class TapScheduleService(
         }
     }
   suspend fun scheduledMovementUpdated(event: ScheduledMovementEvent) = when (event.eventMovementType) {
-    TAP if (event.directionCode == DirectionCode.OUT) -> scheduledMovementTapOutUpdated(event)
+    TAP if (event.directionCode == OUT) -> scheduledMovementTapOutUpdated(event)
     else -> log.info("Ignoring update of scheduled movement event ID ${event.eventId} with type ${event.eventMovementType} and direction ${event.directionCode} ")
   }
 
@@ -141,7 +142,7 @@ class TapScheduleService(
   }
 
   suspend fun scheduledMovementDeleted(event: ScheduledMovementEvent) = when (event.eventMovementType) {
-    TAP if (event.directionCode == DirectionCode.OUT) -> scheduledMovementTapOutDeleted(event)
+    TAP if (event.directionCode == OUT) -> scheduledMovementTapOutDeleted(event)
     else -> log.info("Ignoring delete of scheduled movement event ID ${event.eventId} with type ${event.eventMovementType} and direction ${event.directionCode} ")
   }
 
@@ -198,7 +199,7 @@ class TapScheduleService(
     } catch (e: Exception) {
       log.error("Failed to update mapping for temporary absence scheduled movement NOMIS id ${mapping.nomisEventId}", e)
       queueService.sendMessage(
-        messageType = ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TAP_SCHEDULE.name,
+        messageType = TapRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TAP_SCHEDULE.name,
         synchronisationType = SynchronisationType.EXTERNAL_MOVEMENTS,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),

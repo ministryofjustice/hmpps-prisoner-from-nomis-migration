@@ -10,15 +10,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.DirectionCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode
 import java.util.concurrent.CompletableFuture
 
 @Service
 class CourtSchedulerEventListener(
   private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
-  private val courtScheduleService: CourtSchedulerScheduleService,
-  private val courtMovementService: CourtSchedulerMovementService,
+  private val courtScheduleService: CourtSchedulerSyncScheduleService,
+  private val courtMovementService: CourtSchedulerSyncMovementService,
 ) {
 
   private companion object {
@@ -65,3 +65,7 @@ data class CourtScheduleEvent(
   val directionCode: DirectionCode? = null,
   override val auditModuleName: String,
 ) : EventAudited
+
+enum class CourtMovementRetryMappingMessageTypes {
+  RETRY_MAPPING_COURT_SCHEDULE,
+}

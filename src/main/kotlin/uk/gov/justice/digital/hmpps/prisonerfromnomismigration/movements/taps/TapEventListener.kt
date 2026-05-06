@@ -10,12 +10,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TAP_APPLICATION
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TAP_MOVEMENT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MAPPING_TAP_SCHEDULE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_TAP
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TAP_MOVEMENT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.ExternalMovementRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TAP_SCHEDULE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_MAPPING_TAP_APPLICATION
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_MAPPING_TAP_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_MAPPING_TAP_SCHEDULE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_TAP
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TAP_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TAP_SCHEDULE
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -66,7 +68,7 @@ class TapEventListener(
     }
   }
 
-  private suspend fun retryMapping(type: String, message: String) = when (ExternalMovementRetryMappingMessageTypes.valueOf(type)) {
+  private suspend fun retryMapping(type: String, message: String) = when (TapRetryMappingMessageTypes.valueOf(type)) {
     RETRY_MAPPING_TAP_APPLICATION -> tapApplicationService.retryCreateApplicationMapping(message.fromJson())
     RETRY_MAPPING_TAP_SCHEDULE -> tapScheduleService.retryCreateScheduledMovementMapping(message.fromJson())
     RETRY_MAPPING_TAP_MOVEMENT -> tapMovementService.retryCreateExternalMovementMapping(message.fromJson())
@@ -130,10 +132,7 @@ data class AgencyAddressUpdatedEvent(
   override val auditModuleName: String,
 ) : EventAudited
 
-enum class DirectionCode { IN, OUT }
-enum class MovementType { ADM, CRT, REL, TAP, TRN, }
-
-enum class ExternalMovementRetryMappingMessageTypes {
+enum class TapRetryMappingMessageTypes {
   RETRY_MAPPING_TAP_APPLICATION,
   RETRY_MAPPING_TAP_SCHEDULE,
   RETRY_MAPPING_TAP_MOVEMENT,
