@@ -122,6 +122,8 @@ class CourtSchedulerScheduleIntTest(
           assertThat(courtEvent.eventId).isEqualTo(123)
           assertThat(courtEvent.commentText).isEqualTo("court schedule comment")
           assertThat(courtEvent.externalReferenceUrn).isNull()
+          assertThat(user.username).isEqualTo("USER")
+          assertThat(user.activeCaseloadId).isEqualTo("MDI")
         }
       }
 
@@ -537,6 +539,8 @@ class CourtSchedulerScheduleIntTest(
           assertThat(courtEvent.eventId).isEqualTo(123)
           assertThat(courtEvent.commentText).isEqualTo("court schedule comment")
           assertThat(courtEvent.externalReferenceUrn).isNull()
+          assertThat(user.username).isEqualTo("USER")
+          assertThat(user.activeCaseloadId).isEqualTo("MDI")
         }
       }
 

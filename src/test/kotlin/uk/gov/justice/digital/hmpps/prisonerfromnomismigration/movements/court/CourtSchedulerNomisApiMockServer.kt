@@ -137,6 +137,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       prison = "BXI",
       court = "LEEDMC",
       comment = "court schedule comment",
+      userActiveCaseloadId = "MDI",
       audit = NomisAudit(
         createDatetime = now,
         createUsername = "USER",
@@ -156,6 +157,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       fromPrison = "BXI",
       toCourt = "LEEDMC",
       courtScheduleOutId = null,
+      userActiveCaseloadId = "MDI",
       audit = NomisAudit(
         createDatetime = now,
         createUsername = "USER",
@@ -174,6 +176,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       toPrison = "BXI",
       fromCourt = "LEEDMC",
       courtScheduleOutId = null,
+      userActiveCaseloadId = "MDI",
       audit = NomisAudit(
         createDatetime = now,
         createUsername = "USER",

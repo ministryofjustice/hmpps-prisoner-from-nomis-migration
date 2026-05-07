@@ -220,8 +220,7 @@ private fun CourtScheduleOut.toDpsRequest(courtAppearanceId: UUID?, sentencingCo
   occurredAt = this.audit.modifyDatetime ?: this.audit.createDatetime,
   user = SyncUser(
     username = audit.modifyUserId ?: audit.createUsername,
-    // TODO this needs adding to the NOMIS DTO?
-    activeCaseloadId = null,
+    activeCaseloadId = userActiveCaseloadId,
   ),
 )
 
