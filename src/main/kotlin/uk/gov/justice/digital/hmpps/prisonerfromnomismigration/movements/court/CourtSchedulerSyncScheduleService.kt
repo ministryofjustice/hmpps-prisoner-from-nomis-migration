@@ -17,7 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.tryFetchParent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode.OUT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtMovementRetryMappingMessageTypes.RETRY_MAPPING_COURT_SCHEDULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtScheduleOut
@@ -43,7 +43,7 @@ class CourtSchedulerSyncScheduleService(
   }
 
   suspend fun courtScheduleInserted(event: CourtScheduleEvent) = when (event.directionCode) {
-    DirectionCode.OUT -> syncCourtScheduleOutInserted(event)
+    OUT -> syncCourtScheduleOutInserted(event)
     // TODO when direction is added to the event put this else back in - for now we'll have to check the direction after the nomis call
     //    else -> log.info("Ignoring insert of scheduled movement event ID ${event.eventId} with direction ${event.directionCode} ")
     else -> syncCourtScheduleOutInserted(event)
@@ -107,7 +107,7 @@ class CourtSchedulerSyncScheduleService(
     }
 
   suspend fun courtScheduleUpdated(event: CourtScheduleEvent) = when (event.directionCode) {
-    DirectionCode.OUT -> syncCourtScheduleOutUpdated(event)
+    OUT -> syncCourtScheduleOutUpdated(event)
     // TODO when direction is added to the event put this else back in - for now we'll have to check the direction after the nomis call
     //    else -> log.info("Ignoring update of scheduled movement event ID ${event.eventId} with direction ${event.directionCode} ")
     else -> syncCourtScheduleOutUpdated(event)
@@ -136,14 +136,28 @@ class CourtSchedulerSyncScheduleService(
   }
 
   suspend fun courtScheduleDeleted(event: CourtScheduleEvent) = when (event.directionCode) {
-    DirectionCode.OUT -> syncCourtScheduleOutDeleted(event)
+    OUT -> syncCourtScheduleOutDeleted(event)
     // TODO when direction is added to the event put this else back in - for now we'll have to check the direction after the nomis call
     //    else -> log.info("Ignoring delete of scheduled movement event ID ${event.eventId} with direction ${event.directionCode} ")
     else -> syncCourtScheduleOutDeleted(event)
   }
 
   suspend fun syncCourtScheduleOutDeleted(event: CourtScheduleEvent) {
-    track("${TELEMETRY_PREFIX}-deleted", mutableMapOf()) {}
+    val (eventId, bookingId, prisonerNumber) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber,
+      "bookingId" to bookingId,
+      "nomisEventId" to eventId,
+    )
+    mappingApi.getCourtScheduleMappingOrNull(eventId)?.also {
+      // TODO take this from the event once it has been added
+      telemetry["directionCode"] = OUT.name
+      track("${TELEMETRY_PREFIX}-deleted", telemetry) {
+        telemetry["dpsCourtAppearanceId"] = it.dpsCourtAppearanceId
+        dpsApi.deleteCourtEvent(it.dpsCourtAppearanceId)
+        mappingApi.deleteCourtScheduleMapping(eventId)
+      }
+    } ?: run { telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-ignored", telemetry) }
   }
 
   private suspend fun tryToCreateScheduleMapping(mapping: CourtScheduleMappingDto, telemetry: MutableMap<String, Any>) {
