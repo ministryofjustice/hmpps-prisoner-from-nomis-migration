@@ -247,6 +247,7 @@ class SqsIntegrationTestBase : TestBase() {
       organisationsOffenderEventsQueue,
       visitBalanceOffenderEventsQueue,
       externalMovementsOffenderEventsQueue,
+      courtMovementsOffenderEventsQueue,
       officialVisitsOffenderEventsQueue,
     )
   }
