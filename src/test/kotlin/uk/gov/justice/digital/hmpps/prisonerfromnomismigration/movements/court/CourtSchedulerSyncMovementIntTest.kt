@@ -493,22 +493,167 @@ class CourtSchedulerSyncMovementIntTest(
     }
   }
 
+  /*
+   * Note that the edge cases are covered by CourtMovementOutInserted which largely follows the same execution path
+   */
   @Nested
-  @DisplayName("EXTERNAL_MOVEMENT-CHANGED (updated)")
+  @DisplayName("EXTERNAL_MOVEMENT-CHANGED (OUT, updated)")
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  inner class CourtMovementUpdated {
-    @BeforeAll
-    fun setUpTestClass() {
-      reset(telemetryClient)
-      reset(courtSchedulerSyncMovementService)
+  inner class CourtMovementOutUpdated {
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathNoSchedule {
+      private val dpsCourtMovementId: UUID = UUID.randomUUID()
+
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtMovementMapping(nomisBookingId = 12345L, nomisMovementSeq = 3, dpsCourtMovementId = dpsCourtMovementId)
+        nomisApi.stubGetCourtMovementOut("A1234BC", 12345L, 3)
+        dpsApi.stubSyncCourtMovement("A1234BC", referenceId(dpsCourtMovementId))
+
+        sendMessage(courtMovementEvent(direction = "OUT", inserted = false))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should get court movement mapping`() {
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+      }
+
+      @Test
+      fun `should get NOMIS court movement`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/court/movement/out/12345/3")))
+      }
+
+      @Test
+      fun `should update DPS court appearance movement`() {
+        CourtSchedulerDpsApiMockServer.getRequestBody<SyncCourtEventMovement>(
+          putRequestedFor(urlPathEqualTo("/sync/court-appearance-movements/A1234BC")),
+        ).apply {
+          assertThat(movement.dpsId).isEqualTo(dpsCourtMovementId)
+          assertThat(movement.dpsCourtAppearanceScheduleId).isNull()
+          assertThat(movement.offenderBookId).isEqualTo(12345)
+          assertThat(movement.movementSeq).isEqualTo(3)
+          assertThat(movement.movementDate).isEqualTo(yesterday.toLocalDate())
+          assertThat(LocalDateTime.parse(movement.movementTime)).isCloseTo(yesterday, within(5, ChronoUnit.MINUTES))
+          assertThat(movement.movementReasonCode).isEqualTo("CRT")
+          assertThat(movement.directionCode).isEqualTo("OUT")
+          assertThat(movement.fromAgencyId).isEqualTo("BXI")
+          assertThat(movement.toAgencyId).isEqualTo("LEEDMC")
+          assertThat(user.username).isEqualTo("USER")
+          assertThat(user.activeCaseloadId).isEqualTo("MDI")
+        }
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-movement-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["nomisScheduledEventId"]).isNull()
+            assertThat(it["dpsCourtMovementId"]).isEqualTo("$dpsCourtMovementId")
+            assertThat(it["directionCode"]).isEqualTo("OUT")
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will call service`() = runTest {
-      sendMessage(courtMovementEvent(inserted = false, deleted = false))
-        .also { waitForAnyProcessingToComplete() }
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathWithSchedule {
+      private val dpsCourtMovementId: UUID = UUID.randomUUID()
+      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
 
-      verify(courtSchedulerSyncMovementService).courtMovementUpdated(any())
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtMovementMapping(nomisBookingId = 12345L, nomisMovementSeq = 3, dpsCourtMovementId = dpsCourtMovementId)
+        nomisApi.stubGetCourtMovementOut("A1234BC", 12345L, 3, courtScheduleOutId = 567L)
+        mappingApi.stubGetCourtScheduleMapping(567L, dpsCourtAppearanceId)
+        dpsApi.stubSyncCourtMovement("A1234BC", referenceId(dpsCourtMovementId))
+
+        sendMessage(courtMovementEvent(direction = "OUT", inserted = false))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should get court schedule mapping`() {
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/567")))
+      }
+
+      @Test
+      fun `should update DPS court appearance movement`() {
+        CourtSchedulerDpsApiMockServer.getRequestBody<SyncCourtEventMovement>(
+          putRequestedFor(urlPathEqualTo("/sync/court-appearance-movements/A1234BC")),
+        ).apply {
+          assertThat(movement.dpsId).isEqualTo(dpsCourtMovementId)
+          assertThat(movement.dpsCourtAppearanceScheduleId).isEqualTo(dpsCourtAppearanceId)
+        }
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-movement-updated-success"),
+          check {
+            assertThat(it["nomisEventId"]).isEqualTo("567")
+            assertThat(it["dpsCourtMovementId"]).isEqualTo("$dpsCourtMovementId")
+            assertThat(it["dpsCourtAppearanceId"]).isEqualTo("$dpsCourtAppearanceId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class ScheduleDoesNotExist {
+      private val dpsCourtMovementId: UUID = UUID.randomUUID()
+
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtMovementMapping(nomisBookingId = 12345L, nomisMovementSeq = 3, dpsCourtMovementId = dpsCourtMovementId)
+        nomisApi.stubGetCourtMovementOut("A1234BC", 12345L, 3, courtScheduleOutId = 567L)
+        mappingApi.stubGetCourtScheduleMapping(567L, NOT_FOUND)
+
+        sendMessage(courtMovementEvent(direction = "OUT", inserted = false))
+          .also { waitForAnyProcessingToComplete("court-scheduler-sync-movement-updated-awaiting-parent") }
+      }
+
+      @Test
+      fun `should get court schedule mapping`() {
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/567")))
+      }
+
+      @Test
+      fun `should NOT update DPS court appearance movement`() {
+        dpsApi.verify(
+          0,
+          putRequestedFor(urlPathEqualTo("/sync/court-appearance-movements/A1234BC")),
+        )
+      }
+
+      @Test
+      fun `should publish failure telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-movement-updated-awaiting-parent"),
+          check {
+            assertThat(it["nomisEventId"]).isEqualTo("567")
+            assertThat(it["dpsCourtMovementId"]).isEqualTo("$dpsCourtMovementId")
+          },
+          isNull(),
+        )
+      }
     }
   }
 
@@ -711,6 +856,125 @@ class CourtSchedulerSyncMovementIntTest(
           eq("court-scheduler-sync-movement-inserted-awaiting-parent"),
           check {
             assertThat(it["nomisEventId"]).isEqualTo("567")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("EXTERNAL_MOVEMENT-CHANGED (IN, updated)")
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class CourtMovementInUpdated {
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathNoSchedule {
+      private val dpsCourtMovementId: UUID = UUID.randomUUID()
+
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtMovementMapping(nomisBookingId = 12345L, nomisMovementSeq = 3, dpsCourtMovementId = dpsCourtMovementId)
+        nomisApi.stubGetCourtMovementIn("A1234BC", 12345L, 3)
+        dpsApi.stubSyncCourtMovement("A1234BC", referenceId(dpsCourtMovementId))
+
+        sendMessage(courtMovementEvent(direction = "IN", inserted = false))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should get court movement mapping`() {
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+      }
+
+      @Test
+      fun `should get NOMIS court movement`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/court/movement/in/12345/3")))
+      }
+
+      @Test
+      fun `should update DPS court appearance movement`() {
+        CourtSchedulerDpsApiMockServer.getRequestBody<SyncCourtEventMovement>(
+          putRequestedFor(urlPathEqualTo("/sync/court-appearance-movements/A1234BC")),
+        ).apply {
+          assertThat(movement.dpsId).isEqualTo(dpsCourtMovementId)
+          assertThat(movement.dpsCourtAppearanceScheduleId).isNull()
+          assertThat(movement.offenderBookId).isEqualTo(12345)
+          assertThat(movement.movementSeq).isEqualTo(3)
+          assertThat(movement.movementDate).isEqualTo(yesterday.toLocalDate())
+          assertThat(LocalDateTime.parse(movement.movementTime)).isCloseTo(yesterday, within(5, ChronoUnit.MINUTES))
+          assertThat(movement.movementReasonCode).isEqualTo("CRT")
+          assertThat(movement.directionCode).isEqualTo("IN")
+          assertThat(movement.fromAgencyId).isEqualTo("LEEDMC")
+          assertThat(movement.toAgencyId).isEqualTo("BXI")
+          assertThat(user.username).isEqualTo("USER")
+          assertThat(user.activeCaseloadId).isEqualTo("MDI")
+        }
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-movement-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["nomisScheduledEventId"]).isNull()
+            assertThat(it["dpsCourtMovementId"]).isEqualTo("$dpsCourtMovementId")
+            assertThat(it["directionCode"]).isEqualTo("IN")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathWithSchedule {
+      private val dpsCourtMovementId: UUID = UUID.randomUUID()
+      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
+
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtMovementMapping(nomisBookingId = 12345L, nomisMovementSeq = 3, dpsCourtMovementId = dpsCourtMovementId)
+        nomisApi.stubGetCourtMovementIn("A1234BC", 12345L, 3, courtScheduleOutId = 567L)
+        mappingApi.stubGetCourtScheduleMapping(567L, dpsCourtAppearanceId)
+        dpsApi.stubSyncCourtMovement("A1234BC", referenceId(dpsCourtMovementId))
+
+        sendMessage(courtMovementEvent(direction = "IN", inserted = false))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should get court schedule mapping`() {
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/567")))
+      }
+
+      @Test
+      fun `should update DPS court appearance movement`() {
+        CourtSchedulerDpsApiMockServer.getRequestBody<SyncCourtEventMovement>(
+          putRequestedFor(urlPathEqualTo("/sync/court-appearance-movements/A1234BC")),
+        ).apply {
+          assertThat(movement.dpsId).isEqualTo(dpsCourtMovementId)
+          assertThat(movement.dpsCourtAppearanceScheduleId).isEqualTo(dpsCourtAppearanceId)
+          assertThat(movement.directionCode).isEqualTo("IN")
+        }
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-movement-updated-success"),
+          check {
+            assertThat(it["nomisEventId"]).isEqualTo("567")
+            assertThat(it["dpsCourtMovementId"]).isEqualTo("$dpsCourtMovementId")
+            assertThat(it["dpsCourtAppearanceId"]).isEqualTo("$dpsCourtAppearanceId")
           },
           isNull(),
         )

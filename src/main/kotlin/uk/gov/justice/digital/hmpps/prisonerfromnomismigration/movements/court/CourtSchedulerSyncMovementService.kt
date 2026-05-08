@@ -95,6 +95,7 @@ class CourtSchedulerSyncMovementService(
     bookingId: Long,
     movementSeq: Int,
     telemetry: MutableMap<String, Any>,
+    dpsCourtMovementId: UUID? = null,
   ): SyncCourtEventMovement {
     val nomis = nomisApi.getCourtMovementOut(prisonerNumber, bookingId, movementSeq)
     val dpsCourtAppearanceId = nomis.courtScheduleOutId
@@ -104,7 +105,7 @@ class CourtSchedulerSyncMovementService(
           .also { telemetry["dpsCourtAppearanceId"] = it }
       }
 
-    return nomis.toDpsRequest(dpsCourtAppearanceScheduleId = dpsCourtAppearanceId)
+    return nomis.toDpsRequest(dpsCourtAppearanceScheduleId = dpsCourtAppearanceId, dpsCourtMovementId = dpsCourtMovementId)
   }
 
   private suspend fun courtMovementInRequest(
@@ -112,6 +113,7 @@ class CourtSchedulerSyncMovementService(
     bookingId: Long,
     movementSeq: Int,
     telemetry: MutableMap<String, Any>,
+    dpsCourtMovementId: UUID? = null,
   ): SyncCourtEventMovement {
     val nomis = nomisApi.getCourtMovementIn(prisonerNumber, bookingId, movementSeq)
     val dpsCourtAppearanceId = nomis.courtScheduleOutId
@@ -121,11 +123,36 @@ class CourtSchedulerSyncMovementService(
           .also { telemetry["dpsCourtAppearanceId"] = it }
       }
 
-    return nomis.toDpsRequest(dpsCourtAppearanceScheduleId = dpsCourtAppearanceId)
+    return nomis.toDpsRequest(dpsCourtAppearanceScheduleId = dpsCourtAppearanceId, dpsCourtMovementId = dpsCourtMovementId)
   }
 
   suspend fun courtMovementUpdated(event: ExternalMovementEvent) {
-    track("${TELEMETRY_PREFIX}-updated", mutableMapOf()) {}
+    val (bookingId, prisonerNumber, movementSeq, _, directionCode) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber!!,
+      "bookingId" to bookingId,
+      "movementSeq" to movementSeq,
+      "directionCode" to directionCode,
+    )
+
+    if (event.originatesInDps) {
+      telemetryClient.trackEvent("${TELEMETRY_PREFIX}-updated-skipped", telemetry)
+      return
+    }
+
+    track("${TELEMETRY_PREFIX}-updated", telemetry) {
+      val existingMapping = mappingApi.getCourtMovementMappingOrNull(bookingId, movementSeq)
+        ?.also { telemetry["dpsCourtMovementId"] = it.dpsCourtMovementId }
+        ?: throw IllegalStateException("No mapping found when handling an update event for movement $bookingId/$movementSeq - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
+
+      when (directionCode) {
+        OUT -> courtMovementOutRequest(prisonerNumber, bookingId, movementSeq, telemetry, existingMapping.dpsCourtMovementId)
+        IN -> courtMovementInRequest(prisonerNumber, bookingId, movementSeq, telemetry, existingMapping.dpsCourtMovementId)
+      }.let { dpsRequest ->
+        dpsApi.syncCourtMovement(prisonerNumber, dpsRequest).id
+          .also { telemetry["dpsCourtMovementId"] = it }
+      }
+    }
   }
 
   suspend fun courtMovementDeleted(event: ExternalMovementEvent) {
