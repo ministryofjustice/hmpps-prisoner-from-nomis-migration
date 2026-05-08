@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.tryFetchParent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode.IN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode.OUT
@@ -64,14 +65,14 @@ class CourtSchedulerSyncMovementService(
 
     mappingApi.getCourtMovementMappingOrNull(bookingId, movementSeq)
       ?.also {
-        telemetry["dpsMovementId"] = it.dpsCourtMovementId
+        telemetry["dpsCourtMovementId"] = it.dpsCourtMovementId
         telemetryClient.trackEvent("${TELEMETRY_PREFIX}-inserted-ignored", telemetry)
       }
       ?: run {
         track("${TELEMETRY_PREFIX}-inserted", telemetry) {
           val mapping = when (directionCode) {
-            OUT -> courtMovementOutRequest(prisonerNumber, bookingId, movementSeq)
-            IN -> courtMovementInRequest(prisonerNumber, bookingId, movementSeq)
+            OUT -> courtMovementOutRequest(prisonerNumber, bookingId, movementSeq, telemetry)
+            IN -> courtMovementInRequest(prisonerNumber, bookingId, movementSeq, telemetry)
           }.let { dpsRequest ->
             val dpsCourtMovementId = dpsApi.syncCourtMovement(prisonerNumber, dpsRequest).id
               .also { telemetry["dpsCourtMovementId"] = it }
@@ -93,13 +94,35 @@ class CourtSchedulerSyncMovementService(
     prisonerNumber: String,
     bookingId: Long,
     movementSeq: Int,
-  ): SyncCourtEventMovement = nomisApi.getCourtMovementOut(prisonerNumber, bookingId, movementSeq).toDpsRequest()
+    telemetry: MutableMap<String, Any>,
+  ): SyncCourtEventMovement {
+    val nomis = nomisApi.getCourtMovementOut(prisonerNumber, bookingId, movementSeq)
+    val dpsCourtAppearanceId = nomis.courtScheduleOutId
+      ?.also { telemetry["nomisEventId"] = it }
+      ?.let {
+        tryFetchParent { mappingApi.getCourtScheduleMappingOrNull(it)?.dpsCourtAppearanceId }
+          .also { telemetry["dpsCourtAppearanceId"] = it }
+      }
+
+    return nomis.toDpsRequest(dpsCourtAppearanceScheduleId = dpsCourtAppearanceId)
+  }
 
   private suspend fun courtMovementInRequest(
     prisonerNumber: String,
     bookingId: Long,
     movementSeq: Int,
-  ): SyncCourtEventMovement = nomisApi.getCourtMovementIn(prisonerNumber, bookingId, movementSeq).toDpsRequest()
+    telemetry: MutableMap<String, Any>,
+  ): SyncCourtEventMovement {
+    val nomis = nomisApi.getCourtMovementIn(prisonerNumber, bookingId, movementSeq)
+    val dpsCourtAppearanceId = nomis.courtScheduleOutId
+      ?.also { telemetry["nomisEventId"] = it }
+      ?.let {
+        tryFetchParent { mappingApi.getCourtScheduleMappingOrNull(it)?.dpsCourtAppearanceId }
+          .also { telemetry["dpsCourtAppearanceId"] = it }
+      }
+
+    return nomis.toDpsRequest(dpsCourtAppearanceScheduleId = dpsCourtAppearanceId)
+  }
 
   suspend fun courtMovementUpdated(event: ExternalMovementEvent) {
     track("${TELEMETRY_PREFIX}-updated", mutableMapOf()) {}
@@ -126,7 +149,7 @@ class CourtSchedulerSyncMovementService(
               "duplicateOffenderNo" to duplicate.prisonerNumber,
               "duplicateBookingId" to duplicate.nomisBookingId,
               "duplicateMovementSeq" to duplicate.nomisMovementSeq,
-              "duplicateDpsMovementId" to duplicate.dpsCourtMovementId,
+              "duplicateDpsCourtMovementId" to duplicate.dpsCourtMovementId,
             ),
           )
         }

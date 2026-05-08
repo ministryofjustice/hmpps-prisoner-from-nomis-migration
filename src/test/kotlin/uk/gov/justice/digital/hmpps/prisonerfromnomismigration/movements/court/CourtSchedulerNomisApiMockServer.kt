@@ -56,9 +56,11 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
     bookingId: Long = 12345L,
     movementSeq: Int = 3,
     movementTime: LocalDateTime = yesterday,
+    courtScheduleOutId: Long? = null,
     response: CourtMovementOut = courtMovementOutResponse(
       movementTime = movementTime,
       movementSeq = movementSeq,
+      courtScheduleOutId = courtScheduleOutId,
     ),
   ) {
     nomisApi.stubFor(
@@ -87,9 +89,11 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
     bookingId: Long = 12345L,
     movementSeq: Int = 4,
     movementTime: LocalDateTime = yesterday,
+    courtScheduleOutId: Long? = null,
     response: CourtMovementIn = courtMovementInResponse(
       movementSeq = movementSeq,
       movementTime = movementTime,
+      courtScheduleOutId = courtScheduleOutId,
     ),
   ) {
     nomisApi.stubFor(
@@ -148,6 +152,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
     fun courtMovementOutResponse(
       movementSeq: Int = 3,
       movementTime: LocalDateTime = now,
+      courtScheduleOutId: Long? = null,
     ) = CourtMovementOut(
       bookingId = 12345,
       sequence = movementSeq,
@@ -156,7 +161,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       movementReason = "CRT",
       fromPrison = "BXI",
       toCourt = "LEEDMC",
-      courtScheduleOutId = null,
+      courtScheduleOutId = courtScheduleOutId,
       userActiveCaseloadId = "MDI",
       audit = NomisAudit(
         createDatetime = now,
@@ -167,6 +172,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
     fun courtMovementInResponse(
       movementSeq: Int = 4,
       movementTime: LocalDateTime = now,
+      courtScheduleOutId: Long? = null,
     ) = CourtMovementIn(
       bookingId = 12345,
       sequence = movementSeq,
@@ -175,7 +181,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       movementReason = "CRT",
       toPrison = "BXI",
       fromCourt = "LEEDMC",
-      courtScheduleOutId = null,
+      courtScheduleOutId = courtScheduleOutId,
       userActiveCaseloadId = "MDI",
       audit = NomisAudit(
         createDatetime = now,
