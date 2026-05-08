@@ -44,7 +44,7 @@ import java.time.temporal.ChronoUnit
 import java.util.*
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class CourtSchedulerScheduleIntTest(
+class CourtSchedulerSyncScheduleIntTest(
   @Autowired private val nomisApi: CourtSchedulerNomisApiMockServer,
   @Autowired private val mappingApi: CourtSchedulerMappingApiMockServer,
   @Autowired private val sentencingMappingApi: CourtSentencingMappingApiMockServer,

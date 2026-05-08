@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.tryFetchP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode.IN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode.OUT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType.TAP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.Location
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
