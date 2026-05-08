@@ -65,7 +65,7 @@ data class CourtScheduleEvent(
   val eventId: Long,
   val bookingId: Long,
   val offenderIdDisplay: String,
-  val caseId: Long,
+  val caseId: Long? = null,
   // TODO waiting for direction to be added to events
   val directionCode: DirectionCode? = null,
   override val auditModuleName: String,
