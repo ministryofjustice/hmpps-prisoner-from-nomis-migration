@@ -1,10 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court
 
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.BeforeAll
@@ -12,7 +12,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -658,21 +657,153 @@ class CourtSchedulerSyncMovementIntTest(
   }
 
   @Nested
-  @DisplayName("EXTERNAL_MOVEMENT-CHANGED (deleted)")
+  @DisplayName("EXTERNAL_MOVEMENT-CHANGED (OUT, deleted)")
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  inner class CourtMovementDeleted {
-    @BeforeAll
-    fun setUpTestClass() {
-      reset(telemetryClient)
-      reset(courtSchedulerSyncMovementService)
+  inner class CourtMovementOutDeleted {
+    private val dpsCourtMovementId = UUID.randomUUID()
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPath {
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtMovementMapping(12345, 3, dpsCourtMovementId)
+        mappingApi.stubDeleteCourtMovementMapping(12345, 3)
+        dpsApi.stubDeleteCourtMovement(dpsCourtMovementId)
+
+        sendMessage(courtMovementEvent(deleted = true, direction = "OUT"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should get mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+      }
+
+      @Test
+      fun `should delete mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+      }
+
+      @Test
+      fun `should delete DPS external movement`() {
+        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/court-appearance-movements/$dpsCourtMovementId")))
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-movement-deleted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["directionCode"]).isEqualTo("OUT")
+            assertThat(it["dpsCourtMovementId"]).isEqualTo("$dpsCourtMovementId")
+          },
+          isNull(),
+        )
+      }
     }
 
-    @Test
-    fun `will call service`() = runTest {
-      sendMessage(courtMovementEvent(deleted = true))
-        .also { waitForAnyProcessingToComplete() }
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenMappingDoesNotExist {
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
 
-      verify(courtSchedulerSyncMovementService).courtMovementDeleted(any())
+        mappingApi.stubGetCourtMovementMapping(12345, 3, NOT_FOUND)
+
+        sendMessage(courtMovementEvent(deleted = true, direction = "OUT"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should get mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+      }
+
+      @Test
+      fun `should NOT delete mapping`() {
+        mappingApi.verify(
+          0,
+          deleteRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")),
+        )
+      }
+
+      @Test
+      fun `should NOT delete DPS external movement`() {
+        dpsApi.verify(
+          0,
+          deleteRequestedFor(urlPathEqualTo("/sync/court-appearance-movements/$dpsCourtMovementId")),
+        )
+      }
+
+      @Test
+      fun `should create ignored telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-movement-deleted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["directionCode"]).isEqualTo("OUT")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDpsDeleteFails {
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtMovementMapping(12345, 3, dpsCourtMovementId)
+        mappingApi.stubDeleteCourtMovementMapping(12345, 3)
+        dpsApi.stubDeleteCourtMovementError(dpsCourtMovementId, 400)
+
+        sendMessage(courtMovementEvent(deleted = true, direction = "OUT"))
+          .also { waitForAnyProcessingToComplete("court-scheduler-sync-movement-deleted-error") }
+      }
+
+      @Test
+      fun `should get mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+      }
+
+      @Test
+      fun `should try to delete DPS external movement`() {
+        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/court-appearance-movements/$dpsCourtMovementId")))
+      }
+
+      @Test
+      fun `should NOT delete mapping`() {
+        mappingApi.verify(
+          0,
+          deleteRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")),
+        )
+      }
+
+      @Test
+      fun `should create error telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-movement-deleted-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["directionCode"]).isEqualTo("OUT")
+            assertThat(it["dpsCourtMovementId"]).isEqualTo("$dpsCourtMovementId")
+          },
+          isNull(),
+        )
+      }
     }
   }
 
@@ -975,6 +1106,59 @@ class CourtSchedulerSyncMovementIntTest(
             assertThat(it["nomisEventId"]).isEqualTo("567")
             assertThat(it["dpsCourtMovementId"]).isEqualTo("$dpsCourtMovementId")
             assertThat(it["dpsCourtAppearanceId"]).isEqualTo("$dpsCourtAppearanceId")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("EXTERNAL_MOVEMENT-CHANGED (IN, deleted)")
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class CourtMovementInDeleted {
+    private val dpsCourtMovementId = UUID.randomUUID()
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPath {
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtMovementMapping(12345, 3, dpsCourtMovementId)
+        mappingApi.stubDeleteCourtMovementMapping(12345, 3)
+        dpsApi.stubDeleteCourtMovement(dpsCourtMovementId)
+
+        sendMessage(courtMovementEvent(deleted = true, direction = "IN"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should get mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+      }
+
+      @Test
+      fun `should delete mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+      }
+
+      @Test
+      fun `should delete DPS external movement`() {
+        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/court-appearance-movements/$dpsCourtMovementId")))
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-movement-deleted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["directionCode"]).isEqualTo("IN")
+            assertThat(it["dpsCourtMovementId"]).isEqualTo("$dpsCourtMovementId")
           },
           isNull(),
         )

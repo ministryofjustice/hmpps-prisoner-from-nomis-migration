@@ -156,7 +156,20 @@ class CourtSchedulerSyncMovementService(
   }
 
   suspend fun courtMovementDeleted(event: ExternalMovementEvent) {
-    track("${TELEMETRY_PREFIX}-deleted", mutableMapOf()) {}
+    val (bookingId, prisonerNumber, movementSeq, _, directionCode) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber!!,
+      "bookingId" to bookingId,
+      "movementSeq" to movementSeq,
+      "directionCode" to directionCode,
+    )
+    mappingApi.getCourtMovementMappingOrNull(bookingId, movementSeq)?.also {
+      telemetry["dpsCourtMovementId"] = it.dpsCourtMovementId
+      track("${TELEMETRY_PREFIX}-deleted", telemetry) {
+        dpsApi.deleteCourtMovement(it.dpsCourtMovementId)
+        mappingApi.deleteCourtMovementMapping(bookingId, movementSeq)
+      }
+    } ?: run { telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-ignored", telemetry) }
   }
 
   private suspend fun tryToCreateCourtMovementMapping(
