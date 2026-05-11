@@ -35,7 +35,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.incidents.IncidentsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerSyncMovementService
@@ -58,7 +57,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSRA_QUEU
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSRA_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.EXTERNALMOVEMENTS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.FINANCE_SYNC_QUEUE_ID
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.INCIDENTS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.LOCATIONS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.OFFICIAL_VISITS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ORGANISATIONS_SYNC_QUEUE_ID
@@ -95,7 +93,6 @@ import java.util.concurrent.TimeUnit
   ActivitiesApiExtension::class,
   CorePersonCprApiExtension::class,
   CsraApiExtension::class,
-  IncidentsApiExtension::class,
   LocationsApiExtension::class,
   AlertsDpsApiExtension::class,
   CaseNotesApiExtension::class,
@@ -150,12 +147,6 @@ class SqsIntegrationTestBase : TestBase() {
   internal val sentencingQueueOffenderEventsDlqUrl by lazy { sentencingOffenderEventsQueue.dlqUrl }
   internal val awsSqsSentencingOffenderEventsClient by lazy { sentencingOffenderEventsQueue.sqsClient }
   internal val awsSqsSentencingOffenderEventsDlqClient by lazy { sentencingOffenderEventsQueue.sqsDlqClient }
-
-  internal val incidentsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(INCIDENTS_SYNC_QUEUE_ID) as HmppsQueue }
-  internal val incidentsQueueOffenderEventsUrl by lazy { incidentsOffenderEventsQueue.queueUrl }
-  internal val incidentsQueueOffenderEventsDlqUrl by lazy { incidentsOffenderEventsQueue.dlqUrl as String }
-  internal val awsSqsIncidentsOffenderEventsClient by lazy { incidentsOffenderEventsQueue.sqsClient }
-  internal val awsSqsIncidentsOffenderEventDlqClient by lazy { incidentsOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
 
   internal val locationsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(LOCATIONS_SYNC_QUEUE_ID) as HmppsQueue }
   internal val locationsQueueOffenderEventsUrl by lazy { locationsOffenderEventsQueue.queueUrl }
@@ -227,7 +218,6 @@ class SqsIntegrationTestBase : TestBase() {
 
   private val allQueues by lazy {
     listOf(
-      incidentsOffenderEventsQueue,
       locationsOffenderEventsQueue,
       sentencingOffenderEventsQueue,
       visitsOffenderEventsQueue,

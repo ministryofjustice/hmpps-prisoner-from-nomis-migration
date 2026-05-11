@@ -12,7 +12,6 @@ api.base.url:
   mapping: http://localhost:8083
   sentencing: http://localhost:8085
   activities: http://localhost:8086
-  incidents: http://localhost:8089
   # do not use port 8091 - clashes on some Macs
   alerts: http://localhost:8092
   locations: http://localhost:8093
@@ -47,9 +46,6 @@ allocations:
   complete-check:
     delay-seconds: 1
     count: 1
-incidents:
-  page:
-    size: 10
 locations:
   page:
     size: 10

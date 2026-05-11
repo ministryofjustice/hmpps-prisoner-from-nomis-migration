@@ -63,8 +63,6 @@ generic-service:
       EXT_MOVEMENTS_CLIENT_SECRET: "EXT_MOVEMENTS_CLIENT_SECRET"
       FINANCE_CLIENT_ID: "FINANCE_CLIENT_ID"
       FINANCE_CLIENT_SECRET: "FINANCE_CLIENT_SECRET"
-      INCIDENTS_CLIENT_ID: "INCIDENTS_CLIENT_ID"
-      INCIDENTS_CLIENT_SECRET: "INCIDENTS_CLIENT_SECRET"
       LOCATIONS_CLIENT_ID: "LOCATIONS_CLIENT_ID"
       LOCATIONS_CLIENT_SECRET: "LOCATIONS_CLIENT_SECRET"
       NOMIS_MAPPING_API_CLIENT_ID: "NOMIS_MAPPING_API_CLIENT_ID"
@@ -141,10 +139,6 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTSENTENCING_QUEUE_NAME: "sqs_name"
     prison-events-sentencing-dl-queue:
       HMPPS_SQS_QUEUES_EVENTSENTENCING_DLQ_NAME: "sqs_name"
-    prisoner-from-nomis-incidents-queue:
-      HMPPS_SQS_QUEUES_EVENTINCIDENTS_QUEUE_NAME: "sqs_name"
-    prisoner-from-nomis-incidents-dl-queue:
-      HMPPS_SQS_QUEUES_EVENTINCIDENTS_DLQ_NAME: "sqs_name"
     prisoner-from-nomis-locations-queue:
       HMPPS_SQS_QUEUES_EVENTLOCATIONS_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-locations-dl-queue:
