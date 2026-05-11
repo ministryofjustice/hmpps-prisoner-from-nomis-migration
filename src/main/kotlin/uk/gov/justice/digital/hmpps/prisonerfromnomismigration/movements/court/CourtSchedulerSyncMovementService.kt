@@ -28,6 +28,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 import java.util.*
 
 private const val TELEMETRY_PREFIX: String = "${CRT_TELEMETRY_PREFIX}-movement"
+private const val MISSING_COURT: String = "NULL"
 
 @Service
 class CourtSchedulerSyncMovementService(
@@ -234,7 +235,7 @@ private fun CourtMovementOut.toDpsRequest(
     movementTime = "$movementTime",
     movementReasonCode = this.movementReason,
     fromAgencyId = fromPrison,
-    toAgencyId = toCourt ?: "",
+    toAgencyId = toCourt ?: MISSING_COURT,
     commentText = this.commentText,
   ),
   occurredAt = this.audit.modifyDatetime ?: this.audit.createDatetime,
@@ -257,8 +258,8 @@ private fun CourtMovementIn.toDpsRequest(
     movementDate = movementDate,
     movementTime = "$movementTime",
     movementReasonCode = this.movementReason,
-    fromAgencyId = fromCourt,
-    toAgencyId = toPrison ?: "",
+    fromAgencyId = fromCourt ?: MISSING_COURT,
+    toAgencyId = toPrison,
     commentText = this.commentText,
   ),
   occurredAt = this.audit.modifyDatetime ?: this.audit.createDatetime,
