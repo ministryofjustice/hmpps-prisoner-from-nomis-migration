@@ -10,9 +10,7 @@ class ReactiveResourceServerConfiguration {
   @Bean
   fun resourceServerCustomizer() = ResourceServerConfigurationCustomizer {
     unauthorizedRequestPaths {
-      addPaths = setOf(
-        "/incidents/reports/reconciliation",
-      )
+      addPaths = setOf()
     }
   }
 }
