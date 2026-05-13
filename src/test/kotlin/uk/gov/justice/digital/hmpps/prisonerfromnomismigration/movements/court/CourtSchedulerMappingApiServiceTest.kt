@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.not
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -15,12 +16,15 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import java.util.*
@@ -286,6 +290,54 @@ class CourtSchedulerMappingApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.deleteCourtMovementMapping(12345L, 1)
+      }
+    }
+  }
+
+  @Nested
+  inner class CreateMigrationMappings {
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubCreateCourtSchedulerPrisonerMappings()
+
+      apiService.createMapping(
+        courtSchedulerPrisonerMappings(),
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtSchedulerPrisonerMappingsDto>>() {},
+      )
+
+      mappingApi.verify(
+        putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should pass data to service`() = runTest {
+      mappingApi.stubCreateCourtSchedulerPrisonerMappings()
+
+      apiService.createMapping(
+        courtSchedulerPrisonerMappings(),
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtSchedulerPrisonerMappingsDto>>() {},
+      )
+
+      mappingApi.verify(
+        putRequestedFor(anyUrl())
+          .withRequestBody(matchingJsonPath("offenderNo", equalTo("A1234BC")))
+          .withRequestBody(matchingJsonPath("bookings[0].bookingId", equalTo("12345")))
+          .withRequestBody(matchingJsonPath("bookings[0].courtSchedules[0].nomisEventId", equalTo("1")))
+          .withRequestBody(matchingJsonPath("bookings[0].courtSchedules[0].dpsCourtAppearanceId", not(absent())))
+          .withRequestBody(matchingJsonPath("migrationId", equalTo("2020-01-01T11:10:00"))),
+      )
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubCreateCourtSchedulerPrisonerMappings(INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.createMapping(
+          courtSchedulerPrisonerMappings(),
+          object : ParameterizedTypeReference<DuplicateErrorResponse<CourtSchedulerPrisonerMappingsDto>>() {},
+        )
       }
     }
   }
