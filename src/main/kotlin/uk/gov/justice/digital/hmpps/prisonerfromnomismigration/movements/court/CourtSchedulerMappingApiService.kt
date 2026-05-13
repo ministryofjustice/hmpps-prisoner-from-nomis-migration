@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CourtMovementResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CourtScheduleResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CourtSchedulerMigrationResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CourtSchedulerPrisonerResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
@@ -26,6 +27,7 @@ class CourtSchedulerMappingApiService(@Qualifier("courtSchedulerMappingApiWebCli
   private val scheduleApi = CourtScheduleResourceApi(webClient)
   private val movementApi = CourtMovementResourceApi(webClient)
   private val migrationApi = CourtSchedulerMigrationResourceApi(webClient)
+  private val prisonerApi = CourtSchedulerPrisonerResourceApi(webClient)
 
   suspend fun createMapping(
     mapping: CourtSchedulerPrisonerMappingsDto,
@@ -60,4 +62,6 @@ class CourtSchedulerMappingApiService(@Qualifier("courtSchedulerMappingApiWebCli
 
   suspend fun deleteCourtMovementMapping(nomisBookingId: Long, nomisMovementSeq: Int): Unit = movementApi.deleteCourtMovementMappingByNomisId(nomisBookingId, nomisMovementSeq)
     .awaitSingle()
+
+  suspend fun getCourtSchedulerPrisonMappingIds(offenderNo: String) = prisonerApi.getAllCourtSchedulerPrisonerMappingIds(offenderNo).awaitSingle()
 }

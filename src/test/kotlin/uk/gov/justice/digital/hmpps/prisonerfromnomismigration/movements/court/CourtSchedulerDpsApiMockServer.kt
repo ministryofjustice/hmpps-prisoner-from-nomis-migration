@@ -15,8 +15,11 @@ import org.springframework.stereotype.Component
 import org.springframework.test.context.junit.jupiter.SpringExtension.getApplicationContext
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtEventMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtEventMovement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtMovementMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.ReferenceId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.ResyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEventMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncUser
@@ -126,6 +129,45 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
       )
     }
+
+    fun resyncResponse(
+      dpsCourtAppearanceId: UUID = UUID.randomUUID(),
+      dpsScheduledMovementOutId: UUID = UUID.randomUUID(),
+      dpsScheduledMovementInId: UUID = UUID.randomUUID(),
+      dpsUnscheduledMovementOutId: UUID = UUID.randomUUID(),
+      dpsUnscheduledMovementInId: UUID = UUID.randomUUID(),
+    ) = ResyncResponse(
+      courtEvents = listOf(
+        CourtEventMapping(
+          dpsId = dpsCourtAppearanceId,
+          eventId = 1L,
+          movements = listOf(
+            CourtMovementMapping(
+              dpsId = dpsScheduledMovementOutId,
+              offenderBookId = 12345L,
+              movementSeq = 3,
+            ),
+            CourtMovementMapping(
+              dpsId = dpsScheduledMovementInId,
+              offenderBookId = 12345L,
+              movementSeq = 4,
+            ),
+          ),
+        ),
+      ),
+      unscheduledMovements = listOf(
+        CourtMovementMapping(
+          dpsId = dpsUnscheduledMovementOutId,
+          offenderBookId = 12345L,
+          movementSeq = 1,
+        ),
+        CourtMovementMapping(
+          dpsId = dpsUnscheduledMovementInId,
+          offenderBookId = 12345L,
+          movementSeq = 2,
+        ),
+      ),
+    )
   }
 
   fun stubSyncCourtEvent(personIdentifier: String, response: ReferenceId = referenceId()) {
@@ -232,6 +274,34 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(status)
             .withHeader("Content-Type", "application/json")
             .withBody(OrganisationsDpsApiExtension.jsonMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubResyncPrisonerCourtAppearances(personIdentifier: String = "A1234BC", response: ResyncResponse = resyncResponse()) {
+    dpsCourtSchedulerServer.stubFor(
+      put("/resync/court-appearances/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubResyncPrisonerCourtAppearances(
+    personIdentifier: String = "A1234BC",
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsCourtSchedulerServer.stubFor(
+      put("/resync/court-appearances/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(error)),
         ),
     )
   }

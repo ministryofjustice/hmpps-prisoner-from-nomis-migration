@@ -12,17 +12,24 @@ import java.time.Duration
 class CourtSchedulerConfiguration(
   @Value("\${api.base.url.movements-court}") val tapsUrl: String,
   @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
-  @Value("\${api.movements-court-timeout:10s}") val tapsTimeout: Duration,
-  @Value("\${api.movements-court-mapping-timeout:60s}") val tapsMappingTimeout: Duration,
+  @Value("\${api.movements-court-timeout:10s}") val dpsTimeout: Duration,
+  @Value("\${api.movements-court-resync-timeout:10s}") val dpsResyncTimeout: Duration,
+  @Value("\${api.movements-court-mapping-timeout:60s}") val mappingTimeout: Duration,
   @Value("\${api.base.url.mapping}") val mappingApiBaseUri: String,
 ) {
 
   @Bean
-  fun courtSchedulerMappingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "nomis-mapping-api", url = mappingApiBaseUri, tapsMappingTimeout)
+  fun courtSchedulerMappingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "nomis-mapping-api", url = mappingApiBaseUri, mappingTimeout)
 
   @Bean
   fun courtSchedulerDpsApiWebClient(
     authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
     builder: WebClient.Builder,
-  ): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "movements-court-api", url = tapsUrl, tapsTimeout)
+  ): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "movements-court-api", url = tapsUrl, dpsTimeout)
+
+  @Bean
+  fun courtSchedulerDpsApiResyncWebClient(
+    authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
+    builder: WebClient.Builder,
+  ): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "movements-court-api", url = tapsUrl, dpsResyncTimeout)
 }
