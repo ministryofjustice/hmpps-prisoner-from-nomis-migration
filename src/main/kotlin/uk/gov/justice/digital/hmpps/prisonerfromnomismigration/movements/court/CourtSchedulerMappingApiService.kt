@@ -1,21 +1,43 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court
 
+import kotlinx.coroutines.reactive.awaitFirstOrDefault
 import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.WebClientResponseException
+import org.springframework.web.reactive.function.client.bodyToMono
+import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitSuccessOrDuplicate
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CourtMovementResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CourtScheduleResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CourtSchedulerMigrationResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
 
 @Service
 class CourtSchedulerMappingApiService(@Qualifier("courtSchedulerMappingApiWebClient") webClient: WebClient) {
 
   private val scheduleApi = CourtScheduleResourceApi(webClient)
   private val movementApi = CourtMovementResourceApi(webClient)
+  private val migrationApi = CourtSchedulerMigrationResourceApi(webClient)
+
+  suspend fun createMapping(
+    mapping: CourtSchedulerPrisonerMappingsDto,
+    errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<CourtSchedulerPrisonerMappingsDto>>,
+  ): CreateMappingResult<CourtSchedulerPrisonerMappingsDto> = migrationApi.prepare(migrationApi.createPrisonerCourtSchedulerMappingsRequestConfig(mapping))
+    .retrieve()
+    .bodyToMono<Unit>()
+    .map { CreateMappingResult<CourtSchedulerPrisonerMappingsDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
 
   suspend fun createCourtScheduleMapping(mapping: CourtScheduleMappingDto) = scheduleApi.prepare(scheduleApi.createCourtScheduleMappingRequestConfig((mapping)))
     .retrieve()
