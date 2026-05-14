@@ -209,7 +209,7 @@ class CourtSchedulerDpsApiServiceTest {
 
   @Nested
   inner class Resync {
-    val request = ResyncCourtEvents(listOf(), listOf(), false)
+    val request = ResyncCourtEvents(listOf(), listOf())
 
     @Test
     internal fun `should pass oath2 token`() = runTest {
