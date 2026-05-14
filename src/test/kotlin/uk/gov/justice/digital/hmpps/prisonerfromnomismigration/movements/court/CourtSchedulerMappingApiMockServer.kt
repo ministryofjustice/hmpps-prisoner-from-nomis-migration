@@ -14,8 +14,11 @@ import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.BookingCourtMovementMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.BookingCourtScheduleMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtMovementMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtMovementMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerBookingMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
@@ -221,6 +224,41 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetCourtSchedulerPrisonerMappingIds(
+    prisonerNumber: String = "A1234BC",
+    bookingId: Long = 12345,
+    nomisEventId: Long = 1,
+    dpsCourtAppearanceId: UUID = UUID.randomUUID(),
+    nomisMovementOutSeq: Int = 3,
+    dpsMovementOutId: UUID = UUID.randomUUID(),
+    nomisMovementInSeq: Int = 4,
+    dpsMovementInId: UUID = UUID.randomUUID(),
+    nomisUnscheduledMovementOutSeq: Int = 1,
+    dpsUnscheduledMovementOutId: UUID = UUID.randomUUID(),
+    nomisUnscheduledMovementInSeq: Int = 2,
+    dpsUnscheduledMovementInId: UUID = UUID.randomUUID(),
+    idMappings: CourtSchedulerPrisonerMappingIdsDto = courtSchedulerPrisonerIdMappings(bookingId, nomisEventId, dpsCourtAppearanceId, nomisMovementOutSeq, dpsMovementOutId, nomisMovementInSeq, dpsMovementInId, nomisUnscheduledMovementOutSeq, dpsUnscheduledMovementOutId, nomisUnscheduledMovementInSeq, dpsUnscheduledMovementInId),
+  ) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/court/$prisonerNumber/ids")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(jsonMapper.writeValueAsString(idMappings)),
+      ),
+    )
+  }
+
+  fun stubGetCourtSchedulerPrisonerMappingIds(prisonerNumber: String = "A1234BC", status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/court/$prisonerNumber/ids")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
@@ -284,5 +322,28 @@ fun courtSchedulerPrisonerMappings(prisonerNumber: String = "A1234BC") = CourtSc
         ),
       ),
     ),
+  ),
+)
+
+fun courtSchedulerPrisonerIdMappings(
+  bookingId: Long = 12345,
+  nomisEventId: Long = 1,
+  dpsCourtAppearanceId: UUID = UUID.randomUUID(),
+  nomisMovementOutSeq: Int = 3,
+  dpsMovementOutId: UUID = UUID.randomUUID(),
+  nomisMovementInSeq: Int = 4,
+  dpsMovementInId: UUID = UUID.randomUUID(),
+  nomisUnscheduledMovementOutSeq: Int = 1,
+  dpsUnscheduledMovementOutId: UUID = UUID.randomUUID(),
+  nomisUnscheduledMovementInSeq: Int = 2,
+  dpsUnscheduledMovementInId: UUID = UUID.randomUUID(),
+) = CourtSchedulerPrisonerMappingIdsDto(
+  prisonerNumber = "A1234BC",
+  schedules = listOf(CourtScheduleMappingIdsDto(nomisEventId, dpsCourtAppearanceId)),
+  movements = listOf(
+    CourtMovementMappingIdsDto(bookingId, nomisMovementOutSeq, dpsMovementOutId),
+    CourtMovementMappingIdsDto(bookingId, nomisMovementInSeq, dpsMovementInId),
+    CourtMovementMappingIdsDto(bookingId, nomisUnscheduledMovementOutSeq, dpsUnscheduledMovementOutId),
+    CourtMovementMappingIdsDto(bookingId, nomisUnscheduledMovementInSeq, dpsUnscheduledMovementInId),
   ),
 )

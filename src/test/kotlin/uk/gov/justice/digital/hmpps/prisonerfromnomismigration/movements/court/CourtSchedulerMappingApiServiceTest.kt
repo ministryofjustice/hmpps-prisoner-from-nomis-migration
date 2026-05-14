@@ -341,4 +341,37 @@ class CourtSchedulerMappingApiServiceTest {
       }
     }
   }
+
+  @Nested
+  inner class GetPrisonerMappingIds {
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubGetCourtSchedulerPrisonerMappingIds()
+
+      apiService.getCourtSchedulerPrisonMappingIds("A1234BC")
+
+      mappingApi.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should return mappings`() = runTest {
+      mappingApi.stubGetCourtSchedulerPrisonerMappingIds()
+
+      with(apiService.getCourtSchedulerPrisonMappingIds("A1234BC")) {
+        assertThat(schedules[0].nomisEventId).isEqualTo(1)
+        assertThat(movements[0].nomisMovementSeq).isEqualTo(3)
+      }
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubGetCourtSchedulerPrisonerMappingIds("A1234BC", status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.getCourtSchedulerPrisonMappingIds("A1234BC")
+      }
+    }
+  }
 }

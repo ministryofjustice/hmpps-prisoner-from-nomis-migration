@@ -14,6 +14,7 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.ResyncCourtEvents
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension.Companion.dpsCourtSchedulerServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.referenceId
@@ -203,6 +204,50 @@ class CourtSchedulerDpsApiServiceTest {
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.deleteCourtMovement(courtMovementId)
       }
+    }
+  }
+
+  @Nested
+  inner class Resync {
+    val request = ResyncCourtEvents(listOf(), listOf(), false)
+
+    @Test
+    internal fun `should pass oath2 token`() = runTest {
+      dpsCourtSchedulerServer.stubResyncPrisonerCourtAppearances()
+
+      apiService.resyncPrisoner("A1234BC", request)
+
+      dpsCourtSchedulerServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should call the move endpoint`() = runTest {
+      dpsCourtSchedulerServer.stubResyncPrisonerCourtAppearances()
+
+      apiService.resyncPrisoner("A1234BC", request)
+
+      dpsCourtSchedulerServer.verify(
+        putRequestedFor(urlPathEqualTo("/resync/court-appearances/A1234BC")),
+      )
+    }
+
+    @Test
+    fun `should throw if error`() = runTest {
+      dpsCourtSchedulerServer.stubResyncPrisonerCourtAppearances(status = 500)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.resyncPrisoner("A1234BC", request)
+      }
+    }
+
+    @Test
+    fun `should return null if not found`() = runTest {
+      dpsCourtSchedulerServer.stubResyncPrisonerCourtAppearances(status = 404)
+
+      assertThat(apiService.resyncPrisoner("A1234BC", request)).isNull()
     }
   }
 }
