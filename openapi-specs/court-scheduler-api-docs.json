@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-05-01.111.7726740"
+    "version" : "2026-05-13.142.9d2282d"
   },
   "servers" : [ {
     "url" : "https://court-appearance-scheduler-api-dev.hmpps.service.justice.gov.uk",
@@ -25,6 +25,9 @@
     "bearer-jwt" : [ "read", "write" ]
   } ],
   "tags" : [ {
+    "name" : "Integrations",
+    "description" : "DPS integration endpoints"
+  }, {
     "name" : "UI",
     "description" : "UI endpoints - not to be use by any other client"
   }, {
@@ -168,7 +171,7 @@
     "/court-appearances/{id}" : {
       "get" : {
         "tags" : [ "UI" ],
-        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER__RO\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER__RW\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER_UI",
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER_UI",
         "operationId" : "getCourtAppearance",
         "parameters" : [ {
           "name" : "id",
@@ -194,7 +197,7 @@
       },
       "put" : {
         "tags" : [ "UI" ],
-        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER__RW\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER_UI",
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER_UI",
         "operationId" : "applyAction",
         "parameters" : [ {
           "name" : "id",
@@ -372,7 +375,7 @@
     "/court-appearances/{personIdentifier}" : {
       "post" : {
         "tags" : [ "UI" ],
-        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER__RW\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER_UI",
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER_UI",
         "operationId" : "scheduleCourtAppearance",
         "parameters" : [ {
           "name" : "personIdentifier",
@@ -538,6 +541,90 @@
         }
       }
     },
+    "/integrations/court-appearances/{id}" : {
+      "get" : {
+        "tags" : [ "Integrations" ],
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER__RO\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER__RW",
+        "operationId" : "appearance",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IntegrationResponseIntegrationAppearance"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/integrations/court-appearances/{id}/movements" : {
+      "get" : {
+        "tags" : [ "Integrations" ],
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER__RO\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER__RW",
+        "operationId" : "appearanceMovements",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IntegrationResponsesIntegrationMovement"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/integrations/court-appearance-movements/{id}" : {
+      "get" : {
+        "tags" : [ "Integrations" ],
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER__RO\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER__RW",
+        "operationId" : "movement",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IntegrationResponseIntegrationMovement"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/court-appearances/{id}/history" : {
       "get" : {
         "tags" : [ "UI" ],
@@ -569,7 +656,7 @@
     "/court-appearance-reasons" : {
       "get" : {
         "tags" : [ "UI" ],
-        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER__RO\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER__RW\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER_UI",
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_COURT_APPEARANCES__COURT_APPEARANCE_SCHEDULER_UI",
         "operationId" : "getCourtAppearanceReasons",
         "responses" : {
           "200" : {
@@ -638,7 +725,7 @@
           "occurredAt" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-05T08:51:04"
+            "example" : "2026-05-14T09:12:25"
           },
           "user" : {
             "$ref" : "#/components/schemas/SyncUser"
@@ -724,7 +811,7 @@
           "occurredAt" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-05T08:51:04"
+            "example" : "2026-05-14T09:12:25"
           },
           "user" : {
             "$ref" : "#/components/schemas/SyncUser"
@@ -741,7 +828,7 @@
           "at" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-05T08:51:04"
+            "example" : "2026-05-14T09:12:25"
           },
           "by" : {
             "type" : "string"
@@ -791,7 +878,7 @@
         }
       },
       "ResyncCourtEvents" : {
-        "required" : [ "courtEvents", "isEmpty", "unscheduledMovements" ],
+        "required" : [ "courtEvents", "unscheduledMovements" ],
         "type" : "object",
         "properties" : {
           "courtEvents" : {
@@ -805,9 +892,6 @@
             "items" : {
               "$ref" : "#/components/schemas/ResyncCourtEventMovement"
             }
-          },
-          "isEmpty" : {
-            "type" : "boolean"
           }
         }
       },
@@ -1080,7 +1164,7 @@
           "occurredAt" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-05T08:51:04"
+            "example" : "2026-05-14T09:12:25"
           },
           "domainEvents" : {
             "type" : "array",
@@ -1274,13 +1358,13 @@
           "start" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-05T08:51:04"
+            "example" : "2026-05-14T09:12:25"
           },
           "end" : {
             "type" : "string",
             "format" : "date-time",
             "nullable" : true,
-            "example" : "2026-05-05T08:51:04"
+            "example" : "2026-05-14T09:12:25"
           },
           "comments" : {
             "type" : "string",
@@ -1434,13 +1518,13 @@
           "start" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-05T08:51:04"
+            "example" : "2026-05-14T09:12:25"
           },
           "end" : {
             "type" : "string",
             "format" : "date-time",
             "nullable" : true,
-            "example" : "2026-05-05T08:51:04"
+            "example" : "2026-05-14T09:12:25"
           },
           "status" : {
             "$ref" : "#/components/schemas/AppearanceStatus"
@@ -1549,13 +1633,13 @@
           "start" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-05T08:51:04"
+            "example" : "2026-05-14T09:12:25"
           },
           "end" : {
             "type" : "string",
             "format" : "date-time",
             "nullable" : true,
-            "example" : "2026-05-05T08:51:04"
+            "example" : "2026-05-14T09:12:25"
           },
           "comments" : {
             "type" : "string",
@@ -1596,6 +1680,145 @@
           }
         }
       },
+      "IntegrationAppearance" : {
+        "required" : [ "courtCode", "id", "personIdentifier", "prisonCode", "reason", "start" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "personIdentifier" : {
+            "type" : "string"
+          },
+          "prisonCode" : {
+            "type" : "string"
+          },
+          "courtCode" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "$ref" : "#/components/schemas/IntegrationReason"
+          },
+          "start" : {
+            "type" : "string",
+            "format" : "date-time",
+            "example" : "2026-05-14T09:12:25"
+          },
+          "end" : {
+            "type" : "string",
+            "format" : "date-time",
+            "nullable" : true,
+            "example" : "2026-05-14T09:12:25"
+          },
+          "comments" : {
+            "type" : "string",
+            "nullable" : true
+          }
+        }
+      },
+      "IntegrationReason" : {
+        "required" : [ "code", "description" ],
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          }
+        }
+      },
+      "IntegrationResponseIntegrationAppearance" : {
+        "required" : [ "data" ],
+        "type" : "object",
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/IntegrationAppearance"
+          },
+          "previousUrl" : {
+            "type" : "string",
+            "nullable" : true
+          },
+          "nextUrl" : {
+            "type" : "string",
+            "nullable" : true
+          }
+        }
+      },
+      "IntegrationMovement" : {
+        "required" : [ "courtCode", "direction", "id", "occurredAt", "personIdentifier", "prisonCode", "reason" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "scheduleId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "nullable" : true
+          },
+          "personIdentifier" : {
+            "type" : "string"
+          },
+          "prisonCode" : {
+            "type" : "string"
+          },
+          "courtCode" : {
+            "type" : "string"
+          },
+          "direction" : {
+            "type" : "string",
+            "enum" : [ "IN", "OUT" ]
+          },
+          "reason" : {
+            "$ref" : "#/components/schemas/IntegrationReason"
+          },
+          "occurredAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "example" : "2026-05-14T09:12:25"
+          },
+          "comments" : {
+            "type" : "string",
+            "nullable" : true
+          }
+        }
+      },
+      "IntegrationResponseIntegrationMovement" : {
+        "required" : [ "data" ],
+        "type" : "object",
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/IntegrationMovement"
+          },
+          "previousUrl" : {
+            "type" : "string",
+            "nullable" : true
+          },
+          "nextUrl" : {
+            "type" : "string",
+            "nullable" : true
+          }
+        }
+      },
+      "IntegrationResponsesIntegrationMovement" : {
+        "required" : [ "data" ],
+        "type" : "object",
+        "properties" : {
+          "data" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/IntegrationResponseIntegrationMovement"
+            }
+          },
+          "previousUrl" : {
+            "type" : "string",
+            "nullable" : true
+          }
+        }
+      },
       "Appearance" : {
         "required" : [ "court", "external", "id", "person", "prison", "reason", "start", "status" ],
         "type" : "object",
@@ -1622,13 +1845,13 @@
           "start" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-05-05T08:51:04"
+            "example" : "2026-05-14T09:12:25"
           },
           "end" : {
             "type" : "string",
             "format" : "date-time",
             "nullable" : true,
-            "example" : "2026-05-05T08:51:04"
+            "example" : "2026-05-14T09:12:25"
           },
           "comments" : {
             "type" : "string",
