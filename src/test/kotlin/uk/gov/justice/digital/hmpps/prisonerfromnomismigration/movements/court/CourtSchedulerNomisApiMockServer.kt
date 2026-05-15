@@ -243,7 +243,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
 
     fun bookingCourtSchedule() = BookingCourtScheduleOut(
-      eventId = 67890L,
+      eventId = 1,
       eventDate = yesterday.toLocalDate(),
       startTime = yesterday,
       eventType = "CRT",
