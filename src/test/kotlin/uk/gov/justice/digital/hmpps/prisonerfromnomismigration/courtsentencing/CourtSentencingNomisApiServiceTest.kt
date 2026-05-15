@@ -57,7 +57,7 @@ class CourtSentencingNomisApiServiceTest {
 
     @Test
     fun `will return court case`() = runTest {
-      courtSentencingNomisApiMockServer.stubGetCourtCase(offenderNo = OFFENDER_NO, courtCaseId = NOMIS_COURT_CASE_ID)
+      courtSentencingNomisApiMockServer.stubGetCourtCase(offenderNo = OFFENDER_NO, courtCaseId = NOMIS_COURT_CASE_ID, response = courtCaseResponse().copy(offenderNo = OFFENDER_NO))
 
       val courtCase = apiService.getCourtCase(offenderNo = OFFENDER_NO, courtCaseId = NOMIS_COURT_CASE_ID)
 
