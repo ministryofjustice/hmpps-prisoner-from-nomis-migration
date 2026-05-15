@@ -28,7 +28,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 import java.util.*
 
 private const val TELEMETRY_PREFIX: String = "${CRT_TELEMETRY_PREFIX}-movement"
-private const val MISSING_COURT: String = "NULL"
 
 @Service
 class CourtSchedulerSyncMovementService(

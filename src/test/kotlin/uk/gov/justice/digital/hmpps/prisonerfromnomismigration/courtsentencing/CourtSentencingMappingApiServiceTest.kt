@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -23,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
+import java.util.*
 
 private const val NOMIS_COURT_CASE_ID = 1234L
 private const val DPS_COURT_CASE_ID = "cc1"
@@ -186,6 +188,56 @@ class CourtSentencingMappingApiServiceTest {
         putRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-cases/replace"))
           .withRequestBody(matchingJsonPath("mappingType", equalTo("DPS_CREATED"))),
       )
+    }
+  }
+
+  @Nested
+  inner class GetAllCourtAppearancesByNomisIds {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      courtSentencingMappingApiMockServer.stubGetAllCourtAppearanceByNomisIds()
+
+      apiService.getAllCourtAppearancesByNomisIds(listOf(123, 456))
+
+      courtSentencingMappingApiMockServer.verify(
+        postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass requested IDs to service`() = runTest {
+      courtSentencingMappingApiMockServer.stubGetAllCourtAppearanceByNomisIds()
+
+      apiService.getAllCourtAppearancesByNomisIds(listOf(123, 456))
+
+      courtSentencingMappingApiMockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances/nomis-court-appearance-ids/get-list")).withHeader("Authorization", equalTo("Bearer ABCDE"))
+          .withRequestBody(equalToJson("[123, 456]")),
+      )
+    }
+
+    @Test
+    internal fun `will parse response`() = runTest {
+      val dpsId1 = UUID.randomUUID().toString()
+      val dpsId2 = UUID.randomUUID().toString()
+      courtSentencingMappingApiMockServer.stubGetAllCourtAppearanceByNomisIds(
+        dpsCourtAppearanceIds = listOf(dpsId1, dpsId2),
+      )
+
+      with(apiService.getAllCourtAppearancesByNomisIds(listOf(123, 456))) {
+        assertThat(this).hasSize(2)
+        assertThat(this[0].dpsCourtAppearanceId).isEqualTo(dpsId1)
+        assertThat(this[1].dpsCourtAppearanceId).isEqualTo(dpsId2)
+      }
+    }
+
+    @Test
+    internal fun `will throw if error`() = runTest {
+      courtSentencingMappingApiMockServer.stubGetAllCourtAppearanceByNomisIds(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.getAllCourtAppearancesByNomisIds(listOf(123, 456))
+      }
     }
   }
 }

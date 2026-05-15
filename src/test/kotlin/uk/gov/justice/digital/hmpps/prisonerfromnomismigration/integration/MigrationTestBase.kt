@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
@@ -28,6 +29,7 @@ class MigrationTestBase : SqsIntegrationTestBase() {
     OfficialVisitsDpsApiExtension.resetAndDisableResetBeforeEach()
     CsraApiExtension.resetAndDisableResetBeforeEach()
     TapDpsApiExtension.resetAndDisableResetBeforeEach()
+    CourtSchedulerDpsApiExtension.resetAndDisableResetBeforeEach()
 
     reset(telemetryClient)
   }

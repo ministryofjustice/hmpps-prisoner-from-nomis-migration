@@ -314,6 +314,46 @@ class CourtSentencingMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetAllCourtAppearanceByNomisIds(
+    nomisCourtAppearanceIds: List<Long> = listOf(123, 456),
+    dpsCourtAppearanceIds: List<String> = listOf(UUID.randomUUID().toString(), UUID.randomUUID().toString()),
+    mappings: List<CourtAppearanceMappingDto> = listOf(
+      CourtAppearanceMappingDto(
+        nomisCourtAppearanceId = nomisCourtAppearanceIds[0],
+        dpsCourtAppearanceId = dpsCourtAppearanceIds[0],
+        mappingType = CourtAppearanceMappingDto.MappingType.MIGRATED,
+      ),
+      CourtAppearanceMappingDto(
+        nomisCourtAppearanceId = nomisCourtAppearanceIds[1],
+        dpsCourtAppearanceId = dpsCourtAppearanceIds[1],
+        mappingType = CourtAppearanceMappingDto.MappingType.MIGRATED,
+      ),
+    ),
+  ) {
+    mappingApi.stubFor(
+      post(urlEqualTo("/mapping/court-sentencing/court-appearances/nomis-court-appearance-ids/get-list")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(jsonMapper.writeValueAsString(mappings)),
+      ),
+    )
+  }
+
+  fun stubGetAllCourtAppearanceByNomisIds(
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    mappingApi.stubFor(
+      post(urlPathMatching("/mapping/court-sentencing/court-appearances/nomis-court-appearance-ids/get-list")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun stubPostCourtAppearanceMapping() {
     mappingApi.stubFor(
       post("/mapping/court-sentencing/court-appearances").willReturn(
