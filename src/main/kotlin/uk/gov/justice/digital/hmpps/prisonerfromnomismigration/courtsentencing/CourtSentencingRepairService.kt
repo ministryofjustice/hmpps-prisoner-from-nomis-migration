@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -10,9 +11,12 @@ import java.time.format.DateTimeFormatter
 
 @Service
 class CourtSentencingRepairService(
-  val courtSentencingMigrationService: CourtSentencingMigrationService,
-  val courtSentencingSynchronisationService: CourtSentencingSynchronisationService,
-  val telemetryClient: TelemetryClient,
+  private val courtSentencingMigrationService: CourtSentencingMigrationService,
+  private val courtSentencingSynchronisationService: CourtSentencingSynchronisationService,
+  private val nomisApiService: CourtSentencingNomisApiService,
+  private val dpsApiService: CourtSentencingDpsApiService,
+  private val mappingApiService: CourtSentencingMappingApiService,
+  private val telemetryClient: TelemetryClient,
 ) {
   suspend fun resynchronisePrisonerCourtCases(offenderNo: String) {
     courtSentencingMigrationService.synchronisePrisonerCases(
@@ -111,6 +115,46 @@ class CourtSentencingRepairService(
         "nomisBookingId" to bookingId.toString(),
         "nomisCaseId" to caseId.toString(),
         "nomisSentenceSequence" to sentenceSeq.toString(),
+      ),
+      null,
+    )
+  }
+
+  suspend fun removedUnMappedCourtAppearancesFromCase(offenderNo: String, caseId: Long) {
+    val nomisCourtCase = nomisApiService.getCourtCase(offenderNo = offenderNo, courtCaseId = caseId)
+    val mapping = mappingApiService.getCourtCaseByNomisId(caseId)
+    val dpsCourtCase = dpsApiService.getCourtCase(mapping.dpsCourtCaseId)
+    val numberOfAdditionalAppearances = dpsCourtCase.appearances.size - nomisCourtCase.courtEvents.size
+    val dpsCourtAppearanceIdsDeleted = mutableListOf<String>()
+
+    // if we have additional appearances in DPS start pruning
+    if (nomisCourtCase.courtEvents.size < dpsCourtCase.appearances.size) {
+      val nomisIds = nomisCourtCase.courtEvents.map { it.id }
+      val dpsIds = dpsCourtCase.appearances.map { it.appearanceUuid.toString() }
+      val dpsIdsToKeep = nomisIds.map { nomisAppearanceId ->
+        mappingApiService.getCourtAppearanceByNomisId(nomisAppearanceId).dpsCourtAppearanceId
+      }.toSet()
+
+      val dpsIdsToRemove = dpsIds - dpsIdsToKeep
+      if (dpsIdsToRemove.size != numberOfAdditionalAppearances) {
+        throw BadRequestException("Number of additional appearances in DPS does not match expected count. Expected: $numberOfAdditionalAppearances, Actual: ${dpsIdsToRemove.size}")
+      }
+
+      dpsIdsToRemove.forEach {
+        dpsApiService.deleteCourtAppearance(it)
+        dpsCourtAppearanceIdsDeleted.add(it)
+      }
+    }
+
+    telemetryClient.trackEvent(
+      "court-sentencing-prisoner-court-appearances-pruned",
+      mapOf(
+        "offenderNo" to offenderNo,
+        "nomisCaseId" to caseId.toString(),
+        "numberOfNomisCourtAppearances" to nomisCourtCase.courtEvents.size.toString(),
+        "numberOfDpsCourtAppearances" to dpsCourtCase.appearances.size.toString(),
+        "numberOfAdditionalAppearances" to numberOfAdditionalAppearances.toString(),
+        "dpsCourtAppearanceIdsDeleted" to dpsCourtAppearanceIdsDeleted.joinToString(","),
       ),
       null,
     )

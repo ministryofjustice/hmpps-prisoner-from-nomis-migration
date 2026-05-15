@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -21,6 +22,8 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.reconciliationCourtAppearance
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.reconciliationCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
@@ -57,7 +60,7 @@ class CourtSentencingRepairResourceIntTest : SqsIntegrationTestBase() {
 
   @Nested
   @DisplayName("POST /prisoners/{offenderNo}/court-sentencing/court-cases/repair")
-  inner class MigrationCourtCases {
+  inner class RepairCourtCases {
     val offenderNo = "A1234KT"
 
     @Nested
@@ -502,6 +505,113 @@ class CourtSentencingRepairResourceIntTest : SqsIntegrationTestBase() {
             assertThat(it["nomisBookingId"]).isEqualTo(bookingId.toString())
             assertThat(it["nomisSentenceSequence"]).isEqualTo(sentenceSeq.toString())
             assertThat(it["nomisCaseId"]).isEqualTo(caseId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("DELETE /prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/court-appearances/prune-dps")
+  inner class PruneDPSCourtAppearances {
+    val offenderNo = "A1234KT"
+    val nomisCaseId = NOMIS_COURT_CASE_ID
+    val dpsCaseId = UUID.randomUUID().toString()
+
+    @Nested
+    inner class Security {
+
+      @Test
+      internal fun `must have valid token`() {
+        webTestClient.delete().uri(
+          "/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/court-appearances/prune-dps",
+          offenderNo,
+          nomisCaseId,
+        )
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      internal fun `must have correct role`() {
+        webTestClient.delete().uri(
+          "/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/court-appearances/prune-dps",
+          offenderNo,
+          nomisCaseId,
+        )
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isForbidden
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+      val dpsCourtAppearanceId1: UUID = UUID.randomUUID()
+      val dpsCourtAppearanceId2: UUID = UUID.randomUUID()
+      val dpsCourtAppearanceId3: UUID = UUID.randomUUID()
+
+      @BeforeEach
+      internal fun setup() {
+        courtSentencingMappingApiMockServer.stubGetByNomisId(
+          nomisCourtCaseId = nomisCaseId,
+          dpsCourtCaseId = dpsCaseId,
+        )
+        courtSentencingNomisApiMockServer.stubGetCourtCase(
+          offenderNo = offenderNo,
+          courtCaseId = nomisCaseId,
+          response = courtCaseResponse().copy(
+            courtEvents = listOf(
+              courtEventResponse(eventId = 1),
+              courtEventResponse(eventId = 2),
+            ),
+          ),
+        )
+        dpsCourtSentencingServer.stubGetCourtCase(
+          courtCaseId = dpsCaseId,
+          response = reconciliationCourtCase().copy(
+            appearances = listOf(
+              reconciliationCourtAppearance(dpsCourtAppearanceId1),
+              reconciliationCourtAppearance(dpsCourtAppearanceId2),
+              reconciliationCourtAppearance(dpsCourtAppearanceId3),
+            ),
+          ),
+        )
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(1, dpsCourtAppearanceId = dpsCourtAppearanceId1.toString())
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(2, dpsCourtAppearanceId = dpsCourtAppearanceId2.toString())
+
+        dpsCourtSentencingServer.stubDeleteCourtAppearance(dpsCourtAppearanceId3.toString())
+
+        webTestClient.delete().uri(
+          "/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/court-appearances/prune-dps",
+          offenderNo,
+          nomisCaseId,
+        )
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+      }
+
+      @Test
+      fun `will delete additional appearances from DPS`() {
+        dpsCourtSentencingServer.verify(deleteRequestedFor(urlPathEqualTo("/legacy/court-appearance/$dpsCourtAppearanceId3")))
+      }
+
+      @Test
+      fun `will track a telemetry event for success`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-sentencing-prisoner-court-appearances-pruned"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisCaseId"]).isEqualTo(nomisCaseId.toString())
+            assertThat(it["numberOfNomisCourtAppearances"]).isEqualTo("2")
+            assertThat(it["numberOfDpsCourtAppearances"]).isEqualTo("3")
+            assertThat(it["numberOfAdditionalAppearances"]).isEqualTo("1")
+            assertThat(it["dpsCourtAppearanceIdsDeleted"]).isEqualTo(dpsCourtAppearanceId3.toString())
           },
           isNull(),
         )

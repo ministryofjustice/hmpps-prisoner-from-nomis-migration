@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergePerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCases
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.ReconciliationCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.RefreshCaseReferences
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityIgnoreNotFound
 
@@ -71,6 +72,12 @@ class CourtSentencingDpsApiService(
     .bodyValue(courtCase)
     .retrieve()
     .awaitBodilessEntity()
+
+  suspend fun getCourtCase(courtCaseId: String): ReconciliationCourtCase = webClient
+    .get()
+    .uri("/legacy/court-case/{courtCaseId}/reconciliation", courtCaseId)
+    .retrieve()
+    .awaitBody()
 
   suspend fun deleteCourtCase(courtCaseId: String) = webClient
     .delete()
