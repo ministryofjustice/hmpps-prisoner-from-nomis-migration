@@ -3,13 +3,14 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@Tag(name = "Court Sentencing Migration Resource")
+@Tag(name = "Court Sentencing Repair Resource")
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__UPDATE__RW')")
 class CourtSentencingRepairResource(
   private val courtSentencingRepairService: CourtSentencingRepairService,
@@ -91,6 +92,23 @@ class CourtSentencingRepairResource(
       offenderNo = offenderNo,
       bookingId = bookingId,
       sentenceSeq = sentenceSeq,
+      caseId = caseId,
+    )
+  }
+
+  @DeleteMapping("/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/court-appearances/prune-dps")
+  @Operation(
+    summary = "Deletes court appearances from DPS that are not in NOMIS",
+    description = "Used cases where a duplicate orphaned case has been created in DPS by mistake. This is only intended where there are only unmapped appearances in DPS and all other appearances in both systems are correct. Requires PRISONER_FROM_NOMIS__UPDATE__RW",
+  )
+  suspend fun prisonerCourtAppearancePrune(
+    @PathVariable
+    offenderNo: String,
+    @PathVariable
+    caseId: Long,
+  ) {
+    courtSentencingRepairService.removedUnMappedCourtAppearancesFromCase(
+      offenderNo = offenderNo,
       caseId = caseId,
     )
   }

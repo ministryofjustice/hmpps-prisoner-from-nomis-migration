@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.reconciliationCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCasesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
@@ -28,9 +29,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeCreateCourtCasesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.ReconciliationCourtAppearance
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.ReconciliationCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension.Companion.dpsCourtSchedulerServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
+import java.time.LocalDate
 import java.util.*
 
 class CourtSentencingDpsApiExtension :
@@ -52,6 +56,25 @@ class CourtSentencingDpsApiExtension :
       enableResetBeforeEach = false
       dpsCourtSchedulerServer.resetAll()
     }
+
+    fun reconciliationCourtCase() = ReconciliationCourtCase(
+      courtCaseUuid = UUID.randomUUID().toString(),
+      appearances = emptyList(),
+      prisonerId = "A1234KT",
+      active = true,
+      merged = false,
+      status = ReconciliationCourtCase.Status.ACTIVE,
+      courtCaseLegacyData = null,
+    )
+
+    fun reconciliationCourtAppearance(appearanceUuid: UUID = UUID.randomUUID()) = ReconciliationCourtAppearance(
+      appearanceUuid = appearanceUuid,
+      courtCode = "SHFCC",
+      appearanceDate = LocalDate.parse("2020-01-01"),
+      appearanceTime = "10:00",
+      nomisAppearanceTypeCode = "1001",
+      charges = emptyList(),
+    )
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -190,6 +213,21 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     stubFor(
       put("/legacy/court-case/$courtCaseId")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(CourtSentencingDpsApiExtension.jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubGetCourtCase(
+    courtCaseId: String = UUID.randomUUID().toString(),
+    response: ReconciliationCourtCase = reconciliationCourtCase(),
+  ) {
+    stubFor(
+      get("/legacy/court-case/$courtCaseId/reconciliation")
         .willReturn(
           aResponse()
             .withStatus(200)
