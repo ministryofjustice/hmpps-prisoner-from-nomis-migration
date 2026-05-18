@@ -1,8 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court
 
-import com.microsoft.applicationinsights.TelemetryClient
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.AtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtEvent
@@ -24,17 +28,60 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingCourtMovementOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderCourtMovementsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumberMigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 
 @Service
 class CourtSchedulerMigrationService(
   private val nomisApi: CourtSchedulerNomisApiService,
+  val nomisIdsApi: NomisApiService,
   private val mappingApi: CourtSchedulerMappingApiService,
   private val sentencingMappingApi: CourtSentencingMappingApiService,
   private val dpsApi: CourtSchedulerDpsApiService,
-  private val telemetryClient: TelemetryClient,
+  jsonMapper: JsonMapper,
+  @Value($$"${courtmovements.page.size:1000}") pageSize: Long,
+  @Value($$"${courtmovements.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value($$"${courtmovements.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
+  @Value($$"${courtmovements.complete-check.count}") completeCheckCount: Int,
+  @Value($$"${complete-check.scheduled-retry-seconds:10}") completeCheckScheduledRetrySeconds: Int,
+) : ByPageNumberMigrationService<CourtSchedulerMigrationFilter, PrisonerId, CourtSchedulerPrisonerMappingsDto>(
+  mappingService = mappingApi,
+  migrationType = MigrationType.COURT_MOVEMENTS,
+  pageSize = pageSize,
+  completeCheckDelaySeconds = completeCheckDelaySeconds,
+  completeCheckCount = completeCheckCount,
+  completeCheckRetrySeconds = completeCheckRetrySeconds,
+  completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
+  jsonMapper = jsonMapper,
 ) {
 
-  suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
+  suspend fun getIds(
+    migrationFilter: CourtSchedulerMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): PageImpl<PrisonerId> = if (migrationFilter.prisonerNumber.isNullOrEmpty()) {
+    nomisIdsApi.getPrisonerIds(
+      pageNumber = pageNumber,
+      pageSize = pageSize,
+    )
+  } else {
+    // If a single prisoner migration is requested, then we'll trust the input as we're probably testing. Pretend that we called nomis-prisoner-api which found a single prisoner.
+    PageImpl(mutableListOf(PrisonerId(migrationFilter.prisonerNumber)), Pageable.ofSize(1), 1)
+  }
+
+  override suspend fun getPageOfIds(
+    migrationFilter: CourtSchedulerMigrationFilter,
+    pageSize: Long,
+    pageNumber: Long,
+  ): List<PrisonerId> = getIds(migrationFilter, pageSize, pageNumber).content
+
+  override suspend fun getTotalNumberOfIds(migrationFilter: CourtSchedulerMigrationFilter): Long = getIds(migrationFilter, 1, 0).totalElements
+
+  override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     val offenderNo = context.body.offenderNo
     val migrationId = context.migrationId
     val telemetry = mutableMapOf(
@@ -81,10 +128,18 @@ class CourtSchedulerMigrationService(
 
   private fun publishTelemetry(type: String, telemetry: Map<String, String>) {
     telemetryClient.trackEvent(
-      "temporary-absences-migration-entity-$type",
+      "court-movements-migration-entity-$type",
       telemetry,
     )
   }
+
+  override fun parseContextFilter(json: String): MigrationMessage<*, CourtSchedulerMigrationFilter> = jsonMapper.readValue(json)
+
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<CourtSchedulerMigrationFilter, ByPageNumber>> = jsonMapper.readValue(json)
+
+  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = jsonMapper.readValue(json)
+
+  override fun parseContextMapping(json: String): MigrationMessage<*, CourtSchedulerPrisonerMappingsDto> = jsonMapper.readValue(json)
 }
 
 private fun OffenderCourtMovementsResponse.findCourtAppearanceIds(): List<Long> = bookings

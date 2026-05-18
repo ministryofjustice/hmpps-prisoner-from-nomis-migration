@@ -194,6 +194,9 @@ hmpps.sqs:
       errorVisibilityTimeout: 0
     migrationprisonerbalance:
       errorVisibilityTimeout: 0
+    migrationcourtmovements:
+      errorVisibilityTimeout: 0
+      dlqMaxReceiveCount: 1
     migrationexternalmovements:
       errorVisibilityTimeout: 0
       dlqMaxReceiveCount: 1
