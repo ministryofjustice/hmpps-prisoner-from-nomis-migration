@@ -24,6 +24,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.context.bean.override.mockito.MockReset
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.web.reactive.server.WebTestClient
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -245,7 +246,7 @@ class SqsIntegrationTestBase : TestBase() {
   @Autowired
   protected lateinit var jwtAuthHelper: JwtAuthorisationHelper
 
-  @MockitoSpyBean(reset = MockReset.NONE)
+  @MockitoBean(reset = MockReset.NONE)
   protected lateinit var telemetryClient: TelemetryClient
 
   @MockitoSpyBean
