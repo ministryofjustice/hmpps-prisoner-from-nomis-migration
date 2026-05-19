@@ -7,25 +7,34 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
+import org.awaitility.kotlin.atMost
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.mockito.kotlin.any
+import org.mockito.kotlin.check
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.reset
+import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.MediaType
+import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.ResyncCourtEvents
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiMockServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.MigrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension.Companion.dpsCourtSchedulerServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.resyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
+import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -36,7 +45,6 @@ class CourtSchedulerMigrationIntTest(
   @Autowired private val nomisApi: CourtSchedulerNomisApiMockServer,
   @Autowired private val mappingApi: CourtSchedulerMappingApiMockServer,
   @Autowired private val sentencingMappingApi: CourtSentencingMappingApiMockServer,
-  @Autowired private val migrationService: CourtSchedulerMigrationService,
 ) : MigrationTestBase() {
 
   private val dpsApi = dpsCourtSchedulerServer
@@ -47,6 +55,7 @@ class CourtSchedulerMigrationIntTest(
   private val dpsUnscheduledMovementOutId = UUID.randomUUID()
   private val dpsUnscheduledMovementInId = UUID.randomUUID()
   private val dpsSentencingCourtAppearanceId = UUID.randomUUID()
+  private lateinit var migrationId: String
 
   @AfterAll
   fun tearDownTelemetryClient() = reset(telemetryClient)
@@ -77,16 +86,7 @@ class CourtSchedulerMigrationIntTest(
       setupMigrationTest()
 
       stubMigrationDependencies(entities = 1)
-      // TODO expand this to process messages - just implementing the basic migration service for now
-      migrationService.migrateNomisEntity(
-        MigrationContext(
-          MigrationType.EXTERNAL_MOVEMENTS,
-          generateBatchId(),
-          1,
-          PrisonerId("A0001KT"),
-          mutableMapOf(),
-        ),
-      )
+      migrationId = performMigration()
     }
 
     @Test
@@ -196,5 +196,70 @@ class CourtSchedulerMigrationIntTest(
         }
       }
     }
+
+    @Test
+    fun `will publish telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("court-movements-migration-entity-migrated"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  inner class Security {
+    @Test
+    fun `access forbidden when no role`() {
+      webTestClient.post().uri("/migrate/court")
+        .headers(setAuthorisation(roles = listOf()))
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(TapMigrationFilter())
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `access forbidden with wrong role`() {
+      webTestClient.post().uri("/migrate/court")
+        .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(TapMigrationFilter())
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `access unauthorised with no auth token`() {
+      webTestClient.post().uri("/migrate/court")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(TapMigrationFilter())
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+  }
+
+  private fun performMigration(prisonerNumber: String? = null): String = webTestClient.post()
+    .uri("/migrate/court")
+    .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+    .contentType(MediaType.APPLICATION_JSON)
+    .apply { prisonerNumber?.let { bodyValue("""{"prisonerNumber":"$prisonerNumber"}""") } ?: bodyValue("{}") }
+    .exchange()
+    .expectStatus().isAccepted
+    .returnResult<MigrationResult>().responseBody.blockFirst()!!
+    .migrationId
+    .also {
+      waitUntilCompleted()
+    }
+
+  private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
+    verify(telemetryClient).trackEvent(
+      eq("court-movements-migration-completed"),
+      any(),
+      isNull(),
+    )
   }
 }

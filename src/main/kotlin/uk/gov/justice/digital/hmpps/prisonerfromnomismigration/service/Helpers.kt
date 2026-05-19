@@ -21,6 +21,7 @@ const val ALLOCATIONS_QUEUE_ID = "migrationallocations"
 const val APPOINTMENTS_QUEUE_ID = "migrationappointments"
 const val CORE_PERSON_QUEUE_ID = "migrationcoreperson"
 const val CSRA_QUEUE_ID = "migrationcsra"
+const val COURT_MOVEMENTS_QUEUE_ID = "migrationcourtmovements"
 const val COURT_SENTENCING_QUEUE_ID = "migrationcourtsentencing"
 const val EXTERNAL_MOVEMENTS_QUEUE_ID = "migrationexternalmovements"
 const val PRISON_BALANCE_QUEUE_ID = "migrationprisonbalance"
@@ -54,6 +55,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   APPOINTMENTS(APPOINTMENTS_QUEUE_ID, "appointments"),
   CORE_PERSON_RELIGION(CORE_PERSON_QUEUE_ID, "coreperson-religion"),
   CSRA(CSRA_QUEUE_ID, "csras"),
+  COURT_MOVEMENTS(COURT_MOVEMENTS_QUEUE_ID, "court-movements"),
   COURT_SENTENCING(COURT_SENTENCING_QUEUE_ID, "court-sentencing"),
   EXTERNAL_MOVEMENTS(EXTERNAL_MOVEMENTS_QUEUE_ID, "temporary-absences"),
   PRISON_BALANCE(PRISON_BALANCE_QUEUE_ID, "prisonbalance"),

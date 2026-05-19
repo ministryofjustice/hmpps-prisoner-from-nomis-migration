@@ -101,6 +101,13 @@ externalmovements:
     count: 1
   page:
     size: 10
+courtmovements:
+  complete-check:
+    delay-seconds: 0
+    retry-seconds: 0
+    count: 1
+  page:
+    size: 10
 visitslots:
   complete-check:
     delay-seconds: 0
@@ -194,6 +201,9 @@ hmpps.sqs:
       errorVisibilityTimeout: 0
     migrationprisonerbalance:
       errorVisibilityTimeout: 0
+    migrationcourtmovements:
+      errorVisibilityTimeout: 0
+      dlqMaxReceiveCount: 1
     migrationexternalmovements:
       errorVisibilityTimeout: 0
       dlqMaxReceiveCount: 1
