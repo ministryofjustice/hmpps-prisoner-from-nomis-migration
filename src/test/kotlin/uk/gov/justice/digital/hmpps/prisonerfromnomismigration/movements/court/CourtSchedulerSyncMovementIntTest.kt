@@ -79,7 +79,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should get court movement mapping`() {
-        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement/nomis-id/12345/3")))
       }
 
       @Test
@@ -110,7 +110,7 @@ class CourtSchedulerSyncMovementIntTest(
       @Test
       fun `should create mapping`() {
         mappingApi.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/court/movement"))
+          postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement"))
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("nomisBookingId", "12345")
             .withRequestBodyJsonPath("nomisMovementSeq", "3")
@@ -163,7 +163,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should get court schedule mapping`() {
-        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/567")))
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/567")))
       }
 
       @Test
@@ -215,7 +215,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should try to get court schedule mapping`() {
-        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/567")))
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/567")))
       }
 
       @Test
@@ -262,7 +262,7 @@ class CourtSchedulerSyncMovementIntTest(
       fun `should NOT create mapping`() {
         mappingApi.verify(
           0,
-          postRequestedFor(urlPathEqualTo("/mapping/court/movement")),
+          postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement")),
         )
       }
 
@@ -298,7 +298,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should get court movement mapping`() {
-        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement/nomis-id/12345/3")))
       }
 
       @Test
@@ -313,7 +313,7 @@ class CourtSchedulerSyncMovementIntTest(
       fun `should NOT create mapping`() {
         mappingApi.verify(
           0,
-          postRequestedFor(urlPathEqualTo("/mapping/court/movement")),
+          postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement")),
         )
       }
 
@@ -385,7 +385,7 @@ class CourtSchedulerSyncMovementIntTest(
       @Test
       fun `should try to create mapping`() {
         mappingApi.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/court/movement")),
+          postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement")),
         )
       }
 
@@ -453,7 +453,7 @@ class CourtSchedulerSyncMovementIntTest(
       fun `should create mapping on 2nd call`() {
         mappingApi.verify(
           count = 2,
-          postRequestedFor(urlPathEqualTo("/mapping/court/movement"))
+          postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement"))
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("nomisBookingId", "12345")
             .withRequestBodyJsonPath("nomisMovementSeq", "3")
@@ -519,7 +519,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should get court movement mapping`() {
-        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement/nomis-id/12345/3")))
       }
 
       @Test
@@ -585,7 +585,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should get court schedule mapping`() {
-        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/567")))
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/567")))
       }
 
       @Test
@@ -631,7 +631,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should get court schedule mapping`() {
-        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/567")))
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/567")))
       }
 
       @Test
@@ -679,12 +679,12 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement/nomis-id/12345/3")))
       }
 
       @Test
       fun `should delete mapping`() {
-        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement/nomis-id/12345/3")))
       }
 
       @Test
@@ -723,14 +723,14 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement/nomis-id/12345/3")))
       }
 
       @Test
       fun `should NOT delete mapping`() {
         mappingApi.verify(
           0,
-          deleteRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")),
+          deleteRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement/nomis-id/12345/3")),
         )
       }
 
@@ -774,7 +774,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement/nomis-id/12345/3")))
       }
 
       @Test
@@ -786,7 +786,7 @@ class CourtSchedulerSyncMovementIntTest(
       fun `should NOT delete mapping`() {
         mappingApi.verify(
           0,
-          deleteRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")),
+          deleteRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement/nomis-id/12345/3")),
         )
       }
 
@@ -835,7 +835,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should get court movement mapping`() {
-        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement/nomis-id/12345/3")))
       }
 
       @Test
@@ -866,7 +866,7 @@ class CourtSchedulerSyncMovementIntTest(
       @Test
       fun `should create mapping`() {
         mappingApi.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/court/movement"))
+          postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement"))
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("nomisBookingId", "12345")
             .withRequestBodyJsonPath("nomisMovementSeq", "3")
@@ -919,7 +919,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should get court schedule mapping`() {
-        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/567")))
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/567")))
       }
 
       @Test
@@ -970,7 +970,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should try to get court schedule mapping`() {
-        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/567")))
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/567")))
       }
 
       @Test
@@ -1018,7 +1018,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should get court movement mapping`() {
-        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement/nomis-id/12345/3")))
       }
 
       @Test
@@ -1084,7 +1084,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should get court schedule mapping`() {
-        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/567")))
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/567")))
       }
 
       @Test
@@ -1136,12 +1136,12 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should get mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement/nomis-id/12345/3")))
       }
 
       @Test
       fun `should delete mapping`() {
-        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/court/movement/nomis-id/12345/3")))
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/court-scheduler/movement/nomis-id/12345/3")))
       }
 
       @Test

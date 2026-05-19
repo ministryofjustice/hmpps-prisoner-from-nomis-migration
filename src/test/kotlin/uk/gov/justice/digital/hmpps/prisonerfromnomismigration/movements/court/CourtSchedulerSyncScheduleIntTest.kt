@@ -92,7 +92,7 @@ class CourtSchedulerSyncScheduleIntTest(
 
       @Test
       fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/123")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")))
       }
 
       @Test
@@ -130,7 +130,7 @@ class CourtSchedulerSyncScheduleIntTest(
       @Test
       fun `should create mapping`() {
         mappingApi.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/court/schedule"))
+          postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule"))
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisEventId", 123)
@@ -218,7 +218,7 @@ class CourtSchedulerSyncScheduleIntTest(
       fun `should NOT check mapping`() {
         mappingApi.verify(
           count = 0,
-          pattern = getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/123")),
+          pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")),
         )
       }
 
@@ -284,7 +284,7 @@ class CourtSchedulerSyncScheduleIntTest(
 
       @Test
       fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/123")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")))
       }
 
       @Test
@@ -400,7 +400,7 @@ class CourtSchedulerSyncScheduleIntTest(
 
       @Test
       fun `should create mapping a single time`() {
-        mappingApi.verify(postRequestedFor(urlPathEqualTo("/mapping/court/schedule")))
+        mappingApi.verify(postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule")))
       }
 
       @Test
@@ -456,7 +456,7 @@ class CourtSchedulerSyncScheduleIntTest(
       fun `should create mapping on 2nd call`() {
         mappingApi.verify(
           count = 2,
-          pattern = postRequestedFor(urlPathEqualTo("/mapping/court/schedule")),
+          pattern = postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule")),
         )
       }
 
@@ -509,7 +509,7 @@ class CourtSchedulerSyncScheduleIntTest(
 
       @Test
       fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/123")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")))
       }
 
       @Test
@@ -648,7 +648,7 @@ class CourtSchedulerSyncScheduleIntTest(
       fun `should NOT check mapping`() {
         mappingApi.verify(
           count = 0,
-          pattern = getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/123")),
+          pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")),
         )
       }
 
@@ -742,12 +742,12 @@ class CourtSchedulerSyncScheduleIntTest(
 
       @Test
       fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/123")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")))
       }
 
       @Test
       fun `should delete mapping`() {
-        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/123")))
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")))
       }
 
       @Test
@@ -791,7 +791,7 @@ class CourtSchedulerSyncScheduleIntTest(
       fun `should NOT delete mapping`() {
         mappingApi.verify(
           0,
-          deleteRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/123")),
+          deleteRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")),
         )
       }
 
@@ -837,14 +837,14 @@ class CourtSchedulerSyncScheduleIntTest(
 
       @Test
       fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/123")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")))
       }
 
       @Test
       fun `should NOT delete mapping`() {
         mappingApi.verify(
           0,
-          deleteRequestedFor(urlPathEqualTo("/mapping/court/schedule/nomis-id/123")),
+          deleteRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")),
         )
       }
 
