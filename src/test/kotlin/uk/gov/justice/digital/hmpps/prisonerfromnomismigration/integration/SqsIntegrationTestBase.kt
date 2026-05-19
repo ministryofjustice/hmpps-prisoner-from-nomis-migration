@@ -38,8 +38,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExten
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerSyncMovementService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerSyncScheduleService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension
@@ -251,14 +249,6 @@ class SqsIntegrationTestBase : TestBase() {
 
   @MockitoSpyBean
   protected lateinit var externalMovementsMigrationService: TapMigrationService
-
-  // TODO remove when real tests are in place
-  @MockitoSpyBean
-  protected lateinit var courtSchedulerSyncScheduleService: CourtSchedulerSyncScheduleService
-
-  // TODO remove when real tests are in place
-  @MockitoSpyBean
-  protected lateinit var courtSchedulerSyncMovementService: CourtSchedulerSyncMovementService
 
   @BeforeEach
   fun setUp() {

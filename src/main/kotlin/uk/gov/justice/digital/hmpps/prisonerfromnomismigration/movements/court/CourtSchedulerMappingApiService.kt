@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitSuccessOrDuplicate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CourtMovementResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CourtScheduleResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CourtSchedulerMigrationResourceApi
@@ -22,14 +23,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
 
 @Service
-class CourtSchedulerMappingApiService(@Qualifier("courtSchedulerMappingApiWebClient") webClient: WebClient) {
+class CourtSchedulerMappingApiService(@Qualifier("courtSchedulerMappingApiWebClient") webClient: WebClient) : MigrationMapping<CourtSchedulerPrisonerMappingsDto>(domainUrl = "/mapping/court", webClient) {
 
   private val scheduleApi = CourtScheduleResourceApi(webClient)
   private val movementApi = CourtMovementResourceApi(webClient)
   private val migrationApi = CourtSchedulerMigrationResourceApi(webClient)
   private val prisonerApi = CourtSchedulerPrisonerResourceApi(webClient)
 
-  suspend fun createMapping(
+  override suspend fun createMapping(
     mapping: CourtSchedulerPrisonerMappingsDto,
     errorJavaClass: ParameterizedTypeReference<DuplicateErrorResponse<CourtSchedulerPrisonerMappingsDto>>,
   ): CreateMappingResult<CourtSchedulerPrisonerMappingsDto> = migrationApi.prepare(migrationApi.createPrisonerCourtSchedulerMappingsRequestConfig(mapping))
