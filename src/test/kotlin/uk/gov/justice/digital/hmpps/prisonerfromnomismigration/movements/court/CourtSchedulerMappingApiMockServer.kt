@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court
 
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -222,6 +223,10 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
           .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
+  }
+
+  fun stubCreateCourtSchedulePrisonerMappingsFailureFollowedBySuccess() {
+    mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/court/migrate", WireMock::put)
   }
 
   fun stubGetCourtSchedulerPrisonerMappingIds(

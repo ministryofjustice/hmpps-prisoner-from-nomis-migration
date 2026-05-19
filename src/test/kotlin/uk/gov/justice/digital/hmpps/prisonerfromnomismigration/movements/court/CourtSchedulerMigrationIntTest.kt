@@ -32,7 +32,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.resyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderCourtMovementsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import java.time.Duration
 import java.time.LocalDate
@@ -211,6 +213,185 @@ class CourtSchedulerMigrationIntTest(
   }
 
   @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class FullMigration {
+    @BeforeAll
+    fun setUp() = runTest {
+      setupMigrationTest()
+
+      stubMigrationDependencies(entities = 2)
+      migrationId = performMigration()
+    }
+
+    @Test
+    fun `should call DPS resync API for both prisoners`() {
+      dpsApi.verify(putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")))
+      dpsApi.verify(putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0002KT")))
+    }
+
+    @Test
+    fun `should update mappings for both prisoners`() {
+      mappingApi.verify(
+        count = 2,
+        putRequestedFor(urlPathEqualTo("/mapping/court/migrate")),
+      )
+    }
+
+    @Test
+    fun `will publish telemetry for both prisoners`() {
+      verify(telemetryClient).trackEvent(
+        eq("court-movements-migration-entity-migrated"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+        },
+        isNull(),
+      )
+      verify(telemetryClient).trackEvent(
+        eq("court-movements-migration-entity-migrated"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0002KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class MigrationFailure {
+    @BeforeAll
+    fun setUp() = runTest {
+      setupMigrationTest()
+
+      stubMigrationDependencies(entities = 1)
+      // The call to DPS fails
+      dpsApi.stubResyncPrisonerCourtAppearances("A0001KT", 400)
+      migrationId = performMigration()
+    }
+
+    @Test
+    fun `should call DPS resync API`() {
+      dpsApi.verify(putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")))
+    }
+
+    @Test
+    fun `should not update mappings`() {
+      mappingApi.verify(
+        count = 0,
+        putRequestedFor(urlPathEqualTo("/mapping/court/migrate")),
+      )
+    }
+
+    @Test
+    fun `will publish failure telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("court-movements-migration-entity-failed"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+          assertThat(it["reason"]).isEqualTo("400 Bad Request from PUT http://localhost:8106/resync/court-appearances/A0001KT")
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class MappingErrorRecovery {
+    @BeforeAll
+    fun setUp() = runTest {
+      setupMigrationTest()
+
+      stubMigrationDependencies(entities = 1)
+      // The call to update mappings fails then succeeds on a retry
+      mappingApi.stubCreateCourtSchedulePrisonerMappingsFailureFollowedBySuccess()
+      migrationId = performMigration()
+    }
+
+    @Test
+    fun `should call DPS API once`() {
+      dpsApi.verify(
+        1,
+        putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")),
+      )
+    }
+
+    @Test
+    fun `should attempt to update mappings twice`() {
+      mappingApi.verify(
+        count = 2,
+        putRequestedFor(urlPathEqualTo("/mapping/court/migrate")),
+      )
+    }
+
+    @Test
+    fun `will publish telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("court-movements-migration-entity-migrated"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class IgnoreOffendersWithNoMovements {
+    @BeforeAll
+    fun setUp() = runTest {
+      setupMigrationTest()
+
+      stubMigrationDependencies(entities = 1)
+      // There are no court movements for this prisoner
+      mappingApi.stubGetCourtSchedulerPrisonerMappingIds(
+        prisonerNumber = "A0001KT",
+        idMappings = CourtSchedulerPrisonerMappingIdsDto("A0001KT", listOf(), listOf()),
+      )
+      nomisApi.stubGetOffenderCourtMovements(
+        offenderNo = "A0001KT",
+        response = OffenderCourtMovementsResponse(listOf()),
+      )
+
+      migrationId = performMigration()
+    }
+
+    @Test
+    fun `should NOT migrate prisoner to DPS`() {
+      dpsApi.verify(
+        0,
+        putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")),
+      )
+    }
+
+    @Test
+    fun `should NOT update mappings`() {
+      mappingApi.verify(
+        count = 0,
+        putRequestedFor(urlPathEqualTo("/mapping/court/migrate")),
+      )
+    }
+
+    @Test
+    fun `should publish ignore telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("court-movements-migration-entity-ignored"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+          assertThat(it["reason"]).isEqualTo("The offender has no court movements")
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
   inner class Security {
     @Test
     fun `access forbidden when no role`() {
@@ -255,9 +436,9 @@ class CourtSchedulerMigrationIntTest(
       waitUntilCompleted()
     }
 
-  private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
+  private fun waitUntilCompleted(name: String = "court-movements-migration-completed") = await atMost Duration.ofSeconds(60) untilAsserted {
     verify(telemetryClient).trackEvent(
-      eq("court-movements-migration-completed"),
+      eq(name),
       any(),
       isNull(),
     )
