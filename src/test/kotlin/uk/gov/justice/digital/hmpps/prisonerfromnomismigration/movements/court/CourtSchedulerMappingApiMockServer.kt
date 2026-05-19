@@ -36,7 +36,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateCourtScheduleMapping() {
     mappingApi.stubFor(
-      post("/mapping/court/schedule")
+      post("/mapping/court-scheduler/schedule")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -47,7 +47,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateCourtScheduleMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      post("/mapping/court/schedule").willReturn(
+      post("/mapping/court-scheduler/schedule").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -58,7 +58,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateCourtScheduleMappingConflict(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(
-      post("/mapping/court/schedule").willReturn(
+      post("/mapping/court-scheduler/schedule").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
@@ -67,11 +67,11 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubCreateCourtScheduleMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/court/schedule")
+  fun stubCreateCourtScheduleMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/court-scheduler/schedule")
 
   fun stubGetCourtScheduleMapping(nomisEventId: Long = 1L, dpsCourtAppearanceId: UUID = UUID.randomUUID()) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/court/schedule/nomis-id/$nomisEventId")).willReturn(
+      get(urlPathMatching("/mapping/court-scheduler/schedule/nomis-id/$nomisEventId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(
@@ -88,7 +88,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubGetCourtScheduleMapping(nomisEventId: Long = 1L, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/court/schedule/nomis-id/$nomisEventId")).willReturn(
+      get(urlPathMatching("/mapping/court-scheduler/schedule/nomis-id/$nomisEventId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -99,7 +99,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubDeleteCourtScheduleMapping(nomisEventId: Long = 1L) {
     mappingApi.stubFor(
-      delete(urlPathMatching("/mapping/court/schedule/nomis-id/$nomisEventId")).willReturn(
+      delete(urlPathMatching("/mapping/court-scheduler/schedule/nomis-id/$nomisEventId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(204),
@@ -109,7 +109,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubDeleteCourtScheduleMapping(nomisEventId: Long = 1L, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      delete(urlPathMatching("/mapping/court/schedule/nomis-id/$nomisEventId")).willReturn(
+      delete(urlPathMatching("/mapping/court-scheduler/schedule/nomis-id/$nomisEventId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -120,7 +120,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateCourtMovementMapping() {
     mappingApi.stubFor(
-      post("/mapping/court/movement")
+      post("/mapping/court-scheduler/movement")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -131,7 +131,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateCourtMovementMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      post("/mapping/court/movement").willReturn(
+      post("/mapping/court-scheduler/movement").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -142,7 +142,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateCourtMovementMappingConflict(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(
-      post("/mapping/court/movement").willReturn(
+      post("/mapping/court-scheduler/movement").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
@@ -151,11 +151,11 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubCreateCourtMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/court/movement")
+  fun stubCreateCourtMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/court-scheduler/movement")
 
   fun stubGetCourtMovementMapping(nomisBookingId: Long = 12345L, nomisMovementSeq: Int = 3, dpsCourtMovementId: UUID = UUID.randomUUID()) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/court/movement/nomis-id/$nomisBookingId/$nomisMovementSeq")).willReturn(
+      get(urlPathMatching("/mapping/court-scheduler/movement/nomis-id/$nomisBookingId/$nomisMovementSeq")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(
@@ -173,7 +173,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubGetCourtMovementMapping(nomisBookingId: Long = 12345L, nomisMovementSeq: Int = 3, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/court/movement/nomis-id/$nomisBookingId/$nomisMovementSeq")).willReturn(
+      get(urlPathMatching("/mapping/court-scheduler/movement/nomis-id/$nomisBookingId/$nomisMovementSeq")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -184,7 +184,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubDeleteCourtMovementMapping(bookingId: Long = 12345L, movementSeq: Int = 1) {
     mappingApi.stubFor(
-      delete(urlPathMatching("/mapping/court/movement/nomis-id/$bookingId/$movementSeq")).willReturn(
+      delete(urlPathMatching("/mapping/court-scheduler/movement/nomis-id/$bookingId/$movementSeq")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(204),
@@ -194,7 +194,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubDeleteCourtMovementMapping(bookingId: Long = 12345L, movementSeq: Int = 1, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      delete(urlPathMatching("/mapping/court/movement/nomis-id/$bookingId/$movementSeq")).willReturn(
+      delete(urlPathMatching("/mapping/court-scheduler/movement/nomis-id/$bookingId/$movementSeq")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -205,7 +205,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateCourtSchedulerPrisonerMappings() {
     mappingApi.stubFor(
-      put("/mapping/court/migrate")
+      put("/mapping/court-scheduler/migrate")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -216,7 +216,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateCourtSchedulerPrisonerMappings(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      put("/mapping/court/migrate").willReturn(
+      put("/mapping/court-scheduler/migrate").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -226,7 +226,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
   }
 
   fun stubCreateCourtSchedulePrisonerMappingsFailureFollowedBySuccess() {
-    mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/court/migrate", WireMock::put)
+    mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/court-scheduler/migrate", WireMock::put)
   }
 
   fun stubGetCourtSchedulerPrisonerMappingIds(
@@ -245,7 +245,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
     idMappings: CourtSchedulerPrisonerMappingIdsDto = courtSchedulerPrisonerIdMappings(bookingId, nomisEventId, dpsCourtAppearanceId, nomisMovementOutSeq, dpsMovementOutId, nomisMovementInSeq, dpsMovementInId, nomisUnscheduledMovementOutSeq, dpsUnscheduledMovementOutId, nomisUnscheduledMovementInSeq, dpsUnscheduledMovementInId),
   ) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/court/$prisonerNumber/ids")).willReturn(
+      get(urlPathMatching("/mapping/court-scheduler/$prisonerNumber/ids")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(jsonMapper.writeValueAsString(idMappings)),
@@ -255,7 +255,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubGetCourtSchedulerPrisonerMappingIds(prisonerNumber: String = "A1234BC", status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/court/$prisonerNumber/ids")).willReturn(
+      get(urlPathMatching("/mapping/court-scheduler/$prisonerNumber/ids")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())

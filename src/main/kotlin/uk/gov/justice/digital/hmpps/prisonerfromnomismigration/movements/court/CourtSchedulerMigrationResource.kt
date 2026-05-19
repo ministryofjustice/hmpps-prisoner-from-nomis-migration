@@ -22,7 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMigrationService
 
 @RestController
-@RequestMapping("/migrate/court", produces = [MediaType.APPLICATION_JSON_VALUE])
+@RequestMapping("/migrate/court-scheduler", produces = [MediaType.APPLICATION_JSON_VALUE])
 @Tag(name = "Court Movements Migration Resource")
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
 class CourtSchedulerMigrationResource(

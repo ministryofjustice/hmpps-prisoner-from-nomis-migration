@@ -96,7 +96,7 @@ class CourtSchedulerMigrationIntTest(
 
     @Test
     fun `should check for existing mappings`() {
-      mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/A0001KT/ids")))
+      mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/A0001KT/ids")))
     }
 
     @Test
@@ -181,7 +181,7 @@ class CourtSchedulerMigrationIntTest(
     @Test
     fun `should update mappings`() {
       CourtSchedulerMappingApiMockServer.getRequestBody<CourtSchedulerPrisonerMappingsDto>(
-        putRequestedFor(urlPathEqualTo("/mapping/court/migrate")),
+        putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/migrate")),
       ).apply {
         assertThat(offenderNo).isEqualTo("A0001KT")
         with(bookings[0]) {
@@ -236,7 +236,7 @@ class CourtSchedulerMigrationIntTest(
     fun `should update mappings for both prisoners`() {
       mappingApi.verify(
         count = 2,
-        putRequestedFor(urlPathEqualTo("/mapping/court/migrate")),
+        putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/migrate")),
       )
     }
 
@@ -283,7 +283,7 @@ class CourtSchedulerMigrationIntTest(
     fun `should not update mappings`() {
       mappingApi.verify(
         count = 0,
-        putRequestedFor(urlPathEqualTo("/mapping/court/migrate")),
+        putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/migrate")),
       )
     }
 
@@ -326,7 +326,7 @@ class CourtSchedulerMigrationIntTest(
     fun `should attempt to update mappings twice`() {
       mappingApi.verify(
         count = 2,
-        putRequestedFor(urlPathEqualTo("/mapping/court/migrate")),
+        putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/migrate")),
       )
     }
 
@@ -376,7 +376,7 @@ class CourtSchedulerMigrationIntTest(
     fun `should NOT update mappings`() {
       mappingApi.verify(
         count = 0,
-        putRequestedFor(urlPathEqualTo("/mapping/court/migrate")),
+        putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/migrate")),
       )
     }
 
@@ -413,7 +413,7 @@ class CourtSchedulerMigrationIntTest(
 
       @Test
       fun `should check for existing mappings`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/A0001KT/ids")))
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/A0001KT/ids")))
       }
 
       @Test
@@ -436,7 +436,7 @@ class CourtSchedulerMigrationIntTest(
       @Test
       fun `should update mappings`() {
         mappingApi.verify(
-          putRequestedFor(urlPathEqualTo("/mapping/court/migrate"))
+          putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/migrate"))
             .withRequestBodyJsonPath("offenderNo", "A0001KT"),
         )
       }
@@ -487,7 +487,7 @@ class CourtSchedulerMigrationIntTest(
       @Test
       fun `will update mappings`() {
         mappingApi.verify(
-          putRequestedFor(urlEqualTo("/mapping/court/migrate"))
+          putRequestedFor(urlEqualTo("/mapping/court-scheduler/migrate"))
             .withRequestBodyJsonPath("offenderNo", "A0001KT")
             .withRequestBodyJsonPath("bookings.length()", 0),
         )
@@ -535,7 +535,7 @@ class CourtSchedulerMigrationIntTest(
       @Test
       fun `will update mappings`() {
         mappingApi.verify(
-          putRequestedFor(urlEqualTo("/mapping/court/migrate"))
+          putRequestedFor(urlEqualTo("/mapping/court-scheduler/migrate"))
             .withRequestBodyJsonPath("offenderNo", "A0001KT")
             .withRequestBodyJsonPath("bookings.length()", 0),
         )
@@ -565,7 +565,7 @@ class CourtSchedulerMigrationIntTest(
 
       @Test
       fun `access forbidden when no role`() {
-        webTestClient.put().uri("/migrate/court/repair/$prisonerNumber")
+        webTestClient.put().uri("/migrate/court-scheduler/repair/$prisonerNumber")
           .headers(setAuthorisation(roles = listOf()))
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(CourtSchedulerMigrationFilter())
@@ -575,7 +575,7 @@ class CourtSchedulerMigrationIntTest(
 
       @Test
       fun `access forbidden with wrong role`() {
-        webTestClient.put().uri("/migrate/court/repair/$prisonerNumber")
+        webTestClient.put().uri("/migrate/court-scheduler/repair/$prisonerNumber")
           .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(CourtSchedulerMigrationFilter())
@@ -585,7 +585,7 @@ class CourtSchedulerMigrationIntTest(
 
       @Test
       fun `access unauthorised with no auth token`() {
-        webTestClient.put().uri("/migrate/court/repair/$prisonerNumber")
+        webTestClient.put().uri("/migrate/court-scheduler/repair/$prisonerNumber")
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(CourtSchedulerMigrationFilter())
           .exchange()
@@ -594,7 +594,7 @@ class CourtSchedulerMigrationIntTest(
 
       @Test
       fun `access allowed with temporary role`() {
-        webTestClient.put().uri("/migrate/court/repair/$prisonerNumber")
+        webTestClient.put().uri("/migrate/court-scheduler/repair/$prisonerNumber")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__REPAIR_MOVEMENTS__RW")))
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(CourtSchedulerMigrationFilter())
@@ -605,7 +605,7 @@ class CourtSchedulerMigrationIntTest(
 
     private fun repairPrisoner(prisonerNumber: String) = webTestClient.put()
       .uri {
-        it.path("/migrate/court/repair/$prisonerNumber")
+        it.path("/migrate/court-scheduler/repair/$prisonerNumber")
           .build(prisonerNumber)
       }
       .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
@@ -619,7 +619,7 @@ class CourtSchedulerMigrationIntTest(
   inner class Security {
     @Test
     fun `access forbidden when no role`() {
-      webTestClient.post().uri("/migrate/court")
+      webTestClient.post().uri("/migrate/court-scheduler")
         .headers(setAuthorisation(roles = listOf()))
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(CourtSchedulerMigrationFilter())
@@ -629,7 +629,7 @@ class CourtSchedulerMigrationIntTest(
 
     @Test
     fun `access forbidden with wrong role`() {
-      webTestClient.post().uri("/migrate/court")
+      webTestClient.post().uri("/migrate/court-scheduler")
         .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(CourtSchedulerMigrationFilter())
@@ -639,7 +639,7 @@ class CourtSchedulerMigrationIntTest(
 
     @Test
     fun `access unauthorised with no auth token`() {
-      webTestClient.post().uri("/migrate/court")
+      webTestClient.post().uri("/migrate/court-scheduler")
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(CourtSchedulerMigrationFilter())
         .exchange()
@@ -648,7 +648,7 @@ class CourtSchedulerMigrationIntTest(
   }
 
   private fun performMigration(prisonerNumber: String? = null): String = webTestClient.post()
-    .uri("/migrate/court")
+    .uri("/migrate/court-scheduler")
     .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .apply { prisonerNumber?.let { bodyValue("""{"prisonerNumber":"$prisonerNumber"}""") } ?: bodyValue("{}") }
