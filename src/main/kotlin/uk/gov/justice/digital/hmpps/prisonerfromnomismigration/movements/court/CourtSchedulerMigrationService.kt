@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.BookingCourtMovementMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.BookingCourtScheduleMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
@@ -89,16 +90,36 @@ class CourtSchedulerMigrationService(
       "migrationId" to migrationId,
     )
 
-    val offenderCourtMovements = nomisApi.getOffenderCourtMovementsOrNull(offenderNo)
-      ?: OffenderCourtMovementsResponse(bookings = listOf())
-    val oldMappingIds = mappingApi.getCourtSchedulerPrisonMappingIds(offenderNo)
-    val courtSentencingMappings = offenderCourtMovements.findCourtAppearanceIds()
-      .let { courtAppearanceIds -> sentencingMappingApi.getAllCourtAppearancesByNomisIds(courtAppearanceIds) }
-    val dpsResponse = dpsApi.resyncPrisoner(offenderNo, offenderCourtMovements.toDpsRequest(oldMappingIds, courtSentencingMappings))
-      ?: ResyncResponse(listOf(), listOf())
-    val mappings = offenderCourtMovements.buildMappings(offenderNo, migrationId, dpsResponse)
+    runCatching {
+      val offenderCourtMovements = nomisApi.getOffenderCourtMovementsOrNull(offenderNo)
+        ?: OffenderCourtMovementsResponse(bookings = listOf())
+      if (offenderCourtMovements.bookings.isEmpty()) {
+        publishTelemetry("ignored", telemetry.apply { this["reason"] = "The offender has no court movements" })
+        return
+      }
 
-    createMappingOrOnFailureDo(mappings) {}
+      val oldMappingIds = mappingApi.getCourtSchedulerPrisonMappingIds(offenderNo)
+      val courtSentencingMappings = offenderCourtMovements.findCourtAppearanceIds()
+        .let { courtAppearanceIds -> sentencingMappingApi.getAllCourtAppearancesByNomisIds(courtAppearanceIds) }
+      val dpsResponse =
+        dpsApi.resyncPrisoner(offenderNo, offenderCourtMovements.toDpsRequest(oldMappingIds, courtSentencingMappings))
+          ?: ResyncResponse(listOf(), listOf())
+      val mappings = offenderCourtMovements.buildMappings(offenderNo, migrationId, dpsResponse)
+
+      createMappingOrOnFailureDo(mappings) {
+        requeueCreateMapping(mappings, context)
+      }
+    }
+      .onFailure {
+        publishTelemetry("failed", telemetry.apply { this["reason"] = it.message ?: "Unknown error" })
+        throw it
+      }
+  }
+
+  override suspend fun retryCreateMapping(context: MigrationContext<CourtSchedulerPrisonerMappingsDto>) {
+    createMappingOrOnFailureDo(context.body) {
+      throw it
+    }
   }
 
   private suspend fun createMappingOrOnFailureDo(
@@ -125,6 +146,19 @@ class CourtSchedulerMigrationService(
     object :
       ParameterizedTypeReference<DuplicateErrorResponse<CourtSchedulerPrisonerMappingsDto>>() {},
   )
+
+  private suspend fun requeueCreateMapping(
+    mapping: CourtSchedulerPrisonerMappingsDto,
+    context: MigrationContext<*>,
+  ) {
+    queueService.sendMessage(
+      MigrationMessageType.RETRY_MIGRATION_MAPPING,
+      MigrationContext(
+        context = context,
+        body = mapping,
+      ),
+    )
+  }
 
   private fun publishTelemetry(type: String, telemetry: Map<String, String>) {
     telemetryClient.trackEvent(
