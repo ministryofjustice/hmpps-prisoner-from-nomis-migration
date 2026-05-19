@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.ResyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.BookingCourtMovementMappingsDto
@@ -82,6 +83,16 @@ class CourtSchedulerMigrationService(
 
   override suspend fun getTotalNumberOfIds(migrationFilter: CourtSchedulerMigrationFilter): Long = getIds(migrationFilter, 1, 0).totalElements
 
+  suspend fun resyncPrisonerCourtMovements(prisonerNumber: String) = migrateNomisEntity(
+    MigrationContext(
+      MigrationType.COURT_MOVEMENTS,
+      generateBatchId(),
+      1,
+      PrisonerId(prisonerNumber),
+      mutableMapOf("ignoreMissingCourtMovements" to false),
+    ),
+  )
+
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
     val offenderNo = context.body.offenderNo
     val migrationId = context.migrationId
@@ -89,11 +100,12 @@ class CourtSchedulerMigrationService(
       "offenderNo" to offenderNo,
       "migrationId" to migrationId,
     )
+    val ignoreMissingCourtMovements = context.properties["ignoreMissingCourtMovements"] as Boolean? ?: true
 
     runCatching {
       val offenderCourtMovements = nomisApi.getOffenderCourtMovementsOrNull(offenderNo)
         ?: OffenderCourtMovementsResponse(bookings = listOf())
-      if (offenderCourtMovements.bookings.isEmpty()) {
+      if (ignoreMissingCourtMovements && offenderCourtMovements.bookings.isEmpty()) {
         publishTelemetry("ignored", telemetry.apply { this["reason"] = "The offender has no court movements" })
         return
       }

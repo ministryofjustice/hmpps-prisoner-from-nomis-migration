@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -12,6 +13,7 @@ import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -22,6 +24,7 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.ResyncCourtEvents
@@ -30,12 +33,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationR
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.MigrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension.Companion.dpsCourtSchedulerServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.resyncResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderCourtMovementsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -392,13 +395,234 @@ class CourtSchedulerMigrationIntTest(
   }
 
   @Nested
+  inner class RepairEndpoint {
+    private val prisonerNumber = "A0001KT"
+
+    @BeforeEach
+    fun setUp() = runTest {
+      stubMigrationDependencies(entities = 1)
+      reset(telemetryClient)
+    }
+
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() = runTest {
+        repairPrisonerOk(prisonerNumber)
+      }
+
+      @Test
+      fun `should check for existing mappings`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court/A0001KT/ids")))
+      }
+
+      @Test
+      fun `should get NOMIS court movement details`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A0001KT/court")))
+      }
+
+      @Test
+      fun `should get RaS court sentencing mappings`() {
+        sentencingMappingApi.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances/nomis-court-appearance-ids/get-list")),
+        )
+      }
+
+      @Test
+      fun `should call DPS resync API`() {
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")))
+      }
+
+      @Test
+      fun `should update mappings`() {
+        mappingApi.verify(
+          putRequestedFor(urlPathEqualTo("/mapping/court/migrate"))
+            .withRequestBodyJsonPath("offenderNo", "A0001KT"),
+        )
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-movements-migration-entity-repair-requested"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("court-movements-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class DontIgnoreOffendersWithNoMovements {
+      @BeforeEach
+      fun setUp() = runTest {
+        stubMigrationDependencies(entities = 1)
+
+        // There are no court movements for this prisoner
+        mappingApi.stubGetCourtSchedulerPrisonerMappingIds(
+          prisonerNumber = "A0001KT",
+          idMappings = CourtSchedulerPrisonerMappingIdsDto("A0001KT", listOf(), listOf()),
+        )
+        nomisApi.stubGetOffenderCourtMovements(
+          offenderNo = "A0001KT",
+          response = OffenderCourtMovementsResponse(listOf()),
+        )
+
+        repairPrisonerOk(prisonerNumber)
+      }
+
+      @Test
+      fun `will migrate to DPS`() {
+        dpsApi.verify(putRequestedFor(urlEqualTo("/resync/court-appearances/A0001KT")))
+      }
+
+      @Test
+      fun `will update mappings`() {
+        mappingApi.verify(
+          putRequestedFor(urlEqualTo("/mapping/court/migrate"))
+            .withRequestBodyJsonPath("offenderNo", "A0001KT")
+            .withRequestBodyJsonPath("bookings.length()", 0),
+        )
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-movements-migration-entity-repair-requested"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("court-movements-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class DontIgnoreOffendersNotInNomis {
+      @BeforeEach
+      fun setUp() = runTest {
+        stubMigrationDependencies(entities = 1)
+
+        nomisApi.stubGetOffenderCourtMovements(status = NOT_FOUND)
+        dpsApi.stubResyncPrisonerCourtAppearances(
+          personIdentifier = prisonerNumber,
+          status = 404,
+        )
+
+        repairPrisonerOk(prisonerNumber)
+      }
+
+      @Test
+      fun `will migrate to DPS`() {
+        dpsApi.verify(putRequestedFor(urlEqualTo("/resync/court-appearances/A0001KT")))
+      }
+
+      @Test
+      fun `will update mappings`() {
+        mappingApi.verify(
+          putRequestedFor(urlEqualTo("/mapping/court/migrate"))
+            .withRequestBodyJsonPath("offenderNo", "A0001KT")
+            .withRequestBodyJsonPath("bookings.length()", 0),
+        )
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-movements-migration-entity-repair-requested"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("court-movements-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class Security {
+
+      @Test
+      fun `access forbidden when no role`() {
+        webTestClient.put().uri("/migrate/court/repair/$prisonerNumber")
+          .headers(setAuthorisation(roles = listOf()))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(CourtSchedulerMigrationFilter())
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access forbidden with wrong role`() {
+        webTestClient.put().uri("/migrate/court/repair/$prisonerNumber")
+          .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(CourtSchedulerMigrationFilter())
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access unauthorised with no auth token`() {
+        webTestClient.put().uri("/migrate/court/repair/$prisonerNumber")
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(CourtSchedulerMigrationFilter())
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      fun `access allowed with temporary role`() {
+        webTestClient.put().uri("/migrate/court/repair/$prisonerNumber")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__REPAIR_MOVEMENTS__RW")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(CourtSchedulerMigrationFilter())
+          .exchange()
+          .expectStatus().isOk
+      }
+    }
+
+    private fun repairPrisoner(prisonerNumber: String) = webTestClient.put()
+      .uri {
+        it.path("/migrate/court/repair/$prisonerNumber")
+          .build(prisonerNumber)
+      }
+      .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+      .contentType(MediaType.APPLICATION_JSON)
+      .exchange()
+
+    private fun repairPrisonerOk(prisonerNumber: String) = repairPrisoner(prisonerNumber).expectStatus().isOk
+  }
+
+  @Nested
   inner class Security {
     @Test
     fun `access forbidden when no role`() {
       webTestClient.post().uri("/migrate/court")
         .headers(setAuthorisation(roles = listOf()))
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(TapMigrationFilter())
+        .bodyValue(CourtSchedulerMigrationFilter())
         .exchange()
         .expectStatus().isForbidden
     }
@@ -408,7 +632,7 @@ class CourtSchedulerMigrationIntTest(
       webTestClient.post().uri("/migrate/court")
         .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(TapMigrationFilter())
+        .bodyValue(CourtSchedulerMigrationFilter())
         .exchange()
         .expectStatus().isForbidden
     }
@@ -417,7 +641,7 @@ class CourtSchedulerMigrationIntTest(
     fun `access unauthorised with no auth token`() {
       webTestClient.post().uri("/migrate/court")
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(TapMigrationFilter())
+        .bodyValue(CourtSchedulerMigrationFilter())
         .exchange()
         .expectStatus().isUnauthorized
     }
