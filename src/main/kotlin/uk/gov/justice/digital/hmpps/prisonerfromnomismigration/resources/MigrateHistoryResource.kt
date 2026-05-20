@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.GeneralMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.HistoryFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationHistoryService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -26,7 +27,10 @@ import java.time.LocalDateTime
 @Tag(name = "Migrate Resource")
 @RequestMapping("/migrate/history", produces = [MediaType.APPLICATION_JSON_VALUE])
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
-class MigrateHistoryResource(private val migrationHistoryService: MigrationHistoryService) {
+class MigrateHistoryResource(
+  private val migrationHistoryService: MigrationHistoryService,
+  private val generalMappingService: GeneralMappingService,
+) {
   @GetMapping("/all/{migrationType}")
   @Operation(
     summary = "Lists all filtered migration history for the specified migration type",
@@ -148,5 +152,11 @@ class MigrateHistoryResource(private val migrationHistoryService: MigrationHisto
   )
   suspend fun activeMigration(
     @PathVariable @Schema(description = "Migration Type") migrationType: MigrationType,
-  ) = migrationHistoryService.getActiveMigrationDetails(migrationType)
+  ) = migrationHistoryService.getActiveMigrationDetails(migrationType).let {
+    it.copy(
+      recordsMigrated = it.migrationId?.let { id ->
+        generalMappingService.getMigrationCount(id, migrationType)
+      },
+    )
+  }
 }

@@ -13,8 +13,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -29,8 +27,6 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.json.JsonTest
 import org.springframework.core.ParameterizedTypeReference
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.Pageable
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentInstance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
@@ -44,6 +40,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.Migrati
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.MIGRATE_STATUS_CHECK
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType.RETRY_MIGRATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NomisDpsLocationMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AppointmentResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageAppointmentIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.AuditService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
@@ -58,8 +56,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.pageNumbe
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AppointmentIdResponse as NomisPrisonerAppointmentIdResponse
 
-@ExtendWith(MockitoExtension::class)
 @JsonTest
 internal class AppointmentsMigrationServiceTest(@Autowired private val jsonMapper: JsonMapper) {
   private val nomisApiService: NomisApiService = mock()
@@ -1076,10 +1074,11 @@ fun aNomisAppointmentResponse(
   createdDate = LocalDateTime.parse("2020-01-01T10:00:00"),
   modifiedBy = "another user",
   modifiedDate = LocalDateTime.parse("2020-05-05T12:00:00"),
+  eventId = 12345L,
 )
 
-fun pages(total: Long, startId: Long = 1): PageImpl<AppointmentIdResponse> = PageImpl<AppointmentIdResponse>(
-  (startId..total - 1 + startId).map { AppointmentIdResponse(it) },
-  Pageable.ofSize(10),
-  total,
+fun pages(total: Long, startId: Long = 1): PageAppointmentIdResponse = PageAppointmentIdResponse(
+  totalElements = total,
+  content = (startId..total - 1 + startId).map { NomisPrisonerAppointmentIdResponse(it) },
+  propertySize = 10,
 )

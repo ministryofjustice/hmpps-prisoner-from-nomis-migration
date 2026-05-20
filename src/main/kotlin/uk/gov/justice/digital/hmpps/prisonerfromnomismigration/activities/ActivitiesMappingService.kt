@@ -18,7 +18,7 @@ class ActivitiesMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
   suspend fun findNomisMapping(courseActivityId: Long): ActivityMigrationMappingDto? = webClient.get()
     .uri("/mapping/activities/migration/nomis-course-activity-id/{courseActivityId}", courseActivityId)
     .retrieve()
-    .bodyToMono(ActivityMigrationMappingDto::class.java)
+    .bodyToMono<ActivityMigrationMappingDto>()
     .onErrorResume(WebClientResponseException.NotFound::class.java) {
       Mono.empty()
     }
@@ -31,13 +31,13 @@ class ActivitiesMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
         .build(migrationId)
     }
     .retrieve()
-    .bodyToMono(ActivityMigrationDetails::class.java)
-    .awaitSingle()!!
+    .bodyToMono<ActivityMigrationDetails>()
+    .awaitSingle()
 
   suspend fun getDpsLocation(nomisLocationId: Long): NomisDpsLocationMapping = webClient.get()
     .uri("/api/locations/nomis/{nomisLocationId}", nomisLocationId)
     .retrieve()
-    .bodyToMono(NomisDpsLocationMapping::class.java)
+    .bodyToMono<NomisDpsLocationMapping>()
     .awaitSingle()
 
   override suspend fun getMigrationCount(migrationId: String): Long = countMigrationMappings(migrationId, includeIgnored = false)

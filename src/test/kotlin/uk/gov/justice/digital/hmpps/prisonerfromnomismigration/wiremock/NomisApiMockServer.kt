@@ -762,6 +762,7 @@ private fun appointmentResponse(
 ): String =
   """
 {
+  "eventId": 1,
   "bookingId":$bookingId,
   "offenderNo": "$offenderNo",
   "prisonId": "LEI",

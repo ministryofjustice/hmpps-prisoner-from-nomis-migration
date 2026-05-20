@@ -18,13 +18,12 @@ import java.time.LocalDateTime
 
 @Service
 class MigrationHistoryService(
-  val migrationHistoryRepository: MigrationHistoryRepository,
+  private val migrationHistoryRepository: MigrationHistoryRepository,
   private val jsonMapper: JsonMapper,
   private val hmppsQueueService: HmppsQueueService,
-  private val generalMappingService: GeneralMappingService,
 ) {
   private companion object {
-    val log: Logger = LoggerFactory.getLogger(this::class.java)
+    private val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
   suspend fun recordMigrationStarted(
@@ -104,7 +103,6 @@ class MigrationHistoryService(
       )
 
     return InProgressMigration(
-      recordsMigrated = generalMappingService.getMigrationCount(migrationProperties.migrationId, type),
       toBeProcessedCount = toBeProcessedCount,
       beingProcessedCount = beingProcessedCount,
       recordsFailed = recordsFailedCount,
