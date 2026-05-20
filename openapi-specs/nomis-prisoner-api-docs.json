@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-05-19.1455.ed66edd"
+    "version" : "2026-05-20.1463.020a21c"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -31974,12 +31974,12 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "paged" : {
-            "type" : "boolean"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "paged" : {
+            "type" : "boolean"
           },
           "unpaged" : {
             "type" : "boolean"
@@ -32220,25 +32220,43 @@
           "statusCode" : {
             "type" : "string",
             "description" : "Status of the user account",
-            "example" : "USER"
+            "example" : "ACTIVE"
           },
           "sourceCode" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "How the account was created",
+            "example" : "USER"
           },
           "lastLoggedIn" : {
             "type" : "string",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "Date and time when the user last logged in",
+            "example" : "2023-12-23T11:17:00"
           },
           "activeCaseloadId" : {
             "type" : "string",
             "description" : "The current active caseload on the account"
           },
+          "caseloads" : {
+            "type" : "array",
+            "description" : "Caseloads associated with the user",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "roles" : {
+            "type" : "array",
+            "description" : "Roles associated with the user",
+            "items" : {
+              "type" : "string"
+            }
+          },
           "audit" : {
             "$ref" : "#/components/schemas/NomisAudit",
-            "description" : "Audit data associated with the staff user"
+            "description" : "Audit data associated with the account"
           }
         },
-        "required" : [ "audit", "sourceCode", "statusCode", "typeCode", "username" ]
+        "required" : [ "audit", "caseloads", "roles", "sourceCode", "statusCode", "typeCode", "username" ]
       },
       "UserDetails" : {
         "type" : "object",
@@ -32266,6 +32284,7 @@
           },
           "accounts" : {
             "type" : "array",
+            "description" : "Accounts for the user",
             "items" : {
               "$ref" : "#/components/schemas/UserAccount"
             }
