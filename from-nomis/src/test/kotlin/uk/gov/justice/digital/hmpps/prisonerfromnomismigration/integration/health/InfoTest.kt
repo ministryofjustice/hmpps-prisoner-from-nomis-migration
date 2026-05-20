@@ -17,7 +17,7 @@ class InfoTest(
       .expectStatus()
       .isOk
       .expectBody()
-      .jsonPath("build.name").isEqualTo("hmpps-prisoner-from-nomis-migration")
+      .jsonPath("build.name").isEqualTo("from-nomis")
   }
 
   @Test

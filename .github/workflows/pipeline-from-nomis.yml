@@ -1,4 +1,4 @@
-name: Pipeline [test -> build -> deploy]
+name: Pipeline From NOMIS [test -> build -> deploy]
 on:
   push:
     branches:
@@ -29,12 +29,15 @@ jobs:
     strategy:
       matrix:
         environments: ['dev', 'preprod', 'prod']
-    name: helm lint
+    name: helm lint for from-nomis
     uses: ministryofjustice/hmpps-github-actions/.github/workflows/test_helm_lint.yml@v2 # WORKFLOW_VERSION
     secrets: inherit
     with:
       environment: ${{ matrix.environments }}
+      chart_name: 'from-nomis'
+      helm_dir: 'from-nomis/helm_deploy'
   app_version:
+    name: Calculate application version for from-nomis
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.app_version.outputs.version }}
@@ -43,14 +46,16 @@ jobs:
         name: Application version creators
         uses: ministryofjustice/hmpps-github-shared-actions/.github/actions/build-test-and-deploy/create_app_version@cd5eb88ee6b73a22548a64b8c7358a3bedc9516f # v1.0.13
   gradle-build:
-    name: Validate the kotlin
+    name: Gradle verify for from-nomis
     uses: ministryofjustice/hmpps-github-actions/.github/workflows/gradle_verify.yml@v2 # WORKFLOW_VERSION
     secrets: inherit
     with:
-      gradle-command: 'BUILD_NUMBER=${{ needs.app_version.outputs.version}} ./gradlew assemble ktlintCheck'
+      gradle-command: 'BUILD_NUMBER=${{ needs.app_version.outputs.version}} ./gradlew :from-nomis:assemble :from-nomis:ktlintCheck'
       upload-test-artifacts: false
       upload-build-artifacts: ${{ github.ref == 'refs/heads/main' }}
       java-version: "25"
+      build-dir: 'from-nomis/build'
+      artifact-name: 'from-nomis'
     needs:
       - app_version
   setup-test-matrix:
@@ -58,7 +63,7 @@ jobs:
     uses: ./.github/workflows/setup_test_matrix.yml # LOCAL_VERSION
     secrets: inherit
   gradle-verify:
-    name: Run the tests
+    name: Run the tests for from-nomis
     strategy:
       matrix: ${{ fromJson(needs.setup-test-matrix.outputs.matrix) }}
     uses: ministryofjustice/hmpps-github-actions/.github/workflows/gradle_verify.yml@v2 # WORKFLOW_VERSION
@@ -87,6 +92,8 @@ jobs:
       additional_docker_tag: ${{ inputs.additional_docker_tag }}
       push: ${{ inputs.push || inputs.push == null }}
       docker_multiplatform: false
+      file: 'from-nomis/Dockerfile'
+      image_name: 'from-nomis'
       download_build_artifacts: true
       generate_sbom: true
       attach_sbom_to_registry: true
@@ -101,6 +108,9 @@ jobs:
     with:
       environment: 'dev'
       app_version: '${{ needs.build.outputs.app_version }}'
+      k8s_deployment_name: 'from-nomis'
+      helm_chart_name: 'from-nomis'
+      helm_dir: 'from-nomis/helm_deploy'
   deploy_preprod:
     name: Deploy to the preprod environment
     needs:
@@ -112,6 +122,9 @@ jobs:
     with:
       environment: 'preprod'
       app_version: '${{ needs.build.outputs.app_version }}'
+      k8s_deployment_name: 'from-nomis'
+      helm_chart_name: 'from-nomis'
+      helm_dir: 'from-nomis/helm_deploy'
   deploy_prod:
     name: Deploy to the prod environment
     needs:
@@ -123,3 +136,6 @@ jobs:
     with:
       environment: 'prod'
       app_version: '${{ needs.build.outputs.app_version }}'
+      k8s_deployment_name: 'from-nomis'
+      helm_chart_name: 'from-nomis'
+      helm_dir: 'from-nomis/helm_deploy'
