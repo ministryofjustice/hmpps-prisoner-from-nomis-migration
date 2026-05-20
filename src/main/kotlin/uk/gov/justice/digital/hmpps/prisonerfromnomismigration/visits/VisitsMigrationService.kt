@@ -31,9 +31,9 @@ class VisitsMigrationService(
   private val visitsService: VisitsService,
   private val visitMappingService: VisitMappingService,
   jsonMapper: JsonMapper,
-  @Value("\${visits.page.size:1000}") pageSize: Long,
-  @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
-  @Value("\${complete-check.count}") completeCheckCount: Int,
+  @Value($$"${visits.page.size:1000}") pageSize: Long,
+  @Value($$"${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value($$"${complete-check.count}") completeCheckCount: Int,
 ) : ByPageNumberMigrationService<VisitsMigrationFilter, VisitId, VisitNomisMapping>(
   mappingService = visitMappingService,
   migrationType = VISITS,
@@ -215,9 +215,17 @@ class VisitsMigrationService(
   }
 
   suspend fun findRoomUsageByFilter(filter: VisitsMigrationFilter): List<VisitRoomUsageResponse> {
-    val roomUsage = nomisApiService.getRoomUsage(filter)
+    val roomUsage = nomisApiService.getRoomUsage(
+      filter.prisonIds,
+      visitTypes = filter.visitTypes,
+      fromDateTime = filter.fromDateTime,
+      toDateTime = filter.toDateTime,
+    )
     return roomUsage.map { usage ->
-      usage.copy(
+      VisitRoomUsageResponse(
+        agencyInternalLocationDescription = usage.agencyInternalLocationDescription,
+        prisonId = usage.prisonId,
+        count = usage.count,
         vsipRoom = visitMappingService.findRoomMapping(
           usage.agencyInternalLocationDescription,
           usage.prisonId,

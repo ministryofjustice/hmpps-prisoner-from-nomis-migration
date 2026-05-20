@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
@@ -12,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AppointmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumberMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
@@ -19,7 +21,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.APPOINTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.durationMinutes
-import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -30,9 +31,9 @@ class AppointmentsMigrationService(
   private val appointmentsService: AppointmentsService,
   private val appointmentsMappingService: AppointmentsMappingService,
   jsonMapper: JsonMapper,
-  @Value("\${appointments.page.size:1000}") pageSize: Long,
-  @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
-  @Value("\${complete-check.count}") completeCheckCount: Int,
+  @Value($$"${appointments.page.size:1000}") pageSize: Long,
+  @Value($$"${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value($$"${complete-check.count}") completeCheckCount: Int,
 ) : ByPageNumberMigrationService<AppointmentsMigrationFilter, AppointmentIdResponse, AppointmentMapping>(
   mappingService = appointmentsMappingService,
   migrationType = APPOINTMENTS,
@@ -55,7 +56,15 @@ class AppointmentsMigrationService(
     pageNumber = pageNumber,
     pageSize = pageSize,
     prisonIds = migrationFilter.prisonIds,
-  )
+  ).let {
+    PageImpl(
+      it.content!!.map { a ->
+        AppointmentIdResponse(a.eventId)
+      },
+      PageRequest.of(pageNumber.toInt(), pageSize.toInt()),
+      it.totalElements!!,
+    )
+  }
 
   override suspend fun getPageOfIds(
     migrationFilter: AppointmentsMigrationFilter,
@@ -184,23 +193,6 @@ class AppointmentsMigrationService(
 }
 
 private val simpleTimeFormat = DateTimeFormatter.ofPattern("HH:mm")
-
-data class AppointmentResponse(
-  val bookingId: Long,
-  val offenderNo: String,
-  // prison or toPrison is never null in existing nomis data for event_type = 'APP' (as at 11/5/2023)
-  val prisonId: String,
-  val internalLocation: Long? = null,
-  val startDateTime: LocalDateTime? = null,
-  val endDateTime: LocalDateTime? = null,
-  val comment: String? = null,
-  val subtype: String,
-  val status: String,
-  val createdDate: LocalDateTime,
-  val createdBy: String,
-  val modifiedDate: LocalDateTime? = null,
-  val modifiedBy: String? = null,
-)
 
 data class AppointmentIdResponse(
   val eventId: Long,

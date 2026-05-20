@@ -13,16 +13,18 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import org.springframework.web.reactive.function.client.awaitBody
+import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import tools.jackson.databind.JsonNode
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentIdResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityAsTrueNotFoundAsFalse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.AppointmentsResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.PrisonersResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.ProfileDetailsResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.ServiceAgencySwitchesResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.VisitResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AppointmentResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.EndActivitiesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.FindActiveActivityIdsResponse
@@ -31,13 +33,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GetAllocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.LocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MoveActivityEndDateRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageAppointmentIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RootOffenderIdRange
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitRoomUsageResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsMigrationFilter
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitRoomCountResponse
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -46,6 +48,8 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   private val profileDetailsResourceApi = ProfileDetailsResourceApi(webClient)
   private val serviceAgencySwitchesResourceApi = ServiceAgencySwitchesResourceApi(webClient)
   private val prisonersResourceApi = PrisonersResourceApi(webClient)
+  private val visitResourceApi = VisitResourceApi(webClient)
+  private val appointmentsResourceApi = AppointmentsResourceApi(webClient)
 
   suspend fun getVisits(
     prisonIds: List<String>,
@@ -78,30 +82,24 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   ): NomisVisit = webClient.get()
     .uri("/visits/{nomisVisitId}", nomisVisitId)
     .retrieve()
-    .bodyToMono(NomisVisit::class.java)
-    .awaitSingle()!!
-
-  suspend fun getRoomUsage(
-    filter: VisitsMigrationFilter,
-  ): List<VisitRoomUsageResponse> = webClient.get()
-    .uri {
-      it.path("/visits/rooms/usage-count")
-        .apply {
-          filter.prisonIds.forEach { queryParam("prisonIds", it) }
-          filter.visitTypes.forEach { queryParam("visitTypes", it) }
-          filter.fromDateTime?.let { queryParam("fromDateTime", it) }
-          filter.toDateTime?.let { queryParam("toDateTime", it) }
-        }
-        .build()
-    }
-    .retrieve()
-    .bodyToMono(typeReference<List<VisitRoomUsageResponse>>())
+    .bodyToMono<NomisVisit>()
     .awaitSingle()
 
-  suspend fun getAppointment(nomisEventId: Long): AppointmentResponse = webClient.get()
-    .uri("/appointments/{nomisEventId}", nomisEventId)
-    .retrieve()
-    .bodyToMono(AppointmentResponse::class.java)
+  suspend fun getRoomUsage(
+    prisonIds: List<String>,
+    visitTypes: List<String>,
+    fromDateTime: LocalDateTime?,
+    toDateTime: LocalDateTime?,
+  ): List<VisitRoomCountResponse> = visitResourceApi.getVisitRoomCountsByFilter(
+    prisonIds = prisonIds,
+    visitTypes = visitTypes,
+    fromDateTime = fromDateTime,
+    toDateTime = toDateTime,
+  )
+    .awaitSingle()
+
+  suspend fun getAppointment(nomisEventId: Long): AppointmentResponse = appointmentsResourceApi
+    .getAppointmentById(nomisEventId)
     .awaitSingle()
 
   suspend fun getAppointmentIds(
@@ -110,26 +108,19 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     toDate: LocalDate?,
     pageNumber: Long,
     pageSize: Long,
-  ): PageImpl<AppointmentIdResponse> = webClient.get()
-    .uri {
-      it.path("/appointments/ids")
-        .apply {
-          prisonIds.forEach { queryParam("prisonIds", it) }
-          fromDate?.let { queryParam("fromDate", it) }
-          toDate?.let { queryParam("toDate", it) }
-        }
-        .queryParam("page", pageNumber)
-        .queryParam("size", pageSize)
-        .build()
-    }
-    .retrieve()
-    .bodyToMono(typeReference<RestResponsePage<AppointmentIdResponse>>())
+  ): PageAppointmentIdResponse = appointmentsResourceApi.getAppointmentsByFilter(
+    prisonIds = prisonIds,
+    fromDate = fromDate,
+    toDate = toDate,
+    page = pageNumber.toInt(),
+    size = pageSize.toInt(),
+  )
     .awaitSingle()
 
   suspend fun getActivity(courseActivityId: Long): GetActivityResponse = webClient.get()
     .uri("/activities/{courseActivityId}", courseActivityId)
     .retrieve()
-    .bodyToMono(GetActivityResponse::class.java)
+    .bodyToMono<GetActivityResponse>()
     .awaitSingle()
 
   suspend fun getActivityIds(
@@ -169,7 +160,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   suspend fun getAllocation(allocationId: Long): GetAllocationResponse = webClient.get()
     .uri("/allocations/{allocationId}", allocationId)
     .retrieve()
-    .bodyToMono(GetAllocationResponse::class.java)
+    .bodyToMono<GetAllocationResponse>()
     .awaitSingle()
 
   suspend fun getAllocationIds(
@@ -203,7 +194,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
   suspend fun getLocation(locationId: Long): LocationResponse = webClient.get()
     .uri("/locations/{locationId}", locationId)
     .retrieve()
-    .bodyToMono(LocationResponse::class.java)
+    .bodyToMono<LocationResponse>()
     .awaitSingle()
 
   // /////////////////////////////////////// General
