@@ -185,7 +185,7 @@ class CourtSchedulerSyncScheduleService(
       log.error("Failed to create mapping for court schedule with NOMIS id ${mapping.nomisEventId}", e)
       queueService.sendMessage(
         messageType = RETRY_MAPPING_COURT_SCHEDULE.name,
-        synchronisationType = SynchronisationType.COURT_MOVEMENTS,
+        synchronisationType = SynchronisationType.COURT_SCHEDULER,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
       )

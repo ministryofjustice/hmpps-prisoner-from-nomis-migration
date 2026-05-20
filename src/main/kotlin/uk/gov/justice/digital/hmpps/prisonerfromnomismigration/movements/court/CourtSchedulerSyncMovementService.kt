@@ -201,7 +201,7 @@ class CourtSchedulerSyncMovementService(
       )
       queueService.sendMessage(
         messageType = RETRY_MAPPING_COURT_MOVEMENT.name,
-        synchronisationType = SynchronisationType.COURT_MOVEMENTS,
+        synchronisationType = SynchronisationType.COURT_SCHEDULER,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
       )

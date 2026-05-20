@@ -87,7 +87,7 @@ class CourtSchedulerMigrationResource(
     @PathVariable prisonerNumber: String,
   ) {
     telemetryClient.trackEvent(
-      "court-movements-migration-entity-repair-requested",
+      "court-scheduler-migration-entity-repair-requested",
       mapOf("offenderNo" to prisonerNumber),
       null,
     )

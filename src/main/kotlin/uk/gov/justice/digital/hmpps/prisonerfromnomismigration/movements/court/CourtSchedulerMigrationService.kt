@@ -52,7 +52,7 @@ class CourtSchedulerMigrationService(
   @Value($$"${complete-check.scheduled-retry-seconds:10}") completeCheckScheduledRetrySeconds: Int,
 ) : ByPageNumberMigrationService<CourtSchedulerMigrationFilter, PrisonerId, CourtSchedulerPrisonerMappingsDto>(
   mappingService = mappingApi,
-  migrationType = MigrationType.COURT_MOVEMENTS,
+  migrationType = MigrationType.COURT_SCHEDULER,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
@@ -85,7 +85,7 @@ class CourtSchedulerMigrationService(
 
   suspend fun resyncPrisonerCourtMovements(prisonerNumber: String) = migrateNomisEntity(
     MigrationContext(
-      MigrationType.COURT_MOVEMENTS,
+      MigrationType.COURT_SCHEDULER,
       generateBatchId(),
       1,
       PrisonerId(prisonerNumber),
@@ -174,7 +174,7 @@ class CourtSchedulerMigrationService(
 
   private fun publishTelemetry(type: String, telemetry: Map<String, String>) {
     telemetryClient.trackEvent(
-      "court-movements-migration-entity-$type",
+      "court-scheduler-migration-entity-$type",
       telemetry,
     )
   }

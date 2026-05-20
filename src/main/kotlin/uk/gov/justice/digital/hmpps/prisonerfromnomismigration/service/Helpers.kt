@@ -21,7 +21,7 @@ const val ALLOCATIONS_QUEUE_ID = "migrationallocations"
 const val APPOINTMENTS_QUEUE_ID = "migrationappointments"
 const val CORE_PERSON_QUEUE_ID = "migrationcoreperson"
 const val CSRA_QUEUE_ID = "migrationcsra"
-const val COURT_MOVEMENTS_QUEUE_ID = "migrationcourtmovements"
+const val COURT_SCHEDULER_QUEUE_ID = "migrationcourtmovements"
 const val COURT_SENTENCING_QUEUE_ID = "migrationcourtsentencing"
 const val EXTERNAL_MOVEMENTS_QUEUE_ID = "migrationexternalmovements"
 const val PRISON_BALANCE_QUEUE_ID = "migrationprisonbalance"
@@ -46,7 +46,7 @@ const val ORGANISATIONS_SYNC_QUEUE_ID = "eventorganisations"
 const val FINANCE_SYNC_QUEUE_ID = "eventfinance"
 const val VISIT_BALANCE_SYNC_QUEUE_ID = "eventvisitbalance"
 const val EXTERNALMOVEMENTS_SYNC_QUEUE_ID = "eventexternalmovements"
-const val COURTMOVMENTS_SYNC_QUEUE_ID = "eventcourtmovements"
+const val COURTSCHEDULER_SYNC_QUEUE_ID = "eventcourtmovements"
 const val OFFICIAL_VISITS_SYNC_QUEUE_ID = "eventofficialvisits"
 
 enum class MigrationType(val queueId: String, val telemetryName: String) {
@@ -55,7 +55,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   APPOINTMENTS(APPOINTMENTS_QUEUE_ID, "appointments"),
   CORE_PERSON_RELIGION(CORE_PERSON_QUEUE_ID, "coreperson-religion"),
   CSRA(CSRA_QUEUE_ID, "csras"),
-  COURT_MOVEMENTS(COURT_MOVEMENTS_QUEUE_ID, "court-movements"),
+  COURT_SCHEDULER(COURT_SCHEDULER_QUEUE_ID, "court-scheduler"),
   COURT_SENTENCING(COURT_SENTENCING_QUEUE_ID, "court-sentencing"),
   EXTERNAL_MOVEMENTS(EXTERNAL_MOVEMENTS_QUEUE_ID, "temporary-absences"),
   PRISON_BALANCE(PRISON_BALANCE_QUEUE_ID, "prisonbalance"),
@@ -78,7 +78,7 @@ enum class SynchronisationType(val queueId: String) {
   FINANCE(FINANCE_SYNC_QUEUE_ID),
   VISIT_BALANCE(VISIT_BALANCE_SYNC_QUEUE_ID),
   EXTERNAL_MOVEMENTS(EXTERNALMOVEMENTS_SYNC_QUEUE_ID),
-  COURT_MOVEMENTS(COURTMOVMENTS_SYNC_QUEUE_ID),
+  COURT_SCHEDULER(COURTSCHEDULER_SYNC_QUEUE_ID),
   OFFICIAL_VISITS(OFFICIAL_VISITS_SYNC_QUEUE_ID),
 }
 

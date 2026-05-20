@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
@@ -205,7 +206,7 @@ class CourtSchedulerMigrationIntTest(
     @Test
     fun `will publish telemetry`() {
       verify(telemetryClient).trackEvent(
-        eq("court-movements-migration-entity-migrated"),
+        eq("court-scheduler-migration-entity-migrated"),
         check {
           assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           assertThat(it["migrationId"]).isEqualTo(migrationId)
@@ -243,7 +244,7 @@ class CourtSchedulerMigrationIntTest(
     @Test
     fun `will publish telemetry for both prisoners`() {
       verify(telemetryClient).trackEvent(
-        eq("court-movements-migration-entity-migrated"),
+        eq("court-scheduler-migration-entity-migrated"),
         check {
           assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           assertThat(it["migrationId"]).isEqualTo(migrationId)
@@ -251,13 +252,18 @@ class CourtSchedulerMigrationIntTest(
         isNull(),
       )
       verify(telemetryClient).trackEvent(
-        eq("court-movements-migration-entity-migrated"),
+        eq("court-scheduler-migration-entity-migrated"),
         check {
           assertThat(it["offenderNo"]).isEqualTo("A0002KT")
           assertThat(it["migrationId"]).isEqualTo(migrationId)
         },
         isNull(),
       )
+    }
+
+    @Test
+    fun `should get migration status`() {
+      mappingApi.verify(getRequestedFor(urlPathMatching("/mapping/court-scheduler/migration-id/.*")))
     }
   }
 
@@ -290,7 +296,7 @@ class CourtSchedulerMigrationIntTest(
     @Test
     fun `will publish failure telemetry`() {
       verify(telemetryClient).trackEvent(
-        eq("court-movements-migration-entity-failed"),
+        eq("court-scheduler-migration-entity-failed"),
         check {
           assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           assertThat(it["migrationId"]).isEqualTo(migrationId)
@@ -333,7 +339,7 @@ class CourtSchedulerMigrationIntTest(
     @Test
     fun `will publish telemetry`() {
       verify(telemetryClient).trackEvent(
-        eq("court-movements-migration-entity-migrated"),
+        eq("court-scheduler-migration-entity-migrated"),
         check {
           assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           assertThat(it["migrationId"]).isEqualTo(migrationId)
@@ -383,7 +389,7 @@ class CourtSchedulerMigrationIntTest(
     @Test
     fun `should publish ignore telemetry`() {
       verify(telemetryClient).trackEvent(
-        eq("court-movements-migration-entity-ignored"),
+        eq("court-scheduler-migration-entity-ignored"),
         check {
           assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           assertThat(it["migrationId"]).isEqualTo(migrationId)
@@ -444,14 +450,14 @@ class CourtSchedulerMigrationIntTest(
       @Test
       fun `will publish telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("court-movements-migration-entity-repair-requested"),
+          eq("court-scheduler-migration-entity-repair-requested"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           },
           isNull(),
         )
         verify(telemetryClient).trackEvent(
-          eq("court-movements-migration-entity-migrated"),
+          eq("court-scheduler-migration-entity-migrated"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           },
@@ -496,14 +502,14 @@ class CourtSchedulerMigrationIntTest(
       @Test
       fun `will publish telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("court-movements-migration-entity-repair-requested"),
+          eq("court-scheduler-migration-entity-repair-requested"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           },
           isNull(),
         )
         verify(telemetryClient).trackEvent(
-          eq("court-movements-migration-entity-migrated"),
+          eq("court-scheduler-migration-entity-migrated"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           },
@@ -544,14 +550,14 @@ class CourtSchedulerMigrationIntTest(
       @Test
       fun `will publish telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("court-movements-migration-entity-repair-requested"),
+          eq("court-scheduler-migration-entity-repair-requested"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           },
           isNull(),
         )
         verify(telemetryClient).trackEvent(
-          eq("court-movements-migration-entity-migrated"),
+          eq("court-scheduler-migration-entity-migrated"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           },
@@ -660,7 +666,7 @@ class CourtSchedulerMigrationIntTest(
       waitUntilCompleted()
     }
 
-  private fun waitUntilCompleted(name: String = "court-movements-migration-completed") = await atMost Duration.ofSeconds(60) untilAsserted {
+  private fun waitUntilCompleted(name: String = "court-scheduler-migration-completed") = await atMost Duration.ofSeconds(60) untilAsserted {
     verify(telemetryClient).trackEvent(
       eq(name),
       any(),
