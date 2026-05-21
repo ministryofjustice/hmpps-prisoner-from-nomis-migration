@@ -371,6 +371,148 @@ class CourtSentencingRepairResourceIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("POST /prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/case/{caseId}/sentences/{sentenceSeq}/sentence-level/{sentenceLevel}/sentence-category/{sentenceCategory}/repair")
+  inner class RepairSentenceInsert {
+    val offenderNo = "A1234KT"
+    val bookingId = 12344321L
+    val sentenceSeq = 3
+    val sentenceCategory = "2003"
+    val sentenceLevel = "IND"
+    val caseId = 8L
+
+    @Nested
+    inner class Security {
+
+      @Test
+      internal fun `must have valid token`() {
+        webTestClient.post().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/case/{caseId}/sentences/{sentenceSeq}/sentence-level/{sentenceLevel}/sentence-category/{sentenceCategory/repair",
+          offenderNo,
+          bookingId,
+          caseId,
+          sentenceSeq,
+          sentenceLevel,
+          sentenceCategory,
+        )
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      internal fun `must have correct role`() {
+        webTestClient.post().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/case/{caseId}/sentences/{sentenceSeq}/sentence-level/{sentenceLevel}/sentence-category/{sentenceCategory/repair",
+          offenderNo,
+          bookingId,
+          caseId,
+          sentenceSeq,
+          sentenceLevel,
+          sentenceCategory,
+        )
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isForbidden
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+
+      @BeforeEach
+      internal fun setup() {
+        courtSentencingMappingApiMockServer.stubGetByNomisId(caseId, DPS_CASE_ID)
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+        )
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+          nomisCourtChargeId = 101,
+          dpsCourtChargeId = DPS_CHARGE_ID,
+        )
+
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+          nomisCourtChargeId = 102,
+          dpsCourtChargeId = DPS_CHARGE_2_ID,
+        )
+
+        courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(status = NOT_FOUND)
+
+        courtSentencingNomisApiMockServer.stubGetSentence(
+          sentenceSequence = sentenceSeq,
+          caseId = caseId,
+          bookingId = bookingId,
+          offenderNo = offenderNo,
+          courtOrder = CourtOrderResponse(
+            eventId = NOMIS_COURT_APPEARANCE_ID,
+            id = 2,
+            courtDate = LocalDate.of(2020, 4, 4),
+            issuingCourt = "MDI",
+            orderType = "IMP",
+            orderStatus = "Active",
+            sentencePurposes = emptyList(),
+          ),
+        )
+
+        dpsCourtSentencingServer.stubPostSentenceForCreate(
+          sentenceId = DPS_SENTENCE_ID,
+        )
+
+        courtSentencingMappingApiMockServer.stubPostSentenceMapping()
+
+        webTestClient.post().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/case/{caseId}/sentences/{sentenceSeq}/sentence-level/{sentenceLevel}/sentence-category/{sentenceCategory}/repair",
+          offenderNo,
+          bookingId,
+          caseId,
+          sentenceSeq,
+          sentenceLevel,
+          sentenceCategory,
+        )
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+      }
+
+      @Test
+      fun `will update DPS with the changes`() {
+        dpsCourtSentencingServer.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/legacy/sentence"))
+            .withRequestBody(matchingJsonPath("appearanceUuid", equalTo(DPS_APPEARANCE_ID))),
+        )
+      }
+
+      @Test
+      fun `will track a telemetry event for success`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-sentencing-prisoner-sentence-repaired"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisBookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["nomisSentenceSequence"]).isEqualTo(sentenceSeq.toString())
+            assertThat(it["nomisSentenceLevel"]).isEqualTo(sentenceLevel)
+            assertThat(it["nomisSentenceCategory"]).isEqualTo(sentenceCategory)
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("sentence-synchronisation-created-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisBookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["nomisSentenceSequence"]).isEqualTo(sentenceSeq.toString())
+            assertThat(it["dpsSentenceId"]).isEqualTo(DPS_SENTENCE_ID)
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
   @DisplayName("PUT /prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/sentences/{sentenceSeq}/repair")
   inner class RepairSentenceUpdate {
     val offenderNo = "A1234KT"

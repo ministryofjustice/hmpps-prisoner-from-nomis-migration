@@ -1,6 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -46,6 +48,35 @@ class CourtSentencingRepairResource(
     courtSentencingRepairService.resynchronisePrisonerCourtCaseStatus(
       offenderNo = offenderNo,
       bookingId = bookingId,
+      caseId = caseId,
+    )
+  }
+
+  @PostMapping("/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/case/{caseId}/sentences/{sentenceSeq}/sentence-level/{sentenceLevel}/sentence-category/{sentenceCategory}/repair")
+  @Operation(
+    summary = "Replicate a sentence insert event from NOMIS to DPS for a specific sentence",
+    description = "Used when a sentence insert event has been missed (or the sentence has been mistakenly deleted) and the sentence is missing in DPS. Requires PRISONER_FROM_NOMIS__UPDATE__RW",
+  )
+  suspend fun prisonerSentenceInsertRepair(
+    @PathVariable
+    offenderNo: String,
+    @PathVariable
+    bookingId: Long,
+    @PathVariable
+    caseId: Long,
+    @PathVariable
+    sentenceSeq: Int,
+    @PathVariable
+    sentenceLevel: String,
+    @PathVariable
+    sentenceCategory: String,
+  ) {
+    courtSentencingRepairService.resynchronisePrisonerSentenceInsert(
+      offenderNo = offenderNo,
+      bookingId = bookingId,
+      sentenceSeq = sentenceSeq,
+      sentenceCategory = sentenceCategory,
+      sentenceLevel = sentenceLevel,
       caseId = caseId,
     )
   }
@@ -112,4 +143,12 @@ class CourtSentencingRepairResource(
       caseId = caseId,
     )
   }
+
+  @Schema(description = "Sentence insert repair request")
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  data class SentenceRequest(
+    val offenderNo: String,
+    val dpsChargeId: String,
+    val dpsCaseId: String,
+  )
 }
