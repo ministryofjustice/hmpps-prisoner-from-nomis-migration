@@ -8,9 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
 import org.awaitility.kotlin.await
-import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
-import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -255,8 +253,7 @@ class CourtSchedulerSyncScheduleIntTest(
         mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
         nomisApi.stubGetCourtScheduleOut(status = NOT_FOUND)
 
-        sendMessage(courtScheduleEvent("COURT_EVENTS-INSERTED", direction = "IN"))
-          .also { await untilCallTo { output.out } matches { it!!.contains("Ignoring") } }
+        sendMessage(courtScheduleEvent("COURT_EVENTS-INSERTED", directionCode = "IN"))
       }
 
       @Test
@@ -619,8 +616,7 @@ class CourtSchedulerSyncScheduleIntTest(
         mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, dpsCourtAppearanceId)
         nomisApi.stubGetCourtScheduleOut(NOT_FOUND)
 
-        sendMessage(courtScheduleEvent("COURT_EVENTS-UPDATED", direction = "IN"))
-          .also { await untilCallTo { output.out } matches { it!!.contains("Ignoring") } }
+        sendMessage(courtScheduleEvent("COURT_EVENTS-UPDATED", directionCode = "IN"))
       }
 
       @Test
@@ -880,14 +876,14 @@ class CourtSchedulerSyncScheduleIntTest(
     eventType: String,
     auditModuleName: String = "OCDCCASE",
     nomisEventType: String = eventType.replace("COURT_EVENTS", "COURT_EVENT"),
-    direction: String = "OUT",
+    directionCode: String = "OUT",
     eventId: Long = 123,
   ) = // language=JSON
     """{
          "Type" : "Notification",
          "MessageId" : "57126174-e2d7-518f-914e-0056a63363b0",
          "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
-         "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2026-05-05T09:39:57\",\"nomisEventType\":\"$nomisEventType\",\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\",\"auditModuleName\":\"$auditModuleName\",\"eventId\":$eventId,\"caseId\":101112,\"isBreachHearing\":false}",
+         "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2026-05-05T09:39:57\",\"nomisEventType\":\"$nomisEventType\",\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\",\"auditModuleName\":\"$auditModuleName\",\"eventId\":$eventId,\"caseId\":101112,\"isBreachHearing\":false,\"directionCode\":\"$directionCode\"}",
          "Timestamp" : "2025-09-02T09:19:03.998Z",
          "SignatureVersion" : "1",
          "Signature" : "eePe/HtUdMyeFriH6GJe4FAJjYhQFjohJOu0+t8qULvpaw+qsGBfolKYa83fARpGDZJf9ceKd6kYGwF+OVeNViXluqPeUyoWbJ/lOjCs1tvlUuceCLy/7+eGGxkNASKJ1sWdwhO5J5I8WKUq5vfyYgL/Mygae6U71Bc0H9I2uVkw7tUYg0ZQBMSkA8HpuLLAN06qR5ahJnNDDxxoV07KY6E2dy8TheEo2Dhxq8hicl272LxWKMifM9VfR+D1i1eZNXDGsvvHmMCjumpxxYAJmrU+aqUzAU2KnhoZJTfeZT+RV+ZazjPLqX52zwA47ZFcqzCBnmrU6XwuHT4gKJcj1Q==",

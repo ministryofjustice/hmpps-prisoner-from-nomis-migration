@@ -4,7 +4,6 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEvent
@@ -44,17 +43,16 @@ class CourtSchedulerSyncScheduleService(
 
   suspend fun courtScheduleInserted(event: CourtScheduleEvent) = when (event.directionCode) {
     OUT -> syncCourtScheduleOutInserted(event)
-    // TODO when direction is added to the event put this else back in - for now we'll have to check the direction after the nomis call
-    //    else -> log.info("Ignoring insert of scheduled movement event ID ${event.eventId} with direction ${event.directionCode} ")
-    else -> syncCourtScheduleOutInserted(event)
+    else -> {}
   }
 
   suspend fun syncCourtScheduleOutInserted(event: CourtScheduleEvent) {
-    val (eventId, bookingId, prisonerNumber) = event
+    val (eventId, bookingId, prisonerNumber, _, directionCode) = event
     val telemetry = mutableMapOf<String, Any>(
       "offenderNo" to prisonerNumber,
       "bookingId" to bookingId,
       "nomisEventId" to eventId,
+      "directionCode" to directionCode,
     )
 
     if (event.isFromDPSCourtScheduler()) {
@@ -77,15 +75,8 @@ class CourtSchedulerSyncScheduleService(
     eventId: Long,
     telemetry: MutableMap<String, Any>,
     existingMapping: CourtScheduleMappingDto? = null,
-  ): CourtScheduleMappingDto? = try {
-    nomisApi.getCourtScheduleOut(prisonerNumber, eventId)
-  } catch (e: WebClientResponseException.NotFound) {
-    // TODO When direction is added to the event we can remove this try/catch and quietly ignore IN events, but for now we assume NOT FOUND means an IN schedule (otherwise we'd have to call the court schedule IN endpoint too to be sure)
-    log.info("Ignoring insert of court schedule with event ID $eventId because we can't find it in NOMIS - maybe this is a schedule IN?")
-    null
-  }
-    ?.also { telemetry["directionCode"] = "OUT" }
-    ?.let { nomisSchedule ->
+  ): CourtScheduleMappingDto? = nomisApi.getCourtScheduleOut(prisonerNumber, eventId)
+    .let { nomisSchedule ->
       val dpsSentencingId = if (nomisSchedule.courtCaseId != null) {
         tryFetchParent { sentencingMappingApi.getCourtAppearanceOrNullByNomisId(eventId)?.dpsCourtAppearanceId }
           .also { telemetry["dpsAuthorisationId"] = it }
@@ -108,17 +99,16 @@ class CourtSchedulerSyncScheduleService(
 
   suspend fun courtScheduleUpdated(event: CourtScheduleEvent) = when (event.directionCode) {
     OUT -> syncCourtScheduleOutUpdated(event)
-    // TODO when direction is added to the event put this else back in - for now we'll have to check the direction after the nomis call
-    //    else -> log.info("Ignoring update of scheduled movement event ID ${event.eventId} with direction ${event.directionCode} ")
-    else -> syncCourtScheduleOutUpdated(event)
+    else -> {}
   }
 
   suspend fun syncCourtScheduleOutUpdated(event: CourtScheduleEvent) {
-    val (eventId, bookingId, prisonerNumber) = event
+    val (eventId, bookingId, prisonerNumber, _, directionCode) = event
     val telemetry = mutableMapOf<String, Any>(
       "offenderNo" to prisonerNumber,
       "bookingId" to bookingId,
       "nomisEventId" to eventId,
+      "directionCode" to directionCode,
     )
 
     if (event.isFromDPSCourtScheduler()) {
@@ -137,21 +127,18 @@ class CourtSchedulerSyncScheduleService(
 
   suspend fun courtScheduleDeleted(event: CourtScheduleEvent) = when (event.directionCode) {
     OUT -> syncCourtScheduleOutDeleted(event)
-    // TODO when direction is added to the event put this else back in - for now we'll have to check the direction after the nomis call
-    //    else -> log.info("Ignoring delete of scheduled movement event ID ${event.eventId} with direction ${event.directionCode} ")
-    else -> syncCourtScheduleOutDeleted(event)
+    else -> {}
   }
 
   suspend fun syncCourtScheduleOutDeleted(event: CourtScheduleEvent) {
-    val (eventId, bookingId, prisonerNumber) = event
+    val (eventId, bookingId, prisonerNumber, _, directionCode) = event
     val telemetry = mutableMapOf<String, Any>(
       "offenderNo" to prisonerNumber,
       "bookingId" to bookingId,
       "nomisEventId" to eventId,
+      "directionCode" to directionCode,
     )
     mappingApi.getCourtScheduleMappingOrNull(eventId)?.also {
-      // TODO take this from the event once it has been added
-      telemetry["directionCode"] = OUT.name
       track("${TELEMETRY_PREFIX}-deleted", telemetry) {
         telemetry["dpsCourtAppearanceId"] = it.dpsCourtAppearanceId
         dpsApi.deleteCourtEvent(it.dpsCourtAppearanceId)
