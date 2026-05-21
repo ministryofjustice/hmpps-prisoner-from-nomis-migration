@@ -456,17 +456,17 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
             )
             // will not create a sentence in DPS
             dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+          }
+        }
 
-            @Test
-            fun `the event is placed on dead letter queue`() {
-              await untilAsserted {
-                assertThat(
-                  awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
-                    courtSentencingQueueOffenderEventsDlqUrl,
-                  ).get(),
-                ).isEqualTo(1)
-              }
-            }
+        @Test
+        fun `the event is placed on dead letter queue`() {
+          await untilAsserted {
+            assertThat(
+              awsSqsCourtSentencingOffenderEventDlqClient.countAllMessagesOnQueue(
+                courtSentencingQueueOffenderEventsDlqUrl,
+              ).get(),
+            ).isEqualTo(1)
           }
         }
       }

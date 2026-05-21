@@ -2650,6 +2650,64 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
   }
 
   @Nested
+  @DisplayName("courtsentencing.resync.breach-court-appearance.inserted")
+  inner class RecallBreachCourtAppearanceInsertedSynchronisation {
+    @BeforeEach
+    fun setUp() {
+      courtSentencingOffenderEventsQueue.sendMessage(
+        SQSMessage(
+          Type = "courtsentencing.resync.breach-court-appearance.inserted",
+          Message = SyncRecallBreachCourtAppearanceEvent(
+            offenderNo = OFFENDER_ID_DISPLAY,
+            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          ).toJson(),
+        ).toJson(),
+      ).also { waitForAnyProcessingToComplete("recall-breach-court-appearance-synchronisation-success") }
+    }
+
+    @Test
+    fun `will track telemetry for the create synchronisation`() {
+      verify(telemetryClient).trackEvent(
+        eq("recall-breach-court-appearance-synchronisation-success"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+          assertThat(it["nomisCourtAppearanceId"]).isEqualTo("$NOMIS_COURT_APPEARANCE_ID")
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  @DisplayName("courtsentencing.resync.breach-court-appearance.updated")
+  inner class RecallBreachCourtAppearanceUpdateResynchronisation {
+    @BeforeEach
+    fun setUp() {
+      courtSentencingOffenderEventsQueue.sendMessage(
+        SQSMessage(
+          Type = "courtsentencing.resync.breach-court-appearance.updated",
+          Message = SyncRecallBreachCourtAppearanceEvent(
+            offenderNo = OFFENDER_ID_DISPLAY,
+            courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          ).toJson(),
+        ).toJson(),
+      ).also { waitForAnyProcessingToComplete("recall-breach-court-appearance-resynchronisation-success") }
+    }
+
+    @Test
+    fun `will track telemetry for the create synchronisation`() {
+      verify(telemetryClient).trackEvent(
+        eq("recall-breach-court-appearance-resynchronisation-success"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+          assertThat(it["nomisCourtAppearanceId"]).isEqualTo("$NOMIS_COURT_APPEARANCE_ID")
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
   @DisplayName("COURT_EVENT_CHARGES-INSERTED")
   inner class CourtEventChargeInserted {
 
