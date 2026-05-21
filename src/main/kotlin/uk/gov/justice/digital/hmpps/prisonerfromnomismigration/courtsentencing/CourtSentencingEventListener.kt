@@ -12,20 +12,23 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMess
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CASE_BOOKING_RESYNCHRONISATION
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CASE_RESYNCHRONISATION
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RECALL_SENTENCE_ADJUSTMENTS_SYNCHRONISATION
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_BOOKING_CLONE_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_PRISONER_MERGE_COURT_CASE_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SENTENCE_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SENTENCE_TERM_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SENTENCE_RESYNCHRONISATION
 import java.time.LocalDateTime
 import java.util.concurrent.CompletableFuture
+
+const val RETRY_COURT_CASE_SYNCHRONISATION_MAPPING = "court_case_synchronisation_retry"
+const val RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING = "court_appearance_synchronisation_retry"
+const val RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING = "court_charge_synchronisation_retry"
+const val RETRY_SENTENCE_SYNCHRONISATION_MAPPING = "sentence_synchronisation_retry"
+const val RETRY_SENTENCE_TERM_SYNCHRONISATION_MAPPING = "sentence_term_synchronisation_retry"
+const val RETRY_PRISONER_MERGE_COURT_CASE_SYNCHRONISATION_MAPPING = "prisoner_merge_court_case_synchronisation_retry"
+const val RETRY_COURT_CASE_BOOKING_CLONE_SYNCHRONISATION_MAPPING = "court_case_booking_clone_synchronisation_retry"
+const val RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED = "recall_breach_court_event_charge_inserted"
+const val RECALL_BREACH_COURT_APPEARANCE_SYNCHRONISATION_CREATED = "courtsentencing.resync.breach-court-appearance.inserted"
+const val RECALL_BREACH_COURT_APPEARANCE_SYNCHRONISATION_UPDATED = "courtsentencing.resync.breach-court-appearance.updated"
+const val RECALL_SENTENCE_ADJUSTMENTS_SYNCHRONISATION = "courtsentencing.resync.sentence-adjustments"
+const val SENTENCE_RESYNCHRONISATION = "courtsentencing.resync.sentence"
+const val CASE_RESYNCHRONISATION = "courtsentencing.resync.case"
+const val CASE_BOOKING_RESYNCHRONISATION = "courtsentencing.resync.case.booking"
 
 @Service
 class CourtSentencingEventListener(
@@ -50,34 +53,58 @@ class CourtSentencingEventListener(
           if (eventFeatureSwitch.isEnabled(eventType, "courtsentencing")) {
             when (eventType) {
               "OFFENDER_CASES-INSERTED" -> courtSentencingSynchronisationService.nomisCourtCaseInserted(sqsMessage.Message.fromJson())
+
               "OFFENDER_CASES-UPDATED" -> courtSentencingSynchronisationService.nomisCourtCaseUpdated(sqsMessage.Message.fromJson())
+
               "OFFENDER_CASES-DELETED" -> courtSentencingSynchronisationService.nomisCourtCaseDeleted(sqsMessage.Message.fromJson())
+
               "OFFENDER_CASES-LINKED" -> courtSentencingSynchronisationService.nomisCourtCaseLinked(sqsMessage.Message.fromJson())
+
               "OFFENDER_CASES-UNLINKED" -> courtSentencingSynchronisationService.nomisCourtCaseUnlinked(sqsMessage.Message.fromJson())
+
               "COURT_EVENTS-INSERTED" -> courtSentencingSynchronisationService.nomisCourtAppearanceInserted(sqsMessage.Message.fromJson())
+
               "COURT_EVENTS-UPDATED" -> courtSentencingSynchronisationService.nomisCourtAppearanceUpdated(sqsMessage.Message.fromJson())
+
               "COURT_EVENTS-DELETED" -> courtSentencingSynchronisationService.nomisCourtAppearanceDeleted(sqsMessage.Message.fromJson())
+
               "COURT_EVENT_CHARGES-INSERTED" -> courtSentencingSynchronisationService.nomisCourtChargeInserted(sqsMessage.Message.fromJson())
+
               "COURT_EVENT_CHARGES-DELETED" -> courtSentencingSynchronisationService.nomisCourtChargeDeleted(sqsMessage.Message.fromJson())
+
               "COURT_EVENT_CHARGES-UPDATED" -> courtSentencingSynchronisationService.nomisCourtChargeUpdated(sqsMessage.Message.fromJson())
+
               "COURT_EVENT_CHARGES-LINKED" -> courtSentencingSynchronisationService.nomisCourtChargeLinked(sqsMessage.Message.fromJson())
+
               "OFFENDER_CHARGES-UPDATED" -> courtSentencingSynchronisationService.nomisOffenderChargeUpdated(sqsMessage.Message.fromJson())
+
               "OFFENDER_SENTENCES-INSERTED" -> courtSentencingSynchronisationService.nomisSentenceInserted(sqsMessage.Message.fromJson())
+
               "OFFENDER_SENTENCES-DELETED" -> courtSentencingSynchronisationService.nomisSentenceDeleted(sqsMessage.Message.fromJson())
+
               "OFFENDER_SENTENCES-UPDATED" -> courtSentencingSynchronisationService.nomisSentenceUpdated(sqsMessage.Message.fromJson())
+
               "OFFENDER_SENTENCE_TERMS-INSERTED" -> courtSentencingSynchronisationService.nomisSentenceTermInserted(sqsMessage.Message.fromJson())
+
               "OFFENDER_SENTENCE_TERMS-DELETED" -> courtSentencingSynchronisationService.nomisSentenceTermDeleted(sqsMessage.Message.fromJson())
+
               "OFFENDER_SENTENCE_TERMS-UPDATED" -> courtSentencingSynchronisationService.nomisSentenceTermUpdated(sqsMessage.Message.fromJson())
+
               "OFFENDER_SENTENCE_CHARGES-DELETED" -> courtSentencingSynchronisationService.nomisSentenceChargeDeleted(sqsMessage.Message.fromJson())
+
               "OFFENDER_SENTENCE_CHARGES-INSERTED" -> courtSentencingSynchronisationService.nomisSentenceChargeInserted(
                 sqsMessage.Message.fromJson(),
               )
+
               "OFFENDER_CASE_IDENTIFIERS-DELETED",
               "OFFENDER_CASE_IDENTIFIERS-INSERTED",
               "OFFENDER_CASE_IDENTIFIERS-UPDATED",
               -> courtSentencingSynchronisationService.nomisCaseIdentifiersUpdated(eventType, sqsMessage.Message.fromJson())
+
               "prison-offender-events.prisoner.merged" -> courtSentencingSynchronisationService.prisonerMerged(sqsMessage.Message.fromJson())
+
               "OFFENDER_FIXED_TERM_RECALLS-UPDATED" -> courtSentencingSynchronisationService.nomisRecallReturnToCustodyDataChanged(sqsMessage.Message.fromJson())
+
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -119,6 +146,14 @@ class CourtSentencingEventListener(
           sqsMessage.Message.fromJson(),
         )
 
+        RECALL_BREACH_COURT_APPEARANCE_SYNCHRONISATION_CREATED -> courtSentencingSynchronisationService.nomisRecallBeachCourtAppearanceInserted(
+          sqsMessage.Message.fromJson(),
+        )
+
+        RECALL_BREACH_COURT_APPEARANCE_SYNCHRONISATION_UPDATED -> courtSentencingSynchronisationService.nomisRecallBeachCourtAppearanceUpdated(
+          sqsMessage.Message.fromJson(),
+        )
+
         RECALL_SENTENCE_ADJUSTMENTS_SYNCHRONISATION -> sentencingAdjustmentsSynchronisationService.nomisSentenceAdjustmentsUpdate(
           sqsMessage.Message.fromJson(),
         )
@@ -130,6 +165,7 @@ class CourtSentencingEventListener(
         CASE_RESYNCHRONISATION -> courtSentencingSynchronisationService.nomisCaseResynchronisation(
           sqsMessage.Message.fromJson(),
         )
+
         CASE_BOOKING_RESYNCHRONISATION ->
           courtSentencingSynchronisationService.nomisCaseBookingMoveResynchronisation(sqsMessage.Message.fromJson())
 
@@ -283,4 +319,9 @@ data class SentenceIdAndAdjustmentType(
 data class SyncSentenceAdjustment(
   val offenderNo: String,
   val sentences: List<SentenceIdAndAdjustmentType>,
+)
+
+data class SyncRecallBreachCourtAppearanceEvent(
+  val offenderNo: String,
+  val courtAppearanceId: Long,
 )

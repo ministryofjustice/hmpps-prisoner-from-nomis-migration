@@ -49,17 +49,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RECALL_BREACH_COURT_EVENT_CHARGE_INSERTED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_APPEARANCE_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_BOOKING_CLONE_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CASE_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_COURT_CHARGE_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_PRISONER_MERGE_COURT_CASE_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SENTENCE_SYNCHRONISATION_MAPPING
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RETRY_SENTENCE_TERM_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
-import java.util.UUID
+import java.util.*
 
 @Service
 class CourtSentencingSynchronisationService(
@@ -68,7 +60,7 @@ class CourtSentencingSynchronisationService(
   private val dpsApiService: CourtSentencingDpsApiService,
   private val queueService: SynchronisationQueueService,
   override val telemetryClient: TelemetryClient,
-  @Value("\${contact-sentencing.court-event-update.ignore-missing:false}") private val ignoreMissingCourtAppearances: Boolean,
+  @Value($$"${contact-sentencing.court-event-update.ignore-missing:false}") private val ignoreMissingCourtAppearances: Boolean,
   private val courtSentencingMappingApiService: CourtSentencingMappingApiService,
 ) : TelemetryEnabled {
   private companion object {
@@ -666,6 +658,15 @@ class CourtSentencingSynchronisationService(
     bookingId = message.body.bookingId,
   )
 
+  suspend fun nomisRecallBeachCourtAppearanceInserted(message: SyncRecallBreachCourtAppearanceEvent) {
+    // TODO - implementation
+    telemetryClient.trackEvent("recall-breach-court-appearance-synchronisation-success", mapOf("offenderNo" to message.offenderNo, "nomisCourtAppearanceId" to message.courtAppearanceId.toString()))
+  }
+  suspend fun nomisRecallBeachCourtAppearanceUpdated(message: SyncRecallBreachCourtAppearanceEvent) {
+    // TODO - implementation
+    telemetryClient.trackEvent("recall-breach-court-appearance-resynchronisation-success", mapOf("offenderNo" to message.offenderNo, "nomisCourtAppearanceId" to message.courtAppearanceId.toString()))
+  }
+
   suspend fun nomisCourtChargeInserted(event: CourtEventChargeEvent) = nomisCourtChargeInserted(
     eventId = event.eventId,
     chargeId = event.chargeId,
@@ -793,7 +794,7 @@ class CourtSentencingSynchronisationService(
   }
 
   suspend fun nomisCourtChargeUpdated(event: CourtEventChargeEvent) {
-    var telemetry = mapOf(
+    val telemetry = mapOf(
       "nomisBookingId" to event.bookingId.toString(),
       "nomisOffenderChargeId" to event.chargeId.toString(),
       "nomisCourtAppearanceId" to event.eventId.toString(),
@@ -942,23 +943,6 @@ class CourtSentencingSynchronisationService(
     )
     log.error("Unable to find mapping for nomis offender charges in the context of sentence: bookingId= ${nomisSentence.bookingId} sentenceSequence= ${nomisSentence.sentenceSeq}}\nPossible causes: events out of order or offender charge has not been migrated")
     throw ParentEntityNotFoundRetry("Unable to find mapping for nomis offender charges in the context of sentence: bookingId= ${nomisSentence.bookingId} sentenceSequence= ${nomisSentence.sentenceSeq}")
-  }
-
-  private suspend fun tryToDeleteCourtChargeMapping(mapping: CourtChargeMappingDto) = runCatching {
-    mappingApiService.deleteCourtChargeMappingByNomisId(mapping.nomisCourtChargeId)
-    telemetryClient.trackEvent(
-      "court-charge-mapping-deleted-success",
-      mapOf("nomisOffenderCharge" to mapping.nomisCourtChargeId, "dpsCourtChargeId" to mapping.dpsCourtChargeId),
-    )
-  }.onFailure { e ->
-    telemetryClient.trackEvent(
-      "court-charge-mapping-deleted-failed",
-      mapOf("nomisOffenderCharge" to mapping.nomisCourtChargeId, "dpsCourtChargeId" to mapping.dpsCourtChargeId),
-    )
-    log.warn(
-      "Unable to delete mapping for court charge with nomis id: ${mapping.nomisCourtChargeId}. Please delete manually",
-      e,
-    )
   }
 
   suspend fun retryCreateCourtCaseMapping(retryMessage: InternalMessage<CourtCaseAllMappingDto>) {
