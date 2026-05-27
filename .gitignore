@@ -72,5 +72,5 @@ ecr.repo
 #Helm
 **/Chart.lock
 /root.cert
-helm_deploy/hmpps-prisoner-from-nomis-migration/charts/
+from-nomis/helm_deploy/hmpps-prisoner-from-nomis-migration/charts/
 .kotlin

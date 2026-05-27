@@ -5,7 +5,7 @@ ARG BUILD_NUMBER
 ENV BUILD_NUMBER=${BUILD_NUMBER:-1_0_0}
 
 WORKDIR /builder
-COPY hmpps-prisoner-from-nomis-migration-${BUILD_NUMBER}.jar app.jar
+COPY from-nomis-${BUILD_NUMBER}.jar app.jar
 RUN java -Djarmode=tools -jar app.jar extract --layers --destination extracted
 
 FROM ${BASE_IMAGE}
@@ -14,8 +14,8 @@ ARG BUILD_NUMBER
 ENV BUILD_NUMBER=${BUILD_NUMBER:-1_0_0}
 
 WORKDIR /app
-COPY --chown=appuser:appgroup applicationinsights.json ./
-COPY --chown=appuser:appgroup applicationinsights.dev.json ./
+COPY --chown=appuser:appgroup ../applicationinsights.json ./
+COPY --chown=appuser:appgroup ../applicationinsights.dev.json ./
 COPY --chown=appuser:appgroup applicationinsights-agent*.jar ./agent.jar
 COPY --from=builder --chown=appuser:appgroup /builder/extracted/dependencies/ ./
 COPY --from=builder --chown=appuser:appgroup /builder/extracted/spring-boot-loader/ ./
