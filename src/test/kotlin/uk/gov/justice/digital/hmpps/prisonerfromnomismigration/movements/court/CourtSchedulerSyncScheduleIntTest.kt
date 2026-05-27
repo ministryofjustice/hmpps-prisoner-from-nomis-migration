@@ -21,7 +21,6 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension
@@ -113,8 +112,7 @@ class CourtSchedulerSyncScheduleIntTest(
         ).apply {
           assertThat(courtEvent.dpsId).isNull()
           assertThat(courtEvent.agyLocId).isEqualTo("LEEDMC")
-          assertThat(courtEvent.eventDate).isEqualTo(yesterday.toLocalDate())
-          assertThat(LocalDateTime.parse(courtEvent.startTime)).isCloseTo(yesterday, within(5, ChronoUnit.MINUTES))
+          assertThat(courtEvent.startDateTime).isCloseTo(yesterday, within(5, ChronoUnit.MINUTES))
           assertThat(courtEvent.courtEventType).isEqualTo("CRT")
           assertThat(courtEvent.eventStatus).isEqualTo("SCH")
           assertThat(courtEvent.eventId).isEqualTo(123)
@@ -247,7 +245,7 @@ class CourtSchedulerSyncScheduleIntTest(
     inner class WhenWeReceiveCourtScheduleInEvent {
 
       @BeforeAll
-      fun setUp(output: CapturedOutput) {
+      fun setUp() {
         setUpTestClass()
 
         mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
@@ -529,8 +527,7 @@ class CourtSchedulerSyncScheduleIntTest(
         ).apply {
           assertThat(courtEvent.dpsId).isEqualTo(dpsCourtAppearanceId)
           assertThat(courtEvent.agyLocId).isEqualTo("LEEDMC")
-          assertThat(courtEvent.eventDate).isEqualTo(yesterday.toLocalDate())
-          assertThat(LocalDateTime.parse(courtEvent.startTime)).isCloseTo(yesterday, within(5, ChronoUnit.MINUTES))
+          assertThat(courtEvent.startDateTime).isCloseTo(yesterday, within(5, ChronoUnit.MINUTES))
           assertThat(courtEvent.courtEventType).isEqualTo("CRT")
           assertThat(courtEvent.eventStatus).isEqualTo("SCH")
           assertThat(courtEvent.eventId).isEqualTo(123)
@@ -610,7 +607,7 @@ class CourtSchedulerSyncScheduleIntTest(
       private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
 
       @BeforeAll
-      fun setUp(output: CapturedOutput) {
+      fun setUp() {
         setUpTestClass()
 
         mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, dpsCourtAppearanceId)

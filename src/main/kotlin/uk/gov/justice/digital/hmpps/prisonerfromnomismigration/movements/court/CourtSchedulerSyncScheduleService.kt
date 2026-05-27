@@ -195,8 +195,7 @@ private fun CourtScheduleOut.toDpsRequest(courtAppearanceId: UUID?, sentencingCo
   courtEvent = CourtEvent(
     prisonCodeAtTimeOfScheduling = this.prison,
     agyLocId = court,
-    eventDate = eventDate,
-    startTime = "$startTime",
+    startDateTime = startTime,
     courtEventType = eventType,
     eventStatus = eventStatus,
     dpsId = courtAppearanceId,
