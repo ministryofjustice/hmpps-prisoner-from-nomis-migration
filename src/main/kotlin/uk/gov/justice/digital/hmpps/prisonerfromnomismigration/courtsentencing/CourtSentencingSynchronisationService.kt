@@ -156,7 +156,7 @@ class CourtSentencingSynchronisationService(
                 "court-appearance-synchronisation-created-success",
                 telemetry,
               )
-              // this is a breach court event created by DPS so all charges events will be ignored
+              // this is a breach court event created by DPS, so all charges events will be ignored
               // so add them now via an event
               if (event.originatesInDps) {
                 nomisCourtAppearance.courtEventCharges.forEach {
@@ -573,13 +573,13 @@ class CourtSentencingSynchronisationService(
       )
     if (isAppearancePartOfACourtCase(event)) {
       if (!event.triggeredByFlushSchedules) {
-        if (event.originatesInDps && !event.isBreachHearing) {
+        if (event.originatesInDps) {
           telemetryClient.trackEvent("court-appearance-synchronisation-updated-skipped", telemetry)
         } else {
           val mapping = mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)
           if (mapping == null) {
             if (ignoreMissingCourtAppearances) {
-              // require temporarily in preprod since batch will trigger updates on court events overnight that may not have been migrated
+              // require temporarily in preprod since batch will trigger updates on court events overnight that may not have been migrated,
               // so no point in sending to DLQ and causing confusion
               telemetryClient.trackEvent(
                 "court-appearance-synchronisation-updated-skipped",
@@ -662,9 +662,25 @@ class CourtSentencingSynchronisationService(
     // TODO - implementation
     telemetryClient.trackEvent("recall-breach-court-appearance-synchronisation-success", mapOf("offenderNo" to message.offenderNo, "nomisCourtAppearanceId" to message.courtAppearanceId.toString()))
   }
-  suspend fun nomisRecallBeachCourtAppearanceUpdated(message: SyncRecallBreachCourtAppearanceEvent) {
-    // TODO - implementation
-    telemetryClient.trackEvent("recall-breach-court-appearance-resynchronisation-success", mapOf("offenderNo" to message.offenderNo, "nomisCourtAppearanceId" to message.courtAppearanceId.toString()))
+
+  suspend fun nomisRecallBeachCourtAppearanceUpdated(event: SyncRecallBreachCourtAppearanceEvent) {
+    val telemetry = mutableMapOf<String, Any>("offenderNo" to event.offenderNo, "nomisCourtAppearanceId" to event.courtAppearanceId)
+
+    track(name = "recall-breach-court-appearance-resynchronisation", telemetry = telemetry) {
+      val nomisCourtAppearance = nomisApiService.getCourtAppearance(offenderNo = event.offenderNo, courtAppearanceId = event.courtAppearanceId).also {
+        telemetry["nomisCourtCaseId"] = it.caseId!!
+      }
+      val courtAppearanceMapping = mappingApiService.getCourtAppearanceByNomisId(event.courtAppearanceId).also {
+        telemetry["dpsCourtAppearanceId"] = it.dpsCourtAppearanceId
+      }
+      val courtCaseMapping = mappingApiService.getCourtCaseByNomisId(nomisCourtAppearance.caseId!!).also {
+        telemetry["dpsCourtCaseId"] = it.dpsCourtCaseId
+      }
+      dpsApiService.updateCourtAppearance(
+        courtAppearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
+        courtAppearance = nomisCourtAppearance.toDpsCourtAppearance(dpsCaseId = courtCaseMapping.dpsCourtCaseId),
+      )
+    }
   }
 
   suspend fun nomisCourtChargeInserted(event: CourtEventChargeEvent) = nomisCourtChargeInserted(
@@ -676,7 +692,7 @@ class CourtSentencingSynchronisationService(
   )
 
   // New Court event charge.
-  // is it a new underlying offender charge? 2 DPS endpoints - create charge or apply new version to appearance
+  // is it a new underlying offender charge? 2 DPS endpoints - create charge or apply a new version to appearance
   suspend fun nomisCourtChargeInserted(
     eventId: Long,
     chargeId: Long,
@@ -749,7 +765,7 @@ class CourtSentencingSynchronisationService(
           "court-charge-synchronisation-created-failed",
           telemetry + ("reason" to "court appearance is not mapped"),
         )
-        // after migration has run this should not happen so make sure this message goes in DLQ
+        // after migration has run, this should not happen, so make sure this message goes in DLQ
         throw ParentEntityNotFoundRetry("Received COURT_EVENT_CHARGES-INSERTED for court appearance $eventId that has never been created")
       }
     }
@@ -1343,7 +1359,7 @@ class CourtSentencingSynchronisationService(
     }
   }
 
-  // there is an edge case where a sentence charge is created after the sentence is created - without causing a sentence update event
+  // there is an edge case where a sentence charge is created after the sentence is created - without causing a sentence update event,
   // this handles that scenario by updating the sentence in DPS to ensure all charges are included
   suspend fun nomisSentenceChargeInserted(event: OffenderSentenceChargeEvent) {
     val bookingId = event.bookingId
@@ -1533,7 +1549,7 @@ class CourtSentencingSynchronisationService(
       }
     }
 
-    // no scenario this can reasonably be empty except when testing
+    // there is no scenario this can reasonably be empty except when testing
     if (event.caseIds.isNotEmpty()) {
       val nomisCourtCases =
         nomisApiService.getCourtCases(offenderNo = event.offenderNo, courtCaseIds = event.caseIds)
