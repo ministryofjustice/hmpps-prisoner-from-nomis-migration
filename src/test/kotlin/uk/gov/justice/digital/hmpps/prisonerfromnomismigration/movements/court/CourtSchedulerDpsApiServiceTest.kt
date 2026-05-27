@@ -20,7 +20,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.referenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.syncCourtEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.syncCourtMovement
-import java.time.LocalDate
 import java.util.*
 
 @SpringAPIServiceTest
@@ -53,8 +52,7 @@ class CourtSchedulerDpsApiServiceTest {
       dpsCourtSchedulerServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/court-appearances/A1234BC"))
           .withRequestBody(matchingJsonPath("user.username", equalTo("USER")))
-          .withRequestBody(matchingJsonPath("courtEvent.prisonCodeAtTimeOfScheduling", equalTo("MDI")))
-          .withRequestBody(matchingJsonPath("courtEvent.eventDate", equalTo("${LocalDate.now()}"))),
+          .withRequestBody(matchingJsonPath("courtEvent.prisonCodeAtTimeOfScheduling", equalTo("MDI"))),
       )
     }
 
