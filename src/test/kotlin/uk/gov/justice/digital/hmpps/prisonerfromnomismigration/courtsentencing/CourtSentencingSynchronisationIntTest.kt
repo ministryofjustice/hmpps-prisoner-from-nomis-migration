@@ -32,6 +32,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.NOT_FOUND
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.getRequestBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateSentence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeCreateChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeCreateCourtAppearanceResponse
@@ -2468,87 +2470,6 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
         }
       }
     }
-
-    @Nested
-    @DisplayName("When breach recall court appearance was updated in DPS")
-    inner class DpsUpdatedRecallBreachHearing {
-
-      @BeforeEach
-      fun setUp() {
-        courtSentencingNomisApiMockServer.stubGetCourtAppearance(
-          courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
-          offenderNo = OFFENDER_ID_DISPLAY,
-          courtCaseId = NOMIS_COURT_CASE_ID,
-          eventDateTime = LocalDateTime.parse("2020-01-02T09:00:00"),
-        )
-      }
-
-      @Nested
-      @DisplayName("When happy path")
-      inner class HappyPath {
-        @BeforeEach
-        fun setUp() {
-          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
-            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
-            dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
-          )
-
-          courtSentencingMappingApiMockServer.stubGetByNomisId(
-            nomisCourtCaseId = NOMIS_COURT_CASE_ID,
-          )
-
-          dpsCourtSentencingServer.stubPutCourtAppearanceForUpdate(
-            courtAppearanceId = UUID.fromString(
-              DPS_COURT_APPEARANCE_ID,
-            ),
-          )
-          courtSentencingOffenderEventsQueue.sendMessage(
-            courtAppearanceEvent(
-              eventType = "COURT_EVENTS-UPDATED",
-              auditModule = "DPS_SYNCHRONISATION",
-              isBreachHearing = true,
-            ),
-          ).also {
-            waitForAnyProcessingToComplete()
-          }
-        }
-
-        @Test
-        fun `will update DPS with the changes`() {
-          dpsCourtSentencingServer.verify(
-            1,
-            putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID"))
-              .withRequestBody(
-                matchingJsonPath(
-                  "legacyData.nomisAppearanceTypeCode",
-                  equalTo("CRT"),
-                ),
-              )
-              .withRequestBody(
-                matchingJsonPath(
-                  "legacyData.appearanceTime",
-                  equalTo("09:00"),
-                ),
-              ),
-          )
-        }
-
-        @Test
-        fun `will track a telemetry event for success`() {
-          verify(telemetryClient).trackEvent(
-            eq("court-appearance-synchronisation-updated-success"),
-            check {
-              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-              assertThat(it["isBreachHearing"]).isEqualTo("true")
-              assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
-              assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
-              assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
-            },
-            isNull(),
-          )
-        }
-      }
-    }
   }
 
   @Nested
@@ -2683,6 +2604,29 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
   inner class RecallBreachCourtAppearanceUpdateResynchronisation {
     @BeforeEach
     fun setUp() {
+      courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+        courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+        offenderNo = OFFENDER_ID_DISPLAY,
+        courtCaseId = NOMIS_COURT_CASE_ID,
+        eventDateTime = LocalDateTime.parse("2020-01-02T09:00:00"),
+      )
+
+      courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+        nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+        dpsCourtAppearanceId = DPS_COURT_APPEARANCE_ID,
+      )
+
+      courtSentencingMappingApiMockServer.stubGetByNomisId(
+        nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+        dpsCourtCaseId = DPS_COURT_CASE_ID,
+      )
+
+      dpsCourtSentencingServer.stubPutCourtAppearanceForUpdate(
+        courtAppearanceId = UUID.fromString(
+          DPS_COURT_APPEARANCE_ID,
+        ),
+      )
+
       courtSentencingOffenderEventsQueue.sendMessage(
         SQSMessage(
           Type = "courtsentencing.resync.breach-court-appearance.updated",
@@ -2695,12 +2639,21 @@ class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
     }
 
     @Test
+    fun `will update DPS with the changes`() {
+      val dpsUpdateRequest: LegacyCreateCourtAppearance = getRequestBody(putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_COURT_APPEARANCE_ID")))
+      assertThat(dpsUpdateRequest.appearanceDate).isEqualTo(LocalDate.parse("2020-01-02"))
+    }
+
+    @Test
     fun `will track telemetry for the create synchronisation`() {
       verify(telemetryClient).trackEvent(
         eq("recall-breach-court-appearance-resynchronisation-success"),
         check {
           assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+          assertThat(it["nomisCourtCaseId"]).isEqualTo("$NOMIS_COURT_CASE_ID")
+          assertThat(it["dpsCourtCaseId"]).isEqualTo(DPS_COURT_CASE_ID)
           assertThat(it["nomisCourtAppearanceId"]).isEqualTo("$NOMIS_COURT_APPEARANCE_ID")
+          assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_COURT_APPEARANCE_ID)
         },
         isNull(),
       )
