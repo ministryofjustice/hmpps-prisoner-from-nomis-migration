@@ -200,7 +200,6 @@ data class CourtAppearanceEvent(
   val caseId: Long?,
   val offenderIdDisplay: String,
   val bookingId: Long,
-  val isBreachHearing: Boolean,
   override val auditModuleName: String?,
 ) : EventAudited
 
@@ -216,7 +215,6 @@ data class RecallBreachCourtEventCharge(
   val eventId: Long,
   val chargeId: Long,
   val offenderIdDisplay: String,
-  val bookingId: Long,
 )
 
 data class CourtEventChargeLinkingEvent(
