@@ -241,8 +241,7 @@ private fun BookingCourtMovementOut.toDpsRequest(
 ): ResyncCourtEventMovement = ResyncCourtEventMovement(
   movement = CourtEventMovement(
     dpsId = oldMappingIds.movements.find { it.nomisBookingId == bookingId && it.nomisMovementSeq == sequence }?.dpsCourtMovementId,
-    movementDate = movementDate,
-    movementTime = "$movementTime",
+    occurredAt = movementTime,
     movementReasonCode = movementReason,
     directionCode = "OUT",
     fromAgencyId = fromPrison,
@@ -268,8 +267,7 @@ private fun BookingCourtMovementIn.toDpsRequest(
 ): ResyncCourtEventMovement = ResyncCourtEventMovement(
   movement = CourtEventMovement(
     dpsId = oldMappingIds.movements.find { it.nomisBookingId == bookingId && it.nomisMovementSeq == sequence }?.dpsCourtMovementId,
-    movementDate = movementDate,
-    movementTime = "$movementTime",
+    occurredAt = movementTime,
     movementReasonCode = movementReason,
     directionCode = "IN",
     fromAgencyId = fromCourt ?: MISSING_COURT,

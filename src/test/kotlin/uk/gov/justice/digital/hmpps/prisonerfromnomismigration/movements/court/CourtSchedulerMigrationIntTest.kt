@@ -41,7 +41,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 import java.util.*
@@ -149,8 +148,7 @@ class CourtSchedulerMigrationIntTest(
           assertThat(dpsId).isEqualTo(dpsScheduledMovementOutId)
           assertThat(offenderBookId).isEqualTo(12345)
           assertThat(movementSeq).isEqualTo(3)
-          assertThat(movementDate).isEqualTo(LocalDate.now().minusDays(1))
-          assertThat(LocalDateTime.parse(movementTime)).isCloseTo(LocalDateTime.now().minusDays(1), within(5, ChronoUnit.MINUTES))
+          assertThat(occurredAt).isCloseTo(LocalDateTime.now().minusDays(1), within(5, ChronoUnit.MINUTES))
           assertThat(movementReasonCode).isEqualTo("CRT")
           assertThat(fromAgencyId).isEqualTo("BXI")
           assertThat(toAgencyId).isEqualTo("LEEDMC")

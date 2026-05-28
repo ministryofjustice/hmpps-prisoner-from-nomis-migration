@@ -29,7 +29,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
@@ -107,8 +106,7 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         dpsCourtAppearanceScheduleId = scheduleId,
         offenderBookId = 12345L,
         movementSeq = 3,
-        movementDate = LocalDate.now(),
-        movementTime = "${LocalDateTime.now()}",
+        occurredAt = LocalDateTime.now(),
         movementReasonCode = "CRT",
         directionCode = "OUT",
         fromAgencyId = "BXI",
