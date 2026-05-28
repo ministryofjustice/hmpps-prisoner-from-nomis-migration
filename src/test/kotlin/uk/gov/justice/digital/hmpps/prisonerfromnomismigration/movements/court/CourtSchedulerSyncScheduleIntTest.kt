@@ -112,7 +112,7 @@ class CourtSchedulerSyncScheduleIntTest(
         ).apply {
           assertThat(courtEvent.dpsId).isNull()
           assertThat(courtEvent.agyLocId).isEqualTo("LEEDMC")
-          assertThat(courtEvent.startDateTime).isCloseTo(yesterday, within(5, ChronoUnit.MINUTES))
+          assertThat(courtEvent.start).isCloseTo(yesterday, within(5, ChronoUnit.MINUTES))
           assertThat(courtEvent.courtEventType).isEqualTo("CRT")
           assertThat(courtEvent.eventStatus).isEqualTo("SCH")
           assertThat(courtEvent.eventId).isEqualTo(123)
@@ -527,7 +527,7 @@ class CourtSchedulerSyncScheduleIntTest(
         ).apply {
           assertThat(courtEvent.dpsId).isEqualTo(dpsCourtAppearanceId)
           assertThat(courtEvent.agyLocId).isEqualTo("LEEDMC")
-          assertThat(courtEvent.startDateTime).isCloseTo(yesterday, within(5, ChronoUnit.MINUTES))
+          assertThat(courtEvent.start).isCloseTo(yesterday, within(5, ChronoUnit.MINUTES))
           assertThat(courtEvent.courtEventType).isEqualTo("CRT")
           assertThat(courtEvent.eventStatus).isEqualTo("SCH")
           assertThat(courtEvent.eventId).isEqualTo(123)
