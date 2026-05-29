@@ -13,6 +13,10 @@ import reactor.core.publisher.Mono
 import reactor.util.retry.Retry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 
+suspend inline fun <T : Any> Mono<T>.awaitSingleOrNullForNotFound(): T? = this
+  .onErrorResume(WebClientResponseException.NotFound::class.java) { Mono.empty() }
+  .awaitSingleOrNull()
+
 suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenNotFound(): T? = this.bodyToMono<T>()
   .onErrorResume(WebClientResponseException.NotFound::class.java) { Mono.empty() }
   .awaitSingleOrNull()
