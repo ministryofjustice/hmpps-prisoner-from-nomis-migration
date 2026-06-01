@@ -16,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.core.ParameterizedTypeReference
@@ -25,12 +26,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto.MappingType.MIGRATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.LOCATIONS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
 private const val DPS_LOCATION_ID = "abcdef12-1234-5678-9012-abcdef1234567"
 private const val NOMIS_LOCATION_ID = 1234L
 
+@ExtendWith(MappingApiExtension::class)
 @SpringAPIServiceTest
 @Import(LocationsMappingService::class, LocationsConfiguration::class)
 internal class LocationsMappingServiceTest {

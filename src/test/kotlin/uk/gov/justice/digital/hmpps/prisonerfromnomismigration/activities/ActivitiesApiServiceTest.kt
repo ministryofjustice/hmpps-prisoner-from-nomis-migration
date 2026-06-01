@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
@@ -26,10 +27,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.Slot.TimeSlot.AM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension.Companion.activitiesApi
 import java.time.LocalDate
 import java.util.*
 
+@ExtendWith(ActivitiesApiExtension::class)
 @SpringAPIServiceTest
 @Import(ActivitiesApiService::class, ActivitiesConfiguration::class)
 internal class ActivitiesApiServiceTest {

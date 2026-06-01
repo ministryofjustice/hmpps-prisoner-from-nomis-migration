@@ -12,24 +12,8 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.BootstrapWith
 import org.springframework.web.reactive.config.EnableWebFlux
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.WebClientConfiguration
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.LocationsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisSyncApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension
 import uk.gov.justice.hmpps.kotlin.auth.HmppsReactiveWebClientConfiguration
 import java.lang.annotation.Inherited
 import kotlin.annotation.AnnotationTarget.ANNOTATION_CLASS
@@ -46,25 +30,7 @@ import kotlin.annotation.AnnotationTarget.CLASS
 @Retention(AnnotationRetention.RUNTIME)
 @MustBeDocumented
 @Inherited
-@ExtendWith(
-  NomisApiExtension::class,
-  HmppsAuthApiExtension::class,
-  VisitsApiExtension::class,
-  MappingApiExtension::class,
-  SentencingApiExtension::class,
-  ActivitiesApiExtension::class,
-  CorePersonCprApiExtension::class,
-  LocationsApiExtension::class,
-  AlertsDpsApiExtension::class,
-  ContactPersonDpsApiExtension::class,
-  FinanceApiExtension::class,
-  OrganisationsDpsApiExtension::class,
-  VisitBalanceDpsApiExtension::class,
-  NomisSyncApiExtension::class,
-  TapDpsApiExtension::class,
-  CourtSchedulerDpsApiExtension::class,
-  OfficialVisitsDpsApiExtension::class,
-)
+@ExtendWith(HmppsAuthApiExtension::class)
 @ActiveProfiles("test")
 @EnableWebFlux
 @EnableWebFluxSecurity

@@ -26,7 +26,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension.Companion.dpsCourtSchedulerServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDateTime
@@ -174,7 +173,7 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(OrganisationsDpsApiExtension.jsonMapper.writeValueAsString(response)),
+            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -216,7 +215,7 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(status)
             .withHeader("Content-Type", "application/json")
-            .withBody(OrganisationsDpsApiExtension.jsonMapper.writeValueAsString(error)),
+            .withBody(jsonMapper.writeValueAsString(error)),
         ),
     )
   }
@@ -228,7 +227,7 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
-            .withBody(OrganisationsDpsApiExtension.jsonMapper.writeValueAsString(response)),
+            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -270,7 +269,7 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(status)
             .withHeader("Content-Type", "application/json")
-            .withBody(OrganisationsDpsApiExtension.jsonMapper.writeValueAsString(error)),
+            .withBody(jsonMapper.writeValueAsString(error)),
         ),
     )
   }

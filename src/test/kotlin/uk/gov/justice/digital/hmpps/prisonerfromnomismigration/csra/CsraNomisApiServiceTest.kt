@@ -8,12 +8,15 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 
 private const val OFFENDER_NUMBER = "G4803UT"
 
+@ExtendWith(NomisApiExtension::class)
 @SpringAPIServiceTest
 @Import(CsraNomisApiService::class, CsraConfiguration::class, CsraNomisApiMockServer::class)
 class CsraNomisApiServiceTest {

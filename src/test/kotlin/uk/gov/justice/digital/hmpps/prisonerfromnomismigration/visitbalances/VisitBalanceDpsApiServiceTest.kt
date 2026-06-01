@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
@@ -15,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.Vis
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiMockServer.Companion.visitBalanceMigrationDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 
+@ExtendWith(VisitBalanceDpsApiExtension::class)
 @SpringAPIServiceTest
 @Import(VisitBalanceDpsApiService::class, VisitBalanceConfiguration::class)
 class VisitBalanceDpsApiServiceTest {

@@ -10,15 +10,18 @@ import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
+@ExtendWith(NomisApiExtension::class)
 @SpringAPIServiceTest
 @Import(TapsNomisApiService::class, TapNomisApiMockServer::class)
 class TapNomisApiServiceTest {

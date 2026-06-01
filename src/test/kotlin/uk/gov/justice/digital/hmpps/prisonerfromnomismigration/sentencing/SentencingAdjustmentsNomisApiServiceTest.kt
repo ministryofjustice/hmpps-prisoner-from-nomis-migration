@@ -7,10 +7,13 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 
+@ExtendWith(NomisApiExtension::class)
 @SpringAPIServiceTest
 @Import(SentencingAdjustmentsNomisApiService::class, SentencingConfiguration::class, SentencingAdjustmentsNomisApiMockServer::class)
 class SentencingAdjustmentsNomisApiServiceTest {

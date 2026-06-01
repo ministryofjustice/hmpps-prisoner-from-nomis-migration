@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
@@ -25,6 +26,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
+@ExtendWith(AlertsDpsApiExtension::class)
 @SpringAPIServiceTest
 @Import(AlertsDpsApiService::class, AlertsConfiguration::class)
 class AlertsDpsApiServiceTest {

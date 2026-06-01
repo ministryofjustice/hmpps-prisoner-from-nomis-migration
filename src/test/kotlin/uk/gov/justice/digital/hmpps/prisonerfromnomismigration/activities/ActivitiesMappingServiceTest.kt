@@ -17,6 +17,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.core.ParameterizedTypeReference
@@ -32,6 +33,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import java.util.*
 
+@ExtendWith(MappingApiExtension::class)
 @SpringAPIServiceTest
 @Import(ActivitiesMappingService::class, ActivitiesConfiguration::class)
 class ActivitiesMappingServiceTest {

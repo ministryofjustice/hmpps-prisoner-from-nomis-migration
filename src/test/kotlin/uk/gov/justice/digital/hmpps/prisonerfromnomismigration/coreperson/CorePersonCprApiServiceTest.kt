@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus.BAD_REQUEST
@@ -23,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequ
 import java.time.LocalDate
 import java.time.LocalDateTime
 
+@ExtendWith(CorePersonCprApiExtension::class)
 @SpringAPIServiceTest
 @Import(CorePersonCprApiService::class, CorePersonConfiguration::class)
 class CorePersonCprApiServiceTest {

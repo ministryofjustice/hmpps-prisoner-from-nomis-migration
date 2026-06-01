@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
@@ -45,6 +46,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelations
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiMockServer.Companion.updatePrisonerRestrictionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiService.CreatePrisonerContactSuccess
 
+@ExtendWith(ContactPersonDpsApiExtension::class)
 @SpringAPIServiceTest
 @Import(ContactPersonDpsApiService::class, ContactPersonConfiguration::class)
 class ContactPersonDpsApiServiceTest {

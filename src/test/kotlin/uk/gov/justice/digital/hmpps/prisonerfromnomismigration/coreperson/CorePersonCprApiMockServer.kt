@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes.BirthCountryCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionMapping
@@ -22,7 +23,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDate
@@ -109,7 +109,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(CorePersonCprApiExtension.jsonMapper.writeValueAsString(response)),
+            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }
@@ -126,7 +126,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(201)
             .withHeader("Content-Type", "application/json")
-            .withBody(CorePersonCprApiExtension.jsonMapper.writeValueAsString(response)),
+            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }

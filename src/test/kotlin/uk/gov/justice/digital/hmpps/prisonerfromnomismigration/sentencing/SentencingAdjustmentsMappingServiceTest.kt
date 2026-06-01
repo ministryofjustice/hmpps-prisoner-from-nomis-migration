@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.core.ParameterizedTypeReference
@@ -16,11 +17,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentencingAdjustmentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentencingAdjustmentMappingDto.MappingType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentencingAdjustmentMappingDto.NomisAdjustmentCategory
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.ADJUSTMENTS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
 private const val ADJUSTMENT_ID = "05b332ad-58eb-4ec2-963c-c9c927856788"
 
+@ExtendWith(MappingApiExtension::class)
 @SpringAPIServiceTest
 @Import(SentencingAdjustmentsMappingService::class, SentencingConfiguration::class)
 class SentencingAdjustmentsMappingServiceTest {
