@@ -131,8 +131,8 @@ fun OffenderAddress.buildFullAddress(): String {
   val address = mutableListOf<String>()
 
   // Append "Flat" if there is one
-  if (!flat.isNullOrBlank()) {
-    address.add("Flat ${flat.trim()}")
+  flat.takeIf { !it.isNullOrBlank() }?.let {
+    address.add("Flat ${it.trim()}")
   }
   // Don't separate a numeric premise from the street, only if it's a name
   val hasPremise = !premise.isNullOrBlank()

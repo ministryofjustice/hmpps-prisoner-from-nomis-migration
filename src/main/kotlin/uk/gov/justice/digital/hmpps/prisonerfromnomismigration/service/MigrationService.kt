@@ -19,13 +19,13 @@ import java.time.Duration
 import java.time.LocalDateTime
 
 abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAGE_KEY : PageKey>(
-  internal val mappingService: MigrationMapping<MAPPING>,
-  internal val migrationType: MigrationType,
+  protected val mappingService: MigrationMapping<MAPPING>,
+  private val migrationType: MigrationType,
   private val completeCheckDelaySeconds: Int,
   private val completeCheckCount: Int,
   private val completeCheckRetrySeconds: Int = 1,
   private val completeCheckScheduledRetrySeconds: Int = completeCheckDelaySeconds,
-  internal val jsonMapper: JsonMapper,
+  protected val jsonMapper: JsonMapper,
 ) {
 
   @Autowired

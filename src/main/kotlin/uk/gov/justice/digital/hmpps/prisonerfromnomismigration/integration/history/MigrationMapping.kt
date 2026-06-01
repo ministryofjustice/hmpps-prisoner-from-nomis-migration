@@ -11,8 +11,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDet
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PagedModelMigrationDetails
 
 abstract class MigrationMapping<MAPPING : Any>(
-  val domainUrl: String,
-  internal val webClient: WebClient,
+  protected val domainUrl: String,
+  protected val webClient: WebClient,
 ) {
   open fun createMappingUrl() = domainUrl
 
