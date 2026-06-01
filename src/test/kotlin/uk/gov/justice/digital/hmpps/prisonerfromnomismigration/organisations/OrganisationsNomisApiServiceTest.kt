@@ -8,10 +8,13 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 
+@ExtendWith(NomisApiExtension::class)
 @SpringAPIServiceTest
 @Import(OrganisationsNomisApiService::class, OrganisationsNomisApiMockServer::class)
 class OrganisationsNomisApiServiceTest {

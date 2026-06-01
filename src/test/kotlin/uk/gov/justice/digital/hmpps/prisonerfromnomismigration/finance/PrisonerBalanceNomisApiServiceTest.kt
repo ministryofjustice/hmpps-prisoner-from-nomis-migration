@@ -10,11 +10,14 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import java.math.BigDecimal
 
+@ExtendWith(NomisApiExtension::class)
 @SpringAPIServiceTest
 @Import(PrisonerBalanceNomisApiService::class, PrisonerBalanceNomisApiMockServer::class)
 class PrisonerBalanceNomisApiServiceTest {

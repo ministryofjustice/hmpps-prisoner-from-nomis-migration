@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.client.WireMock
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.core.ParameterizedTypeReference
@@ -16,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 
 private const val APPOINTMENT_INSTANCE_ID = 1234567L
 
+@ExtendWith(MappingApiExtension::class)
 @SpringAPIServiceTest
 @Import(AppointmentsMappingService::class, ActivitiesConfiguration::class)
 class AppointmentsMappingServiceTest {

@@ -12,15 +12,18 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsService.VisitCreateAborted
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitsService.VisitCreated
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension.Companion.visitsApi
 import java.time.LocalDateTime
 
+@ExtendWith(VisitsApiExtension::class)
 @SpringAPIServiceTest
 @Import(VisitsService::class, VisitsConfiguration::class)
 internal class VisitsServiceTest {
