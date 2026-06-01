@@ -125,11 +125,8 @@ class TapMovementService(
         nomisAddressOwnerClass = nomisMovement.toAddressOwnerClass,
       )
         .also {
-          if (nomisMovement.toAddressId != null) telemetry["nomisAddressId"] = nomisMovement.toAddressId
-          if (nomisMovement.toAddressOwnerClass != null) {
-            telemetry["nomisAddressOwnerClass"] =
-              nomisMovement.toAddressOwnerClass
-          }
+          nomisMovement.toAddressId?.let { telemetry["nomisAddressId"] = it }
+          nomisMovement.toAddressOwnerClass?.let { telemetry["nomisAddressOwnerClass"] = it }
         }
     }
 
@@ -181,11 +178,8 @@ class TapMovementService(
         nomisAddressOwnerClass = nomisMovement.fromAddressOwnerClass,
       )
         .also {
-          if (nomisMovement.fromAddressId != null) telemetry["nomisAddressId"] = nomisMovement.fromAddressId
-          if (nomisMovement.fromAddressOwnerClass != null) {
-            telemetry["nomisAddressOwnerClass"] =
-              nomisMovement.fromAddressOwnerClass
-          }
+          nomisMovement.fromAddressId?.let { telemetry["nomisAddressId"] = it }
+          nomisMovement.fromAddressOwnerClass?.let { telemetry["nomisAddressOwnerClass"] = it }
         }
     }
 
@@ -377,7 +371,7 @@ class TapMovementService(
     accompaniedByComments = escortText,
     comments = commentText,
     created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
-    updated = audit.modifyDatetime?.let { SyncAtAndBy(audit.modifyDatetime, audit.modifyUserId!!) },
+    updated = audit.modifyDatetime?.let { SyncAtAndBy(it, audit.modifyUserId!!) },
     legacyId = "${bookingId}_$sequence",
     prisonCode = fromPrison,
   )
@@ -397,7 +391,7 @@ class TapMovementService(
     accompaniedByComments = escortText,
     comments = commentText,
     created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
-    updated = audit.modifyDatetime?.let { SyncAtAndBy(audit.modifyDatetime, audit.modifyUserId!!) },
+    updated = audit.modifyDatetime?.let { SyncAtAndBy(it, audit.modifyUserId!!) },
     legacyId = "${bookingId}_$sequence",
     prisonCode = toPrison,
   )

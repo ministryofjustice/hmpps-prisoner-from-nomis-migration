@@ -216,7 +216,7 @@ fun OffenderCourtMovementsResponse.toDpsRequest(
             ?.let { "$EXTERNAL_REF_PREFIX$it" },
         ),
         created = AtAndBy(schedule.audit.createDatetime, schedule.audit.createUsername),
-        modified = schedule.audit.modifyDatetime?.let { AtAndBy(schedule.audit.modifyDatetime, schedule.audit.modifyUserId!!) },
+        modified = schedule.audit.modifyDatetime?.let { AtAndBy(it, schedule.audit.modifyUserId!!) },
         movements = listOfNotNull(
           schedule.courtMovementOut?.toDpsRequest(oldMappingIds, booking.bookingId, schedule.eventId),
           schedule.courtMovementIn?.toDpsRequest(oldMappingIds, booking.bookingId, schedule.eventId),
@@ -252,12 +252,7 @@ private fun BookingCourtMovementOut.toDpsRequest(
     commentText = commentText,
   ),
   created = AtAndBy(audit.createDatetime, audit.createUsername),
-  modified = audit.modifyDatetime?.let {
-    AtAndBy(
-      audit.modifyDatetime,
-      audit.modifyUserId!!,
-    )
-  },
+  modified = audit.modifyDatetime?.let { AtAndBy(it, audit.modifyUserId!!) },
 )
 
 private fun BookingCourtMovementIn.toDpsRequest(
@@ -278,12 +273,7 @@ private fun BookingCourtMovementIn.toDpsRequest(
     commentText = commentText,
   ),
   created = AtAndBy(audit.createDatetime, audit.createUsername),
-  modified = audit.modifyDatetime?.let {
-    AtAndBy(
-      audit.modifyDatetime,
-      audit.modifyUserId!!,
-    )
-  },
+  modified = audit.modifyDatetime?.let { AtAndBy(it, audit.modifyUserId!!) },
 )
 
 private fun OffenderCourtMovementsResponse.buildMappings(offenderNo: String, migrationId: String, dpsResponse: ResyncResponse) = CourtSchedulerPrisonerMappingsDto(

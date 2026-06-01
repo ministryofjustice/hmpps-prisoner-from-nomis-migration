@@ -157,7 +157,7 @@ fun TapApplication.toDpsRequest(id: UUID? = null) = SyncWriteTapAuthorisation(
   end = toDate,
   comments = comment,
   created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
-  updated = audit.modifyDatetime?.let { SyncAtAndBy(audit.modifyDatetime, audit.modifyUserId!!) },
+  updated = audit.modifyDatetime?.let { SyncAtAndBy(it, audit.modifyUserId!!) },
   legacyId = tapApplicationId,
   transportCode = transportType ?: DEFAULT_TRANSPORT_TYPE,
   startTime = "${releaseTime.toLocalTime()}",
