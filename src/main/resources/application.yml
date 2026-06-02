@@ -99,6 +99,11 @@ spring:
             client-id: ${organisations.client.id}
             client-secret: ${organisations.client.secret}
             authorization-grant-type: client_credentials
+          staff-api:
+            provider: hmpps-auth
+            client-id: ${staff.client.id}
+            client-secret: ${staff.client.secret}
+            authorization-grant-type: client_credentials
           visit-balance-api:
             provider: hmpps-auth
             client-id: ${visit.balance.client.id}
