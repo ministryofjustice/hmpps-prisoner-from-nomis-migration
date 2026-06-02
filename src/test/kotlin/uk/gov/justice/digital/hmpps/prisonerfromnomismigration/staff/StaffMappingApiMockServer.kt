@@ -3,12 +3,14 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.StaffMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -18,17 +20,17 @@ import java.time.LocalDateTime
 @Component
 class StaffMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
-  fun stubGetByNomisStaffIdOrNull(
-    nomisStaffId: Long = 1234L,
+  fun stubGetStaffByNomisIdOrNull(
+    nomisId: Long = 1234L,
     mapping: StaffMappingDto? = StaffMappingDto(
-      dpsId = "123456",
-      nomisId = nomisStaffId,
+      dpsId = "4321",
+      nomisId = nomisId,
       mappingType = StaffMappingDto.MappingType.MIGRATED,
     ),
   ) {
     mapping?.apply {
       mappingApi.stubFor(
-        get(urlEqualTo("/mapping/staff/nomis-id/$nomisStaffId")).willReturn(
+        get(urlEqualTo("/mapping/staff/nomis-id/$nomisId")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
@@ -37,7 +39,7 @@ class StaffMappingApiMockServer(private val jsonMapper: JsonMapper) {
       )
     } ?: run {
       mappingApi.stubFor(
-        get(urlEqualTo("/mapping/staff/nomis-id/$nomisStaffId")).willReturn(
+        get(urlEqualTo("/mapping/staff/nomis-id/$nomisId")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
@@ -45,6 +47,27 @@ class StaffMappingApiMockServer(private val jsonMapper: JsonMapper) {
         ),
       )
     }
+  }
+
+  fun stubCreateMapping() {
+    mappingApi.stubFor(
+      post("/mapping/staff").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(201),
+      ),
+    )
+  }
+
+  fun stubCreateMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post("/mapping/staff").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
   }
 
   fun stubGetMigrationCount(migrationId: String = "2020-01-01T11:10:00", count: Int = 1) {
