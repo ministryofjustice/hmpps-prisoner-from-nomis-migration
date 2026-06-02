@@ -13,7 +13,6 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OfficialVisitMigrationMappingDto
@@ -44,7 +43,7 @@ class OfficialVisitsRepairResourceIntTest(
   @Autowired private val nomisApiMock: OfficialVisitsNomisApiMockServer,
   @Autowired private val visitSlotsMappingApiMock: VisitSlotsMappingApiMockServer,
   @Autowired private val mappingApiMock: OfficialVisitsMappingApiMockServer,
-) : SqsIntegrationTestBase() {
+) : OfficialVisitsIntegrationTestBase() {
 
   private val dpsApiMock = dpsOfficialVisitsServer
 

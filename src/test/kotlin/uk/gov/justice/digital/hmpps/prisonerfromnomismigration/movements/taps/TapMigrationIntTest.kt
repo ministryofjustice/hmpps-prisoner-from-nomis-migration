@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
@@ -28,7 +29,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.MigrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapResponse
@@ -40,6 +40,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.Ta
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapPrisonerMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTapsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
@@ -52,7 +55,8 @@ import java.util.*
 class TapMigrationIntTest(
   @Autowired private val externalMovementsNomisApi: TapNomisApiMockServer,
   @Autowired private val mappingApi: TapMappingApiMockServer,
-) : MigrationTestBase() {
+  @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
+) : TapIntegrationTestBase() {
 
   private val dpsApi = dpsTapsServer
 
@@ -67,6 +71,18 @@ class TapMigrationIntTest(
   private val dpsScheduledMovementInId = UUID.randomUUID()
   private val dpsUnscheduledMovementOutId = UUID.randomUUID()
   private val dpsUnscheduledMovementInId = UUID.randomUUID()
+
+  override fun resetTelemetryClient() {}
+
+  internal fun setupMigrationTest() = runBlocking {
+    migrationHistoryRepository.deleteAll()
+
+    NomisApiExtension.resetAndDisableResetBeforeEach()
+    MappingApiExtension.resetAndDisableResetBeforeEach()
+    TapDpsApiExtension.resetAndDisableResetBeforeEach()
+
+    tearDownTelemetryClient()
+  }
 
   @AfterAll
   fun tearDownTelemetryClient() = reset(telemetryClient)

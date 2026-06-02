@@ -20,7 +20,6 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEventMovement
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension.Companion.dpsCourtSchedulerServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.referenceId
@@ -38,7 +37,7 @@ import java.util.*
 class CourtSchedulerSyncMovementIntTest(
   @Autowired private val nomisApi: CourtSchedulerNomisApiMockServer,
   @Autowired private val mappingApi: CourtSchedulerMappingApiMockServer,
-) : SqsIntegrationTestBase() {
+) : CourtSchedulerIntegrationTestBase() {
 
   private val dpsApi = dpsCourtSchedulerServer
 

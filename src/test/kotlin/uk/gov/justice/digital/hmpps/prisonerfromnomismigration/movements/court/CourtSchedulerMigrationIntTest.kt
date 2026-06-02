@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
@@ -31,13 +32,14 @@ import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.ResyncCourtEvents
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.MigrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension.Companion.dpsCourtSchedulerServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.resyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderCourtMovementsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
@@ -50,7 +52,8 @@ class CourtSchedulerMigrationIntTest(
   @Autowired private val nomisApi: CourtSchedulerNomisApiMockServer,
   @Autowired private val mappingApi: CourtSchedulerMappingApiMockServer,
   @Autowired private val sentencingMappingApi: CourtSentencingMappingApiMockServer,
-) : MigrationTestBase() {
+  @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
+) : CourtSchedulerIntegrationTestBase() {
 
   private val dpsApi = dpsCourtSchedulerServer
 
@@ -61,6 +64,18 @@ class CourtSchedulerMigrationIntTest(
   private val dpsUnscheduledMovementInId = UUID.randomUUID()
   private val dpsSentencingCourtAppearanceId = UUID.randomUUID()
   private lateinit var migrationId: String
+
+  override fun resetTelemetryClient() {}
+
+  internal fun setupMigrationTest() = runBlocking {
+    migrationHistoryRepository.deleteAll()
+
+    NomisApiExtension.resetAndDisableResetBeforeEach()
+    MappingApiExtension.resetAndDisableResetBeforeEach()
+    CourtSchedulerDpsApiExtension.resetAndDisableResetBeforeEach()
+
+    tearDownTelemetryClient()
+  }
 
   @AfterAll
   fun tearDownTelemetryClient() = reset(telemetryClient)

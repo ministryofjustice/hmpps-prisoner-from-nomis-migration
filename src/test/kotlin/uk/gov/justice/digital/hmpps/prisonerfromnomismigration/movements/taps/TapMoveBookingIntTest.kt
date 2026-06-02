@@ -20,7 +20,6 @@ import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MoveTemporaryAbsencesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsTapsServer
@@ -39,7 +38,7 @@ import java.util.*
 class TapMoveBookingIntTest(
   @Autowired private val mappingApi: TapMappingApiMockServer,
   @Autowired private val externalMovementsNomisApi: TapNomisApiMockServer,
-) : SqsIntegrationTestBase() {
+) : TapIntegrationTestBase() {
 
   private val dpsApi = dpsTapsServer
 

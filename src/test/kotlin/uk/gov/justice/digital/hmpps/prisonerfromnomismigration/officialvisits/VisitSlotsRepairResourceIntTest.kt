@@ -8,7 +8,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.LocationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitSlotMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.VisitTimeSlotMappingDto
@@ -33,7 +32,7 @@ import java.util.*
 class VisitSlotsRepairResourceIntTest(
   @Autowired private val nomisApiMock: VisitSlotsNomisApiMockServer,
   @Autowired private val mappingApiMock: VisitSlotsMappingApiMockServer,
-) : SqsIntegrationTestBase() {
+) : OfficialVisitsIntegrationTestBase() {
 
   private val dpsApiMock = dpsOfficialVisitsServer
   val nomisTimeslotSequence = 2

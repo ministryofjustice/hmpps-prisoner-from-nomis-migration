@@ -25,7 +25,6 @@ import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.context.bean.override.mockito.MockReset
 import org.springframework.test.context.bean.override.mockito.MockitoBean
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.web.reactive.server.WebTestClient
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.PurgeQueueRequest
@@ -37,10 +36,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.LocalStackContainer.setLocalStackProperties
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMigrationService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ACTIVITIES_QUEUE_ID
@@ -49,15 +44,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ALLOCATIO
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.APPOINTMENTS_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CASENOTES_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CORE_PERSON_SYNC_QUEUE_ID
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.COURTSCHEDULER_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.COURT_SENTENCING_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.COURT_SENTENCING_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSRA_QUEUE_ID
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSRA_SYNC_QUEUE_ID
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.EXTERNALMOVEMENTS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.FINANCE_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.LOCATIONS_SYNC_QUEUE_ID
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.OFFICIAL_VISITS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ORGANISATIONS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.PERSONALRELATIONSHIPS_DOMAIN_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.PERSONALRELATIONSHIPS_SYNC_QUEUE_ID
@@ -101,9 +92,6 @@ import java.util.concurrent.TimeUnit
   OrganisationsDpsApiExtension::class,
   VisitBalanceDpsApiExtension::class,
   NomisSyncApiExtension::class,
-  TapDpsApiExtension::class,
-  CourtSchedulerDpsApiExtension::class,
-  OfficialVisitsDpsApiExtension::class,
 )
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -114,7 +102,7 @@ class SqsIntegrationTestBase : TestBase() {
   lateinit var webTestClient: WebTestClient
 
   @Autowired
-  private lateinit var hmppsQueueService: HmppsQueueService
+  protected lateinit var hmppsQueueService: HmppsQueueService
 
   internal val visitsMigrationQueue by lazy { hmppsQueueService.findByQueueId(VISITS_QUEUE_ID) as HmppsQueue }
   internal val courtSentencingMigrationQueue by lazy { hmppsQueueService.findByQueueId(COURT_SENTENCING_QUEUE_ID) as HmppsQueue }
@@ -191,55 +179,31 @@ class SqsIntegrationTestBase : TestBase() {
   internal val prisonerRestrictionsDomainEventsQueue by lazy { hmppsQueueService.findByQueueId(PRISONERRESTRICTIONS_DOMAIN_SYNC_QUEUE_ID) as HmppsQueue }
 
   internal val visitBalanceOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(VISIT_BALANCE_SYNC_QUEUE_ID) as HmppsQueue }
-  internal val awsSqsVisitBalanceOffenderEventDlqClient by lazy { visitBalanceOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
-  internal val visitBalanceOffenderEventsDlqUrl by lazy { visitBalanceOffenderEventsQueue.dlqUrl as String }
-
-  internal val externalMovementsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(EXTERNALMOVEMENTS_SYNC_QUEUE_ID) as HmppsQueue }
-  internal val awsSqsExternalMovementsOffenderEventsClient by lazy { externalMovementsOffenderEventsQueue.sqsClient }
-  internal val awsSqsExternalMovementsOffenderEventsDlqClient by lazy { externalMovementsOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
-  internal val externalMovementsQueueOffenderEventsUrl by lazy { externalMovementsOffenderEventsQueue.queueUrl }
-  internal val externalMovementsQueueOffenderEventsDlqUrl by lazy { externalMovementsOffenderEventsQueue.dlqUrl as String }
-
-  internal val courtMovementsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(COURTSCHEDULER_SYNC_QUEUE_ID) as HmppsQueue }
-  internal val awsSqsCourtMovementsOffenderEventsClient by lazy { courtMovementsOffenderEventsQueue.sqsClient }
-  internal val awsSqsCourtMovementsOffenderEventsDlqClient by lazy { courtMovementsOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
-  internal val courtMovementsQueueOffenderEventsUrl by lazy { courtMovementsOffenderEventsQueue.queueUrl }
-  internal val courtMovementsQueueOffenderEventsDlqUrl by lazy { courtMovementsOffenderEventsQueue.dlqUrl as String }
-
-  internal val officialVisitsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(OFFICIAL_VISITS_SYNC_QUEUE_ID) as HmppsQueue }
-  internal val csraOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(CSRA_SYNC_QUEUE_ID) as HmppsQueue }
 
   internal val corePersonOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(CORE_PERSON_SYNC_QUEUE_ID) as HmppsQueue }
   internal val awsSqsCorePersonOffenderEventsClient by lazy { corePersonOffenderEventsQueue.sqsClient }
-  internal val awsSqsCorePersonOffenderEventsDlqClient by lazy { corePersonOffenderEventsQueue.sqsDlqClient as SqsAsyncClient }
   internal val corePersonQueueOffenderEventsUrl by lazy { corePersonOffenderEventsQueue.queueUrl }
-  internal val corePersonQueueOffenderEventsDlqUrl by lazy { corePersonOffenderEventsQueue.dlqUrl as String }
 
-  private val allQueues by lazy {
-    listOf(
-      locationsOffenderEventsQueue,
-      sentencingOffenderEventsQueue,
-      visitsOffenderEventsQueue,
-      activitiesMigrationQueue,
-      appointmentsMigrationQueue,
-      prisonerBalanceMigrationQueue,
-      visitsMigrationQueue,
-      csraMigrationQueue,
-      alertsOffenderEventsQueue,
-      caseNotesOffenderEventsQueue,
-      financeOffenderEventsQueue,
-      corePersonOffenderEventsQueue,
-      courtSentencingOffenderEventsQueue,
-      personalRelationshipsOffenderEventsQueue,
-      personalRelationshipsDomainEventsQueue,
-      personContactsDomainEventsQueue,
-      organisationsOffenderEventsQueue,
-      visitBalanceOffenderEventsQueue,
-      externalMovementsOffenderEventsQueue,
-      courtMovementsOffenderEventsQueue,
-      officialVisitsOffenderEventsQueue,
-    )
-  }
+  protected fun getQueues() = listOf(
+    locationsOffenderEventsQueue,
+    sentencingOffenderEventsQueue,
+    visitsOffenderEventsQueue,
+    activitiesMigrationQueue,
+    appointmentsMigrationQueue,
+    prisonerBalanceMigrationQueue,
+    visitsMigrationQueue,
+    csraMigrationQueue,
+    alertsOffenderEventsQueue,
+    caseNotesOffenderEventsQueue,
+    financeOffenderEventsQueue,
+    corePersonOffenderEventsQueue,
+    courtSentencingOffenderEventsQueue,
+    personalRelationshipsOffenderEventsQueue,
+    personalRelationshipsDomainEventsQueue,
+    personContactsDomainEventsQueue,
+    organisationsOffenderEventsQueue,
+    visitBalanceOffenderEventsQueue,
+  )
 
   @Autowired
   protected lateinit var jwtAuthHelper: JwtAuthorisationHelper
@@ -247,14 +211,11 @@ class SqsIntegrationTestBase : TestBase() {
   @MockitoBean(reset = MockReset.NONE)
   protected lateinit var telemetryClient: TelemetryClient
 
-  @MockitoSpyBean
-  protected lateinit var externalMovementsMigrationService: TapMigrationService
-
   @BeforeEach
   fun setUp() {
     Awaitility.setDefaultPollDelay(1, TimeUnit.MILLISECONDS)
     Awaitility.setDefaultPollInterval(10, TimeUnit.MILLISECONDS)
-    allQueues.forEach { it.purgeAndWait() }
+    getQueues().forEach { it.purgeAndWait() }
     Awaitility.setDefaultPollInterval(50, TimeUnit.MILLISECONDS)
   }
 
