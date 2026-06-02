@@ -33,7 +33,6 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
@@ -60,18 +59,12 @@ private const val NOMIS_OFFENDER_CHARGE = 12L
 private const val NOMIS_CONSEC_SENTENCE_SEQUENCE = 7777L
 private const val DPS_CONSECUTIVE_SENTENCE_ID = "c4c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e2d"
 
-class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var courtSentencingMappingApiService: CourtSentencingMappingApiService
-
-  @Autowired
-  private lateinit var courtSentencingNomisApiMockServer: CourtSentencingNomisApiMockServer
-
-  @Autowired
-  private lateinit var courtSentencingMappingApiMockServer: CourtSentencingMappingApiMockServer
-
-  @Autowired
-  private lateinit var jsonMapper: JsonMapper
+class SentencingSynchronisationIntTest(
+  @Autowired private val courtSentencingMappingApiService: CourtSentencingMappingApiService,
+  @Autowired private val courtSentencingNomisApiMockServer: CourtSentencingNomisApiMockServer,
+  @Autowired private val courtSentencingMappingApiMockServer: CourtSentencingMappingApiMockServer,
+  @Autowired private val jsonMapper: JsonMapper,
+) : CourtSentencingIntegrationTestBase() {
 
   private fun Any.toJson(): String = jsonMapper.writeValueAsString(this)
 

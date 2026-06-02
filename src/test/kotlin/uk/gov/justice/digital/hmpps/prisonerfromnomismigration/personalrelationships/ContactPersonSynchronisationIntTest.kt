@@ -26,7 +26,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingDel
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.prisonerReceivedDomainEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactPersonPrisonerMappingsDto
@@ -100,14 +99,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequ
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-class ContactPersonSynchronisationIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var nomisApiMock: ContactPersonNomisApiMockServer
-
+class ContactPersonSynchronisationIntTest(
+  @Autowired private val nomisApiMock: ContactPersonNomisApiMockServer,
+  @Autowired private val mappingApiMock: ContactPersonMappingApiMockServer,
+) : PersonalRelationshipsIntegrationTestBase() {
   private val dpsApiMock = dpsContactPersonServer
-
-  @Autowired
-  private lateinit var mappingApiMock: ContactPersonMappingApiMockServer
 
   @Nested
   @DisplayName("PERSON-INSERTED")

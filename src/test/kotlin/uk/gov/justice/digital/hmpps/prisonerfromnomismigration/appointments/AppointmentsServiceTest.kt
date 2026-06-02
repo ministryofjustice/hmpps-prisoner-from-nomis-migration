@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.Activi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.model.AppointmentMigrateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension.Companion.activitiesApi
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -32,7 +33,7 @@ internal class AppointmentsServiceTest {
   inner class CreateAppointmentForMigration {
     @BeforeEach
     internal fun setUp() {
-      ActivitiesApiExtension.activitiesApi.stubCreateAppointmentForMigration(APPOINTMENT_INSTANCE_ID)
+      activitiesApi.stubCreateAppointmentForMigration(APPOINTMENT_INSTANCE_ID)
       runBlocking {
         appointmentsService.createAppointment(
           AppointmentMigrateRequest(
@@ -57,7 +58,7 @@ internal class AppointmentsServiceTest {
 
     @Test
     fun `should call api with OAuth2 token`() {
-      ActivitiesApiExtension.activitiesApi.verify(
+      activitiesApi.verify(
         WireMock.postRequestedFor(WireMock.urlEqualTo("/migrate-appointment"))
           .withHeader("Authorization", WireMock.equalTo("Bearer ABCDE")),
       )
@@ -65,7 +66,7 @@ internal class AppointmentsServiceTest {
 
     @Test
     fun `will pass data to the api`() {
-      ActivitiesApiExtension.activitiesApi.verify(
+      activitiesApi.verify(
         WireMock.postRequestedFor(WireMock.urlEqualTo("/migrate-appointment"))
           .withRequestBody(WireMock.matchingJsonPath("bookingId", WireMock.equalTo("1234")))
           .withRequestBody(WireMock.matchingJsonPath("prisonerNumber", WireMock.equalTo("G4803UT")))

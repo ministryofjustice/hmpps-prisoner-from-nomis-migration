@@ -13,7 +13,6 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ContactRestrictionEnteredStaff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerWithRestrictions
@@ -24,14 +23,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequ
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-class PrisonerRestrictionsDataRepairResourceIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var nomisApiMock: ContactPersonNomisApiMockServer
-
+class PrisonerRestrictionsDataRepairResourceIntTest(
+  @Autowired private val nomisApiMock: ContactPersonNomisApiMockServer,
+  @Autowired private val mappingApiMock: PrisonerRestrictionMappingApiMockServer,
+) : PersonalRelationshipsIntegrationTestBase() {
   private val dpsApiMock = ContactPersonDpsApiExtension.dpsContactPersonServer
-
-  @Autowired
-  private lateinit var mappingApiMock: PrisonerRestrictionMappingApiMockServer
 
   @DisplayName("POST /prisoners/{offenderNo}/restrictions/resynchronise")
   @Nested

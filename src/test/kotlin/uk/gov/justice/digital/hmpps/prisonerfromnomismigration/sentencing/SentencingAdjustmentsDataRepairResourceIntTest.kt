@@ -15,15 +15,14 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension.Companion.sentencingApi
 import java.util.UUID
 
-class SentencingAdjustmentsDataRepairResourceIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var nomisApi: SentencingAdjustmentsNomisApiMockServer
+class SentencingAdjustmentsDataRepairResourceIntTest(
+  @Autowired private val nomisApi: SentencingAdjustmentsNomisApiMockServer,
+) : SentencingIntegrationTestBase() {
 
   @DisplayName("POST /prisoners/booking-id/{bookingId}/merge/sentencing-adjustments/repair")
   @Nested

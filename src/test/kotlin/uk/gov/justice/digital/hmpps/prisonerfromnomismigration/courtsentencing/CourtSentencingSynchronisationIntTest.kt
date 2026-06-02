@@ -44,7 +44,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.hasMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -80,12 +79,10 @@ private const val NOMIS_BOOKING_ID = 12344321L
 private const val NOMIS_OFFENDER_CHARGE_ID = 7777L
 private const val DPS_CHARGE_ID = "5b35a357-f458-40b9-b824-de729ffeb488"
 
-class CourtSentencingSynchronisationIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var courtSentencingNomisApiMockServer: CourtSentencingNomisApiMockServer
-
-  @Autowired
-  private lateinit var courtSentencingMappingApiMockServer: CourtSentencingMappingApiMockServer
+class CourtSentencingSynchronisationIntTest(
+  @Autowired private val courtSentencingNomisApiMockServer: CourtSentencingNomisApiMockServer,
+  @Autowired private val courtSentencingMappingApiMockServer: CourtSentencingMappingApiMockServer,
+) : CourtSentencingIntegrationTestBase() {
 
   @Autowired
   private lateinit var jsonMapper: JsonMapper

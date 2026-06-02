@@ -11,7 +11,7 @@ import uk.gov.justice.hmpps.sqs.HmppsQueue
 @ExtendWith(
   CourtSchedulerDpsApiExtension::class,
 )
-class CourtSchedulerIntegrationTestBase : SqsIntegrationTestBase() {
+abstract class CourtSchedulerIntegrationTestBase : SqsIntegrationTestBase() {
 
   internal val courtMovementsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(COURTSCHEDULER_SYNC_QUEUE_ID) as HmppsQueue }
   internal val awsSqsCourtMovementsOffenderEventsClient by lazy { courtMovementsOffenderEventsQueue.sqsClient }

@@ -9,7 +9,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
-import org.hamcrest.core.StringContains
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -28,7 +27,6 @@ import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.reactive.function.BodyInserters
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
@@ -47,13 +45,10 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
-class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
-
-  @Autowired
-  private lateinit var migrationHistoryRepository: MigrationHistoryRepository
-
-  @Autowired
-  private lateinit var jsonMapper: JsonMapper
+class ActivitiesMigrationIntTest(
+  @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
+  @Autowired private val jsonMapper: JsonMapper,
+) : ActivitiesIntegrationTestBase() {
 
   private val today = LocalDate.now()
   private val tomorrow = today.plusDays(1)
@@ -193,7 +188,9 @@ class ActivitiesMigrationIntTest : SqsIntegrationTestBase() {
         .jsonPath("$[0].estimatedRecordCount").isEqualTo(3)
         .jsonPath("$[0].migrationType").isEqualTo("ACTIVITIES")
         .jsonPath("$[0].status").isEqualTo("COMPLETED")
-        .jsonPath("$[0].filter").value(StringContains("BXI"))
+        .jsonPath("$[0].filter").value<String> {
+          assertThat(it).contains("BXI")
+        }
         .jsonPath("$[0].recordsMigrated").isEqualTo(2)
         .jsonPath("$[0].recordsFailed").isEqualTo(1)
     }

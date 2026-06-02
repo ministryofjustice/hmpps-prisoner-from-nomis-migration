@@ -13,7 +13,6 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorporateAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
@@ -24,14 +23,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.mod
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-class OrganisationsDataRepairResourceIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var nomisApiMock: OrganisationsNomisApiMockServer
-
+class OrganisationsDataRepairResourceIntTest(
+  @Autowired private val nomisApiMock: OrganisationsNomisApiMockServer,
+  @Autowired private val mappingApiMock: OrganisationsMappingApiMockServer,
+) : OrganisationsIntegrationTestBase() {
   private val dpsApiMock = dpsOrganisationsServer
-
-  @Autowired
-  private lateinit var mappingApiMock: OrganisationsMappingApiMockServer
 
   @DisplayName("POST /organisation/{organisationId}/resynchronise")
   @Nested

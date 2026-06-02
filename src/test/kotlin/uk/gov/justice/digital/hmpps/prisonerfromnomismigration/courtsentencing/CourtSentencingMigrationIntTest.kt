@@ -47,7 +47,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateSentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
@@ -91,13 +90,10 @@ private const val NOMIS_TERM_SEQUENCE_2_ID = 222L
 data class MigrationResult(val migrationId: String)
 
 class CourtSentencingMigrationIntTest(
+  @Autowired private val courtSentencingMappingApiMockServer: CourtSentencingMappingApiMockServer,
+  @Autowired private val courtSentencingNomisApiMockServer: CourtSentencingNomisApiMockServer,
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
-) : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var courtSentencingMappingApiMockServer: CourtSentencingMappingApiMockServer
-
-  @Autowired
-  private lateinit var courtSentencingNomisApiMockServer: CourtSentencingNomisApiMockServer
+) : CourtSentencingIntegrationTestBase() {
 
   @Nested
   @DisplayName("POST /migrate/court-sentencing")

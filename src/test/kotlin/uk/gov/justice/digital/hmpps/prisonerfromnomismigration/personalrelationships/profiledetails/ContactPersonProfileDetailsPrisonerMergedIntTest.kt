@@ -13,14 +13,14 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.PersonalRelationshipsIntegrationTestBase
 
 class ContactPersonProfileDetailsPrisonerMergedIntTest(
   @Autowired private val dpsApi: ContactPersonProfileDetailsDpsApiMockServer,
   @Autowired private val nomisSyncApi: ContactPersonNomisSyncApiMockServer,
-) : SqsIntegrationTestBase() {
+) : PersonalRelationshipsIntegrationTestBase() {
 
   private val keepingPrisonerNumber = "A1234AA"
   private val removedPrisonerNumber = "B1234BB"

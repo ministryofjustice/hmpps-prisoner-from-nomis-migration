@@ -32,7 +32,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateSentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtOrderResponse
 import java.time.LocalDate
@@ -48,15 +47,11 @@ private const val NOMIS_BOOKING_ID = 12344321L
 private const val DPS_CHARGE_ID = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"
 private const val DPS_CHARGE_2_ID = "d1c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3e"
 
-class CourtSentencingRepairResourceIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var courtSentencingMappingApiService: CourtSentencingMappingApiService
-
-  @Autowired
-  private lateinit var courtSentencingMappingApiMockServer: CourtSentencingMappingApiMockServer
-
-  @Autowired
-  private lateinit var courtSentencingNomisApiMockServer: CourtSentencingNomisApiMockServer
+class CourtSentencingRepairResourceIntTest(
+  @Autowired private val courtSentencingMappingApiService: CourtSentencingMappingApiService,
+  @Autowired private val courtSentencingMappingApiMockServer: CourtSentencingMappingApiMockServer,
+  @Autowired private val courtSentencingNomisApiMockServer: CourtSentencingNomisApiMockServer,
+) : CourtSentencingIntegrationTestBase() {
 
   @Nested
   @DisplayName("POST /prisoners/{offenderNo}/court-sentencing/court-cases/repair")
