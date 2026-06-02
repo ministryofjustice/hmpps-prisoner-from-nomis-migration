@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.health
 
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension
@@ -8,6 +9,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension
@@ -22,6 +24,27 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisSyn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.SentencingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsApiExtension
 
+@ExtendWith(
+  ActivitiesApiExtension::class,
+  AlertsDpsApiExtension::class,
+  CaseNotesApiExtension::class,
+  ContactPersonDpsApiExtension::class,
+  CorePersonCprApiExtension::class,
+  CourtSchedulerDpsApiExtension::class,
+  CourtSentencingDpsApiExtension::class,
+  CsraApiExtension::class,
+  HmppsAuthApiExtension::class,
+  LocationsApiExtension::class,
+  MappingApiExtension::class,
+  NomisApiExtension::class,
+  NomisSyncApiExtension::class,
+  OfficialVisitsDpsApiExtension::class,
+  OrganisationsDpsApiExtension::class,
+  SentencingApiExtension::class,
+  TapDpsApiExtension::class,
+  VisitBalanceDpsApiExtension::class,
+  VisitsApiExtension::class,
+)
 class HealthCheckTest : SqsIntegrationTestBase() {
 
   @Test
@@ -35,23 +58,23 @@ class HealthCheckTest : SqsIntegrationTestBase() {
       .isOk
       .expectBody()
       .jsonPath("status").isEqualTo("UP")
-      .jsonPath("components.personalRelationshipsApi.status").isEqualTo("UP")
-      .jsonPath("components.organisationsApi.status").isEqualTo("UP")
-      .jsonPath("components.visitsApi.status").isEqualTo("UP")
-      .jsonPath("components.sentencingApi.status").isEqualTo("UP")
-      .jsonPath("components.nomisMappingApi.status").isEqualTo("UP")
-      .jsonPath("components.nomisApiHealth.status").isEqualTo("UP")
-      .jsonPath("components.hmppsAuthApiHealth.status").isEqualTo("UP")
-      .jsonPath("components.courtSentencingApi.status").isEqualTo("UP")
-      .jsonPath("components.corePersonApi.status").isEqualTo("UP")
-//      .jsonPath("components.csraApi.status").isEqualTo("UP")
-      .jsonPath("components.caseNotesApi.status").isEqualTo("UP")
-//      .jsonPath("components.financeApi.status").isEqualTo("UP")
-      .jsonPath("components.alertsApi.status").isEqualTo("UP")
       .jsonPath("components.activitiesApi.status").isEqualTo("UP")
-      .jsonPath("components.visitBalanceApi.status").isEqualTo("UP")
+      .jsonPath("components.alertsApi.status").isEqualTo("UP")
+      .jsonPath("components.caseNotesApi.status").isEqualTo("UP")
+      .jsonPath("components.corePersonApi.status").isEqualTo("UP")
+      .jsonPath("components.courtSentencingApi.status").isEqualTo("UP")
+      .jsonPath("components.csraApi.status").isEqualTo("UP")
+      .jsonPath("components.hmppsAuthApiHealth.status").isEqualTo("UP")
+      .jsonPath("components.locationsApi.status").isEqualTo("UP")
+      .jsonPath("components.nomisApiHealth.status").isEqualTo("UP")
+      .jsonPath("components.nomisMappingApi.status").isEqualTo("UP")
       .jsonPath("components.officialVisitsApi.status").isEqualTo("UP")
-//      .jsonPath("components.extMovementsApi.status").isEqualTo("UP")
+      .jsonPath("components.organisationsApi.status").isEqualTo("UP")
+      .jsonPath("components.personalRelationshipsApi.status").isEqualTo("UP")
+      .jsonPath("components.sentencingApi.status").isEqualTo("UP")
+      .jsonPath("components.tapsApi.status").isEqualTo("UP")
+      .jsonPath("components.visitBalanceApi.status").isEqualTo("UP")
+      .jsonPath("components.visitsApi.status").isEqualTo("UP")
   }
 
   @Test

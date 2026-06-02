@@ -16,7 +16,6 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
@@ -50,7 +49,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.*
 
-class OfficialVisitsSynchronisationIntTest : SqsIntegrationTestBase() {
+class OfficialVisitsSynchronisationIntTest : OfficialVisitsIntegrationTestBase() {
   val offenderNo = "A1234KT"
   val bookingId = 1234L
   val prisonId = "MDI"

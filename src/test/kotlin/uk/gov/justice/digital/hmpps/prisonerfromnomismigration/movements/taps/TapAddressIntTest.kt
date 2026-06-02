@@ -15,7 +15,6 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsTapsServer
@@ -26,7 +25,7 @@ import java.util.*
 class TapAddressIntTest(
   @Autowired private val nomisApi: TapNomisApiMockServer,
   @Autowired private val mappingApi: TapMappingApiMockServer,
-) : SqsIntegrationTestBase() {
+) : TapIntegrationTestBase() {
 
   private val dpsApi = dpsTapsServer
 

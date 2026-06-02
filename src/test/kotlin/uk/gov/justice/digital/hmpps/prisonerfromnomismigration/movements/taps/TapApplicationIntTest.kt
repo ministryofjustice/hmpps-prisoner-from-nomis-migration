@@ -19,7 +19,6 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
@@ -38,7 +37,7 @@ import java.util.*
 class TapApplicationIntTest(
   @Autowired private val nomisApi: TapNomisApiMockServer,
   @Autowired private val mappingApi: TapMappingApiMockServer,
-) : SqsIntegrationTestBase() {
+) : TapIntegrationTestBase() {
 
   private val dpsApi = dpsTapsServer
 
