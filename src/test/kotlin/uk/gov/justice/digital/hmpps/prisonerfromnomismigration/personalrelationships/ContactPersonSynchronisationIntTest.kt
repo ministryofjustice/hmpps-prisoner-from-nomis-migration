@@ -4689,7 +4689,7 @@ class ContactPersonSynchronisationIntTest(
             bookingId = bookingId,
             offenderNo = offenderNo,
           ),
-        ).also { waitForAnyProcessingToComplete("from-nomis-sync-contactperson-duplicate", 2) }
+        ).also { waitForAnyProcessingToComplete("contactperson-contact-synchronisation-created-error", 2) }
       }
 
       @Test
@@ -4708,10 +4708,9 @@ class ContactPersonSynchronisationIntTest(
       @Test
       fun `will track telemetry for duplicate`() {
         verify(telemetryClient, times(2)).trackEvent(
-          eq("from-nomis-sync-contactperson-duplicate"),
+          eq("contactperson-contact-synchronisation-created-error"),
           check {
-            assertThat(it["existingNomisContactId"]).isEqualTo(nomisContactId.toString())
-            assertThat(it["type"]).isEqualTo("DPS_CONTACT")
+            assertThat(it["nomisContactId"]).isEqualTo(nomisContactId.toString())
           },
           isNull(),
         )
