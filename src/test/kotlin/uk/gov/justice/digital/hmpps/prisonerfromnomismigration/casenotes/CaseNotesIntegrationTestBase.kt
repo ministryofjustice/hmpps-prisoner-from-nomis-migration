@@ -10,7 +10,7 @@ import uk.gov.justice.hmpps.sqs.HmppsQueue
 @ExtendWith(
   CaseNotesApiExtension::class,
 )
-class CaseNotesIntegrationTestBase : SqsIntegrationTestBase() {
+abstract class CaseNotesIntegrationTestBase : SqsIntegrationTestBase() {
 
   internal val caseNotesOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(CASENOTES_SYNC_QUEUE_ID) as HmppsQueue }
   internal val caseNotesQueueOffenderEventsUrl by lazy { caseNotesOffenderEventsQueue.queueUrl }

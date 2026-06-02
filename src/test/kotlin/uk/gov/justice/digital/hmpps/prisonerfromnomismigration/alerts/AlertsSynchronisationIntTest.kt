@@ -967,7 +967,7 @@ class AlertsSynchronisationIntTest(
           response = listOf(),
         )
         alertsMappingApiMockServer.stubReplaceMappingsForMerge(offenderNo)
-        awsSqsSentencingOffenderEventsClient.sendMessage(
+        awsSqsAlertOffenderEventsClient.sendMessage(
           alertsQueueOffenderEventsUrl,
           mergeDomainEvent(
             bookingId = bookingId,
@@ -1056,7 +1056,7 @@ class AlertsSynchronisationIntTest(
         )
         alertsMappingApiMockServer.stubReplaceMappingsForMerge(offenderNo)
         alertsMappingApiMockServer.stubReplaceMappingsForMergeFollowedBySuccess(offenderNo)
-        awsSqsSentencingOffenderEventsClient.sendMessage(
+        awsSqsAlertOffenderEventsClient.sendMessage(
           alertsQueueOffenderEventsUrl,
           mergeDomainEvent(
             bookingId = bookingId,
@@ -1159,7 +1159,7 @@ class AlertsSynchronisationIntTest(
         )
         alertsMappingApiMockServer.stubReplaceMappings(movedFromNomsNumber)
         alertsNomisApiMockServer.stubGetPrisonerDetails(offenderNo = movedToNomsNumber, prisonerDetails().copy(location = "MDI", active = true))
-        awsSqsSentencingOffenderEventsClient.sendMessage(
+        awsSqsAlertOffenderEventsClient.sendMessage(
           alertsQueueOffenderEventsUrl,
           bookingMovedDomainEvent(
             bookingId = bookingId,
@@ -1265,7 +1265,7 @@ class AlertsSynchronisationIntTest(
         alertsMappingApiMockServer.stubReplaceMappings(movedFromNomsNumber)
         alertsMappingApiMockServer.stubReplaceMappings(movedToNomsNumber)
         alertsNomisApiMockServer.stubGetPrisonerDetails(offenderNo = movedToNomsNumber, prisonerDetails().copy(location = "OUT", active = false))
-        awsSqsSentencingOffenderEventsClient.sendMessage(
+        awsSqsAlertOffenderEventsClient.sendMessage(
           alertsQueueOffenderEventsUrl,
           bookingMovedDomainEvent(
             bookingId = movedBookingId,
@@ -1370,7 +1370,7 @@ class AlertsSynchronisationIntTest(
           ),
         )
         alertsMappingApiMockServer.stubReplaceMappingsFailureFollowedBySuccess(movedFromNomsNumber)
-        awsSqsSentencingOffenderEventsClient.sendMessage(
+        awsSqsAlertOffenderEventsClient.sendMessage(
           alertsQueueOffenderEventsUrl,
           bookingMovedDomainEvent(
             bookingId = bookingId,
@@ -1462,7 +1462,7 @@ class AlertsSynchronisationIntTest(
           ),
         )
         alertsMappingApiMockServer.stubReplaceMappings(offenderNo)
-        awsSqsSentencingOffenderEventsClient.sendMessage(
+        awsSqsAlertOffenderEventsClient.sendMessage(
           alertsQueueOffenderEventsUrl,
           prisonerReceivedDomainEvent(
             offenderNo = offenderNo,
@@ -1533,7 +1533,7 @@ class AlertsSynchronisationIntTest(
           ),
         )
         alertsMappingApiMockServer.stubReplaceMappingsFailureFollowedBySuccess(offenderNo)
-        awsSqsSentencingOffenderEventsClient.sendMessage(
+        awsSqsAlertOffenderEventsClient.sendMessage(
           alertsQueueOffenderEventsUrl,
           prisonerReceivedDomainEvent(
             offenderNo = offenderNo,
@@ -1601,7 +1601,7 @@ class AlertsSynchronisationIntTest(
 
       @BeforeEach
       fun setUp() {
-        awsSqsSentencingOffenderEventsClient.sendMessage(
+        awsSqsAlertOffenderEventsClient.sendMessage(
           alertsQueueOffenderEventsUrl,
           prisonerReceivedDomainEvent(
             offenderNo = offenderNo,
@@ -1647,7 +1647,7 @@ class AlertsSynchronisationIntTest(
           ),
         )
         alertsMappingApiMockServer.stubReplaceMappings(offenderNo)
-        awsSqsSentencingOffenderEventsClient.sendMessage(
+        awsSqsAlertOffenderEventsClient.sendMessage(
           alertsQueueOffenderEventsUrl,
           prisonerReceivedDomainEvent(
             offenderNo = offenderNo,

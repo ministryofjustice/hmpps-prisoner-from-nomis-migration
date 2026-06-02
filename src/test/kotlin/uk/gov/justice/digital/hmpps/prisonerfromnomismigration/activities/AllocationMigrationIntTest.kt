@@ -8,7 +8,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
-import org.hamcrest.core.StringContains
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -21,7 +20,6 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.reactive.function.BodyInserters
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.ALLOCATIONS
@@ -35,7 +33,7 @@ import java.time.Duration
 
 class AllocationMigrationIntTest(
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
-) : SqsIntegrationTestBase() {
+) : ActivitiesIntegrationTestBase() {
   private fun stubMigrationDependencies(
     entities: Int = 1,
     stubGetActivityMappings: () -> Unit = { mappingApi.stubMultipleGetActivityMappings(entities) },
@@ -179,7 +177,9 @@ class AllocationMigrationIntTest(
         .jsonPath("$[0].estimatedRecordCount").isEqualTo(3)
         .jsonPath("$[0].migrationType").isEqualTo("ALLOCATIONS")
         .jsonPath("$[0].status").isEqualTo("COMPLETED")
-        .jsonPath("$[0].filter").value(StringContains("BXI"))
+        .jsonPath("$[0].filter").value<String> {
+          assertThat(it).contains("BXI")
+        }
         .jsonPath("$[0].recordsMigrated").isEqualTo(2)
         .jsonPath("$[0].recordsFailed").isEqualTo(1)
     }

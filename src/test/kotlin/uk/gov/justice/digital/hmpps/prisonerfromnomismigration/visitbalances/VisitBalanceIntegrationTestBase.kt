@@ -9,7 +9,7 @@ import uk.gov.justice.hmpps.sqs.HmppsQueue
 @ExtendWith(
   VisitBalanceDpsApiExtension::class,
 )
-class VisitBalanceIntegrationTestBase : SqsIntegrationTestBase() {
+abstract class VisitBalanceIntegrationTestBase : SqsIntegrationTestBase() {
 
   internal val visitBalanceOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(VISIT_BALANCE_SYNC_QUEUE_ID) as HmppsQueue }
 

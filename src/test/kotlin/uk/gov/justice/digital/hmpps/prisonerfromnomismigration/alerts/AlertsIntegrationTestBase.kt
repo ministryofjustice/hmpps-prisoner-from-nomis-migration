@@ -10,7 +10,7 @@ import uk.gov.justice.hmpps.sqs.HmppsQueue
 @ExtendWith(
   AlertsDpsApiExtension::class,
 )
-class AlertsIntegrationTestBase : SqsIntegrationTestBase() {
+abstract class AlertsIntegrationTestBase : SqsIntegrationTestBase() {
 
   internal val alertsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(ALERTS_SYNC_QUEUE_ID) as HmppsQueue }
   internal val alertsQueueOffenderEventsUrl by lazy { alertsOffenderEventsQueue.queueUrl }

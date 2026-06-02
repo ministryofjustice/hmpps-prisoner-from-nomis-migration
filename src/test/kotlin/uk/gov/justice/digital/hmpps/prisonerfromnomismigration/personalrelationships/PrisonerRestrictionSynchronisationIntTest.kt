@@ -19,7 +19,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.prisonerDe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.prisonerReceivedDomainEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerRestrictionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
@@ -38,14 +37,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequ
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-class PrisonerRestrictionSynchronisationIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var nomisApiMock: ContactPersonNomisApiMockServer
-
+class PrisonerRestrictionSynchronisationIntTest(
+  @Autowired private val nomisApiMock: ContactPersonNomisApiMockServer,
+  @Autowired private val mappingApiMock: PrisonerRestrictionMappingApiMockServer,
+) : PersonalRelationshipsIntegrationTestBase() {
   private val dpsApiMock = dpsContactPersonServer
-
-  @Autowired
-  private lateinit var mappingApiMock: PrisonerRestrictionMappingApiMockServer
 
   @Nested
   @DisplayName("RESTRICTION-UPSERTED created")

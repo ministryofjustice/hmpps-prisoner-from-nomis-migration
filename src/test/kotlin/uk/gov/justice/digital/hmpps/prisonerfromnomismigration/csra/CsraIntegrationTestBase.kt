@@ -9,7 +9,7 @@ import uk.gov.justice.hmpps.sqs.HmppsQueue
 @ExtendWith(
   CsraApiExtension::class,
 )
-class CsraIntegrationTestBase : SqsIntegrationTestBase() {
+abstract class CsraIntegrationTestBase : SqsIntegrationTestBase() {
 
   internal val csraMigrationQueue by lazy { hmppsQueueService.findByQueueId(CSRA_QUEUE_ID) as HmppsQueue }
 

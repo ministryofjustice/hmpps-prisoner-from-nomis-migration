@@ -10,7 +10,7 @@ import uk.gov.justice.hmpps.sqs.HmppsQueue
 @ExtendWith(
   FinanceApiExtension::class,
 )
-class FinanceIntegrationTestBase : SqsIntegrationTestBase() {
+abstract class FinanceIntegrationTestBase : SqsIntegrationTestBase() {
 
   internal val financeOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(FINANCE_SYNC_QUEUE_ID) as HmppsQueue }
   internal val financeQueueOffenderEventsUrl by lazy { financeOffenderEventsQueue.queueUrl }

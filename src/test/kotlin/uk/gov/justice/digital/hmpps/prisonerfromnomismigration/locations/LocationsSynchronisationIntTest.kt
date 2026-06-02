@@ -33,7 +33,6 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.LocationsApiExtension.Companion.locationsApi
@@ -51,7 +50,7 @@ private const val NOMIS_MAPPING_API_URL = "$LOCATIONS_GET_MAPPING_URL/$NOMIS_LOC
 private const val DPS_PARENT_LOCATION_ID = "fedcba98-1234-1234-1234-1234567890ab"
 private const val NOMIS_PARENT_LOCATION_ID = 45678L
 
-class LocationsSynchronisationIntTest : SqsIntegrationTestBase() {
+class LocationsSynchronisationIntTest : LocationsIntegrationTestBase() {
 
   @Nested
   inner class WhenCreateByDPS {

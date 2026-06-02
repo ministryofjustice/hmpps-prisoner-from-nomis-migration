@@ -9,7 +9,7 @@ import uk.gov.justice.hmpps.sqs.HmppsQueue
 @ExtendWith(
   CorePersonCprApiExtension::class,
 )
-class CorePersonIntegrationTestBase : SqsIntegrationTestBase() {
+abstract class CorePersonIntegrationTestBase : SqsIntegrationTestBase() {
 
   internal val corePersonOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(CORE_PERSON_SYNC_QUEUE_ID) as HmppsQueue }
   internal val awsSqsCorePersonOffenderEventsClient by lazy { corePersonOffenderEventsQueue.sqsClient }

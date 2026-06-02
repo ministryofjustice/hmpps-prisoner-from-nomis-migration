@@ -20,7 +20,6 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.hasMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -58,14 +57,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequ
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-class OrganisationsSynchronisationIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var nomisApiMock: OrganisationsNomisApiMockServer
+class OrganisationsSynchronisationIntTest(
+  @Autowired private val nomisApiMock: OrganisationsNomisApiMockServer,
+  @Autowired private val mappingApiMock: OrganisationsMappingApiMockServer,
+) : OrganisationsIntegrationTestBase() {
 
   private val dpsApiMock = dpsOrganisationsServer
-
-  @Autowired
-  private lateinit var mappingApiMock: OrganisationsMappingApiMockServer
 
   @Nested
   @DisplayName("CORPORATE-INSERTED")

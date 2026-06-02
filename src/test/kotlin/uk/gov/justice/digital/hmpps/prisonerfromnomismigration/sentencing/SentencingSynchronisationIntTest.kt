@@ -34,7 +34,6 @@ import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.SentenceIdAndAdjustmentType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.SyncSentenceAdjustment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeNomisEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.KeyDateAdjustmentResponse
@@ -55,7 +54,7 @@ private const val OFFENDER_NUMBER = "G4803UT"
 private const val BOOKING_ID = 1234L
 private const val SENTENCE_SEQUENCE = 1L
 
-class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
+class SentencingSynchronisationIntTest : SentencingIntegrationTestBase() {
   @Autowired
   private lateinit var nomisApi: SentencingAdjustmentsNomisApiMockServer
 
@@ -325,8 +324,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           @Test
           fun `will eventually partially fail with a message on the dead letter queue`() {
             await untilCallTo {
-              awsSqsVisitsMigrationDlqClient?.countAllMessagesOnQueue(sentencingQueueOffenderEventsDlqUrl!!)
-                ?.get()
+              awsSqsSentencingOffenderEventsClient.countAllMessagesOnQueue(sentencingQueueOffenderEventsDlqUrl!!)
+                .get()
             } matches { it == 1 }
 
             verify(telemetryClient).trackEvent(
@@ -1204,8 +1203,8 @@ class SentencingSynchronisationIntTest : SqsIntegrationTestBase() {
           @Test
           fun `will eventually partially fail with a message on the dead letter queue`() {
             await untilCallTo {
-              awsSqsVisitsMigrationDlqClient?.countAllMessagesOnQueue(sentencingQueueOffenderEventsDlqUrl!!)
-                ?.get()
+              awsSqsSentencingOffenderEventsClient.countAllMessagesOnQueue(sentencingQueueOffenderEventsDlqUrl!!)
+                .get()
             } matches { it == 1 }
 
             verify(telemetryClient).trackEvent(

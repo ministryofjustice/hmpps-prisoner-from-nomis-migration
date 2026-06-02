@@ -13,7 +13,7 @@ import uk.gov.justice.hmpps.sqs.HmppsQueue
 @ExtendWith(
   TapDpsApiExtension::class,
 )
-class TapIntegrationTestBase : SqsIntegrationTestBase() {
+abstract class TapIntegrationTestBase : SqsIntegrationTestBase() {
 
   internal val externalMovementsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(EXTERNALMOVEMENTS_SYNC_QUEUE_ID) as HmppsQueue }
   internal val awsSqsExternalMovementsOffenderEventsClient by lazy { externalMovementsOffenderEventsQueue.sqsClient }

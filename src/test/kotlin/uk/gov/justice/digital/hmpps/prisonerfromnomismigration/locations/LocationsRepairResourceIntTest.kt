@@ -12,7 +12,6 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.LocationsApiExtension.Companion.locationsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.LOCATIONS_CREATE_MAPPING_URL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -23,7 +22,7 @@ private const val NOMIS_LOCATION_ID = 12345L
 private const val DPS_PARENT_LOCATION_ID = "fedcba98-1234-1234-1234-1234567890ab"
 private const val NOMIS_PARENT_LOCATION_ID = 45678L
 
-class LocationsRepairResourceIntTest : SqsIntegrationTestBase() {
+class LocationsRepairResourceIntTest : LocationsIntegrationTestBase() {
 
   @DisplayName("POST /locations/id/$NOMIS_LOCATION_ID/repair")
   @Nested

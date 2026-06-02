@@ -21,7 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.reactive.function.BodyInserters
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.ActivitiesIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.APPOINTMENTS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension.Companion.activitiesApi
@@ -37,7 +37,7 @@ import java.util.UUID
 
 class AppointmentsMigrationIntTest(
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
-) : SqsIntegrationTestBase() {
+) : ActivitiesIntegrationTestBase() {
   @Nested
   @DisplayName("POST /migrate/appointments")
   inner class MigrationAppointments {

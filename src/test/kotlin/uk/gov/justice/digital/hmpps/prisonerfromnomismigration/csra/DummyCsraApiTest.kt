@@ -4,13 +4,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CsraGetDto
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-class DummyCsraApiTest : SqsIntegrationTestBase() {
+class DummyCsraApiTest : CsraIntegrationTestBase() {
   @Test
   fun testApi() {
     val body: List<CsraReviewDto> = listOf(

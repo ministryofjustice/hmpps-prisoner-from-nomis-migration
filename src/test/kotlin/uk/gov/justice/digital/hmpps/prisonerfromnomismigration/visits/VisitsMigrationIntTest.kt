@@ -5,7 +5,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
-import org.hamcrest.core.StringContains
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -21,7 +20,6 @@ import org.springframework.http.ReactiveHttpOutputMessage
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.VISITS
@@ -36,7 +34,7 @@ import java.time.Duration
 
 class VisitsMigrationIntTest(
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
-) : SqsIntegrationTestBase() {
+) : VisitsIntegrationTestBase() {
   @Nested
   @DisplayName("POST /migrate/visits")
   inner class MigrationVisits {
@@ -176,8 +174,10 @@ class VisitsMigrationIntTest(
           .jsonPath("$[0].estimatedRecordCount").isEqualTo(26)
           .jsonPath("$[0].migrationType").isEqualTo("VISITS")
           .jsonPath("$[0].status").isEqualTo("COMPLETED")
-          .jsonPath("$[0].filter").value(StringContains("SCON"))
-          .jsonPath("$[0].filter").value(StringContains("HEI"))
+          .jsonPath("$[0].filter").value<String> {
+            assertThat(it).contains("SCON")
+            assertThat(it).contains("HEI")
+          }
           .jsonPath("$[0].recordsMigrated").isEqualTo(25)
           .jsonPath("$[0].recordsFailed").isEqualTo(1)
       }
