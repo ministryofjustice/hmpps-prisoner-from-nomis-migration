@@ -123,6 +123,10 @@ generic-service:
      HMPPS_SQS_QUEUES_MIGRATIONPRISONERBALANCE_QUEUE_NAME: "sqs_name"
     sqs-migration-prisonerbalance-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONPRISONERBALANCE_DLQ_NAME: "sqs_name"
+    sqs-migration-staff-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONSTAFF_QUEUE_NAME: "sqs_name"
+    sqs-migration-staff-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONSTAFF_DLQ_NAME: "sqs_name"
     sqs-migration-courtmovements-queue:
       HMPPS_SQS_QUEUES_MIGRATIONCOURTMOVEMENTS_QUEUE_NAME: "sqs_name"
     sqs-migration-courtmovements-dlq:

@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.VisitSlotsMappingService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMappingService
 
 @Service
@@ -26,6 +27,7 @@ class GeneralMappingService(
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
   private val prisonBalanceMappingApiService: PrisonBalanceMappingApiService,
   private val prisonerBalanceMappingApiService: PrisonerBalanceMappingApiService,
+  private val staffMappingApiService: StaffMappingApiService,
   private val tapMappingApiService: TapMappingApiService,
   private val visitSlotsMappingService: VisitSlotsMappingService,
   private val officialVisitsMappingService: OfficialVisitsMappingService,
@@ -43,6 +45,7 @@ class GeneralMappingService(
     MigrationType.OFFICIAL_VISITS -> officialVisitsMappingService.getMigrationCount(migrationId)
     MigrationType.PRISON_BALANCE -> prisonBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
     MigrationType.PRISONER_BALANCE -> prisonerBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
+    MigrationType.STAFF -> staffMappingApiService.getPagedModelMigrationCount(migrationId)
     MigrationType.VISIT_SLOTS -> visitSlotsMappingService.getMigrationCount(migrationId)
     MigrationType.VISITS -> visitMappingService.getMigrationCount(migrationId)
   }

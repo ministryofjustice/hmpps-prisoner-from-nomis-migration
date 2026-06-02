@@ -88,6 +88,13 @@ prisonerbalance:
     count: 1
   page:
     size: 10
+staff:
+  complete-check:
+    delay-seconds: 0
+    retry-seconds: 0
+    count: 1
+  page:
+    size: 10
 visitbalance:
   complete-check:
     delay-seconds: 0
@@ -201,6 +208,8 @@ hmpps.sqs:
     migrationprisonbalance:
       errorVisibilityTimeout: 0
     migrationprisonerbalance:
+      errorVisibilityTimeout: 0
+    migrationstaff:
       errorVisibilityTimeout: 0
     migrationcourtmovements:
       errorVisibilityTimeout: 0
