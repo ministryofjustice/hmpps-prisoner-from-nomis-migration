@@ -18,7 +18,6 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageAttributes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
@@ -28,7 +27,12 @@ import java.time.Duration
 import java.util.UUID
 
 @TestPropertySource(properties = ["finance.transactions.forwardingDelaySeconds=1"])
-class TransactionSynchronisationMultiIntTest : SqsIntegrationTestBase() {
+class TransactionSynchronisationMultiIntTest(
+  @Autowired private val financeNomisApiMockServer: FinanceNomisApiMockServer,
+  @Autowired private val financeMappingApiMockServer: FinanceMappingApiMockServer,
+  @Autowired private val transactionIdBufferRepository: TransactionIdBufferRepository,
+  @Autowired private val jsonMapper: JsonMapper,
+) : FinanceIntegrationTestBase() {
   companion object {
     val dpsTransactionUuid: UUID = UUID.fromString(DPS_TRANSACTION_ID)
     val messageUuid: UUID = UUID.fromString(MESSAGE_ID)
@@ -38,18 +42,6 @@ class TransactionSynchronisationMultiIntTest : SqsIntegrationTestBase() {
     internal const val DPS_TRANSACTION_ID = "a04f7a8d-61aa-400c-9395-000011112222"
     internal const val MESSAGE_ID = "abcdef01-0000-1111-2222-000011112222"
   }
-
-  @Autowired
-  private lateinit var financeNomisApiMockServer: FinanceNomisApiMockServer
-
-  @Autowired
-  private lateinit var jsonMapper: JsonMapper
-
-  @Autowired
-  private lateinit var financeMappingApiMockServer: FinanceMappingApiMockServer
-
-  @Autowired
-  private lateinit var transactionIdBufferRepository: TransactionIdBufferRepository
 
   @BeforeEach
   fun init() = runTest {

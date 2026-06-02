@@ -28,7 +28,6 @@ import org.springframework.http.HttpStatus
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageAttributes
@@ -41,7 +40,12 @@ import uk.gov.justice.hmpps.sqs.countMessagesOnQueue
 import java.util.AbstractMap.SimpleEntry
 import java.util.UUID
 
-class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
+class PrisonerTransactionSynchronisationIntTest(
+  @Autowired private val financeNomisApiMockServer: FinanceNomisApiMockServer,
+  @Autowired private val jsonMapper: JsonMapper,
+  @Autowired private val financeMappingApiMockServer: FinanceMappingApiMockServer,
+  @Autowired private val transactionIdBufferRepository: TransactionIdBufferRepository,
+) : FinanceIntegrationTestBase() {
 
   companion object {
     internal const val BOOKING_ID = 1234L
@@ -53,18 +57,6 @@ class PrisonerTransactionSynchronisationIntTest : SqsIntegrationTestBase() {
     val dpsTransactionUuid: UUID = UUID.fromString(DPS_TRANSACTION_ID)
     val messageUuid: UUID = UUID.fromString(MESSAGE_ID)
   }
-
-  @Autowired
-  private lateinit var financeNomisApiMockServer: FinanceNomisApiMockServer
-
-  @Autowired
-  private lateinit var jsonMapper: JsonMapper
-
-  @Autowired
-  private lateinit var financeMappingApiMockServer: FinanceMappingApiMockServer
-
-  @Autowired
-  private lateinit var transactionIdBufferRepository: TransactionIdBufferRepository
 
   @Nested
   @DisplayName("OFFENDER_TRANSACTIONS-INSERTED")

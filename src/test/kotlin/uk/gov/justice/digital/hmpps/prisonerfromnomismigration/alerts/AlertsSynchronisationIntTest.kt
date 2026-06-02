@@ -34,7 +34,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.prisonerReceivedDomainEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AlertMappingDto.MappingType.MIGRATED
@@ -52,12 +51,10 @@ private const val BOOKING_ID = 1234L
 private const val ALERT_SEQUENCE = 1L
 private const val OFFENDER_ID_DISPLAY = "A3864DZ"
 
-class AlertsSynchronisationIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var alertsNomisApiMockServer: AlertsNomisApiMockServer
-
-  @Autowired
-  private lateinit var alertsMappingApiMockServer: AlertsMappingApiMockServer
+class AlertsSynchronisationIntTest(
+  @Autowired private val alertsNomisApiMockServer: AlertsNomisApiMockServer,
+  @Autowired private val alertsMappingApiMockServer: AlertsMappingApiMockServer,
+) : AlertsIntegrationTestBase() {
 
   @Nested
   @DisplayName("ALERT-INSERTED")

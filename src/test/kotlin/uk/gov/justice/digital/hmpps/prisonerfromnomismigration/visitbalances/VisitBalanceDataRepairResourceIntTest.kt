@@ -13,16 +13,14 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiExtension.Companion.dpsVisitBalanceServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-class VisitBalanceDataRepairResourceIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var visitBalanceNomisApiMockServer: VisitBalanceNomisApiMockServer
-
+class VisitBalanceDataRepairResourceIntTest(
+  @Autowired private val visitBalanceNomisApiMockServer: VisitBalanceNomisApiMockServer,
+) : VisitBalanceIntegrationTestBase() {
   @DisplayName("POST /prisoners/{prisonNumber}/visit-balance/repair")
   @Nested
   inner class RepairVisitBalance {

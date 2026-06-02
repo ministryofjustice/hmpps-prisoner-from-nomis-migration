@@ -18,7 +18,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion.ReligionsMappingApiMockServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
@@ -27,11 +26,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequ
 
 class CorePersonSynchronisationBeliefsIntTest(
   @Autowired private val nomisApi: CorePersonNomisApiMockServer,
-) : SqsIntegrationTestBase() {
-
-  @Autowired
-  private lateinit var mappingApiMock: ReligionsMappingApiMockServer
-
+  @Autowired private val mappingApiMock: ReligionsMappingApiMockServer,
+) : CorePersonIntegrationTestBase() {
   private val cprApi = CorePersonCprApiExtension.cprCorePersonServer
 
   @Nested

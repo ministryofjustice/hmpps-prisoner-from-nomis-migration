@@ -17,7 +17,6 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
@@ -28,7 +27,7 @@ import java.time.LocalDateTime
 
 class CorePersonSynchronisationProfileDetailsIntTest(
   @Autowired private val nomisApi: ProfileDetailsNomisApiMockServer,
-) : SqsIntegrationTestBase() {
+) : CorePersonIntegrationTestBase() {
 
   private val cprApi = CorePersonCprApiExtension.cprCorePersonServer
 

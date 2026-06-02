@@ -31,7 +31,6 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.caseNotesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiMockServer.Companion.dpsCaseNote
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto.MappingType.MIGRATED
@@ -51,12 +50,10 @@ private const val NOMIS_CASE_NOTE_ID2 = 2345699L
 private const val OFFENDER_ID_DISPLAY = "A3864DZ"
 private const val DPS_CASE_NOTE_ID = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
 
-class CaseNotesSynchronisationIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var caseNotesNomisApiMockServer: CaseNotesNomisApiMockServer
-
-  @Autowired
-  private lateinit var caseNotesMappingApiMockServer: CaseNotesMappingApiMockServer
+class CaseNotesSynchronisationIntTest(
+  @Autowired private val caseNotesNomisApiMockServer: CaseNotesNomisApiMockServer,
+  @Autowired private val caseNotesMappingApiMockServer: CaseNotesMappingApiMockServer,
+) : CaseNotesIntegrationTestBase() {
 
   @Nested
   @DisplayName("OFFENDER_CASE_NOTES-INSERTED")
