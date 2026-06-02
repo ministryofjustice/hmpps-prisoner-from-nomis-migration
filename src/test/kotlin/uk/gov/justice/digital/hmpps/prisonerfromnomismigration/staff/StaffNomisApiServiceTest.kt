@@ -30,7 +30,7 @@ class StaffNomisApiServiceTest {
   inner class GetStaffDetail {
     @Test
     fun `will pass oath2 token to service`() = runTest {
-      mockServer.stubGetStaffDetails(nomisStaffStaffId = 10000)
+      mockServer.stubGetStaffDetails(nomisStaffId = 10000)
 
       apiService.getStaffDetails(staffId = 10000)
 
@@ -41,7 +41,7 @@ class StaffNomisApiServiceTest {
 
     @Test
     fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubGetStaffDetails(nomisStaffStaffId = 10000)
+      mockServer.stubGetStaffDetails(nomisStaffId = 10000)
 
       apiService.getStaffDetails(staffId = 10000)
 
@@ -81,7 +81,7 @@ class StaffNomisApiServiceTest {
 
           assertThat(caseloads.size).isEqualTo(3)
           with(caseloads[0]) {
-            assertThat(caseload).isEqualTo("LEI")
+            assertThat(caseloadId).isEqualTo("LEI")
             assertThat(roles[0].code).isEqualTo("NOMIS_CODE_1")
             assertThat(audit.createDatetime).isEqualTo(LocalDateTime.parse("2016-08-01T10:55"))
             assertThat(audit.createUsername).isEqualTo("KOFEADDY")
@@ -89,11 +89,11 @@ class StaffNomisApiServiceTest {
             assertThat(audit.modifyUserId).isEqualTo("KOFE_MOD")
           }
           with(caseloads[1]) {
-            assertThat(caseload).isEqualTo("MDI")
+            assertThat(caseloadId).isEqualTo("MDI")
             assertThat(roles.size).isEqualTo(0)
           }
           with(caseloads[2]) {
-            assertThat(caseload).isEqualTo("NWEB")
+            assertThat(caseloadId).isEqualTo("NWEB")
             assertThat(audit.createDatetime).isEqualTo(LocalDateTime.parse("2016-08-01T10:55"))
             assertThat(audit.createUsername).isEqualTo("KOFEADDY")
             assertThat(audit.modifyDatetime).isEqualTo(LocalDateTime.parse("2017-08-01T10:55"))
@@ -154,6 +154,81 @@ class StaffNomisApiServiceTest {
           .withQueryParam("staffId", equalTo("99"))
           .withQueryParam("size", equalTo("30")),
       )
+    }
+  }
+
+  @Nested
+  inner class GetStaffIds {
+    @Test
+    internal fun `will pass oath2 token to endpoint`() = runTest {
+      mockServer.stubGetStaffIds(
+        pageNumber = 0,
+        pageSize = 20,
+        content = listOf(
+          StaffIdResponse(
+            staffId = 1234,
+          ),
+        ),
+      )
+
+      apiService.getStaffIds(
+        pageNumber = 0,
+        pageSize = 20,
+
+      )
+
+      mockServer.verify(
+        getRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will call the get IDs endpoint`() = runTest {
+      mockServer.stubGetStaffIds(
+        pageNumber = 10,
+        pageSize = 30,
+        content = listOf(
+          StaffIdResponse(
+            staffId = 1234,
+          ),
+        ),
+      )
+
+      apiService.getStaffIds(
+        pageNumber = 10,
+        pageSize = 30,
+      )
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/staff/ids"))
+          .withQueryParam("page", equalTo("10"))
+          .withQueryParam("size", equalTo("30")),
+      )
+    }
+
+    @Test
+    fun `will return page metadata in the response so it can be used by migration service`() = runTest {
+      mockServer.stubGetStaffIds(
+        content = (1..20).map {
+          StaffIdResponse(
+            staffId = it.toLong(),
+          )
+        },
+        pageNumber = 10,
+        pageSize = 20,
+        totalElements = 1000,
+      )
+
+      val pageOfIds = apiService.getStaffIds(
+        pageNumber = 10,
+        pageSize = 20,
+      )
+
+      assertThat(pageOfIds.content).hasSize(20)
+      assertThat(pageOfIds.page?.totalPages).isEqualTo(50)
+      assertThat(pageOfIds.page?.totalElements).isEqualTo(1000)
+      assertThat(pageOfIds.page?.propertySize).isEqualTo(20)
     }
   }
 }
