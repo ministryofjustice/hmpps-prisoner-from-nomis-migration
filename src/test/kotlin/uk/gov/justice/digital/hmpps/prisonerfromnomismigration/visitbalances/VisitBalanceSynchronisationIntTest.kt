@@ -16,7 +16,6 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
@@ -25,14 +24,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visit.balance.model.VisitAllocationPrisonerSyncDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiExtension.Companion.dpsVisitBalanceServer
 
-class VisitBalanceSynchronisationIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var nomisVisitBalanceApiMock: VisitBalanceNomisApiMockServer
-
+class VisitBalanceSynchronisationIntTest(
+  @Autowired private val nomisVisitBalanceApiMock: VisitBalanceNomisApiMockServer,
+  @Autowired private val mappingApiMock: VisitBalanceMappingApiMockServer,
+) : VisitBalanceIntegrationTestBase() {
   private val dpsApiMock = dpsVisitBalanceServer
-
-  @Autowired
-  private lateinit var mappingApiMock: VisitBalanceMappingApiMockServer
 
   @Nested
   @DisplayName("OFFENDER_VISIT_BALANCE_ADJS-INSERTED")

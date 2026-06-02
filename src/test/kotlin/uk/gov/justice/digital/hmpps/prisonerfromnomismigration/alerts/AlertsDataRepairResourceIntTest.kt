@@ -16,16 +16,13 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension.Companion.dpsAlertsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiMockServer.Companion.resyncedAlert
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.util.*
 
-class AlertsDataRepairResourceIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var alertsNomisApiMockServer: AlertsNomisApiMockServer
-
-  @Autowired
-  private lateinit var alertsMappingApiMockServer: AlertsMappingApiMockServer
+class AlertsDataRepairResourceIntTest(
+  @Autowired private val alertsNomisApiMockServer: AlertsNomisApiMockServer,
+  @Autowired private val alertsMappingApiMockServer: AlertsMappingApiMockServer,
+) : AlertsIntegrationTestBase() {
 
   @DisplayName("POST /prisoners/{offenderNo}/alerts/resynchronise")
   @Nested

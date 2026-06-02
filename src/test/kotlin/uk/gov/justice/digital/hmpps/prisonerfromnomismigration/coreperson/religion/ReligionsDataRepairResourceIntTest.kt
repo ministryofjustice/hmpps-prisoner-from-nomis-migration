@@ -14,17 +14,15 @@ import org.mockito.kotlin.verifyNoInteractions
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonNomisApiMockServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
 
-class ReligionsDataRepairResourceIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var nomisApiMockServer: CorePersonNomisApiMockServer
-
-  @Autowired
-  private lateinit var mappingApiMockServer: ReligionsMappingApiMockServer
+class ReligionsDataRepairResourceIntTest(
+  @Autowired private val nomisApiMockServer: CorePersonNomisApiMockServer,
+  @Autowired private val mappingApiMockServer: ReligionsMappingApiMockServer,
+) : CorePersonIntegrationTestBase() {
 
   @DisplayName("POST /prisoners/{prisonNumber}/core-person/religion/repair")
   @Nested

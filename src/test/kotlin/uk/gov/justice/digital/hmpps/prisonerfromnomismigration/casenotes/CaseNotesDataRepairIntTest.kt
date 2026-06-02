@@ -19,27 +19,18 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.caseNotesApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto.MappingType.MIGRATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteAmendment
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteResponse.SourceSystem
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
-import java.time.LocalDateTime
 
 private const val BOOKING_ID = 1234L
 private const val NOMIS_CASE_NOTE_ID = 2345678L
 private const val NOMIS_CASE_NOTE_ID2 = 2345699L
-private const val OFFENDER_ID_DISPLAY = "A3864DZ"
 private const val DPS_CASE_NOTE_ID = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
 
-class CaseNotesDataRepairIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var caseNotesNomisApiMockServer: CaseNotesNomisApiMockServer
-
-  @Autowired
-  private lateinit var caseNotesMappingApiMockServer: CaseNotesMappingApiMockServer
+class CaseNotesDataRepairIntTest(
+  @Autowired private val caseNotesNomisApiMockServer: CaseNotesNomisApiMockServer,
+  @Autowired private val caseNotesMappingApiMockServer: CaseNotesMappingApiMockServer,
+) : CaseNotesIntegrationTestBase() {
 
   @Nested
   inner class CaseNoteDeleteRepair {
@@ -391,34 +382,3 @@ class CaseNotesDataRepairIntTest : SqsIntegrationTestBase() {
     }
   }
 }
-
-private fun caseNote(bookingId: Long = 123456, caseNoteId: Long = 3) = CaseNoteResponse(
-  bookingId = bookingId,
-  caseNoteId = caseNoteId,
-  caseNoteType = CodeDescription("XNR", "Not For Release"),
-  caseNoteSubType = CodeDescription("X", "Security"),
-  authorUsername = "me",
-  authorStaffId = 123456L,
-  authorFirstName = "First",
-  authorLastName = "Last",
-  amendments = listOf(
-    CaseNoteAmendment(
-      createdDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
-      text = "amendment text",
-      authorUsername = "authorone",
-      authorStaffId = 2001,
-      authorFirstName = "AUTHOR",
-      authorLastName = "ONE",
-      sourceSystem = CaseNoteAmendment.SourceSystem.NOMIS,
-    ),
-  ),
-  creationDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
-  createdDatetime = LocalDateTime.parse("2023-11-12T13:14:15"),
-  createdUsername = "John",
-  noteSourceCode = CaseNoteResponse.NoteSourceCode.INST,
-  occurrenceDateTime = LocalDateTime.parse("2021-02-03T04:05:06"),
-  prisonId = "SWI",
-  caseNoteText = "the actual casenote",
-  auditModuleName = "module",
-  sourceSystem = SourceSystem.NOMIS,
-)

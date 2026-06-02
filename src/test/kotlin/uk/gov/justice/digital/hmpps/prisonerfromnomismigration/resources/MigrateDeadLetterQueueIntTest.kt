@@ -1,14 +1,13 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.resources
 
+import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilCallTo
-import org.hamcrest.Matchers.containsInAnyOrder
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import tools.jackson.databind.json.JsonMapper
@@ -17,15 +16,21 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventTy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageAttributes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.PRISONER_BALANCE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.PRISONER_BALANCE_QUEUE_ID
+import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.countMessagesOnQueue
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class MigrateDeadLetterQueueIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var jsonMapper: JsonMapper
+class MigrateDeadLetterQueueIntTest(
+  @Autowired private val jsonMapper: JsonMapper,
+) : SqsIntegrationTestBase() {
+  internal val prisonerBalanceMigrationQueue by lazy { hmppsQueueService.findByQueueId(PRISONER_BALANCE_QUEUE_ID) as HmppsQueue }
+  internal val prisonerBalanceMigrationDlqUrl by lazy { prisonerBalanceMigrationQueue.dlqUrl }
+  internal val prisonerBalanceMigrationDlqClient by lazy { prisonerBalanceMigrationQueue.sqsDlqClient }
 
-  companion object {
-    val migrationType = PRISONER_BALANCE
+  override fun getQueues(): List<HmppsQueue> = listOf(prisonerBalanceMigrationQueue)
+
+  private companion object {
+    private val migrationType = PRISONER_BALANCE
   }
 
   @Nested
@@ -86,13 +91,13 @@ class MigrateDeadLetterQueueIntTest : SqsIntegrationTestBase() {
         .expectBody()
         .jsonPath("messagesFoundCount").isEqualTo(3)
         .jsonPath("messagesReturnedCount").isEqualTo(3)
-        .jsonPath("messages..body.MessageId").value(
-          containsInAnyOrder(
+        .jsonPath("messages..body.MessageId").value<List<String>> {
+          assertThat(it).containsExactlyInAnyOrder(
             "message-id-1",
             "message-id-2",
             "message-id-3",
-          ),
-        )
+          )
+        }
     }
   }
 

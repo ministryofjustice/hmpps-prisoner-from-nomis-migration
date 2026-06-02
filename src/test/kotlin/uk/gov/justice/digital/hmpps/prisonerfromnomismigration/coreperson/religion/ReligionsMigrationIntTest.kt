@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
@@ -25,11 +26,11 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonNomisApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.beliefs
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.MigrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse.Status
@@ -38,6 +39,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderBelief
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestsAsString
@@ -52,9 +54,22 @@ import kotlin.collections.forEach
 class ReligionsMigrationIntTest(
   @Autowired private val corePersonNomisApiMock: CorePersonNomisApiMockServer,
   @Autowired private val mappingApiMock: ReligionsMappingApiMockServer,
-) : MigrationTestBase() {
+  @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
+) : CorePersonIntegrationTestBase() {
   private val nomisApiMock = NomisApiExtension.nomisApi
   private val cprApiMock = CorePersonCprApiExtension.cprCorePersonServer
+
+  override fun resetTelemetryClient() {}
+
+  internal fun setupMigrationTest() = runBlocking {
+    migrationHistoryRepository.deleteAll()
+
+    NomisApiExtension.resetAndDisableResetBeforeEach()
+    MappingApiExtension.resetAndDisableResetBeforeEach()
+    CorePersonCprApiExtension.resetAndDisableResetBeforeEach()
+
+    tearDownTelemetryClient()
+  }
 
   @AfterAll
   fun tearDownTelemetryClient() = reset(telemetryClient)

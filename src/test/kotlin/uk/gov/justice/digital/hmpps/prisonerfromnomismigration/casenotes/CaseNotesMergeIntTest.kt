@@ -19,7 +19,6 @@ import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.caseNotesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseNoteAmendment
@@ -29,14 +28,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
-
-class CaseNotesMergeIntTest : SqsIntegrationTestBase() {
-
-  @Autowired
-  private lateinit var caseNotesMappingApiMockServer: CaseNotesMappingApiMockServer
-
-  @Autowired
-  private lateinit var caseNotesNomisApiMockServer: CaseNotesNomisApiMockServer
+class CaseNotesMergeIntTest(
+  @Autowired private val caseNotesMappingApiMockServer: CaseNotesMappingApiMockServer,
+  @Autowired private val caseNotesNomisApiMockServer: CaseNotesNomisApiMockServer,
+) : CaseNotesIntegrationTestBase() {
 
   @Nested
   inner class OffenderMerged {

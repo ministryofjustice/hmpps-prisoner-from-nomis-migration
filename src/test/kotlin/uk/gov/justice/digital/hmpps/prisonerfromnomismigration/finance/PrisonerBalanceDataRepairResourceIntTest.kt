@@ -16,14 +16,13 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 
-class PrisonerBalanceDataRepairResourceIntTest : SqsIntegrationTestBase() {
-  @Autowired
-  private lateinit var nomisApiMockServer: PrisonerBalanceNomisApiMockServer
+class PrisonerBalanceDataRepairResourceIntTest(
+  @Autowired private val nomisApiMockServer: PrisonerBalanceNomisApiMockServer,
+) : FinanceIntegrationTestBase() {
 
   @DisplayName("POST /prisoners/id/{rootOffenderId}/prisoner-balance/repair")
   @Nested

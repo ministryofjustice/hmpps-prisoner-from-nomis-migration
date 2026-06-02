@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra
 
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
@@ -30,7 +31,9 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExtension.Companion.csraApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiMockServer.Companion.WIREMOCK_PORT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.MigrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countMessagesOnQueue
@@ -43,9 +46,22 @@ private const val OFFENDER_NUMBER2 = "A0002KT"
 class CsraMigrationIntTest(
   @Autowired private val csrasNomisApiMockServer: CsraNomisApiMockServer,
   @Autowired private val csrasMappingApiMockServer: CsraMappingApiMockServer,
-) : MigrationTestBase() {
+  @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
+) : CsraIntegrationTestBase() {
   private val csraQueueMigrationDlqUrl by lazy { csraMigrationQueue.dlqUrl as String }
   private val awsSqsCsraMigrationDlqClient by lazy { csraMigrationQueue.sqsDlqClient as SqsAsyncClient }
+
+  override fun resetTelemetryClient() {}
+
+  internal fun setupMigrationTest() = runBlocking {
+    migrationHistoryRepository.deleteAll()
+
+    NomisApiExtension.resetAndDisableResetBeforeEach()
+    MappingApiExtension.resetAndDisableResetBeforeEach()
+    CsraApiExtension.resetAndDisableResetBeforeEach()
+
+    tearDownTelemetryClient()
+  }
 
   @AfterAll
   fun tearDownTelemetryClient() = reset(telemetryClient)
