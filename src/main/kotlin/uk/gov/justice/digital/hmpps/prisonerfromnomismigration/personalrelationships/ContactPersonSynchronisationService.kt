@@ -196,15 +196,9 @@ class ContactPersonSynchronisationService(
                 dpsApiService.createPrisonerContact(nomisContact.toDpsCreatePrisonerContactRequest(nomisPersonId = event.personId))
               when (dpsPrisonerContactResponse) {
                 is CreatePrisonerContactDuplicate -> {
-                  telemetryClient.trackEvent(
-                    "from-nomis-sync-contactperson-duplicate",
-                    mapOf(
-                      "existingNomisContactId" to event.contactId,
-                      "type" to "DPS_CONTACT",
-                    ),
-                  )
                   throw IllegalStateException("Duplicate contact ${event.contactId} already exists in DPS")
                 }
+
                 is CreatePrisonerContactSuccess -> {
                   telemetry["dpsPrisonerContactId"] = dpsPrisonerContactResponse.contact.id
                   val mapping = PersonContactMappingDto(
