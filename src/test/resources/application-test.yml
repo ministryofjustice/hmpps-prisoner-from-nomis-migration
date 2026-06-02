@@ -8,25 +8,26 @@ management.endpoint:
 api.base.url:
   nomis: http://localhost:8081
   hmpps-auth: http://localhost:8090/auth
-  visits: http://localhost:8082
   mapping: http://localhost:8083
+  visits: http://localhost:8082
   sentencing: http://localhost:8085
   activities: http://localhost:8086
+  staff: http://localhost:8089
   # do not use port 8091 - clashes on some Macs
   alerts: http://localhost:8092
   locations: http://localhost:8093
   court.sentencing: http://localhost:8094
   casenotes: http://localhost:8096
-  finance: http://localhost:8102
   personal.relationships: http://localhost:8097
   nomis-sync: http://localhost:8098
   core.person: http://localhost:8099
   organisations: http://localhost:8100
   visit.balance: http://localhost:8101
+  finance: http://localhost:8102
   movements-taps: http://localhost:8103
-  movements-court: http://localhost:8106
   officialvisits: http://localhost:8104
   csra: http://localhost:8105
+  movements-court: http://localhost:8106
 
 visits:
   page:

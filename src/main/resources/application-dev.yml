@@ -4,19 +4,20 @@ server:
 api.base.url:
   nomis: http://localhost:8082
   hmpps-auth: http://localhost:8090/auth
+  mapping: http://localhost:8083
   visits: http://localhost:8083
   sentencing: http://localhost:8085
   activities: http://localhost:8086
   core.person: http://localhost:8098
+  staff: http://localhost:8089
   locations: http://localhost:8091
   casenotes: http://localhost:8096
-  finance: http://localhost:8102
-  mapping: http://localhost:8083
   court.sentencing: http://localhost:8090
   alerts: http://localhost:8092
   personal.relationships: http://localhost:8097
   organisations: http://localhost:8097
   visit.balance: http://localhost:8101
+  finance: http://localhost:8102
   ext.movements: http://localhost:8103
   officialvisits: http://localhost:8104
   csra: http://localhost:8105

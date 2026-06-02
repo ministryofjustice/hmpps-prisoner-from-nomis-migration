@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.Ta
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.organisations.OrganisationsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personalrelationships.ContactPersonDpsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visitbalances.VisitBalanceDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ActivitiesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.HmppsAuthApiExtension
@@ -41,6 +42,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsAp
   OfficialVisitsDpsApiExtension::class,
   OrganisationsDpsApiExtension::class,
   SentencingApiExtension::class,
+  StaffDpsApiExtension::class,
   TapDpsApiExtension::class,
   VisitBalanceDpsApiExtension::class,
   VisitsApiExtension::class,
@@ -72,6 +74,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
       .jsonPath("components.organisationsApi.status").isEqualTo("UP")
       .jsonPath("components.personalRelationshipsApi.status").isEqualTo("UP")
       .jsonPath("components.sentencingApi.status").isEqualTo("UP")
+      .jsonPath("components.staffApi.status").isEqualTo("UP")
       .jsonPath("components.tapsApi.status").isEqualTo("UP")
       .jsonPath("components.visitBalanceApi.status").isEqualTo("UP")
       .jsonPath("components.visitsApi.status").isEqualTo("UP")
@@ -126,22 +129,23 @@ class HealthCheckTest : SqsIntegrationTestBase() {
   private fun stubPingWithResponse(status: Int) {
     HmppsAuthApiExtension.hmppsAuth.stubHealthPing(status)
     NomisApiExtension.nomisApi.stubHealthPing(status)
-    VisitsApiExtension.visitsApi.stubHealthPing(status)
+    NomisSyncApiExtension.nomisSyncApi.stubHealthPing(status)
     MappingApiExtension.mappingApi.stubHealthPing(status)
-    SentencingApiExtension.sentencingApi.stubHealthPing(status)
     ActivitiesApiExtension.activitiesApi.stubHealthPing(status)
-    CorePersonCprApiExtension.cprCorePersonServer.stubHealthPing(status)
-    CsraApiExtension.csraApi.stubHealthPing(status)
-    LocationsApiExtension.locationsApi.stubHealthPing(status)
     AlertsDpsApiExtension.dpsAlertsServer.stubHealthPing(status)
     CaseNotesApiExtension.caseNotesApi.stubHealthPing(status)
-    FinanceApiExtension.financeApi.stubHealthPing(status)
-    CourtSentencingDpsApiExtension.dpsCourtSentencingServer.stubHealthPing(status)
+    CorePersonCprApiExtension.cprCorePersonServer.stubHealthPing(status)
     ContactPersonDpsApiExtension.dpsContactPersonServer.stubHealthPing(status)
+    CourtSentencingDpsApiExtension.dpsCourtSentencingServer.stubHealthPing(status)
+    CsraApiExtension.csraApi.stubHealthPing(status)
+    FinanceApiExtension.financeApi.stubHealthPing(status)
+    LocationsApiExtension.locationsApi.stubHealthPing(status)
     OrganisationsDpsApiExtension.dpsOrganisationsServer.stubHealthPing(status)
-    VisitBalanceDpsApiExtension.dpsVisitBalanceServer.stubHealthPing(status)
-    NomisSyncApiExtension.nomisSyncApi.stubHealthPing(status)
+    SentencingApiExtension.sentencingApi.stubHealthPing(status)
+    StaffDpsApiExtension.dpsStaffServer.stubHealthPing(status)
     TapDpsApiExtension.dpsTapsServer.stubHealthPing(status)
     OfficialVisitsDpsApiExtension.dpsOfficialVisitsServer.stubHealthPing(status)
+    VisitBalanceDpsApiExtension.dpsVisitBalanceServer.stubHealthPing(status)
+    VisitsApiExtension.visitsApi.stubHealthPing(status)
   }
 }

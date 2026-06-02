@@ -15,14 +15,16 @@ generic-service:
     API_BASE_URL_CORE_PERSON: https://hmpps-person-record-preprod.hmpps.service.justice.gov.uk
 #    API_BASE_URL_CSRA: https://cell-sharing-risk-assessment-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_CSRA: https://prisoner-nomis-migration-preprod.hmpps.service.justice.gov.uk
-    API_BASE_URL_VISITS: https://visit-scheduler-preprod.prison.service.justice.gov.uk
-    API_BASE_URL_VISIT_BALANCE: https://hmpps-visit-allocation-api-preprod.prison.service.justice.gov.uk
+    API_BASE_URL_FINANCE: https://prisoner-finance-sync-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_SENTENCING: https://adjustments-api-preprod.hmpps.service.justice.gov.uk
+    # Currently set to self until API ready
+    API_BASE_URL_STAFF: https://prisoner-nomis-migration-preprod.hmpps.service.justice.gov.uk
+    API_BASE_URL_VISITS: https://visit-scheduler-preprod.prison.service.justice.gov.uk
+    API_BASE_URL_VISIT_BALANCE: https://hmpps-visit-allocation-api-preprod.prison.service.justice.gov.uk
     API_BASE_URL_ACTIVITIES: https://activities-api-preprod.prison.service.justice.gov.uk
     API_BASE_URL_LOCATIONS: https://locations-inside-prison-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_CASENOTES: https://preprod.offender-case-notes.service.justice.gov.uk
-    API_BASE_URL_FINANCE: https://prisoner-finance-sync-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_ALERTS: https://alerts-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_COURT_SENTENCING: https://remand-and-sentencing-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_PERSONAL_RELATIONSHIPS: https://personal-relationships-api-preprod.hmpps.service.justice.gov.uk
@@ -68,9 +70,6 @@ generic-prometheus-alerts:
     casenotes:
       - "syscon-devs-preprod-prisoner_from_nomis_casenotes_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_casenotes_dl_queue"
-    finance:
-      - "syscon-devs-preprod-prisoner_from_nomis_finance_queue"
-      - "syscon-devs-preprod-prisoner_from_nomis_finance_dl_queue"
     alerts:
       - "syscon-devs-preprod-prisoner_from_nomis_alerts_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_alerts_dl_queue"
@@ -110,6 +109,9 @@ generic-prometheus-alerts:
       - "syscon-devs-preprod-migration_csra_dlq"
       - "syscon-devs-preprod-prisoner_from_nomis_csra_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_csra_dl_queue"
+    finance:
+      - "syscon-devs-preprod-prisoner_from_nomis_finance_queue"
+      - "syscon-devs-preprod-prisoner_from_nomis_finance_dl_queue"
     prisonbalance:
       - "syscon-devs-preprod-migration_prisonbalance_queue"
       - "syscon-devs-preprod-migration_prisonbalance_dlq"
