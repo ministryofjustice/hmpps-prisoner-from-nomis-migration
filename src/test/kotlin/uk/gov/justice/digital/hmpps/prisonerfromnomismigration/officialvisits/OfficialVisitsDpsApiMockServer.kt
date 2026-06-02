@@ -99,14 +99,14 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
 
     fun migrateVisitConfigResponse(request: MigrateVisitConfigRequest = migrateVisitConfigRequest()) = MigrateVisitConfigResponse(
-      prisonCode = request.prisonCode,
-      dayCode = request.dayCode,
-      timeSlotSeq = request.timeSlotSeq,
+      prisonCode = request.prisonCode!!,
+      dayCode = request.dayCode!!,
+      timeSlotSeq = request.timeSlotSeq!!,
       dpsTimeSlotId = 678,
       visitSlots = request.visitSlots.map {
         IdPair(
           elementType = IdPair.ElementType.PRISON_VISIT_SLOT,
-          nomisId = it.agencyVisitSlotId,
+          nomisId = it.agencyVisitSlotId!!,
           dpsId = it.agencyVisitSlotId * 10,
         )
       },
