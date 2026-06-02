@@ -51,6 +51,7 @@ jobs:
       upload-test-artifacts: false
       upload-build-artifacts: ${{ github.ref == 'refs/heads/main' }}
       java-version: "25"
+      build-dir: 'from-nomis/build'
     needs:
       - app_version
   setup-test-matrix:

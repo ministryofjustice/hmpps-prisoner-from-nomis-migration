@@ -2,11 +2,11 @@
 set -e
 
 JSON_TASK=${1?No json task specified}
-WORKING_DIR=${2:-.}
 PROJECT=$(echo "$JSON_TASK" | sed -e 's/^write//' -e 's/Json$//' -e 's/.*/\l&/' | sed -r 's/([a-z0-9])([A-Z])/\1-\L\2/g' )
 PROJECT_CAMEL=$(echo "$PROJECT" | sed -r 's/(^|-)([a-z])/\U\2/g')
 MODEL_TASK="build${PROJECT_CAMEL}ApiModel"
 PROD_VERSION_TASK="read${PROJECT_CAMEL}ProductionVersion"
+WORKING_DIR=$(find -- */openapi-specs -name "$PROJECT-api-docs.json" | awk -F/ '{print $1}')
 SPECS_JSON="${WORKING_DIR}/openapi-specs/$PROJECT-api-docs.json"
 if [[ -z ${GITHUB_OUTPUT+x} ]]; then
   GITHUB_OUTPUT=check-api-docs.log
