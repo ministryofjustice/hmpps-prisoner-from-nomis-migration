@@ -124,6 +124,9 @@ generic-prometheus-alerts:
     prisonerbalance:
       - "syscon-devs-dev-migration_prisonerbalance_queue"
       - "syscon-devs-dev-migration_prisonerbalance_dlq"
+    staff:
+      - "syscon-devs-dev-migration_staff_queue"
+      - "syscon-devs-dev-migration_staff_dlq"
     visitbalance:
       - "syscon-devs-dev-prisoner_from_nomis_visitbalance_queue"
       - "syscon-devs-dev-prisoner_from_nomis_visitbalance_dl_queue"

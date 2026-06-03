@@ -276,6 +276,9 @@ hmpps.sqs:
     migrationprisonerbalance:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
+    migrationstaff:
+      errorVisibilityTimeout: 1, 1, 1, 10
+      propagateTracing: false
     migrationcourtmovements:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
