@@ -70,6 +70,8 @@ class StaffMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubCreateMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/staff")
+
   fun stubGetMigrationCount(migrationId: String = "2020-01-01T11:10:00", count: Int = 1) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/staff/migration-id/.*")).willReturn(

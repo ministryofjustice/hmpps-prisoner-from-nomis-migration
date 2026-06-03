@@ -181,6 +181,7 @@ class StaffMigrationService(
       modifiedBy = audit.modifyUserId,
     ),
     accounts = accounts.map { it.toDpsUserAccount() },
+    // n.b. only roles for staff migration are roles on the NWEB (DPS) caseload - only these are returned from Nomis
     roles = accounts.flatMap { staffUserAccount ->
       staffUserAccount.caseloads.flatMap { caseload ->
         caseload.roles.map { it.toDpsRole(staffUserAccount.username) }
@@ -198,6 +199,7 @@ class StaffMigrationService(
     accountType = AccountTypeDps.valueOf(typeCode),
     accountStatus = AccountStatusDps.valueOf(status),
     activeCaseloadId = activeCaseloadId,
+    lastLoggedIn = lastLoggedIn,
     createDateTime = audit.createDatetime.toOffsetDateTime(),
     createdBy = audit.createUsername,
     lastModifiedDateTime = audit.modifyDatetime?.toOffsetDateTime(),
@@ -217,6 +219,6 @@ class StaffMigrationService(
     createdTimestamp = audit.createDatetime.toOffsetDateTime(),
     createdBy = audit.createUsername,
   )
-
-  fun LocalDateTime.toOffsetDateTime(): OffsetDateTime = atZone(ZoneId.of("Europe/London")).toOffsetDateTime()
 }
+
+fun LocalDateTime.toOffsetDateTime(): OffsetDateTime = atZone(ZoneId.of("Europe/London")).toOffsetDateTime()
