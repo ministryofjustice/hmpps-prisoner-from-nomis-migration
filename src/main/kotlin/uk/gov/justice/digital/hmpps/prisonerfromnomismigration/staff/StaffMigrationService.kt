@@ -156,8 +156,6 @@ class StaffMigrationService(
     throw it
   }
 
-  suspend fun StaffDetails.toMigrateStaffRequest() = this.toDpsMigrateStaffRequest()
-
   override fun parseContextFilter(json: String): MigrationMessage<*, StaffMigrationFilter> = jsonMapper.readValue(json)
 
   override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<StaffMigrationFilter, ByLastId<StaffIdResponse>>> = jsonMapper.readValue(json)
@@ -167,58 +165,59 @@ class StaffMigrationService(
   override fun parseContextMapping(json: String): MigrationMessage<*, StaffMappingDto> = jsonMapper.readValue(json)
 
   override fun parseContextDivisionFilter(json: String): MigrationMessage<*, MigrationDivision<StaffMigrationFilter, StaffIdResponse>> = jsonMapper.readValue(json)
-
-  private fun StaffDetails.toDpsMigrateStaffRequest(): UserMigrationRequestDps = UserMigrationRequestDps(
-    user = UserDps(
-      id = id,
-      email = email,
-      firstName = firstName,
-      lastName = lastName,
-      status = UserStatusDps.valueOf(status),
-      createdTimestamp = audit.createDatetime.toOffsetDateTime(),
-      createdBy = audit.createUsername,
-      modifiedTimestamp = audit.modifyDatetime?.toOffsetDateTime(),
-      modifiedBy = audit.modifyUserId,
-    ),
-    accounts = accounts.map { it.toDpsUserAccount() },
-    // n.b. only roles for staff migration are roles on the NWEB (DPS) caseload - only these are returned from Nomis
-    roles = accounts.flatMap { staffUserAccount ->
-      staffUserAccount.caseloads.flatMap { caseload ->
-        caseload.roles.map { it.toDpsRole(staffUserAccount.username) }
-      }
-    },
-    accessibleCaseloads = accounts.flatMap { staffUserAccount ->
-      staffUserAccount.caseloads.map {
-        it.toDpsUserAccessibleCaseload(staffUserAccount.username)
-      }
-    },
-  )
-
-  private fun StaffAccount.toDpsUserAccount() = UserAccountDps(
-    username = username,
-    accountType = AccountTypeDps.valueOf(typeCode),
-    accountStatus = AccountStatusDps.valueOf(status),
-    activeCaseloadId = activeCaseloadId,
-    lastLoggedIn = lastLoggedIn,
-    createDateTime = audit.createDatetime.toOffsetDateTime(),
-    createdBy = audit.createUsername,
-    lastModifiedDateTime = audit.modifyDatetime?.toOffsetDateTime(),
-    lastModifiedBy = audit.modifyUserId,
-  )
-
-  private fun RoleResponse.toDpsRole(username: String) = UserRoleDps(
-    username = username,
-    roleCode = code,
-    createdTimestamp = audit.createDatetime.toOffsetDateTime(),
-    createdBy = audit.createUsername,
-  )
-
-  private fun CaseloadResponse.toDpsUserAccessibleCaseload(username: String) = UserAccessibleCaseloadDps(
-    username = username,
-    caseloadId = caseloadId,
-    createdTimestamp = audit.createDatetime.toOffsetDateTime(),
-    createdBy = audit.createUsername,
-  )
 }
+
+suspend fun StaffDetails.toMigrateStaffRequest() = this.toDpsMigrateStaffRequest()
+private fun StaffDetails.toDpsMigrateStaffRequest(): UserMigrationRequestDps = UserMigrationRequestDps(
+  user = UserDps(
+    id = id,
+    email = email,
+    firstName = firstName,
+    lastName = lastName,
+    status = UserStatusDps.valueOf(status),
+    createdTimestamp = audit.createDatetime.toOffsetDateTime(),
+    createdBy = audit.createUsername,
+    modifiedTimestamp = audit.modifyDatetime?.toOffsetDateTime(),
+    modifiedBy = audit.modifyUserId,
+  ),
+  accounts = accounts.map { it.toDpsUserAccount() },
+  // n.b. only roles for staff migration are roles on the NWEB (DPS) caseload - only these are returned from Nomis
+  roles = accounts.flatMap { staffUserAccount ->
+    staffUserAccount.caseloads.flatMap { caseload ->
+      caseload.roles.map { it.toDpsRole(staffUserAccount.username) }
+    }
+  },
+  accessibleCaseloads = accounts.flatMap { staffUserAccount ->
+    staffUserAccount.caseloads.map {
+      it.toDpsUserAccessibleCaseload(staffUserAccount.username)
+    }
+  },
+)
+
+private fun StaffAccount.toDpsUserAccount() = UserAccountDps(
+  username = username,
+  accountType = AccountTypeDps.valueOf(typeCode),
+  accountStatus = AccountStatusDps.valueOf(status),
+  activeCaseloadId = activeCaseloadId,
+  lastLoggedIn = lastLoggedIn,
+  createDateTime = audit.createDatetime.toOffsetDateTime(),
+  createdBy = audit.createUsername,
+  lastModifiedDateTime = audit.modifyDatetime?.toOffsetDateTime(),
+  lastModifiedBy = audit.modifyUserId,
+)
+
+private fun RoleResponse.toDpsRole(username: String) = UserRoleDps(
+  username = username,
+  roleCode = code,
+  createdTimestamp = audit.createDatetime.toOffsetDateTime(),
+  createdBy = audit.createUsername,
+)
+
+private fun CaseloadResponse.toDpsUserAccessibleCaseload(username: String) = UserAccessibleCaseloadDps(
+  username = username,
+  caseloadId = caseloadId,
+  createdTimestamp = audit.createDatetime.toOffsetDateTime(),
+  createdBy = audit.createUsername,
+)
 
 fun LocalDateTime.toOffsetDateTime(): OffsetDateTime = atZone(ZoneId.of("Europe/London")).toOffsetDateTime()
