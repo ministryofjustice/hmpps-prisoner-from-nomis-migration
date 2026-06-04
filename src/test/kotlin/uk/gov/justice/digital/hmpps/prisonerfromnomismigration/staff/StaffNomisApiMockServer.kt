@@ -111,9 +111,7 @@ class StaffNomisApiMockServer(private val jsonMapper: JsonMapper) {
         caseloads = listOf(
           CaseloadResponse(
             caseloadId = "LEI",
-            roles = listOf(
-              RoleResponse("NOMIS_CODE_1", name = "Nomis Role 1", audit = audit()),
-            ),
+            roles = emptyList(),
             audit = audit(),
           ),
           CaseloadResponse(caseloadId = "MDI", roles = emptyList(), audit = audit()),

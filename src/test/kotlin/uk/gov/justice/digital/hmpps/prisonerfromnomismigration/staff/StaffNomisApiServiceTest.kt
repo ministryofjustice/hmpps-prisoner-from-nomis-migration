@@ -82,7 +82,7 @@ class StaffNomisApiServiceTest {
           assertThat(caseloads.size).isEqualTo(3)
           with(caseloads[0]) {
             assertThat(caseloadId).isEqualTo("LEI")
-            assertThat(roles[0].code).isEqualTo("NOMIS_CODE_1")
+            assertThat(roles.size).isEqualTo(0)
             assertThat(audit.createDatetime).isEqualTo(LocalDateTime.parse("2016-08-01T10:55"))
             assertThat(audit.createUsername).isEqualTo("KOFEADDY")
             assertThat(audit.modifyDatetime).isEqualTo(LocalDateTime.parse("2017-08-01T10:55"))
@@ -91,6 +91,10 @@ class StaffNomisApiServiceTest {
           with(caseloads[1]) {
             assertThat(caseloadId).isEqualTo("MDI")
             assertThat(roles.size).isEqualTo(0)
+            assertThat(audit.createDatetime).isEqualTo(LocalDateTime.parse("2016-08-01T10:55"))
+            assertThat(audit.createUsername).isEqualTo("KOFEADDY")
+            assertThat(audit.modifyDatetime).isEqualTo(LocalDateTime.parse("2017-08-01T10:55"))
+            assertThat(audit.modifyUserId).isEqualTo("KOFE_MOD")
           }
           with(caseloads[2]) {
             assertThat(caseloadId).isEqualTo("NWEB")
