@@ -1455,7 +1455,6 @@ class TapMovementIntTest(
         verify(telemetryClient).trackEvent(
           eq("temporary-absence-sync-external-movement-deleted-success"),
           check {
-            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["movementSeq"]).isEqualTo("154")
             assertThat(it["directionCode"]).isEqualTo("OUT")
@@ -1498,7 +1497,6 @@ class TapMovementIntTest(
         verify(telemetryClient).trackEvent(
           eq("temporary-absence-sync-external-movement-deleted-success"),
           check {
-            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["movementSeq"]).isEqualTo("154")
             assertThat(it["directionCode"]).isEqualTo("IN")
@@ -1539,7 +1537,6 @@ class TapMovementIntTest(
         verify(telemetryClient).trackEvent(
           eq("temporary-absence-sync-external-movement-deleted-ignored"),
           check {
-            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["movementSeq"]).isEqualTo("154")
             assertThat(it["directionCode"]).isEqualTo("OUT")

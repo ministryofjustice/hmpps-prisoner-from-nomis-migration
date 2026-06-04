@@ -227,9 +227,8 @@ class TapMovementService(
   }
 
   suspend fun tapMovementDeleted(event: ExternalMovementEvent) {
-    val (bookingId, prisonerNumber, movementSeq, _, directionCode) = event
+    val (bookingId, _, movementSeq, _, directionCode) = event
     val telemetry = mutableMapOf<String, Any>(
-      "offenderNo" to prisonerNumber!!,
       "bookingId" to bookingId,
       "movementSeq" to movementSeq,
       "directionCode" to directionCode,
