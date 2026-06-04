@@ -3,11 +3,13 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseloadResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageMetadata
@@ -23,7 +25,7 @@ import java.time.LocalDateTime
 @Component
 class StaffNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetStaffDetails(
-    nomisStaffId: Long = 1234L,
+    nomisStaffId: Long = 1234,
     staff: StaffDetails = staffDetails(nomisStaffId),
     dpsRolesOnly: Boolean = true,
   ) {
@@ -36,6 +38,23 @@ class StaffNomisApiMockServer(private val jsonMapper: JsonMapper) {
             .withStatus(HttpStatus.OK.value())
             .withBody(jsonMapper.writeValueAsString(staff)),
         ),
+    )
+  }
+
+  fun stubGetStaffDetailsNotFound(
+    nomisStaffId: Long = 1234,
+    status: HttpStatus = HttpStatus.NOT_FOUND,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/staff/$nomisStaffId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(
+            jsonMapper.writeValueAsString(error),
+          ),
+      ),
     )
   }
 
