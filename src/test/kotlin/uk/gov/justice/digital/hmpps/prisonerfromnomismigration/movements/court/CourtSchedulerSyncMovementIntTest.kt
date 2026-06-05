@@ -244,7 +244,7 @@ class CourtSchedulerSyncMovementIntTest(
       fun setUp() {
         setUpTestClass()
 
-        sendMessage(courtMovementEvent(direction = "OUT", inserted = true, auditModuleName = "DPS_SYNCHRONISATION"))
+        sendMessage(courtMovementEvent(direction = "OUT", inserted = true, auditModuleName = COURT_SCHEDULER_SYNC_AUDIT_MODULE))
           .also { waitForAnyProcessingToComplete() }
       }
 
