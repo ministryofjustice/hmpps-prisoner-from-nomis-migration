@@ -58,7 +58,7 @@ class CourtSchedulerSyncMovementService(
       "directionCode" to directionCode,
     )
 
-    if (event.originatesInDps) {
+    if (event.auditExactMatchOrHasMissingAudit(COURT_SCHEDULER_SYNC_AUDIT_MODULE)) {
       telemetryClient.trackEvent("${TELEMETRY_PREFIX}-inserted-skipped", telemetry)
       return
     }
@@ -135,7 +135,7 @@ class CourtSchedulerSyncMovementService(
       "directionCode" to directionCode,
     )
 
-    if (event.originatesInDps) {
+    if (event.auditExactMatchOrHasMissingAudit(COURT_SCHEDULER_SYNC_AUDIT_MODULE)) {
       telemetryClient.trackEvent("${TELEMETRY_PREFIX}-updated-skipped", telemetry)
       return
     }

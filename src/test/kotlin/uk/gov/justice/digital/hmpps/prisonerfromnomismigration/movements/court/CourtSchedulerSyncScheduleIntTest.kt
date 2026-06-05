@@ -205,7 +205,7 @@ class CourtSchedulerSyncScheduleIntTest(
       fun setUp() {
         setUpTestClass()
 
-        sendMessage(courtScheduleEvent("COURT_EVENTS-INSERTED", auditModuleName = "DPS_SYNCHRONISATION_COURT_SCHEDULER"))
+        sendMessage(courtScheduleEvent("COURT_EVENTS-INSERTED", auditModuleName = COURT_SCHEDULER_SYNC_AUDIT_MODULE))
           .also { waitForAnyProcessingToComplete() }
       }
 
@@ -632,7 +632,7 @@ class CourtSchedulerSyncScheduleIntTest(
       fun setUp() {
         setUpTestClass()
 
-        sendMessage(courtScheduleEvent("COURT_EVENTS-UPDATED", auditModuleName = "DPS_SYNCHRONISATION_COURT_SCHEDULER"))
+        sendMessage(courtScheduleEvent("COURT_EVENTS-UPDATED", auditModuleName = COURT_SCHEDULER_SYNC_AUDIT_MODULE))
           .also { waitForAnyProcessingToComplete() }
       }
 

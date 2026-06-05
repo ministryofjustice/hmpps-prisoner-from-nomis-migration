@@ -9,8 +9,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -55,7 +53,7 @@ class CourtSchedulerSyncScheduleService(
       "directionCode" to directionCode,
     )
 
-    if (event.isFromDPSCourtScheduler()) {
+    if (event.auditExactMatchOrHasMissingAudit(COURT_SCHEDULER_SYNC_AUDIT_MODULE)) {
       telemetryClient.trackEvent("${TELEMETRY_PREFIX}-inserted-ignored", telemetry)
       return
     }
@@ -111,7 +109,7 @@ class CourtSchedulerSyncScheduleService(
       "directionCode" to directionCode,
     )
 
-    if (event.isFromDPSCourtScheduler()) {
+    if (event.auditExactMatchOrHasMissingAudit(COURT_SCHEDULER_SYNC_AUDIT_MODULE)) {
       telemetryClient.trackEvent("${TELEMETRY_PREFIX}-updated-ignored", telemetry)
       return
     }
@@ -209,5 +207,3 @@ private fun CourtScheduleOut.toDpsRequest(courtAppearanceId: UUID?, sentencingCo
     activeCaseloadId = userActiveCaseloadId,
   ),
 )
-
-private fun EventAudited.isFromDPSCourtScheduler() = this.auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_COURT_SCHEDULER")
