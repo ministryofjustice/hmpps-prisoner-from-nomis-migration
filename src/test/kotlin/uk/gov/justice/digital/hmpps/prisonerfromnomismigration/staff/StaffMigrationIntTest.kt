@@ -77,7 +77,6 @@ class StaffMigrationIntTest(
         webTestClient.post().uri("/migrate/staff")
           .headers(setAuthorisation(roles = listOf()))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(StaffMigrationFilter())
           .exchange()
           .expectStatus().isForbidden
       }
@@ -87,7 +86,6 @@ class StaffMigrationIntTest(
         webTestClient.post().uri("/migrate/staff")
           .headers(setAuthorisation(roles = listOf("BANANAS")))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(StaffMigrationFilter())
           .exchange()
           .expectStatus().isForbidden
       }
@@ -96,7 +94,6 @@ class StaffMigrationIntTest(
       fun `access unauthorised with no auth token`() {
         webTestClient.post().uri("/migrate/staff")
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(StaffMigrationFilter())
           .exchange()
           .expectStatus().isUnauthorized
       }
@@ -240,7 +237,6 @@ class StaffMigrationIntTest(
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPathNomisToDPSMapping {
       private lateinit var migrationResult: MigrationResult
-      private lateinit var migrationRequests: List<UserMigrationRequestDps>
 
       private val dpsStaffId = UUID.randomUUID()
 
@@ -263,12 +259,12 @@ class StaffMigrationIntTest(
         mappingApiMock.stubCreateMapping()
         mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 2)
         migrationResult = performMigration()
-
-        migrationRequests = StaffDpsApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/prison-users/migrate/staff")))
       }
 
       @Test
       fun `will map and transform staff ids`() {
+        val migrationRequests: List<UserMigrationRequestDps> = StaffDpsApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/prison-users/migrate/staff")))
+
         with(migrationRequests.first { it.user.id == 1234L }) {
           with(user) {
             assertThat(id).isEqualTo(1234L)
@@ -523,7 +519,6 @@ class StaffMigrationIntTest(
         webTestClient.post().uri("/migrate/staff")
           .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(StaffMigrationFilter())
           .exchange()
           .expectStatus().isEqualTo(HttpStatus.CONFLICT)
       }
@@ -548,7 +543,6 @@ class StaffMigrationIntTest(
         webTestClient.post().uri("/migrate/staff")
           .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(StaffMigrationFilter())
           .exchange()
           .expectStatus().isEqualTo(HttpStatus.CONFLICT)
       }
@@ -659,10 +653,9 @@ class StaffMigrationIntTest(
     }
   }
 
-  private fun performMigration(body: StaffMigrationFilter = StaffMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/staff")
+  private fun performMigration(): MigrationResult = webTestClient.post().uri("/migrate/staff")
     .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
-    .bodyValue(body)
     .exchange()
     .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
     .also {

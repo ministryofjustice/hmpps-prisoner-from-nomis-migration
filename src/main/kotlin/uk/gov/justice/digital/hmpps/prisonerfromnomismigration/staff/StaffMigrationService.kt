@@ -40,7 +40,7 @@ class StaffMigrationService(
   @Value($$"${staff.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value($$"${staff.complete-check.count}") completeCheckCount: Int,
   @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
-) : ByLastIdMigrationService<StaffMigrationFilter, StaffIdResponse, StaffMappingDto>(
+) : ByLastIdMigrationService<Any, StaffIdResponse, StaffMappingDto>(
   staffMappingService,
   MigrationType.STAFF,
   pageSize = pageSize,
@@ -58,7 +58,7 @@ class StaffMigrationService(
 
   override suspend fun getPageOfIdsFromId(
     lastId: StaffIdResponse?,
-    migrationFilter: StaffMigrationFilter,
+    migrationFilter: Any,
     pageSize: Long,
   ): List<StaffIdResponse> = nomisApiService.getStaffIdsFromId(
     lastStaffId = lastId?.staffId ?: 0,
@@ -71,7 +71,7 @@ class StaffMigrationService(
   ): Int = first.staffId.compareTo(second?.staffId ?: Long.MAX_VALUE)
 
   override suspend fun getPageOfIds(
-    migrationFilter: StaffMigrationFilter,
+    migrationFilter: Any,
     pageSize: Long,
     pageNumber: Long,
   ): List<StaffIdResponse> = nomisApiService.getStaffIds(
@@ -79,7 +79,7 @@ class StaffMigrationService(
     pageSize = pageSize,
   ).content!!
 
-  override suspend fun getTotalNumberOfIds(migrationFilter: StaffMigrationFilter): Long = nomisApiService.getStaffIds(
+  override suspend fun getTotalNumberOfIds(migrationFilter: Any): Long = nomisApiService.getStaffIds(
     pageNumber = 0,
     pageSize = 1,
   ).page?.totalElements!!
@@ -156,15 +156,15 @@ class StaffMigrationService(
     throw it
   }
 
-  override fun parseContextFilter(json: String): MigrationMessage<*, StaffMigrationFilter> = jsonMapper.readValue(json)
+  override fun parseContextFilter(json: String): MigrationMessage<*, Any> = jsonMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<StaffMigrationFilter, ByLastId<StaffIdResponse>>> = jsonMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<Any, ByLastId<StaffIdResponse>>> = jsonMapper.readValue(json)
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, StaffIdResponse> = jsonMapper.readValue(json)
 
   override fun parseContextMapping(json: String): MigrationMessage<*, StaffMappingDto> = jsonMapper.readValue(json)
 
-  override fun parseContextDivisionFilter(json: String): MigrationMessage<*, MigrationDivision<StaffMigrationFilter, StaffIdResponse>> = jsonMapper.readValue(json)
+  override fun parseContextDivisionFilter(json: String): MigrationMessage<*, MigrationDivision<Any, StaffIdResponse>> = jsonMapper.readValue(json)
 }
 
 suspend fun StaffDetails.toMigrateStaffRequest() = this.toDpsMigrateStaffRequest()
