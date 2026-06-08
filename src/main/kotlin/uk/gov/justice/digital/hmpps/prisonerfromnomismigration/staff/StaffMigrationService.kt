@@ -172,7 +172,8 @@ class StaffMigrationService(
 fun StaffDetails.toMigrateStaffRequest(): UserMigrationRequest = UserMigrationRequest(
   user = MigratedUser(
     id = id.toString(),
-    email = email!!,
+    // TODO - ensure the request allows nullable email address
+    email = email ?: "unset",
     firstName = firstName,
     lastName = lastName,
     // TODO - Determine DPS requirements for this field - set active/inactive only for now
