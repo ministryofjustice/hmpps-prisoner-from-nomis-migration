@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationResponse
 import java.util.UUID
 
 @RestController
@@ -20,10 +22,10 @@ class DummyStaffDpsApi {
 
   @PostMapping("/prison-users/migrate/staff")
   @ResponseStatus(value = HttpStatus.CREATED)
-  suspend fun migrateStaff(@RequestBody @Valid staff: UserMigrationRequestDps): UserMigrationResponseDps = UserMigrationResponseDps(
+  suspend fun migrateStaff(@RequestBody @Valid staff: UserMigrationRequest): UserMigrationResponse = UserMigrationResponse(
     userId = UUID.randomUUID(),
-    staffId = staff.user.id.toString(),
-    username = staff.accounts.map { it.username },
+    staffId = staff.user.id,
+    username = staff.accounts.first().username,
   )
     .also {
       log.info("Created staff ${staff.user.id}")

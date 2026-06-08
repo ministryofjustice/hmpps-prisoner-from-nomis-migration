@@ -6,11 +6,13 @@ import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffDpsApiMockServer.Companion.migrateStaff
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationResponse
 
 class DummyStaffDpsApiTest : SqsIntegrationTestBase() {
   @Test
   fun testApi() {
-    val body: UserMigrationRequestDps = migrateStaff()
+    val body: UserMigrationRequest = migrateStaff()
 
     val result = webTestClient.post()
       .uri("/prison-users/migrate/staff")
@@ -19,11 +21,12 @@ class DummyStaffDpsApiTest : SqsIntegrationTestBase() {
       .bodyValue(body)
       .exchange()
       .expectStatus().isCreated
-      .returnResult<UserMigrationResponseDps>()
+      .returnResult<UserMigrationResponse>()
       .responseBody
       .blockFirst()!!
 
     assertThat(result.staffId).isEqualTo("1234")
-    assertThat(result.username!![0]).isEqualTo("JOHNSMITH_ADM")
+    // TODO this should be a list of usernames
+    assertThat(result.username).isEqualTo("JOHNSMITH_ADM")
   }
 }
