@@ -262,4 +262,59 @@ class CourtSchedulerNomisApiServiceTest {
       }
     }
   }
+
+  @Nested
+  inner class GetBookingCourtMovementsTest {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      courtSchedulerNomisApiMockServer.stubGetBookingCourtMovements(bookingId = 12345L)
+
+      apiService.getBookingCourtMovementsOrNull(bookingId = 12345L)
+
+      courtSchedulerNomisApiMockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass booking ID to service`() = runTest {
+      courtSchedulerNomisApiMockServer.stubGetBookingCourtMovements(bookingId = 12345L)
+
+      apiService.getBookingCourtMovementsOrNull(bookingId = 12345L)
+
+      courtSchedulerNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/movements/booking/12345/court")),
+      )
+    }
+
+    @Test
+    fun `will return offender court movements`() = runTest {
+      courtSchedulerNomisApiMockServer.stubGetBookingCourtMovements(bookingId = 12345L)
+
+      val result = apiService.getBookingCourtMovementsOrNull(bookingId = 12345L)!!
+
+      assertThat(result.courtSchedules).hasSize(1)
+      assertThat(result.courtSchedules[0].eventId).isEqualTo(1)
+      assertThat(result.courtSchedules[0].courtMovementOut?.sequence).isEqualTo(3)
+      assertThat(result.courtSchedules[0].courtMovementIn?.sequence).isEqualTo(4)
+      assertThat(result.unscheduledCourtMovementOuts[0].sequence).isEqualTo(1)
+      assertThat(result.unscheduledCourtMovementIns[0].sequence).isEqualTo(2)
+    }
+
+    @Test
+    fun `will return null when offender does not exist`() = runTest {
+      courtSchedulerNomisApiMockServer.stubGetBookingCourtMovements(status = NOT_FOUND)
+
+      assertThat(apiService.getBookingCourtMovementsOrNull(bookingId = 12345L)).isNull()
+    }
+
+    @Test
+    fun `will throw error when API returns an error`() = runTest {
+      courtSchedulerNomisApiMockServer.stubGetBookingCourtMovements(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.getBookingCourtMovementsOrNull(bookingId = 12345L)
+      }
+    }
+  }
 }

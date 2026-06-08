@@ -8,6 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.CourtMovementResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.CourtScheduleResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.OffenderCourtMovementsResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingCourtMovements
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtMovementIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtMovementOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtScheduleOut
@@ -32,4 +33,6 @@ class CourtSchedulerNomisApiService(@Qualifier("nomisApiWebClient") private val 
   suspend fun getOffenderCourtMovementsOrNull(offenderNo: String): OffenderCourtMovementsResponse? = offenderApi.prepare(offenderApi.getOffenderCourtMovementsRequestConfig(offenderNo))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getBookingCourtMovementsOrNull(bookingId: Long): BookingCourtMovements? = offenderApi.prepare(offenderApi.getAllBookingCourtMovementsRequestConfig(bookingId)).retrieve().awaitBodyOrNullWhenNotFound()
 }

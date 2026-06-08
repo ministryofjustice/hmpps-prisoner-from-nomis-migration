@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -150,6 +151,38 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetBookingCourtMovements(
+    bookingId: Long = 12345L,
+    response: BookingCourtMovements = bookingCourtMovements(),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/movements/booking/$bookingId/court")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(jsonMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun verifyGetBookingCourtMovements(bookingId: Long = 12345L, count: Int = 1) {
+    nomisApi.verify(
+      count,
+      getRequestedFor(urlPathEqualTo("/movements/booking/$bookingId/court")),
+    )
+  }
+
+  fun stubGetBookingCourtMovements(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    nomisApi.stubFor(
+      get(urlPathMatching("/movements/booking/.*/court")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 
@@ -286,6 +319,15 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
         createUsername = "USER",
       ),
       commentText = "Some movement in comment",
+    )
+
+    fun bookingCourtMovements() = BookingCourtMovements(
+      bookingId = 12345,
+      activeBooking = true,
+      latestBooking = true,
+      courtSchedules = listOf(bookingCourtSchedule()),
+      unscheduledCourtMovementOuts = listOf(bookingCourtMovementOut(seq = 1)),
+      unscheduledCourtMovementIns = listOf(bookingCourtMovementIn(seq = 2)),
     )
   }
 }
