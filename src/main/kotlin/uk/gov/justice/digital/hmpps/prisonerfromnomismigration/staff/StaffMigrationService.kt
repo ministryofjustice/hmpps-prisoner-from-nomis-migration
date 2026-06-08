@@ -201,7 +201,7 @@ fun StaffDetails.toMigrateStaffRequest(): UserMigrationRequest = UserMigrationRe
 private fun StaffAccount.toMigratedUserAccount() = MigratedUserAccount(
   username = username,
   accountType = MigratedUserAccount.AccountType.valueOf(typeCode),
-  accountStatus = MigratedUserAccount.AccountStatus.valueOf(status),
+  accountStatus = status.toDpsAccountStatus(),
   activeCaseloadId = activeCaseloadId,
   lastLoggedIn = lastLoggedIn,
   createdTimestamp = audit.createDatetime,
@@ -209,6 +209,19 @@ private fun StaffAccount.toMigratedUserAccount() = MigratedUserAccount(
   modifiedTimestamp = audit.modifyDatetime,
   modifiedBy = audit.modifyUserId,
 )
+
+private fun String.toDpsAccountStatus() = when (this) {
+  "OPEN" -> MigratedUserAccount.AccountStatus.OPEN
+  "EXPIRED" -> MigratedUserAccount.AccountStatus.EXPIRED
+  "EXPIRED & LOCKED" -> MigratedUserAccount.AccountStatus.EXPIRED_LOCKED
+  "EXPIRED & LOCKED(TIMED)" -> MigratedUserAccount.AccountStatus.EXPIRED_LOCKED_TIMED
+  "EXPIRED(GRACE)" -> MigratedUserAccount.AccountStatus.EXPIRED_GRACE
+  "EXPIRED(GRACE) & LOCKED" -> MigratedUserAccount.AccountStatus.EXPIRED_GRACE_LOCKED
+  "EXPIRED(GRACE) & LOCKED(TIMED)" -> MigratedUserAccount.AccountStatus.EXPIRED_GRACE_LOCKED_TIMED
+  "LOCKED" -> MigratedUserAccount.AccountStatus.LOCKED
+  "LOCKED(TIMED)" -> MigratedUserAccount.AccountStatus.LOCKED_TIMED
+  else -> throw IllegalArgumentException("Unknown Staff user account status  code: $this")
+}
 
 private fun RoleResponse.toMigratedUserRole(username: String) = MigratedUserRole(
   username = username,
