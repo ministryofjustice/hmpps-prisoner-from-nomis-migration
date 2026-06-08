@@ -36,6 +36,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUser
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccount
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
@@ -263,62 +266,64 @@ class StaffMigrationIntTest(
 
       @Test
       fun `will map and transform staff ids`() {
-        val migrationRequests: List<UserMigrationRequestDps> = StaffDpsApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/prison-users/migrate/staff")))
+        val migrationRequests: List<UserMigrationRequest> = StaffDpsApiExtension.getRequestBodies(
+          postRequestedFor(urlPathEqualTo("/prison-users/migrate/staff")),
+        )
 
-        with(migrationRequests.first { it.user.id == 1234L }) {
+        with(migrationRequests.first { it.user.id == "1234" }) {
           with(user) {
-            assertThat(id).isEqualTo(1234L)
+            assertThat(id).isEqualTo("1234")
             assertThat(email).isEqualTo("john.smith@justice.gov.uk")
             assertThat(firstName).isEqualTo("JOHN")
             assertThat(lastName).isEqualTo("SMITH")
-            assertThat(status).isEqualTo(UserStatusDps.ACTIVE)
-            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00").toOffsetDateTime())
+            assertThat(status).isEqualTo(MigratedUser.Status.ACTIVE)
+            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
             assertThat(createdBy).isEqualTo("KOFEADDY")
-            assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00").toOffsetDateTime())
+            assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
             assertThat(modifiedBy).isEqualTo("KOFE_MOD")
           }
           assertThat(accounts.size).isEqualTo(1)
           with(accounts[0]) {
             assertThat(username).isEqualTo("JOHNSMITH_ADM")
-            assertThat(accountType).isEqualTo(AccountTypeDps.ADMIN)
-            assertThat(accountStatus).isEqualTo(AccountStatusDps.OPEN)
+            assertThat(accountType).isEqualTo(MigratedUserAccount.AccountType.ADMIN)
+            assertThat(accountStatus).isEqualTo(MigratedUserAccount.AccountStatus.OPEN)
             assertThat(lastLoggedIn).isEqualTo(LocalDateTime.parse("2026-03-17T12:30:00"))
             assertThat(activeCaseloadId).isEqualTo("MDI")
-            assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00").toOffsetDateTime())
+            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
             assertThat(createdBy).isEqualTo("KOFEADDY")
-            assertThat(lastModifiedDateTime).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00").toOffsetDateTime())
-            assertThat(lastModifiedBy).isEqualTo("KOFE_MOD")
+            assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
+            assertThat(modifiedBy).isEqualTo("KOFE_MOD")
           }
           assertThat(accessibleCaseloads!!.size).isEqualTo(3)
           with(accessibleCaseloads[0]) {
             assertThat(username).isEqualTo("JOHNSMITH_ADM")
             assertThat(caseloadId).isEqualTo("LEI")
-            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00").toOffsetDateTime())
+            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
             assertThat(createdBy).isEqualTo("KOFEADDY")
           }
           with(accessibleCaseloads[1]) {
             assertThat(username).isEqualTo("JOHNSMITH_ADM")
             assertThat(caseloadId).isEqualTo("MDI")
-            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00").toOffsetDateTime())
+            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
             assertThat(createdBy).isEqualTo("KOFEADDY")
           }
           with(accessibleCaseloads[2]) {
             assertThat(username).isEqualTo("JOHNSMITH_ADM")
             assertThat(caseloadId).isEqualTo("NWEB")
-            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00").toOffsetDateTime())
+            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
             assertThat(createdBy).isEqualTo("KOFEADDY")
           }
           assertThat(roles!!.size).isEqualTo(2)
           with(roles[0]) {
             assertThat(username).isEqualTo("JOHNSMITH_ADM")
             assertThat(roleCode).isEqualTo("DPS_CODE_1")
-            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00").toOffsetDateTime())
+            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
             assertThat(createdBy).isEqualTo("KOFEADDY")
           }
           with(roles[1]) {
             assertThat(username).isEqualTo("JOHNSMITH_ADM")
             assertThat(roleCode).isEqualTo("DPS_CODE_2")
-            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00").toOffsetDateTime())
+            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
             assertThat(createdBy).isEqualTo("KOFEADDY")
           }
         }

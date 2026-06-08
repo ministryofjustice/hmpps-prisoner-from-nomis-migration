@@ -12,9 +12,15 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffDpsApiExtension.Companion.jsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUser
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccessibleCaseload
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccount
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserRole
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
-import java.time.OffsetDateTime
+import java.time.LocalDateTime
 import java.util.UUID
 
 class StaffDpsApiExtension :
@@ -57,64 +63,66 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     const val WIREMOCK_PORT = 8089
 
-    fun migrateStaff() = UserMigrationRequestDps(
-      user = UserDps(
-        id = 1234,
+    fun migrateStaff() = UserMigrationRequest(
+      user = MigratedUser(
+        // TODO this should be a long
+        id = 1234.toString(),
         email = "john.smith@justice.gov.uk",
         firstName = "John",
         lastName = "Smith",
-        status = UserStatusDps.ACTIVE,
-        createdTimestamp = OffsetDateTime.parse("2020-12-04T10:42:43+00:00"),
+        status = MigratedUser.Status.ACTIVE,
+        createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
         createdBy = "JIM_BEAM",
-        modifiedTimestamp = OffsetDateTime.parse("2021-09-12T10:42:43+00:00"),
+        modifiedTimestamp = LocalDateTime.parse("2021-09-12T10:42:43"),
         modifiedBy = "FRED_BROWN",
       ),
       accounts = listOf(
-        UserAccountDps(
+        MigratedUserAccount(
           username = "JOHNSMITH_ADM",
-          accountType = AccountTypeDps.ADMIN,
-          accountStatus = AccountStatusDps.OPEN,
+          accountType = MigratedUserAccount.AccountType.ADMIN,
+          accountStatus = MigratedUserAccount.AccountStatus.OPEN,
           activeCaseloadId = "MDI",
-          createDateTime = OffsetDateTime.parse("2020-12-04T10:42:43+00:00"),
+          createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
           createdBy = "JIM_BEAM2",
-          lastModifiedDateTime = OffsetDateTime.parse("2020-12-04T10:42:43+00:00"),
-          lastModifiedBy = "FRED_BROWN2",
+          modifiedTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
+          modifiedBy = "FRED_BROWN2",
         ),
       ),
       roles = listOf(
-        UserRoleDps(
+        MigratedUserRole(
           username = "JOHNSMITH_ADM",
           roleCode = "DPS_CODE_1",
-          createdTimestamp = OffsetDateTime.parse("2020-12-04T10:42:43+00:00"),
+          createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
           createdBy = "JIM_BEAM3",
         ),
-        UserRoleDps(
+        MigratedUserRole(
           username = "JOHNSMITH_ADM",
           roleCode = "DPS_CODE_2",
-          createdTimestamp = OffsetDateTime.parse("2020-12-04T10:42:43+00:00"),
+          createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
           createdBy = "JIM_BEAM3",
         ),
       ),
       accessibleCaseloads = listOf(
-        UserAccessibleCaseloadDps(
+        MigratedUserAccessibleCaseload(
           username = "JOHNSMITH_ADM",
           caseloadId = "MDI",
-          createdTimestamp = OffsetDateTime.parse("2020-12-04T10:42:43+00:00"),
+          createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
           createdBy = "JIM_BEAM4",
         ),
-        UserAccessibleCaseloadDps(
+        MigratedUserAccessibleCaseload(
           username = "JOHNSMITH_ADM",
           caseloadId = "NWEB",
-          createdTimestamp = OffsetDateTime.parse("2020-12-04T10:42:43+00:00"),
+          createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
           createdBy = "JIM_BEAM4",
         ),
       ),
     )
 
-    fun migrateStaffResponse(nomisStaffId: Long, dpsStaffId: UUID) = UserMigrationResponseDps(
+    fun migrateStaffResponse(nomisStaffId: Long, dpsStaffId: UUID) = UserMigrationResponse(
       userId = dpsStaffId,
       staffId = nomisStaffId.toString(),
-      username = listOf("JSMITH_ADM"),
+      // TOD this should be a list
+      username = "JSMITH_ADM",
     )
   }
 
@@ -129,7 +137,12 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubMigrateStaff(nomisStaffId: Long = 1234, dpsStaffId: UUID = UUID.randomUUID(), response: UserMigrationResponseDps = migrateStaffResponse(nomisStaffId, dpsStaffId)) {
+  fun stubMigrateStaff(
+    nomisStaffId: Long = 1234,
+    dpsStaffId: UUID = UUID.randomUUID(),
+    response: UserMigrationResponse =
+      migrateStaffResponse(nomisStaffId, dpsStaffId),
+  ) {
     stubFor(
       post("/prison-users/migrate/staff")
         .willReturn(

@@ -23,9 +23,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
-import java.time.LocalDateTime
-import java.time.OffsetDateTime
-import java.time.ZoneId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUser
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccessibleCaseload
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccount
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserRole
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
 import kotlin.collections.flatMap
 
 @Service
@@ -167,57 +169,56 @@ class StaffMigrationService(
   override fun parseContextDivisionFilter(json: String): MigrationMessage<*, MigrationDivision<Any, StaffIdResponse>> = jsonMapper.readValue(json)
 }
 
-suspend fun StaffDetails.toMigrateStaffRequest() = this.toDpsMigrateStaffRequest()
-private fun StaffDetails.toDpsMigrateStaffRequest(): UserMigrationRequestDps = UserMigrationRequestDps(
-  user = UserDps(
-    id = id,
-    email = email,
+fun StaffDetails.toMigrateStaffRequest(): UserMigrationRequest = UserMigrationRequest(
+  user = MigratedUser(
+    id = id.toString(),
+    email = email!!,
     firstName = firstName,
     lastName = lastName,
-    status = UserStatusDps.valueOf(status),
-    createdTimestamp = audit.createDatetime.toOffsetDateTime(),
+    // TODO - Determine DPS requirements for this field - set active/inactive only for now
+    status = if (status == "ACTIVE") MigratedUser.Status.ACTIVE else MigratedUser.Status.INACTIVE,
+
+    createdTimestamp = audit.createDatetime,
     createdBy = audit.createUsername,
-    modifiedTimestamp = audit.modifyDatetime?.toOffsetDateTime(),
+    modifiedTimestamp = audit.modifyDatetime,
     modifiedBy = audit.modifyUserId,
   ),
-  accounts = accounts.map { it.toDpsUserAccount() },
+  accounts = accounts.map { it.toMigratedUserAccount() },
   // n.b. only roles for staff migration are roles on the NWEB (DPS) caseload - only these are returned from Nomis
   roles = accounts.flatMap { staffUserAccount ->
     staffUserAccount.caseloads.flatMap { caseload ->
-      caseload.roles.map { it.toDpsRole(staffUserAccount.username) }
+      caseload.roles.map { it.toMigratedUserRole(staffUserAccount.username) }
     }
   },
   accessibleCaseloads = accounts.flatMap { staffUserAccount ->
     staffUserAccount.caseloads.map {
-      it.toDpsUserAccessibleCaseload(staffUserAccount.username)
+      it.toMigratedUserAccessibleCaseload(staffUserAccount.username)
     }
   },
 )
 
-private fun StaffAccount.toDpsUserAccount() = UserAccountDps(
+private fun StaffAccount.toMigratedUserAccount() = MigratedUserAccount(
   username = username,
-  accountType = AccountTypeDps.valueOf(typeCode),
-  accountStatus = AccountStatusDps.valueOf(status),
+  accountType = MigratedUserAccount.AccountType.valueOf(typeCode),
+  accountStatus = MigratedUserAccount.AccountStatus.valueOf(status),
   activeCaseloadId = activeCaseloadId,
   lastLoggedIn = lastLoggedIn,
-  createDateTime = audit.createDatetime.toOffsetDateTime(),
+  createdTimestamp = audit.createDatetime,
   createdBy = audit.createUsername,
-  lastModifiedDateTime = audit.modifyDatetime?.toOffsetDateTime(),
-  lastModifiedBy = audit.modifyUserId,
+  modifiedTimestamp = audit.modifyDatetime,
+  modifiedBy = audit.modifyUserId,
 )
 
-private fun RoleResponse.toDpsRole(username: String) = UserRoleDps(
+private fun RoleResponse.toMigratedUserRole(username: String) = MigratedUserRole(
   username = username,
   roleCode = code,
-  createdTimestamp = audit.createDatetime.toOffsetDateTime(),
+  createdTimestamp = audit.createDatetime,
   createdBy = audit.createUsername,
 )
 
-private fun CaseloadResponse.toDpsUserAccessibleCaseload(username: String) = UserAccessibleCaseloadDps(
+private fun CaseloadResponse.toMigratedUserAccessibleCaseload(username: String) = MigratedUserAccessibleCaseload(
   username = username,
   caseloadId = caseloadId,
-  createdTimestamp = audit.createDatetime.toOffsetDateTime(),
+  createdTimestamp = audit.createDatetime,
   createdBy = audit.createUsername,
 )
-
-fun LocalDateTime.toOffsetDateTime(): OffsetDateTime = atZone(ZoneId.of("Europe/London")).toOffsetDateTime()
