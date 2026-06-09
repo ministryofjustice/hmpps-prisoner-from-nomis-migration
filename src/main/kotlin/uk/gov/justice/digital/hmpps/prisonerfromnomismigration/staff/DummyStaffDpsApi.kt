@@ -25,7 +25,7 @@ class DummyStaffDpsApi {
   suspend fun migrateStaff(@RequestBody @Valid staff: UserMigrationRequest): UserMigrationResponse = UserMigrationResponse(
     userId = UUID.randomUUID(),
     staffId = staff.user.id,
-    username = staff.accounts.first().username,
+    username = staff.accounts.firstOrNull()?.username ?: "NO_USER_ACCOUNT",
   )
     .also {
       log.info("Created staff ${staff.user.id}")
