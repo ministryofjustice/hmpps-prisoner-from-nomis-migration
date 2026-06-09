@@ -278,8 +278,8 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
 
     fun bookingCourtSchedule(
       eventId: Long = 1,
-      movementOutSeq: Int = 3,
-      movementInSeq: Int = 4,
+      movementOutSeq: Int? = 3,
+      movementInSeq: Int? = 4,
     ) = BookingCourtScheduleOut(
       eventId = eventId,
       eventDate = yesterday.toLocalDate(),
@@ -292,8 +292,8 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
         createDatetime = yesterday,
         createUsername = "USER",
       ),
-      courtMovementOut = bookingCourtMovementOut(seq = movementOutSeq),
-      courtMovementIn = bookingCourtMovementIn(seq = movementInSeq),
+      courtMovementOut = movementOutSeq?.let { bookingCourtMovementOut(seq = movementOutSeq) },
+      courtMovementIn = movementInSeq?.let { bookingCourtMovementIn(seq = movementInSeq) },
       comment = "Some schedule comment",
       courtCaseId = 87878L,
     )
