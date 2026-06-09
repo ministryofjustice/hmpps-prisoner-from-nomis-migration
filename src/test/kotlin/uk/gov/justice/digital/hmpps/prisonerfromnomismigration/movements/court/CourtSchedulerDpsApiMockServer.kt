@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtEventMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtEventMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtMovementMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.MoveCourtEventRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.ReferenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.ResyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEvent
@@ -164,6 +165,18 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
       ),
     )
+
+    fun moveBookingRequest(
+      fromPrisoner: String = "A1234BC",
+      toPrisoner: String = "A1234BD",
+      scheduleIds: List<UUID> = listOf(UUID.randomUUID()),
+      unscheduledMovementIds: List<UUID> = listOf(UUID.randomUUID()),
+    ) = MoveCourtEventRequest(
+      fromPersonIdentifier = fromPrisoner,
+      toPersonIdentifier = toPrisoner,
+      scheduleIds = scheduleIds.toSet(),
+      unscheduledMovementIds = unscheduledMovementIds.toSet(),
+    )
   }
 
   fun stubSyncCourtEvent(personIdentifier: String, response: ReferenceId = referenceId()) {
@@ -293,6 +306,32 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     dpsCourtSchedulerServer.stubFor(
       put("/resync/court-appearances/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubMoveBooking() {
+    dpsCourtSchedulerServer.stubFor(
+      put("/move/court-appearances")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubMoveBookingError(
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsCourtSchedulerServer.stubFor(
+      put("/move/court-appearances")
         .willReturn(
           aResponse()
             .withStatus(status)
