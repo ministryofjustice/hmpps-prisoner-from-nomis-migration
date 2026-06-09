@@ -23,8 +23,11 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtMovementIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtMovementMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
@@ -374,6 +377,67 @@ class CourtSchedulerMappingApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getCourtSchedulerPrisonMappingIds("A1234BC")
+      }
+    }
+  }
+
+  @Nested
+  inner class GetMoveBookingMappings {
+    val response = CourtSchedulerMoveBookingMappingDto(
+      scheduleIds = listOf(CourtScheduleIdMapping(777L, UUID.randomUUID())),
+      movementIds = listOf(CourtMovementIdMapping(77, UUID.randomUUID())),
+    )
+
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubGetMoveBookingMappings(12345L, response)
+
+      apiService.getCourtSchedulerMoveBookingMappings(12345L)
+
+      mappingApi.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should return mappings`() = runTest {
+      mappingApi.stubGetMoveBookingMappings(12345L, response)
+
+      with(apiService.getCourtSchedulerMoveBookingMappings(12345L)) {
+        assertThat(scheduleIds).containsExactly(CourtScheduleIdMapping(777, response.scheduleIds.first().dpsCourtAppearanceId))
+        assertThat(movementIds).containsExactly(CourtMovementIdMapping(77, response.movementIds.first().dpsCourtMovementId))
+      }
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubGetMoveBookingMappingsError(12345L)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.getCourtSchedulerMoveBookingMappings(12345L)
+      }
+    }
+  }
+
+  @Nested
+  inner class MoveBookingMappings {
+    @Test
+    fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubMoveBookingMappings()
+
+      apiService.moveCourtSchedulerBookingMappings(12345L, "A1234AA", "B1234BB")
+
+      mappingApi.verify(
+        putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubMoveBookingMappingsError(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.moveCourtSchedulerBookingMappings(12345L, "A1234AA", "B1234BB")
       }
     }
   }
