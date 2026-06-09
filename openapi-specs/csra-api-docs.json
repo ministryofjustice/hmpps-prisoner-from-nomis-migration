@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-06-03.228.c431758"
+    "version" : "2026-06-09.234.d75ad2b"
   },
   "servers" : [ {
     "url" : "/",
@@ -221,7 +221,7 @@
                 "schema" : {
                   "type" : "array",
                   "items" : {
-                    "$ref" : "#/components/schemas/CsraReview"
+                    "$ref" : "#/components/schemas/CsraMigrationResponse"
                   }
                 }
               }
@@ -490,6 +490,18 @@
         "type" : "object",
         "description" : "A single CSRA review in the legacy NOMIS format",
         "properties" : {
+          "bookingId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The booking id of the CSRA in Nomis - the first part of its id",
+            "example" : 4123456
+          },
+          "nomisSequence" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The sequence number of the CSRA in Nomis - the second part of its id",
+            "example" : 4
+          },
           "assessmentPrisonId" : {
             "type" : [ "string", "null" ],
             "description" : "Prison where the assessment took place (NOMIS agencyId). Not currently populated by NOMIS.",
@@ -608,7 +620,7 @@
             }
           }
         },
-        "required" : [ "assessmentDate", "assessmentType", "createdBy", "createdDateTime", "reviewDetails", "score", "status" ]
+        "required" : [ "assessmentDate", "assessmentType", "bookingId", "createdBy", "createdDateTime", "nomisSequence", "reviewDetails", "score", "status" ]
       },
       "SyncResult" : {
         "type" : "object",
@@ -627,6 +639,64 @@
           }
         },
         "required" : [ "created", "csraReviewId" ]
+      },
+      "CsraMigrationResponse" : {
+        "type" : "object",
+        "description" : "Migrate response linking the created UUID with the Nomis id",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The unique id of the CSRA review",
+            "example" : "de91dfa7-821f-4552-a427-bf2f32eafeb0"
+          },
+          "bookingId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The booking id of the CSRA in Nomis - the first part of its id",
+            "example" : 4123456
+          },
+          "nomisSequence" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The sequence number of the CSRA in Nomis - the second part of its id",
+            "example" : 4
+          }
+        },
+        "required" : [ "bookingId", "id", "nomisSequence" ]
+      },
+      "DlqMessage" : {
+        "type" : "object",
+        "properties" : {
+          "body" : {
+            "type" : "object",
+            "additionalProperties" : { }
+          },
+          "messageId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "body", "messageId" ]
+      },
+      "GetDlqResult" : {
+        "type" : "object",
+        "properties" : {
+          "messagesFoundCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "messagesReturnedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "messages" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DlqMessage"
+            }
+          }
+        },
+        "required" : [ "messages", "messagesFoundCount", "messagesReturnedCount" ]
       },
       "CsraReview" : {
         "type" : "object",
@@ -714,39 +784,6 @@
           }
         },
         "required" : [ "assessmentDate", "createdAt", "createdBy", "id", "prisonerNumber", "type" ]
-      },
-      "DlqMessage" : {
-        "type" : "object",
-        "properties" : {
-          "body" : {
-            "type" : "object",
-            "additionalProperties" : { }
-          },
-          "messageId" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "body", "messageId" ]
-      },
-      "GetDlqResult" : {
-        "type" : "object",
-        "properties" : {
-          "messagesFoundCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "messagesReturnedCount" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "messages" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/DlqMessage"
-            }
-          }
-        },
-        "required" : [ "messages", "messagesFoundCount", "messagesReturnedCount" ]
       }
     },
     "securitySchemes" : {
