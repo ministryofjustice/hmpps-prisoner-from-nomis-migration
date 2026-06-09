@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CourtSchedulerPrisonerResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
 
 @Service
@@ -65,4 +66,9 @@ class CourtSchedulerMappingApiService(@Qualifier("courtSchedulerMappingApiWebCli
     .awaitSingle()
 
   suspend fun getCourtSchedulerPrisonMappingIds(offenderNo: String) = prisonerApi.getAllCourtSchedulerPrisonerMappingIds(offenderNo).awaitSingle()
+
+  suspend fun getCourtSchedulerMoveBookingMappings(bookingId: Long): CourtSchedulerMoveBookingMappingDto = prisonerApi.getCourtSchedulerBookingMappings(bookingId).awaitSingle()
+
+  suspend fun moveCourtSchedulerBookingMappings(bookingId: Long, fromOffenderNo: String, toOffenderNo: String): Unit = prisonerApi.moveCourtSchedulerBookingMappings(bookingId, fromOffenderNo, toOffenderNo)
+    .awaitSingle()
 }

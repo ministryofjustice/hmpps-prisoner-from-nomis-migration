@@ -10,6 +10,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.BookingCourtMovementMappingsDto
@@ -19,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerBookingMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
@@ -263,6 +265,64 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
   }
+
+  fun stubGetMoveBookingMappings(
+    bookingId: Long = 12345,
+    mappings: CourtSchedulerMoveBookingMappingDto,
+  ) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/court-scheduler/move-booking/$bookingId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(jsonMapper.writeValueAsString(mappings)),
+      ),
+    )
+  }
+
+  fun stubGetMoveBookingMappingsError(
+    bookingId: Long = 12345,
+    status: HttpStatus = INTERNAL_SERVER_ERROR,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/court-scheduler/move-booking/$bookingId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubMoveBookingMappings(bookingId: Long = 12345L, fromOffenderNo: String = "A1234AA", toOffenderNo: String = "B1234BB") {
+    mappingApi.stubFor(
+      put("/mapping/court-scheduler/move-booking/$bookingId/from/$fromOffenderNo/to/$toOffenderNo")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(200),
+        ),
+    )
+  }
+
+  fun stubMoveBookingMappingsError(
+    bookingId: Long = 12345L,
+    fromOffenderNo: String = "A1234AA",
+    toOffenderNo: String = "B1234BB",
+    status: HttpStatus = INTERNAL_SERVER_ERROR,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    mappingApi.stubFor(
+      put("/mapping/court-scheduler/move-booking/$bookingId/from/$fromOffenderNo/to/$toOffenderNo").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubMoveBookingMappingsFailureFollowedBySuccess(bookingId: Long = 12345L, fromOffenderNo: String = "A1234AA", toOffenderNo: String = "B1234BB") = mappingApi.stubMappingUpdateFailureFollowedBySuccess("/mapping/court-scheduler/move-booking/$bookingId/from/$fromOffenderNo/to/$toOffenderNo")
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
