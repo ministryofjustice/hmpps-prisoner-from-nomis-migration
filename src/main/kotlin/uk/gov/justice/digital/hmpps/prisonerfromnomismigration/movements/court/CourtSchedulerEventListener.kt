@@ -21,6 +21,7 @@ class CourtSchedulerEventListener(
   private val eventFeatureSwitch: EventFeatureSwitch,
   private val courtScheduleService: CourtSchedulerSyncScheduleService,
   private val courtMovementService: CourtSchedulerSyncMovementService,
+  private val moveBookingService: CourtSchedulerMoveBookingService,
 ) {
 
   private companion object {
@@ -42,6 +43,7 @@ class CourtSchedulerEventListener(
               "COURT_EVENTS-UPDATED" -> courtScheduleService.courtScheduleUpdated(sqsMessage.Message.fromJson())
               "COURT_EVENTS-DELETED" -> courtScheduleService.courtScheduleDeleted(sqsMessage.Message.fromJson())
               "EXTERNAL_MOVEMENT-CHANGED" -> courtMovementService.courtMovementChanged(sqsMessage.Message.fromJson())
+              "prison-offender-events.prisoner.booking.moved" -> moveBookingService.moveBooking(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
