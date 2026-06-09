@@ -1,10 +1,9 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court
 
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.kotlin.times
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.COURTSCHEDULER_SYNC_QUEUE_ID
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 
@@ -20,4 +19,7 @@ abstract class CourtSchedulerIntegrationTestBase : SqsIntegrationTestBase() {
   internal val courtMovementsQueueOffenderEventsDlqUrl by lazy { courtMovementsOffenderEventsQueue.dlqUrl as String }
 
   override fun getQueues(): List<HmppsQueue> = listOf(courtMovementsOffenderEventsQueue)
+
+  @MockitoSpyBean
+  protected lateinit var courtSchedulerMigrationService: CourtSchedulerMigrationService
 }

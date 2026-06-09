@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatus.OK
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
@@ -40,7 +41,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       get(urlPathEqualTo("/movements/$offenderNo/court/schedule/out/$eventId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
+          .withStatus(OK.value())
           .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
@@ -73,7 +74,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       get(urlPathEqualTo("/movements/$offenderNo/court/movement/out/$bookingId/$movementSeq")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
+          .withStatus(OK.value())
           .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
@@ -106,7 +107,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       get(urlPathEqualTo("/movements/$offenderNo/court/movement/in/$bookingId/$movementSeq")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
+          .withStatus(OK.value())
           .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
@@ -131,7 +132,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       get(urlPathEqualTo("/movements/$offenderNo/court")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
+          .withStatus(OK.value())
           .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
@@ -159,7 +160,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       get(urlPathEqualTo("/movements/booking/$bookingId/court")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
+          .withStatus(OK.value())
           .withBody(jsonMapper.writeValueAsString(response)),
       ),
     )
@@ -275,8 +276,12 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
 
-    fun bookingCourtSchedule() = BookingCourtScheduleOut(
-      eventId = 1,
+    fun bookingCourtSchedule(
+      eventId: Long = 1,
+      movementOutSeq: Int = 3,
+      movementInSeq: Int = 4,
+    ) = BookingCourtScheduleOut(
+      eventId = eventId,
       eventDate = yesterday.toLocalDate(),
       startTime = yesterday,
       eventType = "CRT",
@@ -287,8 +292,8 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
         createDatetime = yesterday,
         createUsername = "USER",
       ),
-      courtMovementOut = bookingCourtMovementOut(seq = 3),
-      courtMovementIn = bookingCourtMovementIn(seq = 4),
+      courtMovementOut = bookingCourtMovementOut(seq = movementOutSeq),
+      courtMovementIn = bookingCourtMovementIn(seq = movementInSeq),
       comment = "Some schedule comment",
       courtCaseId = 87878L,
     )
