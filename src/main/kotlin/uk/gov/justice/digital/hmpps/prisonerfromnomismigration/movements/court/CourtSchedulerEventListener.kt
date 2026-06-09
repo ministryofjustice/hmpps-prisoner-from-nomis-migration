@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompl
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtMovementRetryMappingMessageTypes.RETRY_MAPPING_COURT_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtMovementRetryMappingMessageTypes.RETRY_MAPPING_COURT_SCHEDULE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtMovementRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_COURT_SCHEDULER
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -58,6 +59,7 @@ class CourtSchedulerEventListener(
   private suspend fun retryMapping(type: String, message: String) = when (CourtMovementRetryMappingMessageTypes.valueOf(type)) {
     RETRY_MAPPING_COURT_SCHEDULE -> courtScheduleService.retryCreateScheduleMapping(message.fromJson())
     RETRY_MAPPING_COURT_MOVEMENT -> courtMovementService.retryCreateMovementMapping(message.fromJson())
+    RETRY_MOVE_BOOKING_MAPPING_COURT_SCHEDULER -> moveBookingService.retryMoveBookingMapping(message.fromJson())
   }
 
   private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
@@ -75,4 +77,5 @@ data class CourtScheduleEvent(
 enum class CourtMovementRetryMappingMessageTypes {
   RETRY_MAPPING_COURT_SCHEDULE,
   RETRY_MAPPING_COURT_MOVEMENT,
+  RETRY_MOVE_BOOKING_MAPPING_COURT_SCHEDULER,
 }
