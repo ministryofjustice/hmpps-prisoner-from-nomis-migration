@@ -28,7 +28,7 @@ class CsraMigrationService(
   val nomisApiService: NomisApiService,
   val csraMappingService: CsraMappingService,
   val csraNomisApiService: CsraNomisApiService,
-  val csraApiService: CsraApiService,
+  val csraApiService: CsraDpsApiService,
   jsonMapper: JsonMapper,
   @Value($$"${csra.page.size:1000}") pageSize: Long,
   @Value($$"${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
@@ -56,6 +56,7 @@ class CsraMigrationService(
       offenderNos.size.toLong(),
     )
   }
+    // These calls are horribly slow in preprod (25s) but better in prod
     ?: nomisApiService.getPrisonerIds(
       pageNumber = pageNumber,
       pageSize = pageSize,
@@ -85,15 +86,15 @@ class CsraMigrationService(
       val csrasToMigrate = csraNomisApiService
         .getCsras(offenderNo)
         .csras
-        .map { it.toDPSCreateCaseNote() }
+        .map { it.toDPSCreateCsra() }
 
-      csraApiService.migrateCsras(offenderNo, csrasToMigrate)
+      csraApiService.migratePrisoner(offenderNo, csrasToMigrate)
         .also { migrationResultList ->
           val prisonerCsraMappingsDto = PrisonerCsraMappingsDto(
             mappings = migrationResultList.map {
               CsraMappingIdDto(
-                dpsCsraId = it.dpsCsraId,
-                nomisBookingId = it.nomisBookingId,
+                dpsCsraId = it.id.toString(),
+                nomisBookingId = it.bookingId,
                 nomisSequence = it.nomisSequence,
               )
             },

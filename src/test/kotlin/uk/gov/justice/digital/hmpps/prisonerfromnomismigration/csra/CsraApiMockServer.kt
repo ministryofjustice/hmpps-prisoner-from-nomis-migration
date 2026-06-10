@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraMigrationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 
 class CsraApiExtension :
@@ -50,12 +51,12 @@ class CsraApiMockServer : WireMockServer(WIREMOCK_PORT) {
     const val WIREMOCK_PORT = 8105
   }
 
-  fun stubMigrateCsras(offenderNo: String, response: List<MigrationResult>) {
-    stubFor(post("/csras/migrate/$offenderNo").willReturn(jsonResponse(response, 201)))
+  fun stubMigrateCsras(offenderNo: String, response: List<CsraMigrationResponse>) {
+    stubFor(post("/nomis-sync/migrate/$offenderNo").willReturn(jsonResponse(response, 201)))
   }
 
   fun stubMigrateCsras(offenderNo: String, status: Int, error: ErrorResponse = ErrorResponse(status = status)) {
-    stubFor(post("/csras/migrate/$offenderNo").willReturn(jsonResponse(error, status)))
+    stubFor(post("/nomis-sync/migrate/$offenderNo").willReturn(jsonResponse(error, status)))
   }
 
   fun stubHealthPing(status: Int) {
