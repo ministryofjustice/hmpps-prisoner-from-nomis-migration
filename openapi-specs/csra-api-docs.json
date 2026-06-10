@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-06-09.234.d75ad2b"
+    "version" : "2026-06-10.238.bc2068f"
   },
   "servers" : [ {
     "url" : "/",
@@ -403,6 +403,26 @@
         },
         "required" : [ "status" ]
       },
+      "CsraAssessmentType" : {
+        "type" : "string",
+        "description" : "CSRA assessment type as configured in the NOMIS ASSESSMENTS table",
+        "enum" : [ "CSRF", "CSRH", "CSRDO", "CSR", "CSR1", "CSRREV" ]
+      },
+      "CsraCommitteeCode" : {
+        "type" : "string",
+        "description" : "Assessment committee code (NOMIS reference domain ASSESS_COMM)",
+        "enum" : [ "GOV", "MED", "OCA", "RECP", "REVIEW", "SECSTATE", "SECUR" ]
+      },
+      "CsraEvaluationResultCode" : {
+        "type" : "string",
+        "description" : "Approved or rejected indicator",
+        "enum" : [ "APP", "REJ" ]
+      },
+      "CsraLevel" : {
+        "type" : "string",
+        "description" : "A CSRA level (used for calculated, review and approved levels)",
+        "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ]
+      },
       "CsraQuestionDto" : {
         "type" : "object",
         "description" : "A question and its responses within a CSRA review section",
@@ -469,6 +489,11 @@
         },
         "required" : [ "code", "questions" ]
       },
+      "CsraStatus" : {
+        "type" : "string",
+        "description" : "CSRA status: I = inactive, A = active, P = provisional",
+        "enum" : [ "I", "A", "P" ]
+      },
       "CsraSyncRequest" : {
         "type" : "object",
         "description" : "Request to synchronise a single CSRA review from NOMIS",
@@ -514,16 +539,16 @@
             "example" : "2025-11-22"
           },
           "assessmentType" : {
-            "type" : "string",
+            "$ref" : "#/components/schemas/CsraAssessmentType",
             "description" : "CSRA assessment type",
-            "enum" : [ "CSRF", "CSRH", "CSRDO", "CSR", "CSR1", "CSRREV" ],
             "example" : "CSR"
           },
           "calculatedLevel" : {
-            "type" : [ "string", "null" ],
-            "description" : "The calculated CSRA level",
-            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
-            "example" : "STANDARD"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CsraLevel"
+            }, {
+              "type" : "null"
+            } ]
           },
           "score" : {
             "type" : "number",
@@ -531,16 +556,16 @@
             "example" : 1000
           },
           "status" : {
-            "type" : "string",
+            "$ref" : "#/components/schemas/CsraStatus",
             "description" : "Status: active, inactive or provisional",
-            "enum" : [ "I", "A", "P" ],
             "example" : "A"
           },
           "committeeCode" : {
-            "type" : [ "string", "null" ],
-            "description" : "The assessment committee code",
-            "enum" : [ "GOV", "MED", "OCA", "RECP", "REVIEW", "SECSTATE", "SECUR" ],
-            "example" : "REVIEW"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CsraCommitteeCode"
+            }, {
+              "type" : "null"
+            } ]
           },
           "nextReviewDate" : {
             "type" : [ "string", "null" ],
@@ -570,16 +595,18 @@
             "minLength" : 1
           },
           "reviewLevel" : {
-            "type" : [ "string", "null" ],
-            "description" : "The review CSRA level",
-            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
-            "example" : "STANDARD"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CsraLevel"
+            }, {
+              "type" : "null"
+            } ]
           },
           "approvedLevel" : {
-            "type" : [ "string", "null" ],
-            "description" : "The approved CSRA level",
-            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
-            "example" : "STANDARD"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CsraLevel"
+            }, {
+              "type" : "null"
+            } ]
           },
           "evaluationDate" : {
             "type" : [ "string", "null" ],
@@ -588,16 +615,18 @@
             "example" : "2025-12-08"
           },
           "evaluationResultCode" : {
-            "type" : [ "string", "null" ],
-            "description" : "Approved or rejected indicator",
-            "enum" : [ "APP", "REJ" ],
-            "example" : "APP"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CsraEvaluationResultCode"
+            }, {
+              "type" : "null"
+            } ]
           },
           "reviewCommitteeCode" : {
-            "type" : [ "string", "null" ],
-            "description" : "The review/approval committee code",
-            "enum" : [ "GOV", "MED", "OCA", "RECP", "REVIEW", "SECSTATE", "SECUR" ],
-            "example" : "REVIEW"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CsraCommitteeCode"
+            }, {
+              "type" : "null"
+            } ]
           },
           "reviewCommitteeComment" : {
             "type" : [ "string", "null" ],
