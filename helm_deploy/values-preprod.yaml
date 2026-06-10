@@ -119,8 +119,8 @@ generic-prometheus-alerts:
       - "syscon-devs-preprod-migration_prisonerbalance_queue"
       - "syscon-devs-preprod-migration_prisonerbalance_dlq"
     staff:
-      - "syscon-devs-dev-migration_staff_queue"
-      - "syscon-devs-dev-migration_staff_dlq"
+      - "syscon-devs-preprod-migration_staff_queue"
+      - "syscon-devs-preprod-migration_staff_dlq"
     visitbalance:
       - "syscon-devs-preprod-prisoner_from_nomis_visitbalance_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_visitbalance_dl_queue"
