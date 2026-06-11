@@ -181,7 +181,7 @@ class CourtSchedulerSyncScheduleIntTest(
         CourtSchedulerDpsApiMockServer.getRequestBody<SyncCourtEvent>(
           putRequestedFor(urlPathEqualTo("/sync/court-appearances/A1234BC")),
         ).apply {
-          assertThat(courtEvent.externalReferenceUrn).isEqualTo("$dpsSentencingCourtAppearanceId")
+          assertThat(courtEvent.externalReferenceUrn).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
         }
       }
 
@@ -584,7 +584,7 @@ class CourtSchedulerSyncScheduleIntTest(
         CourtSchedulerDpsApiMockServer.getRequestBody<SyncCourtEvent>(
           putRequestedFor(urlPathEqualTo("/sync/court-appearances/A1234BC")),
         ).apply {
-          assertThat(courtEvent.externalReferenceUrn).isEqualTo("$dpsSentencingCourtAppearanceId")
+          assertThat(courtEvent.externalReferenceUrn).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
         }
       }
 
@@ -803,8 +803,7 @@ class CourtSchedulerSyncScheduleIntTest(
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisEventId"]).isEqualTo("123")
-// TODO add this back in when direction is added to event
-//            assertThat(it["directionCode"]).isEqualTo("OUT")
+            assertThat(it["directionCode"]).isEqualTo("OUT")
           },
           isNull(),
         )
@@ -867,7 +866,6 @@ class CourtSchedulerSyncScheduleIntTest(
     event,
   )
 
-  // TODO still waiting for direction to be added to the message
   private fun courtScheduleEvent(
     eventType: String,
     auditModuleName: String = "OCDCCASE",

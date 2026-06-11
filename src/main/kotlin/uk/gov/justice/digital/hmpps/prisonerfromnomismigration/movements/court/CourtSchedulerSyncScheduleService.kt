@@ -77,7 +77,6 @@ class CourtSchedulerSyncScheduleService(
     .let { nomisSchedule ->
       val dpsSentencingId = if (nomisSchedule.courtCaseId != null) {
         tryFetchParent { sentencingMappingApi.getCourtAppearanceOrNullByNomisId(eventId)?.dpsCourtAppearanceId }
-          .also { telemetry["dpsAuthorisationId"] = it }
       } else {
         null
       }
@@ -199,7 +198,7 @@ private fun CourtScheduleOut.toDpsRequest(courtAppearanceId: UUID?, sentencingCo
     dpsId = courtAppearanceId,
     eventId = eventId,
     commentText = comment,
-    externalReferenceUrn = sentencingCourtAppearanceId,
+    externalReferenceUrn = sentencingCourtAppearanceId?.let { "$EXTERNAL_REF_PREFIX$sentencingCourtAppearanceId" },
   ),
   occurredAt = this.audit.modifyDatetime ?: this.audit.createDatetime,
   user = SyncUser(
