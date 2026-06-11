@@ -30,6 +30,7 @@ import org.springframework.test.web.reactive.server.returnResult
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExtension.Companion.csraApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiMockServer.Companion.WIREMOCK_PORT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraMigrationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
@@ -38,6 +39,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countMessagesOnQueue
 import java.time.Duration
+import java.util.UUID
 
 private const val OFFENDER_NUMBER1 = "A0001KT"
 private const val OFFENDER_NUMBER2 = "A0002KT"
@@ -130,9 +132,9 @@ class CsraMigrationIntTest(
         csraApi.stubMigrateCsras(
           OFFENDER_NUMBER1,
           listOf(
-            MigrationResult(
-              dpsCsraId = "00000000-0000-0000-0000-000000000001",
-              nomisBookingId = 1,
+            CsraMigrationResponse(
+              id = UUID.fromString("00000000-0000-0000-0000-000000000001"),
+              bookingId = 1,
               nomisSequence = 1,
             ),
           ),
@@ -140,9 +142,9 @@ class CsraMigrationIntTest(
         csraApi.stubMigrateCsras(
           OFFENDER_NUMBER2,
           listOf(
-            MigrationResult(
-              dpsCsraId = "00000000-0000-0000-0000-000000000002",
-              nomisBookingId = 2,
+            CsraMigrationResponse(
+              id = UUID.fromString("00000000-0000-0000-0000-000000000002"),
+              bookingId = 2,
               nomisSequence = 2,
             ),
           ),
@@ -176,15 +178,15 @@ class CsraMigrationIntTest(
       @Test
       fun `will POST all csras to DPS for each prisoner`() {
         csraApi.verify(
-          postRequestedFor(urlPathEqualTo("/csras/migrate/${OFFENDER_NUMBER1}"))
+          postRequestedFor(urlPathEqualTo("/nomis-sync/migrate/${OFFENDER_NUMBER1}"))
             .withRequestBodyJsonPath("$[0].bookingId", 1)
-            .withRequestBodyJsonPath("$[0].sequenceNumber", 1)
+            .withRequestBodyJsonPath("$[0].nomisSequence", 1)
             .withRequestBodyJsonPath("$[0].assessmentDate", "2021-02-03")
+            .withRequestBodyJsonPath("$[0].assessmentPrisonId", "SWI")
             .withRequestBodyJsonPath("$[0].assessmentType", "CSR")
             .withRequestBodyJsonPath("$[0].calculatedLevel", "STANDARD")
             .withRequestBodyJsonPath("$[0].score", "1001")
             .withRequestBodyJsonPath("$[0].status", "A")
-            .withRequestBodyJsonPath("$[0].staffId", "1001")
             .withRequestBodyJsonPath("$[0].committeeCode", "GOV")
             .withRequestBodyJsonPath("$[0].nextReviewDate", "2021-02-03")
             .withRequestBodyJsonPath("$[0].comment", "comment")
@@ -208,15 +210,15 @@ class CsraMigrationIntTest(
             .withRequestBodyJsonPath("$[0].reviewDetails[0].questions[0].responses[0].comment", "response comment"),
         )
         csraApi.verify(
-          postRequestedFor(urlPathEqualTo("/csras/migrate/${OFFENDER_NUMBER2}"))
+          postRequestedFor(urlPathEqualTo("/nomis-sync/migrate/${OFFENDER_NUMBER2}"))
             .withRequestBodyJsonPath("$[0].bookingId", 2)
-            .withRequestBodyJsonPath("$[0].sequenceNumber", 2)
+            .withRequestBodyJsonPath("$[0].nomisSequence", 2)
             .withRequestBodyJsonPath("$[0].assessmentDate", "2021-02-03")
+            .withRequestBodyJsonPath("$[0].assessmentPrisonId", "SWI")
             .withRequestBodyJsonPath("$[0].assessmentType", "CSR")
             .withRequestBodyJsonPath("$[0].calculatedLevel", "STANDARD")
             .withRequestBodyJsonPath("$[0].score", 1001)
             .withRequestBodyJsonPath("$[0].status", "A")
-            .withRequestBodyJsonPath("$[0].staffId", 1001)
             .withRequestBodyJsonPath("$[0].committeeCode", "GOV")
             .withRequestBodyJsonPath("$[0].nextReviewDate", "2021-02-03")
             .withRequestBodyJsonPath("$[0].comment", "comment")
@@ -283,9 +285,9 @@ class CsraMigrationIntTest(
         csraApi.stubMigrateCsras(
           OFFENDER_NUMBER1,
           listOf(
-            MigrationResult(
-              dpsCsraId = "00000000-0000-0000-0000-000000000001",
-              nomisBookingId = 1,
+            CsraMigrationResponse(
+              id = UUID.fromString("00000000-0000-0000-0000-000000000001"),
+              bookingId = 1,
               nomisSequence = 1,
             ),
           ),
@@ -298,7 +300,7 @@ class CsraMigrationIntTest(
       fun `will POST the csras to DPS only once`() {
         csraApi.verify(
           1,
-          postRequestedFor(urlPathEqualTo("/csras/migrate/${OFFENDER_NUMBER1}")),
+          postRequestedFor(urlPathEqualTo("/nomis-sync/migrate/${OFFENDER_NUMBER1}")),
         )
       }
 
@@ -340,7 +342,7 @@ class CsraMigrationIntTest(
         await untilAsserted {
           csraApi.verify(
             2,
-            postRequestedFor(urlPathEqualTo("/csras/migrate/${OFFENDER_NUMBER1}")),
+            postRequestedFor(urlPathEqualTo("/nomis-sync/migrate/${OFFENDER_NUMBER1}")),
           )
           csrasMappingApiMockServer.verify(
             0,
@@ -360,7 +362,7 @@ class CsraMigrationIntTest(
             )
             assertThat(it).containsEntry(
               "error",
-              "400 Bad Request from POST http://localhost:$WIREMOCK_PORT/csras/migrate/$OFFENDER_NUMBER1",
+              "400 Bad Request from POST http://localhost:$WIREMOCK_PORT/nomis-sync/migrate/$OFFENDER_NUMBER1",
             )
           },
           isNull(),
