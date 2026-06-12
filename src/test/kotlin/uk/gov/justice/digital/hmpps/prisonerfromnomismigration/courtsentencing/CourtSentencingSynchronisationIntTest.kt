@@ -2207,13 +2207,13 @@ class CourtSentencingSynchronisationIntTest(
             courtAppearanceEvent(
               eventType = "COURT_EVENTS-UPDATED",
             ),
-          ).also { waitForAnyProcessingToComplete("court-appearance-synchronisation-updated-failed", 2) }
+          ).also { waitForAnyProcessingToComplete("court-appearance-synchronisation-updated-awaiting-parent", 2) }
         }
 
         @Test
         fun `will track a telemetry event for failed`() {
           verify(telemetryClient, times(2)).trackEvent(
-            eq("court-appearance-synchronisation-updated-failed"),
+            eq("court-appearance-synchronisation-updated-awaiting-parent"),
             check {
               assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
               assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
@@ -2224,6 +2224,43 @@ class CourtSentencingSynchronisationIntTest(
             },
             isNull(),
           )
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("When appearance doesn't exist in nomis")
+    inner class CourtAppearanceDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        courtSentencingNomisApiMockServer.stubGetCourtAppearance(status = NOT_FOUND)
+        courtSentencingOffenderEventsQueue.sendMessage(
+          courtAppearanceEvent(
+            eventType = "COURT_EVENTS-UPDATED",
+          ),
+        ).also { waitForAnyProcessingToComplete("court-appearance-synchronisation-updated-ignored") }
+      }
+
+      @Test
+      fun `telemetry added to track the failure`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-appearance-synchronisation-updated-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+            assertThat(it["reason"]).isEqualTo("court appearance does not exist in nomis")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `the event is not placed on dead letter queue`() {
+        await untilAsserted {
+          assertThat(
+            courtSentencingOffenderEventsQueue.hasMessagesOnDLQQueue(),
+          ).isFalse
         }
       }
     }
@@ -3357,13 +3394,13 @@ class CourtSentencingSynchronisationIntTest(
             courtEventChargeEvent(
               eventType = "COURT_EVENT_CHARGES-UPDATED",
             ),
-          ).also { waitForAnyProcessingToComplete("court-charge-synchronisation-updated-failed", 2) }
+          ).also { waitForAnyProcessingToComplete("court-charge-synchronisation-updated-awaiting-parent", 2) }
         }
 
         @Test
         fun `telemetry added to track the failure`() {
           verify(telemetryClient, Mockito.atLeastOnce()).trackEvent(
-            eq("court-charge-synchronisation-updated-failed"),
+            eq("court-charge-synchronisation-updated-awaiting-parent"),
             check {
               assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
               assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
