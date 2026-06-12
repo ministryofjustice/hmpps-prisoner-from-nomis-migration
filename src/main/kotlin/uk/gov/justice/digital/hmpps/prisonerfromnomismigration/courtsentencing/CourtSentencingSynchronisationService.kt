@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClientResponseException
@@ -51,7 +50,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
-import java.util.*
+import java.util.UUID
 
 @Service
 class CourtSentencingSynchronisationService(
@@ -60,7 +59,6 @@ class CourtSentencingSynchronisationService(
   private val dpsApiService: CourtSentencingDpsApiService,
   private val queueService: SynchronisationQueueService,
   override val telemetryClient: TelemetryClient,
-  @Value($$"${contact-sentencing.court-event-update.ignore-missing:false}") private val ignoreMissingCourtAppearances: Boolean,
   private val courtSentencingMappingApiService: CourtSentencingMappingApiService,
 ) : TelemetryEnabled {
   private companion object {
@@ -553,44 +551,41 @@ class CourtSentencingSynchronisationService(
         if (event.originatesInDps) {
           telemetryClient.trackEvent("court-appearance-synchronisation-updated-skipped", telemetry)
         } else {
-          val mapping = mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)
-          if (mapping == null) {
-            if (ignoreMissingCourtAppearances) {
-              // require temporarily in preprod since batch will trigger updates on court events overnight that may not have been migrated,
-              // so no point in sending to DLQ and causing confusion
-              telemetryClient.trackEvent(
-                "court-appearance-synchronisation-updated-skipped",
-                telemetry,
-              )
-              return
-            }
-            telemetryClient.trackEvent(
-              "court-appearance-synchronisation-updated-failed",
-              telemetry,
-            )
-            throw IllegalStateException("Received COURT_EVENTS-UPDATED for court appearance that has never been created")
-          } else {
-            val nomisCourtAppearance = nomisApiService.getCourtAppearance(
-              offenderNo = event.offenderIdDisplay,
-              courtAppearanceId = event.eventId,
-            )
-            mappingApiService.getCourtCaseOrNullByNomisId(nomisCourtAppearance.caseId!!)?.let { courtCaseMapping ->
-              track(
-                name = "court-appearance-synchronisation-updated",
-                telemetry = (telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId)).toMutableMap(),
-              ) {
-                dpsApiService.updateCourtAppearance(
-                  courtAppearanceId = mapping.dpsCourtAppearanceId,
-                  nomisCourtAppearance.toDpsCourtAppearance(dpsCaseId = courtCaseMapping.dpsCourtCaseId),
-                )
-              }
-            } ?: let {
+          nomisApiService.getCourtAppearanceNullable(
+            offenderNo = event.offenderIdDisplay,
+            courtAppearanceId = event.eventId,
+          )?.let { nomisCourtAppearance ->
+            val mapping = mappingApiService.getCourtAppearanceOrNullByNomisId(event.eventId)
+            if (mapping == null) {
               telemetryClient.trackEvent(
                 "court-appearance-synchronisation-updated-failed",
-                telemetry + ("nomisCourtCaseId" to nomisCourtAppearance.caseId.toString()) + ("reason" to "associated court case is not mapped"),
+                telemetry,
               )
-              throw IllegalStateException("Received COURT_EVENTS_UPDATED with court case ${nomisCourtAppearance.caseId} that has never been created/mapped")
+              throw IllegalStateException("Received COURT_EVENTS-UPDATED for court appearance that has never been mapped")
+            } else {
+              mappingApiService.getCourtCaseOrNullByNomisId(nomisCourtAppearance.caseId!!)?.let { courtCaseMapping ->
+                track(
+                  name = "court-appearance-synchronisation-updated",
+                  telemetry = (telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId)).toMutableMap(),
+                ) {
+                  dpsApiService.updateCourtAppearance(
+                    courtAppearanceId = mapping.dpsCourtAppearanceId,
+                    nomisCourtAppearance.toDpsCourtAppearance(dpsCaseId = courtCaseMapping.dpsCourtCaseId),
+                  )
+                }
+              } ?: let {
+                telemetryClient.trackEvent(
+                  "court-appearance-synchronisation-updated-awaiting-parent",
+                  telemetry + ("nomisCourtCaseId" to nomisCourtAppearance.caseId.toString()) + ("reason" to "associated court case is not mapped"),
+                )
+                throw ParentEntityNotFoundRetry("Received COURT_EVENTS_UPDATED with court case ${nomisCourtAppearance.caseId} that has never been created/mapped")
+              }
             }
+          } ?: let {
+            telemetryClient.trackEvent(
+              "court-appearance-synchronisation-updated-ignored",
+              telemetry + ("reason" to "court appearance does not exist in nomis"),
+            )
           }
         }
       } else {
@@ -772,7 +767,7 @@ class CourtSentencingSynchronisationService(
         )
       } ?: let {
         telemetryClient.trackEvent(
-          "court-charge-synchronisation-created-failed",
+          "court-charge-synchronisation-created-awaiting-parent",
           telemetry + ("reason" to "court appearance is not mapped"),
         )
         // after migration has run, this should not happen, so make sure this message goes in DLQ
@@ -866,7 +861,7 @@ class CourtSentencingSynchronisationService(
         }
       } ?: let {
         telemetryClient.trackEvent(
-          "court-charge-synchronisation-updated-failed",
+          "court-charge-synchronisation-updated-awaiting-parent",
           telemetry + ("reason" to "associated court appearance is not mapped"),
         )
         throw ParentEntityNotFoundRetry("Received COURT_EVENT_CHARGES_UPDATED with court appearance ${event.eventId} that has never been created/mapped")
@@ -1031,7 +1026,7 @@ class CourtSentencingSynchronisationService(
           } ?: let {
           mappingApiService.getCourtCaseOrNullByNomisId(caseId) ?: let {
             telemetryClient.trackEvent(
-              "sentence-synchronisation-created-failed",
+              "sentence-synchronisation-created-awaiting-parent",
               telemetry + ("reason" to "Nomis court case $caseId is not mapped"),
             )
             throw ParentEntityNotFoundRetry("Received OFFENDER_SENTENCES-INSERTED for sentence seq ${event.sentenceSeq} and booking ${event.bookingId} on a case ${event.caseId} that has never been created/mapped")
@@ -1080,7 +1075,7 @@ class CourtSentencingSynchronisationService(
             }
           } ?: let {
             telemetryClient.trackEvent(
-              "sentence-synchronisation-created-failed",
+              "sentence-synchronisation-created-awaiting-parent",
               telemetry + ("reason" to "parent court appearance $eventId is not mapped"),
             )
             throw ParentEntityNotFoundRetry("Received OFFENDER_SENTENCES-INSERTED for sentence seq ${event.sentenceSeq} and booking ${event.bookingId} on an appearance $eventId that has never been created/mapped")
@@ -1114,7 +1109,7 @@ class CourtSentencingSynchronisationService(
         mappingApiService.getSentenceOrNullByNomisId(event.bookingId, sentenceSequence = event.sentenceSeq)
           ?: let {
             telemetryClient.trackEvent(
-              "sentence-term-synchronisation-created-failed",
+              "sentence-term-synchronisation-created-awaiting-parent",
               telemetry + ("reason" to "parent sentence not mapped"),
             )
             throw ParentEntityNotFoundRetry("Received OFFENDER_SENTENCE_TERMS-INSERTED for term seq ${event.termSequence}, sentence seq ${event.sentenceSeq} and booking ${event.bookingId} for a sentence that has never been created/mapped")
@@ -1319,7 +1314,7 @@ class CourtSentencingSynchronisationService(
           "sentence-synchronisation-updated-failed",
           telemetry,
         )
-        throw ParentEntityNotFoundRetry("Received OFFENDER_SENTENCES-UPDATED or sync request for sentence (sequence $nomisSentenceSequence booking $nomisBookingId) that exists in nomis without sync mapping")
+        throw IllegalStateException("Received OFFENDER_SENTENCES-UPDATED or sync request for sentence (sequence $nomisSentenceSequence booking $nomisBookingId) that exists in nomis without sync mapping")
       } else {
         telemetryClient.trackEvent(
           "sentence-synchronisation-updated-skipped",
@@ -1361,7 +1356,7 @@ class CourtSentencingSynchronisationService(
         }
       } ?: let {
         telemetryClient.trackEvent(
-          "sentence-synchronisation-updated-failed",
+          "sentence-synchronisation-updated-awaiting-parent",
           telemetry + ("reason" to "parent court appearance $eventId is not mapped"),
         )
         throw ParentEntityNotFoundRetry("Received OFFENDER_SENTENCES-UPDATED for sentence seq $nomisSentenceSequence and booking $nomisBookingId on an appearance $eventId that has never been created/mapped")
@@ -1673,10 +1668,10 @@ class CourtSentencingSynchronisationService(
           }
         } ?: let {
           telemetryClient.trackEvent(
-            "sentence-term-synchronisation-updated-failed",
+            "sentence-term-synchronisation-awaiting-parent",
             telemetry,
           )
-          throw IllegalStateException("Received OFFENDER_SENTENCE_TERMS-UPDATED for sentence term (term ${event.termSequence}, sequence ${event.sentenceSeq} booking ${event.bookingId}) for a sentence that has never been created")
+          throw ParentEntityNotFoundRetry("Received OFFENDER_SENTENCE_TERMS-UPDATED for sentence term (term ${event.termSequence}, sequence ${event.sentenceSeq} booking ${event.bookingId}) for a sentence that has never been created")
         }
         telemetryClient.trackEvent(
           "sentence-term-synchronisation-updated-success",

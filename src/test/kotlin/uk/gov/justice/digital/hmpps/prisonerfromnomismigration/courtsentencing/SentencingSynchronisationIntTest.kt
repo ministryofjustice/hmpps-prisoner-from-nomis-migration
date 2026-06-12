@@ -704,7 +704,7 @@ class SentencingSynchronisationIntTest(
           awsSqsCourtSentencingOffenderEventsClient.sendMessage(
             courtSentencingQueueOffenderEventsUrl,
             sentenceTermEvent(
-              eventType = "OFFENDER_SENTENCE_TERMS-INSERTED",
+              eventType = "OFFENDER_SENTENCE-INSERTED",
             ),
           ).also {
             waitForTelemetry()
@@ -712,7 +712,7 @@ class SentencingSynchronisationIntTest(
 
           await untilAsserted {
             verify(telemetryClient, times(2)).trackEvent(
-              eq("sentence-synchronisation-created-failed"),
+              eq("sentence-synchronisation-created-awaiting-parent"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
@@ -1630,7 +1630,7 @@ class SentencingSynchronisationIntTest(
         fun `will not update a sentence in DPS`() {
           await untilAsserted {
             verify(telemetryClient, times(2)).trackEvent(
-              eq("sentence-synchronisation-updated-failed"),
+              eq("sentence-synchronisation-updated-awaiting-parent"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
@@ -2640,7 +2640,7 @@ class SentencingSynchronisationIntTest(
 
         await untilAsserted {
           verify(telemetryClient, times(2)).trackEvent(
-            eq("sentence-term-synchronisation-created-failed"),
+            eq("sentence-term-synchronisation-created-awaiting-parent"),
             check {
               assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
               assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
