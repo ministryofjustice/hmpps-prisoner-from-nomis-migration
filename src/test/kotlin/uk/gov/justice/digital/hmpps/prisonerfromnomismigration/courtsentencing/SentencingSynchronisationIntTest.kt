@@ -836,6 +836,7 @@ class SentencingSynchronisationIntTest(
               check {
                 assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
                 assertThat(it["nomisSentenceSequence"]).isEqualTo(NOMIS_SENTENCE_SEQUENCE.toString())
+                assertThat(it["nomisChargeIds"]).isEqualTo("101, 102")
               },
               isNull(),
             )

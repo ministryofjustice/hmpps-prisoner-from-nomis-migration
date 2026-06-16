@@ -52,7 +52,11 @@ inline fun <T> TelemetryEnabled.track(name: String, telemetry: MutableMap<String
 }
 
 inline fun <T> TelemetryEnabled.trackIfFailure(name: String, telemetry: MutableMap<String, String>, transform: () -> T): T = try {
-  transform()
+  return transform()
+} catch (e: AwaitParentEntityRetry) {
+  telemetry["error"] = e.message.toString()
+  telemetryClient.trackEvent("$name-awaiting-parent", telemetry)
+  throw e
 } catch (e: Exception) {
   telemetry["error"] = e.message.toString()
   telemetryClient.trackEvent("$name-error", telemetry)

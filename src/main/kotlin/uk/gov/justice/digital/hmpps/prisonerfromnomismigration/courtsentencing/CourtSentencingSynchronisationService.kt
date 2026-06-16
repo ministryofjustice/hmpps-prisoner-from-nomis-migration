@@ -960,6 +960,7 @@ class CourtSentencingSynchronisationService(
       properties = mutableMapOf(
         "nomisBookingId" to nomisSentence.bookingId.toString(),
         "nomisSentenceSequence" to nomisSentence.sentenceSeq.toString(),
+        "nomisChargeIds" to nomisSentence.offenderCharges.joinToString { it.id.toString() },
       ),
     )
     log.error("Unable to find mapping for nomis offender charges in the context of sentence: bookingId= ${nomisSentence.bookingId} sentenceSequence= ${nomisSentence.sentenceSeq}}\nPossible causes: events out of order or offender charge has not been migrated")
