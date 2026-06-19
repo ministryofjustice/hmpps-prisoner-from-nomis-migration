@@ -10,12 +10,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSRA_SYNC_QUEUE_ID
+import java.time.LocalDateTime
 import java.util.concurrent.CompletableFuture
 
 @Service
 class CsraSynchronisationEventListener(
   private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
+  private val csraSyncService: CsraSyncService,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -31,7 +33,12 @@ class CsraSynchronisationEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType, "csra")) {
             when (eventType) {
-              "ASSESSMENT-UPDATED" -> null
+              "ASSESSMENT-INSERTED" -> csraSyncService.create(sqsMessage.Message.fromJson())
+              "ASSESSMENT-UPDATED" -> csraSyncService.update(sqsMessage.Message.fromJson())
+              "ASSESSMENT-DELETED" -> csraSyncService.delete(sqsMessage.Message.fromJson())
+
+              "prison-offender-events.prisoner.merged" -> null // csraSynchronisationService.synchronisePrisonerMerged(sqsMessage.Message.fromJson())
+              "prison-offender-events.prisoner.booking.moved" -> null // csraSynchronisationService.synchronisePrisonerBookingMoved(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a csra message I wasn't expecting {}", eventType)
             }
@@ -44,3 +51,15 @@ class CsraSynchronisationEventListener(
   }
   private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
 }
+
+data class AssessmentUpdateEvent(
+  val eventType: String,
+  val eventDatetime: LocalDateTime,
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+  val assessmentSeq: Int,
+  val assessmentType: String? = null,
+  val evaluationResultCode: String? = null,
+  val reviewLevelSupType: String? = null,
+  val auditModuleName: String? = null,
+)

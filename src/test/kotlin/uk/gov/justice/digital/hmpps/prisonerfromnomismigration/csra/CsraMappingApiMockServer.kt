@@ -63,11 +63,11 @@ class CsraMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubPostMapping(offenderNo: String) {
+  fun stubPostMappings(offenderNo: String) {
     mappingApi.stubFor(post("/mapping/csras/$offenderNo/all").willReturn(status(201)))
   }
 
-  fun stubPostMapping(
+  fun stubPostMappings(
     offenderNo: String,
     status: HttpStatus,
     error: ErrorResponse = ErrorResponse(status = status.value()),
@@ -77,7 +77,7 @@ class CsraMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubPostMapping(offenderNo: String, error: DuplicateMappingErrorResponse) {
+  fun stubPostMappings(offenderNo: String, error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(
       post("/mapping/csras/$offenderNo/all").willReturn(jsonResponse(error, 409)),
     )
@@ -149,6 +149,21 @@ class CsraMappingApiMockServer(private val jsonMapper: JsonMapper) {
         okJson(jsonMapper.writeValueAsString(response)),
       ),
     )
+  }
+
+  fun stubPostMapping() {
+    mappingApi.stubFor(post("/mapping/csras").willReturn(status(201)))
+  }
+
+  fun stubPostMapping(
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    mappingApi.stubFor(post("/mapping/csras").willReturn(jsonResponse(error, status.value())))
+  }
+
+  fun stubPostMapping(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(post("/mapping/csras").willReturn(jsonResponse(error, 409)))
   }
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)

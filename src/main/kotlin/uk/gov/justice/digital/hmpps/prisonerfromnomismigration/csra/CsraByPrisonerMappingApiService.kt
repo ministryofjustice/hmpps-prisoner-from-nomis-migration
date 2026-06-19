@@ -10,12 +10,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CsraMappingDto
 
 @Service
-class CsraMappingService(
+class CsraByPrisonerMappingApiService(
   @Qualifier("mappingApiWebClient") webClient: WebClient,
-) : MigrationMapping<CsraMigrationMapping>("/mapping/csras", webClient) {
+) : MigrationMapping<CsraMigrationMapping>(domainUrl = "/mapping/csras", webClient) {
   private val api = CsraMappingResourceApi(webClient)
 
-  suspend fun createMapping(dto: CsraMigrationMapping): SuccessOrDuplicate<CsraMappingDto> = api
+  suspend fun createMappings(dto: CsraMigrationMapping): SuccessOrDuplicate<CsraMappingDto> = api
     .prepare(api.createCsraMappingsForPrisonerRequestConfig(dto.offenderNo, dto.prisonerMappings))
     .retrieve()
     .awaitSuccessOrDuplicate()
