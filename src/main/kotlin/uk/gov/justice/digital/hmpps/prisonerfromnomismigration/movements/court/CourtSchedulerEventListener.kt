@@ -16,6 +16,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtMovementRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_COURT_SCHEDULER
 import java.util.concurrent.CompletableFuture
 
+const val SYNC_COURT_SCHEDULE: String = "courtscheduler.sync.court.schedule"
+
 @Service
 class CourtSchedulerEventListener(
   private val jsonMapper: JsonMapper,
@@ -51,6 +53,8 @@ class CourtSchedulerEventListener(
             log.info("Feature switch is disabled for event {}", eventType)
           }
         }
+        // Process events from this service
+        SYNC_COURT_SCHEDULE -> courtScheduleService.syncCourtScheduleOut(sqsMessage.Message.fromJson())
         else -> retryMapping(sqsMessage.Type, sqsMessage.Message)
       }
     }
@@ -73,6 +77,12 @@ data class CourtScheduleEvent(
   val directionCode: DirectionCode,
   override val auditModuleName: String,
 ) : EventAudited
+
+data class SynchroniseCourtScheduleOutEvent(
+  val eventId: Long,
+  val bookingId: Long,
+  val offenderIdDisplay: String,
+)
 
 enum class CourtMovementRetryMappingMessageTypes {
   RETRY_MAPPING_COURT_SCHEDULE,

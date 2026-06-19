@@ -68,6 +68,25 @@ class CourtSchedulerSyncScheduleService(
       }
   }
 
+  suspend fun syncCourtScheduleOut(event: SynchroniseCourtScheduleOutEvent) {
+    val (eventId, bookingId, prisonerNumber) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber,
+      "bookingId" to bookingId,
+      "nomisEventId" to eventId,
+      "directionCode" to "OUT",
+      "source" to "FROM_NOMIS_SYNC",
+    )
+
+    track("${TELEMETRY_PREFIX}-synchronised", telemetry) {
+      val existingMapping = mappingApi.getCourtScheduleMappingOrNull(eventId)
+        ?.also { telemetry["dpsCourtAppearanceId"] = it.dpsCourtAppearanceId }
+
+      syncScheduleOut(prisonerNumber, eventId, telemetry, existingMapping)
+        ?.also { tryToCreateScheduleMapping(it, telemetry) }
+    }
+  }
+
   suspend fun syncScheduleOut(
     prisonerNumber: String,
     eventId: Long,

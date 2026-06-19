@@ -861,6 +861,152 @@ class CourtSchedulerSyncScheduleIntTest(
     }
   }
 
+  @Nested
+  @DisplayName("courtscheduler.sync.court.schedule")
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class SynchroniseCourtEvent {
+
+    private val yesterday: LocalDateTime = LocalDateTime.now().minusDays(1)
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPath {
+      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
+      private val dpsSentencingCourtAppearanceId: UUID = UUID.randomUUID()
+
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
+        nomisApi.stubGetCourtScheduleOut("A1234BC", 123L, courtCaseId = 1314L)
+        sentencingMappingApi.stubGetCourtAppearanceByNomisId(123, "$dpsSentencingCourtAppearanceId")
+        dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
+        mappingApi.stubCreateCourtScheduleMapping()
+
+        sendMessage(syncCourtScheduleEvent())
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should check mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")))
+      }
+
+      @Test
+      fun `should get NOMIS court event`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/court/schedule/out/123")))
+      }
+
+      @Test
+      fun `should get court sentencing mapping`() {
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/123")))
+      }
+
+      @Test
+      fun `should create DPS scheduled movement`() {
+        CourtSchedulerDpsApiMockServer.getRequestBody<SyncCourtEvent>(
+          putRequestedFor(urlPathEqualTo("/sync/court-appearances/A1234BC")),
+        ).apply {
+          assertThat(courtEvent.dpsId).isNull()
+          assertThat(courtEvent.agyLocId).isEqualTo("LEEDMC")
+          assertThat(courtEvent.start).isCloseTo(yesterday, within(5, ChronoUnit.MINUTES))
+          assertThat(courtEvent.courtEventType).isEqualTo("CRT")
+          assertThat(courtEvent.eventStatus).isEqualTo("SCH")
+          assertThat(courtEvent.eventId).isEqualTo(123)
+          assertThat(courtEvent.commentText).isEqualTo("court schedule comment")
+          assertThat(courtEvent.externalReferenceUrn).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
+          assertThat(user.username).isEqualTo("USER")
+          assertThat(user.activeCaseloadId).isEqualTo("MDI")
+        }
+      }
+
+      @Test
+      fun `should create mapping`() {
+        mappingApi.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule"))
+            .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
+            .withRequestBodyJsonPath("bookingId", 12345)
+            .withRequestBodyJsonPath("nomisEventId", 123)
+            .withRequestBodyJsonPath("dpsCourtAppearanceId", dpsCourtAppearanceId)
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-schedule-synchronised-success"),
+          check {
+            assertThat(it["source"]).isEqualTo("FROM_NOMIS_SYNC")
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["directionCode"]).isEqualTo("OUT")
+            assertThat(it["dpsCourtAppearanceId"]).isEqualTo("$dpsCourtAppearanceId")
+            assertThat(it["dpsSentencingCourtAppearanceId"]).isEqualTo("$dpsSentencingCourtAppearanceId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class MappingRetry {
+      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
+      private val dpsSentencingCourtAppearanceId: UUID = UUID.randomUUID()
+
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
+        nomisApi.stubGetCourtScheduleOut("A1234BC", 123L)
+        sentencingMappingApi.stubGetCourtAppearanceByNomisId(123, "$dpsSentencingCourtAppearanceId")
+        dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
+        mappingApi.stubCreateCourtScheduleMappingFailureFollowedBySuccess()
+
+        sendMessage(syncCourtScheduleEvent())
+          .also { waitForAnyProcessingToComplete("court-scheduler-sync-schedule-mapping-retry-created") }
+      }
+
+      @Test
+      fun `should create DPS scheduled movement`() {
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/court-appearances/A1234BC")))
+      }
+
+      @Test
+      fun `should create mapping on 2nd call`() {
+        mappingApi.verify(
+          count = 2,
+          pattern = postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule")),
+        )
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-schedule-synchronised-success"),
+          any(),
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should publish mapping retry telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-schedule-mapping-retry-created"),
+          check {
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["dpsCourtAppearanceId"]).isEqualTo("$dpsCourtAppearanceId")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
   private fun sendMessage(event: String) = awsSqsCourtMovementsOffenderEventsClient.sendMessage(
     courtMovementsQueueOffenderEventsUrl,
     event,
@@ -888,6 +1034,16 @@ class CourtSchedulerSyncScheduleIntTest(
            "traceparent" : {"Type":"String","Value":"00-a0103c496069d331bd417cac78f4085c-0158c9f6485e8841-01"},
            "eventType" : {"Type":"String","Value":"$eventType"}
          }
+       }
+    """.trimMargin()
+
+  private fun syncCourtScheduleEvent(
+    eventId: Long = 123,
+  ) = // language=JSON
+    """{
+         "Type" : "courtscheduler.sync.court.schedule",
+         "MessageId" : "57126174-e2d7-518f-914e-0056a63363b0",
+         "Message" : "{\"eventId\":$eventId,\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\"}"
        }
     """.trimMargin()
 }
