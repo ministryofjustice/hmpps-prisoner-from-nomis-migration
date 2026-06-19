@@ -150,8 +150,8 @@ class CsraMigrationIntTest(
           ),
         )
         // csrasMappingApiMockServer.stubGetMappings(listOf())
-        csrasMappingApiMockServer.stubPostMapping(OFFENDER_NUMBER1)
-        csrasMappingApiMockServer.stubPostMapping(OFFENDER_NUMBER2)
+        csrasMappingApiMockServer.stubPostMappings(OFFENDER_NUMBER1)
+        csrasMappingApiMockServer.stubPostMappings(OFFENDER_NUMBER2)
         // csrasMappingApiMockServer.stubMigrationCount(recordsMigrated = 2)
         migrationResult = performMigration()
       }

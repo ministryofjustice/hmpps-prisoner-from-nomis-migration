@@ -26,7 +26,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiS
 @Service
 class CsraMigrationService(
   val nomisApiService: NomisApiService,
-  val csraMappingService: CsraMappingService,
+  val csraByPrisonerMappingApiService: CsraByPrisonerMappingApiService,
   val csraNomisApiService: CsraNomisApiService,
   val csraApiService: CsraDpsApiService,
   jsonMapper: JsonMapper,
@@ -34,7 +34,7 @@ class CsraMigrationService(
   @Value($$"${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value($$"${complete-check.count}") completeCheckCount: Int,
 ) : ByPageNumberMigrationService<PrisonerMigrationFilter, PrisonerId, CsraMigrationMapping>(
-  mappingService = csraMappingService,
+  mappingService = csraByPrisonerMappingApiService,
   migrationType = MigrationType.CSRA,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
@@ -133,15 +133,15 @@ class CsraMigrationService(
   }
 
   suspend fun createMappingOrOnFailureDo(
-    mapping: CsraMigrationMapping,
+    mappings: CsraMigrationMapping,
     failureHandler: suspend (error: Throwable) -> Unit,
   ) {
     runCatching {
-      csraMappingService.createMapping(mapping)
+      csraByPrisonerMappingApiService.createMappings(mappings)
     }.onFailure {
       failureHandler(it)
     }.onSuccess {
-      publishTelemetry(it, mapping)
+      publishTelemetry(it, mappings)
     }
   }
 
