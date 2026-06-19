@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-06-12.619.7f0791e"
+    "version" : "2026-06-19.625.be5165a"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -1052,6 +1052,56 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/DuplicateMappingErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/court-scheduler/schedule/dps-id" : {
+      "put" : {
+        "tags" : [ "court-schedule-resource" ],
+        "summary" : "Creates a court schedule mapping, or updates existing mapping if DPS ID already exists",
+        "description" : "Creates or updates a schedule mapping. If we find a mapping already exists for the DPS ID requested then we just update the NOMIS ID on that record. However if we find a duplicate for the NOMIS ID requested we reject the request as with the create endpoint. Requires ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
+        "operationId" : "createOrUpdateCourtScheduleMappingByDpsId",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CourtScheduleMappingDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Access forbidden for this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "The mapping already exists.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -21931,6 +21981,40 @@
         },
         "required" : [ "errorCode", "moreInfo", "status", "userMessage" ]
       },
+      "CourtScheduleMappingDto" : {
+        "type" : "object",
+        "description" : "Mapping for a single court schedule",
+        "properties" : {
+          "prisonerNumber" : {
+            "type" : "string",
+            "description" : "The NOMIS offender number",
+            "example" : "A1234BC"
+          },
+          "bookingId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The NOMIS ID of the booking",
+            "example" : 12345
+          },
+          "nomisEventId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The NOMIS event id"
+          },
+          "dpsCourtAppearanceId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The DPS court appearance id"
+          },
+          "mappingType" : {
+            "type" : "string",
+            "description" : "The source of the mapping",
+            "enum" : [ "MIGRATED", "NOMIS_CREATED", "DPS_CREATED" ],
+            "example" : "NOMIS_CREATED"
+          }
+        },
+        "required" : [ "bookingId", "dpsCourtAppearanceId", "mappingType", "nomisEventId", "prisonerNumber" ]
+      },
       "BookingCourtMovementMappingsDto" : {
         "type" : "object",
         "description" : "Mappings for a single court movement",
@@ -23699,40 +23783,6 @@
         },
         "required" : [ "dpsCourtAppearanceId", "id", "isNew", "mappingType", "new", "nomisCourtAppearanceId" ]
       },
-      "CourtScheduleMappingDto" : {
-        "type" : "object",
-        "description" : "Mapping for a single court schedule",
-        "properties" : {
-          "prisonerNumber" : {
-            "type" : "string",
-            "description" : "The NOMIS offender number",
-            "example" : "A1234BC"
-          },
-          "bookingId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The NOMIS ID of the booking",
-            "example" : 12345
-          },
-          "nomisEventId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The NOMIS event id"
-          },
-          "dpsCourtAppearanceId" : {
-            "type" : "string",
-            "format" : "uuid",
-            "description" : "The DPS court appearance id"
-          },
-          "mappingType" : {
-            "type" : "string",
-            "description" : "The source of the mapping",
-            "enum" : [ "MIGRATED", "NOMIS_CREATED", "DPS_CREATED" ],
-            "example" : "NOMIS_CREATED"
-          }
-        },
-        "required" : [ "bookingId", "dpsCourtAppearanceId", "mappingType", "nomisEventId", "prisonerNumber" ]
-      },
       "CourtMovementMappingDto" : {
         "type" : "object",
         "description" : "Mapping for a single court movement",
@@ -24857,15 +24907,15 @@
           "last" : {
             "type" : "boolean"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -25116,15 +25166,15 @@
           "last" : {
             "type" : "boolean"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -25185,15 +25235,15 @@
           "last" : {
             "type" : "boolean"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -25280,15 +25330,15 @@
           "last" : {
             "type" : "boolean"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -25326,15 +25376,15 @@
           "last" : {
             "type" : "boolean"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -25412,15 +25462,15 @@
           "last" : {
             "type" : "boolean"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -25638,15 +25688,15 @@
           "last" : {
             "type" : "boolean"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -25684,15 +25734,15 @@
           "last" : {
             "type" : "boolean"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -25832,15 +25882,15 @@
           "last" : {
             "type" : "boolean"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -25962,15 +26012,15 @@
           "last" : {
             "type" : "boolean"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -26008,15 +26058,15 @@
           "last" : {
             "type" : "boolean"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -26082,15 +26132,15 @@
           "last" : {
             "type" : "boolean"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
@@ -26150,15 +26200,15 @@
           "last" : {
             "type" : "boolean"
           },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
           },
           "empty" : {
             "type" : "boolean"
