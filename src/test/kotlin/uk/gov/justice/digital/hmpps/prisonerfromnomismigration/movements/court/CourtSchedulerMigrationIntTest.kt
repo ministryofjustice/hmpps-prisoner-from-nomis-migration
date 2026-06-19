@@ -144,6 +144,7 @@ class CourtSchedulerMigrationIntTest(
           assertThat(courtEventType).isEqualTo("CRT")
           assertThat(eventStatus).isEqualTo("COMP")
           assertThat(commentText).isEqualTo("Some schedule comment")
+          assertThat(currentTerm).isTrue
           assertThat(externalReferenceUrn).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
         }
         with(courtEvents[0].created) {

@@ -88,6 +88,7 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         courtEventType = "CRT",
         eventStatus = "SCH",
         commentText = "court schedule out comment",
+        currentTerm = true,
         externalReferenceUrn = "Some ext ref URN",
       ),
     )
