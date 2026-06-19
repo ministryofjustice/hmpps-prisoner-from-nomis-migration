@@ -211,6 +211,7 @@ fun OffenderCourtMovementsResponse.toDpsRequest(
           eventStatus = schedule.eventStatus,
           eventId = schedule.eventId,
           commentText = schedule.comment,
+          currentTerm = booking.latestBooking,
           externalReferenceUrn = sentencingMappings.find { it.nomisCourtAppearanceId == schedule.eventId }
             ?.dpsCourtAppearanceId
             ?.let { "$EXTERNAL_REF_PREFIX$it" },
