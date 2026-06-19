@@ -199,6 +199,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTORGANISATIONS_QUEUE_NAME: "sqs_name"
     prison-events-organisations-dl-queue:
       HMPPS_SQS_QUEUES_EVENTORGANISATIONS_DLQ_NAME: "sqs_name"
+    prisoner-from-nomis-staff-queue:
+      HMPPS_SQS_QUEUES_EVENTSTAFF_QUEUE_NAME: "sqs_name"
+    prisoner-from-nomis-staff-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTSTAFF_DLQ_NAME: "sqs_name"
     prison-events-visitbalance-queue:
       HMPPS_SQS_QUEUES_EVENTVISITBALANCE_QUEUE_NAME: "sqs_name"
     prison-events-visitbalance-dl-queue:
