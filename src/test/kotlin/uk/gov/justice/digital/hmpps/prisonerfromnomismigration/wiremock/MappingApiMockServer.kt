@@ -28,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.jsonMapper
 import java.net.URLEncoder
 
 class MappingApiExtension :
@@ -674,7 +675,7 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubMappingCreateFailureFollowedBySuccess(url: String, method: (UrlPattern) -> MappingBuilder = WireMock::post) {
+  fun stubMappingCreateFailureFollowedBySuccess(url: String, method: (UrlPattern) -> MappingBuilder = WireMock::post, successResponse: Any? = null) {
     stubFor(
       method(urlPathMatching(url))
         .inScenario("Retry create Scenario")
@@ -691,7 +692,14 @@ class MappingApiMockServer : WireMockServer(WIREMOCK_PORT) {
       method(urlPathMatching(url))
         .inScenario("Retry create Scenario")
         .whenScenarioStateIs("Cause create Success")
-        .willReturn(created())
+        .willReturn(
+          created().apply {
+            successResponse?.run {
+              withHeader("Content-Type", "application/json")
+              withBody(jsonMapper.writeValueAsString(successResponse))
+            }
+          },
+        )
         .willSetStateTo(STARTED),
     )
   }

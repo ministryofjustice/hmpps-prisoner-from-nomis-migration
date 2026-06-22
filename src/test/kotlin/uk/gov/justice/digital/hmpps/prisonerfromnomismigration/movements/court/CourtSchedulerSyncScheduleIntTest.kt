@@ -2,9 +2,9 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court
 
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
 import org.awaitility.kotlin.await
@@ -14,14 +14,20 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.kotlin.any
 import org.mockito.kotlin.check
+import org.mockito.kotlin.doNothing
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.http.HttpStatus.NOT_FOUND
+import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiMockServer
@@ -29,8 +35,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension.Companion.dpsCourtSchedulerServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.referenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingUpsertByDpsIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
@@ -57,6 +65,7 @@ class CourtSchedulerSyncScheduleIntTest(
     CourtSentencingDpsApiExtension.resetAndDisableResetBeforeEach()
 
     reset(telemetryClient)
+    reset(queueService)
   }
 
   @Nested
@@ -80,7 +89,7 @@ class CourtSchedulerSyncScheduleIntTest(
         nomisApi.stubGetCourtScheduleOut("A1234BC", 123L)
         sentencingMappingApi.stubGetCourtAppearanceByNomisId(123, "$dpsSentencingCourtAppearanceId")
         dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
-        mappingApi.stubCreateCourtScheduleMapping()
+        mappingApi.stubUpsertCourtScheduleMapping()
 
         sendMessage(courtScheduleEvent("COURT_EVENTS-INSERTED"))
           .also { waitForAnyProcessingToComplete() }
@@ -125,7 +134,7 @@ class CourtSchedulerSyncScheduleIntTest(
       @Test
       fun `should create mapping`() {
         mappingApi.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule"))
+          putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/dps-id"))
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisEventId", 123)
@@ -165,7 +174,7 @@ class CourtSchedulerSyncScheduleIntTest(
         nomisApi.stubGetCourtScheduleOut("A1234BC", 123L, courtCaseId = 1314L)
         sentencingMappingApi.stubGetCourtAppearanceByNomisId(123, "$dpsSentencingCourtAppearanceId")
         dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
-        mappingApi.stubCreateCourtScheduleMapping()
+        mappingApi.stubUpsertCourtScheduleMapping()
 
         sendMessage(courtScheduleEvent("COURT_EVENTS-INSERTED"))
           .also { waitForAnyProcessingToComplete() }
@@ -359,7 +368,7 @@ class CourtSchedulerSyncScheduleIntTest(
         mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
         nomisApi.stubGetCourtScheduleOut("A1234BC", 123L)
         dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
-        mappingApi.stubCreateCourtScheduleMappingConflict(
+        mappingApi.stubUpsertCourtScheduleMappingConflict(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
               existing = CourtScheduleMappingDto(
@@ -394,7 +403,7 @@ class CourtSchedulerSyncScheduleIntTest(
 
       @Test
       fun `should create mapping a single time`() {
-        mappingApi.verify(postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule")))
+        mappingApi.verify(putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/dps-id")))
       }
 
       @Test
@@ -428,14 +437,14 @@ class CourtSchedulerSyncScheduleIntTest(
       private val dpsSentencingCourtAppearanceId: UUID = UUID.randomUUID()
 
       @BeforeAll
-      fun setUp() {
+      fun setUp() = runTest {
         setUpTestClass()
 
         mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
         nomisApi.stubGetCourtScheduleOut("A1234BC", 123L)
         sentencingMappingApi.stubGetCourtAppearanceByNomisId(123, "$dpsSentencingCourtAppearanceId")
         dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
-        mappingApi.stubCreateCourtScheduleMappingFailureFollowedBySuccess()
+        mappingApi.stubUpsertCourtScheduleMappingFailureFollowedBySuccess()
 
         sendMessage(courtScheduleEvent("COURT_EVENTS-INSERTED"))
           .also { waitForAnyProcessingToComplete("court-scheduler-sync-schedule-mapping-retry-created") }
@@ -450,7 +459,7 @@ class CourtSchedulerSyncScheduleIntTest(
       fun `should create mapping on 2nd call`() {
         mappingApi.verify(
           count = 2,
-          pattern = postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule")),
+          pattern = putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/dps-id")),
         )
       }
 
@@ -472,6 +481,148 @@ class CourtSchedulerSyncScheduleIntTest(
             assertThat(it["dpsCourtAppearanceId"]).isEqualTo("$dpsCourtAppearanceId")
           },
           isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class MappingNeedsReplacing {
+      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
+      private val dpsSentencingCourtAppearanceId: UUID = UUID.randomUUID()
+
+      @BeforeAll
+      fun setUp(output: CapturedOutput) = runTest {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
+        nomisApi.stubGetCourtScheduleOut("A1234BC", 123L, courtCaseId = 1314L)
+        sentencingMappingApi.stubGetCourtAppearanceByNomisId(123, "$dpsSentencingCourtAppearanceId")
+        dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
+        // mapping service tells us the mapping's nomis event ID was replaced
+        mappingApi.stubUpsertCourtScheduleMapping(CourtScheduleMappingUpsertByDpsIdResponse(replacedNomisEventId = 456))
+        // We won't process the extra sync message, we'll just check it was called
+        doNothing().whenever(queueService).sendMessage(any(), any(), any(), any(), anyInt())
+
+        sendMessage(courtScheduleEvent("COURT_EVENTS-INSERTED"))
+          .also {
+            await untilAsserted {
+              assertThat(output.toString()).contains("Requested sync of court schedule")
+            }
+          }
+      }
+
+      @Test
+      fun `should get court sentencing mapping`() {
+        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/123")))
+      }
+
+      @Test
+      fun `should create DPS scheduled movement`() {
+        CourtSchedulerDpsApiMockServer.getRequestBody<SyncCourtEvent>(
+          putRequestedFor(urlPathEqualTo("/sync/court-appearances/A1234BC")),
+        ).apply {
+          assertThat(courtEvent.externalReferenceUrn).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
+        }
+      }
+
+      @Test
+      fun `should upsert mapping`() {
+        mappingApi.verify(
+          putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/dps-id"))
+            .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
+            .withRequestBodyJsonPath("bookingId", 12345)
+            .withRequestBodyJsonPath("nomisEventId", 123)
+            .withRequestBodyJsonPath("dpsCourtAppearanceId", dpsCourtAppearanceId)
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-schedule-inserted-success"),
+          check {
+            assertThat(it["dpsSentencingCourtAppearanceId"]).isEqualTo("$dpsSentencingCourtAppearanceId")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["replacedNomisEventId"]).isEqualTo("456")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should send request to synchronise replaced NOMIS court schedule`() = runTest {
+        verify(queueService).sendMessage(
+          eq(SYNC_COURT_SCHEDULE),
+          eq(SynchronisationType.COURT_SCHEDULER),
+          any(),
+          any(),
+          anyInt(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class MappingNeedsReplacingButSendMessageFails {
+      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
+      private val dpsSentencingCourtAppearanceId: UUID = UUID.randomUUID()
+
+      @BeforeAll
+      fun setUp(output: CapturedOutput) = runTest {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
+        nomisApi.stubGetCourtScheduleOut("A1234BC", 123L, courtCaseId = 1314L)
+        sentencingMappingApi.stubGetCourtAppearanceByNomisId(123, "$dpsSentencingCourtAppearanceId")
+        dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
+        // mapping service tells us the mapping's nomis event ID was replaced
+        mappingApi.stubUpsertCourtScheduleMapping(CourtScheduleMappingUpsertByDpsIdResponse(replacedNomisEventId = 456))
+        // Mock a failed send of the sync message to the sync queue
+        doThrow(QueueDoesNotExistException.builder().build()).whenever(queueService).sendMessage(any(), any(), any(), any(), anyInt())
+
+        sendMessage(courtScheduleEvent("COURT_EVENTS-INSERTED"))
+          .also {
+            await untilAsserted {
+              assertThat(output.toString()).contains("Failed to send sync message")
+            }
+          }
+      }
+
+      @Test
+      fun `should upsert mapping`() {
+        mappingApi.verify(
+          putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/dps-id"))
+            .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
+            .withRequestBodyJsonPath("bookingId", 12345)
+            .withRequestBodyJsonPath("nomisEventId", 123)
+            .withRequestBodyJsonPath("dpsCourtAppearanceId", dpsCourtAppearanceId)
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-schedule-inserted-success"),
+          check {
+            assertThat(it["dpsSentencingCourtAppearanceId"]).isEqualTo("$dpsSentencingCourtAppearanceId")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["replacedNomisEventId"]).isEqualTo("456")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should send request to synchronise replaced NOMIS court schedule`() = runTest {
+        verify(queueService).sendMessage(
+          eq(SYNC_COURT_SCHEDULE),
+          eq(SynchronisationType.COURT_SCHEDULER),
+          any(),
+          any(),
+          anyInt(),
         )
       }
     }
@@ -882,7 +1033,7 @@ class CourtSchedulerSyncScheduleIntTest(
         nomisApi.stubGetCourtScheduleOut("A1234BC", 123L, courtCaseId = 1314L)
         sentencingMappingApi.stubGetCourtAppearanceByNomisId(123, "$dpsSentencingCourtAppearanceId")
         dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
-        mappingApi.stubCreateCourtScheduleMapping()
+        mappingApi.stubUpsertCourtScheduleMapping()
 
         sendMessage(syncCourtScheduleEvent())
           .also { waitForAnyProcessingToComplete() }
@@ -924,7 +1075,7 @@ class CourtSchedulerSyncScheduleIntTest(
       @Test
       fun `should create mapping`() {
         mappingApi.verify(
-          postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule"))
+          putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/dps-id"))
             .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
             .withRequestBodyJsonPath("bookingId", 12345)
             .withRequestBodyJsonPath("nomisEventId", 123)
@@ -965,7 +1116,7 @@ class CourtSchedulerSyncScheduleIntTest(
         nomisApi.stubGetCourtScheduleOut("A1234BC", 123L)
         sentencingMappingApi.stubGetCourtAppearanceByNomisId(123, "$dpsSentencingCourtAppearanceId")
         dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
-        mappingApi.stubCreateCourtScheduleMappingFailureFollowedBySuccess()
+        mappingApi.stubUpsertCourtScheduleMappingFailureFollowedBySuccess()
 
         sendMessage(syncCourtScheduleEvent())
           .also { waitForAnyProcessingToComplete("court-scheduler-sync-schedule-mapping-retry-created") }
@@ -980,7 +1131,7 @@ class CourtSchedulerSyncScheduleIntTest(
       fun `should create mapping on 2nd call`() {
         mappingApi.verify(
           count = 2,
-          pattern = postRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule")),
+          pattern = putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/dps-id")),
         )
       }
 

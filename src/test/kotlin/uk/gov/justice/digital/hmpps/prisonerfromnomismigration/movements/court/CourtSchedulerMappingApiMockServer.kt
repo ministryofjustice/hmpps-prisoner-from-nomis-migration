@@ -70,8 +70,6 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubCreateCourtScheduleMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/court-scheduler/schedule")
-
   fun stubUpsertCourtScheduleMapping(response: CourtScheduleMappingUpsertByDpsIdResponse = CourtScheduleMappingUpsertByDpsIdResponse()) {
     mappingApi.stubFor(
       put("/mapping/court-scheduler/schedule/dps-id")
@@ -105,6 +103,8 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
   }
+
+  fun stubUpsertCourtScheduleMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/court-scheduler/schedule/dps-id", WireMock::put, CourtScheduleMappingUpsertByDpsIdResponse())
 
   fun stubGetCourtScheduleMapping(nomisEventId: Long = 1L, dpsCourtAppearanceId: UUID = UUID.randomUUID()) {
     mappingApi.stubFor(

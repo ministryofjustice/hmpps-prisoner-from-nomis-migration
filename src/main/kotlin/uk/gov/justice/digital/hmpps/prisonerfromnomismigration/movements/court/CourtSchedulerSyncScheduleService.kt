@@ -165,25 +165,7 @@ class CourtSchedulerSyncScheduleService(
 
   private suspend fun tryToCreateScheduleMapping(mapping: CourtScheduleMappingDto, telemetry: MutableMap<String, Any>) {
     try {
-      mappingApi.createCourtScheduleMapping(mapping)
-        .takeIf { it.isError }
-        ?.also {
-          with(it.errorResponse!!.moreInfo) {
-            telemetryClient.trackEvent(
-              "${TELEMETRY_PREFIX}-inserted-duplicate",
-              mapOf(
-                "existingOffenderNo" to existing!!.prisonerNumber,
-                "existingBookingId" to existing.bookingId,
-                "existingNomisEventId" to existing.nomisEventId,
-                "existingDpsCourtAppearanceId" to existing.dpsCourtAppearanceId,
-                "duplicateOffenderNo" to duplicate.prisonerNumber,
-                "duplicateBookingId" to duplicate.bookingId,
-                "duplicateNomisEventId" to duplicate.nomisEventId,
-                "duplicateDpsCourtAppearanceId" to duplicate.dpsCourtAppearanceId,
-              ),
-            )
-          }
-        }
+      createScheduleMapping(mapping, telemetry)
     } catch (e: Exception) {
       log.error("Failed to create mapping for court schedule with NOMIS id ${mapping.nomisEventId}", e)
       queueService.sendMessage(
@@ -196,13 +178,49 @@ class CourtSchedulerSyncScheduleService(
   }
 
   suspend fun retryCreateScheduleMapping(retryMessage: InternalMessage<CourtScheduleMappingDto>) {
-    mappingApi.createCourtScheduleMapping(
-      retryMessage.body,
-    ).also {
-      telemetryClient.trackEvent(
-        "${TELEMETRY_PREFIX}-mapping-retry-created",
-        retryMessage.telemetryAttributes,
-      )
+    createScheduleMapping(retryMessage.body, retryMessage.telemetryAttributes.toMutableMap())
+      .also {
+        telemetryClient.trackEvent(
+          "${TELEMETRY_PREFIX}-mapping-retry-created",
+          retryMessage.telemetryAttributes,
+        )
+      }
+  }
+
+  private suspend fun createScheduleMapping(mapping: CourtScheduleMappingDto, telemetry: MutableMap<String, Any>) {
+    val mappingResponse = mappingApi.upsertCourtScheduleMappingByDpsId(mapping)
+    if (!mappingResponse.isError && mappingResponse.successResponse!!.replacedNomisEventId != null) {
+      telemetry["replacedNomisEventId"] = mappingResponse.successResponse.replacedNomisEventId
+      runCatching {
+        queueService.sendMessage(
+          messageType = SYNC_COURT_SCHEDULE,
+          synchronisationType = SynchronisationType.COURT_SCHEDULER,
+          message = SynchroniseCourtScheduleOutEvent(
+            eventId = mappingResponse.successResponse.replacedNomisEventId,
+            bookingId = mapping.bookingId,
+            offenderIdDisplay = mapping.prisonerNumber,
+          ),
+        )
+        log.info("Requested sync of court schedule event ID=${mappingResponse.successResponse.replacedNomisEventId} for offender ${mapping.prisonerNumber}")
+      }.onFailure {
+        log.error("Failed to send sync message for court schedule event ID=${mappingResponse.successResponse.replacedNomisEventId} for offender ${mapping.prisonerNumber}", it)
+      }
+    } else if (mappingResponse.isError) {
+      with(mappingResponse.errorResponse!!.moreInfo) {
+        telemetryClient.trackEvent(
+          "${TELEMETRY_PREFIX}-inserted-duplicate",
+          mapOf(
+            "existingOffenderNo" to existing!!.prisonerNumber,
+            "existingBookingId" to existing.bookingId,
+            "existingNomisEventId" to existing.nomisEventId,
+            "existingDpsCourtAppearanceId" to existing.dpsCourtAppearanceId,
+            "duplicateOffenderNo" to duplicate.prisonerNumber,
+            "duplicateBookingId" to duplicate.bookingId,
+            "duplicateNomisEventId" to duplicate.nomisEventId,
+            "duplicateDpsCourtAppearanceId" to duplicate.dpsCourtAppearanceId,
+          ),
+        )
+      }
     }
   }
 }

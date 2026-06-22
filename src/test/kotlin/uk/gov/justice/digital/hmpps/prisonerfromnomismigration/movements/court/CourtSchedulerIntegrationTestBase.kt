@@ -1,10 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court
 
 import org.junit.jupiter.api.extension.ExtendWith
+import org.springframework.test.context.bean.override.mockito.MockReset
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.COURTSCHEDULER_SYNC_QUEUE_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 
 @ExtendWith(
@@ -22,4 +24,7 @@ abstract class CourtSchedulerIntegrationTestBase : SqsIntegrationTestBase() {
 
   @MockitoSpyBean
   protected lateinit var courtSchedulerMigrationService: CourtSchedulerMigrationService
+
+  @MockitoSpyBean(reset = MockReset.NONE)
+  protected lateinit var queueService: SynchronisationQueueService
 }
