@@ -70,6 +70,9 @@ hmpps.sqs:
     eventpersonalrelationships:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventstaff:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     domaineventpersonalrelationships:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

@@ -31,24 +31,25 @@ const val STAFF_QUEUE_ID = "migrationstaff"
 const val VISITS_QUEUE_ID = "migrationvisits"
 const val VISIT_SLOTS_QUEUE_ID = "migrationvisitslots"
 
-const val VISITS_SYNC_QUEUE_ID = "eventvisits"
-const val SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID = "eventsentencing"
-const val COURT_SENTENCING_SYNC_QUEUE_ID = "eventcourtsentencing"
-const val CORE_PERSON_SYNC_QUEUE_ID = "eventcoreperson"
-const val CSRA_SYNC_QUEUE_ID = "eventcsra"
-const val LOCATIONS_SYNC_QUEUE_ID = "eventlocations"
-const val CASENOTES_SYNC_QUEUE_ID = "eventcasenotes"
 const val ALERTS_SYNC_QUEUE_ID = "eventalerts"
+const val CASENOTES_SYNC_QUEUE_ID = "eventcasenotes"
+const val CORE_PERSON_SYNC_QUEUE_ID = "eventcoreperson"
+const val COURTSCHEDULER_SYNC_QUEUE_ID = "eventcourtmovements"
+const val COURT_SENTENCING_SYNC_QUEUE_ID = "eventcourtsentencing"
+const val CSRA_SYNC_QUEUE_ID = "eventcsra"
+const val EXTERNALMOVEMENTS_SYNC_QUEUE_ID = "eventexternalmovements"
+const val FINANCE_SYNC_QUEUE_ID = "eventfinance"
+const val LOCATIONS_SYNC_QUEUE_ID = "eventlocations"
+const val OFFICIAL_VISITS_SYNC_QUEUE_ID = "eventofficialvisits"
+const val ORGANISATIONS_SYNC_QUEUE_ID = "eventorganisations"
 const val PERSONALRELATIONSHIPS_SYNC_QUEUE_ID = "eventpersonalrelationships"
 const val PERSONALRELATIONSHIPS_DOMAIN_SYNC_QUEUE_ID = "domaineventpersonalrelationships"
 const val PERSONCONTACTS_DOMAIN_SYNC_QUEUE_ID = "domaineventpersoncontacts"
 const val PRISONERRESTRICTIONS_DOMAIN_SYNC_QUEUE_ID = "domaineventprisonerrestrictions"
-const val ORGANISATIONS_SYNC_QUEUE_ID = "eventorganisations"
-const val FINANCE_SYNC_QUEUE_ID = "eventfinance"
+const val SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID = "eventsentencing"
+const val STAFF_SYNC_QUEUE_ID = "eventstaff"
+const val VISITS_SYNC_QUEUE_ID = "eventvisits"
 const val VISIT_BALANCE_SYNC_QUEUE_ID = "eventvisitbalance"
-const val EXTERNALMOVEMENTS_SYNC_QUEUE_ID = "eventexternalmovements"
-const val COURTSCHEDULER_SYNC_QUEUE_ID = "eventcourtmovements"
-const val OFFICIAL_VISITS_SYNC_QUEUE_ID = "eventofficialvisits"
 
 enum class MigrationType(val queueId: String, val telemetryName: String) {
   ACTIVITIES(ACTIVITIES_QUEUE_ID, "activity"),
@@ -68,21 +69,22 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
 }
 
 enum class SynchronisationType(val queueId: String) {
-  VISITS(VISITS_SYNC_QUEUE_ID),
-  SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID),
   ALERTS(ALERTS_SYNC_QUEUE_ID),
-  LOCATIONS(LOCATIONS_SYNC_QUEUE_ID),
   CASENOTES(CASENOTES_SYNC_QUEUE_ID),
   CORE_PERSON_RELIGION(CORE_PERSON_SYNC_QUEUE_ID),
+  COURT_SCHEDULER(COURTSCHEDULER_SYNC_QUEUE_ID),
   COURT_SENTENCING(COURT_SENTENCING_SYNC_QUEUE_ID),
   CSRAS(CSRA_SYNC_QUEUE_ID),
-  PERSONALRELATIONSHIPS(PERSONALRELATIONSHIPS_SYNC_QUEUE_ID),
-  ORGANISATIONS(ORGANISATIONS_SYNC_QUEUE_ID),
-  FINANCE(FINANCE_SYNC_QUEUE_ID),
-  VISIT_BALANCE(VISIT_BALANCE_SYNC_QUEUE_ID),
   EXTERNAL_MOVEMENTS(EXTERNALMOVEMENTS_SYNC_QUEUE_ID),
-  COURT_SCHEDULER(COURTSCHEDULER_SYNC_QUEUE_ID),
+  FINANCE(FINANCE_SYNC_QUEUE_ID),
   OFFICIAL_VISITS(OFFICIAL_VISITS_SYNC_QUEUE_ID),
+  ORGANISATIONS(ORGANISATIONS_SYNC_QUEUE_ID),
+  LOCATIONS(LOCATIONS_SYNC_QUEUE_ID),
+  PERSONALRELATIONSHIPS(PERSONALRELATIONSHIPS_SYNC_QUEUE_ID),
+  SENTENCING_ADJUSTMENTS(SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID),
+  STAFF(STAFF_SYNC_QUEUE_ID),
+  VISITS(VISITS_SYNC_QUEUE_ID),
+  VISIT_BALANCE(VISIT_BALANCE_SYNC_QUEUE_ID),
 }
 
 fun Any.asMap(): Map<String, String> = this::class.memberProperties
