@@ -235,8 +235,7 @@ private fun CourtScheduleOut.toDpsRequest(courtAppearanceId: UUID?, sentencingCo
     dpsId = courtAppearanceId,
     eventId = eventId,
     commentText = comment,
-    // TODO SDIT-3845 Replace with value returned from NOMIS CourtScheduleOut when available
-    currentTerm = true,
+    currentTerm = latestBooking,
     externalReferenceUrn = sentencingCourtAppearanceId?.let { "$EXTERNAL_REF_PREFIX$sentencingCourtAppearanceId" },
   ),
   occurredAt = this.audit.modifyDatetime ?: this.audit.createDatetime,
