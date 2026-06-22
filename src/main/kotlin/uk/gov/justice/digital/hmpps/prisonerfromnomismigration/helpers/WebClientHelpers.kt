@@ -65,6 +65,13 @@ suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitSuccessOrDuplic
   }
   .awaitFirstOrDefault(SuccessOrDuplicate())
 
+suspend inline fun <reified R : Any, reified E : Any> WebClient.ResponseSpec.awaitSuccessWithResponseOrDuplicate(): SuccessWithResponseOrDuplicate<R, E> = this.bodyToMono<R>()
+  .map { SuccessWithResponseOrDuplicate<R, E>(successResponse = it) }
+  .onErrorResume(WebClientResponseException.Conflict::class.java) {
+    Mono.just(SuccessWithResponseOrDuplicate(errorResponse = it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateError<E>>() {})))
+  }
+  .awaitSingle()
+
 suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitSuccessOrBadRequestErrorMessage(): SuccessOrBadRequest<T> = this.bodyToMono<T>()
   .map { SuccessOrBadRequest(successResponse = it) }
   .onErrorResume(WebClientResponseException.BadRequest::class.java) {
@@ -76,6 +83,14 @@ suspend inline fun <reified T : Any, reified C : Any> ApiClient.awaitSuccessOrBa
 
 data class SuccessOrDuplicate<T>(
   val errorResponse: DuplicateError<T>? = null,
+) {
+  val isError
+    get() = errorResponse != null
+}
+
+data class SuccessWithResponseOrDuplicate<R, E>(
+  val successResponse: R? = null,
+  val errorResponse: DuplicateError<E>? = null,
 ) {
   val isError
     get() = errorResponse != null

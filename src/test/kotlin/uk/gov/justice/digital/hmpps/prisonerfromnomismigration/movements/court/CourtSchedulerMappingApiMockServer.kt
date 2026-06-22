@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtMovementMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingIdsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingUpsertByDpsIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerBookingMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingIdsDto
@@ -70,6 +71,40 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
   }
 
   fun stubCreateCourtScheduleMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/court-scheduler/schedule")
+
+  fun stubUpsertCourtScheduleMapping(response: CourtScheduleMappingUpsertByDpsIdResponse = CourtScheduleMappingUpsertByDpsIdResponse()) {
+    mappingApi.stubFor(
+      put("/mapping/court-scheduler/schedule/dps-id")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(200)
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubUpsertCourtScheduleMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      put("/mapping/court-scheduler/schedule/dps-id").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubUpsertCourtScheduleMappingConflict(error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      put("/mapping/court-scheduler/schedule/dps-id").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(409)
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
 
   fun stubGetCourtScheduleMapping(nomisEventId: Long = 1L, dpsCourtAppearanceId: UUID = UUID.randomUUID()) {
     mappingApi.stubFor(
