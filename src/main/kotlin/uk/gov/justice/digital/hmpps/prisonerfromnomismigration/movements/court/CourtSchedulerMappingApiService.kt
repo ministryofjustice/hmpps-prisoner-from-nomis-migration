@@ -11,6 +11,7 @@ import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitSuccessOrDuplicate
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitSuccessWithResponseOrDuplicate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
@@ -20,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CourtSchedulerPrisonerResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingUpsertByDpsIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
 
@@ -46,6 +48,10 @@ class CourtSchedulerMappingApiService(@Qualifier("courtSchedulerMappingApiWebCli
   suspend fun createCourtScheduleMapping(mapping: CourtScheduleMappingDto) = scheduleApi.prepare(scheduleApi.createCourtScheduleMappingRequestConfig((mapping)))
     .retrieve()
     .awaitSuccessOrDuplicate<CourtScheduleMappingDto>()
+
+  suspend fun upsertCourtScheduleMappingByDpsId(mapping: CourtScheduleMappingDto) = scheduleApi.prepare(scheduleApi.createOrUpdateCourtScheduleMappingByDpsIdRequestConfig((mapping)))
+    .retrieve()
+    .awaitSuccessWithResponseOrDuplicate<CourtScheduleMappingUpsertByDpsIdResponse, CourtScheduleMappingDto>()
 
   suspend fun getCourtScheduleMappingOrNull(nomisEventId: Long): CourtScheduleMappingDto? = scheduleApi.prepare(scheduleApi.getCourtScheduleMappingByNomisIdRequestConfig(nomisEventId))
     .retrieve()

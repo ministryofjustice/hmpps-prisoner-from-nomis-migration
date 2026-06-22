@@ -27,6 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingUpsertByDpsIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -438,6 +439,89 @@ class CourtSchedulerMappingApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.moveCourtSchedulerBookingMappings(12345L, "A1234AA", "B1234BB")
+      }
+    }
+  }
+
+  @Nested
+  inner class UpsertCourtScheduleMappings {
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubUpsertCourtScheduleMapping()
+
+      apiService.upsertCourtScheduleMappingByDpsId(courtScheduleMapping())
+
+      mappingApi.verify(
+        putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should pass data to service`() = runTest {
+      mappingApi.stubUpsertCourtScheduleMapping()
+
+      apiService.upsertCourtScheduleMappingByDpsId(courtScheduleMapping())
+
+      mappingApi.verify(
+        putRequestedFor(anyUrl())
+          .withRequestBody(matchingJsonPath("prisonerNumber", equalTo("A1234BC")))
+          .withRequestBody(matchingJsonPath("bookingId", equalTo("12345")))
+          .withRequestBody(matchingJsonPath("nomisEventId", equalTo("1")))
+          .withRequestBody(matchingJsonPath("dpsCourtAppearanceId", not(absent())))
+          .withRequestBody(matchingJsonPath("mappingType", equalTo("MIGRATED"))),
+      )
+    }
+
+    @Test
+    fun `should return error for 409 conflict`() = runTest {
+      val dpsCourtAppearanceId = UUID.randomUUID()
+      mappingApi.stubUpsertCourtScheduleMappingConflict(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            existing = CourtScheduleMappingDto(
+              prisonerNumber = "A1234BC",
+              bookingId = 12345L,
+              nomisEventId = 1L,
+              dpsCourtAppearanceId = dpsCourtAppearanceId,
+              mappingType = CourtScheduleMappingDto.MappingType.NOMIS_CREATED,
+            ),
+            duplicate = CourtScheduleMappingDto(
+              prisonerNumber = "A1234BC",
+              bookingId = 12345L,
+              nomisEventId = 2L,
+              dpsCourtAppearanceId = dpsCourtAppearanceId,
+              mappingType = CourtScheduleMappingDto.MappingType.NOMIS_CREATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      apiService.upsertCourtScheduleMappingByDpsId(courtScheduleMapping())
+        .apply {
+          assertThat(isError).isTrue
+          assertThat(errorResponse!!.moreInfo.existing!!.nomisEventId).isEqualTo(1L)
+          assertThat(errorResponse.moreInfo.duplicate.nomisEventId).isEqualTo(2L)
+        }
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubUpsertCourtScheduleMapping(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.upsertCourtScheduleMappingByDpsId(courtScheduleMapping())
+      }
+    }
+
+    @Test
+    internal fun `should parse success response`() = runTest {
+      mappingApi.stubUpsertCourtScheduleMapping(response = CourtScheduleMappingUpsertByDpsIdResponse(123))
+
+      with(apiService.upsertCourtScheduleMappingByDpsId(courtScheduleMapping()).successResponse!!) {
+        assertThat(replacedNomisEventId).isEqualTo(123)
       }
     }
   }
