@@ -209,6 +209,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       court = "LEEDMC",
       comment = "court schedule comment",
       userActiveCaseloadId = "MDI",
+      latestBooking = true,
       audit = NomisAudit(
         createDatetime = now,
         createUsername = "USER",
