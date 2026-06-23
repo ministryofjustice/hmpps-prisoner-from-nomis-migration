@@ -16,3 +16,8 @@ data class ExternalMovementEvent(
   val recordDeleted: Boolean,
   override val auditModuleName: String,
 ) : EventAudited
+
+internal fun String.toDpsUser() = when (this) {
+  "PRISONER_MANAGER_API" -> "SYS"
+  else -> this
+}

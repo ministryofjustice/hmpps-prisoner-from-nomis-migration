@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.L
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_MAPPING_TAP_APPLICATION
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapApplication
@@ -156,8 +157,8 @@ fun TapApplication.toDpsRequest(id: UUID? = null) = SyncWriteTapAuthorisation(
   start = fromDate,
   end = toDate,
   comments = comment,
-  created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
-  updated = audit.modifyDatetime?.let { SyncAtAndBy(it, audit.modifyUserId!!) },
+  created = SyncAtAndBy(audit.createDatetime, audit.createUsername.toDpsUser()),
+  updated = audit.modifyDatetime?.let { SyncAtAndBy(it, audit.modifyUserId!!.toDpsUser()) },
   legacyId = tapApplicationId,
   transportCode = transportType ?: DEFAULT_TRANSPORT_TYPE,
   startTime = "${releaseTime.toLocalTime()}",

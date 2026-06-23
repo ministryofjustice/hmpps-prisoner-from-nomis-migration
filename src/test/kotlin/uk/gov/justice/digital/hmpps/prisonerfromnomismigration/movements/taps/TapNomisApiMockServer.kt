@@ -240,7 +240,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
       applicationTime = now,
       audit = NomisAudit(
         createDatetime = now,
-        createUsername = "USER",
+        createUsername = "PRISONER_MANAGER_API",
       ),
     )
 
@@ -298,7 +298,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
       taps = taps,
       audit = NomisAudit(
         createDatetime = now,
-        createUsername = "USER",
+        createUsername = "PRISONER_MANAGER_API",
       ),
     )
 
@@ -335,7 +335,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
       fromAddressPostcode = "S2 2AA",
       audit = NomisAudit(
         createDatetime = now,
-        createUsername = "USER",
+        createUsername = "PRISONER_MANAGER_API",
       ),
     )
 
@@ -357,7 +357,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
       toAddressPostcode = "S1 1AA",
       audit = NomisAudit(
         createDatetime = now,
-        createUsername = "USER",
+        createUsername = "PRISONER_MANAGER_API",
       ),
     )
 
@@ -373,7 +373,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
       toPrison = "LEI",
       audit = NomisAudit(
         createDatetime = now,
-        createUsername = "USER",
+        createUsername = "PRISONER_MANAGER_API",
       ),
     )
 
@@ -400,7 +400,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
       contactPersonName = "Derek",
       audit = NomisAudit(
         createDatetime = now,
-        createUsername = "USER",
+        createUsername = "PRISONER_MANAGER_API",
       ),
     )
 
@@ -438,7 +438,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
       tapSubType = "SPL",
       audit = NomisAudit(
         createDatetime = now,
-        createUsername = "USER",
+        createUsername = "PRISONER_MANAGER_API",
       ),
     )
 
@@ -457,7 +457,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
       movementReason = "C6",
       audit = NomisAudit(
         createDatetime = now,
-        createUsername = "USER",
+        createUsername = "PRISONER_MANAGER_API",
       ),
       tapApplicationId = tapApplicationId,
       tapScheduleOutId = tapScheduleOutId,
@@ -490,7 +490,7 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
       movementReason = "C5",
       audit = NomisAudit(
         createDatetime = now,
-        createUsername = "USER",
+        createUsername = "PRISONER_MANAGER_API",
       ),
       tapApplicationId = tapApplicationId,
       tapScheduleOutId = tapScheduleOutId,

@@ -97,6 +97,7 @@ class TapApplicationIntTest(
           assertThat(location.address).isEqualTo("some full address")
           assertThat(location.description).isEqualTo("some address description")
           assertThat(location.postcode).isEqualTo("S1 1AA")
+          assertThat(created.by).isEqualTo("SYS")
         }
       }
 
@@ -425,7 +426,8 @@ class TapApplicationIntTest(
             .withRequestBodyJsonPath("start", equalTo = "$today")
             .withRequestBodyJsonPath("end", equalTo = "${tomorrow.toLocalDate()}")
             .withRequestBodyJsonPath("comments", equalTo = "application comment")
-            .withRequestBodyJsonPath("legacyId", equalTo = 111),
+            .withRequestBodyJsonPath("legacyId", equalTo = 111)
+            .withRequestBodyJsonPath("created.by", equalTo = "SYS"),
         )
       }
 

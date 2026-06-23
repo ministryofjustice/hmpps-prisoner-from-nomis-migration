@@ -125,7 +125,7 @@ class CourtSchedulerSyncScheduleIntTest(
           assertThat(courtEvent.eventId).isEqualTo(123)
           assertThat(courtEvent.commentText).isEqualTo("court schedule comment")
           assertThat(courtEvent.externalReferenceUrn).isNull()
-          assertThat(user.username).isEqualTo("USER")
+          assertThat(user.username).isEqualTo("SYS")
           assertThat(user.activeCaseloadId).isEqualTo("MDI")
         }
       }
@@ -694,7 +694,7 @@ class CourtSchedulerSyncScheduleIntTest(
           assertThat(courtEvent.eventId).isEqualTo(123)
           assertThat(courtEvent.commentText).isEqualTo("court schedule comment")
           assertThat(courtEvent.externalReferenceUrn).isNull()
-          assertThat(user.username).isEqualTo("USER")
+          assertThat(user.username).isEqualTo("SYS")
           assertThat(user.activeCaseloadId).isEqualTo("MDI")
         }
       }
@@ -1078,7 +1078,7 @@ class CourtSchedulerSyncScheduleIntTest(
           assertThat(courtEvent.eventId).isEqualTo(123)
           assertThat(courtEvent.commentText).isEqualTo("court schedule comment")
           assertThat(courtEvent.externalReferenceUrn).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
-          assertThat(user.username).isEqualTo("USER")
+          assertThat(user.username).isEqualTo("SYS")
           assertThat(user.activeCaseloadId).isEqualTo("MDI")
         }
       }

@@ -100,7 +100,7 @@ class CourtSchedulerSyncMovementIntTest(
           assertThat(movement.directionCode).isEqualTo("OUT")
           assertThat(movement.fromAgencyId).isEqualTo("BXI")
           assertThat(movement.toAgencyId).isEqualTo("LEEDMC")
-          assertThat(user.username).isEqualTo("USER")
+          assertThat(user.username).isEqualTo("SYS")
           assertThat(user.activeCaseloadId).isEqualTo("MDI")
         }
       }
@@ -539,7 +539,7 @@ class CourtSchedulerSyncMovementIntTest(
           assertThat(movement.directionCode).isEqualTo("OUT")
           assertThat(movement.fromAgencyId).isEqualTo("BXI")
           assertThat(movement.toAgencyId).isEqualTo("LEEDMC")
-          assertThat(user.username).isEqualTo("USER")
+          assertThat(user.username).isEqualTo("SYS")
           assertThat(user.activeCaseloadId).isEqualTo("MDI")
         }
       }
@@ -854,7 +854,7 @@ class CourtSchedulerSyncMovementIntTest(
           assertThat(movement.directionCode).isEqualTo("IN")
           assertThat(movement.fromAgencyId).isEqualTo("LEEDMC")
           assertThat(movement.toAgencyId).isEqualTo("BXI")
-          assertThat(user.username).isEqualTo("USER")
+          assertThat(user.username).isEqualTo("SYS")
           assertThat(user.activeCaseloadId).isEqualTo("MDI")
         }
       }
@@ -1036,7 +1036,7 @@ class CourtSchedulerSyncMovementIntTest(
           assertThat(movement.directionCode).isEqualTo("IN")
           assertThat(movement.fromAgencyId).isEqualTo("LEEDMC")
           assertThat(movement.toAgencyId).isEqualTo("BXI")
-          assertThat(user.username).isEqualTo("USER")
+          assertThat(user.username).isEqualTo("SYS")
           assertThat(user.activeCaseloadId).isEqualTo("MDI")
         }
       }
