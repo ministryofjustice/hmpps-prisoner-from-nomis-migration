@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
+import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.stereotype.Component
@@ -105,6 +106,37 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
   }
 
   fun stubUpsertCourtScheduleMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/court-scheduler/schedule/dps-id", WireMock::put, CourtScheduleMappingUpsertByDpsIdResponse())
+
+  fun stubUpsertCourtScheduleMapping(
+    response1: CourtScheduleMappingUpsertByDpsIdResponse,
+    response2: CourtScheduleMappingUpsertByDpsIdResponse,
+  ) {
+    mappingApi.stubFor(
+      put(urlPathMatching("/mapping/court-scheduler/schedule/dps-id"))
+        .inScenario("Sync 2 court schedules")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response1)),
+        )
+        .willSetStateTo("Second sync"),
+    )
+
+    mappingApi.stubFor(
+      put(urlPathMatching("/mapping/court-scheduler/schedule/dps-id"))
+        .inScenario("Sync 2 court schedules")
+        .whenScenarioStateIs("Second sync")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response2)),
+        )
+        .willSetStateTo(STARTED),
+    )
+  }
 
   fun stubGetCourtScheduleMapping(nomisEventId: Long = 1L, dpsCourtAppearanceId: UUID = UUID.randomUUID()) {
     mappingApi.stubFor(
