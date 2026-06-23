@@ -1,20 +1,20 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Address
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Address.CountryCode
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.AddressUsage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.AddressUsage.AddressUsageCode
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Alias
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Alias.TitleCode
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Contact
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes.BirthCountryCode
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes.EthnicityCode
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes.NationalityCode
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes.SexualOrientation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Identifier
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddress.CountryCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressUsage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressUsage.AddressUsageCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias.TitleCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDemographicAttributes
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDemographicAttributes.BirthCountryCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDemographicAttributes.EthnicityCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDemographicAttributes.NationalityCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDemographicAttributes.SexualOrientation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSentence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Sentence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
@@ -32,11 +32,11 @@ fun CorePerson.toCprPrisoner(): Prisoner {
       (emailAddresses?.map { it.toCprContact() } ?: emptyList()) +
       (addresses?.flatMap { it.toCprContact() ?: emptyList() } ?: emptyList()),
     pseudonyms = offenders.filterNot { it.workingName }.map { it.toCprAlias() },
-    sentences = sentenceStartDates?.map { Sentence(it) } ?: emptyList(),
+    sentences = sentenceStartDates?.map { PrisonSentence(it) } ?: emptyList(),
   )
 }
 
-private fun CoreOffender.toCprAlias() = Alias(
+private fun CoreOffender.toCprAlias() = PrisonAlias(
   nomisAliasId = offenderId,
   isPrimary = workingName,
   titleCode = title?.code?.toTitleCode(),
@@ -44,7 +44,7 @@ private fun CoreOffender.toCprAlias() = Alias(
   middleNames = listOfNotNull(middleName1, middleName2).takeIf { it.isNotEmpty() }?.joinToString(" "),
   lastName = lastName,
   dateOfBirth = dateOfBirth,
-  sexCode = sex?.code?.let { Alias.SexCode.valueOf(it) },
+  sexCode = sex?.code?.let { PrisonAlias.SexCode.valueOf(it) },
   identifiers = identifiers
     // TODO: confirm only 4 identifier types required
     .filter { i -> allowedIdentifiers.contains(i.type.code) }
@@ -58,11 +58,11 @@ private fun CoreOffender.toCprAlias() = Alias(
     },
 )
 
-private fun CorePerson.toDemographicAttributes(currentAlias: CoreOffender): DemographicAttributes = DemographicAttributes(
+private fun CorePerson.toDemographicAttributes(currentAlias: CoreOffender): PrisonDemographicAttributes = PrisonDemographicAttributes(
   birthPlace = currentAlias.birthPlace,
   birthCountryCode = currentAlias.birthCountry?.code?.toBirthCountryCode(),
   ethnicityCode = currentAlias.ethnicity?.code?.toEthnicityCode(),
-  sexCode = currentAlias.sex?.code?.let { DemographicAttributes.SexCode.valueOf(it) },
+  sexCode = currentAlias.sex?.code?.let { PrisonDemographicAttributes.SexCode.valueOf(it) },
   sexualOrientation = sexualOrientations?.firstOrNull()?.sexualOrientation?.code?.toSexualOrientation(),
   disability = disabilities?.firstOrNull()?.disability,
   religionCode = this.beliefs?.firstOrNull()?.belief?.code,
@@ -98,7 +98,7 @@ private fun String.toTitleCode(): TitleCode = when (this) {
   else -> TitleCode.valueOf(this)
 }
 
-private fun OffenderAddress.toCprAddress() = Address(
+private fun OffenderAddress.toCprAddress() = PrisonAddress(
   nomisAddressId = addressId,
   fullAddress = buildFullAddress(),
   noFixedAbode = noFixedAddress,
@@ -116,7 +116,8 @@ private fun OffenderAddress.toCprAddress() = Address(
   comment = comment,
   isPrimary = primaryAddress,
   isMail = mailAddress,
-  addressUsage = usages?.map { AddressUsage(addressId, AddressUsageCode.valueOf(it.usage.code), it.active) } ?: emptyList(),
+  addressUsage = usages?.map { PrisonAddressUsage(addressId, AddressUsageCode.valueOf(it.usage.code), it.active) }
+    ?: emptyList(),
   contacts = this.toCprContact() ?: emptyList(),
 )
 
@@ -153,23 +154,23 @@ fun OffenderAddress.buildFullAddress(): String {
   return address.joinToString(", ")
 }
 
-fun OffenderPhoneNumber.toCprContact() = Contact(
+fun OffenderPhoneNumber.toCprContact() = PrisonContact(
   value = number,
   type = when (type.code) {
-    "HOME" -> Contact.Type.HOME
-    "MOB" -> Contact.Type.MOBILE
+    "HOME" -> PrisonContact.Type.HOME
+    "MOB" -> PrisonContact.Type.MOBILE
     // TODO Not all codes are catered for here
-    else -> Contact.Type.HOME
+    else -> PrisonContact.Type.HOME
   },
   extension = extension,
 )
 
-fun OffenderEmailAddress.toCprContact() = Contact(
+fun OffenderEmailAddress.toCprContact() = PrisonContact(
   value = email,
-  type = Contact.Type.EMAIL,
+  type = PrisonContact.Type.EMAIL,
 )
 
-fun OffenderAddress.toCprContact(): List<Contact>? = this.phoneNumbers?.map { it.toCprContact() }
+fun OffenderAddress.toCprContact(): List<PrisonContact>? = this.phoneNumbers?.map { it.toCprContact() }
 
 // fun OffenderBelief.toCprReligion() = Religion(
 //  religion = belief.code,

@@ -14,12 +14,12 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension.Companion.jsonMapper
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.DemographicAttributes.BirthCountryCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDemographicAttributes
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDemographicAttributes.BirthCountryCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionSaveResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSentence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Sentence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
@@ -69,23 +69,23 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     private const val WIREMOCK_PORT = 8099
 
     fun migrateCorePersonRequest() = Prisoner(
-      demographicAttributes = DemographicAttributes(
+      demographicAttributes = PrisonDemographicAttributes(
         birthPlace = "LONDON",
         birthCountryCode = BirthCountryCode.ENG,
-        ethnicityCode = DemographicAttributes.EthnicityCode.B1,
-        sexCode = DemographicAttributes.SexCode.M,
-        sexualOrientation = DemographicAttributes.SexualOrientation.HET,
+        ethnicityCode = PrisonDemographicAttributes.EthnicityCode.B1,
+        sexCode = PrisonDemographicAttributes.SexCode.M,
+        sexualOrientation = PrisonDemographicAttributes.SexualOrientation.HET,
         disability = true,
         interestToImmigration = true,
         religionCode = "REL",
-        nationalityCode = DemographicAttributes.NationalityCode.BRIT,
+        nationalityCode = PrisonDemographicAttributes.NationalityCode.BRIT,
         nationalityNote = "NOT_ENG",
       ),
       pseudonyms = listOf(),
       addresses = listOf(),
       personContacts = listOf(),
       sentences = listOf(
-        Sentence(LocalDate.parse("1980-01-01")),
+        PrisonSentence(LocalDate.parse("1980-01-01")),
       ),
     )
 
