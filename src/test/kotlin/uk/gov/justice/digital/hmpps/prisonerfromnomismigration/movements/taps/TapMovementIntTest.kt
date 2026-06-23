@@ -96,7 +96,7 @@ class TapMovementIntTest(
           assertThat(accompaniedByCode).isEqualTo("P")
           assertThat(accompaniedByComments).isEqualTo("Absence escort text")
           assertThat(comments).isEqualTo("Absence comment text")
-          assertThat(created.by).isEqualTo("USER")
+          assertThat(created.by).isEqualTo("SYS")
           assertThat(prisonCode).isEqualTo("LEI")
           assertThat(legacyId).isEqualTo("12345_154")
         }

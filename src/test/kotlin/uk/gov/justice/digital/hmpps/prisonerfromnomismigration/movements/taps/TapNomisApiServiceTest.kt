@@ -129,7 +129,7 @@ class TapNomisApiServiceTest {
           assertThat(fromDate).isEqualTo(today)
           assertThat(releaseTime).isCloseTo(now, within(5, ChronoUnit.MINUTES))
           assertThat(toAddressId).isEqualTo(321)
-          assertThat(audit.createUsername).isEqualTo("USER")
+          assertThat(audit.createUsername).isEqualTo("PRISONER_MANAGER_API")
         }
     }
 
@@ -190,7 +190,7 @@ class TapNomisApiServiceTest {
           assertThat(eventDate).isEqualTo(yesterday.toLocalDate())
           assertThat(startTime).isCloseTo(yesterday, within(5, ChronoUnit.MINUTES))
           assertThat(toAddressId).isEqualTo(321)
-          assertThat(audit.createUsername).isEqualTo("USER")
+          assertThat(audit.createUsername).isEqualTo("PRISONER_MANAGER_API")
         }
     }
 
@@ -260,7 +260,7 @@ class TapNomisApiServiceTest {
           assertThat(toAddressOwnerClass).isEqualTo("OFF")
           assertThat(toAddressDescription).isEqualTo("Some description")
           assertThat(toFullAddress).isEqualTo("full address")
-          assertThat(audit.createUsername).isEqualTo("USER")
+          assertThat(audit.createUsername).isEqualTo("PRISONER_MANAGER_API")
         }
     }
 
@@ -335,7 +335,7 @@ class TapNomisApiServiceTest {
           assertThat(commentText).isEqualTo("Return comment text")
           assertThat(fromAddressId).isEqualTo(321)
           assertThat(fromAddressOwnerClass).isEqualTo("OFF")
-          assertThat(audit.createUsername).isEqualTo("USER")
+          assertThat(audit.createUsername).isEqualTo("PRISONER_MANAGER_API")
         }
     }
 

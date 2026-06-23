@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.L
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_MAPPING_TAP_SCHEDULE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapScheduleOut
@@ -278,8 +279,8 @@ fun TapScheduleOut.toDpsRequest(id: UUID? = null, dpsLocation: Location) = SyncW
   accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
   transportCode = transportType ?: DEFAULT_TRANSPORT_TYPE,
   comments = comment,
-  created = SyncAtAndBy(at = audit.createDatetime, by = audit.createUsername),
-  updated = audit.modifyDatetime?.let { SyncAtAndBy(at = audit.modifyDatetime, by = audit.modifyUserId!!) },
+  created = SyncAtAndBy(at = audit.createDatetime, by = audit.createUsername.toDpsUser()),
+  updated = audit.modifyDatetime?.let { SyncAtAndBy(at = audit.modifyDatetime, by = audit.modifyUserId!!.toDpsUser()) },
   isCancelled = eventStatus == "CANC",
   legacyId = eventId,
   contactInformation = this.contactPersonName,

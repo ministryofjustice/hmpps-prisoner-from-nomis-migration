@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.tryFetchP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode.OUT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtMovementRetryMappingMessageTypes.RETRY_MAPPING_COURT_SCHEDULE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtScheduleOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -242,7 +243,7 @@ private fun CourtScheduleOut.toDpsRequest(courtAppearanceId: UUID?, sentencingCo
   ),
   occurredAt = this.audit.modifyDatetime ?: this.audit.createDatetime,
   user = SyncUser(
-    username = audit.modifyUserId ?: audit.createUsername,
+    username = audit.modifyUserId?.toDpsUser() ?: audit.createUsername.toDpsUser(),
     activeCaseloadId = userActiveCaseloadId,
   ),
 )

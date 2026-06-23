@@ -212,7 +212,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       latestBooking = true,
       audit = NomisAudit(
         createDatetime = now,
-        createUsername = "USER",
+        createUsername = "PRISONER_MANAGER_API",
         auditModuleName = auditModuleName,
       ),
     )
@@ -233,7 +233,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       userActiveCaseloadId = "MDI",
       audit = NomisAudit(
         createDatetime = now,
-        createUsername = "USER",
+        createUsername = "PRISONER_MANAGER_API",
       ),
     )
 
@@ -253,7 +253,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       userActiveCaseloadId = "MDI",
       audit = NomisAudit(
         createDatetime = now,
-        createUsername = "USER",
+        createUsername = "PRISONER_MANAGER_API",
       ),
     )
 
@@ -291,7 +291,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       court = "LEEDMC",
       audit = NomisAudit(
         createDatetime = yesterday,
-        createUsername = "USER",
+        createUsername = "PRISONER_MANAGER_API",
       ),
       courtMovementOut = movementOutSeq?.let { bookingCourtMovementOut(seq = movementOutSeq) },
       courtMovementIn = movementInSeq?.let { bookingCourtMovementIn(seq = movementInSeq) },
@@ -308,7 +308,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       toCourt = "LEEDMC",
       audit = NomisAudit(
         createDatetime = yesterday,
-        createUsername = "USER",
+        createUsername = "PRISONER_MANAGER_API",
       ),
       commentText = "Some movement out comment",
     )
@@ -322,7 +322,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       toPrison = "BXI",
       audit = NomisAudit(
         createDatetime = yesterday,
-        createUsername = "USER",
+        createUsername = "PRISONER_MANAGER_API",
       ),
       commentText = "Some movement in comment",
     )

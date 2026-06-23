@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Externa
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType.CRT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtMovementRetryMappingMessageTypes.RETRY_MAPPING_COURT_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMovementService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtMovementIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtMovementOut
@@ -238,7 +239,7 @@ private fun CourtMovementOut.toDpsRequest(
   ),
   occurredAt = this.audit.modifyDatetime ?: this.audit.createDatetime,
   user = SyncUser(
-    username = audit.modifyUserId ?: audit.createUsername,
+    username = audit.modifyUserId?.toDpsUser() ?: audit.createUsername.toDpsUser(),
     activeCaseloadId = userActiveCaseloadId,
   ),
 )
@@ -261,7 +262,7 @@ private fun CourtMovementIn.toDpsRequest(
   ),
   occurredAt = this.audit.modifyDatetime ?: this.audit.createDatetime,
   user = SyncUser(
-    username = audit.modifyUserId ?: audit.createUsername,
+    username = audit.modifyUserId?.toDpsUser() ?: audit.createUsername.toDpsUser(),
     activeCaseloadId = userActiveCaseloadId,
   ),
 )

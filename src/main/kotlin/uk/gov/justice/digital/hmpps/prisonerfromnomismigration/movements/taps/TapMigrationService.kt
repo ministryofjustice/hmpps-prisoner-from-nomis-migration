@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.M
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapBookingMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementMappingsDto
@@ -277,8 +278,8 @@ fun OffenderTapsResponse.toDpsRequest(oldMappingIds: TapPrisonerMappingIdsDto) =
         start = application.fromDate,
         end = application.toDate,
         comments = application.comment,
-        created = SyncAtAndBy(application.audit.createDatetime, application.audit.createUsername),
-        updated = application.audit.modifyDatetime?.let { SyncAtAndBy(application.audit.modifyDatetime, application.audit.modifyUserId ?: "") },
+        created = SyncAtAndBy(application.audit.createDatetime, application.audit.createUsername.toDpsUser()),
+        updated = application.audit.modifyDatetime?.let { SyncAtAndBy(application.audit.modifyDatetime, application.audit.modifyUserId?.toDpsUser() ?: "") },
         legacyId = application.tapApplicationId,
         startTime = "${application.releaseTime.toLocalTime()}",
         endTime = "${application.returnTime.toLocalTime()}",
@@ -330,8 +331,8 @@ private fun BookingTapScheduleOut.toDpsRequest(
   transportCode = transportType ?: DEFAULT_TRANSPORT_TYPE,
   contactInformation = contactPersonName,
   comments = comment,
-  created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
-  updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId ?: "") },
+  created = SyncAtAndBy(audit.createDatetime, audit.createUsername.toDpsUser()),
+  updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId?.toDpsUser() ?: "") },
   legacyId = eventId,
   movements = listOfNotNull(movementOut?.toDpsRequest(bookingId, schedulePrison, oldMappingIds), movementIn?.toDpsRequest(bookingId, schedulePrison, oldMappingIds)),
   id = oldMappingIds.schedules.find { it.nomisEventId == eventId }?.dpsOccurrenceId,
@@ -347,11 +348,11 @@ private fun BookingTapMovementIn.toDpsRequest(
   absenceReasonCode = movementReason,
   location = Location(description = fromAddressDescription, address = fromFullAddress, postcode = fromAddressPostcode),
   accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
-  created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
+  created = SyncAtAndBy(audit.createDatetime, audit.createUsername.toDpsUser()),
   legacyId = "${bookingId}_$sequence",
   accompaniedByComments = escortText,
   comments = commentText,
-  updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId ?: "") },
+  updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId?.toDpsUser() ?: "") },
   prisonCode = toPrison ?: schedulePrison,
   id = oldMappingIds.movements.find { it.nomisBookingId == bookingId && it.nomisMovementSeq == sequence }?.dpsMovementId,
 )
@@ -366,11 +367,11 @@ private fun BookingTapMovementOut.toDpsRequest(
   absenceReasonCode = movementReason,
   location = Location(description = toAddressDescription, address = toFullAddress, postcode = toAddressPostcode),
   accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
-  created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
+  created = SyncAtAndBy(audit.createDatetime, audit.createUsername.toDpsUser()),
   legacyId = "${bookingId}_$sequence",
   accompaniedByComments = escortText,
   comments = commentText,
-  updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId ?: "") },
+  updated = audit.modifyDatetime?.let { modified -> SyncAtAndBy(modified, audit.modifyUserId?.toDpsUser() ?: "") },
   prisonCode = fromPrison ?: schedulePrison,
   id = oldMappingIds.movements.find { it.nomisBookingId == bookingId && it.nomisMovementSeq == sequence }?.dpsMovementId,
 )

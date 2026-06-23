@@ -103,7 +103,7 @@ class TapScheduleIntTest(
           assertThat(transportCode).isEqualTo("VAN")
           assertThat(comments).isEqualTo("scheduled absence comment")
           assertThat(contactInformation).isEqualTo("Derek")
-          assertThat(created.by).isEqualTo("USER")
+          assertThat(created.by).isEqualTo("SYS")
           assertThat(updated).isNull()
           assertThat(isCancelled).isFalse
           assertThat(legacyId).isEqualTo(45678)
@@ -503,7 +503,7 @@ class TapScheduleIntTest(
           assertThat(absenceReasonCode).isEqualTo("C5")
           assertThat(transportCode).isEqualTo("VAN")
           assertThat(comments).isEqualTo("scheduled absence comment")
-          assertThat(created.by).isEqualTo("USER")
+          assertThat(created.by).isEqualTo("SYS")
           assertThat(updated).isNull()
           assertThat(isCancelled).isFalse
           assertThat(legacyId).isEqualTo(45678)

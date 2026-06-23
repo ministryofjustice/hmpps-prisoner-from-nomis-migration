@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.BookingCourtMovementMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.BookingCourtScheduleMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
@@ -216,8 +217,8 @@ fun OffenderCourtMovementsResponse.toDpsRequest(
             ?.dpsCourtAppearanceId
             ?.let { "$EXTERNAL_REF_PREFIX$it" },
         ),
-        created = AtAndBy(schedule.audit.createDatetime, schedule.audit.createUsername),
-        modified = schedule.audit.modifyDatetime?.let { AtAndBy(it, schedule.audit.modifyUserId!!) },
+        created = AtAndBy(schedule.audit.createDatetime, schedule.audit.createUsername.toDpsUser()),
+        modified = schedule.audit.modifyDatetime?.let { AtAndBy(it, schedule.audit.modifyUserId!!.toDpsUser()) },
         movements = listOfNotNull(
           schedule.courtMovementOut?.toDpsRequest(oldMappingIds, booking.bookingId, schedule.eventId),
           schedule.courtMovementIn?.toDpsRequest(oldMappingIds, booking.bookingId, schedule.eventId),
@@ -252,8 +253,8 @@ private fun BookingCourtMovementOut.toDpsRequest(
     movementSeq = sequence,
     commentText = commentText,
   ),
-  created = AtAndBy(audit.createDatetime, audit.createUsername),
-  modified = audit.modifyDatetime?.let { AtAndBy(it, audit.modifyUserId!!) },
+  created = AtAndBy(audit.createDatetime, audit.createUsername.toDpsUser()),
+  modified = audit.modifyDatetime?.let { AtAndBy(it, audit.modifyUserId!!.toDpsUser()) },
 )
 
 private fun BookingCourtMovementIn.toDpsRequest(
@@ -273,8 +274,8 @@ private fun BookingCourtMovementIn.toDpsRequest(
     movementSeq = sequence,
     commentText = commentText,
   ),
-  created = AtAndBy(audit.createDatetime, audit.createUsername),
-  modified = audit.modifyDatetime?.let { AtAndBy(it, audit.modifyUserId!!) },
+  created = AtAndBy(audit.createDatetime, audit.createUsername.toDpsUser()),
+  modified = audit.modifyDatetime?.let { AtAndBy(it, audit.modifyUserId!!.toDpsUser()) },
 )
 
 private fun OffenderCourtMovementsResponse.buildMappings(offenderNo: String, migrationId: String, dpsResponse: ResyncResponse) = CourtSchedulerPrisonerMappingsDto(

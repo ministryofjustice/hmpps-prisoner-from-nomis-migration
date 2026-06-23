@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.S
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_MAPPING_TAP_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_UPDATE_MAPPING_TAP_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapMovementIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapMovementOut
@@ -369,8 +370,8 @@ class TapMovementService(
     accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
     accompaniedByComments = escortText,
     comments = commentText,
-    created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
-    updated = audit.modifyDatetime?.let { SyncAtAndBy(it, audit.modifyUserId!!) },
+    created = SyncAtAndBy(audit.createDatetime, audit.createUsername.toDpsUser()),
+    updated = audit.modifyDatetime?.let { SyncAtAndBy(it, audit.modifyUserId!!.toDpsUser()) },
     legacyId = "${bookingId}_$sequence",
     prisonCode = fromPrison,
   )
@@ -389,8 +390,8 @@ class TapMovementService(
     accompaniedByCode = escort ?: DEFAULT_ESCORT_CODE,
     accompaniedByComments = escortText,
     comments = commentText,
-    created = SyncAtAndBy(audit.createDatetime, audit.createUsername),
-    updated = audit.modifyDatetime?.let { SyncAtAndBy(it, audit.modifyUserId!!) },
+    created = SyncAtAndBy(audit.createDatetime, audit.createUsername.toDpsUser()),
+    updated = audit.modifyDatetime?.let { SyncAtAndBy(it, audit.modifyUserId!!.toDpsUser()) },
     legacyId = "${bookingId}_$sequence",
     prisonCode = toPrison,
   )

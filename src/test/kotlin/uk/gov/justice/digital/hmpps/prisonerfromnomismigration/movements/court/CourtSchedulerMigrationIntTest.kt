@@ -148,7 +148,7 @@ class CourtSchedulerMigrationIntTest(
           assertThat(externalReferenceUrn).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
         }
         with(courtEvents[0].created) {
-          assertThat(by).isEqualTo("USER")
+          assertThat(by).isEqualTo("SYS")
           assertThat(at).isCloseTo(LocalDateTime.now().minusDays(1), within(5, ChronoUnit.MINUTES))
         }
         assertThat(courtEvents[0].modified).isNull()
@@ -171,7 +171,7 @@ class CourtSchedulerMigrationIntTest(
           assertThat(commentText).isEqualTo("Some movement out comment")
         }
         with(courtEvents[0].movements[0].created) {
-          assertThat(by).isEqualTo("USER")
+          assertThat(by).isEqualTo("SYS")
           assertThat(at).isCloseTo(LocalDateTime.now().minusDays(1), within(5, ChronoUnit.MINUTES))
         }
         assertThat(courtEvents[0].movements[0].modified).isNull()
