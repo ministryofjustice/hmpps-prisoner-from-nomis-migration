@@ -17,7 +17,6 @@ import org.junit.jupiter.api.TestInstance
 import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.kotlin.any
 import org.mockito.kotlin.check
-import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -49,9 +48,9 @@ import java.util.*
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CourtSchedulerSyncScheduleIntTest(
-  @Autowired private val nomisApi: CourtSchedulerNomisApiMockServer,
-  @Autowired private val mappingApi: CourtSchedulerMappingApiMockServer,
-  @Autowired private val sentencingMappingApi: CourtSentencingMappingApiMockServer,
+  @param:Autowired private val nomisApi: CourtSchedulerNomisApiMockServer,
+  @param:Autowired private val mappingApi: CourtSchedulerMappingApiMockServer,
+  @param:Autowired private val sentencingMappingApi: CourtSentencingMappingApiMockServer,
 ) : CourtSchedulerIntegrationTestBase() {
 
   private val dpsApi = dpsCourtSchedulerServer
@@ -492,24 +491,24 @@ class CourtSchedulerSyncScheduleIntTest(
       private val dpsSentencingCourtAppearanceId: UUID = UUID.randomUUID()
 
       @BeforeAll
-      fun setUp(output: CapturedOutput) = runTest {
+      fun setUp() = runTest {
         setUpTestClass()
 
+        // As we'll sync the original schedule and the replaced schedule we need stubs for both
         mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
+        mappingApi.stubGetCourtScheduleMapping(nomisEventId = 456L, status = NOT_FOUND)
         nomisApi.stubGetCourtScheduleOut("A1234BC", 123L, courtCaseId = 1314L)
+        nomisApi.stubGetCourtScheduleOut("A1234BC", 456L, courtCaseId = 1315L)
         sentencingMappingApi.stubGetCourtAppearanceByNomisId(123, "$dpsSentencingCourtAppearanceId")
+        sentencingMappingApi.stubGetCourtAppearanceByNomisId(456, "$dpsSentencingCourtAppearanceId")
         dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
-        // mapping service tells us the mapping's nomis event ID was replaced
-        mappingApi.stubUpsertCourtScheduleMapping(CourtScheduleMappingUpsertByDpsIdResponse(replacedNomisEventId = 456))
-        // We won't process the extra sync message, we'll just check it was called
-        doNothing().whenever(queueService).sendMessage(any(), any(), any(), any(), anyInt())
+        mappingApi.stubUpsertCourtScheduleMapping(
+          response1 = CourtScheduleMappingUpsertByDpsIdResponse(replacedNomisEventId = 456),
+          response2 = CourtScheduleMappingUpsertByDpsIdResponse(),
+        )
 
         sendMessage(courtScheduleEvent("COURT_EVENTS-INSERTED"))
-          .also {
-            await untilAsserted {
-              assertThat(output.toString()).contains("Requested sync of court schedule")
-            }
-          }
+          .also { waitForAnyProcessingToComplete("court-scheduler-sync-schedule-synchronised-success") }
       }
 
       @Test
@@ -559,6 +558,18 @@ class CourtSchedulerSyncScheduleIntTest(
           any(),
           any(),
           anyInt(),
+        )
+      }
+
+      @Test
+      fun `should create synchronisation telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-schedule-synchronised-success"),
+          check {
+            assertThat(it["nomisEventId"]).isEqualTo("456")
+            assertThat(it["originalNomisEventId"]).isEqualTo("123")
+          },
+          isNull(),
         )
       }
     }
@@ -1194,7 +1205,7 @@ class CourtSchedulerSyncScheduleIntTest(
     """{
          "Type" : "courtscheduler.sync.court.schedule",
          "MessageId" : "57126174-e2d7-518f-914e-0056a63363b0",
-         "Message" : "{\"eventId\":$eventId,\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\"}"
+         "Message":"{\"body\":{\"eventId\":$eventId,\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\"},\"telemetryAttributes\":{}}"
        }
     """.trimMargin()
 }

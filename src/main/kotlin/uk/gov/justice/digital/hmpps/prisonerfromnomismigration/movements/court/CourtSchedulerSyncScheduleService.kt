@@ -68,15 +68,16 @@ class CourtSchedulerSyncScheduleService(
       }
   }
 
-  suspend fun syncCourtScheduleOut(event: SynchroniseCourtScheduleOutEvent) {
-    val (eventId, bookingId, prisonerNumber) = event
-    val telemetry = mutableMapOf<String, Any>(
-      "offenderNo" to prisonerNumber,
-      "bookingId" to bookingId,
-      "nomisEventId" to eventId,
-      "directionCode" to "OUT",
-      "source" to "FROM_NOMIS_SYNC",
-    )
+  suspend fun syncCourtScheduleOut(event: InternalMessage<SynchroniseCourtScheduleOutEvent>) {
+    val (eventId, bookingId, prisonerNumber) = event.body
+    val telemetry = event.telemetryAttributes.toMutableMap<String, Any>()
+      .apply {
+        this["offenderNo"] = prisonerNumber
+        this["bookingId"] = bookingId
+        this["nomisEventId"] = eventId
+        this["directionCode"] = "OUT"
+        this["source"] = "FROM_NOMIS_SYNC"
+      }
 
     track("${TELEMETRY_PREFIX}-synchronised", telemetry) {
       val existingMapping = mappingApi.getCourtScheduleMappingOrNull(eventId)
@@ -200,8 +201,8 @@ class CourtSchedulerSyncScheduleService(
             bookingId = mapping.bookingId,
             offenderIdDisplay = mapping.prisonerNumber,
           ),
+          telemetryAttributes = mapOf("originalNomisEventId" to telemetry["nomisEventId"].toString()),
         )
-        log.info("Requested sync of court schedule event ID=${mappingResponse.successResponse.replacedNomisEventId} for offender ${mapping.prisonerNumber}")
       }.onFailure {
         log.error("Failed to send sync message for court schedule event ID=${mappingResponse.successResponse.replacedNomisEventId} for offender ${mapping.prisonerNumber}", it)
       }
