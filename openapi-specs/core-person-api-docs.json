@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-06-23.3984.3d85dc8"
+    "version" : "2026-06-23.3995.b1d5b6a"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -1711,7 +1711,7 @@
             "example" : "AGNO"
           },
           "changeReasonKnown" : {
-            "type" : [ "boolean", "null" ],
+            "type" : "boolean",
             "description" : "The religion change reason known",
             "example" : true
           },
@@ -1760,7 +1760,7 @@
             "example" : "12345"
           }
         },
-        "required" : [ "createDateTime", "createUserId", "current", "nomisReligionId", "religionCode", "startDate" ]
+        "required" : [ "changeReasonKnown", "createDateTime", "createUserId", "current", "nomisReligionId", "religionCode", "startDate" ]
       },
       "PrisonReligionRequest" : {
         "type" : "object",
@@ -2536,19 +2536,19 @@
         "type" : "object",
         "properties" : {
           "religionCode" : {
-            "type" : [ "string", "null" ]
+            "type" : "string"
           },
           "religionDescription" : {
             "type" : [ "string", "null" ]
           },
           "changeReasonKnown" : {
-            "type" : [ "boolean", "null" ]
+            "type" : "boolean"
           },
           "comments" : {
             "type" : [ "string", "null" ]
           },
           "startDate" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "format" : "date"
           },
           "endDate" : {
@@ -2563,7 +2563,7 @@
             "type" : [ "string", "null" ]
           },
           "current" : {
-            "type" : [ "boolean", "null" ]
+            "type" : "boolean"
           },
           "createDateTime" : {
             "type" : "string",
@@ -2573,7 +2573,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "createDateTime", "createUserId" ]
+        "required" : [ "changeReasonKnown", "createDateTime", "createUserId", "current", "religionCode", "startDate" ]
       },
       "PrisonReligionReadResponse" : {
         "type" : "object",
