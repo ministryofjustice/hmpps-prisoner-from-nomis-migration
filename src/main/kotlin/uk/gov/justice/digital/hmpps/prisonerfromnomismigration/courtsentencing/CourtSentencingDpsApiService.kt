@@ -33,6 +33,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodi
 class CourtSentencingDpsApiService(
   @Qualifier("courtSentencingApiWebClient") private val webClient: WebClient,
   @Qualifier("courtSentencingApiTimeCriticalWebClient") private val timeCriticalWebClient: WebClient,
+  @Qualifier("courtSentencingApiPostWebClient") private val postWebClient: WebClient,
 ) {
   suspend fun createCourtCase(courtCase: LegacyCreateCourtCase): LegacyCourtCaseCreatedResponse = webClient
     .post()
@@ -52,14 +53,14 @@ class CourtSentencingDpsApiService(
     .retrieve()
     .awaitBody()
 
-  suspend fun createCourtCaseCloneBooking(courtCase: BookingCreateCourtCases): BookingCreateCourtCasesResponse = webClient
+  suspend fun createCourtCaseCloneBooking(courtCase: BookingCreateCourtCases): BookingCreateCourtCasesResponse = postWebClient
     .post()
     .uri("/legacy/court-case/booking")
     .bodyValue(courtCase)
     .retrieve()
     .awaitBody()
 
-  suspend fun createCourtCaseMerge(mergePerson: MergePerson, offenderNo: String): MergeCreateCourtCasesResponse = webClient
+  suspend fun createCourtCaseMerge(mergePerson: MergePerson, offenderNo: String): MergeCreateCourtCasesResponse = postWebClient
     .post()
     .uri("/legacy/court-case/merge/person/{offenderNo}", offenderNo)
     .bodyValue(mergePerson)
@@ -85,7 +86,7 @@ class CourtSentencingDpsApiService(
     .retrieve()
     .awaitBodilessEntityIgnoreNotFound()
 
-  suspend fun createCourtAppearance(courtAppearance: LegacyCreateCourtAppearance): LegacyCourtAppearanceCreatedResponse = webClient
+  suspend fun createCourtAppearance(courtAppearance: LegacyCreateCourtAppearance): LegacyCourtAppearanceCreatedResponse = postWebClient
     .post()
     .uri("/legacy/court-appearance")
     .bodyValue(courtAppearance)
@@ -113,7 +114,7 @@ class CourtSentencingDpsApiService(
     .awaitBodilessEntity()
 
   // add a court charge and associate it with the given appearance (will create sync mapping)
-  suspend fun addNewCourtCharge(charge: LegacyCreateCharge): LegacyChargeCreatedResponse = webClient
+  suspend fun addNewCourtCharge(charge: LegacyCreateCharge): LegacyChargeCreatedResponse = postWebClient
     .post()
     .uri("/legacy/charge")
     .bodyValue(charge)
@@ -141,7 +142,7 @@ class CourtSentencingDpsApiService(
     .retrieve()
     .awaitBodilessEntity()
 
-  suspend fun createSentence(sentence: LegacyCreateSentence): LegacySentenceCreatedResponse = webClient
+  suspend fun createSentence(sentence: LegacyCreateSentence): LegacySentenceCreatedResponse = postWebClient
     .post()
     .uri("/legacy/sentence")
     .bodyValue(sentence)
@@ -161,7 +162,7 @@ class CourtSentencingDpsApiService(
     .retrieve()
     .awaitBodilessEntity()
 
-  suspend fun createPeriodLength(sentence: LegacyCreatePeriodLength): LegacyPeriodLengthCreatedResponse = webClient
+  suspend fun createPeriodLength(sentence: LegacyCreatePeriodLength): LegacyPeriodLengthCreatedResponse = postWebClient
     .post()
     .uri("/legacy/period-length")
     .bodyValue(sentence)

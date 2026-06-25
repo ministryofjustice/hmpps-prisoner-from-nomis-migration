@@ -18,6 +18,7 @@ class CourtSentencingConfiguration(
   @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
   @Value("\${api.court-sentencing-timeout:10s}") val timeout: Duration,
   @Value("\${api.time-critical.timeout:3s}") val timeCriticalTimeout: Duration,
+  @Value("\${api.post-timeout:50s}") val postTimeout: Duration,
 ) {
 
   @Bean
@@ -38,6 +39,17 @@ class CourtSentencingConfiguration(
     registrationId = "court-sentencing-api",
     url = apiBaseUri,
     timeCriticalTimeout,
+  )
+
+  @Bean
+  fun courtSentencingApiPostWebClient(
+    authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
+    builder: WebClient.Builder,
+  ): WebClient = builder.reactiveAuthorisedWebClient(
+    authorizedClientManager,
+    registrationId = "court-sentencing-api",
+    url = apiBaseUri,
+    postTimeout,
   )
 
   @Component("courtSentencingApi")
