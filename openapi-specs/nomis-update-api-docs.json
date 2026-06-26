@@ -1,0 +1,4262 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "Prisoner to NOMIS update API",
+    "description" : "Handles HMPPS domain events for NOMIS updates",
+    "contact" : {
+      "name" : "HMPPS Digital Studio",
+      "email" : "feedback@digital.justice.gov.uk"
+    },
+    "version" : "2026-06-26.4012.0ff1025"
+  },
+  "servers" : [ {
+    "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
+    "description" : "Development"
+  }, {
+    "url" : "https://prisoner-to-nomis-update-preprod.hmpps.service.justice.gov.uk",
+    "description" : "PreProd"
+  }, {
+    "url" : "https://prisoner-to-nomis-update.hmpps.service.justice.gov.uk",
+    "description" : "Prod"
+  }, {
+    "url" : "http://localhost:8080",
+    "description" : "Local"
+  } ],
+  "security" : [ {
+    "bearer-jwt" : [ "read", "write" ]
+  } ],
+  "paths" : {
+    "/queue-admin/retry-dlq/{dlqName}" : {
+      "put" : {
+        "tags" : [ "hmpps-reactive-queue-resource" ],
+        "operationId" : "retryDlq",
+        "parameters" : [ {
+          "name" : "dlqName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RetryDlqResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue-admin/retry-all-dlqs" : {
+      "put" : {
+        "tags" : [ "hmpps-reactive-queue-resource" ],
+        "operationId" : "retryAllDlqs",
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/RetryDlqResult"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue-admin/purge-queue/{queueName}" : {
+      "put" : {
+        "tags" : [ "hmpps-reactive-queue-resource" ],
+        "operationId" : "purgeQueue",
+        "parameters" : [ {
+          "name" : "queueName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PurgeQueueResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/court-sentencing/dps-court-case/{courtCaseId}/dps-appearance/{appearanceId}/dps-sentence/{sentenceId}/repair" : {
+      "put" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "summary" : "Resynchronises a sentence from DPS to NOMIS",
+        "description" : "Used when a sentence with an existing mapping needs resynchronising to nomis, so emergency use only. Mappings should all exist. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairSentenceUpdateInNomis",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "courtCaseId",
+          "in" : "path",
+          "description" : "The DPS ID of the related court case",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related court case"
+          }
+        }, {
+          "name" : "appearanceId",
+          "in" : "path",
+          "description" : "The DPS ID of the related appearance",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related appearance"
+          }
+        }, {
+          "name" : "sentenceId",
+          "in" : "path",
+          "description" : "The DPS ID of the sentence to be re-synced to NOMIS",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the sentence to be re-synced to NOMIS"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "repair successful",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtCaseRepairResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : { }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to call endpoint",
+            "content" : { }
+          },
+          "404" : {
+            "description" : "Either mapping found for case/appearance/sentence or case/appearance/sentence not found in DPS",
+            "content" : { }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "summary" : "Resynchronises a sentence insert from DPS to NOMIS",
+        "description" : "Used when a sentence insert needs resynchronising to NOMIS which failed previously, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairSentenceInsertInNomis",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "courtCaseId",
+          "in" : "path",
+          "description" : "The DPS ID of the related court case",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related court case"
+          }
+        }, {
+          "name" : "appearanceId",
+          "in" : "path",
+          "description" : "The DPS ID of the related appearance",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related appearance"
+          }
+        }, {
+          "name" : "sentenceId",
+          "in" : "path",
+          "description" : "The DPS ID of the sentence to be re-synced to NOMIS",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the sentence to be re-synced to NOMIS"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "repair successful",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtCaseRepairResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : { }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to call endpoint",
+            "content" : { }
+          },
+          "404" : {
+            "description" : "Either mapping found for case/appearance or case/appearance/sentence not found in DPS",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/court-sentencing/dps-court-case/{courtCaseId}/dps-appearance/{appearanceId}/dps-sentence/{sentenceId}/dps-period-length/{periodLengthId}/repair" : {
+      "put" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "summary" : "Resynchronises a sentence term from DPS to NOMIS",
+        "description" : "Used when a sentence term with an existing mapping needs an update resynchronising to nomis, so emergency use only. Mappings should all exist. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairSentenceTermUpdateInNomis",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "courtCaseId",
+          "in" : "path",
+          "description" : "The DPS ID of the related court case",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related court case"
+          }
+        }, {
+          "name" : "appearanceId",
+          "in" : "path",
+          "description" : "The DPS ID of the related appearance",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related appearance"
+          }
+        }, {
+          "name" : "sentenceId",
+          "in" : "path",
+          "description" : "The DPS ID of the related sentence",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related sentence"
+          }
+        }, {
+          "name" : "periodLengthId",
+          "in" : "path",
+          "description" : "The DPS ID of the related term to be re-synced to NOMIS",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related term to be re-synced to NOMIS"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "repair successful",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : { }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to call endpoint",
+            "content" : { }
+          },
+          "404" : {
+            "description" : "Either mapping found for case/appearance/sentence/term or case/appearance/sentence/term not found in DPS",
+            "content" : { }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "summary" : "Resynchronises a sentence term insert from DPS to NOMIS",
+        "description" : "Used when a sentence term insert needs resynchronising to NOMIS which failed previously, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairTermInsertInNomis",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "courtCaseId",
+          "in" : "path",
+          "description" : "The DPS ID of the related court case",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related court case"
+          }
+        }, {
+          "name" : "appearanceId",
+          "in" : "path",
+          "description" : "The DPS ID of the related appearance",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related appearance"
+          }
+        }, {
+          "name" : "sentenceId",
+          "in" : "path",
+          "description" : "The DPS ID of the related sentence",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related sentence"
+          }
+        }, {
+          "name" : "periodLengthId",
+          "in" : "path",
+          "description" : "The DPS ID of the term to be re-synced to NOMIS",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the term to be re-synced to NOMIS"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "repair successful",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtCaseRepairResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : { }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to call endpoint",
+            "content" : { }
+          },
+          "404" : {
+            "description" : "Either mapping found for case or sentence, or term not found in DPS",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/court-sentencing/dps-court-case/{courtCaseId}/dps-appearance/{appearanceId}/dps-charge/{chargeId}/repair" : {
+      "put" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "summary" : "Resynchronises a charge for an appearance from DPS to NOMIS",
+        "description" : "Used when a charge with an existing mapping needs resynchronising to nomis, so emergency use only. Mappings should all exist. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairCourtUpdateInNomis",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "courtCaseId",
+          "in" : "path",
+          "description" : "The DPS ID of the related court case",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related court case"
+          }
+        }, {
+          "name" : "appearanceId",
+          "in" : "path",
+          "description" : "The DPS ID of the related appearance",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related appearance"
+          }
+        }, {
+          "name" : "chargeId",
+          "in" : "path",
+          "description" : "The DPS ID of the charge to be re-synced to NOMIS",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the charge to be re-synced to NOMIS"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "repair successful",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtCaseRepairResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : { }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to call endpoint",
+            "content" : { }
+          },
+          "404" : {
+            "description" : "Either mapping not found for case/appearance/charge or case/appearance/sentence not found in DPS",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/prison/{prisonId}/prisoners/{offenderNo}/official-visits/{dpsOfficialVisitId}" : {
+      "put" : {
+        "tags" : [ "Official Visits Resource" ],
+        "summary" : "Updates a visit in NOMIS from the visit in DPS, will create or update visitors as required",
+        "description" : "Used when an unexpected event has happened in DPS that has resulted in the NOMIS data drifting from DPS, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__SYNCHRONISATION__RW",
+        "operationId" : "updateOfficialVisitFromNomis",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "prisonId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "dpsOfficialVisitId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Visit details updated",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_PRISONER_TO_NOMIS__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Visit mapping not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "Official Visits Resource" ],
+        "summary" : "Create a visit in NOMIS from the visit in DPS",
+        "description" : "Used when an unexpected event has happened in DPS that has resulted in the NOMIS data drifting from DPS, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__SYNCHRONISATION__RW",
+        "operationId" : "createOfficialVisitFromDps",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "prisonId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "dpsOfficialVisitId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "201" : {
+            "description" : "Visit details created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncOfficialVisit"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Visit mapping already exists",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_PRISONER_TO_NOMIS__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/locations/{dpsLocationId}/repair" : {
+      "put" : {
+        "tags" : [ "Locations Resource" ],
+        "summary" : "Synchronises a DPS Location TO Nomis",
+        "description" : "A manual method for synchronising a DPS Location. In other words it repairs the location by updating or creating it in Nomis depending on whether a mapping exists. Requires role <b>PRISONER_TO_NOMIS__UPDATE__RW</b>",
+        "operationId" : "repairLocation",
+        "parameters" : [ {
+          "name" : "dpsLocationId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "include-children",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The Location was synchronised",
+            "content" : { }
+          },
+          "404" : {
+            "description" : "The DPS id was not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/court-scheduler/court/schedule/out/{prisonerNumber}/{dpsCourtAppearanceId}" : {
+      "put" : {
+        "tags" : [ "Court Scheduler Resource" ],
+        "summary" : "Synchronises a court schedule",
+        "description" : "An endpoint to synchronise a court schedule. The recreate query parameter is passed onto nomis-prisoner-api to tell it to recreate using the eventId from the existing mapping. This is to recover from court schedules deleted by remand and sentencing. Requires role <b>PRISONER_TO_NOMIS__UPDATE__RW</b>",
+        "operationId" : "synchroniseCourtSchedule",
+        "parameters" : [ {
+          "name" : "prisonerNumber",
+          "in" : "path",
+          "description" : "Prisoner number",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prisoner number"
+          }
+        }, {
+          "name" : "dpsCourtAppearanceId",
+          "in" : "path",
+          "description" : "DPS court appearance Id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "DPS court appearance Id"
+          }
+        }, {
+          "name" : "recreate",
+          "in" : "query",
+          "description" : "Whether to recreate a deleted court schedule with the existing mapping eventId",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "description" : "Whether to recreate a deleted court schedule with the existing mapping eventId"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The court schedule was synchronised",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to start migration",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/contacts/{contactId}/prisoner-contact/{prisonerContactId}/resynchronise" : {
+      "put" : {
+        "tags" : [ "Contact Person Repair Resource" ],
+        "summary" : "Update prisoner contact aka contact data from DPS back to NOMIS. This will update the prisoner contact",
+        "description" : "Used when an unexpected event has happened in DPS, for instance no domain events published after a prisoner contact that has resulted in the NOMIS data drifting from DPS, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__SYNCHRONISATION__RW",
+        "operationId" : "repairPrisonerContact",
+        "parameters" : [ {
+          "name" : "contactId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "prisonerContactId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : { }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "Contact Person Repair Resource" ],
+        "summary" : "Creates prisoner contact aka contact data from DPS back to NOMIS. This will create the prisoner contact",
+        "description" : "Used when an unexpected event has happened in DPS, for instance no domain events published after a prisoner contact that has resulted in the NOMIS data drifting from DPS, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__SYNCHRONISATION__RW",
+        "operationId" : "createPrisonerContact",
+        "parameters" : [ {
+          "name" : "contactId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "prisonerContactId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/contactperson/sync/profile-details/{prisonerNumber}/{profileType}" : {
+      "put" : {
+        "tags" : [ "Contact Person Update Resource" ],
+        "summary" : "Synchronises a profile detail to NOMIS",
+        "description" : "Manually synchronises a profile detail to NOMIS. This is intended for use by developers to recover from errors. Requires role <b>PRISONER_TO_NOMIS__SYNCHRONISATION__RW</b>",
+        "operationId" : "syncContactPersonProfileDetail-0E7RQCE",
+        "parameters" : [ {
+          "name" : "prisonerNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "profileType",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "MARITAL", "CHILD" ]
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Profile detail synchronised to NOMIS",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to start migration",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Found nothing to synchronise",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/casenotes/{offenderNo}/{dpsId}/resynchronise" : {
+      "put" : {
+        "tags" : [ "Case Notes Update Resource" ],
+        "summary" : "Resynchronises a case note for the given prisoner from DPS to NOMIS",
+        "description" : "Copies a case note from DPS to NOMIS. Used when an unexpected event has happened in DPS that has resulted in the NOMIS data drifting from DPS, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairCaseNote",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "dpsId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/attendances/{attendanceId}" : {
+      "put" : {
+        "tags" : [ "Activities Update Resource" ],
+        "summary" : "Synchronises a DPS Attendance",
+        "description" : "A manual method for synchronising a DPS Attendance to Nomis (whether new or not - performs an upsert). Performs in the same way as the automated message based solution - intended for use as a workaround when things go wrong. Requires role <b>PRISONER_TO_NOMIS__UPDATE__RW</b>",
+        "operationId" : "synchroniseUpsertAttendance",
+        "parameters" : [ {
+          "name" : "attendanceId",
+          "in" : "path",
+          "description" : "DPS Attendance id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "DPS Attendance id"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The DPS Attendance was synchronised",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to start migration",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/allocations/{allocationId}" : {
+      "put" : {
+        "tags" : [ "Activities Update Resource" ],
+        "summary" : "Synchronises a DPS Allocation",
+        "description" : "A manual method for synchronising a DPS Allocation to Nomis (whether new or not - performs an upsert). Performs in the same way as the automated message based solution - intended for use as a workaround when things go wrong. Requires role <b>PRISONER_TO_NOMIS__UPDATE__RW</b>",
+        "operationId" : "synchroniseUpsertAllocation",
+        "parameters" : [ {
+          "name" : "allocationId",
+          "in" : "path",
+          "description" : "DPS Allocation id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "DPS Allocation id"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The DPS Allocation was synchronised",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to start migration",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/activities/{activityScheduleId}" : {
+      "put" : {
+        "tags" : [ "Activities Update Resource" ],
+        "summary" : "Synchronises an existing DPS Activity",
+        "description" : "A manual method for synchronising an existing DPS Activity to Nomis. Performs in the same way as the automated message based solution - intended for use as a workaround when things go wrong. Requires role <b>PRISONER_TO_NOMIS__UPDATE__RW</b>",
+        "operationId" : "synchroniseUpdateActivity",
+        "parameters" : [ {
+          "name" : "activityScheduleId",
+          "in" : "path",
+          "description" : "DPS Activity id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "DPS Activity id"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The DPS Activity was synchronised",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to start migration",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "Activities Update Resource" ],
+        "summary" : "Synchronises a new DPS Activity",
+        "description" : "A manual method for synchronising a new DPS Activity to Nomis. Performs in the same way as the automated message based solution - intended for use as a workaround when things go wrong. Requires role <b>PRISONER_TO_NOMIS__UPDATE__RW</b>",
+        "operationId" : "synchroniseCreateActivity",
+        "parameters" : [ {
+          "name" : "activityScheduleId",
+          "in" : "path",
+          "description" : "DPS Activity id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "DPS Activity id"
+          }
+        } ],
+        "responses" : {
+          "201" : {
+            "description" : "The DPS Activity was synchronised",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to start migration",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisons/{prisonId}/prisoners/{offenderNo}/adjudication/dps-charge-number/{chargeNumber}/repair" : {
+      "post" : {
+        "tags" : [ "Adjudications Update Resource" ],
+        "summary" : "Resynchronises adjudication for the given charge from DPS back to NOMIS",
+        "description" : "Used when an adjudication in NOMIS has been deleted, so emergency use only. If any element fails run individual repair endpoints for hearings etc assuming adjudication create did succeed. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairAdjudication",
+        "parameters" : [ {
+          "name" : "prisonId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "chargeNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/prisons/{prisonId}/prisoners/{offenderNo}/adjudication/dps-charge-number/{chargeNumber}/punishments/repair" : {
+      "post" : {
+        "tags" : [ "Adjudications Update Resource" ],
+        "summary" : "Resynchronises punishments for the given adjudication from DPS back to NOMIS",
+        "description" : "Used when a domain event adjudication.punishments.updated has gone missing, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairPunishments",
+        "parameters" : [ {
+          "name" : "prisonId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "chargeNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/prisons/{prisonId}/prisoners/{offenderNo}/adjudication/dps-charge-number/{chargeNumber}/hearing/dps-hearing-id/{hearingId}" : {
+      "post" : {
+        "tags" : [ "Adjudications Update Resource" ],
+        "summary" : "Resynchronises a hearing for the given adjudication from DPS back to NOMIS",
+        "description" : "Used when a hearing has been deleted in NOMIS due to linked charges, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairHearing",
+        "parameters" : [ {
+          "name" : "prisonId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "chargeNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "hearingId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/prisons/{prisonId}/prisoners/{offenderNo}/adjudication/dps-charge-number/{chargeNumber}/hearing/dps-hearing-id/{hearingId}/outcome" : {
+      "post" : {
+        "tags" : [ "Adjudications Update Resource" ],
+        "summary" : "Resynchronises an outcome for the given adjudication from DPS back to NOMIS",
+        "description" : "Used when one of the numerous outcome upsert domain events, calling adjudicationsService.upsertOutcome(message.fromJson()) from the listener have gone missing, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairOutcome",
+        "parameters" : [ {
+          "name" : "prisonId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "chargeNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "hearingId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/prisoners/{prisonNumber}/visit-balance/repair" : {
+      "post" : {
+        "tags" : [ "Visit Balance Update Resource" ],
+        "summary" : "Resynchronises a DPS visit balance to NOMIS",
+        "description" : "Used when an unexpected event has happened in DPS that has resulted in the NOMIS data drifting from DPS, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairVisitBalance",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/prisoners/{prisonNumber}/csip/{dpsCsipReportId}/repair" : {
+      "post" : {
+        "tags" : [ "CSIP Update Resource" ],
+        "summary" : "Resynchronises a csip report inserted from DPS to NOMIS",
+        "description" : "Used when DPS is in the correct state but NOMIS is wrong, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairCsipReport",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "dpsCsipReportId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "clearChildMappings",
+          "in" : "query",
+          "description" : "Whether to clear existing child mappings",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false,
+            "description" : "Whether to clear existing child mappings"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/visits/resynchronise/{visitId}" : {
+      "post" : {
+        "tags" : [ "Visits Update Resource" ],
+        "summary" : "Resynchronises the DPS visit to NOMIS",
+        "description" : "Used when an unexpected event has happened in DPS that has resulted in the NOMIS visit not being present, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairVisit",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "visitId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/sentencing-adjustments/{adjustmentId}/repair" : {
+      "post" : {
+        "tags" : [ "Sentencing Adjustments Update Resource" ],
+        "summary" : "Resynchronises an adjustments for the given prisoner from DPS back to NOMIS",
+        "description" : "Used when DPS is in the correct state but NOMIS is wrong, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairAdjustments",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "adjustmentId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "force-status",
+          "in" : "query",
+          "description" : "Whether status of the DPS should be propagated to NOMIS",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false,
+            "description" : "Whether status of the DPS should be propagated to NOMIS"
+          }
+        }, {
+          "name" : "set-active",
+          "in" : "query",
+          "description" : "Whether status of the NOMIS adjustment should be set to true",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false,
+            "description" : "Whether status of the NOMIS adjustment should be set to true"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/court-sentencing/court-case/{dpsCourtCaseId}/booking-repair" : {
+      "post" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "summary" : "Clones a case to latest booking",
+        "description" : "Used when cases need cloning to latest booking which failed previously, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "clonedCourtCaseToLatestBooking",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "dpsCourtCaseId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/court-sentencing/court-case/{courtCaseId}/repair" : {
+      "post" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "summary" : "Resynchronises a court case from DPS to NOMIS",
+        "description" : "Used when a single case needs resynchronising to NOMIS which failed previously, so emergency use only. Only cases without sentences are currently supported. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairCourtCaseInNomis",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "courtCaseId",
+          "in" : "path",
+          "description" : "The ID of the court case to be re-synced to NOMIS. For convenience this can either be the DPS court case ID or the NOMIS court case ID.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The ID of the court case to be re-synced to NOMIS. For convenience this can either be the DPS court case ID or the NOMIS court case ID."
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Migration payload returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtCaseRepairResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtCaseRepairResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to call endpoint",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtCaseRepairResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Either no mapping found for case or case not found for prisoner",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtCaseRepairResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Unable to repair a case which is already sentenced",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtCaseRepairResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/alerts/resynchronise" : {
+      "post" : {
+        "tags" : [ "Alerts Update Resource" ],
+        "summary" : "Resynchronises current alerts for the given prisoner from DPS back to current booking in NOMIS",
+        "description" : "Used when an unexpected event has happened in DPS that has resulted in the NOMIS data drifting from DPS, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairAlerts",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/prisoners/court-sentencing/court-cases/reconciliation" : {
+      "post" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "operationId" : "getCaseReconciliationByOffenderNoList",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "string"
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "array",
+                    "items" : {
+                      "$ref" : "#/components/schemas/MismatchCaseResponse"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incidents/{incidentId}/repair" : {
+      "post" : {
+        "tags" : [ "Incidents Update Resource" ],
+        "operationId" : "repairIncident",
+        "parameters" : [ {
+          "name" : "incidentId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/incentives/prisoner/{prisonNumber}/repair" : {
+      "post" : {
+        "tags" : [ "Incentives Update Resource" ],
+        "operationId" : "repairIncentive",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/court-sentencing/court-charges/repair" : {
+      "post" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "summary" : "Resynchronises a charge.inserted from DPS to NOMIS",
+        "description" : "Used when DPS is in the correct state but NOMIS is wrong, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "chargeInserted",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CourtChargeRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/contacts/{contactId}/resynchronise" : {
+      "post" : {
+        "tags" : [ "Contact Person Repair Resource" ],
+        "summary" : "Creates contact aka person data from DPS back to NOMIS. This will create the contact and any support child entities including the prisoner relationship that are created in DPS create contact flow. Currently only supports creating a contact without restrictions. When mapping already exists for entity or child no update will be applied",
+        "description" : "Used when an unexpected event has happened in DPS, for instance no domain events published after create contact that has resulted in the NOMIS data drifting from DPS, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__SYNCHRONISATION__RW",
+        "operationId" : "repairContact",
+        "parameters" : [ {
+          "name" : "contactId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/visit-balance/reconciliation/{prisonNumber}" : {
+      "get" : {
+        "tags" : [ "Visit Balance Update Resource" ],
+        "summary" : "Run the reconciliation for this prison number",
+        "description" : "Retrieves the differences for a prisoner. Empty response returned if no differences found. \n      Requires PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "generateVisitBalanceReconciliationReportForPrisoner",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "description" : "Prison number aka noms id / offender id display",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison number aka noms id / offender id display",
+            "example" : "A1234BC"
+          },
+          "example" : "A1234BC"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reconciliation differences returned",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchVisitBalance"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires PRISONER_TO_NOMIS__UPDATE__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Offender does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/staff/nomis-staff-id/{nomisStaffId}/reconciliation" : {
+      "get" : {
+        "tags" : [ "Staff Reconciliation Resource" ],
+        "operationId" : "getStaffReconciliationByNomisId",
+        "parameters" : [ {
+          "name" : "nomisStaffId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchStaff"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue-admin/get-dlq-messages/{dlqName}" : {
+      "get" : {
+        "tags" : [ "hmpps-reactive-queue-resource" ],
+        "operationId" : "getDlqMessages",
+        "parameters" : [ {
+          "name" : "dlqName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "maxMessages",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 100
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GetDlqResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/official-visits/reconciliation" : {
+      "get" : {
+        "tags" : [ "Official Visits Reconciliation Resource" ],
+        "operationId" : "getOfficialVisitsReconciliationByPrisonerNumber",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MismatchVisit"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/court-sentencing/court-cases/reconciliation" : {
+      "get" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "operationId" : "getCaseReconciliationByOffenderNo",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MismatchCaseResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/court-sentencing/court-cases/nomis-case-id/{nomisCaseId}/reconciliation" : {
+      "get" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "operationId" : "getCaseReconciliationByNomisCaseId",
+        "parameters" : [ {
+          "name" : "nomisCaseId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchCaseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/court-sentencing/court-cases/nomis-case-id/{nomisCaseId}/dps-case-id/{dpsCaseId}/reconciliation" : {
+      "get" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "operationId" : "getCaseReconciliationByCaseId",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "nomisCaseId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "dpsCaseId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchCaseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/court-sentencing/court-cases/dps-case-id/{dpsCaseId}/reconciliation" : {
+      "get" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "operationId" : "getCaseReconciliationByDpsCaseId",
+        "parameters" : [ {
+          "name" : "dpsCaseId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchCaseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoner-transactions/reconciliation/transaction/{transactionId}" : {
+      "get" : {
+        "tags" : [ "Finance Transaction Resource" ],
+        "summary" : "Run the prisoner transaction reconciliation for this transaction id",
+        "description" : "Retrieves the prisoner transaction differences for a transaction. \n      Empty response returned if no differences found.\n      Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "generateReconciliationReportForPrisonerTransaction",
+        "parameters" : [ {
+          "name" : "transactionId",
+          "in" : "path",
+          "description" : "Transaction Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Transaction Id",
+            "example" : 12345
+          },
+          "example" : 12345
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reconciliation differences returned.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchPrisonerTransaction"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoner-balance/reconciliation/{offenderNo}" : {
+      "get" : {
+        "tags" : [ "Finance Update Resource" ],
+        "summary" : "Run the prisoner balance reconciliation for this prisoner",
+        "description" : "Retrieves the account balance differences for a prisoner. A null response returned if no differences found. \n      Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "manualCheckCaseOffenderNo",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "description" : "Prisoner's offenderNo",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prisoner's offenderNo",
+            "example" : "A3456NZ"
+          },
+          "example" : "A3456NZ"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reconciliation differences returned",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchPrisonerBalance"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoner-balance/reconciliation/prison/{prisonId}" : {
+      "get" : {
+        "tags" : [ "Finance Update Resource" ],
+        "summary" : "Run the prisoner balance reconciliation for one prison",
+        "description" : "Retrieves the account balance differences for all prisoners who have balances for the given prison (not prisoners necessarily in that prison).\n      A null response returned if no differences found. \n      Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "manualCheckSinglePrisonBalances",
+        "parameters" : [ {
+          "name" : "prisonId",
+          "in" : "path",
+          "description" : "Prison Id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison Id",
+            "example" : "BXI"
+          },
+          "example" : "BXI"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reconciliation differences returned",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReconciliationResultMismatchPrisonerBalance"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisoner-balance/reconciliation/id/{rootOffenderId}" : {
+      "get" : {
+        "tags" : [ "Finance Update Resource" ],
+        "summary" : "Run the prisoner balance reconciliation for this prisoner",
+        "description" : "Retrieves the account balance differences for a prisoner. A null response returned if no differences found. \n      Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "manualCheckCaseOffenderId",
+        "parameters" : [ {
+          "name" : "rootOffenderId",
+          "in" : "path",
+          "description" : "Prisoner's rootOffenderId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Prisoner's rootOffenderId",
+            "example" : 1234567
+          },
+          "example" : 1234567
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reconciliation differences returned",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchPrisonerBalance"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prison-users/staff/{staffId}" : {
+      "get" : {
+        "tags" : [ "dummy-staff-dps-api" ],
+        "operationId" : "getDpsStaff",
+        "parameters" : [ {
+          "name" : "staffId",
+          "in" : "path",
+          "description" : "staff Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "staff Id"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DpsStaffDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prison-users/staff/ids" : {
+      "get" : {
+        "tags" : [ "dummy-staff-dps-api" ],
+        "operationId" : "getDpsStaffIds",
+        "parameters" : [ {
+          "name" : "page",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PagedModelDpsStaffId"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prison-transactions/reconciliation/{prisonId}" : {
+      "get" : {
+        "tags" : [ "Finance Transaction Resource" ],
+        "summary" : "Run the prison (GL) transaction reconciliation for this prison id ",
+        "description" : "Retrieves the prison (GL) transaction differences for a prison on the specified date, or today if no date is provided.\n       It does not reconcile prison (GL) transactions that form part of an offender transaction.\n       An empty response returned if no differences are found.\n       Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "generatePrisonTransactionReconciliationReportForPrison",
+        "parameters" : [ {
+          "name" : "prisonId",
+          "in" : "path",
+          "description" : "Prison Id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison Id",
+            "example" : "MDI"
+          },
+          "example" : "MDI"
+        }, {
+          "name" : "date",
+          "in" : "query",
+          "description" : "Date for prison reconcile",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Date for prison reconcile",
+            "example" : "2026-02-19"
+          },
+          "example" : "2026-02-19"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reconciliation differences returned",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MismatchPrisonTransaction"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prison-transactions/reconciliation/transaction/{transactionId}" : {
+      "get" : {
+        "tags" : [ "Finance Transaction Resource" ],
+        "summary" : "Run the prison (GL) transaction reconciliation for this transaction id",
+        "description" : "Retrieves the GL transaction differences for a transaction. Empty response returned if no differences found.\n      Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "manualCheckPrisonTransaction",
+        "parameters" : [ {
+          "name" : "transactionId",
+          "in" : "path",
+          "description" : "Transaction Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Transaction Id",
+            "example" : 12345
+          },
+          "example" : 12345
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reconciliation differences returned",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchPrisonTransaction"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Prison (GL) Transaction Id does not exist.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prison-balance/reconciliation/{prisonId}" : {
+      "get" : {
+        "tags" : [ "Finance Update Resource" ],
+        "summary" : "Run the prison balance reconciliation for this prison id",
+        "description" : "Retrieves the account balance differences for a prison. Empty response returned if no differences found. \n      Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "generatePrisonBalanceReconciliationReportForPrison",
+        "parameters" : [ {
+          "name" : "prisonId",
+          "in" : "path",
+          "description" : "Prison Id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison Id",
+            "example" : "MDI"
+          },
+          "example" : "MDI"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reconciliation differences returned",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchPrisonBalance"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/persons/{personId}/person-contact/reconciliation" : {
+      "get" : {
+        "tags" : [ "Contact Person Update Resource" ],
+        "operationId" : "getPersonContactReconciliationForPerson",
+        "parameters" : [ {
+          "name" : "personId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchPersonContacts"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/official-visits/nomis-visit-id/{nomisVisitId}/reconciliation" : {
+      "get" : {
+        "tags" : [ "Official Visits Reconciliation Resource" ],
+        "operationId" : "getOfficialVisitsReconciliationByNomisId",
+        "parameters" : [ {
+          "name" : "nomisVisitId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchVisit"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/non-associations/reconciliation/{prisonNumber1}/ns/{prisonNumber2}" : {
+      "get" : {
+        "tags" : [ "Non Associations Update Resource" ],
+        "summary" : "Run the reconciliation for this prison number",
+        "description" : "Retrieves the differences for a prisoner. Empty response returned if no differences found. \n      Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "generateNonAssociationsReconciliationReportForPrisoner",
+        "parameters" : [ {
+          "name" : "prisonNumber1",
+          "in" : "path",
+          "description" : "Prison number aka noms id / offender id display",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison number aka noms id / offender id display",
+            "example" : "A1234BC"
+          },
+          "example" : "A1234BC"
+        }, {
+          "name" : "prisonNumber2",
+          "in" : "path",
+          "description" : "Prison number aka noms id / offender id display",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison number aka noms id / offender id display",
+            "example" : "A1234BC"
+          },
+          "example" : "A1234BC"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reconciliation differences returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MismatchNonAssociation"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Offender does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/incidents/reconciliation/{nomisIncidentId}" : {
+      "get" : {
+        "tags" : [ "Incidents Update Resource" ],
+        "summary" : "Run reconciliation against this incident",
+        "description" : "Retrieves the differences for the incident report. Empty response returned if no differences found.\n      Requires PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "generateReconciliationReportForIncident",
+        "parameters" : [ {
+          "name" : "nomisIncidentId",
+          "in" : "path",
+          "description" : "Nomis Incident Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Nomis Incident Id",
+            "example" : 123
+          },
+          "example" : 123
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reconciliation differences returned",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchIncident"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires PRISONER_TO_NOMIS__UPDATE__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Incident does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/external-movements/court/{offenderNo}/reconciliation" : {
+      "get" : {
+        "tags" : [ "External Movements Reconciliation Resource" ],
+        "operationId" : "courtMovementsReconciliation",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MismatchedPrisonerCourtMovements"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/external-movements/all-taps/{offenderNo}/reconciliation" : {
+      "get" : {
+        "tags" : [ "External Movements Reconciliation Resource" ],
+        "operationId" : "allTapsReconciliation",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MismatchPrisonerTapsSummary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/external-movements/active-taps/{offenderNo}/reconciliation" : {
+      "get" : {
+        "tags" : [ "External Movements Reconciliation Resource" ],
+        "operationId" : "activeTapsReconciliation",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MismatchPrisonerTaps"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/csip/reconciliation/{prisonNumber}" : {
+      "get" : {
+        "tags" : [ "CSIP Update Resource" ],
+        "summary" : "Run csip reconciliation against this prisoner",
+        "description" : "Retrieves the differences for csip reports against a specific prisoner. Empty response returned if no differences found.\n      Requires PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "generateCSIPReconciliationReportForPrisoner",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "description" : "Prison number aka noms id / offender id display",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison number aka noms id / offender id display",
+            "example" : "A1234BC"
+          },
+          "example" : "A1234BC"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reconciliation differences returned",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchCSIPs"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires PRISONER_TO_NOMIS__UPDATE__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Offender does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core-person/reconciliation/{prisonNumber}" : {
+      "get" : {
+        "tags" : [ "Core Person Update Resource" ],
+        "summary" : "Run the reconciliation for this prison number",
+        "description" : "Retrieves the differences for a prisoner. Empty response returned if no differences found. \n      Requires PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "generateCorePersonReconciliationReportForPrisoner",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "description" : "Prison number aka noms id / offender id display",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison number aka noms id / offender id display",
+            "example" : "A1234BC"
+          },
+          "example" : "A1234BC"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reconciliation differences returned",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchCorePerson"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires PRISONER_TO_NOMIS__UPDATE__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Offender does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/casenotes/reconciliation/{prisonNumber}" : {
+      "get" : {
+        "tags" : [ "Case Notes Update Resource" ],
+        "summary" : "Run the reconciliation for this prison number",
+        "description" : "Retrieves the differences for a prisoner. Empty response returned if no differences found. \n      Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "generateCaseNotesReconciliationReportForPrisoner",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "description" : "Prison number aka noms id / offender id display",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison number aka noms id / offender id display",
+            "example" : "A1234BC"
+          },
+          "example" : "A1234BC"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reconciliation differences returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchCaseNote"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Offender does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisons/{prisonId}/prisoners/{offenderNo}/adjudication/dps-charge-number/{chargeNumber}/hearing/dps-hearing-id/{hearingId}/result" : {
+      "delete" : {
+        "tags" : [ "Adjudications Update Resource" ],
+        "summary" : "Resynchronises a delete hearing result for the given adjudication from DPS back to NOMIS",
+        "description" : "Used when a domain event adjudication.hearingCompleted.deleted has gone missing, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairDeleteHearingResult",
+        "parameters" : [ {
+          "name" : "prisonId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "chargeNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "hearingId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content",
+            "content" : { }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "RetryDlqResult" : {
+        "type" : "object",
+        "properties" : {
+          "messagesFoundCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "messagesFoundCount" ]
+      },
+      "PurgeQueueResult" : {
+        "type" : "object",
+        "properties" : {
+          "messagesFoundCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "messagesFoundCount" ]
+      },
+      "CourtCaseRepairResponse" : {
+        "type" : "object",
+        "description" : "Court case repair response",
+        "properties" : {
+          "nomisCaseId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The new NOMIS court case ID"
+          }
+        },
+        "required" : [ "nomisCaseId" ]
+      },
+      "ErrorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "errorCode" : {
+            "type" : "string"
+          },
+          "userMessage" : {
+            "type" : "string"
+          },
+          "developerMessage" : {
+            "type" : "string"
+          },
+          "moreInfo" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "status" ]
+      },
+      "AppearanceFields" : {
+        "type" : "object",
+        "properties" : {
+          "date" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "court" : {
+            "type" : "string"
+          },
+          "outcome" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "mappedId" : {
+            "type" : "string"
+          },
+          "charges" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ChargeFields"
+            }
+          },
+          "chargeAsString" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "charges", "court", "id" ]
+      },
+      "CaseFields" : {
+        "type" : "object",
+        "properties" : {
+          "active" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "appearances" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AppearanceFields"
+            }
+          },
+          "caseReferences" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "sentences" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SentenceFields"
+            }
+          }
+        },
+        "required" : [ "appearances", "caseReferences", "id", "sentences" ]
+      },
+      "ChargeFields" : {
+        "type" : "object",
+        "properties" : {
+          "offenceCode" : {
+            "type" : "string"
+          },
+          "offenceDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "offenceEndDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "outcome" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "mappedId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "offenceCode" ]
+      },
+      "Difference" : {
+        "type" : "object",
+        "properties" : {
+          "property" : {
+            "type" : "string"
+          },
+          "dps" : { },
+          "nomis" : { },
+          "id" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "property" ]
+      },
+      "MismatchCase" : {
+        "type" : "object",
+        "properties" : {
+          "differences" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Difference"
+            }
+          },
+          "nomisCase" : {
+            "$ref" : "#/components/schemas/CaseFields"
+          },
+          "dpsCase" : {
+            "$ref" : "#/components/schemas/CaseFields"
+          },
+          "nomisBookingId" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "differences", "dpsCase", "nomisBookingId", "nomisCase" ]
+      },
+      "MismatchCaseResponse" : {
+        "type" : "object",
+        "properties" : {
+          "offenderNo" : {
+            "type" : "string"
+          },
+          "dpsCaseId" : {
+            "type" : "string"
+          },
+          "nomisCaseId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "nomisBookingId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "caseCountMismatch" : {
+            "type" : "boolean"
+          },
+          "mismatch" : {
+            "$ref" : "#/components/schemas/MismatchCase"
+          }
+        },
+        "required" : [ "caseCountMismatch", "dpsCaseId", "nomisCaseId", "offenderNo" ]
+      },
+      "SentenceFields" : {
+        "type" : "object",
+        "properties" : {
+          "sentencingAppearanceDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "sentenceCategory" : {
+            "type" : "string"
+          },
+          "sentenceCalcType" : {
+            "type" : "string"
+          },
+          "fine" : {
+            "type" : "number"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "mappedId" : {
+            "type" : "string"
+          },
+          "offenceCodes" : {
+            "type" : "string"
+          },
+          "termsAsString" : {
+            "type" : "string"
+          },
+          "terms" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SentenceTermFields"
+            }
+          }
+        },
+        "required" : [ "id", "status", "terms" ]
+      },
+      "SentenceTermFields" : {
+        "type" : "object",
+        "properties" : {
+          "sentenceTermCode" : {
+            "type" : "string"
+          },
+          "years" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "months" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "weeks" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "days" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "lifeSentenceFlag" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "type" : "string"
+          },
+          "mappedId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id" ]
+      },
+      "SyncOfficialVisit" : {
+        "type" : "object",
+        "properties" : {
+          "officialVisitId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "visitDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "startTime" : {
+            "type" : "string"
+          },
+          "endTime" : {
+            "type" : "string"
+          },
+          "prisonVisitSlotId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "dpsLocationId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "prisonCode" : {
+            "type" : "string"
+          },
+          "prisonerNumber" : {
+            "type" : "string"
+          },
+          "statusCode" : {
+            "type" : "string",
+            "enum" : [ "SCHEDULED", "CANCELLED", "COMPLETED", "EXPIRED" ]
+          },
+          "visitType" : {
+            "type" : "string",
+            "enum" : [ "IN_PERSON", "TELEPHONE", "VIDEO", "UNKNOWN" ]
+          },
+          "createdBy" : {
+            "type" : "string"
+          },
+          "createdTime" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "visitors" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SyncOfficialVisitor"
+            }
+          },
+          "completionCode" : {
+            "type" : "string",
+            "enum" : [ "NORMAL", "PRISONER_EARLY", "PRISONER_REFUSED", "STAFF_EARLY", "VISITOR_DENIED", "VISITOR_EARLY", "VISITOR_NO_SHOW", "PRISONER_CANCELLED", "STAFF_CANCELLED", "VISITOR_CANCELLED" ]
+          },
+          "offenderBookId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "offenderVisitId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "prisonerAttendance" : {
+            "type" : "string",
+            "enum" : [ "ATTENDED", "ABSENT" ]
+          },
+          "searchType" : {
+            "type" : "string",
+            "enum" : [ "FULL", "PAT", "RUB", "RUB_A", "RUB_B", "STR" ]
+          },
+          "visitComments" : {
+            "type" : "string"
+          },
+          "updatedBy" : {
+            "type" : "string"
+          },
+          "updatedTime" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "visitorConcernNotes" : {
+            "type" : "string"
+          },
+          "visitOrderNumber" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "overrideBanStaffUsername" : {
+            "type" : "string"
+          },
+          "currentTerm" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "createdBy", "createdTime", "dpsLocationId", "endTime", "officialVisitId", "prisonCode", "prisonVisitSlotId", "prisonerNumber", "startTime", "statusCode", "visitDate", "visitType", "visitors" ]
+      },
+      "SyncOfficialVisitor" : {
+        "type" : "object",
+        "properties" : {
+          "officialVisitorId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "createdBy" : {
+            "type" : "string"
+          },
+          "createdTime" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "contactId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "firstName" : {
+            "type" : "string"
+          },
+          "lastName" : {
+            "type" : "string"
+          },
+          "relationshipType" : {
+            "type" : "string",
+            "enum" : [ "OFFICIAL", "SOCIAL" ]
+          },
+          "relationshipCode" : {
+            "type" : "string"
+          },
+          "attendanceCode" : {
+            "type" : "string",
+            "enum" : [ "ATTENDED", "ABSENT" ]
+          },
+          "leadVisitor" : {
+            "type" : "boolean"
+          },
+          "assistedVisit" : {
+            "type" : "boolean"
+          },
+          "visitorNotes" : {
+            "type" : "string"
+          },
+          "updatedBy" : {
+            "type" : "string"
+          },
+          "updatedTime" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "createdBy", "createdTime", "officialVisitorId" ]
+      },
+      "CourtChargeRequest" : {
+        "type" : "object",
+        "description" : "Court Charge Request",
+        "properties" : {
+          "offenderNo" : {
+            "type" : "string"
+          },
+          "dpsChargeId" : {
+            "type" : "string"
+          },
+          "dpsCaseId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "dpsCaseId", "dpsChargeId", "offenderNo" ]
+      },
+      "MismatchVisitBalance" : {
+        "type" : "object",
+        "properties" : {
+          "prisonNumber" : {
+            "type" : "string"
+          },
+          "dpsVisitBalance" : {
+            "$ref" : "#/components/schemas/PrisonerBalance"
+          },
+          "nomisVisitBalance" : {
+            "$ref" : "#/components/schemas/PrisonerBalance"
+          }
+        },
+        "required" : [ "dpsVisitBalance", "nomisVisitBalance", "prisonNumber" ]
+      },
+      "PrisonerBalance" : {
+        "type" : "object",
+        "properties" : {
+          "visitBalance" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "privilegedVisitBalance" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "privilegedVisitBalance", "visitBalance" ]
+      },
+      "MismatchStaff" : {
+        "type" : "object",
+        "properties" : {
+          "nomisStaffId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "dpsStaffId" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "nomisStaff" : {
+            "$ref" : "#/components/schemas/StaffSummary"
+          },
+          "dpsStaff" : {
+            "$ref" : "#/components/schemas/StaffSummary"
+          }
+        },
+        "required" : [ "nomisStaffId", "reason" ]
+      },
+      "StaffAccountSummary" : {
+        "type" : "object",
+        "properties" : {
+          "username" : {
+            "type" : "string"
+          },
+          "typeCode" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "caseloads" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "dpsRoles" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "lastLoggedIn" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "activeCaseloadId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "caseloads", "dpsRoles", "status", "typeCode", "username" ]
+      },
+      "StaffSummary" : {
+        "type" : "object",
+        "properties" : {
+          "firstName" : {
+            "type" : "string"
+          },
+          "lastName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "accounts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/StaffAccountSummary"
+            }
+          },
+          "email" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "accounts", "firstName", "lastName", "status" ]
+      },
+      "DlqMessage" : {
+        "type" : "object",
+        "properties" : {
+          "body" : {
+            "type" : "object",
+            "additionalProperties" : { }
+          },
+          "messageId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "body", "messageId" ]
+      },
+      "GetDlqResult" : {
+        "type" : "object",
+        "properties" : {
+          "messagesFoundCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "messagesReturnedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "messages" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DlqMessage"
+            }
+          }
+        },
+        "required" : [ "messages", "messagesFoundCount", "messagesReturnedCount" ]
+      },
+      "MismatchVisit" : {
+        "type" : "object",
+        "properties" : {
+          "nomisVisitId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "nomisVisit" : {
+            "$ref" : "#/components/schemas/OfficialVisitSummary"
+          },
+          "dpsVisit" : {
+            "$ref" : "#/components/schemas/OfficialVisitSummary"
+          }
+        },
+        "required" : [ "nomisVisitId", "reason" ]
+      },
+      "OfficialVisitSummary" : {
+        "type" : "object",
+        "properties" : {
+          "startDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The start time of the visit",
+            "example" : "2021-07-16T12:34:56"
+          },
+          "endDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The end time of the visit",
+            "example" : "2020-04-20T18:00:00"
+          },
+          "prisonId" : {
+            "type" : "string"
+          },
+          "offenderNo" : {
+            "type" : "string"
+          },
+          "visitStatus" : {
+            "type" : "string",
+            "enum" : [ "SCHEDULED", "CANCELLED", "COMPLETED", "EXPIRED" ]
+          },
+          "visitOutcome" : {
+            "type" : "string",
+            "enum" : [ "NORMAL", "PRISONER_EARLY", "PRISONER_REFUSED", "STAFF_EARLY", "VISITOR_DENIED", "VISITOR_EARLY", "VISITOR_NO_SHOW", "PRISONER_CANCELLED", "STAFF_CANCELLED", "VISITOR_CANCELLED" ]
+          },
+          "visitors" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VisitorSummary"
+            }
+          },
+          "currentTerm" : {
+            "type" : "boolean"
+          },
+          "bookingId" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "currentTerm", "endDateTime", "offenderNo", "prisonId", "startDateTime", "visitStatus", "visitors" ]
+      },
+      "VisitorSummary" : {
+        "type" : "object",
+        "properties" : {
+          "nomisPersonAndDpsContactId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "attendance" : {
+            "type" : "string",
+            "enum" : [ "ATTENDED", "ABSENT" ]
+          }
+        },
+        "required" : [ "nomisPersonAndDpsContactId" ]
+      },
+      "MismatchPrisonerTransaction" : {
+        "type" : "object",
+        "properties" : {
+          "nomisTransactionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "dpsTransactionId" : {
+            "type" : "string"
+          },
+          "prisonNumber" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "nomisTransaction" : {
+            "$ref" : "#/components/schemas/PrisonerTransactionSummary"
+          },
+          "dpsTransaction" : {
+            "$ref" : "#/components/schemas/PrisonerTransactionSummary"
+          }
+        },
+        "required" : [ "nomisTransactionId", "prisonNumber", "reason" ]
+      },
+      "PrisonerTransactionEntry" : {
+        "type" : "object",
+        "properties" : {
+          "transactionSequence" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "subAccountType" : {
+            "type" : "string"
+          },
+          "postingType" : {
+            "type" : "string"
+          },
+          "amount" : {
+            "type" : "number"
+          },
+          "prisonEntries" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TransactionEntry"
+            }
+          }
+        },
+        "required" : [ "amount", "postingType", "prisonEntries", "subAccountType", "transactionSequence" ]
+      },
+      "PrisonerTransactionSummary" : {
+        "type" : "object",
+        "properties" : {
+          "prisonId" : {
+            "type" : "string"
+          },
+          "nomisTransactionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "entryDateTime" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "entries" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PrisonerTransactionEntry"
+            }
+          }
+        },
+        "required" : [ "entries", "entryDateTime", "nomisTransactionId", "prisonId" ]
+      },
+      "TransactionEntry" : {
+        "type" : "object",
+        "properties" : {
+          "accountCode" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "postingType" : {
+            "type" : "string"
+          },
+          "amount" : {
+            "type" : "number"
+          },
+          "entrySequence" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "accountCode", "amount", "entrySequence", "postingType" ]
+      },
+      "AccountFields" : {
+        "type" : "object",
+        "properties" : {
+          "accountCode" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "balance" : {
+            "type" : "number"
+          },
+          "holdBalance" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "accountCode", "balance" ]
+      },
+      "BalanceFields" : {
+        "type" : "object",
+        "properties" : {
+          "prisonNumber" : {
+            "type" : "string"
+          },
+          "accounts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AccountFields"
+            }
+          }
+        },
+        "required" : [ "accounts", "prisonNumber" ]
+      },
+      "MismatchPrisonerBalance" : {
+        "type" : "object",
+        "properties" : {
+          "nomis" : {
+            "$ref" : "#/components/schemas/BalanceFields"
+          },
+          "dps" : {
+            "$ref" : "#/components/schemas/BalanceFields"
+          },
+          "differences" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Difference"
+            }
+          }
+        },
+        "required" : [ "differences", "dps", "nomis" ]
+      },
+      "ReconciliationResultMismatchPrisonerBalance" : {
+        "type" : "object",
+        "properties" : {
+          "mismatches" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MismatchPrisonerBalance"
+            }
+          },
+          "itemsChecked" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pagesChecked" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "itemsChecked", "mismatches", "pagesChecked" ]
+      },
+      "DpsStaffDetails" : {
+        "type" : "object",
+        "properties" : {
+          "user" : {
+            "$ref" : "#/components/schemas/DpsUser"
+          },
+          "accounts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MigratedUserAccount"
+            }
+          },
+          "roles" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MigratedUserRole"
+            }
+          },
+          "accessibleCaseloads" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MigratedUserAccessibleCaseload"
+            }
+          }
+        },
+        "required" : [ "accounts", "user" ]
+      },
+      "DpsUser" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "firstName" : {
+            "type" : "string"
+          },
+          "lastName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "ACTIVE", "INACTIVE" ]
+          }
+        },
+        "required" : [ "email", "firstName", "id", "lastName", "status" ]
+      },
+      "MigratedUserAccessibleCaseload" : {
+        "type" : "object",
+        "properties" : {
+          "username" : {
+            "type" : "string"
+          },
+          "caseloadId" : {
+            "type" : "string"
+          },
+          "createdTimestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createdBy" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "caseloadId", "createdBy", "createdTimestamp", "username" ]
+      },
+      "MigratedUserAccount" : {
+        "type" : "object",
+        "properties" : {
+          "username" : {
+            "type" : "string"
+          },
+          "accountType" : {
+            "type" : "string",
+            "enum" : [ "ADMIN", "GENERAL" ]
+          },
+          "accountStatus" : {
+            "type" : "string",
+            "enum" : [ "OPEN", "EXPIRED", "EXPIRED_GRACE", "LOCKED_TIMED", "LOCKED", "EXPIRED_LOCKED_TIMED", "EXPIRED_GRACE_LOCKED_TIMED", "EXPIRED_LOCKED", "EXPIRED_GRACE_LOCKED" ]
+          },
+          "createdTimestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createdBy" : {
+            "type" : "string"
+          },
+          "lastLoggedIn" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "activeCaseloadId" : {
+            "type" : "string"
+          },
+          "modifiedTimestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "modifiedBy" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "accountStatus", "accountType", "createdBy", "createdTimestamp", "username" ]
+      },
+      "MigratedUserRole" : {
+        "type" : "object",
+        "properties" : {
+          "username" : {
+            "type" : "string"
+          },
+          "roleCode" : {
+            "type" : "string"
+          },
+          "createdTimestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createdBy" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "createdBy", "createdTimestamp", "roleCode", "username" ]
+      },
+      "DpsStaffId" : {
+        "type" : "object",
+        "properties" : {
+          "staffId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "staffId" ]
+      },
+      "PageMetadata" : {
+        "type" : "object",
+        "properties" : {
+          "size" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "PagedModelDpsStaffId" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DpsStaffId"
+            }
+          },
+          "page" : {
+            "$ref" : "#/components/schemas/PageMetadata"
+          }
+        }
+      },
+      "MismatchPrisonTransaction" : {
+        "type" : "object",
+        "properties" : {
+          "nomisTransactionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "dpsTransactionId" : {
+            "type" : "string"
+          },
+          "differences" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "differences", "dpsTransactionId", "nomisTransactionId" ]
+      },
+      "MismatchBalance" : {
+        "type" : "object",
+        "properties" : {
+          "accountCode" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "nomisBalance" : {
+            "type" : "number"
+          },
+          "dpsBalance" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "accountCode", "dpsBalance", "nomisBalance" ]
+      },
+      "MismatchPrisonBalance" : {
+        "type" : "object",
+        "properties" : {
+          "prisonId" : {
+            "type" : "string"
+          },
+          "dpsAccountCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "nomisAccountCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "missingFromNomis" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "missingFromDps" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int32"
+            }
+          },
+          "balanceMismatches" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MismatchBalance"
+            }
+          },
+          "verdict" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "balanceMismatches", "dpsAccountCount", "missingFromDps", "missingFromNomis", "nomisAccountCount", "prisonId", "verdict" ]
+      },
+      "MismatchPersonContacts" : {
+        "type" : "object",
+        "properties" : {
+          "personId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "dpsSummary" : {
+            "$ref" : "#/components/schemas/PersonSummary"
+          },
+          "nomisSummary" : {
+            "$ref" : "#/components/schemas/PersonSummary"
+          }
+        },
+        "required" : [ "personId" ]
+      },
+      "PersonContactRestrictionSummary" : {
+        "type" : "object",
+        "properties" : {
+          "restrictionType" : {
+            "type" : "string"
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "expiryDate" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        },
+        "required" : [ "restrictionType" ]
+      },
+      "PersonSummary" : {
+        "type" : "object",
+        "properties" : {
+          "personId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "firstName" : {
+            "type" : "string"
+          },
+          "lastName" : {
+            "type" : "string"
+          },
+          "dateOfBirth" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "addressCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "phoneNumbers" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            },
+            "uniqueItems" : true
+          },
+          "emailAddresses" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            },
+            "uniqueItems" : true
+          },
+          "identifiers" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            },
+            "uniqueItems" : true
+          },
+          "employmentOrganisations" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            },
+            "uniqueItems" : true
+          },
+          "addressPhoneNumbers" : {
+            "type" : "array",
+            "items" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string"
+              },
+              "uniqueItems" : true
+            },
+            "uniqueItems" : true
+          },
+          "prisonerContacts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PrisonerRelationship"
+            },
+            "uniqueItems" : true
+          },
+          "restrictions" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonContactRestrictionSummary"
+            },
+            "uniqueItems" : true
+          }
+        },
+        "required" : [ "addressCount", "addressPhoneNumbers", "emailAddresses", "employmentOrganisations", "firstName", "identifiers", "lastName", "personId", "phoneNumbers", "prisonerContacts", "restrictions" ]
+      },
+      "PrisonerRelationship" : {
+        "type" : "object",
+        "properties" : {
+          "offenderNo" : {
+            "type" : "string"
+          },
+          "relationshipType" : {
+            "type" : "string"
+          },
+          "active" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "active", "offenderNo", "relationshipType" ]
+      },
+      "MismatchNonAssociation" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/NonAssociationIdResponse"
+          },
+          "nomisNonAssociation" : {
+            "$ref" : "#/components/schemas/NonAssociationReportDetail"
+          },
+          "dpsNonAssociation" : {
+            "$ref" : "#/components/schemas/NonAssociationReportDetail"
+          }
+        },
+        "required" : [ "id" ]
+      },
+      "NonAssociationIdResponse" : {
+        "type" : "object",
+        "properties" : {
+          "offenderNo1" : {
+            "type" : "string"
+          },
+          "offenderNo2" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "offenderNo1", "offenderNo2" ]
+      },
+      "NonAssociationReportDetail" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          },
+          "createdDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "expiryDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "closed" : {
+            "type" : "boolean"
+          },
+          "roleReason" : {
+            "type" : "string"
+          },
+          "roleReason2" : {
+            "type" : "string"
+          },
+          "dpsReason" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "createdDate", "roleReason", "roleReason2", "type" ]
+      },
+      "IncidentReportDetail" : {
+        "type" : "object",
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          },
+          "reportedBy" : {
+            "type" : "string"
+          },
+          "reportedDateTime" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "offenderParties" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "totalStaffParties" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalQuestions" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalRequirements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalResponses" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "reportedBy", "reportedDateTime" ]
+      },
+      "MismatchIncident" : {
+        "type" : "object",
+        "properties" : {
+          "nomisId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "dpsId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "nomisIncident" : {
+            "$ref" : "#/components/schemas/IncidentReportDetail"
+          },
+          "dpsIncident" : {
+            "$ref" : "#/components/schemas/IncidentReportDetail"
+          },
+          "verdict" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "nomisId", "verdict" ]
+      },
+      "MismatchedPrisonerCourtMovements" : {
+        "type" : "object",
+        "properties" : {
+          "offenderNo" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "offenderNo", "type" ]
+      },
+      "MismatchPrisonerTapsSummary" : {
+        "type" : "object",
+        "properties" : {
+          "offenderNo" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "AUTHORISATIONS", "OCCURRENCES", "SCHEDULED_OUT", "SCHEDULED_IN", "UNSCHEDULED_OUT", "UNSCHEDULED_IN" ]
+          },
+          "dpsCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "nomisCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "dpsCount", "nomisCount", "offenderNo", "type" ]
+      },
+      "MismatchPrisonerTaps" : {
+        "type" : "object",
+        "properties" : {
+          "offenderNo" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "offenderNo", "type" ]
+      },
+      "CSIPReportSummary" : {
+        "type" : "object",
+        "properties" : {
+          "incidentTypeCode" : {
+            "type" : "string"
+          },
+          "incidentDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "incidentTime" : {
+            "type" : "string"
+          },
+          "attendeeCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "factorCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "interviewCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "planCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "reviewCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "scsOutcomeCode" : {
+            "type" : "string"
+          },
+          "decisionOutcomeCode" : {
+            "type" : "string"
+          },
+          "csipClosedFlag" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "attendeeCount", "csipClosedFlag", "factorCount", "incidentTypeCode", "interviewCount", "planCount", "reviewCount" ]
+      },
+      "MismatchCSIPs" : {
+        "type" : "object",
+        "properties" : {
+          "offenderNo" : {
+            "type" : "string"
+          },
+          "nomisCSIPCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "dpsCSIPCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "missingFromDps" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CSIPReportSummary"
+            },
+            "uniqueItems" : true
+          },
+          "missingFromNomis" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CSIPReportSummary"
+            },
+            "uniqueItems" : true
+          }
+        },
+        "required" : [ "dpsCSIPCount", "missingFromDps", "missingFromNomis", "nomisCSIPCount", "offenderNo" ]
+      },
+      "MismatchCorePerson" : {
+        "type" : "object",
+        "properties" : {
+          "prisonNumber" : {
+            "type" : "string"
+          },
+          "differences" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "differences", "prisonNumber" ]
+      },
+      "MismatchCaseNote" : {
+        "type" : "object",
+        "properties" : {
+          "offenderNo" : {
+            "type" : "string"
+          },
+          "diffsForDps" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            },
+            "uniqueItems" : true
+          },
+          "diffsForNomis" : {
+            "type" : "array",
+            "items" : {
+              "type" : "integer",
+              "format" : "int64"
+            },
+            "uniqueItems" : true
+          },
+          "notes" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "diffsForDps", "diffsForNomis", "notes", "offenderNo" ]
+      }
+    },
+    "securitySchemes" : {
+      "bearer-jwt" : {
+        "type" : "http",
+        "description" : "An HMPPS Auth access token.",
+        "name" : "Authorization",
+        "in" : "header",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT"
+      }
+    }
+  }
+}
