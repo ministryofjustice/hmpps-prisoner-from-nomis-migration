@@ -4,6 +4,7 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEvent
@@ -34,6 +35,7 @@ class CourtSchedulerSyncScheduleService(
   private val sentencingMappingApi: CourtSentencingMappingApiService,
   private val nomisApi: CourtSchedulerNomisApiService,
   private val dpsApi: CourtSchedulerDpsApiService,
+  private val nomisSyncApi: CourtSchedulerNomisSyncApiService,
 ) : TelemetryEnabled {
 
   companion object {
@@ -156,12 +158,35 @@ class CourtSchedulerSyncScheduleService(
       "nomisEventId" to eventId,
       "directionCode" to directionCode,
     )
+
+    fun Exception.trackAndRethrow(): Nothing {
+      telemetry["error"] = message ?: "Unknown error"
+      telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-error", telemetry)
+      throw this
+    }
+
     mappingApi.getCourtScheduleMappingOrNull(eventId)?.also {
-      track("${TELEMETRY_PREFIX}-deleted", telemetry) {
+      try {
         telemetry["dpsCourtAppearanceId"] = it.dpsCourtAppearanceId
         dpsApi.deleteCourtEvent(it.dpsCourtAppearanceId)
         mappingApi.deleteCourtScheduleMapping(eventId)
       }
+      // A conflict from DPS always means we should try to recreate the court schedule
+      catch (_: WebClientResponseException.Conflict) {
+        try {
+          nomisSyncApi.recreateCourtScheduleInNomis(prisonerNumber, it.dpsCourtAppearanceId)
+          telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-recreated", telemetry)
+          return
+        } catch (ex: Exception) {
+          ex.trackAndRethrow()
+        }
+      }
+      // Any other error means we failed
+      catch (ex: Exception) {
+        ex.trackAndRethrow()
+      }
+
+      telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-success", telemetry)
     } ?: run { telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-ignored", telemetry) }
   }
 

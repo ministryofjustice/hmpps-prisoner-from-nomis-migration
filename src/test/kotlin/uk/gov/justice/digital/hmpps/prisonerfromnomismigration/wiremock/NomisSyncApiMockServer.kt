@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 
 class NomisSyncApiExtension :
   BeforeAllCallback,
@@ -19,6 +20,13 @@ class NomisSyncApiExtension :
     @JvmField
     val nomisSyncApi = NomisSyncApiMockServer()
     lateinit var jsonMapper: JsonMapper
+
+    private var enableResetBeforeEach = true
+
+    fun resetAndDisableResetBeforeEach() {
+      enableResetBeforeEach = false
+      nomisApi.resetAll()
+    }
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -27,7 +35,7 @@ class NomisSyncApiExtension :
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    nomisSyncApi.resetAll()
+    if (enableResetBeforeEach) nomisSyncApi.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {
