@@ -39,16 +39,27 @@ class TransactionEventListener(
             val messageId = UUID.fromString(sqsMessage.MessageId)
             when (eventType) {
               // NOTE: Several inserts per second!
-              "OFFENDER_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.transactionInserted(
+              "OFFENDER_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.prisonerTransactionInserted(
                 sqsMessage.Message.fromJson(),
                 messageId,
               )
-              "OFFENDER_TRANSACTIONS-UPDATED" -> transactionSynchronisationService.transactionUpdated(
+              "OFFENDER_TRANSACTIONS-UPDATED" -> transactionSynchronisationService.prisonerTransactionUpdated(
                 sqsMessage.Message.fromJson(),
                 messageId,
               )
               // extremely rare (only happened 61 times ever according to oms_deleted_rows, mostly by scripts)
               // "OFFENDER_TRANSACTIONS-DELETED"
+              // TODO Waiting for DPS to decide whether to intercept this event
+              "GL_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.glTransactionInserted(
+                sqsMessage.Message.fromJson(),
+                messageId,
+              )
+              "GL_TRANSACTIONS-UPDATED" -> transactionSynchronisationService.glTransactionUpdated(
+                sqsMessage.Message.fromJson(),
+                messageId,
+              )
+              // extremely rare (only happened once at 11-AUG-2021 10:39:26.470007000 according to oms_deleted_rows, 8 deleted)
+              // GL_TRANSACTIONS-DELETED"
               // TODO Waiting for DPS to decide whether to intercept this event
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)

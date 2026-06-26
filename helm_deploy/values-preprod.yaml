@@ -31,9 +31,6 @@ generic-service:
     API_BASE_URL_MOVEMENTS_TAPS: https://external-movements-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_MOVEMENTS_COURT: https://court-appearance-scheduler-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_OFFICIALVISITS: https://official-visits-api-preprod.hmpps.service.justice.gov.uk
-    FEATURE_EVENT_GL_TRANSACTIONS-INSERTED: false
-    FEATURE_EVENT_GL_TRANSACTIONS-UPDATED: false
-    FEATURE_EVENT_GL_TRANSACTIONS-DELETED: false
     CONTACT-SENTENCING_COURT-EVENT-UPDATE_IGNORE-MISSING: true
 
   scheduledDowntime:
