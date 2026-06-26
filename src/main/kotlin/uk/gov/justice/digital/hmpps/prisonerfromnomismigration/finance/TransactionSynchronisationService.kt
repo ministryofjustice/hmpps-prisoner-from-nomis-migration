@@ -62,7 +62,7 @@ class TransactionSynchronisationService(
     }
   }
 
-  suspend fun transactionInserted(event: TransactionEvent, requestId: UUID) {
+  suspend fun prisonerTransactionInserted(event: TransactionEvent, requestId: UUID) {
     if (event.originatesInDps) {
       telemetryClient.trackEvent("transactions-synchronisation-created-skipped", event.toTelemetryProperties())
       return
@@ -70,7 +70,7 @@ class TransactionSynchronisationService(
     transactionIdCheck(event, requestId)
   }
 
-  suspend fun transactionUpdated(event: TransactionEvent, requestId: UUID) {
+  suspend fun prisonerTransactionUpdated(event: TransactionEvent, requestId: UUID) {
     if (event.originatesInDps) {
       telemetryClient.trackEvent("transactions-synchronisation-updated-skipped", event.toTelemetryProperties())
       return
@@ -114,7 +114,13 @@ class TransactionSynchronisationService(
     val mapping = transactionMappingService.getMappingGivenNomisIdOrNull(nomisTransactionId)
     val nomisTransactions = nomisApiService.getPrisonerTransactions(nomisTransactionId)
     if (nomisTransactions.isEmpty()) {
-      throw NotFoundException("No Prisoner transactions found in nomis for transactionId=$nomisTransactionId")
+      // We just have gl_transactions, with no associated offender_transaction - so ignore
+      telemetryClient.trackEvent(
+        "transactions-synchronisation-gl-$eventType-ignored",
+        event.toTelemetryProperties(
+          mappingFailed = false,
+        ),
+      )
     } else {
       financeService.syncPrisonerTransactions(
         nomisTransactions.toSyncOffenderTransactionRequest(requestId),
@@ -142,6 +148,34 @@ class TransactionSynchronisationService(
           }
         }
     }
+  }
+
+  suspend fun glTransactionInserted(event: GLTransactionEvent, requestId: UUID) {
+    if (event.originatesInDps) {
+      val telemetry = event.toTransactionEvent().toTelemetryProperties() +
+        mapOf("glSequence" to event.gLEntrySequence.toString())
+      telemetryClient.trackEvent("transactions-synchronisation-created-skipped", telemetry)
+      return
+    }
+    transactionIdCheck(event.toTransactionEvent(), requestId)
+  }
+
+  suspend fun glTransactionUpdated(event: GLTransactionEvent, requestId: UUID) {
+    if (event.originatesInDps) {
+      val telemetry = event.toTransactionEvent().toTelemetryProperties() +
+        mapOf("glSequence" to event.gLEntrySequence.toString())
+      telemetryClient.trackEvent("transactions-synchronisation-updated-skipped", telemetry)
+      return
+    }
+
+    transactionMappingService.getMappingGivenNomisIdOrNull(event.transactionId)
+      ?.let {
+        transactionIdCheck(event.toTransactionEvent(), requestId, "updated")
+      }
+      ?: run {
+        telemetryClient.trackEvent("transactions-synchronisation-updated-failed", event.toTransactionEvent().toTelemetryProperties())
+        throw IllegalStateException("Received GL_TRANSACTIONS-UPDATED for a transaction that has never been created")
+      }
   }
 
   enum class MappingResponse {
@@ -224,6 +258,15 @@ private fun GeneralLedgerTransactionDto.toTransactionEvent() = TransactionEvent(
   offenderIdDisplay = null,
   bookingId = null,
   auditModuleName = null,
+)
+
+private fun GLTransactionEvent.toTransactionEvent() = TransactionEvent(
+  transactionId = transactionId,
+  entrySequence = entrySequence,
+  caseload = caseload,
+  offenderIdDisplay = offenderIdDisplay,
+  bookingId = bookingId,
+  auditModuleName = auditModuleName,
 )
 
 private fun assertMappingExistenceMatchesAction(
