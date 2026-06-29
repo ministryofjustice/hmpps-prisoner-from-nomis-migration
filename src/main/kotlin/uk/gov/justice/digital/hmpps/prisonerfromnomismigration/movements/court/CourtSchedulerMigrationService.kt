@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ConflictException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.AtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtEvent
@@ -213,9 +214,14 @@ fun OffenderCourtMovementsResponse.toDpsRequest(
           eventId = schedule.eventId,
           commentText = schedule.comment,
           currentTerm = booking.latestBooking,
-          externalReferenceUrn = sentencingMappings.find { it.nomisCourtAppearanceId == schedule.eventId }
-            ?.dpsCourtAppearanceId
-            ?.let { "$EXTERNAL_REF_PREFIX$it" },
+          externalReferenceUrn = if (schedule.courtCaseId != null) {
+            sentencingMappings.find { it.nomisCourtAppearanceId == schedule.eventId }
+              ?.dpsCourtAppearanceId
+              ?.let { "$EXTERNAL_REF_PREFIX$it" }
+              ?: throw ConflictException("Could not find a sentencing mapping for eventId=${schedule.eventId} but there is a court case so we expect one")
+          } else {
+            null
+          },
         ),
         created = AtAndBy(schedule.audit.createDatetime, schedule.audit.createUsername.toDpsUser()),
         modified = schedule.audit.modifyDatetime?.let { AtAndBy(it, schedule.audit.modifyUserId!!.toDpsUser()) },

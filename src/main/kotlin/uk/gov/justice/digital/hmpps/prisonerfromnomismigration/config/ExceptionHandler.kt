@@ -90,6 +90,19 @@ class HmppsPrisonerFromNomisMigrationExceptionHandler {
       ),
   ).also { log.info("Bad request returned from downstream service: {}", e.message) }
 
+  @ExceptionHandler(ConflictException::class)
+  fun handleConflict(e: ConflictException): Mono<ResponseEntity<ErrorResponse>> = Mono.just(
+    ResponseEntity
+      .status(HttpStatus.CONFLICT.value())
+      .body(
+        ErrorResponse(
+          status = HttpStatus.CONFLICT.value(),
+          userMessage = "Conflict: ${e.message}",
+          developerMessage = e.message,
+        ),
+      ),
+  ).also { log.info("Conflict: {}", e.message) }
+
   @ExceptionHandler(MoveActivityStartDatesException::class)
   fun handleBadRequest(e: MoveActivityStartDatesException): Mono<ResponseEntity<ErrorResponse>> = Mono.just(
     ResponseEntity
@@ -126,3 +139,4 @@ data class ErrorResponse(
 }
 
 class BadRequestException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+class ConflictException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)

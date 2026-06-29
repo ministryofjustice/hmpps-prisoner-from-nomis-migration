@@ -580,6 +580,78 @@ class CourtSchedulerMigrationIntTest(
     }
 
     @Nested
+    inner class ErrorIfExternalReferenceDoesNotExist {
+      @BeforeEach
+      fun setUp() = runTest {
+        mappingApi.stubGetCourtSchedulerPrisonerMappingIds(prisonerNumber, 12345L, 1, dpsCourtScheduleId, 3, dpsScheduledMovementOutId, 4, dpsScheduledMovementInId, 1, dpsUnscheduledMovementOutId, 2, dpsUnscheduledMovementInId)
+        nomisApi.stubGetOffenderCourtMovements(prisonerNumber)
+        // The NOMIS response has a court case but there is no court sentencing mapping
+        sentencingMappingApi.stubGetAllCourtAppearanceByNomisIds(mappings = listOf())
+      }
+
+      @Test
+      fun `should return conflict`() {
+        repairPrisoner(prisonerNumber)
+          .expectStatus().isEqualTo(409)
+      }
+
+      @Test
+      fun `should check for existing mappings`() {
+        repairPrisoner(prisonerNumber)
+
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/A0001KT/ids")))
+      }
+
+      @Test
+      fun `should get NOMIS court movement details`() {
+        repairPrisoner(prisonerNumber)
+
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A0001KT/court")))
+      }
+
+      @Test
+      fun `should get RaS court sentencing mappings`() {
+        repairPrisoner(prisonerNumber)
+
+        sentencingMappingApi.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances/nomis-court-appearance-ids/get-list")),
+        )
+      }
+
+      @Test
+      fun `should NOT call DPS resync API`() {
+        repairPrisoner(prisonerNumber)
+
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")))
+      }
+
+      @Test
+      fun `should NOT update mappings`() {
+        repairPrisoner(prisonerNumber)
+
+        mappingApi.verify(
+          count = 0,
+          putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/migrate"))
+            .withRequestBodyJsonPath("offenderNo", "A0001KT"),
+        )
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        repairPrisoner(prisonerNumber)
+
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-migration-entity-failed"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+            assertThat(it["reason"]).isEqualTo("Could not find a sentencing mapping for eventId=1 but there is a court case so we expect one")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
     inner class Security {
 
       @Test
