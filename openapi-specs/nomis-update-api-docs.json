@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-06-26.4012.0ff1025"
+    "version" : "2026-06-26.4017.9649b8e"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -95,6 +95,60 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/court-sentencing/dps-court-case/{courtCaseId}/dps-appearance/{appearanceId}/repair" : {
+      "put" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "summary" : "Resynchronises an appearance for an appearance from DPS to NOMIS",
+        "description" : "Used when an appearance with an existing mapping needs resynchronising to nomis, so emergency use only. Mappings should all exist. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairAppearanceUpdateToNomis",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "courtCaseId",
+          "in" : "path",
+          "description" : "The DPS ID of the related court case",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related court case"
+          }
+        }, {
+          "name" : "appearanceId",
+          "in" : "path",
+          "description" : "The DPS ID of the appearance to be resynchronised",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the appearance to be resynchronised"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "repair successful",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtCaseRepairResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : { }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to call endpoint",
+            "content" : { }
           }
         }
       }
@@ -380,7 +434,7 @@
         "tags" : [ "Court Sentencing Update Resource" ],
         "summary" : "Resynchronises a charge for an appearance from DPS to NOMIS",
         "description" : "Used when a charge with an existing mapping needs resynchronising to nomis, so emergency use only. Mappings should all exist. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
-        "operationId" : "repairCourtUpdateInNomis",
+        "operationId" : "repairCourtChargeUpdateInNomis",
         "parameters" : [ {
           "name" : "offenderNo",
           "in" : "path",
@@ -437,6 +491,71 @@
           },
           "404" : {
             "description" : "Either mapping not found for case/appearance/charge or case/appearance/sentence not found in DPS",
+            "content" : { }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "summary" : "Resynchronises a charge insert from DPS to NOMIS",
+        "description" : "Used when a charge insert needs resynchronising to NOMIS which failed previously or was erroneously deleted, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairChargeInsertInNomis",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "courtCaseId",
+          "in" : "path",
+          "description" : "The DPS ID of the related court case",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related court case"
+          }
+        }, {
+          "name" : "appearanceId",
+          "in" : "path",
+          "description" : "The DPS ID of the related appearance",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related appearance"
+          }
+        }, {
+          "name" : "chargeId",
+          "in" : "path",
+          "description" : "The DPS ID of the charge to be re-synced to NOMIS",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the charge to be re-synced to NOMIS"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "repair successful",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtCaseRepairResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : { }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to call endpoint",
+            "content" : { }
+          },
+          "404" : {
+            "description" : "Either mapping found for case/appearance or case/appearance/charge not found in DPS",
             "content" : { }
           }
         }
@@ -1511,30 +1630,6 @@
             "type" : "string"
           }
         } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : { }
-          }
-        }
-      }
-    },
-    "/court-sentencing/court-charges/repair" : {
-      "post" : {
-        "tags" : [ "Court Sentencing Update Resource" ],
-        "summary" : "Resynchronises a charge.inserted from DPS to NOMIS",
-        "description" : "Used when DPS is in the correct state but NOMIS is wrong, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
-        "operationId" : "chargeInserted",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/CourtChargeRequest"
-              }
-            }
-          },
-          "required" : true
-        },
         "responses" : {
           "200" : {
             "description" : "OK",
@@ -3192,22 +3287,6 @@
           }
         },
         "required" : [ "createdBy", "createdTime", "officialVisitorId" ]
-      },
-      "CourtChargeRequest" : {
-        "type" : "object",
-        "description" : "Court Charge Request",
-        "properties" : {
-          "offenderNo" : {
-            "type" : "string"
-          },
-          "dpsChargeId" : {
-            "type" : "string"
-          },
-          "dpsCaseId" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "dpsCaseId", "dpsChargeId", "offenderNo" ]
       },
       "MismatchVisitBalance" : {
         "type" : "object",
