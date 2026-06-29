@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-06-10.238.bc2068f"
+    "version" : "2026-06-29.262.b71613e"
   },
   "servers" : [ {
     "url" : "/",
@@ -756,7 +756,7 @@
           "type" : {
             "type" : "string",
             "description" : "The type of assessment",
-            "enum" : [ "FULL", "HEALTH", "LOCATE", "RATING", "RECEPTION", "REVIEW" ],
+            "enum" : [ "FULL", "HEALTH", "LOCATE", "RATING", "RECEPTION", "REVIEW", "CSRA_INITIAL_REVIEW", "CSRA_REVIEW" ],
             "example" : "RATING"
           },
           "interimResult" : {
