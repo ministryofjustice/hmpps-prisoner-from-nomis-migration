@@ -34,7 +34,8 @@ generic-service:
     CONTACT-SENTENCING_COURT-EVENT-UPDATE_IGNORE-MISSING: true
 
   scheduledDowntime:
-    enabled: true
+    # Temporarily set to false to enable prisoner transaction reconciliation testing in preprod
+    enabled: false
     startup: '25 6 * * 1-5' # Start at 6.25am UTC Monday-Friday
     shutdown: '58 21 * * 1-5' # Stop at 9.58pm UTC Monday-Friday
 
