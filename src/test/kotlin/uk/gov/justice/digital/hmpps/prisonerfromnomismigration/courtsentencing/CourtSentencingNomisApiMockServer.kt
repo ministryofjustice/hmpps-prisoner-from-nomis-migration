@@ -312,6 +312,7 @@ class CourtSentencingNomisApiMockServer(private val jsonMapper: JsonMapper) {
       courtOrders = emptyList(),
       nextEventDateTime = nextEventDateTime,
       isClone = isClone,
+      commentText = "a new comment",
     ),
   ) {
     nomisApi.stubFor(

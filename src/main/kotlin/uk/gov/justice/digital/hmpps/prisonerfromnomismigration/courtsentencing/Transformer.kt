@@ -147,6 +147,7 @@ fun CourtEventResponse.toDpsCourtAppearance(
     nextEventDateTime = this.nextEventDateTime,
     appearanceTime = this.eventDateTime.toLocalTime().toString(),
     nomisAppearanceTypeCode = this.courtEventType.code,
+    comments = this.commentText,
   ),
   performedByUser = this.modifiedByUsername ?: this.createdByUsername,
 )
