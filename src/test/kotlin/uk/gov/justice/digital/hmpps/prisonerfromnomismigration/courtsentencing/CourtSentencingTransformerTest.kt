@@ -1,5 +1,11 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
+// import com.fasterxml.jackson.annotation.JsonInclude
+// import com.fasterxml.jackson.databind.ObjectMapper
+// import com.fasterxml.jackson.databind.SerializationFeature
+// import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+// import com.fasterxml.jackson.module.kotlin.readValue
+// import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -51,21 +57,25 @@ class CourtSentencingTransformerTest {
       }
     }
 
-    // @Test
-    // internal fun `local running test using real case data`() = runTest {
-    //   val json = this::class.java.getResource("/inputRecon.json")!!.readText()
-    //
-    //   val objectMapper = ObjectMapper()
-    //     .registerModule(JavaTimeModule())
-    //     .registerKotlinModule()
-    //     .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-    //     .configure(SerializationFeature.INDENT_OUTPUT, true)
-    //     .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-    //   val courtCaseResponse2: CourtCaseResponse = objectMapper.readValue(json)
-    //   courtCaseResponse2.toMigrationDpsCourtCase().apply {
-    //     assertThat(this.caseId).isEqualTo(NOMIS_COURT_CASE_ID)
-    //   }
-    // }
+    /* @Test
+     internal fun `local running test using real case data`() = runTest {
+       val json = this::class.java.getResource("/inputRecon.json")!!.readText()
+
+       val objectMapper = ObjectMapper()
+         .registerModule(JavaTimeModule())
+         .registerKotlinModule()
+         .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
+         .configure(SerializationFeature.INDENT_OUTPUT, true)
+         .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+       val courtCaseResponse2: SentenceResponse = objectMapper.readValue(json)
+       courtCaseResponse2.toDpsSentence(
+         dpsAppearanceUuid = "1b6d7606-727b-4155-a168-d3c195eacc78",
+         dpsConsecUuid = "1b6d7606-727b-4155-a168-d3c195eacc49",
+         sentenceChargeIds = emptyList(),
+       ).apply {
+         print(objectMapper.writeValueAsString(this))
+       }
+     }*/
 
     val courtCaseResponse = CourtCaseResponse(
       id = NOMIS_COURT_CASE_ID,

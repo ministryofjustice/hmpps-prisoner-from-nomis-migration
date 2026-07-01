@@ -1561,6 +1561,7 @@ class CourtSentencingSynchronisationIntTest(
               .withRequestBody(matchingJsonPath("legacyData.outcomeDescription", equalTo("Adjournment")))
               .withRequestBody(matchingJsonPath("legacyData.postedDate", not(WireMock.absent())))
               .withRequestBody(matchingJsonPath("legacyData.appearanceTime", equalTo("09:00")))
+              .withRequestBody(matchingJsonPath("legacyData.comments", equalTo("a new comment")))
               .withRequestBody(matchingJsonPath("courtCode", equalTo("MDI")))
               .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_COURT_CASE_ID)))
               .withRequestBody(matchingJsonPath("appearanceDate", equalTo("2020-01-02"))),
