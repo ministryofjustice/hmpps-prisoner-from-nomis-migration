@@ -875,6 +875,40 @@ class CourtSchedulerSyncScheduleIntTest(
         )
       }
     }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDirectionCodeIsNull {
+      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
+
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, dpsCourtAppearanceId = dpsCourtAppearanceId)
+        nomisApi.stubGetCourtScheduleOut("A1234BC", 123L)
+        dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
+
+        sendMessage(courtScheduleEvent("COURT_EVENTS-UPDATED", directionCode = null))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should update DPS court appearance`() {
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/court-appearances/A1234BC")))
+      }
+
+      @Test
+      fun `should create success telemetry with correct direction`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-schedule-updated-success"),
+          check {
+            assertThat(it["directionCode"]).isEqualTo("OUT")
+          },
+          isNull(),
+        )
+      }
+    }
   }
 
   @Nested
@@ -1139,6 +1173,40 @@ class CourtSchedulerSyncScheduleIntTest(
         )
       }
     }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDirectionCodeIsNull {
+      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
+
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, dpsCourtAppearanceId = dpsCourtAppearanceId)
+        mappingApi.stubDeleteCourtScheduleMapping(nomisEventId = 123L)
+        dpsApi.stubDeleteCourtEvent(dpsCourtAppearanceId)
+
+        sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED", directionCode = null))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should delete DPS court appearance`() {
+        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/court-appearances/$dpsCourtAppearanceId")))
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-schedule-deleted-success"),
+          check {
+            assertThat(it["directionCode"]).isEqualTo("OUT")
+          },
+          isNull(),
+        )
+      }
+    }
   }
 
   @Nested
@@ -1296,14 +1364,14 @@ class CourtSchedulerSyncScheduleIntTest(
     eventType: String,
     auditModuleName: String = "OCDCCASE",
     nomisEventType: String = eventType.replace("COURT_EVENTS", "COURT_EVENT"),
-    directionCode: String = "OUT",
+    directionCode: String? = "OUT",
     eventId: Long = 123,
   ) = // language=JSON
     """{
          "Type" : "Notification",
          "MessageId" : "57126174-e2d7-518f-914e-0056a63363b0",
          "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
-         "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2026-05-05T09:39:57\",\"nomisEventType\":\"$nomisEventType\",\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\",\"auditModuleName\":\"$auditModuleName\",\"eventId\":$eventId,\"caseId\":101112,\"isBreachHearing\":false,\"directionCode\":\"$directionCode\"}",
+         "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2026-05-05T09:39:57\",\"nomisEventType\":\"$nomisEventType\",\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\",\"auditModuleName\":\"$auditModuleName\",\"eventId\":$eventId,\"caseId\":101112,\"isBreachHearing\":false${directionCode?.let { """,\"directionCode\":\"$directionCode\"""" } ?: ""}}",
          "Timestamp" : "2025-09-02T09:19:03.998Z",
          "SignatureVersion" : "1",
          "Signature" : "eePe/HtUdMyeFriH6GJe4FAJjYhQFjohJOu0+t8qULvpaw+qsGBfolKYa83fARpGDZJf9ceKd6kYGwF+OVeNViXluqPeUyoWbJ/lOjCs1tvlUuceCLy/7+eGGxkNASKJ1sWdwhO5J5I8WKUq5vfyYgL/Mygae6U71Bc0H9I2uVkw7tUYg0ZQBMSkA8HpuLLAN06qR5ahJnNDDxxoV07KY6E2dy8TheEo2Dhxq8hicl272LxWKMifM9VfR+D1i1eZNXDGsvvHmMCjumpxxYAJmrU+aqUzAU2KnhoZJTfeZT+RV+ZazjPLqX52zwA47ZFcqzCBnmrU6XwuHT4gKJcj1Q==",

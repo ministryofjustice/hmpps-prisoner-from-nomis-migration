@@ -74,7 +74,7 @@ data class CourtScheduleEvent(
   val bookingId: Long,
   val offenderIdDisplay: String,
   val caseId: Long? = null,
-  val directionCode: DirectionCode,
+  val directionCode: DirectionCode = DirectionCode.OUT,
   override val auditModuleName: String,
 ) : EventAudited
 
