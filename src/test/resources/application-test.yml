@@ -28,11 +28,15 @@ api.base.url:
   officialvisits: http://localhost:8104
   csra: http://localhost:8105
   movements-court: http://localhost:8106
+  property: http://localhost:8107
 
 visits:
   page:
     size: 10
 appointments:
+  page:
+    size: 10
+property:
   page:
     size: 10
 activities:
@@ -130,6 +134,7 @@ officialvisits:
     count: 1
   page:
     size: 10
+
 spring:
   r2dbc:
     url: r2dbc:postgresql://localhost:5432/migration
@@ -200,6 +205,9 @@ hmpps.sqs:
       errorVisibilityTimeout: 0
     migrationappointments:
       errorVisibilityTimeout: 0
+    migrationproperty:
+      errorVisibilityTimeout: 0
+      dlqMaxReceiveCount: 2
     migrationcourtsentencing:
       errorVisibilityTimeout: 0
     migrationcoreperson:

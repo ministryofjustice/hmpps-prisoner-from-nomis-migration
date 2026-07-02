@@ -10,7 +10,6 @@ import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ActivityMigrationMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NomisDpsLocationMapping
 
 @Service
 class ActivitiesMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<ActivityMigrationMappingDto>(domainUrl = "/mapping/activities/migration", webClient) {
@@ -32,12 +31,6 @@ class ActivitiesMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
     }
     .retrieve()
     .bodyToMono<ActivityMigrationDetails>()
-    .awaitSingle()
-
-  suspend fun getDpsLocation(nomisLocationId: Long): NomisDpsLocationMapping = webClient.get()
-    .uri("/api/locations/nomis/{nomisLocationId}", nomisLocationId)
-    .retrieve()
-    .bodyToMono<NomisDpsLocationMapping>()
     .awaitSingle()
 
   override suspend fun getMigrationCount(migrationId: String): Long = countMigrationMappings(migrationId, includeIgnored = false)

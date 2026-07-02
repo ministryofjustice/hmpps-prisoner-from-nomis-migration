@@ -22,6 +22,9 @@ hmpps.sqs:
     migrationcsra:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    migrationproperty:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     migrationprisonbalance:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

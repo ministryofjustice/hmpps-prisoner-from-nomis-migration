@@ -1,0 +1,1361 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "HMPPS Prisoner Property API",
+    "description" : "API for viewing and managing prisoner's properties and its locations",
+    "contact" : {
+      "name" : "Move a prisoner Team",
+      "email" : "Moveaprisoner-gg@justice.gov.uk"
+    },
+    "version" : "2026-06-25.58.104ad66"
+  },
+  "servers" : [ {
+    "url" : "/",
+    "description" : "Current url"
+  } ],
+  "security" : [ {
+    "bearer-jwt" : [ "read", "write" ]
+  } ],
+  "tags" : [ {
+    "name" : "hmpps-queue-resource-async",
+    "description" : "Endpoints that are to be used by administrators only for managing SQS queues. All endpoints require the <b>QUEUE_ADMIN</b> role further information can be found in the <a href=\"https://github.com/ministryofjustice/hmpps-spring-boot-sqs\">hmpps-spring-boot-sqs</a> project"
+  } ],
+  "paths" : {
+    "/property-containers/{id}" : {
+      "get" : {
+        "tags" : [ "Property containers" ],
+        "summary" : "Get a single property container by its id",
+        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO.",
+        "operationId" : "getById",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "Property container id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "example" : "0196f1d3-9a1f-7c3a-9b2e-2c1f3a4b5c6d"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Property container returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyContainerDto"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__RO role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Property container not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      },
+      "put" : {
+        "tags" : [ "Property containers" ],
+        "summary" : "Update a property container",
+        "description" : "Replaces the container's mutable details (type, seal, location, proposed disposal date), recording any change in history. Requires role ROLE_PRISONER_PROPERTY__RW.",
+        "operationId" : "update",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "Property container id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "example" : "0196f1d3-9a1f-7c3a-9b2e-2c1f3a4b5c6d"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdatePropertyContainerRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Property container updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyContainerDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__RW role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Property container not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    },
+    "/sync/property-containers/upsert" : {
+      "post" : {
+        "tags" : [ "Sync with NOMIS" ],
+        "summary" : "Create or update a property container from a NOMIS change",
+        "description" : "Used by the NOMIS sync to keep DPS in step with ongoing NOMIS changes. Supply the DPS id to update an existing container, or omit it to create a new one. Requires role ROLE_PRISONER_PROPERTY__SYNC. Re-sending an unchanged snapshot makes no change.",
+        "operationId" : "upsert",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SyncPropertyContainerRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Container created or updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncPropertyContainerResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__SYNC role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The supplied DPS id does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    },
+    "/sync/property-containers/migrate" : {
+      "post" : {
+        "tags" : [ "Sync with NOMIS" ],
+        "summary" : "Migrate a property container from NOMIS",
+        "description" : "Used by the initial bulk migration from NOMIS. Behaves like upsert but raises no domain event, as migrated data is a one-off load that downstream systems do not need to be notified of. Requires role ROLE_PRISONER_PROPERTY__SYNC.",
+        "operationId" : "migrate",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SyncPropertyContainerRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Container migrated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncPropertyContainerResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__SYNC role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "The supplied DPS id does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    },
+    "/property-containers" : {
+      "post" : {
+        "tags" : [ "Property containers" ],
+        "summary" : "Create a new property container",
+        "description" : "Requires role ROLE_PRISONER_PROPERTY__RW. If `previousSealNumber` matches a container the prisoner has due for transfer out at another prison, that container is reconciled as the property arriving here on transfer: it is linked to the new record and deactivated (transferred).",
+        "operationId" : "create",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreatePropertyContainerRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Property container created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyContainerDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__RW role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "The seal number is already in use by another active container",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    },
+    "/property-containers/{id}/remove" : {
+      "post" : {
+        "tags" : [ "Property containers" ],
+        "summary" : "Remove a property container from active storage",
+        "description" : "Records the container as returned to the prisoner or transferred to another prison, taking it out of active storage and clearing its location. Requires role ROLE_PRISONER_PROPERTY__RW.",
+        "operationId" : "remove",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "Property container id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "example" : "0196f1d3-9a1f-7c3a-9b2e-2c1f3a4b5c6d"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RemoveContainerRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Property container removed",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyContainerDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__RW role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Property container not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Property container has already left active storage",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    },
+    "/property-containers/{id}/move" : {
+      "post" : {
+        "tags" : [ "Property containers" ],
+        "summary" : "Move a property container",
+        "description" : "Moves the container to an internal prison location or offsite to the Branston warehouse, recording the move in history. Requires role ROLE_PRISONER_PROPERTY__RW.",
+        "operationId" : "move",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "Property container id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "example" : "0196f1d3-9a1f-7c3a-9b2e-2c1f3a4b5c6d"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MoveContainerRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Property container moved (or already at the target location)",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyContainerDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__RW role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Property container not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Property container has already left active storage",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    },
+    "/property-containers/{id}/dispose" : {
+      "post" : {
+        "tags" : [ "Property containers" ],
+        "summary" : "Dispose of a property container",
+        "description" : "Records the container as disposed of (destroyed), taking it out of active storage and clearing its location. Requires role ROLE_PRISONER_PROPERTY__RW.",
+        "operationId" : "dispose",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "Property container id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "example" : "0196f1d3-9a1f-7c3a-9b2e-2c1f3a4b5c6d"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DisposeContainerRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Property container disposed",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyContainerDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__RW role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Property container not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Property container has already left active storage",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    },
+    "/property-containers/combine" : {
+      "post" : {
+        "tags" : [ "Property containers" ],
+        "summary" : "Combine containers into a new sealed container",
+        "description" : "Combines the property of two or more source containers into a single new sealed container. The sources must share one prisoner and prison (inherited by the new container) and are taken out of active storage (COMBINED). Requires role ROLE_PRISONER_PROPERTY__RW.",
+        "operationId" : "combine",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CombineContainersRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "New combined container created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyContainerDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request (mismatched or removed sources, fewer than two)",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__RW role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "A source container was not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "The seal number is already in use by another active container",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    },
+    "/sync/property-containers/{id}" : {
+      "get" : {
+        "tags" : [ "Sync with NOMIS" ],
+        "summary" : "Get a synced property container by its DPS id, for reconciliation",
+        "description" : "Requires role ROLE_PRISONER_PROPERTY__SYNC.",
+        "operationId" : "getSyncedContainerById",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "Property container id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "example" : "0196f1d3-9a1f-7c3a-9b2e-2c1f3a4b5c6d"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Property container returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyContainerDto"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__SYNC role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Property container not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    },
+    "/property-containers/prisoner/{prisonerNumber}" : {
+      "get" : {
+        "tags" : [ "Property containers" ],
+        "summary" : "Get the property containers held for a prisoner",
+        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO. Returns an empty list if the prisoner has no property containers.",
+        "operationId" : "getByPrisonerNumber",
+        "parameters" : [ {
+          "name" : "prisonerNumber",
+          "in" : "path",
+          "description" : "Prisoner (NOMS) number",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "([a-zA-Z][0-9]{4}[a-zA-Z]{2})"
+          },
+          "example" : "A1234BC"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Property containers returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PropertyContainerDto"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid prisoner number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__RO role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    },
+    "/property-containers/prison/{prisonId}" : {
+      "get" : {
+        "tags" : [ "Property containers" ],
+        "summary" : "Get the property containers held in a prison",
+        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO. Returns an empty list if the prison has no property containers.",
+        "operationId" : "getByPrisonId",
+        "parameters" : [ {
+          "name" : "prisonId",
+          "in" : "path",
+          "description" : "Id of the prison",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "^[A-Z]{2}I|ZZGHI$"
+          },
+          "example" : "LEI"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Property containers returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PropertyContainerDto"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid prison id",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__RO role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "ErrorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "errorCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "userMessage" : {
+            "type" : [ "string", "null" ]
+          },
+          "developerMessage" : {
+            "type" : [ "string", "null" ]
+          },
+          "moreInfo" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "status" ]
+      },
+      "UpdatePropertyContainerRequest" : {
+        "type" : "object",
+        "description" : "Updated details for a property container",
+        "properties" : {
+          "containerType" : {
+            "type" : "string",
+            "description" : "Type of container",
+            "enum" : [ "STANDARD", "EXCESS", "VALUABLES", "CONFISCATED" ],
+            "example" : "STANDARD"
+          },
+          "sealNumber" : {
+            "type" : "string",
+            "description" : "Seal number identifying the container",
+            "example" : "SN8842K1",
+            "minLength" : 1
+          },
+          "internalLocationId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Internal storage location id (locations-inside-prison-api), if known",
+            "example" : "11111111-1111-1111-1111-111111111111"
+          },
+          "proposedDisposalDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date the container is proposed to be disposed of, if any",
+            "example" : "2026-09-01"
+          }
+        },
+        "required" : [ "containerType", "sealNumber" ]
+      },
+      "PropertyContainerDto" : {
+        "type" : "object",
+        "description" : "A sealed container of a prisoner's property",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Unique id of the container",
+            "example" : "0196f1d3-9a1f-7c3a-9b2e-2c1f3a4b5c6d"
+          },
+          "prisonerNumber" : {
+            "type" : "string",
+            "description" : "Prisoner number the property belongs to",
+            "example" : "A1234BC"
+          },
+          "prisonId" : {
+            "type" : "string",
+            "description" : "Id of the prison holding the container",
+            "example" : "LEI"
+          },
+          "containerType" : {
+            "type" : "string",
+            "description" : "Type of container",
+            "enum" : [ "STANDARD", "EXCESS", "VALUABLES", "CONFISCATED" ],
+            "example" : "STANDARD"
+          },
+          "currentSealNumber" : {
+            "type" : [ "string", "null" ],
+            "description" : "Current seal number, derived from the most recent seal event",
+            "example" : "SEAL12345"
+          },
+          "currentStatus" : {
+            "type" : "string",
+            "description" : "Current status, derived from the most recent event",
+            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED" ],
+            "example" : "STORED"
+          },
+          "currentLocation" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Current internal location id, derived from the most recent move. Null when offsite at Branston, unrecorded, or disposed",
+            "example" : "11111111-1111-1111-1111-111111111111"
+          },
+          "currentLocationType" : {
+            "type" : [ "string", "null" ],
+            "description" : "Current storage location type (INTERNAL prison location or offsite BRANSTON), derived from the most recent move",
+            "enum" : [ "INTERNAL", "BRANSTON" ],
+            "example" : "INTERNAL"
+          },
+          "proposedDisposalDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date the container is proposed to be disposed of, if any",
+            "example" : "2026-09-01"
+          },
+          "removalOutcome" : {
+            "type" : [ "string", "null" ],
+            "description" : "Why the container left active storage (disposed, returned, transferred, combined), if it has",
+            "enum" : [ "DISPOSED", "RETURNED", "TRANSFERRED", "COMBINED" ],
+            "example" : "DISPOSED"
+          },
+          "removalDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date the container left active storage, if it has",
+            "example" : "2026-09-15"
+          },
+          "createDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When the container was created"
+          },
+          "createdByUserId" : {
+            "type" : "string",
+            "description" : "Id of the user who created the container",
+            "example" : "AUSER_GEN"
+          },
+          "archived" : {
+            "type" : "boolean",
+            "description" : "Whether the container is archived (hidden from normal reads, e.g. NOMIS inactive containers)",
+            "example" : false
+          }
+        },
+        "required" : [ "archived", "containerType", "createDateTime", "createdByUserId", "currentStatus", "id", "prisonId", "prisonerNumber" ]
+      },
+      "SyncPropertyContainerRequest" : {
+        "type" : "object",
+        "description" : "A NOMIS property container snapshot to migrate or sync into DPS",
+        "properties" : {
+          "nomisPropertyContainerId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "NOMIS PROPERTY_CONTAINER_ID",
+            "example" : 123456
+          },
+          "dpsId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Existing DPS container id. Null when creating/migrating a new container; supplied on update.",
+            "example" : "0196f1d3-9a1f-7c3a-9b2e-2c1f3a4b5c6d"
+          },
+          "prisonerNumber" : {
+            "type" : "string",
+            "description" : "Prisoner (NOMS) number, resolved by the caller from OFFENDER_BOOK_ID",
+            "example" : "A1234BC",
+            "pattern" : "[A-Za-z][0-9]{4}[A-Za-z]{2}"
+          },
+          "prisonId" : {
+            "type" : "string",
+            "description" : "NOMIS AGY_LOC_ID - establishment holding the container",
+            "example" : "LEI",
+            "minLength" : 1
+          },
+          "containerCode" : {
+            "type" : "string",
+            "description" : "NOMIS CONTAINER_CODE (PPTY_CNTNR reference)",
+            "enum" : [ "Bulk", "Valuables", "Confiscated", "Branston Storage", "For Destruction" ],
+            "example" : "Bulk"
+          },
+          "internalLocationId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "DPS locations-inside-prison-api location UUID for NOMIS INTERNAL_LOCATION_ID, resolved by the caller. Null if NOMIS had no location, or for 'Branston Storage' containers which are held offsite with no internal location.",
+            "example" : "11111111-1111-1111-1111-111111111111"
+          },
+          "sealMark" : {
+            "type" : [ "string", "null" ],
+            "description" : "NOMIS SEAL_MARK (free text, may be null or blank)",
+            "example" : "SN8842K1"
+          },
+          "proposedDisposalDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "NOMIS PROPOSED_DISPOSAL_DATE",
+            "example" : "2026-09-01"
+          },
+          "expiryDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "NOMIS EXPIRY_DATE - the date the container was disposed of",
+            "example" : "2026-09-15"
+          },
+          "createDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "NOMIS CREATE_DATETIME"
+          },
+          "createUsername" : {
+            "type" : "string",
+            "description" : "NOMIS CREATE_USER_ID",
+            "example" : "QWILLIS",
+            "minLength" : 1
+          },
+          "modifyDateTime" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "NOMIS MODIFY_DATETIME"
+          },
+          "modifyUsername" : {
+            "type" : [ "string", "null" ],
+            "description" : "NOMIS MODIFY_USER_ID",
+            "example" : "QWILLIS"
+          },
+          "active" : {
+            "type" : "boolean",
+            "default" : true,
+            "description" : "NOMIS ACTIVE_FLAG. False (inactive) archives the container - it is retained but hidden from normal reads.",
+            "example" : true
+          }
+        },
+        "required" : [ "containerCode", "createDateTime", "createUsername", "nomisPropertyContainerId", "prisonId", "prisonerNumber" ]
+      },
+      "SyncPropertyContainerResponse" : {
+        "type" : "object",
+        "description" : "The result of a property container sync/migrate upsert",
+        "properties" : {
+          "dpsId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The DPS container id - newly minted when CREATED, the existing id when UPDATED",
+            "example" : "0196f1d3-9a1f-7c3a-9b2e-2c1f3a4b5c6d"
+          },
+          "nomisPropertyContainerId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The NOMIS PROPERTY_CONTAINER_ID, echoed back so the caller can persist the mapping",
+            "example" : 123456
+          },
+          "mappingType" : {
+            "type" : "string",
+            "description" : "Whether a new DPS container was created or an existing one updated",
+            "enum" : [ "CREATED", "UPDATED" ],
+            "example" : "CREATED"
+          }
+        },
+        "required" : [ "dpsId", "mappingType", "nomisPropertyContainerId" ]
+      },
+      "CreatePropertyContainerRequest" : {
+        "type" : "object",
+        "description" : "Details for a new sealed property container",
+        "properties" : {
+          "prisonerNumber" : {
+            "type" : "string",
+            "description" : "Prisoner (NOMS) number the property belongs to",
+            "example" : "A1234BC",
+            "pattern" : "[A-Za-z][0-9]{4}[A-Za-z]{2}"
+          },
+          "prisonId" : {
+            "type" : "string",
+            "description" : "Id of the prison holding the container",
+            "example" : "LEI",
+            "minLength" : 1
+          },
+          "containerType" : {
+            "type" : "string",
+            "description" : "Type of container",
+            "enum" : [ "STANDARD", "EXCESS", "VALUABLES", "CONFISCATED" ],
+            "example" : "STANDARD"
+          },
+          "sealNumber" : {
+            "type" : "string",
+            "description" : "Seal number identifying the container",
+            "example" : "SN8842K1",
+            "minLength" : 1
+          },
+          "previousSealNumber" : {
+            "type" : [ "string", "null" ],
+            "description" : "If this container is arriving on transfer from another establishment, the seal it was recorded under there (its 'due for transfer out' seal). Used to link to and deactivate that record so no ghost record is left behind. Leave blank for genuinely new property.",
+            "example" : "SN8842K1"
+          },
+          "internalLocationId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Internal storage location id (locations-inside-prison-api), if known",
+            "example" : "11111111-1111-1111-1111-111111111111"
+          },
+          "proposedDisposalDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date the container is proposed to be disposed of, if any",
+            "example" : "2026-09-01"
+          }
+        },
+        "required" : [ "containerType", "prisonId", "prisonerNumber", "sealNumber" ]
+      },
+      "RemoveContainerRequest" : {
+        "type" : "object",
+        "description" : "Details for removing a property container from active storage by returning it to the prisoner or transferring it",
+        "properties" : {
+          "outcome" : {
+            "type" : "string",
+            "description" : "Why the container is being removed - must be RETURNED or TRANSFERRED (use the dispose endpoint for disposals)",
+            "enum" : [ "DISPOSED", "RETURNED", "TRANSFERRED", "COMBINED" ],
+            "example" : "RETURNED"
+          },
+          "date" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date the container was removed; defaults to today when omitted",
+            "example" : "2026-09-15"
+          },
+          "toPrisonId" : {
+            "type" : [ "string", "null" ],
+            "description" : "Destination prison id - required when the outcome is TRANSFERRED",
+            "example" : "MDI"
+          }
+        },
+        "required" : [ "outcome" ]
+      },
+      "MoveContainerRequest" : {
+        "type" : "object",
+        "description" : "Details for moving a property container",
+        "properties" : {
+          "locationType" : {
+            "type" : "string",
+            "description" : "Where the container is being moved to - an INTERNAL prison location or the offsite BRANSTON warehouse",
+            "enum" : [ "INTERNAL", "BRANSTON" ],
+            "example" : "BRANSTON"
+          },
+          "internalLocationId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Internal storage location id (locations-inside-prison-api) - required for an INTERNAL move, omitted for BRANSTON",
+            "example" : "11111111-1111-1111-1111-111111111111"
+          }
+        },
+        "required" : [ "locationType" ]
+      },
+      "DisposeContainerRequest" : {
+        "type" : "object",
+        "description" : "Details for disposing of a property container",
+        "properties" : {
+          "disposalDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date the container was disposed of; defaults to today when omitted",
+            "example" : "2026-09-15"
+          }
+        }
+      },
+      "CombineContainersRequest" : {
+        "type" : "object",
+        "description" : "Details for combining containers into a new sealed container",
+        "properties" : {
+          "sourceContainerIds" : {
+            "type" : "array",
+            "description" : "Ids of the source containers to combine (at least two)",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            },
+            "maxItems" : 2147483647,
+            "minItems" : 2
+          },
+          "containerType" : {
+            "type" : "string",
+            "description" : "Type of the new container",
+            "enum" : [ "STANDARD", "EXCESS", "VALUABLES", "CONFISCATED" ],
+            "example" : "STANDARD"
+          },
+          "sealNumber" : {
+            "type" : "string",
+            "description" : "Seal number for the new container",
+            "example" : "SN8842K1",
+            "minLength" : 1
+          },
+          "internalLocationId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "Internal storage location id of the new container (locations-inside-prison-api), if held internally",
+            "example" : "11111111-1111-1111-1111-111111111111"
+          },
+          "locationType" : {
+            "type" : [ "string", "null" ],
+            "description" : "Storage location type of the new container; defaults to INTERNAL when an internal location id is given",
+            "enum" : [ "INTERNAL", "BRANSTON" ],
+            "example" : "INTERNAL"
+          }
+        },
+        "required" : [ "containerType", "sealNumber", "sourceContainerIds" ]
+      }
+    },
+    "securitySchemes" : {
+      "bearer-jwt" : {
+        "type" : "http",
+        "description" : "An HMPPS Auth access token.",
+        "name" : "Authorization",
+        "in" : "header",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT"
+      }
+    }
+  }
+}
