@@ -128,3 +128,6 @@ generic-prometheus-alerts:
       - "syscon-devs-prod-migration_officialvisits_dlq"
       - "syscon-devs-prod-prisoner_from_nomis_officialvisits_queue"
       - "syscon-devs-prod-prisoner_from_nomis_officialvisits_dl_queue"
+    courtmovements:
+      - "syscon-devs-prod-prisoner_from_nomis_courtmovements_queue"
+      - "syscon-devs-prod-prisoner_from_nomis_courtmovements_dl_queue"
