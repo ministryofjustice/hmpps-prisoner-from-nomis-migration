@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history
 
 import kotlinx.coroutines.reactive.awaitFirstOrDefault
+import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.web.reactive.function.client.WebClient
@@ -9,11 +10,15 @@ import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PagedModelMigrationDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.NOMISDPSMappingLookupApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NomisDpsLocationMapping
 
 abstract class MigrationMapping<MAPPING : Any>(
   protected val domainUrl: String,
   protected val webClient: WebClient,
 ) {
+  private val externalApi = NOMISDPSMappingLookupApi(webClient)
+
   open fun createMappingUrl() = domainUrl
 
   open suspend fun getMigrationCount(migrationId: String): Long = webClient.get()
@@ -57,6 +62,10 @@ abstract class MigrationMapping<MAPPING : Any>(
       Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
     }
     .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun getDpsLocation(nomisLocationId: Long): NomisDpsLocationMapping = externalApi
+    .getLocationMappingByNomisId(nomisLocationId)
+    .awaitSingle()
 }
 
 data class CreateMappingResult<MAPPING>(

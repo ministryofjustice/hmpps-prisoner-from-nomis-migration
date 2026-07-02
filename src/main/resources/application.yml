@@ -59,6 +59,11 @@ spring:
             client-id: ${core.person.client.id}
             client-secret: ${core.person.client.secret}
             authorization-grant-type: client_credentials
+          property-api:
+            provider: hmpps-auth
+            client-id: ${property.client.id}
+            client-secret: ${property.client.secret}
+            authorization-grant-type: client_credentials
           csra-api:
             provider: hmpps-auth
             client-id: ${csra.client.id}
@@ -273,6 +278,9 @@ hmpps.sqs:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationcsra:
+      errorVisibilityTimeout: 1, 1, 1, 10
+      propagateTracing: false
+    migrationproperty:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationprisonbalance:

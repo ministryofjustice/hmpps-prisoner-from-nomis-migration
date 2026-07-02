@@ -217,7 +217,7 @@ class ActivitiesMigrationService(
     outsideWork = outsideWork,
   )
 
-  private suspend fun Long?.toDpsLocationId(): UUID? = this?.let { activitiesMappingService.getDpsLocation(it).dpsLocationId }?.let { UUID.fromString(it) }
+  private suspend fun Long?.toDpsLocationId(): UUID? = this?.let { activitiesMappingService.getDpsLocation(it)?.dpsLocationId }?.let { UUID.fromString(it) }
   override fun parseContextFilter(json: String): MigrationMessage<*, ActivitiesMigrationFilter> = jsonMapper.readValue(json)
 
   override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<ActivitiesMigrationFilter, ByPageNumber>> = jsonMapper.readValue(json)

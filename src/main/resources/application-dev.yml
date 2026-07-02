@@ -21,6 +21,7 @@ api.base.url:
   ext.movements: http://localhost:8103
   officialvisits: http://localhost:8104
   csra: http://localhost:8105
+  property: http://localhost:8107
 
 spring:
   r2dbc:
