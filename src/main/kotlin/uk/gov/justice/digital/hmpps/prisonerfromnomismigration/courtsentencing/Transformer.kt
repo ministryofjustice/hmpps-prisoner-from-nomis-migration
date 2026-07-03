@@ -150,6 +150,7 @@ fun CourtEventResponse.toDpsCourtAppearance(
     comments = this.commentText,
   ),
   performedByUser = this.modifiedByUsername ?: this.createdByUsername,
+  appearanceDateTime = this.eventDateTime,
 )
 
 fun CourtEventResponse.toMigrationDpsCourtAppearance(
