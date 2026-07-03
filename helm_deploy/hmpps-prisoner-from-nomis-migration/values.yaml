@@ -77,6 +77,8 @@ generic-service:
       ORGANISATIONS_CLIENT_SECRET: "ORGANISATIONS_CLIENT_SECRET"
       PERSONAL_RELATIONSHIPS_CLIENT_ID: "PERSONAL_RELATIONSHIPS_CLIENT_ID"
       PERSONAL_RELATIONSHIPS_CLIENT_SECRET: "PERSONAL_RELATIONSHIPS_CLIENT_SECRET"
+      PROPERTY_CLIENT_ID: "PERSONAL_RELATIONSHIPS_CLIENT_ID"
+      PROPERTY_CLIENT_SECRET: "PERSONAL_RELATIONSHIPS_CLIENT_SECRET"
       STAFF_CLIENT_ID: "STAFF_CLIENT_ID"
       STAFF_CLIENT_SECRET: "STAFF_CLIENT_SECRET"
       SENTENCING_CLIENT_ID: "SENTENCING_CLIENT_ID"
@@ -115,6 +117,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONCSRA_QUEUE_NAME: "sqs_name"
     sqs-migration-csra-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONCSRA_DLQ_NAME: "sqs_name"
+    sqs-migration-property-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONPROPERTY_QUEUE_NAME: "sqs_name"
+    sqs-migration-property-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONPROPERTY_DLQ_NAME: "sqs_name"
     sqs-migration-prisonbalance-queue:
      HMPPS_SQS_QUEUES_MIGRATIONPRISONBALANCE_QUEUE_NAME: "sqs_name"
     sqs-migration-prisonbalance-dlq:
@@ -179,6 +185,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTCSRA_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-csra-dl-queue:
       HMPPS_SQS_QUEUES_EVENTCSRA_DLQ_NAME: "sqs_name"
+    prisoner-from-nomis-property-queue:
+      HMPPS_SQS_QUEUES_EVENTPROPERTY_QUEUE_NAME: "sqs_name"
+    prisoner-from-nomis-property-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTPROPERTY_DLQ_NAME: "sqs_name"
     prison-events-personalrelationships-queue:
       HMPPS_SQS_QUEUES_EVENTPERSONALRELATIONSHIPS_QUEUE_NAME: "sqs_name"
     prison-events-personalrelationships-dl-queue:

@@ -27,6 +27,7 @@ generic-service:
     API_BASE_URL_ALERTS: https://alerts-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_COURT_SENTENCING: https://remand-and-sentencing-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_PERSONAL_RELATIONSHIPS: https://personal-relationships-api-preprod.hmpps.service.justice.gov.uk
+    API_BASE_URL_PROPERTY: https://prisoner-property-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_ORGANISATIONS: https://organisations-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_MOVEMENTS_TAPS: https://external-movements-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_MOVEMENTS_COURT: https://court-appearance-scheduler-api-preprod.hmpps.service.justice.gov.uk
