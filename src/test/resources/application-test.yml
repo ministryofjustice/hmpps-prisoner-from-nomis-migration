@@ -37,6 +37,10 @@ appointments:
   page:
     size: 10
 property:
+  complete-check:
+    delay-seconds: 0
+    retry-seconds: 0
+    count: 1
   page:
     size: 10
 activities:

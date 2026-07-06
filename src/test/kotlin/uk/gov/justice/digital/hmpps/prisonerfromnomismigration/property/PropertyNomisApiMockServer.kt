@@ -61,12 +61,12 @@ class PropertyNomisApiMockServer(private val jsonMapper: JsonMapper) {
   }
 
   fun stubGetProperty(
-    dpsId: Long = 1001,
+    containerId: Long = 1001,
     bookingId: Long = 123456,
     propertyResponse: PropertyContainerGetResponse = propertyContainerGetResponse(bookingId),
   ) {
     nomisApi.stubFor(
-      get(urlEqualTo("/property-containers/$dpsId")).willReturn(
+      get(urlEqualTo("/property-containers/$containerId")).willReturn(
         okJson(jsonMapper.writeValueAsString(propertyResponse)),
       ),
     )
@@ -100,12 +100,14 @@ fun propertyContainerGetResponse(bookingId: Long) = PropertyContainerGetResponse
   prisonId = "SYI",
   active = true,
   containerCode = PropertyContainerCode.BULK,
-  createdDateTime = LocalDateTime.now(),
-  createdBy = "ME",
   internalLocationId = 123456,
   sealMark = "SEAL1234",
   expiryDate = LocalDate.parse("2035-05-13"),
   proposedDisposalDate = LocalDate.parse("2035-05-14"),
+  createdDateTime = LocalDateTime.parse("2025-05-01T12:34:56"),
+  createdBy = "ME",
+  updatedDateTime = LocalDateTime.parse("2025-05-02T12:34:56"),
+  updatedBy = "SOMEONEELSE",
 )
 
 private fun propertyResponse(

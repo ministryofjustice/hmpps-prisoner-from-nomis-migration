@@ -16,6 +16,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -38,10 +39,7 @@ import java.util.UUID
 
 private const val DPS_ID = "e52d7268-6e10-41a8-a0b9-2319b32520d6"
 private const val DPS_ID2 = "edcd118c-41ba-42ea-b5c4-404b453ad58b"
-private const val NOMIS_ID = 1234567L
-private const val NOMIS_ID2 = 1234568L
-private const val OFFENDER_NO = "A1234AA"
-private const val BOOKING_ID = 12345L
+private const val DPS_LOCATION_ID = "edcd118c-41ba-42ea-b5c4-404b453a0000"
 
 class PropertyMigrationIntTest(
   @Autowired private val propertyNomisApiMockServer: PropertyNomisApiMockServer,
@@ -167,6 +165,36 @@ class PropertyMigrationIntTest(
     }
 
     @Test
+    fun `will post the correct data to DPS`() {
+      nomisApi.stubGetInitialCount("/property-containers/ids", 1) { propertyIdsPagedResponse(it) }
+      propertyNomisApiMockServer.stubMultipleGetPropertyIdCounts(totalElements = 1, pageSize = 10)
+      propertyNomisApiMockServer.stubGetProperty(1)
+      mappingApi.stubAllMappingsNotFound("/mapping/property/nomis-id")
+      mappingApi.stubMappingCreate("/mapping/property")
+      propertyMappingApiMockServer.stubCountByMigrationId(1)
+      propertiesDpsApi.stubCreatePropertyForMigration(DPS_ID)
+      mappingApi.stubGetApiLocationNomis(123456, DPS_LOCATION_ID)
+
+      webTestClient.performMigration("""{ "prisonIds": ["MDI"] }""")
+
+      propertiesDpsApi.verify(
+        postRequestedFor(urlPathEqualTo("/sync/property-containers/migrate"))
+          .withRequestBodyJsonPath("prisonerNumber", "A1234AA")
+          .withRequestBodyJsonPath("internalLocationId", DPS_LOCATION_ID)
+          .withRequestBodyJsonPath("prisonId", "SYI")
+          .withRequestBodyJsonPath("containerCode", "Bulk")
+          .withRequestBodyJsonPath("sealMark", "SEAL1234")
+          .withRequestBodyJsonPath("active", "true")
+          .withRequestBodyJsonPath("proposedDisposalDate", "2035-05-14")
+          .withRequestBodyJsonPath("expiryDate", "2035-05-13")
+          .withRequestBodyJsonPath("createDateTime", "2025-05-01T12:34:56")
+          .withRequestBodyJsonPath("createUsername", "ME")
+          .withRequestBodyJsonPath("modifyDateTime", "2025-05-02T12:34:56")
+          .withRequestBodyJsonPath("modifyUsername", "SOMEONEELSE"),
+      )
+    }
+
+    @Test
     fun `will retry to create a mapping, and only the mapping, if it fails first time`() {
       nomisApi.stubGetInitialCount("/property-containers/ids", 1) { propertyIdsPagedResponse(it) }
       propertyNomisApiMockServer.stubMultipleGetPropertyIdCounts(totalElements = 1, pageSize = 10)
@@ -187,6 +215,32 @@ class PropertyMigrationIntTest(
 
       // should retry to create mapping twice
       propertyMappingApiMockServer.verifyCreateMappingPropertyIds(arrayOf(DPS_ID), times = 2)
+    }
+
+    @Test
+    fun `will generate failure telemetry`() {
+      nomisApi.stubGetInitialCount("/property-containers/ids", 1) { propertyIdsPagedResponse(it) }
+      propertyNomisApiMockServer.stubMultipleGetPropertyIdCounts(totalElements = 1, pageSize = 10)
+      propertyNomisApiMockServer.stubMultipleGetProperty(1..1)
+      mappingApi.stubAllMappingsNotFound("/mapping/property/nomis-id")
+      propertyMappingApiMockServer.stubCountByMigrationId(1)
+      propertiesDpsApi.stubCreatePropertyForMigrationFailure(DPS_ID)
+      mappingApi.stubGetApiLocationNomis(123456, UUID.randomUUID().toString())
+
+      webTestClient.performMigration("""{ "prisonIds": ["MDI"] }""")
+
+      await untilAsserted {
+        verify(telemetryClient, atLeastOnce()).trackEvent(
+          eq(
+            "property-migration-entity-migrate-failed",
+          ),
+          check {
+            assertThat(it["nomisId"]).isEqualTo("1")
+            assertThat(it["error"]).contains("500 Internal Server Error")
+          },
+          isNull(),
+        )
+      }
     }
 
     @Test
