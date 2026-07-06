@@ -13,7 +13,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionSaveResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSexualOrientation
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 
@@ -21,11 +20,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val webClient: WebClient) {
   private val api = SysconSyncApi(webClient)
   private val personApi = PrisonApi(webClient)
-
-  suspend fun migrateCorePerson(prisonNumber: String, corePerson: Prisoner): String = api
-    .prepare(api.updateRequestConfig(prisonNumber, corePerson))
-    .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
 
   suspend fun migrateCorePersonReligion(prisonNumber: String, request: PrisonReligionRequest): SysconReligionResponseBody = api
     .prepare(api.savePrisonerReligionsRequestConfig(prisonNumber, request))

@@ -14,18 +14,13 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension.Companion.jsonMapper
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDemographicAttributes
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDemographicAttributes.BirthCountryCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionSaveResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSentence
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.Prisoner
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
-import java.time.LocalDate
 import java.util.UUID
 
 class CorePersonCprApiExtension :
@@ -68,29 +63,6 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8099
 
-    fun migrateCorePersonRequest() = Prisoner(
-      demographicAttributes = PrisonDemographicAttributes(
-        birthPlace = "LONDON",
-        birthCountryCode = BirthCountryCode.ENG,
-        ethnicityCode = PrisonDemographicAttributes.EthnicityCode.B1,
-        sexCode = PrisonDemographicAttributes.SexCode.M,
-        sexualOrientation = PrisonDemographicAttributes.SexualOrientation.HET,
-        disability = true,
-        interestToImmigration = true,
-        religionCode = "REL",
-        nationalityCode = PrisonDemographicAttributes.NationalityCode.BRIT,
-        nationalityNote = "NOT_ENG",
-      ),
-      pseudonyms = listOf(),
-      addresses = listOf(),
-      personContacts = listOf(),
-      sentences = listOf(
-        PrisonSentence(LocalDate.parse("1980-01-01")),
-      ),
-    )
-
-    fun migrateCorePersonResponse(request: Prisoner = migrateCorePersonRequest()) = "OK"
-
     fun syncCorePersonReligionResponse(prisonNumber: String, nomisId: Long) = PrisonReligionSaveResponse(
       prisonNumber = prisonNumber,
       religionMappings = PrisonReligionMapping(nomisId.toString(), UUID.randomUUID().toString()),
@@ -99,18 +71,6 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun migrateCorePersonReligionResponse(prisonNumber: String, nomisId: Long, cprId: String) = SysconReligionResponseBody(
       prisonNumber = prisonNumber,
       religionMappings = listOf(SysconReligionMapping(nomisId.toString(), cprId)),
-    )
-  }
-
-  fun stubMigrateCorePerson(nomisPrisonNumber: String = "A1234BC", response: String = migrateCorePersonResponse()) {
-    stubFor(
-      put("/syscon-sync/$nomisPrisonNumber")
-        .willReturn(
-          aResponse()
-            .withStatus(201)
-            .withHeader("Content-Type", "application/json")
-            .withBody(jsonMapper.writeValueAsString(response)),
-        ),
     )
   }
 

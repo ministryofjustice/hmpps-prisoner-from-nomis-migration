@@ -6,7 +6,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -16,7 +15,6 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension.Companion.cprCorePersonServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiMockServer.Companion.migrateCorePersonRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
@@ -30,33 +28,6 @@ import java.time.LocalDateTime
 class CorePersonCprApiServiceTest {
   @Autowired
   private lateinit var apiService: CorePersonCprApiService
-
-  @Nested
-  @Disabled
-  inner class MigrateCorePerson {
-    @Test
-    internal fun `will pass oath2 token to core endpoint`() = runTest {
-      // cprCorePersonServer.stubMigrateCorePerson()
-
-      apiService.migrateCorePerson("A1234BC", migrateCorePersonRequest())
-
-      cprCorePersonServer.verify(
-        putRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `will call the migrate endpoint`() = runTest {
-      // cprCorePersonServer.stubMigrateCorePerson("A4321BC")
-
-      apiService.migrateCorePerson("A4321BC", migrateCorePersonRequest())
-
-      cprCorePersonServer.verify(
-        putRequestedFor(urlPathEqualTo("/syscon-sync/A4321BC")),
-      )
-    }
-  }
 
   @Nested
   inner class SyncCreateOffenderBelief {
