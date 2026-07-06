@@ -39,12 +39,14 @@ class StaffEventListener(
               "STAFF_USER_ACCOUNTS-INSERTED" -> service.staffAccountCreated(sqsMessage.Message.fromJson())
               "STAFF_USER_ACCOUNTS-UPDATED" -> service.staffAccountUpdated(sqsMessage.Message.fromJson())
               "STAFF_USER_ACCOUNTS-DELETED" -> service.staffAccountDeleted(sqsMessage.Message.fromJson())
+              "INTERNET_ADDRESSES_STAFF-INSERTED" -> service.staffInternetAddressCreated(sqsMessage.Message.fromJson())
+              "INTERNET_ADDRESSES_STAFF-UPDATED" -> service.staffInternetAddressUpdated(sqsMessage.Message.fromJson())
+              "INTERNET_ADDRESSES_STAFF-DELETED" -> service.staffInternetAddressDeleted(sqsMessage.Message.fromJson())
               "USER_ACCESSIBLE_CASELOADS-INSERTED" -> service.userAccessibleCaseloadCreated(sqsMessage.Message.fromJson())
               "USER_ACCESSIBLE_CASELOADS-DELETED" -> service.userAccessibleCaseloadDeleted(sqsMessage.Message.fromJson())
 
               /*
                 TODO
-                INTERNET_ADDRESSES_STAFF
                 USER_CASELOAD_ROLES
                */
               else -> log.info("Received a message I wasn't expecting {}", eventType)
@@ -67,6 +69,12 @@ data class StaffEvent(
 data class StaffUserAccountEvent(
   val staffId: Long,
   val username: String,
+  override val auditModuleName: String,
+) : EventAudited
+
+data class StaffInternetAddressEvent(
+  val staffId: Long,
+  val internetAddressId: Long,
   override val auditModuleName: String,
 ) : EventAudited
 
