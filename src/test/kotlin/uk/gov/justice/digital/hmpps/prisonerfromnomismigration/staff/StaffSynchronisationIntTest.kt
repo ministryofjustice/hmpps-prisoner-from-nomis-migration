@@ -201,6 +201,194 @@ class StaffSynchronisationIntTest : StaffIntegrationTestBase() {
   }
 
   @Nested
+  inner class StaffUserAccounts {
+    @Nested
+    @DisplayName("STAFF_USER_ACCOUNTS-INSERTED")
+    inner class StaffUserAccountCreated {
+      @Nested
+      inner class WhenCreatedInDps {
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            staffUserAccountEvent(
+              eventType = "STAFF_USER_ACCOUNTS-INSERTED",
+              staffId = nomisStaffId,
+              username = username,
+              auditModuleName = "DPS_SYNCHRONISATION",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("staffuseraccounts-synchronisation-created-notimplemented"),
+            check {
+              assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenCreatedInNomis {
+
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            staffUserAccountEvent(
+              eventType = "STAFF_USER_ACCOUNTS-INSERTED",
+              staffId = nomisStaffId,
+              username = username,
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Nested
+        inner class HappyPath {
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("staffuseraccounts-synchronisation-created-notimplemented"),
+              check {
+                assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+                assertThat(it["username"]).isEqualTo(username)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("STAFF_USER_ACCOUNTS-UPDATED")
+    inner class StaffUserAccountUpdated {
+      @Nested
+      inner class WhenUpdatedInDps {
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            staffUserAccountEvent(
+              eventType = "STAFF_USER_ACCOUNTS-UPDATED",
+              staffId = nomisStaffId,
+              username = username,
+              auditModuleName = "DPS_SYNCHRONISATION",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("staffuseraccounts-synchronisation-updated-notimplemented"),
+            check {
+              assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+              assertThat(it["username"]).isEqualTo(username)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenUpdatedInNomis {
+
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            staffUserAccountEvent(
+              eventType = "STAFF_USER_ACCOUNTS-UPDATED",
+              staffId = nomisStaffId,
+              username = username,
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Nested
+        inner class HappyPath {
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("staffuseraccounts-synchronisation-updated-notimplemented"),
+              check {
+                assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+                assertThat(it["username"]).isEqualTo(username)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("STAFF_USER_ACCOUNTS-DELETED")
+    inner class StaffUserAccountDeleted {
+      @Nested
+      inner class WhenDeletedInDps {
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            staffUserAccountEvent(
+              eventType = "STAFF_USER_ACCOUNTS-DELETED",
+              staffId = nomisStaffId,
+              username = username,
+              auditModuleName = "DPS_SYNCHRONISATION",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("staffuseraccounts-synchronisation-deleted-notimplemented"),
+            check {
+              assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+              assertThat(it["username"]).isEqualTo(username)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenDeletedInNomis {
+
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            staffUserAccountEvent(
+              eventType = "STAFF_USER_ACCOUNTS-DELETED",
+              staffId = nomisStaffId,
+              username = username,
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Nested
+        inner class HappyPath {
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("staffuseraccounts-synchronisation-deleted-notimplemented"),
+              check {
+                assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+                assertThat(it["username"]).isEqualTo(username)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+  }
+
+  @Nested
   inner class UserAccessibleCaseloads {
     @Nested
     @DisplayName("USER_ACCESSIBLE_CASELOADS-INSERTED")
@@ -336,6 +524,25 @@ fun staffEvent(
   """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
     "Message": "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"staffId\": $staffId,\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+  """.trimIndent()
+
+fun staffUserAccountEvent(
+  eventType: String,
+  staffId: Long,
+  username: String,
+  auditModuleName: String = "OUUUSERS",
+) = // language=JSON
+  """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"staffId\": $staffId,\"username\": \"$username\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 

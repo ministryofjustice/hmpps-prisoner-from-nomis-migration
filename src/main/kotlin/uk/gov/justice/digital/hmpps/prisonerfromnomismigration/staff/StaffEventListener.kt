@@ -36,12 +36,14 @@ class StaffEventListener(
               "STAFF_MEMBERS-INSERTED" -> service.staffCreated(sqsMessage.Message.fromJson())
               "STAFF_MEMBERS-UPDATED" -> service.staffUpdated(sqsMessage.Message.fromJson())
               "STAFF_MEMBERS-DELETED" -> service.staffDeleted(sqsMessage.Message.fromJson())
-
+              "STAFF_USER_ACCOUNTS-INSERTED" -> service.staffAccountCreated(sqsMessage.Message.fromJson())
+              "STAFF_USER_ACCOUNTS-UPDATED" -> service.staffAccountUpdated(sqsMessage.Message.fromJson())
+              "STAFF_USER_ACCOUNTS-DELETED" -> service.staffAccountDeleted(sqsMessage.Message.fromJson())
               "USER_ACCESSIBLE_CASELOADS-INSERTED" -> service.userAccessibleCaseloadCreated(sqsMessage.Message.fromJson())
               "USER_ACCESSIBLE_CASELOADS-DELETED" -> service.userAccessibleCaseloadDeleted(sqsMessage.Message.fromJson())
+
               /*
                 TODO
-                STAFF_USER_ACCOUNT
                 INTERNET_ADDRESSES_STAFF
                 USER_CASELOAD_ROLES
                */
@@ -59,6 +61,12 @@ class StaffEventListener(
 
 data class StaffEvent(
   val staffId: Long,
+  override val auditModuleName: String,
+) : EventAudited
+
+data class StaffUserAccountEvent(
+  val staffId: Long,
+  val username: String,
   override val auditModuleName: String,
 ) : EventAudited
 
