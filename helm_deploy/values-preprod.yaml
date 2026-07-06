@@ -33,6 +33,11 @@ generic-service:
     API_BASE_URL_MOVEMENTS_COURT: https://court-appearance-scheduler-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_OFFICIALVISITS: https://official-visits-api-preprod.hmpps.service.justice.gov.uk
     CONTACT-SENTENCING_COURT-EVENT-UPDATE_IGNORE-MISSING: true
+    FEATURE_EVENT_STAFF_MEMBERS-INSERTED: false
+    FEATURE_EVENT_STAFF_MEMBERS-UPDATED: false
+    FEATURE_EVENT_STAFF_MEMBERS-DELETED: false
+    FEATURE_EVENT_USER_ACCESSIBLE_CASELOADS-INSERTED: false
+    FEATURE_EVENT_USER_ACCESSIBLE_CASELOADS-DELETED: false
 
   scheduledDowntime:
     # Temporarily set to false to enable prisoner transaction reconciliation testing in preprod
