@@ -44,11 +44,9 @@ class StaffEventListener(
               "INTERNET_ADDRESSES_STAFF-DELETED" -> service.staffInternetAddressDeleted(sqsMessage.Message.fromJson())
               "USER_ACCESSIBLE_CASELOADS-INSERTED" -> service.userAccessibleCaseloadCreated(sqsMessage.Message.fromJson())
               "USER_ACCESSIBLE_CASELOADS-DELETED" -> service.userAccessibleCaseloadDeleted(sqsMessage.Message.fromJson())
+              "USER_CASELOAD_ROLES-INSERTED" -> service.userCaseloadRoleCreated(sqsMessage.Message.fromJson())
+              "USER_CASELOAD_ROLES-DELETED" -> service.userCaseloadRoleDeleted(sqsMessage.Message.fromJson())
 
-              /*
-                TODO
-                USER_CASELOAD_ROLES
-               */
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -81,5 +79,12 @@ data class StaffInternetAddressEvent(
 data class UserAccessibleCaseloadEvent(
   val username: String,
   val caseloadId: String,
+  override val auditModuleName: String,
+) : EventAudited
+
+data class UserCaseloadRoleEvent(
+  val username: String,
+  val caseloadId: String,
+  val roleCode: String,
   override val auditModuleName: String,
 ) : EventAudited
