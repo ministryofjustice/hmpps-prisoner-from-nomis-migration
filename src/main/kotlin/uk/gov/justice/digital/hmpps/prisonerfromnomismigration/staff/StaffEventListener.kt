@@ -33,14 +33,16 @@ class StaffEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType, "staff")) {
             when (eventType) {
-              "STAFF-INSERTED" -> service.staffCreated(sqsMessage.Message.fromJson())
-              "STAFF-UPDATED" -> service.staffUpdated(sqsMessage.Message.fromJson())
-              "STAFF-DELETED" -> service.staffDeleted(sqsMessage.Message.fromJson())
+              "STAFF_MEMBERS-INSERTED" -> service.staffCreated(sqsMessage.Message.fromJson())
+              "STAFF_MEMBERS-UPDATED" -> service.staffUpdated(sqsMessage.Message.fromJson())
+              "STAFF_MEMBERS-DELETED" -> service.staffDeleted(sqsMessage.Message.fromJson())
+
+              "USER_ACCESSIBLE_CASELOADS-INSERTED" -> service.userAccessibleCaseloadCreated(sqsMessage.Message.fromJson())
+              "USER_ACCESSIBLE_CASELOADS-DELETED" -> service.userAccessibleCaseloadDeleted(sqsMessage.Message.fromJson())
               /*
                 TODO
                 STAFF_USER_ACCOUNT
                 INTERNET_ADDRESSES_STAFF
-                USER_CASELOADS
                 USER_CASELOAD_ROLES
                */
               else -> log.info("Received a message I wasn't expecting {}", eventType)
@@ -57,5 +59,11 @@ class StaffEventListener(
 
 data class StaffEvent(
   val staffId: Long,
+  override val auditModuleName: String,
+) : EventAudited
+
+data class UserAccessibleCaseloadEvent(
+  val username: String,
+  val caseloadId: String,
   override val auditModuleName: String,
 ) : EventAudited

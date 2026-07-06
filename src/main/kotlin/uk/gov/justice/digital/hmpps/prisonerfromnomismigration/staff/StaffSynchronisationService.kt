@@ -27,16 +27,21 @@ class StaffSynchronisationService(
     val telemetry = telemetryOf("nomisStaffId" to event.staffId)
     telemetryClient.trackEvent("staff-synchronisation-created-notimplemented", telemetry)
   }
-
   suspend fun staffUpdated(event: StaffEvent) {
-    log.info("received a staff updated event $event")
     val telemetry = telemetryOf("nomisStaffId" to event.staffId)
     telemetryClient.trackEvent("staff-synchronisation-updated-notimplemented", telemetry)
   }
-
   suspend fun staffDeleted(event: StaffEvent) {
-    log.info("received a staff deleted event $event")
     val telemetry = telemetryOf("nomisStaffId" to event.staffId)
     telemetryClient.trackEvent("staff-synchronisation-deleted-notimplemented", telemetry)
+  }
+
+  suspend fun userAccessibleCaseloadCreated(event: UserAccessibleCaseloadEvent) {
+    val telemetry = telemetryOf("username" to event.username, "caseloadId" to event.caseloadId)
+    telemetryClient.trackEvent("useraccessiblecaseloads-synchronisation-created-notimplemented", telemetry)
+  }
+  suspend fun userAccessibleCaseloadDeleted(event: UserAccessibleCaseloadEvent) {
+    val telemetry = telemetryOf("username" to event.username, "caseloadId" to event.caseloadId)
+    telemetryClient.trackEvent("useraccessiblecaseloads-synchronisation-deleted-notimplemented", telemetry)
   }
 }
