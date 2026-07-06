@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-07-03.1695.63e883d"
+    "version" : "2026-07-06.1697.982506a"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -32759,9 +32759,6 @@
             "type" : "integer",
             "format" : "int64"
           },
-          "unpaged" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
@@ -32774,6 +32771,9 @@
             "format" : "int32"
           },
           "paged" : {
+            "type" : "boolean"
+          },
+          "unpaged" : {
             "type" : "boolean"
           }
         }
@@ -33905,6 +33905,17 @@
           "createdBy" : {
             "type" : "string",
             "description" : "Username of the staff creating the container",
+            "example" : "AJONES"
+          },
+          "updatedDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Timestamp for when the container was modified",
+            "example" : "2025-12-06T12:34:56"
+          },
+          "updatedBy" : {
+            "type" : "string",
+            "description" : "Username of the staff modifying the container",
             "example" : "AJONES"
           }
         },
