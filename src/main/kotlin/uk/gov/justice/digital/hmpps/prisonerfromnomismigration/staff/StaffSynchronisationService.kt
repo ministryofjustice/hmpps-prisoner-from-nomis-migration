@@ -49,6 +49,19 @@ class StaffSynchronisationService(
     telemetryClient.trackEvent("staffuseraccounts-synchronisation-deleted-notimplemented", telemetry)
   }
 
+  suspend fun staffInternetAddressCreated(event: StaffInternetAddressEvent) {
+    val telemetry = telemetryOf("nomisStaffId" to event.staffId, "internetAddressId" to event.internetAddressId)
+    telemetryClient.trackEvent("staffinternetaddresses-synchronisation-created-notimplemented", telemetry)
+  }
+  suspend fun staffInternetAddressUpdated(event: StaffInternetAddressEvent) {
+    val telemetry = telemetryOf("nomisStaffId" to event.staffId, "internetAddressId" to event.internetAddressId)
+    telemetryClient.trackEvent("staffinternetaddresses-synchronisation-updated-notimplemented", telemetry)
+  }
+  suspend fun staffInternetAddressDeleted(event: StaffInternetAddressEvent) {
+    val telemetry = telemetryOf("nomisStaffId" to event.staffId, "internetAddressId" to event.internetAddressId)
+    telemetryClient.trackEvent("staffinternetaddresses-synchronisation-deleted-notimplemented", telemetry)
+  }
+
   suspend fun userAccessibleCaseloadCreated(event: UserAccessibleCaseloadEvent) {
     val telemetry = telemetryOf("username" to event.username, "caseloadId" to event.caseloadId)
     telemetryClient.trackEvent("useraccessiblecaseloads-synchronisation-created-notimplemented", telemetry)
