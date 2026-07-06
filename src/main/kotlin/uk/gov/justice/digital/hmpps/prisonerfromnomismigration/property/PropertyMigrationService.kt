@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PropertyContainerMappingDto
@@ -31,13 +32,15 @@ class PropertyMigrationService(
   private val propertyMappingService: PropertyMappingService,
   jsonMapper: JsonMapper,
   @Value($$"${property.page.size:1000}") pageSize: Long,
-  @Value($$"${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
-  @Value($$"${complete-check.count}") completeCheckCount: Int,
+  @Value($$"${property.complete-check.delay-seconds:10}") completeCheckDelaySeconds: Int,
+  @Value($$"${property.complete-check.retry-seconds:10}") completeCheckRetrySeconds: Int,
+  @Value($$"${property.complete-check.count:9}") completeCheckCount: Int,
 ) : ByPageNumberMigrationService<PropertyMigrationFilter, PropertyContainerIdResponse, PropertyContainerMappingDto>(
   mappingService = propertyMappingService,
   migrationType = MigrationType.PROPERTY,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
+  completeCheckRetrySeconds = completeCheckRetrySeconds,
   completeCheckCount = completeCheckCount,
   jsonMapper = jsonMapper,
 ) {
@@ -79,34 +82,45 @@ class PropertyMigrationService(
     log.info("attempting to migrate ${context.body}")
     val nomisId = context.body.propertyContainerId
 
-    propertyMappingService.getMappingByNomisId(nomisId)
-      ?.run {
-        log.info("Will not migrate the container since it is migrated already, NOMIS id is $nomisId, dpsPropertyContainerId is ${this.dpsPropertyContainerId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
-      }
-      ?: run {
-        val container = nomisApiService.getPropertyContainer(nomisId)
+    try {
+      propertyMappingService.getMappingByNomisId(nomisId)
+        ?.run {
+          log.info("Will not migrate the container since it is migrated already, NOMIS id is $nomisId, dpsPropertyContainerId is ${this.dpsPropertyContainerId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
+        }
+        ?: run {
+          val container = nomisApiService.getPropertyContainer(nomisId)
 
-        propertyDpsApiService.migrate(container.toProperty())
-          .also {
-            createPropertyMapping(
-              nomisPropertyContainerId = nomisId,
-              dpsId = it.dpsId,
-              bookingId = container.bookingId,
-              offenderNo = container.offenderNo,
-              context = context,
-            )
+          propertyDpsApiService.migrate(container.toProperty())
+            .also {
+              createPropertyMapping(
+                nomisPropertyContainerId = nomisId,
+                dpsId = it.dpsId,
+                bookingId = container.bookingId,
+                offenderNo = container.offenderNo,
+                context = context,
+              )
 
-            telemetryClient.trackEvent(
-              "property-migration-entity-migrated",
-              mapOf(
-                "nomisId" to nomisId.toString(),
-                "dpsId" to it.dpsId.toString(),
-                "migrationId" to context.migrationId,
-              ),
-              null,
-            )
-          }
-      }
+              telemetryClient.trackEvent(
+                "property-migration-entity-migrated",
+                mapOf(
+                  "nomisId" to nomisId,
+                  "dpsId" to it.dpsId,
+                  "migrationId" to context.migrationId,
+                ),
+              )
+            }
+        }
+    } catch (e: Exception) {
+      telemetryClient.trackEvent(
+        "property-migration-entity-migrate-failed",
+        mapOf(
+          "nomisId" to nomisId,
+          "migrationId" to context.migrationId,
+          "error" to (e.message ?: "unknown error"),
+        ),
+      )
+      throw e
+    }
   }
 
   private suspend fun createPropertyMapping(
@@ -167,16 +181,16 @@ class PropertyMigrationService(
     nomisPropertyContainerId = containerId,
     prisonerNumber = offenderNo,
     internalLocationId = toDpsLocation(),
-    createDateTime = createdDateTime,
-    createUsername = createdBy,
     prisonId = prisonId,
     containerCode = toDpsContainerCode(),
     sealMark = sealMark,
+    active = active,
     proposedDisposalDate = proposedDisposalDate,
     expiryDate = expiryDate,
-//    modifyDateTime = TODO(),
-//    modifyUsername = TODO(),
-    active = active,
+    createDateTime = createdDateTime,
+    createUsername = createdBy,
+    modifyDateTime = updatedDateTime,
+    modifyUsername = updatedBy,
   )
 
   private fun PropertyContainerGetResponse.toDpsContainerCode(): SyncPropertyContainerRequest.ContainerCode = when (containerCode) {
@@ -188,10 +202,7 @@ class PropertyMigrationService(
   }
 
   private suspend fun PropertyContainerGetResponse.toDpsLocation(): UUID? = internalLocationId?.let {
-    UUID.fromString(
-      propertyMappingService.getDpsLocation(it).dpsLocationId
-        ?: throw IllegalArgumentException("location $it not found"),
-    )
+    UUID.fromString(propertyMappingService.getDpsLocation(it).dpsLocationId)
   }
 
   override fun parseContextFilter(json: String): MigrationMessage<*, PropertyMigrationFilter> = jsonMapper

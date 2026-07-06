@@ -71,6 +71,19 @@ class PropertyDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubCreatePropertyForMigrationFailure(dpsId: String) {
+    val response = samplePropertyInstance(UUID.fromString(dpsId))
+
+    stubFor(
+      post(urlMatching("/sync/property-containers/migrate"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value()),
+        ),
+    )
+  }
+
   fun createPropertyCount() = findAll(postRequestedFor(urlMatching("/sync/property-containers/migrate"))).count()
 }
 
