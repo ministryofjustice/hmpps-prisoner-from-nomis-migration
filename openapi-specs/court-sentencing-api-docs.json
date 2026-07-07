@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version": "2026-07-03.2086.4a07ee6"
+    "version" : "2026-07-07.2119.5b554aa"
   },
   "servers" : [ {
     "url" : "https://remand-and-sentencing-api.hmpps.service.justice.gov.uk",
@@ -68,10 +68,9 @@
     "name" : "court-case-controller",
     "description" : "Court case"
   }, {
-    "name": "ThingsToDoController",
-    "description": "Operations related to the things-to-do list for prisoners"
-  },
-    {
+    "name" : "ThingsToDoController",
+    "description" : "Operations related to the things-to-do list for prisoners"
+  }, {
     "name" : "legacy-court-case-controller",
     "description" : "CRUD operations for syncing court case data from NOMIS into remand and sentencing api database."
   }, {
@@ -2017,50 +2016,46 @@
         }
       }
     },
-    "/court-appearance-schedule/{appearanceUuid}": {
-      "put": {
-        "tags": [
-          "court-appearance-schedules-controller"
-        ],
-        "summary": "Update court appearance schedule by appearance uuid",
-        "description": "This endpoint will update court appearance schedule by appearance uuid",
-        "operationId": "updateCourtAppearanceSchedule",
-        "parameters": [
-          {
-            "name": "appearanceUuid",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
+    "/court-appearance-schedule/{appearanceUuid}" : {
+      "put" : {
+        "tags" : [ "court-appearance-schedules-controller" ],
+        "summary" : "Update court appearance schedule by appearance uuid",
+        "description" : "This endpoint will update court appearance schedule by appearance uuid",
+        "operationId" : "updateCourtAppearanceSchedule",
+        "parameters" : [ {
+          "name" : "appearanceUuid",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
           }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateCourtAppearanceSchedule"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateCourtAppearanceSchedule"
               }
             }
           },
-          "required": true
+          "required" : true
         },
-        "responses": {
-          "200": {
-            "description": "Returns court appearance schedules"
+        "responses" : {
+          "200" : {
+            "description" : "Returns court appearance schedules"
           },
-          "401": {
-            "description": "Unauthorised, requires a valid Oauth2 token"
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token"
           },
-          "403": {
-            "description": "Forbidden, requires an appropriate role"
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role"
           },
-          "404": {
-            "description": "No court appearance schedule found"
+          "404" : {
+            "description" : "No court appearance schedule found"
           },
-          "204": {
-            "description": "No Content"
+          "204" : {
+            "description" : "No Content"
           }
         }
       }
@@ -3508,53 +3503,49 @@
         }
       }
     },
-    "/things-to-do/prisoner/{prisonerId}": {
-      "get": {
-        "tags": [
-          "ThingsToDoController"
-        ],
-        "summary": "Retrieve things-to-do for a prisoner",
-        "description": "Provides a list of things-to-do for a specified prisoner based on their ID.",
-        "operationId": "getThingsToDo",
-        "parameters": [
-          {
-            "name": "prisonerId",
-            "in": "path",
-            "description": "Prisoner's ID (also known as nomsId)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "example": "A1234AB"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successfully returns the things-to-do list",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ThingsToDo"
+    "/things-to-do/prisoner/{prisonerId}" : {
+      "get" : {
+        "tags" : [ "ThingsToDoController" ],
+        "summary" : "Retrieve things-to-do for a prisoner",
+        "description" : "Provides a list of things-to-do for a specified prisoner based on their ID.",
+        "operationId" : "getThingsToDo",
+        "parameters" : [ {
+          "name" : "prisonerId",
+          "in" : "path",
+          "description" : "Prisoner's ID (also known as nomsId)",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "A1234AB"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Successfully returns the things-to-do list",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ThingsToDo"
                 }
               }
             }
           },
-          "401": {
-            "description": "Unauthorized - valid Oauth2 token required",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ThingsToDo"
+          "401" : {
+            "description" : "Unauthorized - valid Oauth2 token required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ThingsToDo"
                 }
               }
             }
           },
-          "403": {
-            "description": "Forbidden - requires appropriate role",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ThingsToDo"
+          "403" : {
+            "description" : "Forbidden - requires appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ThingsToDo"
                 }
               }
             }
@@ -7139,7 +7130,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example": "10:07:42.253166768"
+            "example" : "07:10:08.2135916"
           },
           "outcomeDispositionCode" : {
             "type" : [ "string", "null" ]
@@ -7174,18 +7165,12 @@
           "performedByUser" : {
             "type" : [ "string", "null" ]
           },
-          "appearanceDateTime": {
-            "type": "string",
-            "format": "date-time"
+          "appearanceDateTime" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         },
-        "required": [
-          "appearanceDate",
-          "appearanceDateTime",
-          "courtCaseUuid",
-          "courtCode",
-          "legacyData"
-        ]
+        "required" : [ "appearanceDate", "appearanceDateTime", "courtCaseUuid", "courtCode", "legacyData" ]
       },
       "ChargeLegacyData" : {
         "type" : "object",
@@ -7514,7 +7499,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example": "10:07:42.253166768"
+            "example" : "07:10:08.2135916"
           },
           "courtCode" : {
             "type" : "string"
@@ -7561,16 +7546,7 @@
           },
           "type" : {
             "type" : "string",
-            "enum": [
-              "SENTENCE_LENGTH",
-              "CUSTODIAL_TERM",
-              "LICENCE_PERIOD",
-              "TARIFF_LENGTH",
-              "TERM_LENGTH",
-              "OVERALL_SENTENCE_LENGTH",
-              "BREACH_OF_SUPERVISION_REQUIREMENTS",
-              "UNSUPPORTED"
-            ]
+            "enum" : [ "SENTENCE_LENGTH", "CUSTODIAL_TERM", "LICENCE_PERIOD", "TARIFF_LENGTH", "TERM_LENGTH", "OVERALL_SENTENCE_LENGTH", "BREACH_OF_SUPERVISION_REQUIREMENTS", "UNSUPPORTED" ]
           },
           "prisonId" : {
             "type" : "string"
@@ -7686,35 +7662,27 @@
         },
         "required" : [ "appearances", "charges", "courtCaseUuid" ]
       },
-      "UpdateCourtAppearanceSchedule": {
-        "type": "object",
-        "properties": {
-          "courtCode": {
-            "type": "string"
+      "UpdateCourtAppearanceSchedule" : {
+        "type" : "object",
+        "properties" : {
+          "courtCode" : {
+            "type" : "string"
           },
-          "reasonCode": {
-            "type": "string"
+          "reasonCode" : {
+            "type" : "string"
           },
-          "start": {
-            "type": "string",
-            "format": "date-time"
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
           },
-          "comments": {
-            "type": [
-              "string",
-              "null"
-            ]
+          "comments" : {
+            "type" : [ "string", "null" ]
           },
-          "prisonCode": {
-            "type": "string"
+          "prisonCode" : {
+            "type" : "string"
           }
         },
-        "required": [
-          "courtCode",
-          "prisonCode",
-          "reasonCode",
-          "start"
-        ]
+        "required" : [ "courtCode", "prisonCode", "reasonCode", "start" ]
       },
       "CreateChargeOutcome" : {
         "type" : "object",
@@ -9210,60 +9178,43 @@
         },
         "required" : [ "updatedSentenceUuids" ]
       },
-      "HearingThingsToDoData": {
-        "type": "object",
-        "properties": {
-          "hearingId": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "uuid",
-            "description": "The ID of the hearing for this thing to do"
+      "HearingThingsToDoData" : {
+        "type" : "object",
+        "properties" : {
+          "hearingId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The ID of the hearing for this thing to do"
           },
-          "courtCaseReference": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "The case reference of the hearing for this thing to do"
+          "courtCaseReference" : {
+            "type" : [ "string", "null" ],
+            "description" : "The case reference of the hearing for this thing to do"
           }
         },
-        "required": [
-          "courtCaseReference",
-          "hearingId"
-        ]
+        "required" : [ "courtCaseReference", "hearingId" ]
       },
-      "ThingsToDo": {
-        "type": "object",
-        "properties": {
-          "prisonerId": {
-            "type": "string"
+      "ThingsToDo" : {
+        "type" : "object",
+        "properties" : {
+          "prisonerId" : {
+            "type" : "string"
           },
-          "thingsToDo": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "NEW_REMAND_WARRANT"
-              ]
+          "thingsToDo" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "NEW_REMAND_WARRANT" ]
             }
           },
-          "hearingThingsToDoData": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/HearingThingsToDoData"
-              },
-              {
-                "type": "null"
-              }
-            ]
+          "hearingThingsToDoData" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/HearingThingsToDoData"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
-        "required": [
-          "prisonerId",
-          "thingsToDo"
-        ]
+        "required" : [ "prisonerId", "thingsToDo" ]
       },
       "Attachment" : {
         "type" : "object",
@@ -9389,16 +9340,7 @@
           },
           "periodLengthType" : {
             "type" : "string",
-            "enum": [
-              "SENTENCE_LENGTH",
-              "CUSTODIAL_TERM",
-              "LICENCE_PERIOD",
-              "TARIFF_LENGTH",
-              "TERM_LENGTH",
-              "OVERALL_SENTENCE_LENGTH",
-              "BREACH_OF_SUPERVISION_REQUIREMENTS",
-              "UNSUPPORTED"
-            ]
+            "enum" : [ "SENTENCE_LENGTH", "CUSTODIAL_TERM", "LICENCE_PERIOD", "TARIFF_LENGTH", "TERM_LENGTH", "OVERALL_SENTENCE_LENGTH", "BREACH_OF_SUPERVISION_REQUIREMENTS", "UNSUPPORTED" ]
           },
           "legacyData" : {
             "oneOf" : [ {
@@ -9954,19 +9896,13 @@
             "format" : "uuid"
           },
           "aggravatingFactors" : {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AggravatingFactor"
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AggravatingFactor"
             }
           }
         },
-        "required": [
-          "aggravatingFactors",
-          "offenceCode",
-          "periodLengths",
-          "sentenceServeType",
-          "sentenceUuid"
-        ]
+        "required" : [ "aggravatingFactors", "offenceCode", "periodLengths", "sentenceServeType", "sentenceUuid" ]
       },
       "PrisonerRecallsResponse" : {
         "type" : "object",
@@ -10382,7 +10318,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example": "10:07:42.253166768"
+            "example" : "07:10:08.2135916"
           },
           "courtCode" : {
             "type" : "string"
@@ -10447,16 +10383,7 @@
           },
           "periodLengthType" : {
             "type" : "string",
-            "enum": [
-              "SENTENCE_LENGTH",
-              "CUSTODIAL_TERM",
-              "LICENCE_PERIOD",
-              "TARIFF_LENGTH",
-              "TERM_LENGTH",
-              "OVERALL_SENTENCE_LENGTH",
-              "BREACH_OF_SUPERVISION_REQUIREMENTS",
-              "UNSUPPORTED"
-            ]
+            "enum" : [ "SENTENCE_LENGTH", "CUSTODIAL_TERM", "LICENCE_PERIOD", "TARIFF_LENGTH", "TERM_LENGTH", "OVERALL_SENTENCE_LENGTH", "BREACH_OF_SUPERVISION_REQUIREMENTS", "UNSUPPORTED" ]
           },
           "legacyData" : {
             "oneOf" : [ {
@@ -10777,16 +10704,7 @@
         "properties" : {
           "type" : {
             "type" : "string",
-            "enum": [
-              "SENTENCE_LENGTH",
-              "CUSTODIAL_TERM",
-              "LICENCE_PERIOD",
-              "TARIFF_LENGTH",
-              "TERM_LENGTH",
-              "OVERALL_SENTENCE_LENGTH",
-              "BREACH_OF_SUPERVISION_REQUIREMENTS",
-              "UNSUPPORTED"
-            ]
+            "enum" : [ "SENTENCE_LENGTH", "CUSTODIAL_TERM", "LICENCE_PERIOD", "TARIFF_LENGTH", "TERM_LENGTH", "OVERALL_SENTENCE_LENGTH", "BREACH_OF_SUPERVISION_REQUIREMENTS", "UNSUPPORTED" ]
           },
           "auto" : {
             "type" : "boolean"
@@ -10815,16 +10733,7 @@
           },
           "periodLengthType" : {
             "type" : "string",
-            "enum": [
-              "SENTENCE_LENGTH",
-              "CUSTODIAL_TERM",
-              "LICENCE_PERIOD",
-              "TARIFF_LENGTH",
-              "TERM_LENGTH",
-              "OVERALL_SENTENCE_LENGTH",
-              "BREACH_OF_SUPERVISION_REQUIREMENTS",
-              "UNSUPPORTED"
-            ]
+            "enum" : [ "SENTENCE_LENGTH", "CUSTODIAL_TERM", "LICENCE_PERIOD", "TARIFF_LENGTH", "TERM_LENGTH", "OVERALL_SENTENCE_LENGTH", "BREACH_OF_SUPERVISION_REQUIREMENTS", "UNSUPPORTED" ]
           },
           "description" : {
             "type" : "string"
@@ -11097,7 +11006,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example": "10:07:42.253166768"
+            "example" : "07:10:08.2135916"
           },
           "nomisOutcomeCode" : {
             "type" : [ "string", "null" ]
@@ -11176,7 +11085,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example": "10:07:42.253166768"
+            "example" : "07:10:08.2135916"
           },
           "courtId" : {
             "type" : "string"
@@ -11328,7 +11237,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example": "10:07:42.253166768"
+            "example" : "07:10:08.2135916"
           },
           "charges" : {
             "type" : "array",
@@ -11349,6 +11258,9 @@
           },
           "nomisAppearanceTypeCode" : {
             "type" : "string"
+          },
+          "comments" : {
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "appearanceDate", "appearanceTime", "charges", "courtCaseUuid", "courtCode", "lifetimeUuid", "nomisAppearanceTypeCode", "prisonerId" ]
@@ -11362,7 +11274,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example": "10:07:42.253166768"
+            "example" : "07:10:08.2135916"
           },
           "courtId" : {
             "type" : "string"
@@ -11538,21 +11450,13 @@
             "format" : "date-time"
           },
           "aggravatingFactors" : {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AggravatingFactor"
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AggravatingFactor"
             }
           }
         },
-        "required": [
-          "aggravatingFactors",
-          "createdAt",
-          "isRecallable",
-          "periodLengths",
-          "sentenceTypeUuid",
-          "sentenceUuid",
-          "systemOfRecord"
-        ]
+        "required" : [ "aggravatingFactors", "createdAt", "isRecallable", "periodLengths", "sentenceTypeUuid", "sentenceUuid", "systemOfRecord" ]
       },
       "RecallableCourtCasesResponse" : {
         "type" : "object",
@@ -11657,16 +11561,16 @@
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
           },
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "pageSize" : {
             "type" : "integer",
             "format" : "int32"
           },
           "paged" : {
             "type" : "boolean"
-          },
-          "pageNumber" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "unpaged" : {
             "type" : "boolean"
@@ -11701,16 +11605,7 @@
           },
           "type" : {
             "type" : "string",
-            "enum": [
-              "SENTENCE_LENGTH",
-              "CUSTODIAL_TERM",
-              "LICENCE_PERIOD",
-              "TARIFF_LENGTH",
-              "TERM_LENGTH",
-              "OVERALL_SENTENCE_LENGTH",
-              "BREACH_OF_SUPERVISION_REQUIREMENTS",
-              "UNSUPPORTED"
-            ]
+            "enum" : [ "SENTENCE_LENGTH", "CUSTODIAL_TERM", "LICENCE_PERIOD", "TARIFF_LENGTH", "TERM_LENGTH", "OVERALL_SENTENCE_LENGTH", "BREACH_OF_SUPERVISION_REQUIREMENTS", "UNSUPPORTED" ]
           }
         },
         "required" : [ "order", "periodLengthUuid", "type" ]
@@ -11854,24 +11749,11 @@
           "canAppeal" : {
             "type" : "boolean"
           },
-          "canBreach": {
-            "type": "boolean"
+          "canBreach" : {
+            "type" : "boolean"
           }
         },
-        "required": [
-          "allAppearancesHaveRecall",
-          "appearanceCount",
-          "canAppeal",
-          "canBreach",
-          "caseReferences",
-          "courtCaseStatus",
-          "courtCaseUuid",
-          "firstDayInCustody",
-          "firstDayInCustodyWarrantType",
-          "latestCourtAppearance",
-          "mergedFromCases",
-          "prisonerId"
-        ]
+        "required" : [ "allAppearancesHaveRecall", "appearanceCount", "canAppeal", "canBreach", "caseReferences", "courtCaseStatus", "courtCaseUuid", "firstDayInCustody", "firstDayInCustodyWarrantType", "latestCourtAppearance", "mergedFromCases", "prisonerId" ]
       },
       "PagedLatestCourtAppearance" : {
         "type" : "object",
@@ -11983,7 +11865,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example": "10:07:42.253166768"
+            "example" : "07:10:08.2135916"
           },
           "courtCode" : {
             "type" : [ "string", "null" ]
@@ -12079,16 +11961,7 @@
           },
           "type" : {
             "type" : [ "string", "null" ],
-            "enum": [
-              "SENTENCE_LENGTH",
-              "CUSTODIAL_TERM",
-              "LICENCE_PERIOD",
-              "TARIFF_LENGTH",
-              "TERM_LENGTH",
-              "OVERALL_SENTENCE_LENGTH",
-              "BREACH_OF_SUPERVISION_REQUIREMENTS",
-              "UNSUPPORTED"
-            ]
+            "enum" : [ "SENTENCE_LENGTH", "CUSTODIAL_TERM", "LICENCE_PERIOD", "TARIFF_LENGTH", "TERM_LENGTH", "OVERALL_SENTENCE_LENGTH", "BREACH_OF_SUPERVISION_REQUIREMENTS", "UNSUPPORTED" ]
           },
           "legacyData" : {
             "oneOf" : [ {
@@ -12138,6 +12011,9 @@
             "type" : "integer",
             "format" : "int64"
           },
+          "last" : {
+            "type" : "boolean"
+          },
           "totalElements" : {
             "type" : "integer",
             "format" : "int64"
@@ -12145,9 +12021,6 @@
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "last": {
-            "type": "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -12157,11 +12030,11 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort": {
-            "$ref": "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
