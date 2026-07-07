@@ -16,6 +16,7 @@ interface EventAudited {
   companion object {
     const val DPS_SYNC_AUDIT_MODULE = "DPS_SYNCHRONISATION"
     const val FLUSH_SCHEDULES_AUDIT_MODULE = "FLUSH_SCHEDULES"
+    const val EDIT_EXTERNAL_MOVEMENTS_AUDIT_MODULE = "OUMEEMOV"
   }
 
   val originatesInDps: Boolean

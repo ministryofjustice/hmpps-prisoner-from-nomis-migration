@@ -5,9 +5,11 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -20,9 +22,12 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEventMovement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension.Companion.dpsCourtSchedulerServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.referenceId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.resyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
@@ -37,6 +42,7 @@ import java.util.*
 class CourtSchedulerSyncMovementIntTest(
   @Autowired private val nomisApi: CourtSchedulerNomisApiMockServer,
   @Autowired private val mappingApi: CourtSchedulerMappingApiMockServer,
+  @Autowired private val sentencingMappingApi: CourtSentencingMappingApiMockServer,
 ) : CourtSchedulerIntegrationTestBase() {
 
   private val dpsApi = dpsCourtSchedulerServer
@@ -1161,6 +1167,164 @@ class CourtSchedulerSyncMovementIntTest(
     }
   }
 
+  @Nested
+  inner class NomisAdminScreenUpdates {
+    private val prisonerNumber = "A0001KT"
+    private val dpsCourtScheduleId = UUID.randomUUID()
+    private val dpsScheduledMovementOutId = UUID.randomUUID()
+    private val dpsScheduledMovementInId = UUID.randomUUID()
+    private val dpsUnscheduledMovementOutId = UUID.randomUUID()
+    private val dpsUnscheduledMovementInId = UUID.randomUUID()
+    private val dpsSentencingCourtAppearanceId = UUID.randomUUID()
+
+    @Nested
+    inner class HappyPath {
+
+      @BeforeEach
+      fun setUp() = runTest {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtSchedulerPrisonerMappingIds(prisonerNumber, 12345L, 1, dpsCourtScheduleId, 3, dpsScheduledMovementOutId, 4, dpsScheduledMovementInId, 1, dpsUnscheduledMovementOutId, 2, dpsUnscheduledMovementInId)
+        nomisApi.stubGetOffenderCourtMovements(prisonerNumber)
+        sentencingMappingApi.stubGetAllCourtAppearanceByNomisIds(
+          mappings = listOf(CourtAppearanceMappingDto(1, dpsSentencingCourtAppearanceId.toString(), "any", CourtAppearanceMappingDto.MappingType.MIGRATED)),
+        )
+        dpsApi.stubResyncPrisonerCourtAppearances(
+          personIdentifier = prisonerNumber,
+          response = resyncResponse(dpsCourtScheduleId, dpsScheduledMovementOutId, dpsScheduledMovementInId, dpsUnscheduledMovementOutId, dpsUnscheduledMovementInId),
+        )
+        mappingApi.stubCreateCourtSchedulerPrisonerMappings()
+
+        sendMessage(courtMovementEvent(prisonerNumber = prisonerNumber, auditModuleName = "OUMEEMOV"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should call DPS resync API`() {
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")))
+      }
+
+      @Test
+      fun `should update mappings`() {
+        mappingApi.verify(
+          putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/migrate"))
+            .withRequestBodyJsonPath("offenderNo", "A0001KT"),
+        )
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class DpsUpdateFailsOnce {
+
+      @BeforeEach
+      fun setUp() = runTest {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtSchedulerPrisonerMappingIds(prisonerNumber, 12345L, 1, dpsCourtScheduleId, 3, dpsScheduledMovementOutId, 4, dpsScheduledMovementInId, 1, dpsUnscheduledMovementOutId, 2, dpsUnscheduledMovementInId)
+        nomisApi.stubGetOffenderCourtMovements(prisonerNumber)
+        sentencingMappingApi.stubGetAllCourtAppearanceByNomisIds(
+          mappings = listOf(CourtAppearanceMappingDto(1, dpsSentencingCourtAppearanceId.toString(), "any", CourtAppearanceMappingDto.MappingType.MIGRATED)),
+        )
+        // The first call to DPS fails, but then succeeds on a retry
+        dpsApi.stubResyncPrisonerCourtAppearancesFailureFollowedBySuccess(
+          personIdentifier = prisonerNumber,
+          response = resyncResponse(dpsCourtScheduleId, dpsScheduledMovementOutId, dpsScheduledMovementInId, dpsUnscheduledMovementOutId, dpsUnscheduledMovementInId),
+        )
+        mappingApi.stubCreateCourtSchedulerPrisonerMappings()
+
+        sendMessage(courtMovementEvent(prisonerNumber = prisonerNumber, auditModuleName = "OUMEEMOV"))
+          .also { waitForAnyProcessingToComplete("court-scheduler-migration-entity-migrated") }
+      }
+
+      @Test
+      fun `should call DPS resync API twice`() {
+        dpsApi.verify(
+          2,
+          putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")),
+        )
+      }
+
+      @Test
+      fun `should update mappings`() {
+        mappingApi.verify(
+          putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/migrate"))
+            .withRequestBodyJsonPath("offenderNo", "A0001KT"),
+        )
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class MappingUpdateFailsOnce {
+
+      @BeforeEach
+      fun setUp() = runTest {
+        setUpTestClass()
+
+        mappingApi.stubGetCourtSchedulerPrisonerMappingIds(prisonerNumber, 12345L, 1, dpsCourtScheduleId, 3, dpsScheduledMovementOutId, 4, dpsScheduledMovementInId, 1, dpsUnscheduledMovementOutId, 2, dpsUnscheduledMovementInId)
+        nomisApi.stubGetOffenderCourtMovements(prisonerNumber)
+        sentencingMappingApi.stubGetAllCourtAppearanceByNomisIds(
+          mappings = listOf(CourtAppearanceMappingDto(1, dpsSentencingCourtAppearanceId.toString(), "any", CourtAppearanceMappingDto.MappingType.MIGRATED)),
+        )
+        dpsApi.stubResyncPrisonerCourtAppearances(
+          personIdentifier = prisonerNumber,
+          response = resyncResponse(dpsCourtScheduleId, dpsScheduledMovementOutId, dpsScheduledMovementInId, dpsUnscheduledMovementOutId, dpsUnscheduledMovementInId),
+        )
+        // The first call to mappings fails, but then succeeds on a retry
+        mappingApi.stubCreateCourtSchedulePrisonerMappingsFailureFollowedBySuccess()
+
+        sendMessage(courtMovementEvent(prisonerNumber = prisonerNumber, auditModuleName = "OUMEEMOV"))
+          .also { waitForAnyProcessingToComplete("court-scheduler-migration-entity-migrated") }
+      }
+
+      @Test
+      fun `should call DPS resync API`() {
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")))
+      }
+
+      @Test
+      fun `should update mappings twice`() {
+        mappingApi.verify(
+          count = 2,
+          putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/migrate"))
+            .withRequestBodyJsonPath("offenderNo", "A0001KT"),
+        )
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
   private fun sendMessage(event: String) = awsSqsCourtMovementsOffenderEventsClient.sendMessage(
     courtMovementsQueueOffenderEventsUrl,
     event,
@@ -1172,12 +1336,13 @@ class CourtSchedulerSyncMovementIntTest(
     direction: String = "OUT",
     inserted: Boolean = false,
     deleted: Boolean = false,
+    prisonerNumber: String = "A1234BC",
   ) = // language=JSON
     """{
          "Type" : "Notification",
          "MessageId" : "83354f3f-45cb-5e8e-9266-2e0fa1e91dcc",
          "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-160f3055cc4e04c4105ee85f2ed1fccb",
-         "Message" : "{\"eventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"eventDatetime\":\"2025-09-02T13:24:01\",\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\",\"nomisEventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"movementSeq\":3,\"movementDateTime\":\"2025-09-02T13:23:00\",\"movementType\":\"$movementType\",\"movementReasonCode\":\"OPA\",\"directionCode\":\"$direction\",\"fromAgencyLocationId\":\"NWI\",\"recordInserted\":$inserted,\"recordDeleted\":$deleted,\"auditModuleName\":\"$auditModuleName\"}",
+         "Message" : "{\"eventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"eventDatetime\":\"2025-09-02T13:24:01\",\"bookingId\":12345,\"offenderIdDisplay\":\"$prisonerNumber\",\"nomisEventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"movementSeq\":3,\"movementDateTime\":\"2025-09-02T13:23:00\",\"movementType\":\"$movementType\",\"movementReasonCode\":\"OPA\",\"directionCode\":\"$direction\",\"fromAgencyLocationId\":\"NWI\",\"recordInserted\":$inserted,\"recordDeleted\":$deleted,\"auditModuleName\":\"$auditModuleName\"}",
          "Timestamp" : "2025-09-02T12:24:02.004Z",
          "SignatureVersion" : "1",
          "Signature" : "HDyAhgG0o4XV4eJjuLODqeyBfZfsUxLcqVyiwQQIvegES5QnWmfgKwzb+D3az1QgiJBaknq/NIR+C/71O0AFFTSRN3RFOQyLrPZBeynGIyBNzGgeJjPGrZrSBqYegtJKJPDQEQLNepk2Jgqjiu3NgKT0gq5z5mU7G45wqkC81F3/DJUAHb98BmLbWK/cibnaHrvgXW493IbWPLXQENzJ9rDJKekz6sdY6+qHcOg57xdho/Xlb6VFo28/9qoVqA+A2MUBlHBRI1BSK0QVu8duri5DHjE0I2/UG7emlt9vZ6KtxyXz/ZmFVC/nY2OD0OgFJvP7DaAJbgMo/rbGe1JlYQ==",

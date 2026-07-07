@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
+import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -313,6 +314,36 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withHeader("Content-Type", "application/json")
             .withBody(jsonMapper.writeValueAsString(error)),
         ),
+    )
+  }
+
+  fun stubResyncPrisonerCourtAppearancesFailureFollowedBySuccess(
+    personIdentifier: String = "A1234BC",
+    response: ResyncResponse = resyncResponse(),
+  ) {
+    stubFor(
+      put("/resync/court-appearances/$personIdentifier")
+        .inScenario("Retry update Scenario")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(
+          aResponse()
+            .withStatus(500)
+            .withHeader("Content-Type", "application/json"),
+        )
+        .willSetStateTo("Cause update Success"),
+    )
+
+    stubFor(
+      put("/resync/court-appearances/$personIdentifier")
+        .inScenario("Retry update Scenario")
+        .whenScenarioStateIs("Cause update Success")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
+        )
+        .willSetStateTo(STARTED),
     )
   }
 

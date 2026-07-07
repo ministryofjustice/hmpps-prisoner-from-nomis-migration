@@ -190,7 +190,7 @@ hmpps.sqs:
     eventexternalmovements:
       dlqMaxReceiveCount: 1
     eventcourtmovements:
-      dlqMaxReceiveCount: 1
+      dlqMaxReceiveCount: 2
     domaineventpersonalrelationships:
       dlqMaxReceiveCount: 1
     eventofficialvisits:

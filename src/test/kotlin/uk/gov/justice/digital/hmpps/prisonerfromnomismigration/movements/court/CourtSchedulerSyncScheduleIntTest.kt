@@ -22,6 +22,7 @@ import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.reset
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
@@ -352,7 +353,7 @@ class CourtSchedulerSyncScheduleIntTest(
 
       @Test
       fun `should create failure telemetry`() {
-        verify(telemetryClient).trackEvent(
+        verify(telemetryClient, times(2)).trackEvent(
           eq("court-scheduler-sync-schedule-inserted-awaiting-parent"),
           any(),
           isNull(),
