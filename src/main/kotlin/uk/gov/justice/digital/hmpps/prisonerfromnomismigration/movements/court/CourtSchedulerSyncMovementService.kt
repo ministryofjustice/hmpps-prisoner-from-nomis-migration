@@ -8,6 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtEventMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEventMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncUser
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.EDIT_EXTERNAL_MOVEMENTS_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -37,6 +38,7 @@ class CourtSchedulerSyncMovementService(
   private val mappingApi: CourtSchedulerMappingApiService,
   private val nomisApi: CourtSchedulerNomisApiService,
   private val dpsApi: CourtSchedulerDpsApiService,
+  private val migrationService: CourtSchedulerMigrationService,
 ) : TelemetryEnabled {
 
   companion object {
@@ -45,6 +47,7 @@ class CourtSchedulerSyncMovementService(
 
   suspend fun courtMovementChanged(event: ExternalMovementEvent) = when {
     event.movementType != CRT -> {}
+    event.auditModuleName == EDIT_EXTERNAL_MOVEMENTS_AUDIT_MODULE -> migrationService.resyncPrisonerCourtMovements(event.offenderIdDisplay!!)
     event.recordInserted -> courtMovementInserted(event)
     event.recordDeleted -> courtMovementDeleted(event)
     else -> courtMovementUpdated(event)
