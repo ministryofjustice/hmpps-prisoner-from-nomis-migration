@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-07-06.1697.982506a"
+    "version" : "2026-07-06.1699.7776449"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -32766,12 +32766,12 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "paged" : {
+            "type" : "boolean"
+          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "paged" : {
-            "type" : "boolean"
           },
           "unpaged" : {
             "type" : "boolean"
@@ -38896,8 +38896,7 @@
           },
           "auditModule" : {
             "type" : "string",
-            "description" : "The NOMIS module that created this IEP",
-            "enum" : [ "OCUWARNG", "PRISON_API", "OIDADMIS", "MERGE", "OIDOIEPS", "OIDITRAN", "OSIOSEAR" ]
+            "description" : "The NOMIS module that created this IEP"
           },
           "whenCreated" : {
             "type" : "string",
