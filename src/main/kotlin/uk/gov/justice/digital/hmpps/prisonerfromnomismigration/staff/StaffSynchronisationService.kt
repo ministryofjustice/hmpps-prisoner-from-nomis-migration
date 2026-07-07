@@ -70,4 +70,13 @@ class StaffSynchronisationService(
     val telemetry = telemetryOf("username" to event.username, "caseloadId" to event.caseloadId)
     telemetryClient.trackEvent("useraccessiblecaseloads-synchronisation-deleted-notimplemented", telemetry)
   }
+
+  suspend fun userCaseloadRoleCreated(event: UserCaseloadRoleEvent) {
+    val telemetry = telemetryOf("username" to event.username, "caseloadId" to event.caseloadId, "roleCode" to event.roleCode)
+    telemetryClient.trackEvent("usercaseloadroles-synchronisation-created-notimplemented", telemetry)
+  }
+  suspend fun userCaseloadRoleDeleted(event: UserCaseloadRoleEvent) {
+    val telemetry = telemetryOf("username" to event.username, "caseloadId" to event.caseloadId, "roleCode" to event.roleCode)
+    telemetryClient.trackEvent("usercaseloadroles-synchronisation-deleted-notimplemented", telemetry)
+  }
 }

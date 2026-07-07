@@ -17,6 +17,7 @@ class StaffSynchronisationIntTest : StaffIntegrationTestBase() {
   val nomisInternetAddressStaffId = 5678L
   val username = "FRED_GEN"
   val caseloadId = "ASI"
+  val roleCode = "ROLE_ADD_USER"
 
   @Autowired
   private lateinit var nomisApiMock: StaffNomisApiMockServer
@@ -703,6 +704,141 @@ class StaffSynchronisationIntTest : StaffIntegrationTestBase() {
       }
     }
   }
+
+  @Nested
+  inner class UserCaseloadRoles {
+    @Nested
+    @DisplayName("USER_CASELOAD_ROLES-INSERTED")
+    inner class UserCaseloadRoleCreated {
+      @Nested
+      inner class WhenCreatedInDps {
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            userCaseloadRoleEvent(
+              eventType = "USER_CASELOAD_ROLES-INSERTED",
+              username = username,
+              caseloadId = caseloadId,
+              roleCode = roleCode,
+              auditModuleName = "DPS_SYNCHRONISATION",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("usercaseloadroles-synchronisation-created-notimplemented"),
+            check {
+              assertThat(it["username"]).isEqualTo(username)
+              assertThat(it["caseloadId"]).isEqualTo(caseloadId)
+              assertThat(it["roleCode"]).isEqualTo(roleCode)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenCreatedInNomis {
+
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            userCaseloadRoleEvent(
+              eventType = "USER_CASELOAD_ROLES-INSERTED",
+              username = username,
+              caseloadId = caseloadId,
+              roleCode = roleCode,
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Nested
+        inner class HappyPath {
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("usercaseloadroles-synchronisation-created-notimplemented"),
+              check {
+                assertThat(it["username"]).isEqualTo(username)
+                assertThat(it["caseloadId"]).isEqualTo(caseloadId)
+                assertThat(it["roleCode"]).isEqualTo(roleCode)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("USER_CASELOAD_ROLES-DELETED")
+    inner class UserCaseloadRoleDeleted {
+      @Nested
+      inner class WhenDeletedInDps {
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            userCaseloadRoleEvent(
+              eventType = "USER_CASELOAD_ROLES-DELETED",
+              username = username,
+              caseloadId = caseloadId,
+              roleCode = roleCode,
+              auditModuleName = "DPS_SYNCHRONISATION",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("usercaseloadroles-synchronisation-deleted-notimplemented"),
+            check {
+              assertThat(it["username"]).isEqualTo(username)
+              assertThat(it["caseloadId"]).isEqualTo(caseloadId)
+              assertThat(it["roleCode"]).isEqualTo(roleCode)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenDeletedInNomis {
+
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            userCaseloadRoleEvent(
+              eventType = "USER_CASELOAD_ROLES-DELETED",
+              username = username,
+              caseloadId = caseloadId,
+              roleCode = roleCode,
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Nested
+        inner class HappyPath {
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("usercaseloadroles-synchronisation-deleted-notimplemented"),
+              check {
+                assertThat(it["username"]).isEqualTo(username)
+                assertThat(it["caseloadId"]).isEqualTo(caseloadId)
+                assertThat(it["roleCode"]).isEqualTo(roleCode)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+  }
 }
 
 fun staffEvent(
@@ -770,6 +906,26 @@ fun userAccessibleCaseloadEvent(
   """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
     "Message": "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"username\": \"$username\",\"caseloadId\": \"$caseloadId\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+  """.trimIndent()
+
+fun userCaseloadRoleEvent(
+  eventType: String,
+  username: String,
+  caseloadId: String,
+  roleCode: String,
+  auditModuleName: String = "OUUUSERS",
+) = // language=JSON
+  """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"username\": \"$username\",\"caseloadId\": \"$caseloadId\",\"roleCode\": \"$roleCode\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 
