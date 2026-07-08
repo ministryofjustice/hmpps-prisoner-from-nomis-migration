@@ -6,8 +6,11 @@ import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -130,6 +133,71 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       // TOD this should be a list
       username = "JSMITH_ADM",
     )
+
+    fun verifyUserMigrationRequest() {
+      val request: UserMigrationRequest = StaffDpsApiExtension.getRequestBody(
+        putRequestedFor(urlPathEqualTo("/prison-users/staff")),
+      )
+      with(request) {
+        with(user) {
+          assertThat(id).isEqualTo("1234")
+          assertThat(email).isEqualTo("john.smith@justice.gov.uk")
+          assertThat(firstName).isEqualTo("JOHN")
+          assertThat(lastName).isEqualTo("SMITH")
+          assertThat(status).isEqualTo(MigratedUser.Status.ACTIVE)
+          assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+          assertThat(createdBy).isEqualTo("KOFEADDY")
+          assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
+          assertThat(modifiedBy).isEqualTo("KOFE_MOD")
+        }
+        assertThat(accounts.size).isEqualTo(1)
+        with(accounts[0]) {
+          assertThat(username).isEqualTo("JOHNSMITH_ADM")
+          assertThat(accountType).isEqualTo(MigratedUserAccount.AccountType.ADMIN)
+          assertThat(accountStatus).isEqualTo(MigratedUserAccount.AccountStatus.OPEN)
+          assertThat(lastLoggedIn).isEqualTo(LocalDateTime.parse("2026-03-17T12:30:00"))
+          assertThat(activeCaseloadId).isEqualTo("MDI")
+          assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+          assertThat(createdBy).isEqualTo("KOFEADDY")
+          assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
+          assertThat(modifiedBy).isEqualTo("KOFE_MOD")
+        }
+
+        assertThat(roles!!.size).isEqualTo(2)
+        with(roles[0]) {
+          assertThat(username).isEqualTo("JOHNSMITH_ADM")
+          assertThat(roleCode).isEqualTo("DPS_CODE_1")
+          assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+          assertThat(createdBy).isEqualTo("KOFEADDY")
+        }
+        with(roles[1]) {
+          assertThat(username).isEqualTo("JOHNSMITH_ADM")
+          assertThat(roleCode).isEqualTo("DPS_CODE_2")
+          assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+          assertThat(createdBy).isEqualTo("KOFEADDY")
+        }
+
+        assertThat(accessibleCaseloads!!.size).isEqualTo(3)
+        with(accessibleCaseloads[0]) {
+          assertThat(username).isEqualTo("JOHNSMITH_ADM")
+          assertThat(caseloadId).isEqualTo("LEI")
+          assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+          assertThat(createdBy).isEqualTo("KOFEADDY")
+        }
+        with(accessibleCaseloads[1]) {
+          assertThat(username).isEqualTo("JOHNSMITH_ADM")
+          assertThat(caseloadId).isEqualTo("MDI")
+          assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+          assertThat(createdBy).isEqualTo("KOFEADDY")
+        }
+        with(accessibleCaseloads[2]) {
+          assertThat(username).isEqualTo("JOHNSMITH_ADM")
+          assertThat(caseloadId).isEqualTo("NWEB")
+          assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+          assertThat(createdBy).isEqualTo("KOFEADDY")
+        }
+      }
+    }
   }
 
   fun stubHealthPing(status: Int) {

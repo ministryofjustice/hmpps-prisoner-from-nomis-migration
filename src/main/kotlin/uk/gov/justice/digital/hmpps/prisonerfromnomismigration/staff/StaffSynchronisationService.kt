@@ -1,8 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff
 
 import com.microsoft.applicationinsights.TelemetryClient
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
@@ -16,9 +14,6 @@ class StaffSynchronisationService(
   private val dpsApiService: StaffDpsApiService,
   override val telemetryClient: TelemetryClient,
 ) : TelemetryEnabled {
-  private companion object {
-    val log: Logger = LoggerFactory.getLogger(this::class.java)
-  }
 
   suspend fun resynchroniseStaff(staffId: Long) {
     val nomisStaff = nomisApiService.getStaffDetails(staffId)
@@ -26,11 +21,7 @@ class StaffSynchronisationService(
   }
 
   suspend fun staffCreated(event: StaffEvent) = staffUpserted("created", event)
-  suspend fun staffUpdated(event: StaffEvent) {
-    val telemetry = telemetryOf("nomisStaffId" to event.staffId)
-    telemetryClient.trackEvent("staff-synchronisation-updated-notimplemented", telemetry)
-  }
-
+  suspend fun staffUpdated(event: StaffEvent) = staffUpserted("updated", event)
   suspend fun staffUpserted(eventType: String, event: StaffEvent) {
     val nomisStaffId = event.staffId
     val telemetry = telemetryOf("nomisStaffId" to nomisStaffId)
@@ -47,16 +38,17 @@ class StaffSynchronisationService(
       }
     }
   }
-
   suspend fun staffDeleted(event: StaffEvent) {
-    val telemetry = telemetryOf("nomisStaffId" to event.staffId)
+    val nomisStaffId = event.staffId
+    val telemetry = telemetryOf("nomisStaffId" to nomisStaffId)
     if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent(
         "staff-synchronisation-deleted-skipped",
         telemetry,
       )
     } else {
-      telemetryClient.trackEvent("staff-synchronisation-deleted-notimplemented", telemetry)
+      dpsApiService.deleteStaff(nomisStaffId)
+      telemetryClient.trackEvent("staff-synchronisation-deleted-success", telemetry)
     }
   }
 
