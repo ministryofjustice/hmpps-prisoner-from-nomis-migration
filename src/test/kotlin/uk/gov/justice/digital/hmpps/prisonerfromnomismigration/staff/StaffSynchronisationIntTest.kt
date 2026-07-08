@@ -1,9 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff
 
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -15,10 +18,7 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffDpsApiExtension.Companion.dpsStaffServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUser
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccount
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
-import java.time.LocalDateTime
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffDpsApiMockServer.Companion.verifyUserMigrationRequest
 
 class StaffSynchronisationIntTest(
   @Autowired private val nomisApiMock: StaffNomisApiMockServer,
@@ -85,68 +85,7 @@ class StaffSynchronisationIntTest(
           @Test
           fun `will create the staff in DPS`() {
             dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
-            val request: UserMigrationRequest = StaffDpsApiExtension.getRequestBody(
-              putRequestedFor(urlPathEqualTo("/prison-users/staff")),
-            )
-            with(request) {
-              with(user) {
-                assertThat(id).isEqualTo("1234")
-                assertThat(email).isEqualTo("john.smith@justice.gov.uk")
-                assertThat(firstName).isEqualTo("JOHN")
-                assertThat(lastName).isEqualTo("SMITH")
-                assertThat(status).isEqualTo(MigratedUser.Status.ACTIVE)
-                assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
-                assertThat(createdBy).isEqualTo("KOFEADDY")
-                assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
-                assertThat(modifiedBy).isEqualTo("KOFE_MOD")
-              }
-              assertThat(accounts.size).isEqualTo(1)
-              with(accounts[0]) {
-                assertThat(username).isEqualTo("JOHNSMITH_ADM")
-                assertThat(accountType).isEqualTo(MigratedUserAccount.AccountType.ADMIN)
-                assertThat(accountStatus).isEqualTo(MigratedUserAccount.AccountStatus.OPEN)
-                assertThat(lastLoggedIn).isEqualTo(LocalDateTime.parse("2026-03-17T12:30:00"))
-                assertThat(activeCaseloadId).isEqualTo("MDI")
-                assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
-                assertThat(createdBy).isEqualTo("KOFEADDY")
-                assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
-                assertThat(modifiedBy).isEqualTo("KOFE_MOD")
-              }
-
-              assertThat(roles!!.size).isEqualTo(2)
-              with(roles[0]) {
-                assertThat(username).isEqualTo("JOHNSMITH_ADM")
-                assertThat(roleCode).isEqualTo("DPS_CODE_1")
-                assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
-                assertThat(createdBy).isEqualTo("KOFEADDY")
-              }
-              with(roles[1]) {
-                assertThat(username).isEqualTo("JOHNSMITH_ADM")
-                assertThat(roleCode).isEqualTo("DPS_CODE_2")
-                assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
-                assertThat(createdBy).isEqualTo("KOFEADDY")
-              }
-
-              assertThat(accessibleCaseloads!!.size).isEqualTo(3)
-              with(accessibleCaseloads[0]) {
-                assertThat(username).isEqualTo("JOHNSMITH_ADM")
-                assertThat(caseloadId).isEqualTo("LEI")
-                assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
-                assertThat(createdBy).isEqualTo("KOFEADDY")
-              }
-              with(accessibleCaseloads[1]) {
-                assertThat(username).isEqualTo("JOHNSMITH_ADM")
-                assertThat(caseloadId).isEqualTo("MDI")
-                assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
-                assertThat(createdBy).isEqualTo("KOFEADDY")
-              }
-              with(accessibleCaseloads[2]) {
-                assertThat(username).isEqualTo("JOHNSMITH_ADM")
-                assertThat(caseloadId).isEqualTo("NWEB")
-                assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
-                assertThat(createdBy).isEqualTo("KOFEADDY")
-              }
-            }
+            verifyUserMigrationRequest()
           }
 
           @Test
@@ -161,85 +100,69 @@ class StaffSynchronisationIntTest(
           }
         }
       }
+    }
 
+    @Nested
+    @DisplayName("STAFF_MEMBERS-UPDATED")
+    inner class StaffMemberUpdated {
       @Nested
-      @DisplayName("STAFF_MEMBERS-UPDATED")
-      inner class StaffMemberUpdated {
-        @Nested
-        inner class WhenUpdatedInDps {
-          @BeforeEach
-          fun setUp() {
-            staffOffenderEventsQueue.sendMessage(
-              staffEvent(
-                eventType = "STAFF_MEMBERS-UPDATED",
-                staffId = nomisStaffId,
-                auditModuleName = "DPS_SYNCHRONISATION",
-              ),
-            ).also { waitForAnyProcessingToComplete() }
-          }
-
-          @Test
-          fun `will track telemetry`() {
-            verify(telemetryClient).trackEvent(
-              eq("staff-synchronisation-updated-notimplemented"),
-              check {
-                assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
-              },
-              isNull(),
-            )
-          }
+      inner class WhenUpdatedInDps {
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            staffEvent(
+              eventType = "STAFF_MEMBERS-UPDATED",
+              staffId = nomisStaffId,
+              auditModuleName = "DPS_SYNCHRONISATION",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
         }
 
-        @Nested
-        inner class WhenUpdatedInNomis {
-
-          @BeforeEach
-          fun setUp() {
-            staffOffenderEventsQueue.sendMessage(
-              staffEvent(
-                eventType = "STAFF_MEMBERS-UPDATED",
-                staffId = nomisStaffId,
-              ),
-            ).also { waitForAnyProcessingToComplete() }
-          }
-
-          @Nested
-          inner class HappyPath {
-
-            @Test
-            fun `will track telemetry`() {
-              verify(telemetryClient).trackEvent(
-                eq("staff-synchronisation-updated-notimplemented"),
-                check {
-                  assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
-                },
-                isNull(),
-              )
-            }
-          }
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("staff-synchronisation-updated-skipped"),
+            check {
+              assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+            },
+            isNull(),
+          )
         }
       }
 
       @Nested
-      @DisplayName("STAFF_MEMBERS-DELETED")
-      inner class StaffMemberDeleted {
+      inner class WhenUpdatedInNomis {
         @Nested
-        inner class WhenDeletedInDps {
+        inner class HappyPath {
+
           @BeforeEach
           fun setUp() {
+            nomisApiMock.stubGetStaffDetails()
+            dpsApiMock.stubSyncStaff()
+
             staffOffenderEventsQueue.sendMessage(
               staffEvent(
-                eventType = "STAFF_MEMBERS-DELETED",
+                eventType = "STAFF_MEMBERS-UPDATED",
                 staffId = nomisStaffId,
-                auditModuleName = "DPS_SYNCHRONISATION",
               ),
             ).also { waitForAnyProcessingToComplete() }
           }
 
           @Test
+          fun `will retrieve the staff details from NOMIS`() {
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/$nomisStaffId")))
+          }
+
+          @Test
+          fun `will update the staff in DPS`() {
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
+            verifyUserMigrationRequest()
+          }
+
+          @Test
           fun `will track telemetry`() {
             verify(telemetryClient).trackEvent(
-              eq("staff-synchronisation-deleted-skipped"),
+              eq("staff-synchronisation-updated-success"),
               check {
                 assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
               },
@@ -247,33 +170,75 @@ class StaffSynchronisationIntTest(
             )
           }
         }
+      }
+    }
+
+    @Nested
+    @DisplayName("STAFF_MEMBERS-DELETED")
+    inner class StaffMemberDeleted {
+      @Nested
+      inner class WhenDeletedInDps {
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            staffEvent(
+              eventType = "STAFF_MEMBERS-DELETED",
+              staffId = nomisStaffId,
+              auditModuleName = "DPS_SYNCHRONISATION",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("staff-synchronisation-deleted-skipped"),
+            check {
+              assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenDeletedInNomis {
+
+        @BeforeEach
+        fun setUp() {
+          nomisApiMock.stubGetStaffDetails()
+          dpsApiMock.stubDeleteStaff()
+
+          staffOffenderEventsQueue.sendMessage(
+            staffEvent(
+              eventType = "STAFF_MEMBERS-DELETED",
+              staffId = nomisStaffId,
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
 
         @Nested
-        inner class WhenDeletedInNomis {
+        inner class HappyPath {
 
-          @BeforeEach
-          fun setUp() {
-            staffOffenderEventsQueue.sendMessage(
-              staffEvent(
-                eventType = "STAFF_MEMBERS-DELETED",
-                staffId = nomisStaffId,
-              ),
-            ).also { waitForAnyProcessingToComplete() }
-          }
-
-          @Nested
-          inner class HappyPath {
-
-            @Test
-            fun `will track telemetry`() {
-              verify(telemetryClient).trackEvent(
-                eq("staff-synchronisation-deleted-notimplemented"),
-                check {
-                  assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
-                },
-                isNull(),
+          @Test
+          fun `will delete Staff in DPS`() {
+            await untilAsserted {
+              dpsStaffServer.verify(
+                1,
+                deleteRequestedFor(urlPathEqualTo("/prison-users/staff/$nomisStaffId")),
               )
             }
+          }
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("staff-synchronisation-deleted-success"),
+              check {
+                assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+              },
+              isNull(),
+            )
           }
         }
       }
