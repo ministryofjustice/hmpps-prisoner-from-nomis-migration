@@ -2,8 +2,11 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -118,6 +121,9 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
 
+    // TODO Temporarily Set syncRequest to migrationRequest - update when endpoint ready
+    fun syncStaff() = migrateStaff()
+
     fun migrateStaffResponse(nomisStaffId: Long, dpsStaffId: UUID) = UserMigrationResponse(
       userId = dpsStaffId,
       staffId = nomisStaffId.toString(),
@@ -144,12 +150,40 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       migrateStaffResponse(nomisStaffId, dpsStaffId),
   ) {
     stubFor(
-      post("/prison-users/migrate/staff")
+      post("/migrate/user")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(201)
             .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubSyncStaff(
+    nomisStaffId: Long = 1234,
+    dpsStaffId: UUID = UUID.randomUUID(),
+    response: UserMigrationResponse =
+      migrateStaffResponse(nomisStaffId, dpsStaffId),
+  ) {
+    stubFor(
+      put("/prison-users/staff")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(200)
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubDeleteStaff(nomisStaffId: Long = 1234) {
+    stubFor(
+      delete(urlPathMatching("/prison-users/staff/$nomisStaffId"))
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
         ),
     )
   }
