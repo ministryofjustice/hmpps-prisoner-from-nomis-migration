@@ -267,7 +267,7 @@ class StaffMigrationIntTest(
       @Test
       fun `will map and transform staff ids`() {
         val migrationRequests: List<UserMigrationRequest> = StaffDpsApiExtension.getRequestBodies(
-          postRequestedFor(urlPathEqualTo("/prison-users/migrate/staff")),
+          postRequestedFor(urlPathEqualTo("/migrate/user")),
         )
 
         with(migrationRequests.first { it.user.id == "1234" }) {

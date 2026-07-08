@@ -3,7 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -61,7 +61,7 @@ class StaffDataRepairResourceIntTest(
       @BeforeEach
       fun setUp() {
         nomisApiMockServer.stubGetStaffDetails(nomisStaffId = staffId)
-        dpsStaffServer.stubMigrateStaff()
+        dpsStaffServer.stubSyncStaff()
 
         webTestClient.post().uri("/staff/$staffId/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
@@ -77,7 +77,7 @@ class StaffDataRepairResourceIntTest(
       @Test
       fun `will send staff details to DPS`() {
         dpsStaffServer.verify(
-          postRequestedFor(urlPathEqualTo("/prison-users/migrate/staff"))
+          putRequestedFor(urlPathEqualTo("/prison-users/staff"))
             .withRequestBodyJsonPath("user.id", equalTo("1234"))
             .withRequestBodyJsonPath("user.email", equalTo("john.smith@justice.gov.uk"))
             .withRequestBodyJsonPath("user.firstName", equalTo("JOHN"))

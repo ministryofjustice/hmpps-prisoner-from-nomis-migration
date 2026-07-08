@@ -6,7 +6,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffDetails
 
 @Service
 class StaffSynchronisationService(
@@ -20,20 +22,42 @@ class StaffSynchronisationService(
 
   suspend fun resynchroniseStaff(staffId: Long) {
     val nomisStaff = nomisApiService.getStaffDetails(staffId)
-    dpsApiService.migrateStaff(nomisStaff.toMigrateStaffRequest())
+    dpsApiService.syncStaff(nomisStaff.toSyncStaffRequest())
   }
 
-  suspend fun staffCreated(event: StaffEvent) {
-    val telemetry = telemetryOf("nomisStaffId" to event.staffId)
-    telemetryClient.trackEvent("staff-synchronisation-created-notimplemented", telemetry)
-  }
+  suspend fun staffCreated(event: StaffEvent) = staffUpserted("created", event)
   suspend fun staffUpdated(event: StaffEvent) {
     val telemetry = telemetryOf("nomisStaffId" to event.staffId)
     telemetryClient.trackEvent("staff-synchronisation-updated-notimplemented", telemetry)
   }
+
+  suspend fun staffUpserted(eventType: String, event: StaffEvent) {
+    val nomisStaffId = event.staffId
+    val telemetry = telemetryOf("nomisStaffId" to nomisStaffId)
+    if (event.originatesInDpsOrHasMissingAudit) {
+      telemetryClient.trackEvent(
+        "staff-synchronisation-$eventType-skipped",
+        telemetry,
+      )
+    } else {
+      nomisApiService.getStaffDetails(nomisStaffId).also {
+        track("staff-synchronisation-$eventType", telemetry) {
+          dpsApiService.syncStaff(it.toSyncStaffRequest())
+        }
+      }
+    }
+  }
+
   suspend fun staffDeleted(event: StaffEvent) {
     val telemetry = telemetryOf("nomisStaffId" to event.staffId)
-    telemetryClient.trackEvent("staff-synchronisation-deleted-notimplemented", telemetry)
+    if (event.originatesInDpsOrHasMissingAudit) {
+      telemetryClient.trackEvent(
+        "staff-synchronisation-deleted-skipped",
+        telemetry,
+      )
+    } else {
+      telemetryClient.trackEvent("staff-synchronisation-deleted-notimplemented", telemetry)
+    }
   }
 
   suspend fun staffAccountCreated(event: StaffUserAccountEvent) {
@@ -80,3 +104,6 @@ class StaffSynchronisationService(
     telemetryClient.trackEvent("usercaseloadroles-synchronisation-deleted-notimplemented", telemetry)
   }
 }
+
+// TODO Temporary until Endpoint ready
+fun StaffDetails.toSyncStaffRequest() = toMigrateStaffRequest()

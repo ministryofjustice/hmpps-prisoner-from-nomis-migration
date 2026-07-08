@@ -1,5 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff
 
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -11,22 +14,22 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffDpsApiExtension.Companion.dpsStaffServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUser
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccount
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
+import java.time.LocalDateTime
 
-class StaffSynchronisationIntTest : StaffIntegrationTestBase() {
-  val nomisStaffId = 1234L
-  val nomisInternetAddressStaffId = 5678L
-  val username = "FRED_GEN"
-  val caseloadId = "ASI"
-  val roleCode = "ROLE_ADD_USER"
+class StaffSynchronisationIntTest(
+  @Autowired private val nomisApiMock: StaffNomisApiMockServer,
+) : StaffIntegrationTestBase() {
 
-  @Autowired
-  private lateinit var nomisApiMock: StaffNomisApiMockServer
-
-  @Autowired
-  private lateinit var mappingApiMock: StaffMappingApiMockServer
+  private val dpsApiMock = dpsStaffServer
 
   @Nested
   inner class StaffMember {
+    val nomisStaffId = 1234L
+
     @Nested
     @DisplayName("STAFF_MEMBERS-INSERTED")
     inner class StaffMemberCreated {
@@ -46,7 +49,7 @@ class StaffSynchronisationIntTest : StaffIntegrationTestBase() {
         @Test
         fun `will track telemetry`() {
           verify(telemetryClient).trackEvent(
-            eq("staff-synchronisation-created-notimplemented"),
+            eq("staff-synchronisation-created-skipped"),
             check {
               assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
             },
@@ -58,23 +61,98 @@ class StaffSynchronisationIntTest : StaffIntegrationTestBase() {
       @Nested
       inner class WhenCreatedInNomis {
 
-        @BeforeEach
-        fun setUp() {
-          staffOffenderEventsQueue.sendMessage(
-            staffEvent(
-              eventType = "STAFF_MEMBERS-INSERTED",
-              staffId = nomisStaffId,
-            ),
-          ).also { waitForAnyProcessingToComplete() }
-        }
-
         @Nested
         inner class HappyPath {
+
+          @BeforeEach
+          fun setUp() {
+            nomisApiMock.stubGetStaffDetails()
+            dpsApiMock.stubSyncStaff()
+
+            staffOffenderEventsQueue.sendMessage(
+              staffEvent(
+                eventType = "STAFF_MEMBERS-INSERTED",
+                staffId = nomisStaffId,
+              ),
+            ).also { waitForAnyProcessingToComplete() }
+          }
+
+          @Test
+          fun `will retrieve the staff details from NOMIS`() {
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/$nomisStaffId")))
+          }
+
+          @Test
+          fun `will create the staff in DPS`() {
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
+            val request: UserMigrationRequest = StaffDpsApiExtension.getRequestBody(
+              putRequestedFor(urlPathEqualTo("/prison-users/staff")),
+            )
+            with(request) {
+              with(user) {
+                assertThat(id).isEqualTo("1234")
+                assertThat(email).isEqualTo("john.smith@justice.gov.uk")
+                assertThat(firstName).isEqualTo("JOHN")
+                assertThat(lastName).isEqualTo("SMITH")
+                assertThat(status).isEqualTo(MigratedUser.Status.ACTIVE)
+                assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+                assertThat(createdBy).isEqualTo("KOFEADDY")
+                assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
+                assertThat(modifiedBy).isEqualTo("KOFE_MOD")
+              }
+              assertThat(accounts.size).isEqualTo(1)
+              with(accounts[0]) {
+                assertThat(username).isEqualTo("JOHNSMITH_ADM")
+                assertThat(accountType).isEqualTo(MigratedUserAccount.AccountType.ADMIN)
+                assertThat(accountStatus).isEqualTo(MigratedUserAccount.AccountStatus.OPEN)
+                assertThat(lastLoggedIn).isEqualTo(LocalDateTime.parse("2026-03-17T12:30:00"))
+                assertThat(activeCaseloadId).isEqualTo("MDI")
+                assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+                assertThat(createdBy).isEqualTo("KOFEADDY")
+                assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
+                assertThat(modifiedBy).isEqualTo("KOFE_MOD")
+              }
+
+              assertThat(roles!!.size).isEqualTo(2)
+              with(roles[0]) {
+                assertThat(username).isEqualTo("JOHNSMITH_ADM")
+                assertThat(roleCode).isEqualTo("DPS_CODE_1")
+                assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+                assertThat(createdBy).isEqualTo("KOFEADDY")
+              }
+              with(roles[1]) {
+                assertThat(username).isEqualTo("JOHNSMITH_ADM")
+                assertThat(roleCode).isEqualTo("DPS_CODE_2")
+                assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+                assertThat(createdBy).isEqualTo("KOFEADDY")
+              }
+
+              assertThat(accessibleCaseloads!!.size).isEqualTo(3)
+              with(accessibleCaseloads[0]) {
+                assertThat(username).isEqualTo("JOHNSMITH_ADM")
+                assertThat(caseloadId).isEqualTo("LEI")
+                assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+                assertThat(createdBy).isEqualTo("KOFEADDY")
+              }
+              with(accessibleCaseloads[1]) {
+                assertThat(username).isEqualTo("JOHNSMITH_ADM")
+                assertThat(caseloadId).isEqualTo("MDI")
+                assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+                assertThat(createdBy).isEqualTo("KOFEADDY")
+              }
+              with(accessibleCaseloads[2]) {
+                assertThat(username).isEqualTo("JOHNSMITH_ADM")
+                assertThat(caseloadId).isEqualTo("NWEB")
+                assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+                assertThat(createdBy).isEqualTo("KOFEADDY")
+              }
+            }
+          }
 
           @Test
           fun `will track telemetry`() {
             verify(telemetryClient).trackEvent(
-              eq("staff-synchronisation-created-notimplemented"),
+              eq("staff-synchronisation-created-success"),
               check {
                 assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
               },
@@ -83,51 +161,22 @@ class StaffSynchronisationIntTest : StaffIntegrationTestBase() {
           }
         }
       }
-    }
-
-    @Nested
-    @DisplayName("STAFF_MEMBERS-UPDATED")
-    inner class StaffMemberUpdated {
-      @Nested
-      inner class WhenUpdatedInDps {
-        @BeforeEach
-        fun setUp() {
-          staffOffenderEventsQueue.sendMessage(
-            staffEvent(
-              eventType = "STAFF_MEMBERS-UPDATED",
-              staffId = nomisStaffId,
-              auditModuleName = "DPS_SYNCHRONISATION",
-            ),
-          ).also { waitForAnyProcessingToComplete() }
-        }
-
-        @Test
-        fun `will track telemetry`() {
-          verify(telemetryClient).trackEvent(
-            eq("staff-synchronisation-updated-notimplemented"),
-            check {
-              assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
-            },
-            isNull(),
-          )
-        }
-      }
 
       @Nested
-      inner class WhenUpdatedInNomis {
-
-        @BeforeEach
-        fun setUp() {
-          staffOffenderEventsQueue.sendMessage(
-            staffEvent(
-              eventType = "STAFF_MEMBERS-UPDATED",
-              staffId = nomisStaffId,
-            ),
-          ).also { waitForAnyProcessingToComplete() }
-        }
-
+      @DisplayName("STAFF_MEMBERS-UPDATED")
+      inner class StaffMemberUpdated {
         @Nested
-        inner class HappyPath {
+        inner class WhenUpdatedInDps {
+          @BeforeEach
+          fun setUp() {
+            staffOffenderEventsQueue.sendMessage(
+              staffEvent(
+                eventType = "STAFF_MEMBERS-UPDATED",
+                staffId = nomisStaffId,
+                auditModuleName = "DPS_SYNCHRONISATION",
+              ),
+            ).also { waitForAnyProcessingToComplete() }
+          }
 
           @Test
           fun `will track telemetry`() {
@@ -140,62 +189,91 @@ class StaffSynchronisationIntTest : StaffIntegrationTestBase() {
             )
           }
         }
-      }
-    }
-
-    @Nested
-    @DisplayName("STAFF_MEMBERS-DELETED")
-    inner class StaffMemberDeleted {
-      @Nested
-      inner class WhenDeletedInDps {
-        @BeforeEach
-        fun setUp() {
-          staffOffenderEventsQueue.sendMessage(
-            staffEvent(
-              eventType = "STAFF_MEMBERS-DELETED",
-              staffId = nomisStaffId,
-              auditModuleName = "DPS_SYNCHRONISATION",
-            ),
-          ).also { waitForAnyProcessingToComplete() }
-        }
-
-        @Test
-        fun `will track telemetry`() {
-          verify(telemetryClient).trackEvent(
-            eq("staff-synchronisation-deleted-notimplemented"),
-            check {
-              assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
-            },
-            isNull(),
-          )
-        }
-      }
-
-      @Nested
-      inner class WhenDeletedInNomis {
-
-        @BeforeEach
-        fun setUp() {
-          staffOffenderEventsQueue.sendMessage(
-            staffEvent(
-              eventType = "STAFF_MEMBERS-DELETED",
-              staffId = nomisStaffId,
-            ),
-          ).also { waitForAnyProcessingToComplete() }
-        }
 
         @Nested
-        inner class HappyPath {
+        inner class WhenUpdatedInNomis {
+
+          @BeforeEach
+          fun setUp() {
+            staffOffenderEventsQueue.sendMessage(
+              staffEvent(
+                eventType = "STAFF_MEMBERS-UPDATED",
+                staffId = nomisStaffId,
+              ),
+            ).also { waitForAnyProcessingToComplete() }
+          }
+
+          @Nested
+          inner class HappyPath {
+
+            @Test
+            fun `will track telemetry`() {
+              verify(telemetryClient).trackEvent(
+                eq("staff-synchronisation-updated-notimplemented"),
+                check {
+                  assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+                },
+                isNull(),
+              )
+            }
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("STAFF_MEMBERS-DELETED")
+      inner class StaffMemberDeleted {
+        @Nested
+        inner class WhenDeletedInDps {
+          @BeforeEach
+          fun setUp() {
+            staffOffenderEventsQueue.sendMessage(
+              staffEvent(
+                eventType = "STAFF_MEMBERS-DELETED",
+                staffId = nomisStaffId,
+                auditModuleName = "DPS_SYNCHRONISATION",
+              ),
+            ).also { waitForAnyProcessingToComplete() }
+          }
 
           @Test
           fun `will track telemetry`() {
             verify(telemetryClient).trackEvent(
-              eq("staff-synchronisation-deleted-notimplemented"),
+              eq("staff-synchronisation-deleted-skipped"),
               check {
                 assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
               },
               isNull(),
             )
+          }
+        }
+
+        @Nested
+        inner class WhenDeletedInNomis {
+
+          @BeforeEach
+          fun setUp() {
+            staffOffenderEventsQueue.sendMessage(
+              staffEvent(
+                eventType = "STAFF_MEMBERS-DELETED",
+                staffId = nomisStaffId,
+              ),
+            ).also { waitForAnyProcessingToComplete() }
+          }
+
+          @Nested
+          inner class HappyPath {
+
+            @Test
+            fun `will track telemetry`() {
+              verify(telemetryClient).trackEvent(
+                eq("staff-synchronisation-deleted-notimplemented"),
+                check {
+                  assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+                },
+                isNull(),
+              )
+            }
           }
         }
       }
@@ -204,6 +282,10 @@ class StaffSynchronisationIntTest : StaffIntegrationTestBase() {
 
   @Nested
   inner class StaffUserAccounts {
+    val nomisStaffId = 1234L
+    val username = "FRED_GEN"
+    val caseloadId = "ASI"
+
     @Nested
     @DisplayName("STAFF_USER_ACCOUNTS-INSERTED")
     inner class StaffUserAccountCreated {
@@ -392,6 +474,11 @@ class StaffSynchronisationIntTest : StaffIntegrationTestBase() {
 
   @Nested
   inner class InternetAddressesStaff {
+    val nomisStaffId = 1234L
+    val nomisInternetAddressStaffId = 5678L
+    val username = "FRED_GEN"
+    val caseloadId = "ASI"
+
     @Nested
     @DisplayName("INTERNET_ADDRESSES_STAFF-INSERTED")
     inner class InternetAddressesStaffCreated {
@@ -580,6 +667,9 @@ class StaffSynchronisationIntTest : StaffIntegrationTestBase() {
 
   @Nested
   inner class UserAccessibleCaseloads {
+    val username = "FRED_GEN"
+    val caseloadId = "ASI"
+
     @Nested
     @DisplayName("USER_ACCESSIBLE_CASELOADS-INSERTED")
     inner class UserAccessibleCaseloadCreated {
@@ -707,6 +797,10 @@ class StaffSynchronisationIntTest : StaffIntegrationTestBase() {
 
   @Nested
   inner class UserCaseloadRoles {
+    val username = "FRED_GEN"
+    val caseloadId = "ASI"
+    val roleCode = "ROLE_ADD_USER"
+
     @Nested
     @DisplayName("USER_CASELOAD_ROLES-INSERTED")
     inner class UserCaseloadRoleCreated {

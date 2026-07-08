@@ -10,9 +10,14 @@
 **/src/test/
 **/api/*
 **/model/*
+!**/MigrationResourceApi.kt
+!**/ErrorResponse.kt
 !**/MigratedUser.kt
 !**/MigratedUserAccessibleCaseload.kt
 !**/MigratedUserAccount.kt
 !**/MigratedUserRole.kt
+!**/PrisonCaseload.kt
+!**/UserBasicDetails.kt
+!**/UserCaseloadDetail.kt
 !**/UserMigrationRequest.kt
 !**/UserMigrationResponse.kt
