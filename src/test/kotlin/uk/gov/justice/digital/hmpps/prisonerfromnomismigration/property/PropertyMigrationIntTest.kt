@@ -27,7 +27,7 @@ import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.reactive.function.BodyInserters
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.PropertyApiExtension.Companion.propertiesDpsApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.PropertyApiExtension.Companion.propertyDpsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -101,7 +101,7 @@ class PropertyMigrationIntTest(
       mappingApi.stubMappingCreate("/mapping/property")
       mappingApi.stubGetApiLocationNomis(123456, UUID.randomUUID().toString())
 
-      propertiesDpsApi.stubCreatePropertyForMigration(DPS_ID)
+      propertyDpsApi.stubCreatePropertyForMigration(DPS_ID)
       propertyMappingApiMockServer.stubCountByMigrationId(count = 14)
 
       webTestClient.performMigration("""{ "prisonIds": ["MDI"] }""")
@@ -112,13 +112,13 @@ class PropertyMigrationIntTest(
           .withQueryParam("prisonIds", equalTo("MDI")),
       )
 
-      propertiesDpsApi.verify(
+      propertyDpsApi.verify(
         postRequestedFor(urlPathEqualTo("/sync/property-containers/migrate"))
           .withRequestBodyJsonPath("createDateTime", "2023-01-01T11:00:01.234567"),
       )
 
       await untilAsserted {
-        assertThat(propertiesDpsApi.createPropertyCount()).isEqualTo(14)
+        assertThat(propertyDpsApi.createPropertyCount()).isEqualTo(14)
       }
     }
 
@@ -127,7 +127,7 @@ class PropertyMigrationIntTest(
       nomisApi.stubGetInitialCount("/property-containers/ids", 3) { propertyIdsPagedResponse(it) }
       propertyNomisApiMockServer.stubMultipleGetPropertyIdCounts(totalElements = 3, pageSize = 10)
       propertyNomisApiMockServer.stubMultipleGetProperty(1..3)
-      propertiesDpsApi.stubCreatePropertyForMigration(DPS_ID)
+      propertyDpsApi.stubCreatePropertyForMigration(DPS_ID)
       mappingApi.stubAllMappingsNotFound("/mapping/property/nomis-id")
       mappingApi.stubMappingCreate("/mapping/property")
       mappingApi.stubGetApiLocationNomis(123456, UUID.randomUUID().toString())
@@ -135,7 +135,7 @@ class PropertyMigrationIntTest(
       // stub 10 migrated records and 1 fake a failure
       propertyMappingApiMockServer.stubCountByMigrationId(count = 2)
 
-      awsSqsPropertyMigrationDlqClient!!.sendMessage(
+      awsSqsPropertyMigrationDlqClient.sendMessage(
         SendMessageRequest.builder().queueUrl(propertyMigrationDlqUrl)
           .messageBody("""{ "message": "some error" }""").build(),
       ).get()
@@ -172,12 +172,12 @@ class PropertyMigrationIntTest(
       mappingApi.stubAllMappingsNotFound("/mapping/property/nomis-id")
       mappingApi.stubMappingCreate("/mapping/property")
       propertyMappingApiMockServer.stubCountByMigrationId(1)
-      propertiesDpsApi.stubCreatePropertyForMigration(DPS_ID)
+      propertyDpsApi.stubCreatePropertyForMigration(DPS_ID)
       mappingApi.stubGetApiLocationNomis(123456, DPS_LOCATION_ID)
 
       webTestClient.performMigration("""{ "prisonIds": ["MDI"] }""")
 
-      propertiesDpsApi.verify(
+      propertyDpsApi.verify(
         postRequestedFor(urlPathEqualTo("/sync/property-containers/migrate"))
           .withRequestBodyJsonPath("prisonerNumber", "A1234AA")
           .withRequestBodyJsonPath("internalLocationId", DPS_LOCATION_ID)
@@ -201,7 +201,7 @@ class PropertyMigrationIntTest(
       propertyNomisApiMockServer.stubMultipleGetProperty(1..1)
       mappingApi.stubAllMappingsNotFound("/mapping/property/nomis-id")
       propertyMappingApiMockServer.stubCountByMigrationId(1)
-      propertiesDpsApi.stubCreatePropertyForMigration(DPS_ID)
+      propertyDpsApi.stubCreatePropertyForMigration(DPS_ID)
       mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/property")
       mappingApi.stubGetApiLocationNomis(123456, UUID.randomUUID().toString())
 
@@ -211,7 +211,7 @@ class PropertyMigrationIntTest(
       await untilCallTo { mappingApi.createMappingCount("/mapping/property") } matches { it == 2 }
 
       // check that one property is created
-      assertThat(propertiesDpsApi.createPropertyCount()).isEqualTo(1)
+      assertThat(propertyDpsApi.createPropertyCount()).isEqualTo(1)
 
       // should retry to create mapping twice
       propertyMappingApiMockServer.verifyCreateMappingPropertyIds(arrayOf(DPS_ID), times = 2)
@@ -224,7 +224,7 @@ class PropertyMigrationIntTest(
       propertyNomisApiMockServer.stubMultipleGetProperty(1..1)
       mappingApi.stubAllMappingsNotFound("/mapping/property/nomis-id")
       propertyMappingApiMockServer.stubCountByMigrationId(1)
-      propertiesDpsApi.stubCreatePropertyForMigrationFailure(DPS_ID)
+      propertyDpsApi.stubCreatePropertyForMigrationFailure()
       mappingApi.stubGetApiLocationNomis(123456, UUID.randomUUID().toString())
 
       webTestClient.performMigration("""{ "prisonIds": ["MDI"] }""")
@@ -248,7 +248,7 @@ class PropertyMigrationIntTest(
       nomisApi.stubGetInitialCount("/property-containers/ids", 1) { propertyIdsPagedResponse(it) }
       propertyNomisApiMockServer.stubMultipleGetPropertyIdCounts(totalElements = 1, pageSize = 10)
       propertyNomisApiMockServer.stubMultipleGetProperty(1..1)
-      propertiesDpsApi.stubCreatePropertyForMigration(DPS_ID)
+      propertyDpsApi.stubCreatePropertyForMigration(DPS_ID)
       mappingApi.stubAllMappingsNotFound("/mapping/property/nomis-id")
       mappingApi.stubMappingCreate("/mapping/property")
       // Not found from location mapping request
@@ -259,11 +259,11 @@ class PropertyMigrationIntTest(
 
       // should end up on the DLQ
       await untilCallTo {
-        awsSqsPropertyMigrationDlqClient!!.countMessagesOnQueue(propertyMigrationDlqUrl!!).get()
+        awsSqsPropertyMigrationDlqClient.countMessagesOnQueue(propertyMigrationDlqUrl).get()
       } matches { it == 1 }
 
       // check that property is not created
-      assertThat(propertiesDpsApi.createPropertyCount()).isEqualTo(0)
+      assertThat(propertyDpsApi.createPropertyCount()).isEqualTo(0)
     }
 
     @Test
@@ -272,7 +272,7 @@ class PropertyMigrationIntTest(
       propertyNomisApiMockServer.stubMultipleGetPropertyIdCounts(totalElements = 2, pageSize = 10)
       propertyNomisApiMockServer.stubMultipleGetProperty(1..2)
       mappingApi.stubAllMappingsNotFound("/mapping/property/nomis-id")
-      propertiesDpsApi.stubCreatePropertyForMigration(DPS_ID)
+      propertyDpsApi.stubCreatePropertyForMigration(DPS_ID)
       propertyMappingApiMockServer.stubPropertyMappingCreateConflict(DPS_ID, DPS_ID2, 1)
       propertyMappingApiMockServer.stubNomisPropertyMappingFound(2)
       propertyMappingApiMockServer.stubCountByMigrationId(1)
@@ -284,7 +284,7 @@ class PropertyMigrationIntTest(
       await untilCallTo { mappingApi.createMappingCount("/mapping/property") } matches { it == 1 }
 
       // check that one property is created
-      assertThat(propertiesDpsApi.createPropertyCount()).isEqualTo(1)
+      assertThat(propertyDpsApi.createPropertyCount()).isEqualTo(1)
 
       // doesn't retry
       propertyMappingApiMockServer.verifyCreateMappingPropertyIds(arrayOf(DPS_ID), times = 1)

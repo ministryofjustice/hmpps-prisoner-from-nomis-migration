@@ -187,6 +187,8 @@ hmpps.sqs:
       dlqMaxReceiveCount: 2
     eventpersonalrelationships:
       dlqMaxReceiveCount: 2
+    eventproperty:
+      dlqMaxReceiveCount: 2
     eventexternalmovements:
       dlqMaxReceiveCount: 1
     eventcourtmovements:
@@ -199,6 +201,7 @@ hmpps.sqs:
       dlqMaxReceiveCount: 1
     eventvisitbalance:
       dlqMaxReceiveCount: 1
+
     migrationofficialvisits:
       dlqMaxReceiveCount: 2
     migrationvisitslots:

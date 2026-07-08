@@ -72,6 +72,11 @@ generic-prometheus-alerts:
     casenotes:
       - "syscon-devs-dev-prisoner_from_nomis_casenotes_queue"
       - "syscon-devs-dev-prisoner_from_nomis_casenotes_dl_queue"
+    property:
+      - "syscon-devs-dev-migration_property_queue"
+      - "syscon-devs-dev-migration_property_dlq"
+      - "syscon-devs-dev-prisoner_from_nomis_property_queue"
+      - "syscon-devs-dev-prisoner_from_nomis_property_dl_queue"
     alerts:
       - "syscon-devs-dev-prisoner_from_nomis_alerts_queue"
       - "syscon-devs-dev-prisoner_from_nomis_alerts_dl_queue"

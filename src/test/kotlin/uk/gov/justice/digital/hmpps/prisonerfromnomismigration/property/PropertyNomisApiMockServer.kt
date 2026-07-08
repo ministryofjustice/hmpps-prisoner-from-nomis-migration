@@ -63,7 +63,7 @@ class PropertyNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetProperty(
     containerId: Long = 1001,
     bookingId: Long = 123456,
-    propertyResponse: PropertyContainerGetResponse = propertyContainerGetResponse(bookingId),
+    propertyResponse: PropertyContainerGetResponse = propertyContainerGetResponse(containerId, bookingId, "A1234AA"),
   ) {
     nomisApi.stubFor(
       get(urlEqualTo("/property-containers/$containerId")).willReturn(
@@ -93,10 +93,10 @@ class PropertyNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
 
-fun propertyContainerGetResponse(bookingId: Long) = PropertyContainerGetResponse(
-  containerId = 1234567,
+fun propertyContainerGetResponse(containerId: Long, bookingId: Long, offenderNo: String) = PropertyContainerGetResponse(
+  containerId = containerId,
   bookingId = bookingId,
-  offenderNo = "A1234AA",
+  offenderNo = offenderNo,
   prisonId = "SYI",
   active = true,
   containerCode = PropertyContainerCode.BULK,

@@ -224,6 +224,10 @@ class PropertyMappingApiMockServer(private val jsonMapper: JsonMapper) {
     mappingApi.stubFor(post("/mapping/property").willReturn(jsonResponse(error, status.value())))
   }
 
+  fun stubPostMappingFailureFollowedBySuccess() {
+    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/property")
+  }
+
   fun stubPostMapping(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(post("/mapping/property").willReturn(jsonResponse(error, 409)))
   }

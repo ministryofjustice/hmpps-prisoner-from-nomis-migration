@@ -39,6 +39,9 @@ generic-service:
     FEATURE_EVENT_GL_TRANSACTIONS-UPDATED: false
     FEATURE_EVENT_GL_TRANSACTIONS-DELETED: false
     FEATURE_EVENT_CSRA_ASSESSMENT-UPDATED: false
+    FEATURE_EVENT_PROPERTY-INSERTED: false
+    FEATURE_EVENT_PROPERTY-UPDATED: false
+    FEATURE_EVENT_PROPERTY-DELETED: false
     FEATURE_EVENT_STAFF_MEMBERS-INSERTED: false
     FEATURE_EVENT_STAFF_MEMBERS-UPDATED: false
     FEATURE_EVENT_STAFF_MEMBERS-DELETED: false
@@ -73,6 +76,11 @@ generic-prometheus-alerts:
     casenotes:
       - "syscon-devs-prod-prisoner_from_nomis_casenotes_queue"
       - "syscon-devs-prod-prisoner_from_nomis_casenotes_dl_queue"
+    property:
+      - "syscon-devs-prod-migration_property_queue"
+      - "syscon-devs-prod-migration_property_dlq"
+      - "syscon-devs-prod-prisoner_from_nomis_property_queue"
+      - "syscon-devs-prod-prisoner_from_nomis_property_dl_queue"
     alerts:
       - "syscon-devs-prod-prisoner_from_nomis_alerts_queue"
       - "syscon-devs-prod-prisoner_from_nomis_alerts_dl_queue"
