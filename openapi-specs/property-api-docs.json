@@ -7,7 +7,7 @@
       "name" : "Move a prisoner Team",
       "email" : "Moveaprisoner-gg@justice.gov.uk"
     },
-    "version" : "2026-07-06.84.cdab00f"
+    "version" : "2026-07-08.96.13ee0d8"
   },
   "servers" : [ {
     "url" : "/",
@@ -1044,7 +1044,7 @@
       "get" : {
         "tags" : [ "Property containers" ],
         "summary" : "Get the property containers held in a prison, paged and grouped by prisoner",
-        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO. Returns the establishment-wide property list as a page of prisoners (each with all their matching containers), so a prisoner's containers are never split across a page boundary - the page total is the number of matching prisoners. Each container is enriched with the prisoner name (prisoner-search), prison name (prison-register) and location description (locations-inside-prison-api). Optionally filtered by prisoner number, seal number, container type, status and storage location. With no status filter, containers that have left active storage (disposed, returned, transferred, combined) are hidden; pass a status filter to include them. Use the standard page, size and sort query parameters for pagination.",
+        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO. Returns the establishment-wide property list as a page of prisoners (each with all their matching containers), so a prisoner's containers are never split across a page boundary - the page total is the number of matching prisoners. Each container is enriched with the prisoner name (prisoner-search), prison name (prison-register) and location description (locations-inside-prison-api). Optionally filtered by a free-text query (prisoner number, seal number or storage location), prisoner number, seal number, container type(s), status and storage location. With no status filter, containers that have left active storage (disposed, returned, transferred, combined) are hidden; pass a status filter, or includeRemoved=true to also surface returned/disposed containers. Use the standard page, size and sort query parameters for pagination.",
         "operationId" : "getByPrisonId",
         "parameters" : [ {
           "name" : "prisonId",
@@ -1056,6 +1056,15 @@
             "pattern" : "^[A-Z]{2}I|ZZGHI$"
           },
           "example" : "LEI"
+        }, {
+          "name" : "query",
+          "in" : "query",
+          "description" : "Free-text search matched against prisoner number, seal number or storage location",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "A1234BC"
         }, {
           "name" : "prisonerNumber",
           "in" : "query",
@@ -1077,11 +1086,14 @@
         }, {
           "name" : "containerType",
           "in" : "query",
-          "description" : "Filter to a single container type",
+          "description" : "Filter to these container types (repeatable). Omit for all types.",
           "required" : false,
           "schema" : {
-            "type" : "string",
-            "enum" : [ "STANDARD", "EXCESS", "VALUABLES", "CONFISCATED" ]
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "STANDARD", "EXCESS", "VALUABLES", "CONFISCATED" ]
+            }
           },
           "example" : "STANDARD"
         }, {
@@ -1106,6 +1118,16 @@
             "type" : "string"
           },
           "example" : "PB5638"
+        }, {
+          "name" : "includeRemoved",
+          "in" : "query",
+          "description" : "Also include containers that have been returned or disposed of",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          },
+          "example" : false
         }, {
           "name" : "page",
           "in" : "query",
@@ -2088,14 +2110,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
@@ -2295,14 +2317,14 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
           },
           "last" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
