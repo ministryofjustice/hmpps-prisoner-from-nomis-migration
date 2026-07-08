@@ -66,7 +66,7 @@ class PropertyNomisApiMockServer(private val jsonMapper: JsonMapper) {
     propertyResponse: PropertyContainerGetResponse = propertyContainerGetResponse(containerId, bookingId, "A1234AA"),
   ) {
     nomisApi.stubFor(
-      get(urlEqualTo("/property-containers/$containerId")).willReturn(
+      get(urlEqualTo("/property-containers/${propertyResponse.containerId}")).willReturn(
         okJson(jsonMapper.writeValueAsString(propertyResponse)),
       ),
     )

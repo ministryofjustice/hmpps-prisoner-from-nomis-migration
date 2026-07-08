@@ -30,18 +30,16 @@ import java.util.UUID
 @Component
 class PropertyMappingApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetByNomisId(
-    bookingId: Long = 123456,
-    nomisPropertyContainerId: Long = 1234567,
     mapping: PropertyContainerMappingDto = PropertyContainerMappingDto(
-      bookingId = bookingId,
-      nomisPropertyContainerId = nomisPropertyContainerId,
+      bookingId = 123456,
+      nomisPropertyContainerId = 1234567,
       dpsPropertyContainerId = UUID.randomUUID().toString(),
       offenderNo = "A1234KT",
       mappingType = MIGRATED,
     ),
   ) {
     mappingApi.stubFor(
-      get(urlEqualTo("/mapping/property/nomis-id/$nomisPropertyContainerId")).willReturn(
+      get(urlEqualTo("/mapping/property/nomis-id/${mapping.nomisPropertyContainerId}")).willReturn(
         okJson(jsonMapper.writeValueAsString(mapping)),
       ),
     )
@@ -55,7 +53,7 @@ class PropertyMappingApiMockServer(private val jsonMapper: JsonMapper) {
   }
 
   fun stubGetByNomisId(
-    nomisPropertyContainerId: Int = 1234567,
+    nomisPropertyContainerId: Long = 1234567,
     status: HttpStatus,
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {

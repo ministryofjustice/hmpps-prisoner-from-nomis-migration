@@ -81,7 +81,7 @@ class PropertyMigrationService(
     val nomisId = context.body.propertyContainerId
 
     try {
-      propertyMappingService.getMappingByNomisId(nomisId)
+      propertyMappingService.getMappingByNomisIdOrNull(nomisId)
         ?.run {
           log.info("Will not migrate the container since it is migrated already, NOMIS id is $nomisId, dpsPropertyContainerId is ${this.dpsPropertyContainerId} as part migration ${this.label ?: "NONE"} (${this.mappingType})")
         }

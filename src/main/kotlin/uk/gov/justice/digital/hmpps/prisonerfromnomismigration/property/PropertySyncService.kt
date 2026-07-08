@@ -6,7 +6,10 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PropertyContainerMappingDto
@@ -19,77 +22,64 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.util.UUID
 
+private const val TELEMETRY_PREFIX = "property-synchronisation"
+
 @Service
 class PropertySyncService(
   private val nomisApiService: PropertyNomisApiService,
   private val propertyDpsApiService: PropertyDpsApiService,
   private val propertyMappingService: PropertyMappingService,
-  private val telemetryClient: TelemetryClient,
+  override val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
-) {
+) : TelemetryEnabled {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
   suspend fun created(event: PropertyEvent) {
-    if (event.auditModuleName.originatesInDps()) {
-      telemetryClient.trackEvent("property-synchronisation-created-skipped", event.toTelemetryProperties())
+    val telemetryName = "$TELEMETRY_PREFIX-created"
+    val (_, _, bookingId, offenderIdDisplay, propertyContainerId, auditModuleName) = event
+    val telemetry = telemetryOf(
+      "nomisPropertyContainerId" to propertyContainerId.toString(),
+      "bookingId" to bookingId.toString(),
+      "offenderNo" to offenderIdDisplay.toString(),
+    )
+    if (event.originatesInDps) {
+      telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
       return
     }
-    try {
-      val nomisPropertyContainer = nomisApiService.getPropertyContainer(event.propertyContainerId)
-      propertyMappingService.getMappingByNomisId(event.propertyContainerId)
-        ?.let { mappingResponse ->
-          telemetryClient.trackEvent(
-            "property-sync-create-failed",
-            event.toTelemetryProperties(
-              dpsId = mappingResponse.dpsPropertyContainerId,
-            ),
-          )
-        }
-        ?: run {
-          propertyDpsApiService.upsert(toDpsProperty(nomisPropertyContainer))
-            .also { dpsResponse ->
-              if (dpsResponse.mappingType != SyncPropertyContainerResponse.MappingType.CREATED) {
-                throw IllegalStateException("Property ${event.propertyContainerId} already exists in DPS")
-                // probably redundant as this just depends on sending a UUID
-              }
-              tryToCreateMapping(
-                PropertyContainerMappingDto(
-                  dpsPropertyContainerId = dpsResponse.dpsId.toString(),
-                  nomisPropertyContainerId = dpsResponse.nomisPropertyContainerId,
-                  bookingId = nomisPropertyContainer.bookingId,
-                  offenderNo = nomisPropertyContainer.offenderNo,
-                  mappingType = PropertyContainerMappingDto.MappingType.NOMIS_CREATED,
-                ),
-              )
-                .also { mappingCreateResult ->
-                  telemetryClient.trackEvent(
-                    "property-synchronisation-created-success",
-
-                    mapOf(
-                      "dpsPropertyContainerId" to dpsResponse.dpsId.toString(),
-                      "nomisPropertyContainerId" to dpsResponse.nomisPropertyContainerId.toString(),
-                      "bookingId" to nomisPropertyContainer.bookingId.toString(),
-                      "offenderNo" to nomisPropertyContainer.offenderNo,
-                      "mapping" to (
-                        if (mappingCreateResult == MappingResponse.MAPPING_FAILED) "initial-failure" else "success"
-                        ),
-                    ),
-                  )
-                }
+    val nomisPropertyContainer = nomisApiService.getPropertyContainer(event.propertyContainerId)
+    val mapping = propertyMappingService.getMappingByNomisIdOrNull(event.propertyContainerId)
+    if (mapping != null) {
+      telemetry["dpsPropertyContainerId"] = mapping.dpsPropertyContainerId
+      telemetryClient.trackEvent("$telemetryName-mapping-exists-ignored", telemetry)
+    } else {
+      track(telemetryName, telemetry) {
+        propertyDpsApiService.upsert(toDpsProperty(nomisPropertyContainer))
+          .also { dpsResponse ->
+            if (dpsResponse.mappingType != SyncPropertyContainerResponse.MappingType.CREATED) {
+              throw IllegalStateException("Property ${event.propertyContainerId} already exists in DPS")
+              // probably redundant as this just depends on sending a UUID
             }
-        }
-    } catch (e: Exception) {
-      telemetryClient.trackEvent(
-        "property-synchronisation-created-failed",
-        event.toTelemetryProperties() + mapOf("error" to (e.message ?: "unknown error")),
-      )
-      throw e
+            tryToCreateMapping(
+              PropertyContainerMappingDto(
+                dpsPropertyContainerId = dpsResponse.dpsId.toString(),
+                nomisPropertyContainerId = dpsResponse.nomisPropertyContainerId,
+                bookingId = nomisPropertyContainer.bookingId,
+                offenderNo = nomisPropertyContainer.offenderNo,
+                mappingType = PropertyContainerMappingDto.MappingType.NOMIS_CREATED,
+              ),
+            )
+              .also { mappingCreateResult ->
+                telemetry["dpsPropertyContainerId"] = dpsResponse.dpsId.toString()
+                telemetry["mapping"] = if (mappingCreateResult == MappingResponse.MAPPING_FAILED) "initial-failure" else "success"
+              }
+          }
+      }
     }
   }
 
-  suspend fun tryToCreateMapping(mapping: PropertyContainerMappingDto): MappingResponse {
+  private suspend fun tryToCreateMapping(mapping: PropertyContainerMappingDto): MappingResponse {
     try {
       createMapping(mapping)
       return MappingResponse.MAPPING_CREATED
@@ -104,7 +94,6 @@ class PropertySyncService(
           "dpsPropertyContainerId" to mapping.dpsPropertyContainerId,
           "nomisPropertyContainerId" to mapping.nomisPropertyContainerId.toString(),
           "offenderNo" to mapping.offenderNo,
-          "mapping" to "initial-failure",
         ),
       )
       return MappingResponse.MAPPING_FAILED
@@ -127,25 +116,42 @@ class PropertySyncService(
             "existingNomisPropertyContainerId" to duplicateErrorDetails.existing.nomisPropertyContainerId.toString(),
           ),
         )
-      } else {
-        telemetryClient.trackEvent(
-          "property-synchronisation-mapping-created-success",
-          mapOf(
-            "dpsPropertyContainerId" to mapping.dpsPropertyContainerId,
-            "nomisPropertyContainerId" to mapping.nomisPropertyContainerId.toString(),
-            "bookingId" to mapping.bookingId.toString(),
-            "offenderNo" to mapping.offenderNo,
-            "mapping" to "success",
-          ),
-        )
       }
     }
   }
 
   suspend fun updated(event: PropertyEvent) {
+    val telemetryName = "$TELEMETRY_PREFIX-updated"
+    val (_, _, bookingId, offenderIdDisplay, propertyContainerId) = event
+    val telemetry = telemetryOf(
+      "nomisPropertyContainerId" to propertyContainerId.toString(),
+      "bookingId" to bookingId.toString(),
+      "offenderNo" to offenderIdDisplay.toString(),
+    )
+    if (event.originatesInDps) {
+      telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
+      return
+    }
+    track(telemetryName, telemetry) {
+      val nomisPropertyContainer = nomisApiService.getPropertyContainer(propertyContainerId)
+      propertyMappingService.getMappingByNomisId(propertyContainerId)
+        .also { mappingResponse ->
+          telemetry["dpsPropertyContainerId"] = mappingResponse.dpsPropertyContainerId
+          propertyDpsApiService.upsert(toDpsProperty(mappingResponse.dpsPropertyContainerId, nomisPropertyContainer))
+        }
+    }
   }
 
   suspend fun deleted(event: PropertyEvent) {
+    telemetryClient.trackEvent(
+      "$TELEMETRY_PREFIX-deleted-ignored",
+      mapOf(
+        "nomisPropertyContainerId" to event.propertyContainerId.toString(),
+        "bookingId" to event.bookingId.toString(),
+        "offenderNo" to event.offenderIdDisplay.toString(),
+      ),
+    )
+    // TODO: not sure if this ever happens
   }
 
   enum class MappingResponse {
@@ -154,11 +160,14 @@ class PropertySyncService(
   }
 
   suspend fun retryCreateMapping(retryMessage: InternalMessage<PropertyContainerMappingDto>) {
-    val mapping = retryMessage.body
-    createMapping(mapping)
+    createMapping(retryMessage.body)
+    telemetryClient.trackEvent("$TELEMETRY_PREFIX-mapping-created", retryMessage.telemetryAttributes)
   }
 
-  suspend fun toDpsProperty(nomisProperty: PropertyContainerGetResponse) = SyncPropertyContainerRequest(
+  suspend fun toDpsProperty(nomisProperty: PropertyContainerGetResponse) = toDpsProperty(null, nomisProperty)
+
+  suspend fun toDpsProperty(dpsId: String?, nomisProperty: PropertyContainerGetResponse) = SyncPropertyContainerRequest(
+    dpsId = dpsId?.let { UUID.fromString(dpsId) },
     nomisPropertyContainerId = nomisProperty.containerId,
     prisonerNumber = nomisProperty.offenderNo,
     internalLocationId = nomisProperty.toDpsLocation(),
@@ -186,14 +195,3 @@ class PropertySyncService(
     UUID.fromString(propertyMappingService.getDpsLocation(it).dpsLocationId)
   }
 }
-
-private fun PropertyEvent.toTelemetryProperties(
-  dpsId: String? = null,
-  mappingFailed: Boolean? = null,
-): Map<String, String> = mapOf(
-  "nomisPropertyContainerId" to this.propertyContainerId.toString(),
-  "bookingId" to this.bookingId.toString(),
-) +
-  (offenderIdDisplay?.let { mapOf("offenderNo" to it) } ?: emptyMap()) +
-  (dpsId?.let { mapOf("dpsId" to it) } ?: emptyMap()) +
-  (if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap())
