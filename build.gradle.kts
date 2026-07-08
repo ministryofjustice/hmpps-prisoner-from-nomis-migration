@@ -11,7 +11,7 @@ import kotlin.io.path.pathString
 import kotlin.io.path.Path as KotlinPath
 
 plugins {
-  id("uk.gov.justice.hmpps.gradle-spring-boot") version "10.5.2"
+  id("uk.gov.justice.hmpps.gradle-spring-boot") version "10.5.6"
   kotlin("plugin.spring") version "2.4.0"
   id("org.openapi.generator") version "7.23.0"
 }
@@ -21,10 +21,6 @@ configurations {
     exclude(module = "spring-boot-starter-web")
     exclude(module = "spring-boot-starter-tomcat")
   }
-}
-
-dependencyCheck {
-  suppressionFiles.add("azure-dependency-check-suppress.xml")
 }
 
 dependencies {
@@ -48,24 +44,20 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8")
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk9")
 
-  implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.60.1")
-
-  val appinsightsCore = "core:2.6.4"
-  implementation("io.micrometer:micrometer-registry-azure-monitor:1.17.0")
-  implementation("com.microsoft.azure:applicationinsights-$appinsightsCore")
+  implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.62.0")
 
   runtimeOnly("org.postgresql:r2dbc-postgresql:1.1.1.RELEASE")
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
-  runtimeOnly("org.postgresql:postgresql:42.7.11")
+  runtimeOnly("org.postgresql:postgresql:42.7.12")
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
 
   testImplementation("uk.gov.justice.service.hmpps:hmpps-kotlin-spring-boot-starter-test:2.5.0")
   testImplementation("org.springframework.boot:spring-boot-starter-data-r2dbc-test")
   testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
-  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.42") {
+  testImplementation("io.swagger.parser.v3:swagger-parser:2.1.45") {
     exclude(group = "io.swagger.core.v3")
   }
-  testImplementation("io.swagger.core.v3:swagger-core-jakarta:2.2.49")
+  testImplementation("io.swagger.core.v3:swagger-core-jakarta:2.2.52")
 
   testImplementation("org.wiremock:wiremock-standalone:3.13.2")
   testImplementation("org.testcontainers:localstack:1.21.4")
