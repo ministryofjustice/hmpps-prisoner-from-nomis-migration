@@ -17,6 +17,10 @@ class PropertyMappingService(
 
   suspend fun getMappingByNomisId(nomisId: Long) = api
     .getPropertyContainerMappingByNomisId(nomisId)
+    .awaitSingle()
+
+  suspend fun getMappingByNomisIdOrNull(nomisId: Long) = api
+    .getPropertyContainerMappingByNomisId(nomisId)
     .awaitSingleOrNullForNotFound()
 
   suspend fun deleteMapping(nomisId: Long) = api

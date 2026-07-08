@@ -19,14 +19,15 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.eq
-import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PropertyContainerMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.PropertyApiExtension.Companion.propertyDpsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.model.SyncPropertyContainerResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -35,7 +36,6 @@ import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.util.UUID
 
 private const val DPS_ID = "e52d7268-6e10-41a8-a0b9-2319b32520d6"
-private const val DPS_ID2 = "edcd118c-41ba-42ea-b5c4-404b453ad58b"
 private const val DPS_LOCATION_ID = "edcd118c-41ba-42ea-b5c4-404b453a0000"
 private const val NOMIS_ID = 9876543210L
 private const val BOOKING_ID = 1234567L
@@ -263,7 +263,7 @@ class PropertySyncIntTest(
 
             await untilAsserted {
               verify(telemetryClient).trackEvent(
-                eq("property-synchronisation-mapping-created-success"),
+                eq("property-synchronisation-mapping-created"),
                 check {
                   assertThat(it["dpsPropertyContainerId"]).isEqualTo(DPS_ID)
                   assertThat(it["nomisPropertyContainerId"]).isEqualTo(NOMIS_ID.toString())
@@ -354,8 +354,8 @@ class PropertySyncIntTest(
         @Test
         fun `will not attempt to create mapping and will track a telemetry event for failure`() {
           await untilAsserted {
-            verify(telemetryClient, atLeast(1)).trackEvent(
-              eq("property-synchronisation-created-failed"),
+            verify(telemetryClient, times(2)).trackEvent(
+              eq("property-synchronisation-created-error"),
               check {
                 assertThat(it["nomisPropertyContainerId"]).isEqualTo(NOMIS_ID.toString())
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
@@ -368,6 +368,124 @@ class PropertySyncIntTest(
             0,
             postRequestedFor(urlPathEqualTo("/mapping/property")),
           )
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("PRISONER_PROPERTY-UPDATED")
+  inner class Updated {
+    @Nested
+    @DisplayName("When property was updated in DPS")
+    inner class DPSUpdated {
+
+      @BeforeEach
+      fun setUp() = runTest {
+        propertyNomisApiMockServer.stubGetProperty(
+          containerId = NOMIS_ID,
+          bookingId = BOOKING_ID,
+          propertyResponse = propertyContainerGetResponse(NOMIS_ID, BOOKING_ID, OFFENDER_ID_DISPLAY),
+        )
+        awsSqsPropertyEventDlqClient.sendMessage(
+          propertyEventQueueUrl,
+          propertyEvent(eventType = "PRISONER_PROPERTY-UPDATED", auditModuleName = "DPS_SYNCHRONISATION"),
+        )
+      }
+
+      @Test
+      fun `the event is ignored`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("property-synchronisation-updated-skipped"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["nomisPropertyContainerId"]).isEqualTo(NOMIS_ID.toString())
+            },
+            isNull(),
+          )
+        }
+
+        // will not bother getting mapping
+        propertyMappingApiMockServer.verify(
+          count = 0,
+          getRequestedFor(urlPathMatching("/mapping/property/nomis-id/\\d+")),
+        )
+        // will not create property in DPS
+        propertyDpsApi.verify(0, postRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    @DisplayName("When property was updated in NOMIS")
+    inner class NomisUpdated {
+      @BeforeEach
+      fun setUp() {
+        propertyNomisApiMockServer.stubGetProperty(
+          propertyResponse = propertyContainerGetResponse(NOMIS_ID, BOOKING_ID, OFFENDER_ID_DISPLAY),
+        )
+        propertyMappingApiMockServer.stubGetByNomisId(
+          PropertyContainerMappingDto(
+            dpsPropertyContainerId = DPS_ID,
+            nomisPropertyContainerId = NOMIS_ID,
+            bookingId = BOOKING_ID,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            mappingType = PropertyContainerMappingDto.MappingType.MIGRATED,
+          ),
+        )
+        mappingApi.stubGetApiLocationNomis(123456, DPS_LOCATION_ID)
+      }
+
+      @Nested
+      inner class HappyPath {
+        @BeforeEach
+        fun setUp() {
+          propertyDpsApi.stubUpsert(
+            SyncPropertyContainerResponse(
+              dpsId = UUID.fromString(DPS_ID),
+              nomisPropertyContainerId = NOMIS_ID,
+              mappingType = SyncPropertyContainerResponse.MappingType.UPDATED,
+            ),
+          )
+
+          awsSqsPropertyEventDlqClient.sendMessage(
+            propertyEventQueueUrl,
+            propertyEvent(
+              eventType = "PRISONER_PROPERTY-UPDATED",
+              bookingId = BOOKING_ID,
+              nomisId = NOMIS_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+        }
+
+        @Test
+        fun `will update property in DPS`() {
+          await untilAsserted {
+            propertyDpsApi.verify(
+              postRequestedFor(urlPathEqualTo("/sync/property-containers/upsert"))
+                .withRequestBodyJsonPath("dpsId", equalTo(DPS_ID))
+                .withRequestBodyJsonPath("nomisPropertyContainerId", equalTo(NOMIS_ID.toString()))
+                .withRequestBodyJsonPath("prisonerNumber", equalTo(OFFENDER_ID_DISPLAY)),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("property-synchronisation-updated-success"),
+              check {
+                assertThat(it["dpsPropertyContainerId"]).isEqualTo(DPS_ID)
+                assertThat(it["nomisPropertyContainerId"]).isEqualTo(NOMIS_ID.toString())
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              },
+              isNull(),
+            )
+          }
         }
       }
     }
