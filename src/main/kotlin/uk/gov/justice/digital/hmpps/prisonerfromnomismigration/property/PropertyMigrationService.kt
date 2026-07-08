@@ -14,9 +14,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PropertyContainerMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PropertyContainerCode
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PropertyContainerGetResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.model.SyncPropertyContainerRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumberMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
@@ -30,6 +27,7 @@ class PropertyMigrationService(
   private val nomisApiService: PropertyNomisApiService,
   private val propertyDpsApiService: PropertyDpsApiService,
   private val propertyMappingService: PropertyMappingService,
+  private val propertySyncService: PropertySyncService,
   jsonMapper: JsonMapper,
   @Value($$"${property.page.size:1000}") pageSize: Long,
   @Value($$"${property.complete-check.delay-seconds:10}") completeCheckDelaySeconds: Int,
@@ -90,7 +88,7 @@ class PropertyMigrationService(
         ?: run {
           val container = nomisApiService.getPropertyContainer(nomisId)
 
-          propertyDpsApiService.migrate(container.toProperty())
+          propertyDpsApiService.migrate(propertySyncService.toDpsProperty(container))
             .also {
               createPropertyMapping(
                 nomisPropertyContainerId = nomisId,
@@ -175,34 +173,6 @@ class PropertyMigrationService(
         ),
       ),
     )
-  }
-
-  suspend fun PropertyContainerGetResponse.toProperty() = SyncPropertyContainerRequest(
-    nomisPropertyContainerId = containerId,
-    prisonerNumber = offenderNo,
-    internalLocationId = toDpsLocation(),
-    prisonId = prisonId,
-    containerCode = toDpsContainerCode(),
-    sealMark = sealMark,
-    active = active,
-    proposedDisposalDate = proposedDisposalDate,
-    expiryDate = expiryDate,
-    createDateTime = createdDateTime,
-    createUsername = createdBy,
-    modifyDateTime = updatedDateTime,
-    modifyUsername = updatedBy,
-  )
-
-  private fun PropertyContainerGetResponse.toDpsContainerCode(): SyncPropertyContainerRequest.ContainerCode = when (containerCode) {
-    PropertyContainerCode.BRA -> SyncPropertyContainerRequest.ContainerCode.Branston_Storage
-    PropertyContainerCode.BULK -> SyncPropertyContainerRequest.ContainerCode.Bulk
-    PropertyContainerCode.CO -> SyncPropertyContainerRequest.ContainerCode.Confiscated
-    PropertyContainerCode.DES -> SyncPropertyContainerRequest.ContainerCode.For_Destruction
-    PropertyContainerCode.VALU -> SyncPropertyContainerRequest.ContainerCode.Valuables
-  }
-
-  private suspend fun PropertyContainerGetResponse.toDpsLocation(): UUID? = internalLocationId?.let {
-    UUID.fromString(propertyMappingService.getDpsLocation(it).dpsLocationId)
   }
 
   override fun parseContextFilter(json: String): MigrationMessage<*, PropertyMigrationFilter> = jsonMapper

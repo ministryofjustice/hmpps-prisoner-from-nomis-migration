@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
@@ -23,21 +24,21 @@ class PropertyApiExtension :
   BeforeEachCallback {
   companion object {
     @JvmField
-    val propertiesDpsApi = PropertyDpsApiMockServer()
+    val propertyDpsApi = PropertyDpsApiMockServer()
     lateinit var jsonMapper: JsonMapper
   }
 
   override fun beforeAll(context: ExtensionContext) {
-    propertiesDpsApi.start()
+    propertyDpsApi.start()
     jsonMapper = (SpringExtension.getApplicationContext(context).getBean("jacksonJsonMapper") as JsonMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    propertiesDpsApi.resetAll()
+    propertyDpsApi.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {
-    propertiesDpsApi.stop()
+    propertyDpsApi.stop()
   }
 }
 
@@ -62,20 +63,31 @@ class PropertyDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
     stubFor(
       post(urlMatching("/sync/property-containers/migrate"))
+        .willReturn(okJson(jsonMapper.writeValueAsString(response))),
+    )
+  }
+
+  fun stubCreatePropertyForMigrationFailure() {
+    stubFor(
+      post(urlMatching("/sync/property-containers/migrate"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.CREATED.value())
-            .withBody(jsonMapper.writeValueAsString(response)),
+            .withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value()),
         ),
     )
   }
 
-  fun stubCreatePropertyForMigrationFailure(dpsId: String) {
-    val response = samplePropertyInstance(UUID.fromString(dpsId))
-
+  fun stubUpsert(response: SyncPropertyContainerResponse) {
     stubFor(
-      post(urlMatching("/sync/property-containers/migrate"))
+      post(urlMatching("/sync/property-containers/upsert"))
+        .willReturn(okJson(jsonMapper.writeValueAsString(response))),
+    )
+  }
+
+  fun stubUpsertFailure() {
+    stubFor(
+      post(urlMatching("/sync/property-containers/upsert"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
