@@ -134,6 +134,10 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       username = "JSMITH_ADM",
     )
 
+    fun verifyUserSyncRequest() {
+      verifyUserMigrationRequest()
+    }
+
     fun verifyUserMigrationRequest() {
       val request: UserMigrationRequest = StaffDpsApiExtension.getRequestBody(
         putRequestedFor(urlPathEqualTo("/prison-users/staff")),

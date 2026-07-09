@@ -39,9 +39,9 @@ class StaffEventListener(
               "STAFF_USER_ACCOUNTS-INSERTED" -> service.staffAccountUpserted("created", sqsMessage.Message.fromJson())
               "STAFF_USER_ACCOUNTS-UPDATED" -> service.staffAccountUpserted("updated", sqsMessage.Message.fromJson())
               "STAFF_USER_ACCOUNTS-DELETED" -> service.staffAccountUpserted("deleted", sqsMessage.Message.fromJson())
-              "INTERNET_ADDRESSES_STAFF-INSERTED" -> service.staffInternetAddressCreated(sqsMessage.Message.fromJson())
-              "INTERNET_ADDRESSES_STAFF-UPDATED" -> service.staffInternetAddressUpdated(sqsMessage.Message.fromJson())
-              "INTERNET_ADDRESSES_STAFF-DELETED" -> service.staffInternetAddressDeleted(sqsMessage.Message.fromJson())
+              "INTERNET_ADDRESSES_STAFF-INSERTED" -> service.staffInternetAddressUpserted("created", sqsMessage.Message.fromJson())
+              "INTERNET_ADDRESSES_STAFF-UPDATED" -> service.staffInternetAddressUpserted("updated", sqsMessage.Message.fromJson())
+              "INTERNET_ADDRESSES_STAFF-DELETED" -> service.staffInternetAddressUpserted("deleted", sqsMessage.Message.fromJson())
               "USER_ACCESSIBLE_CASELOADS-INSERTED" -> service.userAccessibleCaseloadCreated(sqsMessage.Message.fromJson())
               "USER_ACCESSIBLE_CASELOADS-DELETED" -> service.userAccessibleCaseloadDeleted(sqsMessage.Message.fromJson())
               "USER_CASELOAD_ROLES-INSERTED" -> service.userCaseloadRoleCreated(sqsMessage.Message.fromJson())
@@ -75,10 +75,10 @@ data class StaffUserAccountEvent(
 ) : StaffAuditedEvent
 
 data class StaffInternetAddressEvent(
-  val staffId: Long,
+  override val staffId: Long,
   val internetAddressId: Long,
   override val auditModuleName: String,
-) : EventAudited
+) : StaffAuditedEvent
 
 data class UserAccessibleCaseloadEvent(
   val username: String,
