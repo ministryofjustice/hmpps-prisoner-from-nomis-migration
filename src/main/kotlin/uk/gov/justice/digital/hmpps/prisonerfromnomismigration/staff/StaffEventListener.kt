@@ -42,10 +42,10 @@ class StaffEventListener(
               "INTERNET_ADDRESSES_STAFF-INSERTED" -> service.staffInternetAddressUpserted("created", sqsMessage.Message.fromJson())
               "INTERNET_ADDRESSES_STAFF-UPDATED" -> service.staffInternetAddressUpserted("updated", sqsMessage.Message.fromJson())
               "INTERNET_ADDRESSES_STAFF-DELETED" -> service.staffInternetAddressUpserted("deleted", sqsMessage.Message.fromJson())
-              "USER_ACCESSIBLE_CASELOADS-INSERTED" -> service.userAccessibleCaseloadCreated(sqsMessage.Message.fromJson())
-              "USER_ACCESSIBLE_CASELOADS-DELETED" -> service.userAccessibleCaseloadDeleted(sqsMessage.Message.fromJson())
-              "USER_CASELOAD_ROLES-INSERTED" -> service.userCaseloadRoleCreated(sqsMessage.Message.fromJson())
-              "USER_CASELOAD_ROLES-DELETED" -> service.userCaseloadRoleDeleted(sqsMessage.Message.fromJson())
+              "USER_ACCESSIBLE_CASELOADS-INSERTED" -> service.userAccessibleCaseloadUpserted("created", sqsMessage.Message.fromJson())
+              "USER_ACCESSIBLE_CASELOADS-DELETED" -> service.userAccessibleCaseloadUpserted("deleted", sqsMessage.Message.fromJson())
+              "USER_CASELOAD_ROLES-INSERTED" -> service.userCaseloadRoleUpserted("created", sqsMessage.Message.fromJson())
+              "USER_CASELOAD_ROLES-DELETED" -> service.userCaseloadRoleUpserted("deleted", sqsMessage.Message.fromJson())
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }

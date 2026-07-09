@@ -16,7 +16,7 @@ class StaffSynchronisationService(
 ) : TelemetryEnabled {
 
   suspend fun resynchroniseStaff(staffId: Long) {
-    val nomisStaff = nomisApiService.getStaffDetails(staffId)
+    val nomisStaff = nomisApiService.getStaffDetailsById(staffId)
     dpsApiService.syncStaff(nomisStaff.toSyncStaffRequest())
   }
 
@@ -50,22 +50,14 @@ class StaffSynchronisationService(
     synchroniseStaff(event, "staffinternetaddress-synchronisation-$eventType", telemetry)
   }
 
-  suspend fun userAccessibleCaseloadCreated(event: UserAccessibleCaseloadEvent) {
+  suspend fun userAccessibleCaseloadUpserted(eventType: String, event: UserAccessibleCaseloadEvent) {
     val telemetry = telemetryOf("username" to event.username, "caseloadId" to event.caseloadId)
-    telemetryClient.trackEvent("useraccessiblecaseloads-synchronisation-created-notimplemented", telemetry)
-  }
-  suspend fun userAccessibleCaseloadDeleted(event: UserAccessibleCaseloadEvent) {
-    val telemetry = telemetryOf("username" to event.username, "caseloadId" to event.caseloadId)
-    telemetryClient.trackEvent("useraccessiblecaseloads-synchronisation-deleted-notimplemented", telemetry)
+    telemetryClient.trackEvent("useraccessiblecaseloads-synchronisation-$eventType-notimplemented", telemetry)
   }
 
-  suspend fun userCaseloadRoleCreated(event: UserCaseloadRoleEvent) {
+  suspend fun userCaseloadRoleUpserted(eventType: String, event: UserCaseloadRoleEvent) {
     val telemetry = telemetryOf("username" to event.username, "caseloadId" to event.caseloadId, "roleCode" to event.roleCode)
-    telemetryClient.trackEvent("usercaseloadroles-synchronisation-created-notimplemented", telemetry)
-  }
-  suspend fun userCaseloadRoleDeleted(event: UserCaseloadRoleEvent) {
-    val telemetry = telemetryOf("username" to event.username, "caseloadId" to event.caseloadId, "roleCode" to event.roleCode)
-    telemetryClient.trackEvent("usercaseloadroles-synchronisation-deleted-notimplemented", telemetry)
+    telemetryClient.trackEvent("usercaseloadroles-synchronisation-$eventType-notimplemented", telemetry)
   }
 
   private suspend fun synchroniseStaff(
@@ -76,7 +68,7 @@ class StaffSynchronisationService(
     if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
     } else {
-      nomisApiService.getStaffDetails(event.staffId).also {
+      nomisApiService.getStaffDetailsById(event.staffId).also {
         track(telemetryName, telemetry) {
           dpsApiService.syncStaff(it.toSyncStaffRequest())
         }

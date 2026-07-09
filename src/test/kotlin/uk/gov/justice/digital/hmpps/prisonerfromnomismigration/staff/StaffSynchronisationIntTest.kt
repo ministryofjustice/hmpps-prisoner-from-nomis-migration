@@ -66,7 +66,7 @@ class StaffSynchronisationIntTest(
 
           @BeforeEach
           fun setUp() {
-            nomisApiMock.stubGetStaffDetails()
+            nomisApiMock.stubGetStaffDetailsById()
             dpsApiMock.stubSyncStaff()
 
             staffOffenderEventsQueue.sendMessage(
@@ -79,7 +79,7 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will retrieve the staff details from NOMIS`() {
-            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/$nomisStaffId")))
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/$nomisStaffId")))
           }
 
           @Test
@@ -137,7 +137,7 @@ class StaffSynchronisationIntTest(
 
           @BeforeEach
           fun setUp() {
-            nomisApiMock.stubGetStaffDetails()
+            nomisApiMock.stubGetStaffDetailsById()
             dpsApiMock.stubSyncStaff()
 
             staffOffenderEventsQueue.sendMessage(
@@ -150,7 +150,7 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will retrieve the staff details from NOMIS`() {
-            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/$nomisStaffId")))
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/$nomisStaffId")))
           }
 
           @Test
@@ -206,7 +206,7 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
-          nomisApiMock.stubGetStaffDetails()
+          nomisApiMock.stubGetStaffDetailsById()
           dpsApiMock.stubDeleteStaff()
 
           staffOffenderEventsQueue.sendMessage(
@@ -285,7 +285,7 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
-          nomisApiMock.stubGetStaffDetails()
+          nomisApiMock.stubGetStaffDetailsById()
           dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             staffUserAccountEvent(
@@ -301,7 +301,7 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will retrieve the staff details from NOMIS`() {
-            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/$nomisStaffId")))
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/$nomisStaffId")))
           }
 
           @Test
@@ -360,7 +360,7 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
-          nomisApiMock.stubGetStaffDetails()
+          nomisApiMock.stubGetStaffDetailsById()
           dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             staffUserAccountEvent(
@@ -376,7 +376,7 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will retrieve the staff details from NOMIS`() {
-            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/$nomisStaffId")))
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/$nomisStaffId")))
           }
 
           @Test
@@ -435,7 +435,7 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
-          nomisApiMock.stubGetStaffDetails()
+          nomisApiMock.stubGetStaffDetailsById()
           dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             staffUserAccountEvent(
@@ -451,7 +451,7 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will retrieve the staff details from NOMIS`() {
-            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/$nomisStaffId")))
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/$nomisStaffId")))
           }
 
           @Test
@@ -517,7 +517,7 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
-          nomisApiMock.stubGetStaffDetails()
+          nomisApiMock.stubGetStaffDetailsById()
           dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             internetAddressesStaffEvent(
@@ -533,7 +533,7 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will retrieve the staff details from NOMIS`() {
-            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/$nomisStaffId")))
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/$nomisStaffId")))
           }
 
           @Test
@@ -592,7 +592,7 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
-          nomisApiMock.stubGetStaffDetails()
+          nomisApiMock.stubGetStaffDetailsById()
           dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             internetAddressesStaffEvent(
@@ -608,7 +608,7 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will retrieve the staff details from NOMIS`() {
-            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/$nomisStaffId")))
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/$nomisStaffId")))
           }
 
           @Test
@@ -667,7 +667,7 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
-          nomisApiMock.stubGetStaffDetails()
+          nomisApiMock.stubGetStaffDetailsById()
           dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             internetAddressesStaffEvent(

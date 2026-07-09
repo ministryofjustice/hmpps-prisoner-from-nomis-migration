@@ -13,7 +13,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 class StaffNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
   private val api = StaffResourceApi(webClient)
 
-  suspend fun getStaffDetails(staffId: Long): StaffDetails = api.getStaff(staffId, true)
+  suspend fun getStaffDetailsById(staffId: Long): StaffDetails = api.getStaffById(staffId, true)
+    .awaitSingle()
+
+  suspend fun getStaffDetailsByUsername(username: String): StaffDetails = api.getStaffByUsername(username, true)
     .awaitSingle()
 
   suspend fun getStaffIds(pageNumber: Long, pageSize: Long): PagedModelStaffIdResponse = api.getStaffIds(page = pageNumber.toInt(), size = pageSize.toInt())

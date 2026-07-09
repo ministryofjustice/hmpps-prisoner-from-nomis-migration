@@ -117,7 +117,7 @@ class StaffMigrationIntTest(
         nomisApiMock.stubGetStaffIdsFromId(staffId = 1234, content = emptyList())
 
         mappingApiMock.stubGetStaffByNomisIdOrNull(mapping = null)
-        nomisApiMock.stubGetStaffDetails()
+        nomisApiMock.stubGetStaffDetailsById()
         dpsApiMock.stubMigrateStaff(dpsStaffId = dpsStaffId)
 
         mappingApiMock.stubCreateMapping()
@@ -137,7 +137,7 @@ class StaffMigrationIntTest(
 
       @Test
       fun `will get details for staff`() {
-        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/1234")))
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/1234")))
       }
 
       @Test
@@ -253,8 +253,8 @@ class StaffMigrationIntTest(
 
         mappingApiMock.stubGetStaffByNomisIdOrNull(mapping = null)
         mappingApiMock.stubGetStaffByNomisIdOrNull(nomisId = 2345, mapping = null)
-        nomisApiMock.stubGetStaffDetails()
-        nomisApiMock.stubGetStaffDetails(nomisStaffId = 2345)
+        nomisApiMock.stubGetStaffDetailsById()
+        nomisApiMock.stubGetStaffDetailsById(nomisStaffId = 2345)
 
         dpsApiMock.stubMigrateStaff(dpsStaffId = dpsStaffId)
         dpsApiMock.stubMigrateStaff(nomisStaffId = 2345, dpsStaffId = dpsStaffId)
@@ -363,7 +363,7 @@ class StaffMigrationIntTest(
         nomisApiMock.stubGetStaffIdsFromId(staffId = 1234, content = emptyList())
 
         mappingApiMock.stubGetStaffByNomisIdOrNull(mapping = null)
-        nomisApiMock.stubGetStaffDetails()
+        nomisApiMock.stubGetStaffDetailsById()
         dpsApiMock.stubMigrateStaff(dpsStaffId = dpsStaffId)
 
         mappingApiMock.stubCreateMappingFailureFollowedBySuccess()
@@ -373,7 +373,7 @@ class StaffMigrationIntTest(
 
       @Test
       fun `will get details only once`() {
-        nomisApiMock.verify(1, getRequestedFor(urlPathEqualTo("/staff/1234")))
+        nomisApiMock.verify(1, getRequestedFor(urlPathEqualTo("/staff/id/1234")))
       }
 
       @Test
@@ -428,7 +428,7 @@ class StaffMigrationIntTest(
         nomisApiMock.stubGetStaffIdsFromId(staffId = 0, content = listOf(StaffIdResponse(staffId = 1234)))
         nomisApiMock.stubGetStaffIdsFromId(staffId = 1234, content = emptyList())
         mappingApiMock.stubGetStaffByNomisIdOrNull(mapping = null)
-        nomisApiMock.stubGetStaffDetails()
+        nomisApiMock.stubGetStaffDetailsById()
 
         dpsApiMock.stubMigrateStaff(dpsStaffId = dpsStaffId)
         mappingApiMock.stubCreateMapping(
@@ -456,7 +456,7 @@ class StaffMigrationIntTest(
 
       @Test
       fun `will get details for staff only once`() {
-        nomisApiMock.verify(1, getRequestedFor(urlPathEqualTo("/staff/1234")))
+        nomisApiMock.verify(1, getRequestedFor(urlPathEqualTo("/staff/id/1234")))
       }
 
       @Test
