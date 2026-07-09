@@ -7,7 +7,7 @@
       "name" : "Move a prisoner Team",
       "email" : "Moveaprisoner-gg@justice.gov.uk"
     },
-    "version" : "2026-07-08.96.13ee0d8"
+    "version" : "2026-07-08.106.f163735"
   },
   "servers" : [ {
     "url" : "/",
@@ -390,7 +390,7 @@
       "post" : {
         "tags" : [ "Property containers" ],
         "summary" : "Remove a property container from active storage",
-        "description" : "Records the container as returned to the prisoner or transferred to another prison, taking it out of active storage and clearing its location. Requires role ROLE_PRISONER_PROPERTY__RW.",
+        "description" : "Records why the container is leaving the sending prison's active storage: RETURNED to the prisoner, DISPOSED of, or CREATED_IN_ERROR (all terminal, clearing its location and freeing its seal), or TRANSFERRED - which instead reassigns the container to the receiving prison (toPrisonId), keeping it active there. Requires role ROLE_PRISONER_PROPERTY__RW.",
         "operationId" : "remove",
         "parameters" : [ {
           "name" : "id",
@@ -907,7 +907,7 @@
             "type" : "array",
             "items" : {
               "type" : "string",
-              "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED" ]
+              "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR" ]
             }
           },
           "example" : "STORED"
@@ -1105,7 +1105,7 @@
             "type" : "array",
             "items" : {
               "type" : "string",
-              "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED" ]
+              "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR" ]
             }
           },
           "example" : "STORED"
@@ -1128,6 +1128,16 @@
             "default" : false
           },
           "example" : false
+        }, {
+          "name" : "personLocation",
+          "in" : "query",
+          "description" : "Filter by where the property's owner currently is: IN_ESTABLISHMENT (people held here) or LEFT_ESTABLISHMENT (people no longer here). Resolved from prisoner-search.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "IN_ESTABLISHMENT", "LEFT_ESTABLISHMENT" ]
+          },
+          "example" : "IN_ESTABLISHMENT"
         }, {
           "name" : "page",
           "in" : "query",
@@ -1466,7 +1476,7 @@
           "currentStatus" : {
             "type" : "string",
             "description" : "Current status, derived from the most recent event",
-            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED" ],
+            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR" ],
             "example" : "STORED"
           },
           "currentLocation" : {
@@ -1490,7 +1500,7 @@
           "removalOutcome" : {
             "type" : [ "string", "null" ],
             "description" : "Why the container left active storage (disposed, returned, transferred, combined), if it has",
-            "enum" : [ "DISPOSED", "RETURNED", "TRANSFERRED", "COMBINED" ],
+            "enum" : [ "DISPOSED", "RETURNED", "TRANSFERRED", "COMBINED", "CREATED_IN_ERROR" ],
             "example" : "DISPOSED"
           },
           "removalDate" : {
@@ -1679,12 +1689,12 @@
       },
       "RemoveContainerRequest" : {
         "type" : "object",
-        "description" : "Details for removing a property container from active storage by returning it to the prisoner or transferring it",
+        "description" : "Details for removing a property container from active storage: returned to the prisoner, disposed of, transferred to the prisoner's new establishment, or the record was created in error",
         "properties" : {
           "outcome" : {
             "type" : "string",
-            "description" : "Why the container is being removed - must be RETURNED or TRANSFERRED (use the dispose endpoint for disposals)",
-            "enum" : [ "DISPOSED", "RETURNED", "TRANSFERRED", "COMBINED" ],
+            "description" : "Why the container is being removed - one of RETURNED, DISPOSED, TRANSFERRED or CREATED_IN_ERROR (COMBINED is not accepted; use the combine endpoint)",
+            "enum" : [ "DISPOSED", "RETURNED", "TRANSFERRED", "COMBINED", "CREATED_IN_ERROR" ],
             "example" : "RETURNED"
           },
           "date" : {
@@ -1695,7 +1705,7 @@
           },
           "toPrisonId" : {
             "type" : [ "string", "null" ],
-            "description" : "Destination prison id - required when the outcome is TRANSFERRED",
+            "description" : "Receiving prison id - required when the outcome is TRANSFERRED; the container is reassigned to this prison",
             "example" : "MDI"
           }
         },
@@ -1786,7 +1796,7 @@
           "eventType" : {
             "type" : "string",
             "description" : "What happened to the container",
-            "enum" : [ "CREATED_SEALED", "SEAL_CHANGED", "CONTAINER_TYPE_CHANGE", "MOVED", "PRISONER_RECEIVED", "TRANSFERRED", "RETURNED", "DISPOSAL_REQUIRED", "DISPOSED", "COMBINED" ],
+            "enum" : [ "CREATED_SEALED", "SEAL_CHANGED", "CONTAINER_TYPE_CHANGE", "MOVED", "PRISONER_RECEIVED", "PRISONER_RELEASED", "TRANSFERRED", "RETURNED", "DISPOSAL_REQUIRED", "DISPOSED", "COMBINED", "CREATED_IN_ERROR" ],
             "example" : "MOVED"
           },
           "eventDateTime" : {
@@ -1827,10 +1837,26 @@
             "description" : "Prison the container moved from, for transfer events",
             "example" : "LEI"
           },
+          "fromPrisonName" : {
+            "type" : [ "string", "null" ],
+            "description" : "Name of the prison the container moved from, for transfer events",
+            "example" : "Leeds (HMP)"
+          },
           "toPrisonId" : {
             "type" : [ "string", "null" ],
             "description" : "Prison the container moved to, for transfer events",
             "example" : "MDI"
+          },
+          "toPrisonName" : {
+            "type" : [ "string", "null" ],
+            "description" : "Name of the prison the container moved to, for transfer events",
+            "example" : "Moorland (HMP & YOI)"
+          },
+          "containerType" : {
+            "type" : "string",
+            "description" : "The container's type as at the time of this event (snapshotted for the durable history)",
+            "enum" : [ "STANDARD", "EXCESS", "VALUABLES", "CONFISCATED" ],
+            "example" : "STANDARD"
           },
           "eventDate" : {
             "type" : [ "string", "null" ],
@@ -1845,7 +1871,7 @@
             "example" : "33333333-3333-3333-3333-333333333333"
           }
         },
-        "required" : [ "eventDateTime", "eventType", "eventUserId", "id" ]
+        "required" : [ "containerType", "eventDateTime", "eventType", "eventUserId", "id" ]
       },
       "PrisonerPropertyContainerDto" : {
         "type" : "object",
@@ -1912,7 +1938,7 @@
           "currentStatus" : {
             "type" : "string",
             "description" : "Current status, derived from the most recent event",
-            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED" ],
+            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR" ],
             "example" : "STORED"
           },
           "currentLocation" : {
@@ -1941,7 +1967,7 @@
           "removalOutcome" : {
             "type" : [ "string", "null" ],
             "description" : "Why the container left active storage (disposed, returned, transferred, combined), if it has",
-            "enum" : [ "DISPOSED", "RETURNED", "TRANSFERRED", "COMBINED" ],
+            "enum" : [ "DISPOSED", "RETURNED", "TRANSFERRED", "COMBINED", "CREATED_IN_ERROR" ],
             "example" : "DISPOSED"
           },
           "removalDate" : {
@@ -1987,13 +2013,13 @@
           "eventType" : {
             "type" : [ "string", "null" ],
             "description" : "What happened to the container, for container events; null for prisoner movements",
-            "enum" : [ "CREATED_SEALED", "SEAL_CHANGED", "CONTAINER_TYPE_CHANGE", "MOVED", "PRISONER_RECEIVED", "TRANSFERRED", "RETURNED", "DISPOSAL_REQUIRED", "DISPOSED", "COMBINED" ],
+            "enum" : [ "CREATED_SEALED", "SEAL_CHANGED", "CONTAINER_TYPE_CHANGE", "MOVED", "PRISONER_RECEIVED", "PRISONER_RELEASED", "TRANSFERRED", "RETURNED", "DISPOSAL_REQUIRED", "DISPOSED", "COMBINED", "CREATED_IN_ERROR" ],
             "example" : "TRANSFERRED"
           },
           "eventStatus" : {
             "type" : [ "string", "null" ],
             "description" : "The status this event put the container into (used for the item's status tag); null for prisoner movements",
-            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED" ],
+            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR" ],
             "example" : "TRANSFER"
           },
           "eventDateTime" : {
@@ -2074,7 +2100,7 @@
           "containerStatus" : {
             "type" : [ "string", "null" ],
             "description" : "The container's current status, for the item's expandable details",
-            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED" ],
+            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR" ],
             "example" : "STORED"
           },
           "containerLocationDescription" : {
@@ -2218,31 +2244,31 @@
           "availableStorageLocations" : {
             "type" : "integer",
             "format" : "int32",
-            "description" : "Number of BOX storage locations configured for the prison (from locations-inside-prison-api)",
+            "description" : "The prison's total internal BOX storage locations minus the containers currently stored on-site (floored at 0)",
             "example" : 150
           },
           "storedOnSite" : {
             "type" : "integer",
             "format" : "int32",
-            "description" : "Number of containers currently stored on-site (status STORED)",
+            "description" : "Number of containers currently in internal storage at this establishment",
             "example" : 3000
           },
           "dueToTransferOut" : {
             "type" : "integer",
             "format" : "int32",
-            "description" : "Number of containers due to be transferred out (status DUE_FOR_TRANSFER_OUT)",
+            "description" : "Number of containers held here for people no longer at this establishment (status DUE_FOR_TRANSFER_OUT)",
             "example" : 80
           },
           "dueToBeReturned" : {
             "type" : "integer",
             "format" : "int32",
-            "description" : "Number of containers due to be returned. Always 0 for now - no status yet represents a pending return",
-            "example" : 0
+            "description" : "Number of containers due to be returned (flagged after the prisoner's release)",
+            "example" : 36
           },
           "dueToBeDisposed" : {
             "type" : "integer",
             "format" : "int32",
-            "description" : "Number of containers due to be disposed of (status DISPOSAL_REQUIRED)",
+            "description" : "Number of containers whose proposed disposal date has arisen (today or earlier)",
             "example" : 40
           }
         },
