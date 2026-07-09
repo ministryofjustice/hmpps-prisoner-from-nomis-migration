@@ -271,7 +271,7 @@ class StaffSynchronisationIntTest(
         @Test
         fun `will track telemetry`() {
           verify(telemetryClient).trackEvent(
-            eq("staffuseraccounts-synchronisation-created-notimplemented"),
+            eq("staff-useraccount-synchronisation-created-skipped"),
             check {
               assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
             },
@@ -285,6 +285,8 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
+          nomisApiMock.stubGetStaffDetails()
+          dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             staffUserAccountEvent(
               eventType = "STAFF_USER_ACCOUNTS-INSERTED",
@@ -298,9 +300,20 @@ class StaffSynchronisationIntTest(
         inner class HappyPath {
 
           @Test
+          fun `will retrieve the staff details from NOMIS`() {
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/$nomisStaffId")))
+          }
+
+          @Test
+          fun `will update the staff in DPS`() {
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
+            verifyUserMigrationRequest()
+          }
+
+          @Test
           fun `will track telemetry`() {
             verify(telemetryClient).trackEvent(
-              eq("staffuseraccounts-synchronisation-created-notimplemented"),
+              eq("staff-useraccount-synchronisation-created-success"),
               check {
                 assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
                 assertThat(it["username"]).isEqualTo(username)
@@ -332,7 +345,7 @@ class StaffSynchronisationIntTest(
         @Test
         fun `will track telemetry`() {
           verify(telemetryClient).trackEvent(
-            eq("staffuseraccounts-synchronisation-updated-notimplemented"),
+            eq("staff-useraccount-synchronisation-updated-skipped"),
             check {
               assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
               assertThat(it["username"]).isEqualTo(username)
@@ -347,6 +360,8 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
+          nomisApiMock.stubGetStaffDetails()
+          dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             staffUserAccountEvent(
               eventType = "STAFF_USER_ACCOUNTS-UPDATED",
@@ -360,9 +375,20 @@ class StaffSynchronisationIntTest(
         inner class HappyPath {
 
           @Test
+          fun `will retrieve the staff details from NOMIS`() {
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/$nomisStaffId")))
+          }
+
+          @Test
+          fun `will update the staff in DPS`() {
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
+            verifyUserMigrationRequest()
+          }
+
+          @Test
           fun `will track telemetry`() {
             verify(telemetryClient).trackEvent(
-              eq("staffuseraccounts-synchronisation-updated-notimplemented"),
+              eq("staff-useraccount-synchronisation-updated-success"),
               check {
                 assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
                 assertThat(it["username"]).isEqualTo(username)
@@ -394,7 +420,7 @@ class StaffSynchronisationIntTest(
         @Test
         fun `will track telemetry`() {
           verify(telemetryClient).trackEvent(
-            eq("staffuseraccounts-synchronisation-deleted-notimplemented"),
+            eq("staff-useraccount-synchronisation-deleted-skipped"),
             check {
               assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
               assertThat(it["username"]).isEqualTo(username)
@@ -409,6 +435,8 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
+          nomisApiMock.stubGetStaffDetails()
+          dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             staffUserAccountEvent(
               eventType = "STAFF_USER_ACCOUNTS-DELETED",
@@ -422,9 +450,20 @@ class StaffSynchronisationIntTest(
         inner class HappyPath {
 
           @Test
+          fun `will retrieve the staff details from NOMIS`() {
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/$nomisStaffId")))
+          }
+
+          @Test
+          fun `will update the staff in DPS`() {
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
+            verifyUserMigrationRequest()
+          }
+
+          @Test
           fun `will track telemetry`() {
             verify(telemetryClient).trackEvent(
-              eq("staffuseraccounts-synchronisation-deleted-notimplemented"),
+              eq("staff-useraccount-synchronisation-deleted-success"),
               check {
                 assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
                 assertThat(it["username"]).isEqualTo(username)

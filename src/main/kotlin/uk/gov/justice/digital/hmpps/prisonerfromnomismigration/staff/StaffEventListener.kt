@@ -33,12 +33,12 @@ class StaffEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType, "staff")) {
             when (eventType) {
-              "STAFF_MEMBERS-INSERTED" -> service.staffCreated(sqsMessage.Message.fromJson())
-              "STAFF_MEMBERS-UPDATED" -> service.staffUpdated(sqsMessage.Message.fromJson())
+              "STAFF_MEMBERS-INSERTED" -> service.staffUpserted("created", sqsMessage.Message.fromJson())
+              "STAFF_MEMBERS-UPDATED" -> service.staffUpserted("updated", sqsMessage.Message.fromJson())
               "STAFF_MEMBERS-DELETED" -> service.staffDeleted(sqsMessage.Message.fromJson())
-              "STAFF_USER_ACCOUNTS-INSERTED" -> service.staffAccountCreated(sqsMessage.Message.fromJson())
-              "STAFF_USER_ACCOUNTS-UPDATED" -> service.staffAccountUpdated(sqsMessage.Message.fromJson())
-              "STAFF_USER_ACCOUNTS-DELETED" -> service.staffAccountDeleted(sqsMessage.Message.fromJson())
+              "STAFF_USER_ACCOUNTS-INSERTED" -> service.staffAccountUpserted("created", sqsMessage.Message.fromJson())
+              "STAFF_USER_ACCOUNTS-UPDATED" -> service.staffAccountUpserted("updated", sqsMessage.Message.fromJson())
+              "STAFF_USER_ACCOUNTS-DELETED" -> service.staffAccountUpserted("deleted", sqsMessage.Message.fromJson())
               "INTERNET_ADDRESSES_STAFF-INSERTED" -> service.staffInternetAddressCreated(sqsMessage.Message.fromJson())
               "INTERNET_ADDRESSES_STAFF-UPDATED" -> service.staffInternetAddressUpdated(sqsMessage.Message.fromJson())
               "INTERNET_ADDRESSES_STAFF-DELETED" -> service.staffInternetAddressDeleted(sqsMessage.Message.fromJson())
@@ -59,16 +59,20 @@ class StaffEventListener(
   private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
 }
 
+interface StaffAuditedEvent : EventAudited {
+  val staffId: Long
+}
+
 data class StaffEvent(
-  val staffId: Long,
+  override val staffId: Long,
   override val auditModuleName: String,
-) : EventAudited
+) : StaffAuditedEvent
 
 data class StaffUserAccountEvent(
-  val staffId: Long,
+  override val staffId: Long,
   val username: String,
   override val auditModuleName: String,
-) : EventAudited
+) : StaffAuditedEvent
 
 data class StaffInternetAddressEvent(
   val staffId: Long,
