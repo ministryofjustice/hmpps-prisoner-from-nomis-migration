@@ -31,7 +31,7 @@ class DummyStaffDpsApi {
     username = staff.accounts.firstOrNull()?.username ?: "NO_USER_ACCOUNT",
   )
     .also {
-      log.info("Created staff ${staff.user.id}")
+      log.info("Migrated staff ${staff.user.id}")
     }
 
   @PutMapping("/prison-users/staff")
