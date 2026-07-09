@@ -23,7 +23,7 @@ class StaffSynchronisationService(
   suspend fun staffUpserted(eventType: String, event: StaffEvent) {
     val nomisStaffId = event.staffId
     val telemetry = telemetryOf("nomisStaffId" to nomisStaffId)
-    synchroniseStaff(nomisStaffId, event, "staff-synchronisation-$eventType", telemetry)
+    synchroniseStaff(event, "staff-synchronisation-$eventType", telemetry)
   }
   suspend fun staffDeleted(event: StaffEvent) {
     val nomisStaffId = event.staffId
@@ -42,20 +42,12 @@ class StaffSynchronisationService(
   suspend fun staffAccountUpserted(eventType: String, event: StaffUserAccountEvent) {
     val nomisStaffId = event.staffId
     val telemetry = telemetryOf("nomisStaffId" to nomisStaffId, "username" to event.username)
-    synchroniseStaff(nomisStaffId, event, "staff-useraccount-synchronisation-$eventType", telemetry)
+    synchroniseStaff(event, "staffuseraccount-synchronisation-$eventType", telemetry)
   }
 
-  suspend fun staffInternetAddressCreated(event: StaffInternetAddressEvent) {
+  suspend fun staffInternetAddressUpserted(eventType: String, event: StaffInternetAddressEvent) {
     val telemetry = telemetryOf("nomisStaffId" to event.staffId, "internetAddressId" to event.internetAddressId)
-    telemetryClient.trackEvent("staffinternetaddresses-synchronisation-created-notimplemented", telemetry)
-  }
-  suspend fun staffInternetAddressUpdated(event: StaffInternetAddressEvent) {
-    val telemetry = telemetryOf("nomisStaffId" to event.staffId, "internetAddressId" to event.internetAddressId)
-    telemetryClient.trackEvent("staffinternetaddresses-synchronisation-updated-notimplemented", telemetry)
-  }
-  suspend fun staffInternetAddressDeleted(event: StaffInternetAddressEvent) {
-    val telemetry = telemetryOf("nomisStaffId" to event.staffId, "internetAddressId" to event.internetAddressId)
-    telemetryClient.trackEvent("staffinternetaddresses-synchronisation-deleted-notimplemented", telemetry)
+    synchroniseStaff(event, "staffinternetaddress-synchronisation-$eventType", telemetry)
   }
 
   suspend fun userAccessibleCaseloadCreated(event: UserAccessibleCaseloadEvent) {
@@ -77,7 +69,6 @@ class StaffSynchronisationService(
   }
 
   private suspend fun synchroniseStaff(
-    nomisStaffId: Long,
     event: StaffAuditedEvent,
     telemetryName: String,
     telemetry: MutableMap<String, Any>,
@@ -85,7 +76,7 @@ class StaffSynchronisationService(
     if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
     } else {
-      nomisApiService.getStaffDetails(nomisStaffId).also {
+      nomisApiService.getStaffDetails(event.staffId).also {
         track(telemetryName, telemetry) {
           dpsApiService.syncStaff(it.toSyncStaffRequest())
         }
