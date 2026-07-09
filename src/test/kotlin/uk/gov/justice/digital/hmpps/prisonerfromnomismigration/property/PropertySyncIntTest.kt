@@ -219,16 +219,13 @@ class PropertySyncIntTest(
           }
 
           @Test
-          fun `will create property in DPS`() {
+          fun `will create property in DPS, mapping and telemetry`() {
             await untilAsserted {
               propertyDpsApi.verify(
                 postRequestedFor(urlPathEqualTo("/sync/property-containers/upsert")),
               )
             }
-          }
 
-          @Test
-          fun `will attempt to create mapping twice and succeed`() {
             await untilAsserted {
               propertyMappingApiMockServer.verify(
                 exactly(2),
@@ -240,13 +237,6 @@ class PropertySyncIntTest(
               )
             }
 
-            assertThat(
-              awsSqsPropertyEventDlqClient.countAllMessagesOnQueue(propertyEventDlqUrl).get(),
-            ).isEqualTo(0)
-          }
-
-          @Test
-          fun `will track a telemetry event for partial success`() {
             await untilAsserted {
               verify(telemetryClient).trackEvent(
                 eq("property-synchronisation-created-success"),
@@ -273,6 +263,10 @@ class PropertySyncIntTest(
                 isNull(),
               )
             }
+
+            assertThat(
+              awsSqsPropertyEventDlqClient.countAllMessagesOnQueue(propertyEventDlqUrl).get(),
+            ).isEqualTo(0)
           }
         }
 
