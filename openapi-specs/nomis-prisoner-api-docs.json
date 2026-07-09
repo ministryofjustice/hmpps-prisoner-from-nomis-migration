@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-07-07.1704.6dc7a28"
+    "version" : "2026-07-09.1712.d9e4a02"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -15080,20 +15080,19 @@
         }
       }
     },
-    "/staff/{staffId}" : {
+    "/staff/username/{username}" : {
       "get" : {
         "tags" : [ "staff-resource" ],
-        "summary" : "Get staff details",
+        "summary" : "Get staff details by any of the staff's usernames",
         "description" : "Gets staff details. Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
-        "operationId" : "getStaff",
+        "operationId" : "getStaffByUsername",
         "parameters" : [ {
-          "name" : "staffId",
+          "name" : "username",
           "in" : "path",
           "description" : "staff Id",
           "required" : true,
           "schema" : {
-            "type" : "integer",
-            "format" : "int64",
+            "type" : "string",
             "description" : "staff Id"
           }
         }, {
@@ -15289,6 +15288,88 @@
           },
           "403" : {
             "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/staff/id/{staffId}" : {
+      "get" : {
+        "tags" : [ "staff-resource" ],
+        "summary" : "Get staff details",
+        "description" : "Gets staff details. Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "operationId" : "getStaffById",
+        "parameters" : [ {
+          "name" : "staffId",
+          "in" : "path",
+          "description" : "staff Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "staff Id"
+          }
+        }, {
+          "name" : "dpsRolesOnly",
+          "in" : "query",
+          "description" : "Only return dps roles for the staff",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "description" : "Only return dps roles for the staff",
+            "example" : true
+          },
+          "example" : true
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StaffDetails"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -28831,6 +28912,9 @@
           },
           "nextCourtId" : {
             "type" : "string"
+          },
+          "comment" : {
+            "type" : "string"
           }
         },
         "required" : [ "courtEventCharges", "courtEventType", "courtId", "eventDateTime" ]
@@ -33374,8 +33458,7 @@
           },
           "caseloads" : {
             "type" : "array",
-            "description" : "Caseloads associated with the user",
-            "example" : "['MDI','LEI']",
+            "description" : "Caseloads and roles associated with the user",
             "items" : {
               "$ref" : "#/components/schemas/CaseloadResponse"
             }

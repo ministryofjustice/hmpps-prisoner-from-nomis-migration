@@ -24,13 +24,13 @@ import java.time.LocalDateTime
 
 @Component
 class StaffNomisApiMockServer(private val jsonMapper: JsonMapper) {
-  fun stubGetStaffDetails(
+  fun stubGetStaffDetailsById(
     nomisStaffId: Long = 1234,
     staff: StaffDetails = staffDetails(nomisStaffId),
     dpsRolesOnly: Boolean = true,
   ) {
     nomisApi.stubFor(
-      get(urlPathEqualTo("/staff/$nomisStaffId"))
+      get(urlPathEqualTo("/staff/id/$nomisStaffId"))
         .withQueryParam("dpsRolesOnly", equalTo(dpsRolesOnly.toString()))
         .willReturn(
           aResponse()
@@ -41,7 +41,7 @@ class StaffNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetStaffDetailsNotFound(
+  fun stubGetStaffDetailsByIdNotFound(
     nomisStaffId: Long = 1234,
     status: HttpStatus = HttpStatus.NOT_FOUND,
     error: ErrorResponse = ErrorResponse(status = status.value()),
@@ -55,6 +55,24 @@ class StaffNomisApiMockServer(private val jsonMapper: JsonMapper) {
             jsonMapper.writeValueAsString(error),
           ),
       ),
+    )
+  }
+
+  fun stubGetStaffDetailsByUsername(
+    nomisStaffId: Long = 1234,
+    username: String = "JOHNSMITH_ADM",
+    staff: StaffDetails = staffDetails(staffId = nomisStaffId, username = username),
+    dpsRolesOnly: Boolean = true,
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/staff/username/$username"))
+        .withQueryParam("dpsRolesOnly", equalTo(dpsRolesOnly.toString()))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(jsonMapper.writeValueAsString(staff)),
+        ),
     )
   }
 
@@ -112,7 +130,7 @@ class StaffNomisApiMockServer(private val jsonMapper: JsonMapper) {
     ),
   )
 
-  fun staffDetails(staffId: Long = 1234) = StaffDetails(
+  fun staffDetails(staffId: Long = 1234, username: String = "JOHNSMITH_ADM") = StaffDetails(
     id = staffId,
     firstName = "JOHN",
     lastName = "SMITH",
@@ -121,7 +139,7 @@ class StaffNomisApiMockServer(private val jsonMapper: JsonMapper) {
     audit = audit(),
     accounts = listOf(
       StaffAccount(
-        username = "JOHNSMITH_ADM",
+        username = username,
         sourceCode = "USER",
         status = "OPEN",
         typeCode = "ADMIN",

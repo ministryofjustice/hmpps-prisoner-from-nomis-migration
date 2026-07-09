@@ -95,7 +95,7 @@ class StaffMigrationService(
     alreadyMigratedMapping?.run {
       log.info("Will not migrate the nomis staff id=$nomisStaffId since it was already mapped to DPS staff $dpsId during migration $label")
     } ?: run {
-      val nomisStaff = nomisApiService.getStaffDetails(staffId = nomisStaffId)
+      val nomisStaff = nomisApiService.getStaffDetailsById(staffId = nomisStaffId)
       val dpsStaff = dpsApiService.migrateStaff(nomisStaff.toMigrateStaffRequest())
 
       val mapping = StaffMappingDto(

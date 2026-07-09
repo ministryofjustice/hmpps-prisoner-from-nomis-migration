@@ -60,7 +60,7 @@ class StaffDataRepairResourceIntTest(
 
       @BeforeEach
       fun setUp() {
-        nomisApiMockServer.stubGetStaffDetails(nomisStaffId = staffId)
+        nomisApiMockServer.stubGetStaffDetailsById(nomisStaffId = staffId)
         dpsStaffServer.stubSyncStaff()
 
         webTestClient.post().uri("/staff/$staffId/repair")
@@ -71,7 +71,7 @@ class StaffDataRepairResourceIntTest(
 
       @Test
       fun `will retrieve staff details for the staff`() {
-        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/staff/$staffId")))
+        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/staff/id/$staffId")))
       }
 
       @Test
@@ -107,7 +107,7 @@ class StaffDataRepairResourceIntTest(
 
       @BeforeEach
       fun setUp() {
-        nomisApiMockServer.stubGetStaffDetailsNotFound(staffId)
+        nomisApiMockServer.stubGetStaffDetailsByIdNotFound(staffId)
         dpsStaffServer.stubMigrateStaff()
 
         webTestClient.post().uri("/staff/$staffId/repair")
@@ -120,7 +120,7 @@ class StaffDataRepairResourceIntTest(
 
       @Test
       fun `will try to retrieve staff details from Nomis`() {
-        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/staff/$staffId")))
+        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/staff/id/$staffId")))
       }
 
       @Test
