@@ -52,12 +52,12 @@ class StaffSynchronisationService(
 
   suspend fun userAccessibleCaseloadUpserted(eventType: String, event: UserAccessibleCaseloadEvent) {
     val telemetry = telemetryOf("username" to event.username, "caseloadId" to event.caseloadId)
-    telemetryClient.trackEvent("useraccessiblecaseloads-synchronisation-$eventType-notimplemented", telemetry)
+    synchroniseStaffByUsername(event, "useraccessiblecaseload-synchronisation-$eventType", telemetry)
   }
 
   suspend fun userCaseloadRoleUpserted(eventType: String, event: UserCaseloadRoleEvent) {
     val telemetry = telemetryOf("username" to event.username, "caseloadId" to event.caseloadId, "roleCode" to event.roleCode)
-    telemetryClient.trackEvent("usercaseloadroles-synchronisation-$eventType-notimplemented", telemetry)
+    synchroniseStaffByUsername(event, "usercaseloadrole-synchronisation-$eventType", telemetry)
   }
 
   private suspend fun synchroniseStaff(
@@ -69,6 +69,21 @@ class StaffSynchronisationService(
       telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
     } else {
       nomisApiService.getStaffDetailsById(event.staffId).also {
+        track(telemetryName, telemetry) {
+          dpsApiService.syncStaff(it.toSyncStaffRequest())
+        }
+      }
+    }
+  }
+  private suspend fun synchroniseStaffByUsername(
+    event: UsernameAuditedEvent,
+    telemetryName: String,
+    telemetry: MutableMap<String, Any>,
+  ) {
+    if (event.originatesInDpsOrHasMissingAudit) {
+      telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
+    } else {
+      nomisApiService.getStaffDetailsByUsername(event.username).also {
         track(telemetryName, telemetry) {
           dpsApiService.syncStaff(it.toSyncStaffRequest())
         }

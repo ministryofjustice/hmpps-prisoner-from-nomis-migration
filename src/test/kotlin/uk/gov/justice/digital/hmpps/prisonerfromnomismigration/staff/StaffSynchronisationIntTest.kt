@@ -248,7 +248,7 @@ class StaffSynchronisationIntTest(
   @Nested
   inner class StaffUserAccounts {
     val nomisStaffId = 1234L
-    val username = "FRED_GEN"
+    val username = "JOHNSMITH_ADM"
     val caseloadId = "ASI"
 
     @Nested
@@ -480,7 +480,7 @@ class StaffSynchronisationIntTest(
   inner class InternetAddressesStaff {
     val nomisStaffId = 1234L
     val nomisInternetAddressStaffId = 5678L
-    val username = "FRED_GEN"
+    val username = "JOHNSMITH_ADM"
     val caseloadId = "ASI"
 
     @Nested
@@ -699,7 +699,7 @@ class StaffSynchronisationIntTest(
 
   @Nested
   inner class UserAccessibleCaseloads {
-    val username = "FRED_GEN"
+    val username = "JOHNSMITH_ADM"
     val caseloadId = "ASI"
 
     @Nested
@@ -722,7 +722,7 @@ class StaffSynchronisationIntTest(
         @Test
         fun `will track telemetry`() {
           verify(telemetryClient).trackEvent(
-            eq("useraccessiblecaseloads-synchronisation-created-notimplemented"),
+            eq("useraccessiblecaseload-synchronisation-created-skipped"),
             check {
               assertThat(it["username"]).isEqualTo(username)
               assertThat(it["caseloadId"]).isEqualTo(caseloadId)
@@ -737,6 +737,8 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
+          nomisApiMock.stubGetStaffDetailsByUsername()
+          dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             userAccessibleCaseloadEvent(
               eventType = "USER_ACCESSIBLE_CASELOADS-INSERTED",
@@ -750,9 +752,20 @@ class StaffSynchronisationIntTest(
         inner class HappyPath {
 
           @Test
+          fun `will retrieve the staff details from NOMIS`() {
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/username/$username")))
+          }
+
+          @Test
+          fun `will update the staff in DPS`() {
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
+            verifyUserMigrationRequest()
+          }
+
+          @Test
           fun `will track telemetry`() {
             verify(telemetryClient).trackEvent(
-              eq("useraccessiblecaseloads-synchronisation-created-notimplemented"),
+              eq("useraccessiblecaseload-synchronisation-created-success"),
               check {
                 assertThat(it["username"]).isEqualTo(username)
                 assertThat(it["caseloadId"]).isEqualTo(caseloadId)
@@ -784,7 +797,7 @@ class StaffSynchronisationIntTest(
         @Test
         fun `will track telemetry`() {
           verify(telemetryClient).trackEvent(
-            eq("useraccessiblecaseloads-synchronisation-deleted-notimplemented"),
+            eq("useraccessiblecaseload-synchronisation-deleted-skipped"),
             check {
               assertThat(it["username"]).isEqualTo(username)
               assertThat(it["caseloadId"]).isEqualTo(caseloadId)
@@ -799,6 +812,8 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
+          nomisApiMock.stubGetStaffDetailsByUsername()
+          dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             userAccessibleCaseloadEvent(
               eventType = "USER_ACCESSIBLE_CASELOADS-DELETED",
@@ -812,9 +827,20 @@ class StaffSynchronisationIntTest(
         inner class HappyPath {
 
           @Test
+          fun `will retrieve the staff details from NOMIS`() {
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/username/$username")))
+          }
+
+          @Test
+          fun `will update the staff in DPS`() {
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
+            verifyUserMigrationRequest()
+          }
+
+          @Test
           fun `will track telemetry`() {
             verify(telemetryClient).trackEvent(
-              eq("useraccessiblecaseloads-synchronisation-deleted-notimplemented"),
+              eq("useraccessiblecaseload-synchronisation-deleted-success"),
               check {
                 assertThat(it["username"]).isEqualTo(username)
                 assertThat(it["caseloadId"]).isEqualTo(caseloadId)
@@ -829,7 +855,7 @@ class StaffSynchronisationIntTest(
 
   @Nested
   inner class UserCaseloadRoles {
-    val username = "FRED_GEN"
+    val username = "JOHNSMITH_ADM"
     val caseloadId = "ASI"
     val roleCode = "ROLE_ADD_USER"
 
@@ -854,7 +880,7 @@ class StaffSynchronisationIntTest(
         @Test
         fun `will track telemetry`() {
           verify(telemetryClient).trackEvent(
-            eq("usercaseloadroles-synchronisation-created-notimplemented"),
+            eq("usercaseloadrole-synchronisation-created-skipped"),
             check {
               assertThat(it["username"]).isEqualTo(username)
               assertThat(it["caseloadId"]).isEqualTo(caseloadId)
@@ -870,6 +896,8 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
+          nomisApiMock.stubGetStaffDetailsByUsername()
+          dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             userCaseloadRoleEvent(
               eventType = "USER_CASELOAD_ROLES-INSERTED",
@@ -884,9 +912,20 @@ class StaffSynchronisationIntTest(
         inner class HappyPath {
 
           @Test
+          fun `will retrieve the staff details from NOMIS`() {
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/username/$username")))
+          }
+
+          @Test
+          fun `will update the staff in DPS`() {
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
+            verifyUserMigrationRequest()
+          }
+
+          @Test
           fun `will track telemetry`() {
             verify(telemetryClient).trackEvent(
-              eq("usercaseloadroles-synchronisation-created-notimplemented"),
+              eq("usercaseloadrole-synchronisation-created-success"),
               check {
                 assertThat(it["username"]).isEqualTo(username)
                 assertThat(it["caseloadId"]).isEqualTo(caseloadId)
@@ -920,7 +959,7 @@ class StaffSynchronisationIntTest(
         @Test
         fun `will track telemetry`() {
           verify(telemetryClient).trackEvent(
-            eq("usercaseloadroles-synchronisation-deleted-notimplemented"),
+            eq("usercaseloadrole-synchronisation-deleted-skipped"),
             check {
               assertThat(it["username"]).isEqualTo(username)
               assertThat(it["caseloadId"]).isEqualTo(caseloadId)
@@ -936,6 +975,8 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
+          nomisApiMock.stubGetStaffDetailsByUsername()
+          dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             userCaseloadRoleEvent(
               eventType = "USER_CASELOAD_ROLES-DELETED",
@@ -950,9 +991,20 @@ class StaffSynchronisationIntTest(
         inner class HappyPath {
 
           @Test
+          fun `will retrieve the staff details from NOMIS`() {
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/username/$username")))
+          }
+
+          @Test
+          fun `will update the staff in DPS`() {
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
+            verifyUserMigrationRequest()
+          }
+
+          @Test
           fun `will track telemetry`() {
             verify(telemetryClient).trackEvent(
-              eq("usercaseloadroles-synchronisation-deleted-notimplemented"),
+              eq("usercaseloadrole-synchronisation-deleted-success"),
               check {
                 assertThat(it["username"]).isEqualTo(username)
                 assertThat(it["caseloadId"]).isEqualTo(caseloadId)

@@ -127,11 +127,11 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     // TODO Temporarily Set syncRequest to migrationRequest - update when endpoint ready
     fun syncStaff() = migrateStaff()
 
-    fun migrateStaffResponse(nomisStaffId: Long, dpsStaffId: UUID) = UserMigrationResponse(
+    fun migrateStaffResponse(nomisStaffId: Long, dpsStaffId: UUID, username: String = "JOHNSMITH_ADM") = UserMigrationResponse(
       userId = dpsStaffId,
       staffId = nomisStaffId.toString(),
       // TOD this should be a list
-      username = "JSMITH_ADM",
+      username = username,
     )
 
     fun verifyUserSyncRequest() {
@@ -235,8 +235,9 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubSyncStaff(
     nomisStaffId: Long = 1234,
     dpsStaffId: UUID = UUID.randomUUID(),
+    username: String = "JOHNSMITH_ADM",
     response: UserMigrationResponse =
-      migrateStaffResponse(nomisStaffId, dpsStaffId),
+      migrateStaffResponse(nomisStaffId, dpsStaffId, username),
   ) {
     stubFor(
       put("/prison-users/staff")
