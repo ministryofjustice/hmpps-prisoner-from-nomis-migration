@@ -52,7 +52,7 @@ class PrisonerBalanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
     prisonerBalance: PrisonerBalanceDto = prisonerBalance(rootOffenderId = rootOffenderId, prisonNumber = prisonNumber),
   ) {
     nomisApi.stubFor(
-      get(urlEqualTo("/finance/prisoners/$rootOffenderId/balance")).willReturn(
+      get(urlEqualTo("/finance/prisoners/rootOffenderId/$rootOffenderId/balance")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())

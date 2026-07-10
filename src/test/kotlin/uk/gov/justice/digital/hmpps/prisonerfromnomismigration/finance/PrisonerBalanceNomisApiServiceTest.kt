@@ -99,7 +99,7 @@ class PrisonerBalanceNomisApiServiceTest {
       apiService.getPrisonerBalance(10000)
 
       mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/finance/prisoners/10000/balance")),
+        getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/10000/balance")),
       )
     }
 
