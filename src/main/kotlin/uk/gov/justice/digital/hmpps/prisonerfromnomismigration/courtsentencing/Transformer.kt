@@ -169,6 +169,7 @@ fun CourtEventResponse.toMigrationDpsCourtAppearance(
     nextEventDateTime = this.nextEventDateTime,
     appearanceTime = this.eventDateTime.toLocalTime().toString(),
     nomisAppearanceTypeCode = this.courtEventType.code,
+    comments = this.commentText,
   ),
 
   /* supporting sentences with multiple charges
@@ -198,6 +199,7 @@ fun CourtEventResponse.toBookingCloneDpsCourtAppearance(
     nextEventDateTime = this.nextEventDateTime,
     appearanceTime = this.eventDateTime.toLocalTime().toString(),
     nomisAppearanceTypeCode = this.courtEventType.code,
+    comments = this.commentText,
   ),
 
   /* supporting sentences with multiple charges
@@ -227,6 +229,7 @@ fun CourtEventResponse.toMergeDpsCourtAppearance(
     nextEventDateTime = this.nextEventDateTime,
     appearanceTime = this.eventDateTime.toLocalTime().toString(),
     nomisAppearanceTypeCode = this.courtEventType.code,
+    comments = this.commentText,
   ),
 
   /* supporting sentences with multiple charges
