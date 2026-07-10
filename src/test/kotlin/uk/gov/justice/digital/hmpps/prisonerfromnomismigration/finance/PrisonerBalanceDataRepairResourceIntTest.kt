@@ -73,7 +73,7 @@ class PrisonerBalanceDataRepairResourceIntTest(
 
       @Test
       fun `will retrieve current prisonerBalance for the prisoner`() {
-        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/$rootOffenderId/balance")))
+        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/$rootOffenderId/balance")))
       }
 
       @Test
@@ -119,7 +119,7 @@ class PrisonerBalanceDataRepairResourceIntTest(
 
       @Test
       fun `will try to retrieve current prisonerBalance for the prisoner`() {
-        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/$rootOffenderId/balance")))
+        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/$rootOffenderId/balance")))
       }
 
       @Test
@@ -192,7 +192,7 @@ class PrisonerBalanceDataRepairResourceIntTest(
 
       @Test
       fun `will retrieve current prisonerBalance for the prisoner`() {
-        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/$rootOffenderId/balance")))
+        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/$rootOffenderId/balance")))
       }
 
       @Test
@@ -277,7 +277,7 @@ class PrisonerBalanceDataRepairResourceIntTest(
 
       @Test
       fun `will try to retrieve current prisonerBalance for the prisoner`() {
-        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/$rootOffenderId/balance")))
+        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/$rootOffenderId/balance")))
       }
 
       @Test

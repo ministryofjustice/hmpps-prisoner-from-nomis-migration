@@ -229,8 +229,7 @@ class PrisonerBalanceMigrationIntTest(
 
       @Test
       fun `will get prisoner balance details for each offender`() {
-        nomisPrisonerBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/10000/balance")))
-        nomisPrisonerBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/10001/balance")))
+        nomisPrisonerBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/10000/balance")))
       }
 
       @Test
@@ -360,8 +359,7 @@ class PrisonerBalanceMigrationIntTest(
 
       @Test
       fun `will get prisoner balance details for each offender`() {
-        nomisPrisonerBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/10000/balance")))
-        nomisPrisonerBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/10001/balance")))
+        nomisPrisonerBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/10000/balance")))
       }
 
       @Test
@@ -547,7 +545,7 @@ class PrisonerBalanceMigrationIntTest(
 
       @Test
       fun `will get details only once`() {
-        nomisPrisonerBalanceApiMock.verify(1, getRequestedFor(urlPathEqualTo("/finance/prisoners/10000/balance")))
+        nomisPrisonerBalanceApiMock.verify(1, getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/10000/balance")))
       }
 
       @Test
@@ -646,7 +644,7 @@ class PrisonerBalanceMigrationIntTest(
 
       @Test
       fun `will get details for offender only once`() {
-        nomisPrisonerBalanceApiMock.verify(1, getRequestedFor(urlPathEqualTo("/finance/prisoners/10000/balance")))
+        nomisPrisonerBalanceApiMock.verify(1, getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/10000/balance")))
       }
 
       @Test
