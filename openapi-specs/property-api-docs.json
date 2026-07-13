@@ -7,7 +7,7 @@
       "name" : "Move a prisoner Team",
       "email" : "Moveaprisoner-gg@justice.gov.uk"
     },
-    "version" : "2026-07-08.106.f163735"
+    "version" : "2026-07-10.112.0df8672"
   },
   "servers" : [ {
     "url" : "/",
@@ -153,6 +153,79 @@
           },
           "404" : {
             "description" : "Property container not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    },
+    "/active-agencies/{agencyId}" : {
+      "put" : {
+        "tags" : [ "Active agencies" ],
+        "summary" : "Switch the property service on or off for an agency",
+        "description" : "Activates or deactivates the property service for the given agency (prison). Idempotent. Requires role ROLE_PRISONER_PROPERTY__ADMIN.",
+        "operationId" : "setActiveAgency",
+        "parameters" : [ {
+          "name" : "agencyId",
+          "in" : "path",
+          "description" : "Agency (prison) id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "MDI"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SetActiveAgencyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Agency state updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyStatusDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__ADMIN role is required",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1385,6 +1458,98 @@
           "bearer-jwt" : [ ]
         } ]
       }
+    },
+    "/active-agencies" : {
+      "get" : {
+        "tags" : [ "Active agencies" ],
+        "summary" : "List the agencies the property service is switched on for",
+        "description" : "Returns the ids of the active agencies (prisons). The same list is published under /info as \"activeAgencies\". Requires role ROLE_PRISONER_PROPERTY__ADMIN.",
+        "operationId" : "getActiveAgencies",
+        "responses" : {
+          "200" : {
+            "description" : "Active agency ids returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__ADMIN role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    },
+    "/active-agencies/all" : {
+      "get" : {
+        "tags" : [ "Active agencies" ],
+        "summary" : "List all prisons with whether the property service is switched on for each",
+        "description" : "Returns every prison (from prison-register) with an `active` flag, for the rollout admin console. Requires role ROLE_PRISONER_PROPERTY__ADMIN.",
+        "operationId" : "getAllAgencies",
+        "responses" : {
+          "200" : {
+            "description" : "Prisons with their active state returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AgencyStatusDto"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__ADMIN role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
     }
   },
   "components" : {
@@ -1526,6 +1691,40 @@
           }
         },
         "required" : [ "archived", "containerType", "createDateTime", "createdByUserId", "currentStatus", "id", "prisonId", "prisonerNumber" ]
+      },
+      "SetActiveAgencyRequest" : {
+        "type" : "object",
+        "description" : "Switch the property service on or off for an agency (prison)",
+        "properties" : {
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether the property service should be active for this agency",
+            "example" : true
+          }
+        },
+        "required" : [ "active" ]
+      },
+      "AgencyStatusDto" : {
+        "type" : "object",
+        "description" : "A prison (agency) and whether the property service is switched on for it",
+        "properties" : {
+          "agencyId" : {
+            "type" : "string",
+            "description" : "Agency (prison) id",
+            "example" : "MDI"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "Agency (prison) name",
+            "example" : "Moorland (HMP & YOI)"
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether the property service is active for this agency",
+            "example" : true
+          }
+        },
+        "required" : [ "active", "agencyId", "name" ]
       },
       "SyncPropertyContainerRequest" : {
         "type" : "object",
@@ -2171,12 +2370,12 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "paged" : {
-            "type" : "boolean"
-          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "paged" : {
+            "type" : "boolean"
           },
           "unpaged" : {
             "type" : "boolean"
