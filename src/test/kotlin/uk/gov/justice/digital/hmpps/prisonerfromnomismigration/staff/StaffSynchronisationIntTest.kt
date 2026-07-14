@@ -855,9 +855,10 @@ class StaffSynchronisationIntTest(
 
   @Nested
   inner class UserCaseloadRoles {
+    val nomisStaffId = 1234L
     val username = "JOHNSMITH_ADM"
     val caseloadId = "ASI"
-    val roleCode = "ROLE_ADD_USER"
+    val roleId = 123L
 
     @Nested
     @DisplayName("USER_CASELOAD_ROLES-INSERTED")
@@ -869,9 +870,10 @@ class StaffSynchronisationIntTest(
           staffOffenderEventsQueue.sendMessage(
             userCaseloadRoleEvent(
               eventType = "USER_CASELOAD_ROLES-INSERTED",
+              staffId = nomisStaffId,
               username = username,
               caseloadId = caseloadId,
-              roleCode = roleCode,
+              roleId = roleId,
               auditModuleName = "DPS_SYNCHRONISATION",
             ),
           ).also { waitForAnyProcessingToComplete() }
@@ -882,9 +884,10 @@ class StaffSynchronisationIntTest(
           verify(telemetryClient).trackEvent(
             eq("usercaseloadrole-synchronisation-created-skipped"),
             check {
+              assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
               assertThat(it["username"]).isEqualTo(username)
               assertThat(it["caseloadId"]).isEqualTo(caseloadId)
-              assertThat(it["roleCode"]).isEqualTo(roleCode)
+              assertThat(it["roleId"]).isEqualTo(roleId.toString())
             },
             isNull(),
           )
@@ -896,14 +899,15 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
-          nomisApiMock.stubGetStaffDetailsByUsername()
+          nomisApiMock.stubGetStaffDetailsById()
           dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             userCaseloadRoleEvent(
               eventType = "USER_CASELOAD_ROLES-INSERTED",
+              staffId = nomisStaffId,
               username = username,
               caseloadId = caseloadId,
-              roleCode = roleCode,
+              roleId = roleId,
             ),
           ).also { waitForAnyProcessingToComplete() }
         }
@@ -913,7 +917,7 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will retrieve the staff details from NOMIS`() {
-            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/username/$username")))
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/$nomisStaffId")))
           }
 
           @Test
@@ -927,9 +931,10 @@ class StaffSynchronisationIntTest(
             verify(telemetryClient).trackEvent(
               eq("usercaseloadrole-synchronisation-created-success"),
               check {
+                assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
                 assertThat(it["username"]).isEqualTo(username)
                 assertThat(it["caseloadId"]).isEqualTo(caseloadId)
-                assertThat(it["roleCode"]).isEqualTo(roleCode)
+                assertThat(it["roleId"]).isEqualTo(roleId.toString())
               },
               isNull(),
             )
@@ -948,9 +953,10 @@ class StaffSynchronisationIntTest(
           staffOffenderEventsQueue.sendMessage(
             userCaseloadRoleEvent(
               eventType = "USER_CASELOAD_ROLES-DELETED",
+              staffId = nomisStaffId,
               username = username,
               caseloadId = caseloadId,
-              roleCode = roleCode,
+              roleId = roleId,
               auditModuleName = "DPS_SYNCHRONISATION",
             ),
           ).also { waitForAnyProcessingToComplete() }
@@ -961,9 +967,10 @@ class StaffSynchronisationIntTest(
           verify(telemetryClient).trackEvent(
             eq("usercaseloadrole-synchronisation-deleted-skipped"),
             check {
+              assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
               assertThat(it["username"]).isEqualTo(username)
               assertThat(it["caseloadId"]).isEqualTo(caseloadId)
-              assertThat(it["roleCode"]).isEqualTo(roleCode)
+              assertThat(it["roleId"]).isEqualTo(roleId.toString())
             },
             isNull(),
           )
@@ -975,14 +982,15 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
-          nomisApiMock.stubGetStaffDetailsByUsername()
+          nomisApiMock.stubGetStaffDetailsById()
           dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             userCaseloadRoleEvent(
               eventType = "USER_CASELOAD_ROLES-DELETED",
+              staffId = nomisStaffId,
               username = username,
               caseloadId = caseloadId,
-              roleCode = roleCode,
+              roleId = roleId,
             ),
           ).also { waitForAnyProcessingToComplete() }
         }
@@ -992,7 +1000,7 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will retrieve the staff details from NOMIS`() {
-            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/username/$username")))
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/$nomisStaffId")))
           }
 
           @Test
@@ -1006,9 +1014,10 @@ class StaffSynchronisationIntTest(
             verify(telemetryClient).trackEvent(
               eq("usercaseloadrole-synchronisation-deleted-success"),
               check {
+                assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
                 assertThat(it["username"]).isEqualTo(username)
                 assertThat(it["caseloadId"]).isEqualTo(caseloadId)
-                assertThat(it["roleCode"]).isEqualTo(roleCode)
+                assertThat(it["roleId"]).isEqualTo(roleId.toString())
               },
               isNull(),
             )
@@ -1096,14 +1105,15 @@ fun userAccessibleCaseloadEvent(
 
 fun userCaseloadRoleEvent(
   eventType: String,
+  staffId: Long,
   username: String,
   caseloadId: String,
-  roleCode: String,
+  roleId: Long,
   auditModuleName: String = "OUUUSERS",
 ) = // language=JSON
   """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
-    "Message": "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"username\": \"$username\",\"caseloadId\": \"$caseloadId\",\"roleCode\": \"$roleCode\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
+    "Message": "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"staffId\": $staffId,\"username\": \"$username\",\"caseloadId\": \"$caseloadId\",\"roleId\": \"$roleId\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 

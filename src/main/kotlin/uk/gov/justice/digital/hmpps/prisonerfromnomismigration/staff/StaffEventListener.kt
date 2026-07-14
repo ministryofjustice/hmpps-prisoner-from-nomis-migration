@@ -62,7 +62,7 @@ class StaffEventListener(
 interface StaffAuditedEvent : EventAudited {
   val staffId: Long
 }
-interface UsernameAuditedEvent : EventAudited {
+interface UsernameAuditedEvent : StaffAuditedEvent {
   val username: String
 }
 
@@ -73,9 +73,9 @@ data class StaffEvent(
 
 data class StaffUserAccountEvent(
   override val staffId: Long,
-  val username: String,
+  override val username: String,
   override val auditModuleName: String,
-) : StaffAuditedEvent
+) : UsernameAuditedEvent
 
 data class StaffInternetAddressEvent(
   override val staffId: Long,
@@ -84,14 +84,15 @@ data class StaffInternetAddressEvent(
 ) : StaffAuditedEvent
 
 data class UserAccessibleCaseloadEvent(
-  override val username: String,
+  val username: String,
   val caseloadId: String,
   override val auditModuleName: String,
-) : UsernameAuditedEvent
+) : EventAudited
 
 data class UserCaseloadRoleEvent(
+  override val staffId: Long,
   override val username: String,
   val caseloadId: String,
-  val roleCode: String,
+  val roleId: Long,
   override val auditModuleName: String,
 ) : UsernameAuditedEvent

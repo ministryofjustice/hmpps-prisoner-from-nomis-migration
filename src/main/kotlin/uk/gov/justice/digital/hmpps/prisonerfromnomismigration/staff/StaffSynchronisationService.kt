@@ -56,8 +56,8 @@ class StaffSynchronisationService(
   }
 
   suspend fun userCaseloadRoleUpserted(eventType: String, event: UserCaseloadRoleEvent) {
-    val telemetry = telemetryOf("username" to event.username, "caseloadId" to event.caseloadId, "roleCode" to event.roleCode)
-    synchroniseStaffByUsername(event, "usercaseloadrole-synchronisation-$eventType", telemetry)
+    val telemetry = telemetryOf("nomisStaffId" to event.staffId, "username" to event.username, "caseloadId" to event.caseloadId, "roleId" to event.roleId)
+    synchroniseStaff(event, "usercaseloadrole-synchronisation-$eventType", telemetry)
   }
 
   private suspend fun synchroniseStaff(
@@ -76,7 +76,7 @@ class StaffSynchronisationService(
     }
   }
   private suspend fun synchroniseStaffByUsername(
-    event: UsernameAuditedEvent,
+    event: UserAccessibleCaseloadEvent,
     telemetryName: String,
     telemetry: MutableMap<String, Any>,
   ) {
