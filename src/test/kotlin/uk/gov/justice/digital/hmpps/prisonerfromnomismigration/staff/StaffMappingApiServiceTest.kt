@@ -186,15 +186,15 @@ class StaffMappingApiServiceTest {
   }
 
   @Nested
-  inner class GetMigrationCount {
+  inner class GetPagedModelMigrationCount {
     @BeforeEach
     fun setUp() {
-      mockServer.stubGetMigrationCount("2020-01-01T10:00:00", count = 56_766)
+      mockServer.stubGetPagedModelMigrationCount("2020-01-01T10:00:00", count = 56_766)
     }
 
     @Test
     fun `will supply authentication token`(): Unit = runTest {
-      apiService.getMigrationCount("2020-01-01T10:00:00")
+      apiService.getPagedModelMigrationCount("2020-01-01T10:00:00")
 
       mappingApi.verify(
         getRequestedFor(
@@ -215,12 +215,12 @@ class StaffMappingApiServiceTest {
         ),
       )
 
-      assertThat(apiService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(0)
+      assertThat(apiService.getPagedModelMigrationCount("2020-01-01T10:00:00")).isEqualTo(0)
     }
 
     @Test
     fun `will return the mapping count when found`(): Unit = runTest {
-      assertThat(apiService.getMigrationCount("2020-01-01T10:00:00")).isEqualTo(56_766)
+      assertThat(apiService.getPagedModelMigrationCount("2020-01-01T10:00:00")).isEqualTo(56_766)
     }
   }
 }

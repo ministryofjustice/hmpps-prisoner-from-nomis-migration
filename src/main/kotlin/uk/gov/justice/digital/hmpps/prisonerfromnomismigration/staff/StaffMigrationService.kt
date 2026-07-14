@@ -58,6 +58,8 @@ class StaffMigrationService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
+  override suspend fun getMigrationCount(migrationId: String): Long = staffMappingService.getPagedModelMigrationCount(migrationId)
+
   override suspend fun getPageOfIdsFromId(
     lastId: StaffIdResponse?,
     migrationFilter: Any,

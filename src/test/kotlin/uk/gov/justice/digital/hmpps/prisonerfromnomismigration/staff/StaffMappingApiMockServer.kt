@@ -12,9 +12,10 @@ import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PageMetadata
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PagedModelStaffMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.StaffMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
 
 @Component
@@ -72,27 +73,30 @@ class StaffMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/staff")
 
-  fun stubGetMigrationCount(migrationId: String = "2020-01-01T11:10:00", count: Int = 1) {
+  fun stubGetPagedModelMigrationCount(migrationId: String = "2020-01-01T11:10:00", count: Int = 1) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/staff/migration-id/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(
-            pageContent(
-              jsonMapper = jsonMapper,
-              content = listOf(
-                StaffMappingDto(
-                  nomisId = 1234,
-                  dpsId = "654321",
-                  label = migrationId,
-                  whenCreated = LocalDateTime.now().toString(),
-                  mappingType = StaffMappingDto.MappingType.MIGRATED,
+            jsonMapper.writeValueAsString(
+              PagedModelStaffMappingDto(
+                content = listOf(
+                  StaffMappingDto(
+                    nomisId = 1234,
+                    dpsId = "654321",
+                    label = migrationId,
+                    whenCreated = LocalDateTime.now().toString(),
+                    mappingType = StaffMappingDto.MappingType.MIGRATED,
+                  ),
+                ),
+                page = PageMetadata(
+                  propertySize = 1,
+                  number = 0,
+                  totalPages = count.toLong(),
+                  totalElements = count.toLong(),
                 ),
               ),
-              pageSize = 1L,
-              pageNumber = 0L,
-              totalElements = count.toLong(),
-              size = 1,
             ),
           ),
       ),
