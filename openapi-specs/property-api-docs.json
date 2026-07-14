@@ -7,7 +7,7 @@
       "name" : "Move a prisoner Team",
       "email" : "Moveaprisoner-gg@justice.gov.uk"
     },
-    "version" : "2026-07-10.112.0df8672"
+    "version" : "2026-07-13.128.0697f28"
   },
   "servers" : [ {
     "url" : "/",
@@ -21,6 +21,172 @@
     "description" : "Endpoints that are to be used by administrators only for managing SQS queues. All endpoints require the <b>QUEUE_ADMIN</b> role further information can be found in the <a href=\"https://github.com/ministryofjustice/hmpps-spring-boot-sqs\">hmpps-spring-boot-sqs</a> project"
   } ],
   "paths" : {
+    "/property-locations/{id}" : {
+      "put" : {
+        "tags" : [ "Property storage locations (management)" ],
+        "summary" : "Update a property storage location's name and/or capacity",
+        "description" : "Requires role ROLE_PRISONER_PROPERTY__LOCATION_ADMIN.",
+        "operationId" : "updatePropertyLocation",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "Location id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "example" : "2475f250-434a-4257-afe7-b911f1773a4d"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdatePropertyLocationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Property location updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyLocationAdminDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__LOCATION_ADMIN role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Property location not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "A storage location with this name already exists in the prison",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      },
+      "delete" : {
+        "tags" : [ "Property storage locations (management)" ],
+        "summary" : "Remove a location as a place property can be stored",
+        "description" : "Drops the location's property designation. Rejected if the location still holds any container. Requires role ROLE_PRISONER_PROPERTY__LOCATION_ADMIN.",
+        "operationId" : "removePropertyLocation",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "description" : "Location id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "example" : "2475f250-434a-4257-afe7-b911f1773a4d"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Property designation removed",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyLocationAdminDto"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__LOCATION_ADMIN role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Property location not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "The location still holds containers and cannot be removed",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    },
     "/property-containers/{id}" : {
       "get" : {
         "tags" : [ "Property containers" ],
@@ -372,6 +538,143 @@
           },
           "404" : {
             "description" : "The supplied DPS id does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    },
+    "/property-locations/prison/{prisonId}" : {
+      "get" : {
+        "tags" : [ "Property storage locations (management)" ],
+        "summary" : "List the property storage locations for a prison",
+        "description" : "Every property storage location in the prison (including full ones), each with its capacity and how many containers it currently holds, for the management screens. Requires role ROLE_PRISONER_PROPERTY__LOCATION_ADMIN.",
+        "operationId" : "listPropertyLocations",
+        "parameters" : [ {
+          "name" : "prisonId",
+          "in" : "path",
+          "description" : "Prison id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "MDI"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Property locations returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PropertyLocationAdminDto"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__LOCATION_ADMIN role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      },
+      "post" : {
+        "tags" : [ "Property storage locations (management)" ],
+        "summary" : "Add a new property storage location to a prison",
+        "description" : "Creates a top-level storage location with a generated code and the given capacity. Requires role ROLE_PRISONER_PROPERTY__LOCATION_ADMIN.",
+        "operationId" : "createPropertyLocation",
+        "parameters" : [ {
+          "name" : "prisonId",
+          "in" : "path",
+          "description" : "Prison id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "MDI"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreatePropertyLocationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Property location created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PropertyLocationAdminDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__LOCATION_ADMIN role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "A storage location with this name already exists in the prison",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1357,8 +1660,8 @@
     "/property-containers/prison/{prisonId}/box-locations" : {
       "get" : {
         "tags" : [ "Property containers" ],
-        "summary" : "Get the property box locations in a prison with their current container counts",
-        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO. Returns a page of the BOX locations in the prison (from locations-inside-prison-api) annotated with how many property containers are currently held there, so a user can pick a suitable place to store property. Empty boxes are included with a count of 0. Optionally filtered by a search query matched (case-insensitively) against the box code, local name and path hierarchy - the query supports * (any run of characters) and ? (a single character) wildcards, and a query with no wildcards is a substring match. Ordered alphabetically by name by default, or emptiest-first with sort=FEWEST_CONTAINERS. Use the standard page and size query parameters for pagination.",
+        "summary" : "Get the property storage locations in a prison that have space, with capacity and container counts",
+        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO. Returns a page of the prison's property storage locations (from locations-inside-prison-api - any location with a PROPERTY usage, not only BOX-typed ones) that still have room, annotated with their capacity, how many property containers are currently held there and the remaining available spaces, so a user can pick somewhere to store property. Locations with no remaining space are excluded. Optionally filtered by a search query matched (case-insensitively) against the location code, local name and path hierarchy - the query supports * (any run of characters) and ? (a single character) wildcards, and a query with no wildcards is a substring match. Ordered alphabetically by name by default, or most-available-first with sort=MOST_AVAILABLE. Use the standard page and size query parameters for pagination.",
         "operationId" : "getBoxLocations",
         "parameters" : [ {
           "name" : "prisonId",
@@ -1378,8 +1681,8 @@
           "schema" : {
             "type" : "string",
             "default" : "NAME",
-            "description" : "How to order the box locations returned for a prison",
-            "enum" : [ "NAME", "FEWEST_CONTAINERS" ]
+            "description" : "How to order the storage locations returned for a prison",
+            "enum" : [ "NAME", "MOST_AVAILABLE" ]
           },
           "example" : "NAME"
         }, {
@@ -1575,6 +1878,77 @@
           }
         },
         "required" : [ "status" ]
+      },
+      "UpdatePropertyLocationRequest" : {
+        "type" : "object",
+        "description" : "Request to update a property storage location's name and/or capacity",
+        "properties" : {
+          "localName" : {
+            "type" : [ "string", "null" ],
+            "description" : "New name to display for the location",
+            "example" : "Reception property store",
+            "maxLength" : 80,
+            "minLength" : 1
+          },
+          "capacity" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32",
+            "description" : "New number of property containers this location can hold",
+            "example" : 12,
+            "minimum" : 0
+          }
+        }
+      },
+      "PropertyLocationAdminDto" : {
+        "type" : "object",
+        "description" : "A property storage location for the management screens, with its capacity and how full it is",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Location id",
+            "example" : "2475f250-434a-4257-afe7-b911f1773a4d"
+          },
+          "prisonId" : {
+            "type" : "string",
+            "description" : "Prison id",
+            "example" : "MDI"
+          },
+          "code" : {
+            "type" : "string",
+            "description" : "Location code",
+            "example" : "PROP1"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "Name to display for the location",
+            "example" : "Reception property store"
+          },
+          "locationType" : {
+            "type" : [ "string", "null" ],
+            "description" : "Location type",
+            "example" : "BOX"
+          },
+          "capacity" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many property containers this location can hold",
+            "example" : 10
+          },
+          "containersHeld" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many containers are currently held here",
+            "example" : 3
+          },
+          "availableSpaces" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many more containers can be stored here (capacity minus held, never below zero)",
+            "example" : 7
+          }
+        },
+        "required" : [ "availableSpaces", "capacity", "code", "containersHeld", "id", "name", "prisonId" ]
       },
       "UpdatePropertyContainerRequest" : {
         "type" : "object",
@@ -1837,6 +2211,27 @@
           }
         },
         "required" : [ "dpsId", "mappingType", "nomisPropertyContainerId" ]
+      },
+      "CreatePropertyLocationRequest" : {
+        "type" : "object",
+        "description" : "Request to create a new property storage location for a prison",
+        "properties" : {
+          "localName" : {
+            "type" : "string",
+            "description" : "Name to display for the location",
+            "example" : "Reception property store",
+            "maxLength" : 80,
+            "minLength" : 1
+          },
+          "capacity" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many property containers this location can hold",
+            "example" : 10,
+            "minimum" : 0
+          }
+        },
+        "required" : [ "capacity", "localName" ]
       },
       "CreatePropertyContainerRequest" : {
         "type" : "object",
@@ -2370,12 +2765,12 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "paged" : {
+            "type" : "boolean"
+          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "paged" : {
-            "type" : "boolean"
           },
           "unpaged" : {
             "type" : "boolean"
@@ -2440,10 +2835,10 @@
         "type" : "object",
         "description" : "Whole-prison property totals for the establishment summary tiles. Counts are for the prison as a whole, independent of any list paging or filtering.",
         "properties" : {
-          "availableStorageLocations" : {
+          "availableStorageSpaces" : {
             "type" : "integer",
             "format" : "int32",
-            "description" : "The prison's total internal BOX storage locations minus the containers currently stored on-site (floored at 0)",
+            "description" : "Remaining spaces for property across the prison's storage locations - the sum over each location of its capacity minus the containers it holds (floored at 0)",
             "example" : 150
           },
           "storedOnSite" : {
@@ -2471,21 +2866,21 @@
             "example" : 40
           }
         },
-        "required" : [ "availableStorageLocations", "dueToBeDisposed", "dueToBeReturned", "dueToTransferOut", "storedOnSite" ]
+        "required" : [ "availableStorageSpaces", "dueToBeDisposed", "dueToBeReturned", "dueToTransferOut", "storedOnSite" ]
       },
       "BoxLocationDto" : {
         "type" : "object",
-        "description" : "A property box location within a prison and how many containers it currently holds",
+        "description" : "A property storage location within a prison, its capacity and how many containers it currently holds",
         "properties" : {
           "id" : {
             "type" : "string",
             "format" : "uuid",
-            "description" : "Id of the box location (locations-inside-prison-api)",
+            "description" : "Id of the storage location (locations-inside-prison-api)",
             "example" : "11111111-1111-1111-1111-111111111111"
           },
           "prisonId" : {
             "type" : "string",
-            "description" : "Id of the prison the box is in",
+            "description" : "Id of the prison the location is in",
             "example" : "LEI"
           },
           "code" : {
@@ -2495,12 +2890,12 @@
           },
           "localName" : {
             "type" : [ "string", "null" ],
-            "description" : "Local (display) name of the box, if set",
+            "description" : "Local (display) name of the location, if set",
             "example" : "Reception Property Store"
           },
           "pathHierarchy" : {
             "type" : "string",
-            "description" : "Full path of the box within the prison",
+            "description" : "Full path of the location within the prison",
             "example" : "RECP-PROP1"
           },
           "name" : {
@@ -2511,11 +2906,23 @@
           "containerCount" : {
             "type" : "integer",
             "format" : "int32",
-            "description" : "Number of property containers currently held in this box",
+            "description" : "Number of property containers currently held in this location",
             "example" : 3
+          },
+          "capacity" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How many property containers this location can hold (capacity of its PROPERTY usage)",
+            "example" : 10
+          },
+          "availableSpaces" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Remaining spaces for property containers (capacity minus the containers currently held)",
+            "example" : 7
           }
         },
-        "required" : [ "code", "containerCount", "id", "name", "pathHierarchy", "prisonId" ]
+        "required" : [ "availableSpaces", "capacity", "code", "containerCount", "id", "name", "pathHierarchy", "prisonId" ]
       },
       "PageBoxLocationDto" : {
         "type" : "object",
