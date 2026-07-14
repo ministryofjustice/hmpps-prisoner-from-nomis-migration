@@ -121,7 +121,7 @@ class StaffMigrationIntTest(
         dpsApiMock.stubMigrateStaff(dpsStaffId = dpsStaffId)
 
         mappingApiMock.stubCreateMapping()
-        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
+        mappingApiMock.stubGetPagedModelMigrationCount(migrationId = ".*", count = 1)
         migrationResult = performMigration()
       }
 
@@ -199,7 +199,7 @@ class StaffMigrationIntTest(
           ),
         )
 
-        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetPagedModelMigrationCount(migrationId = ".*", count = 0)
         migrationResult = performMigration()
       }
 
@@ -260,7 +260,7 @@ class StaffMigrationIntTest(
         dpsApiMock.stubMigrateStaff(nomisStaffId = 2345, dpsStaffId = dpsStaffId)
 
         mappingApiMock.stubCreateMapping()
-        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 2)
+        mappingApiMock.stubGetPagedModelMigrationCount(migrationId = ".*", count = 2)
         migrationResult = performMigration()
       }
 
@@ -367,7 +367,7 @@ class StaffMigrationIntTest(
         dpsApiMock.stubMigrateStaff(dpsStaffId = dpsStaffId)
 
         mappingApiMock.stubCreateMappingFailureFollowedBySuccess()
-        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
+        mappingApiMock.stubGetPagedModelMigrationCount(migrationId = ".*", count = 1)
         migrationResult = performMigration()
       }
 
@@ -450,7 +450,7 @@ class StaffMigrationIntTest(
             userMessage = "Duplicate mapping",
           ),
         )
-        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetPagedModelMigrationCount(migrationId = ".*", count = 0)
         migrationResult = performMigration()
       }
 
@@ -583,7 +583,7 @@ class StaffMigrationIntTest(
             label = "2020-01-01T00:00:00",
           ),
         )
-        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetPagedModelMigrationCount(migrationId = ".*", count = 0)
         performMigration()
       }
 
@@ -617,7 +617,7 @@ class StaffMigrationIntTest(
             label = "2020-01-01T00:00:00",
           ),
         )
-        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetPagedModelMigrationCount(migrationId = ".*", count = 0)
         performMigration()
       }
 
@@ -652,7 +652,7 @@ class StaffMigrationIntTest(
             label = "2020-01-01T00:00:00",
           ),
         )
-        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetPagedModelMigrationCount(migrationId = ".*", count = 0)
         performMigration()
       }
     }
