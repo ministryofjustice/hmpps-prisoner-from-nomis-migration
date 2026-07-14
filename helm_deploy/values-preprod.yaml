@@ -43,6 +43,9 @@ generic-service:
     FEATURE_EVENT_USER_ACCESSIBLE_CASELOADS-DELETED: false
     FEATURE_EVENT_USER_CASELOAD_ROLES-INSERTED: false
     FEATURE_EVENT_USER_CASELOAD_ROLES-DELETED: false
+    FEATURE_EVENT_PROPERTY_PRISONER_PROPERTY-INSERTED: false
+    FEATURE_EVENT_PROPERTY_PRISONER_PROPERTY-UPDATED: false
+    FEATURE_EVENT_PROPERTY_PRISONER_PROPERTY-DELETED: false
 
   scheduledDowntime:
     # Temporarily set to false to enable prisoner transaction reconciliation testing in preprod
