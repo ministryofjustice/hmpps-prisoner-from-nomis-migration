@@ -21,8 +21,7 @@ class StaffSynchronisationService(
   }
 
   suspend fun staffUpserted(eventType: String, event: StaffEvent) {
-    val nomisStaffId = event.staffId
-    val telemetry = telemetryOf("nomisStaffId" to nomisStaffId)
+    val telemetry = telemetryOf("nomisStaffId" to event.staffId)
     synchroniseStaff(event, "staff-synchronisation-$eventType", telemetry)
   }
   suspend fun staffDeleted(event: StaffEvent) {
@@ -40,8 +39,7 @@ class StaffSynchronisationService(
   }
 
   suspend fun staffAccountUpserted(eventType: String, event: StaffUserAccountEvent) {
-    val nomisStaffId = event.staffId
-    val telemetry = telemetryOf("nomisStaffId" to nomisStaffId, "username" to event.username)
+    val telemetry = telemetryOf("nomisStaffId" to event.staffId, "username" to event.username)
     synchroniseStaff(event, "staffuseraccount-synchronisation-$eventType", telemetry)
   }
 
@@ -51,8 +49,8 @@ class StaffSynchronisationService(
   }
 
   suspend fun userAccessibleCaseloadUpserted(eventType: String, event: UserAccessibleCaseloadEvent) {
-    val telemetry = telemetryOf("username" to event.username, "caseloadId" to event.caseloadId)
-    synchroniseStaffByUsername(event, "useraccessiblecaseload-synchronisation-$eventType", telemetry)
+    val telemetry = telemetryOf("nomisStaffId" to event.staffId, "username" to event.username, "caseloadId" to event.caseloadId)
+    synchroniseStaff(event, "useraccessiblecaseload-synchronisation-$eventType", telemetry)
   }
 
   suspend fun userCaseloadRoleUpserted(eventType: String, event: UserCaseloadRoleEvent) {
@@ -69,21 +67,6 @@ class StaffSynchronisationService(
       telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
     } else {
       nomisApiService.getStaffDetailsById(event.staffId).also {
-        track(telemetryName, telemetry) {
-          dpsApiService.syncStaff(it.toSyncStaffRequest())
-        }
-      }
-    }
-  }
-  private suspend fun synchroniseStaffByUsername(
-    event: UserAccessibleCaseloadEvent,
-    telemetryName: String,
-    telemetry: MutableMap<String, Any>,
-  ) {
-    if (event.originatesInDpsOrHasMissingAudit) {
-      telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
-    } else {
-      nomisApiService.getStaffDetailsByUsername(event.username).also {
         track(telemetryName, telemetry) {
           dpsApiService.syncStaff(it.toSyncStaffRequest())
         }
