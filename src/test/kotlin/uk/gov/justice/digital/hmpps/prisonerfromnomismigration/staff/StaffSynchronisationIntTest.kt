@@ -699,6 +699,7 @@ class StaffSynchronisationIntTest(
 
   @Nested
   inner class UserAccessibleCaseloads {
+    val nomisStaffId = 1234L
     val username = "JOHNSMITH_ADM"
     val caseloadId = "ASI"
 
@@ -712,6 +713,7 @@ class StaffSynchronisationIntTest(
           staffOffenderEventsQueue.sendMessage(
             userAccessibleCaseloadEvent(
               eventType = "USER_ACCESSIBLE_CASELOADS-INSERTED",
+              staffId = nomisStaffId,
               username = username,
               caseloadId = caseloadId,
               auditModuleName = "DPS_SYNCHRONISATION",
@@ -724,6 +726,7 @@ class StaffSynchronisationIntTest(
           verify(telemetryClient).trackEvent(
             eq("useraccessiblecaseload-synchronisation-created-skipped"),
             check {
+              assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
               assertThat(it["username"]).isEqualTo(username)
               assertThat(it["caseloadId"]).isEqualTo(caseloadId)
             },
@@ -737,11 +740,12 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
-          nomisApiMock.stubGetStaffDetailsByUsername()
+          nomisApiMock.stubGetStaffDetailsById()
           dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             userAccessibleCaseloadEvent(
               eventType = "USER_ACCESSIBLE_CASELOADS-INSERTED",
+              staffId = nomisStaffId,
               username = username,
               caseloadId = caseloadId,
             ),
@@ -753,7 +757,7 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will retrieve the staff details from NOMIS`() {
-            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/username/$username")))
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/$nomisStaffId")))
           }
 
           @Test
@@ -767,6 +771,7 @@ class StaffSynchronisationIntTest(
             verify(telemetryClient).trackEvent(
               eq("useraccessiblecaseload-synchronisation-created-success"),
               check {
+                assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
                 assertThat(it["username"]).isEqualTo(username)
                 assertThat(it["caseloadId"]).isEqualTo(caseloadId)
               },
@@ -787,6 +792,7 @@ class StaffSynchronisationIntTest(
           staffOffenderEventsQueue.sendMessage(
             userAccessibleCaseloadEvent(
               eventType = "USER_ACCESSIBLE_CASELOADS-DELETED",
+              staffId = nomisStaffId,
               username = username,
               caseloadId = caseloadId,
               auditModuleName = "DPS_SYNCHRONISATION",
@@ -799,6 +805,7 @@ class StaffSynchronisationIntTest(
           verify(telemetryClient).trackEvent(
             eq("useraccessiblecaseload-synchronisation-deleted-skipped"),
             check {
+              assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
               assertThat(it["username"]).isEqualTo(username)
               assertThat(it["caseloadId"]).isEqualTo(caseloadId)
             },
@@ -812,11 +819,12 @@ class StaffSynchronisationIntTest(
 
         @BeforeEach
         fun setUp() {
-          nomisApiMock.stubGetStaffDetailsByUsername()
+          nomisApiMock.stubGetStaffDetailsById()
           dpsApiMock.stubSyncStaff()
           staffOffenderEventsQueue.sendMessage(
             userAccessibleCaseloadEvent(
               eventType = "USER_ACCESSIBLE_CASELOADS-DELETED",
+              staffId = nomisStaffId,
               username = username,
               caseloadId = caseloadId,
             ),
@@ -828,7 +836,7 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will retrieve the staff details from NOMIS`() {
-            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/username/$username")))
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/$nomisStaffId")))
           }
 
           @Test
@@ -842,6 +850,7 @@ class StaffSynchronisationIntTest(
             verify(telemetryClient).trackEvent(
               eq("useraccessiblecaseload-synchronisation-deleted-success"),
               check {
+                assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
                 assertThat(it["username"]).isEqualTo(username)
                 assertThat(it["caseloadId"]).isEqualTo(caseloadId)
               },
@@ -1086,13 +1095,14 @@ fun internetAddressesStaffEvent(
 
 fun userAccessibleCaseloadEvent(
   eventType: String,
+  staffId: Long,
   username: String,
   caseloadId: String,
   auditModuleName: String = "OUUUSERS",
 ) = // language=JSON
   """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
-    "Message": "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"username\": \"$username\",\"caseloadId\": \"$caseloadId\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
+    "Message": "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"staffId\": $staffId,\"username\": \"$username\",\"caseloadId\": \"$caseloadId\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 

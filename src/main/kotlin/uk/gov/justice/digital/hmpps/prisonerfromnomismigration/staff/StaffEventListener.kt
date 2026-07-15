@@ -84,10 +84,11 @@ data class StaffInternetAddressEvent(
 ) : StaffAuditedEvent
 
 data class UserAccessibleCaseloadEvent(
-  val username: String,
-  val caseloadId: String,
+  override val staffId: Long,
+  override val username: String,
   override val auditModuleName: String,
-) : EventAudited
+  val caseloadId: String,
+) : UsernameAuditedEvent
 
 data class UserCaseloadRoleEvent(
   override val staffId: Long,
