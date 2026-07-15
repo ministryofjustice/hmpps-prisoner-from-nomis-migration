@@ -708,7 +708,7 @@ class CourtSentencingRepairResourceIntTest(
 
         courtSentencingMappingApiMockServer.stubGetByNomisId(
           nomisCourtCaseId = NOMIS_COURT_CASE_ID,
-          dpsCourtCaseId = DPS_APPEARANCE_ID,
+          dpsCourtCaseId = DPS_CASE_ID,
         )
 
         dpsCourtSentencingServer.stubPutCourtAppearanceForUpdate(
