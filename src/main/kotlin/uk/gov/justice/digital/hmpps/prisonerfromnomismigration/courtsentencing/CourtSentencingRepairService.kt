@@ -124,6 +124,34 @@ class CourtSentencingRepairService(
     )
   }
 
+  suspend fun resynchroniseCourtEventChargeInsert(
+    offenderNo: String,
+    bookingId: Long,
+    eventId: Long,
+    chargeId: Long,
+  ) {
+    courtSentencingSynchronisationService.nomisCourtChargeInserted(
+      CourtEventChargeEvent(
+        offenderIdDisplay = offenderNo,
+        bookingId = bookingId,
+        eventId = eventId,
+        chargeId = chargeId,
+        auditModuleName = "NOMIS",
+      ),
+    )
+
+    telemetryClient.trackEvent(
+      "court-charge-synchronisation-created-repaired",
+      mapOf(
+        "offenderNo" to offenderNo,
+        "nomisBookingId" to bookingId.toString(),
+        "nomisOffenderChargeId" to chargeId.toString(),
+        "nomisCourtAppearanceId" to eventId.toString(),
+      ),
+      null,
+    )
+  }
+
   suspend fun resynchronisePrisonerSentenceUpdated(
     offenderNo: String,
     bookingId: Long,

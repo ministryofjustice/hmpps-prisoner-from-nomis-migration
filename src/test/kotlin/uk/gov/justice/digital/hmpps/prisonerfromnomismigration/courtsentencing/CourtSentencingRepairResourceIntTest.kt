@@ -43,6 +43,7 @@ private const val DPS_CASE_ID = "c7c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3d"
 private const val DPS_APPEARANCE_ID = "d8c1e3e3-3e3e-3e3e-3e3e-3e3e3e3d7d7d"
 private const val NOMIS_COURT_CASE_ID = 1234L
 private const val NOMIS_COURT_APPEARANCE_ID = 5555L
+private const val NOMIS_COURT_CHARGE_ID = 8888L
 private const val NOMIS_BOOKING_ID = 12344321L
 private const val DPS_CHARGE_ID = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"
 private const val DPS_CHARGE_2_ID = "d1c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3e"
@@ -867,6 +868,122 @@ class CourtSentencingRepairResourceIntTest(
             assertThat(it["numberOfDpsCourtAppearances"]).isEqualTo("3")
             assertThat(it["numberOfAdditionalAppearances"]).isEqualTo("1")
             assertThat(it["dpsCourtAppearanceIdsDeleted"]).isEqualTo(dpsCourtAppearanceId3.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("POST /prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/appearances/{eventId}/charges/{chargeId}/repair")
+  inner class RepairCourtEventChargeInsert {
+    val offenderNo = "A1234KT"
+    val bookingId = NOMIS_BOOKING_ID
+    val eventId = NOMIS_COURT_APPEARANCE_ID
+    val chargeId = NOMIS_COURT_CHARGE_ID
+
+    @Nested
+    inner class Security {
+
+      @Test
+      internal fun `must have valid token`() {
+        webTestClient.post().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/appearances/{eventId}/charges/{chargeId}/repair",
+          offenderNo,
+          bookingId,
+          eventId,
+          chargeId,
+        )
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      internal fun `must have correct role`() {
+        webTestClient.post().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/appearances/{eventId}/charges/{chargeId}/repair",
+          offenderNo,
+          bookingId,
+          eventId,
+          chargeId,
+        )
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isForbidden
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+
+      @BeforeEach
+      internal fun setup() {
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+        )
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+          nomisCourtChargeId = NOMIS_COURT_CHARGE_ID,
+          dpsCourtChargeId = DPS_CHARGE_ID,
+        )
+
+        courtSentencingNomisApiMockServer.stubGetCourtEventCharge(
+          offenderChargeId = NOMIS_COURT_CHARGE_ID,
+          courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          offenderNo = offenderNo,
+        )
+
+        dpsCourtSentencingServer.stubPutCourtChargeForAddExistingChargeToAppearance(
+          courtChargeId = DPS_CHARGE_ID,
+          courtAppearanceId = DPS_APPEARANCE_ID,
+        )
+
+        webTestClient.post().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/appearances/{eventId}/charges/{chargeId}/repair",
+          offenderNo,
+          bookingId,
+          eventId,
+          chargeId,
+        )
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+      }
+
+      @Test
+      fun `will update DPS with the changes`() {
+        dpsCourtSentencingServer.verify(
+          1,
+          putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_APPEARANCE_ID/charge/$DPS_CHARGE_ID")),
+        )
+      }
+
+      @Test
+      fun `will track a telemetry event for success`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-charge-synchronisation-created-repaired"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+            assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_COURT_CHARGE_ID.toString())
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("court-charge-synchronisation-created-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+            assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_COURT_CHARGE_ID.toString())
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+            assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
+            assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_APPEARANCE_ID)
+            assertThat(it["existingDpsCharge"]).isEqualTo("true")
           },
           isNull(),
         )

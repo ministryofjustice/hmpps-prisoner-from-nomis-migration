@@ -81,6 +81,29 @@ class CourtSentencingRepairResource(
     )
   }
 
+  @PostMapping("/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/appearances/{eventId}/charges/{chargeId}/repair")
+  @Operation(
+    summary = "Replicate a court event charge insert event from NOMIS to DPS",
+    description = "Used when an existing or new charge needs to be associated with an appearance. Requires PRISONER_FROM_NOMIS__UPDATE__RW",
+  )
+  suspend fun courtEventChargeInsertRepair(
+    @PathVariable
+    offenderNo: String,
+    @PathVariable
+    bookingId: Long,
+    @PathVariable
+    eventId: Long,
+    @PathVariable
+    chargeId: Long,
+  ) {
+    courtSentencingRepairService.resynchroniseCourtEventChargeInsert(
+      offenderNo = offenderNo,
+      bookingId = bookingId,
+      eventId = eventId,
+      chargeId = chargeId,
+    )
+  }
+
   @PostMapping("/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/sentences/{sentenceSeq}/terms/{termSeq}/repair")
   @Operation(
     summary = "Replicate a sentence term insert event from NOMIS to DPS for a specific sentence term",
