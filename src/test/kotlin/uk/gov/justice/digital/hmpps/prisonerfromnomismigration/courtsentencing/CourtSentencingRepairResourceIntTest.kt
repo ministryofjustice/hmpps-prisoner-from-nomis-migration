@@ -650,6 +650,124 @@ class CourtSentencingRepairResourceIntTest(
   }
 
   @Nested
+  @DisplayName("PUT /prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair")
+  inner class RepairAppearanceUpdate {
+    val offenderNo = "A1234KT"
+    val bookingId = NOMIS_BOOKING_ID
+    val caseId = NOMIS_COURT_CASE_ID
+    val eventId = NOMIS_COURT_APPEARANCE_ID
+
+    @Nested
+    inner class Security {
+
+      @Test
+      internal fun `must have valid token`() {
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair",
+          offenderNo,
+          bookingId,
+          caseId,
+          eventId,
+        )
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      internal fun `must have correct role`() {
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair",
+          offenderNo,
+          bookingId,
+          caseId,
+          eventId,
+        )
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isForbidden
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+
+      @BeforeEach
+      internal fun setup() {
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+        )
+
+        courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+          courtAppearanceId = eventId,
+          courtCaseId = caseId,
+          offenderNo = offenderNo,
+        )
+
+        courtSentencingMappingApiMockServer.stubGetByNomisId(
+          nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+          dpsCourtCaseId = DPS_CASE_ID,
+        )
+
+        dpsCourtSentencingServer.stubPutCourtAppearanceForUpdate(
+          courtAppearanceId = UUID.fromString(DPS_APPEARANCE_ID),
+        )
+
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair",
+          offenderNo,
+          bookingId,
+          caseId,
+          eventId,
+        )
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+      }
+
+      @Test
+      fun `will update DPS with the changes`() {
+        await untilAsserted {
+          dpsCourtSentencingServer.verify(
+            1,
+            putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_APPEARANCE_ID"))
+              .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_CASE_ID)))
+              .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("4506"))),
+          )
+        }
+      }
+
+      @Test
+      fun `will track a telemetry event for success`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-sentencing-appearance-update-repaired"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisBookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+            assertThat(it["nomisCaseId"]).isEqualTo(caseId.toString())
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("court-appearance-synchronisation-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisBookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+            assertThat(it["nomisCaseId"]).isEqualTo(caseId.toString())
+            assertThat(it["nomisOutcomeCode"]).isEqualTo("4506")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
   @DisplayName("DELETE /prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/court-appearances/prune-dps")
   inner class PruneDPSCourtAppearances {
     val offenderNo = "A1234KT"

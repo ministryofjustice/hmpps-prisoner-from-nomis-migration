@@ -127,6 +127,29 @@ class CourtSentencingRepairResource(
     )
   }
 
+  @PutMapping("/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair")
+  @Operation(
+    summary = "Replicate a appearance update event from NOMIS to DPS for a specific sentence",
+    description = "Used when a appearance update event has been missed. Requires PRISONER_FROM_NOMIS__UPDATE__RW",
+  )
+  suspend fun appearanceUpdateRepair(
+    @PathVariable
+    offenderNo: String,
+    @PathVariable
+    bookingId: Long,
+    @PathVariable
+    caseId: Long,
+    @PathVariable
+    eventId: Long,
+  ) {
+    courtSentencingRepairService.resynchroniseAppearanceUpdated(
+      offenderNo = offenderNo,
+      bookingId = bookingId,
+      eventId = eventId,
+      caseId = caseId,
+    )
+  }
+
   @DeleteMapping("/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/court-appearances/prune-dps")
   @Operation(
     summary = "Deletes court appearances from DPS that are not in NOMIS",
