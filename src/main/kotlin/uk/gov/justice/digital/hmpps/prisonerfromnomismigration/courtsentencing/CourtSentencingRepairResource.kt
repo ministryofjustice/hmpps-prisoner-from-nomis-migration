@@ -83,7 +83,7 @@ class CourtSentencingRepairResource(
 
   @PostMapping("/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/appearances/{eventId}/charges/{chargeId}/repair")
   @Operation(
-    summary = "Replicate a court event charge insert event from NOMIS to DPS f",
+    summary = "Replicate a court event charge insert event from NOMIS to DPS",
     description = "Used when an existing or new charge needs to be associated with an appearance. Requires PRISONER_FROM_NOMIS__UPDATE__RW",
   )
   suspend fun courtEventChargeInsertRepair(
