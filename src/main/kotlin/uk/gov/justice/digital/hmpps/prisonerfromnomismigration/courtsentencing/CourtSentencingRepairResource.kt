@@ -132,7 +132,7 @@ class CourtSentencingRepairResource(
     summary = "Replicate a appearance update event from NOMIS to DPS for a specific sentence",
     description = "Used when a appearance update event has been missed. Requires PRISONER_FROM_NOMIS__UPDATE__RW",
   )
-  suspend fun prisonerSentenceUpdateRepair(
+  suspend fun appearanceUpdateRepair(
     @PathVariable
     offenderNo: String,
     @PathVariable
