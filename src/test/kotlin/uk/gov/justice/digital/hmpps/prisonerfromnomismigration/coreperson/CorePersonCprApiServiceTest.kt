@@ -140,7 +140,7 @@ class CorePersonCprApiServiceTest {
 
   fun prisonReligionRequest() = PrisonReligionHistory(
     nomisReligionId = "1",
-    religionCode = "BAPT",
+    religionCode = PrisonReligionHistory.ReligionCode.BAPT,
     current = true,
     changeReasonKnown = true,
     comments = "This is a comment",

@@ -139,7 +139,7 @@ class CorePersonSynchronisationBeliefsService(
       comments = r.comments,
       startDate = r.startDate,
       endDate = r.endDate,
-      religionCode = r.belief.code,
+      religionCode = PrisonReligionHistory.ReligionCode.valueOf(r.belief.code),
       changeReasonKnown = r.changeReason ?: false,
       createDateTime = r.audit.createDatetime,
       createUserId = r.audit.createUsername,
@@ -214,7 +214,7 @@ fun List<OffenderBelief>.toMigrateReligionsRequest(): PrisonReligionRequest = Pr
     PrisonReligionHistory(
       nomisReligionId = r.beliefId.toString(),
       current = i == 0,
-      religionCode = r.belief.code,
+      religionCode = PrisonReligionHistory.ReligionCode.valueOf(r.belief.code),
       startDate = r.startDate,
       endDate = r.endDate,
       comments = r.comments,
