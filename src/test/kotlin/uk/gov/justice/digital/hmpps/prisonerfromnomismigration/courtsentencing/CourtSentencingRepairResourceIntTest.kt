@@ -735,7 +735,7 @@ class CourtSentencingRepairResourceIntTest(
             1,
             putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_APPEARANCE_ID"))
               .withRequestBody(matchingJsonPath("courtCaseUuid", equalTo(DPS_CASE_ID)))
-              .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("ADIMP_ORA"))),
+              .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("4506"))),
           )
         }
       }
