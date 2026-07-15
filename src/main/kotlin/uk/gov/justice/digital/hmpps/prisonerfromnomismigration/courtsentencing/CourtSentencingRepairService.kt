@@ -154,6 +154,34 @@ class CourtSentencingRepairService(
     )
   }
 
+  suspend fun resynchroniseAppearanceUpdated(
+    offenderNo: String,
+    bookingId: Long,
+    caseId: Long,
+    eventId: Long,
+  ) {
+    courtSentencingSynchronisationService.nomisCourtAppearanceUpdated(
+      CourtAppearanceEvent(
+        eventId = eventId,
+        offenderIdDisplay = offenderNo,
+        bookingId = bookingId,
+        caseId = caseId,
+        auditModuleName = "NOMIS",
+      ),
+    )
+
+    telemetryClient.trackEvent(
+      "court-sentencing-appearance-update-repaired",
+      mapOf(
+        "offenderNo" to offenderNo,
+        "nomisBookingId" to bookingId.toString(),
+        "nomisCaseId" to caseId.toString(),
+        "nomisCourtAppearanceId" to eventId.toString(),
+      ),
+      null,
+    )
+  }
+
   suspend fun removedUnMappedCourtAppearancesFromCase(offenderNo: String, caseId: Long) {
     val nomisCourtCase = nomisApiService.getCourtCase(offenderNo = offenderNo, courtCaseId = caseId)
     val mapping = mappingApiService.getCourtCaseByNomisId(caseId)

@@ -566,7 +566,7 @@ class CourtSentencingSynchronisationService(
               mappingApiService.getCourtCaseOrNullByNomisId(nomisCourtAppearance.caseId!!)?.let { courtCaseMapping ->
                 track(
                   name = "court-appearance-synchronisation-updated",
-                  telemetry = (telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId)).toMutableMap(),
+                  telemetry = (telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId) + ("nomisOutcomeCode" to nomisCourtAppearance.outcomeReasonCode?.code.toString())).toMutableMap(),
                 ) {
                   dpsApiService.updateCourtAppearance(
                     courtAppearanceId = mapping.dpsCourtAppearanceId,
