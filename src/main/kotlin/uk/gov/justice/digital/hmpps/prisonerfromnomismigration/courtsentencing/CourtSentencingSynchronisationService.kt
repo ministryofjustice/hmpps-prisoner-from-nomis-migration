@@ -568,7 +568,7 @@ class CourtSentencingSynchronisationService(
                   name = "court-appearance-synchronisation-updated",
                   telemetry = (
                     telemetry + ("dpsCourtAppearanceId" to mapping.dpsCourtAppearanceId) +
-                      ("nomisCaseId" to nomisCourtAppearance.outcomeReasonCode?.code.toString()) +
+                      ("nomisCaseId" to courtCaseMapping.nomisCourtCaseId.toString()) +
                       ("nomisOutcomeCode" to nomisCourtAppearance.outcomeReasonCode?.code.toString())
                     ).toMutableMap(),
                 ) {
