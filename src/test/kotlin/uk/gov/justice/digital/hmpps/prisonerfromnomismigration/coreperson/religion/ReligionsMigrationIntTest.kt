@@ -29,6 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonNomisApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.beliefs
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionHistory.ReligionCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -200,7 +201,7 @@ class ReligionsMigrationIntTest(
 
         assertThat(migrationRequest.religions).hasSize(1)
         assertThat(migrationRequest.religions[0].nomisReligionId).isEqualTo(nomisId.toString())
-        assertThat(migrationRequest.religions[0].religionCode).isEqualTo("DRU")
+        assertThat(migrationRequest.religions[0].religionCode).isEqualTo(ReligionCode.DRU)
         assertThat(migrationRequest.religions[0].startDate).isEqualTo(LocalDate.parse("2016-08-02"))
         assertThat(migrationRequest.religions[0].endDate).isNull()
         assertThat(migrationRequest.religions[0].changeReasonKnown).isEqualTo(true)
@@ -437,7 +438,7 @@ class ReligionsMigrationIntTest(
           CorePersonCprApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/syscon-sync/religion/$nomisPrisonNumber")))
 
         assertThat(migrationRequest.religions).hasSize(1)
-        assertThat(migrationRequest.religions[0].religionCode).isEqualTo("DRU")
+        assertThat(migrationRequest.religions[0].religionCode).isEqualTo(ReligionCode.DRU)
       }
 
       @Test
@@ -541,7 +542,7 @@ class ReligionsMigrationIntTest(
           CorePersonCprApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/syscon-sync/religion/$nomisPrisonNumber")))
 
         assertThat(migrationRequest.religions).hasSize(1)
-        assertThat(migrationRequest.religions[0].religionCode).isEqualTo("DRU")
+        assertThat(migrationRequest.religions[0].religionCode).isEqualTo(ReligionCode.DRU)
       }
 
       @Test

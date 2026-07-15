@@ -184,7 +184,7 @@ fun multipleBeliefs() = listOf(offenderBelief1, offenderBelief2)
 
 val offenderBelief1 = OffenderBelief(
   beliefId = 1,
-  belief = CodeDescription("ZOO", "Zoroastrianism"),
+  belief = CodeDescription("ZORO", "Zoroastrianism"),
   startDate = LocalDate.parse("2015-08-02"),
   endDate = LocalDate.parse("2016-08-02"),
   audit = NomisAudit(
