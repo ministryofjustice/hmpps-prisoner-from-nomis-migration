@@ -958,8 +958,7 @@ class CourtSentencingRepairResourceIntTest(
       fun `will update DPS with the changes`() {
         dpsCourtSentencingServer.verify(
           1,
-          postRequestedFor(urlPathEqualTo("/legacy/sentence"))
-            .withRequestBody(matchingJsonPath("appearanceUuid", equalTo(DPS_APPEARANCE_ID))),
+          putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_APPEARANCE_ID/charge/$DPS_CHARGE_ID")),
         )
       }
 
