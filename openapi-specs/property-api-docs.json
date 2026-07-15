@@ -7,7 +7,7 @@
       "name" : "Move a prisoner Team",
       "email" : "Moveaprisoner-gg@justice.gov.uk"
     },
-    "version" : "2026-07-13.128.0697f28"
+    "version" : "2026-07-14.144.bb5601a"
   },
   "servers" : [ {
     "url" : "/",
@@ -1420,7 +1420,7 @@
       "get" : {
         "tags" : [ "Property containers" ],
         "summary" : "Get the property containers held in a prison, paged and grouped by prisoner",
-        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO. Returns the establishment-wide property list as a page of prisoners (each with all their matching containers), so a prisoner's containers are never split across a page boundary - the page total is the number of matching prisoners. Each container is enriched with the prisoner name (prisoner-search), prison name (prison-register) and location description (locations-inside-prison-api). Optionally filtered by a free-text query (prisoner number, seal number or storage location), prisoner number, seal number, container type(s), status and storage location. With no status filter, containers that have left active storage (disposed, returned, transferred, combined) are hidden; pass a status filter, or includeRemoved=true to also surface returned/disposed containers. Use the standard page, size and sort query parameters for pagination.",
+        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO. Returns the establishment-wide property list as a page of prisoners (each with all their matching containers), so a prisoner's containers are never split across a page boundary - the page total is the number of matching prisoners. Each container is enriched with the prisoner name (prisoner-search), prison name (prison-register) and location description (locations-inside-prison-api). Optionally filtered by a free-text query (prisoner number, seal number or storage location), prisoner number, seal number, container type(s), status and storage location. With no status filter, containers that have left active storage (disposed, returned, transferred, combined) are hidden; pass a status filter, or includeRemoved=true to also surface returned/disposed containers. Set dueForTransferIn=true to additionally surface property held at another prison that is due to be transferred in to this establishment (its owner was received here). Use the standard page, size and sort query parameters for pagination.",
         "operationId" : "getByPrisonId",
         "parameters" : [ {
           "name" : "prisonId",
@@ -1515,6 +1515,16 @@
           },
           "example" : "IN_ESTABLISHMENT"
         }, {
+          "name" : "dueForTransferIn",
+          "in" : "query",
+          "description" : "Also include property held at another prison that is due to be transferred in to this establishment (its owner was received here). Additive to the held-here list; when it is the only status selection, only incoming property is returned.",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          },
+          "example" : false
+        }, {
           "name" : "page",
           "in" : "query",
           "description" : "Zero-based page index (0..N)",
@@ -1597,7 +1607,7 @@
       "get" : {
         "tags" : [ "Property containers" ],
         "summary" : "Get the whole-prison property summary counts for a prison",
-        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO. Returns the establishment summary tiles for the prison as a whole, independent of any list paging or filtering: the number of BOX storage locations configured (from locations-inside-prison-api) and how many containers are stored on-site, due to transfer out and due to be disposed. 'Due to be returned' is always 0 for now - no status yet represents a pending return.",
+        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO. Returns the establishment summary tiles for the prison as a whole, independent of any list paging or filtering: the remaining storage spaces across the prison's property locations (from locations-inside-prison-api) and how many containers are stored on-site, due to transfer out, due to be returned and due to be disposed.",
         "operationId" : "getPrisonSummary",
         "parameters" : [ {
           "name" : "prisonId",
@@ -2390,7 +2400,7 @@
           "eventType" : {
             "type" : "string",
             "description" : "What happened to the container",
-            "enum" : [ "CREATED_SEALED", "SEAL_CHANGED", "CONTAINER_TYPE_CHANGE", "MOVED", "PRISONER_RECEIVED", "PRISONER_RELEASED", "TRANSFERRED", "RETURNED", "DISPOSAL_REQUIRED", "DISPOSED", "COMBINED", "CREATED_IN_ERROR" ],
+            "enum" : [ "CREATED_SEALED", "SEAL_CHANGED", "CONTAINER_TYPE_CHANGE", "MOVED", "PRISONER_RECEIVED", "PRISONER_RELEASED", "DIED_IN_CUSTODY", "TRANSFERRED", "RETURNED", "DISPOSAL_REQUIRED", "DISPOSED", "COMBINED", "CREATED_IN_ERROR" ],
             "example" : "MOVED"
           },
           "eventDateTime" : {
@@ -2595,8 +2605,14 @@
           "itemType" : {
             "type" : "string",
             "description" : "Whether the item is a container event or a prisoner movement",
-            "enum" : [ "CONTAINER_EVENT", "PRISONER_MOVEMENT" ],
+            "enum" : [ "CONTAINER_EVENT", "PRISONER_MOVEMENT", "SCHEDULED_FOR_RELEASE" ],
             "example" : "CONTAINER_EVENT"
+          },
+          "movementKind" : {
+            "type" : [ "string", "null" ],
+            "description" : "For a prisoner movement, whether it was an initial admission or a transfer in; null otherwise",
+            "enum" : [ "ADMISSION", "TRANSFER_IN" ],
+            "example" : "ADMISSION"
           },
           "eventId" : {
             "type" : "string",
@@ -2607,7 +2623,7 @@
           "eventType" : {
             "type" : [ "string", "null" ],
             "description" : "What happened to the container, for container events; null for prisoner movements",
-            "enum" : [ "CREATED_SEALED", "SEAL_CHANGED", "CONTAINER_TYPE_CHANGE", "MOVED", "PRISONER_RECEIVED", "PRISONER_RELEASED", "TRANSFERRED", "RETURNED", "DISPOSAL_REQUIRED", "DISPOSED", "COMBINED", "CREATED_IN_ERROR" ],
+            "enum" : [ "CREATED_SEALED", "SEAL_CHANGED", "CONTAINER_TYPE_CHANGE", "MOVED", "PRISONER_RECEIVED", "PRISONER_RELEASED", "DIED_IN_CUSTODY", "TRANSFERRED", "RETURNED", "DISPOSAL_REQUIRED", "DISPOSED", "COMBINED", "CREATED_IN_ERROR" ],
             "example" : "TRANSFERRED"
           },
           "eventStatus" : {
