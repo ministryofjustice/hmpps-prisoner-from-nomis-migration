@@ -27,4 +27,7 @@ abstract class CourtSchedulerIntegrationTestBase : SqsIntegrationTestBase() {
 
   @MockitoSpyBean(reset = MockReset.NONE)
   protected lateinit var queueService: SynchronisationQueueService
+
+  @MockitoSpyBean(reset = MockReset.NONE)
+  protected lateinit var courtSchedulerFeature: CourtSchedulerFeatureSwitches
 }
