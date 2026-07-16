@@ -221,7 +221,7 @@ class CourtSchedulerSyncScheduleIntTest(
       fun setUp() {
         setUpTestClass()
         // Mock the feature switch as being turned on
-        doReturn(true).whenever(courtSchedulerFeature).ignoreAllSentencingEvents
+        doReturn(true).whenever(courtSchedulerFeature).ignoreInsertAndUpdateSentencingEvents
 
         sendMessage(courtScheduleEvent("COURT_EVENTS-INSERTED", caseId = 1314L))
           .also { waitForAnyProcessingToComplete() }
@@ -823,7 +823,7 @@ class CourtSchedulerSyncScheduleIntTest(
       fun setUp() {
         setUpTestClass()
         // Mock the feature switch as being turned on
-        doReturn(true).whenever(courtSchedulerFeature).ignoreAllSentencingEvents
+        doReturn(true).whenever(courtSchedulerFeature).ignoreInsertAndUpdateSentencingEvents
 
         sendMessage(courtScheduleEvent("COURT_EVENTS-UPDATED", caseId = 1314L))
           .also { waitForAnyProcessingToComplete() }
@@ -1022,7 +1022,7 @@ class CourtSchedulerSyncScheduleIntTest(
         mappingApi.stubDeleteCourtScheduleMapping(nomisEventId = 123L)
         dpsApi.stubDeleteCourtEvent(dpsCourtAppearanceId)
 
-        sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED"))
+        sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED", caseId = null))
           .also { waitForAnyProcessingToComplete() }
       }
 
@@ -1060,6 +1060,113 @@ class CourtSchedulerSyncScheduleIntTest(
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDeleteOriginatesInDps {
+      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
+
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+
+        sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED", caseId = null, auditModuleName = COURT_SCHEDULER_SYNC_AUDIT_MODULE))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT check mapping`() {
+        mappingApi.verify(
+          0,
+          getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")),
+        )
+      }
+
+      @Test
+      fun `should NOT delete mapping`() {
+        mappingApi.verify(
+          0,
+          deleteRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")),
+        )
+      }
+
+      @Test
+      fun `should NOT delete DPS court appearance`() {
+        dpsApi.verify(
+          0,
+          deleteRequestedFor(urlPathEqualTo("/sync/court-appearances/$dpsCourtAppearanceId")),
+        )
+      }
+
+      @Test
+      fun `should publish ignored telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-schedule-deleted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["directionCode"]).isEqualTo("OUT")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class LinkedToCourtCaseAndRasFeatureSwitchedOff {
+      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
+
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+        // Mock the feature switch as being turned on
+        doReturn(true).whenever(courtSchedulerFeature).ignoreDeletedSentencingEvents
+
+        sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED", caseId = 1314L))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT check mapping`() {
+        mappingApi.verify(
+          0,
+          getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")),
+        )
+      }
+
+      @Test
+      fun `should NOT delete mapping`() {
+        mappingApi.verify(
+          0,
+          deleteRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")),
+        )
+      }
+
+      @Test
+      fun `should NOT delete DPS court appearance`() {
+        dpsApi.verify(
+          0,
+          deleteRequestedFor(urlPathEqualTo("/sync/court-appearances/$dpsCourtAppearanceId")),
+        )
+      }
+
+      @Test
+      fun `should publish ignored telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-schedule-deleted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["directionCode"]).isEqualTo("OUT")
+            assertThat(it["caseId"]).isEqualTo("1314")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class WhenMappingDoesNotExist {
       private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
 
@@ -1069,7 +1176,7 @@ class CourtSchedulerSyncScheduleIntTest(
 
         mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, NOT_FOUND)
 
-        sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED"))
+        sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED", caseId = null))
           .also { waitForAnyProcessingToComplete() }
       }
 
