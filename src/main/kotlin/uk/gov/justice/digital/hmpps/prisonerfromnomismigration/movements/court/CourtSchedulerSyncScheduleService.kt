@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.util.*
+import kotlin.collections.set
 
 private const val TELEMETRY_PREFIX: String = "${CRT_TELEMETRY_PREFIX}-schedule"
 
@@ -36,6 +37,7 @@ class CourtSchedulerSyncScheduleService(
   private val nomisApi: CourtSchedulerNomisApiService,
   private val dpsApi: CourtSchedulerDpsApiService,
   private val nomisSyncApi: CourtSchedulerNomisSyncApiService,
+  private val features: CourtSchedulerFeatureSwitches,
 ) : TelemetryEnabled {
 
   companion object {
@@ -48,15 +50,17 @@ class CourtSchedulerSyncScheduleService(
   }
 
   suspend fun syncCourtScheduleOutInserted(event: CourtScheduleEvent) {
-    val (eventId, bookingId, prisonerNumber, _, directionCode) = event
+    val (eventId, bookingId, prisonerNumber, caseId, directionCode) = event
     val telemetry = mutableMapOf<String, Any>(
       "offenderNo" to prisonerNumber,
       "bookingId" to bookingId,
       "nomisEventId" to eventId,
       "directionCode" to directionCode,
-    )
+    ).apply {
+      if (caseId != null) this["caseId"] = caseId
+    }
 
-    if (event.auditExactMatchOrHasMissingAudit(COURT_SCHEDULER_SYNC_AUDIT_MODULE)) {
+    if (event.auditExactMatchOrHasMissingAudit(COURT_SCHEDULER_SYNC_AUDIT_MODULE) || (caseId != null && features.ignoreAllSentencingEvents)) {
       telemetryClient.trackEvent("${TELEMETRY_PREFIX}-inserted-ignored", telemetry)
       return
     }
@@ -123,15 +127,17 @@ class CourtSchedulerSyncScheduleService(
   }
 
   suspend fun syncCourtScheduleOutUpdated(event: CourtScheduleEvent) {
-    val (eventId, bookingId, prisonerNumber, _, directionCode) = event
+    val (eventId, bookingId, prisonerNumber, caseId, directionCode) = event
     val telemetry = mutableMapOf<String, Any>(
       "offenderNo" to prisonerNumber,
       "bookingId" to bookingId,
       "nomisEventId" to eventId,
       "directionCode" to directionCode,
-    )
+    ).apply {
+      if (caseId != null) this["caseId"] = caseId
+    }
 
-    if (event.auditExactMatchOrHasMissingAudit(COURT_SCHEDULER_SYNC_AUDIT_MODULE)) {
+    if (event.auditExactMatchOrHasMissingAudit(COURT_SCHEDULER_SYNC_AUDIT_MODULE) || (caseId != null && features.ignoreAllSentencingEvents)) {
       telemetryClient.trackEvent("${TELEMETRY_PREFIX}-updated-ignored", telemetry)
       return
     }

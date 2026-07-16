@@ -18,6 +18,7 @@ import org.junit.jupiter.api.TestInstance
 import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.kotlin.any
 import org.mockito.kotlin.check
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -71,6 +72,7 @@ class CourtSchedulerSyncScheduleIntTest(
 
     reset(telemetryClient)
     reset(queueService)
+    reset(courtSchedulerFeature)
   }
 
   @Nested
@@ -205,6 +207,51 @@ class CourtSchedulerSyncScheduleIntTest(
           eq("court-scheduler-sync-schedule-inserted-success"),
           check {
             assertThat(it["dpsSentencingCourtAppearanceId"]).isEqualTo("$dpsSentencingCourtAppearanceId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class LinkedToCourtCaseAndRasFeatureSwitchedOff {
+
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+        // Mock the feature switch as being turned on
+        doReturn(true).whenever(courtSchedulerFeature).ignoreAllSentencingEvents
+
+        sendMessage(courtScheduleEvent("COURT_EVENTS-INSERTED", caseId = 1314L))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT check mapping`() {
+        mappingApi.verify(
+          count = 0,
+          pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")),
+        )
+      }
+
+      @Test
+      fun `should NOT create DPS scheduled movement`() {
+        dpsApi.verify(
+          0,
+          putRequestedFor(urlPathEqualTo("/sync/court-appearances/A1234BC")),
+        )
+      }
+
+      @Test
+      fun `should create telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-schedule-inserted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["caseId"]).isEqualTo("1314")
           },
           isNull(),
         )
@@ -762,6 +809,51 @@ class CourtSchedulerSyncScheduleIntTest(
           eq("court-scheduler-sync-schedule-updated-success"),
           check {
             assertThat(it["dpsSentencingCourtAppearanceId"]).isEqualTo("$dpsSentencingCourtAppearanceId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class LinkedToCourtCaseAndRasFeatureSwitchedOff {
+
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+        // Mock the feature switch as being turned on
+        doReturn(true).whenever(courtSchedulerFeature).ignoreAllSentencingEvents
+
+        sendMessage(courtScheduleEvent("COURT_EVENTS-UPDATED", caseId = 1314L))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT check mapping`() {
+        mappingApi.verify(
+          count = 0,
+          pattern = getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")),
+        )
+      }
+
+      @Test
+      fun `should NOT create DPS scheduled movement`() {
+        dpsApi.verify(
+          0,
+          putRequestedFor(urlPathEqualTo("/sync/court-appearances/A1234BC")),
+        )
+      }
+
+      @Test
+      fun `should publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-schedule-updated-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["caseId"]).isEqualTo("1314")
           },
           isNull(),
         )
@@ -1367,12 +1459,13 @@ class CourtSchedulerSyncScheduleIntTest(
     nomisEventType: String = eventType.replace("COURT_EVENTS", "COURT_EVENT"),
     directionCode: String? = "OUT",
     eventId: Long = 123,
+    caseId: Long? = 1314,
   ) = // language=JSON
     """{
          "Type" : "Notification",
          "MessageId" : "57126174-e2d7-518f-914e-0056a63363b0",
          "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-f221e27fcfcf78f6ab4f4c3cc165eee7",
-         "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2026-05-05T09:39:57\",\"nomisEventType\":\"$nomisEventType\",\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\",\"auditModuleName\":\"$auditModuleName\",\"eventId\":$eventId,\"caseId\":101112,\"isBreachHearing\":false${directionCode?.let { """,\"directionCode\":\"$directionCode\"""" } ?: ""}}",
+         "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2026-05-05T09:39:57\",\"nomisEventType\":\"$nomisEventType\",\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\",\"auditModuleName\":\"$auditModuleName\",\"eventId\":$eventId,\"caseId\":$caseId,\"isBreachHearing\":false${directionCode?.let { """,\"directionCode\":\"$directionCode\"""" } ?: ""}}",
          "Timestamp" : "2025-09-02T09:19:03.998Z",
          "SignatureVersion" : "1",
          "Signature" : "eePe/HtUdMyeFriH6GJe4FAJjYhQFjohJOu0+t8qULvpaw+qsGBfolKYa83fARpGDZJf9ceKd6kYGwF+OVeNViXluqPeUyoWbJ/lOjCs1tvlUuceCLy/7+eGGxkNASKJ1sWdwhO5J5I8WKUq5vfyYgL/Mygae6U71Bc0H9I2uVkw7tUYg0ZQBMSkA8HpuLLAN06qR5ahJnNDDxxoV07KY6E2dy8TheEo2Dhxq8hicl272LxWKMifM9VfR+D1i1eZNXDGsvvHmMCjumpxxYAJmrU+aqUzAU2KnhoZJTfeZT+RV+ZazjPLqX52zwA47ZFcqzCBnmrU6XwuHT4gKJcj1Q==",
