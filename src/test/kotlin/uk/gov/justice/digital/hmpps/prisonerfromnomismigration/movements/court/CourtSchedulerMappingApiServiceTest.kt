@@ -32,6 +32,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.UpdateScheduleMappingPrisonerRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import java.util.*
 
@@ -522,6 +523,53 @@ class CourtSchedulerMappingApiServiceTest {
 
       with(apiService.upsertCourtScheduleMappingByDpsId(courtScheduleMapping()).successResponse!!) {
         assertThat(replacedNomisEventId).isEqualTo(123)
+      }
+    }
+  }
+
+  @Nested
+  inner class UpdateMappingPrisoner {
+    private val request = UpdateScheduleMappingPrisonerRequest(
+      dpsCourtAppearanceId = UUID.randomUUID(),
+      oldPrisonerNumber = "A1234AA",
+      oldBookingId = 12345L,
+      newPrisonerNumber = "B1234BB",
+      newBookingId = 54321,
+    )
+
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubUpdateMappingPrisoner()
+
+      apiService.updateMappingPrisoner(123, request)
+
+      mappingApi.verify(
+        putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should pass data to service`() = runTest {
+      mappingApi.stubUpdateMappingPrisoner()
+
+      apiService.updateMappingPrisoner(123, request)
+
+      mappingApi.verify(
+        putRequestedFor(anyUrl())
+          .withRequestBody(matchingJsonPath("dpsCourtAppearanceId", equalTo("${request.dpsCourtAppearanceId}")))
+          .withRequestBody(matchingJsonPath("oldPrisonerNumber", equalTo(request.oldPrisonerNumber)))
+          .withRequestBody(matchingJsonPath("oldBookingId", equalTo("${request.oldBookingId}")))
+          .withRequestBody(matchingJsonPath("newPrisonerNumber", equalTo(request.newPrisonerNumber)))
+          .withRequestBody(matchingJsonPath("newBookingId", equalTo("${request.newBookingId}"))),
+      )
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubUpdateMappingPrisoner(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.updateMappingPrisoner(123, request)
       }
     }
   }
