@@ -7,7 +7,7 @@
       "name" : "Move a prisoner Team",
       "email" : "Moveaprisoner-gg@justice.gov.uk"
     },
-    "version" : "2026-07-14.144.bb5601a"
+    "version" : "2026-07-16.156.f1522c1"
   },
   "servers" : [ {
     "url" : "/",
@@ -1349,6 +1349,70 @@
         } ]
       }
     },
+    "/property-containers/prisoner/{prisonerNumber}/summary" : {
+      "get" : {
+        "tags" : [ "Property containers" ],
+        "summary" : "Get a prisoner's property summary counts for the profile tile",
+        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO. Returns just the totals a prisoner-profile \"Property containers\" tile needs, over the person's active (not removed) containers: how many are held at their current establishment (from prisoner-search) versus other establishments, how many are due to be transferred in or out, and how many are overdue for disposal or return - plus whether they have ever had any property recorded. The current establishment (and its name) is null when the prisoner is released or in transit.",
+        "operationId" : "getPrisonerSummary",
+        "parameters" : [ {
+          "name" : "prisonerNumber",
+          "in" : "path",
+          "description" : "Prisoner (NOMS) number",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "([a-zA-Z][0-9]{4}[a-zA-Z]{2})"
+          },
+          "example" : "A1234BC"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Prisoner property summary returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonerPropertySummaryDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid prisoner number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - a valid token was not presented",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - the ROLE_PRISONER_PROPERTY__RO role is required",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ ]
+        } ]
+      }
+    },
     "/property-containers/prisoner/{prisonerNumber}/events" : {
       "get" : {
         "tags" : [ "Property containers" ],
@@ -2164,7 +2228,7 @@
           "expiryDate" : {
             "type" : [ "string", "null" ],
             "format" : "date",
-            "description" : "NOMIS EXPIRY_DATE - the date the container was disposed of",
+            "description" : "NOMIS EXPIRY_DATE - the date the container became inactive. Used as the disposal/removal date only when the container is inactive (active=false); it may be a future planned date while still active, in which case it does not dispose the container.",
             "example" : "2026-09-15"
           },
           "createDateTime" : {
@@ -2191,7 +2255,7 @@
           "active" : {
             "type" : "boolean",
             "default" : true,
-            "description" : "NOMIS ACTIVE_FLAG. False (inactive) archives the container - it is retained but hidden from normal reads.",
+            "description" : "NOMIS ACTIVE_FLAG. False (inactive) means the container has left storage and is recorded as disposed (dated by EXPIRY_DATE); it remains visible with a disposed status.",
             "example" : true
           }
         },
@@ -2598,6 +2662,64 @@
         },
         "required" : [ "archived", "containerType", "createDateTime", "createdByUserId", "currentStatus", "id", "inPrisonersCurrentPrison", "prisonId", "prisonerNumber" ]
       },
+      "PrisonerPropertySummaryDto" : {
+        "type" : "object",
+        "description" : "A single prisoner's property totals for the profile \"Property containers\" tile. All counts are for the person's active (not removed) containers, split by where they are held relative to the prisoner's current establishment (resolved from prisoner-search). Carries everything the candidate tile designs need so the profile can render either the simple two-count layout or the fuller breakdown.",
+        "properties" : {
+          "currentEstablishmentId" : {
+            "type" : [ "string", "null" ],
+            "description" : "The prisoner's current establishment id (prisoner-search), or null if they are released or in transit",
+            "example" : "IWI"
+          },
+          "currentEstablishmentName" : {
+            "type" : [ "string", "null" ],
+            "description" : "The prisoner's current establishment name (prison-register), or null if unknown/released/in transit",
+            "example" : "Isle of Wight (HMP)"
+          },
+          "heldInCurrentEstablishment" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Active containers physically held at the prisoner's current establishment",
+            "example" : 2
+          },
+          "heldInOtherEstablishments" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Active containers held at any other establishment",
+            "example" : 3
+          },
+          "dueForTransferIn" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Active containers held elsewhere that are due to be transferred in to the current establishment (their owner was received here). A subset of those held in other establishments.",
+            "example" : 3
+          },
+          "dueForTransferOut" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Active containers held at the current establishment that are due to be transferred out (status DUE_FOR_TRANSFER_OUT)",
+            "example" : 0
+          },
+          "overdueForDisposal" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Active containers whose proposed disposal date has arisen (today or earlier)",
+            "example" : 1
+          },
+          "overdueForReturn" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Active containers flagged due for return following the prisoner's release (status DUE_FOR_RETURN)",
+            "example" : 1
+          },
+          "hasEverHadProperty" : {
+            "type" : "boolean",
+            "description" : "Whether the prisoner has any recorded property at all (including containers that have since been returned, disposed or transferred). Lets the tile distinguish \"never had property\" from \"no longer has any\".",
+            "example" : true
+          }
+        },
+        "required" : [ "dueForTransferIn", "dueForTransferOut", "hasEverHadProperty", "heldInCurrentEstablishment", "heldInOtherEstablishments", "overdueForDisposal", "overdueForReturn" ]
+      },
       "PrisonerTimelineItemDto" : {
         "type" : "object",
         "description" : "A single item in a prisoner's whole-property history timeline",
@@ -2605,7 +2727,7 @@
           "itemType" : {
             "type" : "string",
             "description" : "Whether the item is a container event or a prisoner movement",
-            "enum" : [ "CONTAINER_EVENT", "PRISONER_MOVEMENT", "SCHEDULED_FOR_RELEASE" ],
+            "enum" : [ "CONTAINER_EVENT", "PRISONER_MOVEMENT", "SCHEDULED_FOR_RELEASE", "DPS_FIRST_USED" ],
             "example" : "CONTAINER_EVENT"
           },
           "movementKind" : {
@@ -2613,6 +2735,12 @@
             "description" : "For a prisoner movement, whether it was an initial admission or a transfer in; null otherwise",
             "enum" : [ "ADMISSION", "TRANSFER_IN" ],
             "example" : "ADMISSION"
+          },
+          "propertySystem" : {
+            "type" : [ "string", "null" ],
+            "description" : "For a prisoner movement, whether the receiving establishment was managing property in DPS or NOMIS at that date; null otherwise",
+            "enum" : [ "DPS", "NOMIS" ],
+            "example" : "DPS"
           },
           "eventId" : {
             "type" : "string",
@@ -2724,13 +2852,13 @@
       "PagePrisonerPropertyGroupDto" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -2943,13 +3071,13 @@
       "PageBoxLocationDto" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
