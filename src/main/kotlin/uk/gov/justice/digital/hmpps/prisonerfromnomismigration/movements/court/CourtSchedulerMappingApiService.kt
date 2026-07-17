@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingUpsertByDpsIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSchedulerPrisonerMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.UpdateScheduleMappingPrisonerRequest
 
 @Service
 class CourtSchedulerMappingApiService(@Qualifier("courtSchedulerMappingApiWebClient") webClient: WebClient) : MigrationMapping<CourtSchedulerPrisonerMappingsDto>(domainUrl = "/mapping/court-scheduler", webClient) {
@@ -56,6 +57,8 @@ class CourtSchedulerMappingApiService(@Qualifier("courtSchedulerMappingApiWebCli
   suspend fun getCourtScheduleMappingOrNull(nomisEventId: Long): CourtScheduleMappingDto? = scheduleApi.prepare(scheduleApi.getCourtScheduleMappingByNomisIdRequestConfig(nomisEventId))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun updateMappingPrisoner(eventId: Long, request: UpdateScheduleMappingPrisonerRequest): Unit = scheduleApi.updateMappingPrisoner(eventId, request).awaitSingle()
 
   suspend fun deleteCourtScheduleMapping(nomisEventId: Long): Unit = scheduleApi.deleteCourtScheduleMappingByNomisId(nomisEventId)
     .awaitSingle()

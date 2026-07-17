@@ -148,6 +148,7 @@ class CourtSchedulerSyncScheduleService(
         ?: throw IllegalStateException("No mapping found when handling an update event for court schedule $eventId - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
 
       syncScheduleOut(prisonerNumber, eventId, telemetry, existingMapping)
+      // TODO SDIT-4039 if the mapping has a different prisoner to the existing mapping then we need to update it
     }
   }
 

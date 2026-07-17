@@ -391,6 +391,29 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubMoveBookingMappingsFailureFollowedBySuccess(bookingId: Long = 12345L, fromOffenderNo: String = "A1234AA", toOffenderNo: String = "B1234BB") = mappingApi.stubMappingUpdateFailureFollowedBySuccess("/mapping/court-scheduler/move-booking/$bookingId/from/$fromOffenderNo/to/$toOffenderNo")
 
+  fun stubUpdateMappingPrisoner(eventId: Long = 123) {
+    mappingApi.stubFor(
+      put("/mapping/court-scheduler/schedule/update-prisoner/nomis-id/$eventId")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(200),
+        ),
+    )
+  }
+
+  fun stubUpdateMappingPrisoner(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      put(urlPathMatching("/mapping/court-scheduler/schedule/update-prisoner/nomis-id/.*"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(jsonMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
