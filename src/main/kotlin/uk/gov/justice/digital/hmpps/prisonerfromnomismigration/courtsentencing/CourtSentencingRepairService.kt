@@ -249,4 +249,25 @@ class CourtSentencingRepairService(
       null,
     )
   }
+
+  suspend fun repairCourtCaseInfoNumbersByCaseId(offenderNo: String, caseId: Long) {
+    courtSentencingSynchronisationService.nomisCaseIdentifiersUpdated(
+      eventName = "OFFENDER_CASE_IDENTIFIERS-UPDATED",
+      event = CaseIdentifiersEvent(
+        caseId = caseId,
+        // all parameters used only for logging
+        identifierType = "repair",
+        identifierNo = "repair",
+        auditModuleName = "repair",
+      ),
+    )
+    telemetryClient.trackEvent(
+      "court-sentencing-prisoner-court-case-info-numbers-updated",
+      mapOf(
+        "offenderNo" to offenderNo,
+        "nomisCaseId" to caseId.toString(),
+      ),
+      null,
+    )
+  }
 }

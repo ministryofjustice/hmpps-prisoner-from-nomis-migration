@@ -33,9 +33,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtOrderResponse
 import java.time.LocalDate
-import java.util.UUID
+import java.time.LocalDateTime
+import java.util.*
 
 private const val DPS_SENTENCE_ID = "c1c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3e"
 private const val DPS_TERM_ID = "d5c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3d"
@@ -49,7 +51,6 @@ private const val DPS_CHARGE_ID = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"
 private const val DPS_CHARGE_2_ID = "d1c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3e"
 
 class CourtSentencingRepairResourceIntTest(
-  @Autowired private val courtSentencingMappingApiService: CourtSentencingMappingApiService,
   @Autowired private val courtSentencingMappingApiMockServer: CourtSentencingMappingApiMockServer,
   @Autowired private val courtSentencingNomisApiMockServer: CourtSentencingNomisApiMockServer,
 ) : CourtSentencingIntegrationTestBase() {
@@ -868,6 +869,111 @@ class CourtSentencingRepairResourceIntTest(
             assertThat(it["numberOfDpsCourtAppearances"]).isEqualTo("3")
             assertThat(it["numberOfAdditionalAppearances"]).isEqualTo("1")
             assertThat(it["dpsCourtAppearanceIdsDeleted"]).isEqualTo(dpsCourtAppearanceId3.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("PUT /prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/court-info-numbers")
+  inner class RepairCourtCaseInfoNumbersByCaseId {
+    val offenderNo = "A1234KT"
+    val nomisCaseId = NOMIS_COURT_CASE_ID
+    val dpsCaseId = UUID.randomUUID().toString()
+
+    @Nested
+    inner class Security {
+
+      @Test
+      internal fun `must have valid token`() {
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/court-info-numbers",
+          offenderNo,
+          nomisCaseId,
+        )
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      internal fun `must have correct role`() {
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/court-info-numbers",
+          offenderNo,
+          nomisCaseId,
+        )
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isForbidden
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      internal fun setup() {
+        courtSentencingNomisApiMockServer.stubGetCourtCaseNoOffenderVersion(
+          caseId = NOMIS_COURT_CASE_ID,
+          bookingId = NOMIS_BOOKING_ID,
+          offenderNo = offenderNo,
+          caseIndentifiers = listOf(
+            CaseIdentifierResponse(
+              reference = "GH123",
+              createDateTime = LocalDateTime.now(),
+              type = "CASE/INFO#",
+            ),
+            CaseIdentifierResponse(
+              reference = "ref2",
+              createDateTime = LocalDateTime.now().plusHours(1),
+              type = "CASE/INFO#",
+            ),
+            CaseIdentifierResponse(
+              reference = "ref2",
+              createDateTime = LocalDateTime.now().plusHours(1),
+              type = "NOT_OF_INTEREST_TO_DPS",
+            ),
+          ),
+        )
+
+        courtSentencingMappingApiMockServer.stubGetByNomisId(
+          nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+          dpsCourtCaseId = dpsCaseId,
+        )
+
+        dpsCourtSentencingServer.stubPutCaseIdentifierRefresh(courtCaseId = dpsCaseId)
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/court-info-numbers",
+          offenderNo,
+          nomisCaseId,
+        )
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+      }
+
+      @Test
+      fun `will update DPS with the changes`() {
+        dpsCourtSentencingServer.verify(
+          1,
+          putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCaseId/case-references/refresh"))
+            .withRequestBody(matchingJsonPath("caseReferences.size()", equalTo("2")))
+            .withRequestBody(matchingJsonPath("caseReferences[0].offenderCaseReference", equalTo("GH123")))
+            .withRequestBody(matchingJsonPath("caseReferences[1].offenderCaseReference", equalTo("ref2"))),
+        )
+      }
+
+      @Test
+      fun `will track a telemetry event for success`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-sentencing-prisoner-court-case-info-numbers-updated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisCaseId"]).isEqualTo(nomisCaseId.toString())
           },
           isNull(),
         )

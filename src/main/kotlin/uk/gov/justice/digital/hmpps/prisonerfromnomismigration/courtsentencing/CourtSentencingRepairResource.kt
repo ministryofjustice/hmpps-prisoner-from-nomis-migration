@@ -190,6 +190,23 @@ class CourtSentencingRepairResource(
     )
   }
 
+  @PutMapping("/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/court-info-numbers")
+  @Operation(
+    summary = "Updates court info number for a court case",
+    description = "Updates court info number for a court case. Requires PRISONER_FROM_NOMIS__UPDATE__RW",
+  )
+  suspend fun repairCourtCaseInfoNumbersByCaseId(
+    @PathVariable
+    offenderNo: String,
+    @PathVariable
+    caseId: Long,
+  ) {
+    courtSentencingRepairService.repairCourtCaseInfoNumbersByCaseId(
+      offenderNo = offenderNo,
+      caseId = caseId,
+    )
+  }
+
   @Schema(description = "Sentence insert repair request")
   @JsonInclude(JsonInclude.Include.NON_NULL)
   data class SentenceRequest(
