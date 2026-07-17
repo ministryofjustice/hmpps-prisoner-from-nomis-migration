@@ -138,7 +138,7 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
     fun migrateStaffResponse(nomisStaffId: Long, dpsStaffId: UUID, username: String = "JOHNSMITH_ADM") = UserMigrationResponse(
       userId = dpsStaffId,
-      staffId = nomisStaffId.toString(),
+      staffId = nomisStaffId,
     )
 
     fun verifyUserSyncRequest() {

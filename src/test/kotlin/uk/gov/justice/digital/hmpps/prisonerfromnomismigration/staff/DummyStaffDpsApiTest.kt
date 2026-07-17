@@ -26,7 +26,7 @@ class DummyStaffDpsApiTest : SqsIntegrationTestBase() {
       .responseBody
       .blockFirst()!!
 
-    assertThat(result.staffId).isEqualTo("1234")
+    assertThat(result.staffId).isEqualTo(1234)
     assertThat(result.userId).isNotNull
   }
 
@@ -45,7 +45,7 @@ class DummyStaffDpsApiTest : SqsIntegrationTestBase() {
       .responseBody
       .blockFirst()!!
 
-    assertThat(result.staffId).isEqualTo("1234")
+    assertThat(result.staffId).isEqualTo(1234)
     assertThat(result.userId).isNotNull
   }
 

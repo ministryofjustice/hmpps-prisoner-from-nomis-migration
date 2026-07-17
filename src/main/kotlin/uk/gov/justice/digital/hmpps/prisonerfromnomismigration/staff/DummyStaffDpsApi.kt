@@ -27,7 +27,7 @@ class DummyStaffDpsApi {
   @ResponseStatus(value = HttpStatus.CREATED)
   suspend fun migrateStaff(@RequestBody @Valid staff: UserMigrationRequest): UserMigrationResponse = UserMigrationResponse(
     userId = UUID.randomUUID(),
-    staffId = staff.user.staffId.toString(),
+    staffId = staff.user.staffId,
   )
     .also {
       log.info("Migrated staff ${staff.user.staffId}")
@@ -37,7 +37,7 @@ class DummyStaffDpsApi {
   @ResponseStatus(value = HttpStatus.OK)
   suspend fun syncStaff(@RequestBody @Valid staff: UserMigrationRequest): UserMigrationResponse = UserMigrationResponse(
     userId = UUID.randomUUID(),
-    staffId = staff.user.staffId.toString(),
+    staffId = staff.user.staffId,
   )
     .also {
       log.info("Upserted staff ${staff.user.staffId}")
