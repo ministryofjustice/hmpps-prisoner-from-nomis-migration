@@ -27,22 +27,20 @@ class DummyStaffDpsApi {
   @ResponseStatus(value = HttpStatus.CREATED)
   suspend fun migrateStaff(@RequestBody @Valid staff: UserMigrationRequest): UserMigrationResponse = UserMigrationResponse(
     userId = UUID.randomUUID(),
-    staffId = staff.user.id,
-    username = staff.accounts.firstOrNull()?.username ?: "NO_USER_ACCOUNT",
+    staffId = staff.user.staffId,
   )
     .also {
-      log.info("Migrated staff ${staff.user.id}")
+      log.info("Migrated staff ${staff.user.staffId}")
     }
 
   @PutMapping("/prison-users/staff")
   @ResponseStatus(value = HttpStatus.OK)
   suspend fun syncStaff(@RequestBody @Valid staff: UserMigrationRequest): UserMigrationResponse = UserMigrationResponse(
     userId = UUID.randomUUID(),
-    staffId = staff.user.id,
-    username = staff.accounts.firstOrNull()?.username ?: "NO_USER_ACCOUNT",
+    staffId = staff.user.staffId,
   )
     .also {
-      log.info("Upserted staff ${staff.user.id}")
+      log.info("Upserted staff ${staff.user.staffId}")
     }
 
   @DeleteMapping("/prison-users/staff/{nomisStaffId}")

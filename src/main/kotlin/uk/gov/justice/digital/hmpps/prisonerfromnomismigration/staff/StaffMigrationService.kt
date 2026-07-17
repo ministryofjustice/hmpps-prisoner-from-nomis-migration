@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RoleResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffAccount
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffEmail
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastIdMigrationService
@@ -26,6 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccessibleCaseload
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccount
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserEmail
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserRole
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
 import kotlin.collections.flatMap
@@ -173,12 +175,10 @@ class StaffMigrationService(
 
 fun StaffDetails.toMigrateStaffRequest(): UserMigrationRequest = UserMigrationRequest(
   user = MigratedUser(
-    id = id.toString(),
-    // TODO - ensure the request allows nullable email address
-    email = email ?: "unset",
+    staffId = id,
+    emails = emailAddresses.map { it.toMigratedUserEmail() },
     firstName = firstName,
     lastName = lastName,
-    // TODO - Determine DPS requirements for this field - set active/inactive only for now
     status = if (status == "ACTIVE") MigratedUser.Status.ACTIVE else MigratedUser.Status.INACTIVE,
 
     createdTimestamp = audit.createDatetime,
@@ -198,6 +198,15 @@ fun StaffDetails.toMigrateStaffRequest(): UserMigrationRequest = UserMigrationRe
       it.toMigratedUserAccessibleCaseload(staffUserAccount.username)
     }
   },
+)
+
+private fun StaffEmail.toMigratedUserEmail() = MigratedUserEmail(
+  legacyEmailId = emailAddressId,
+  email = email,
+  createdTimestamp = audit.createDatetime,
+  createdBy = audit.createUsername,
+  modifiedTimestamp = audit.modifyDatetime,
+  modifiedBy = audit.modifyUserId,
 )
 
 private fun StaffAccount.toMigratedUserAccount() = MigratedUserAccount(

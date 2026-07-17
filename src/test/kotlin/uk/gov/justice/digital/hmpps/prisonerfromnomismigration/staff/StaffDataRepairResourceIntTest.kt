@@ -78,8 +78,9 @@ class StaffDataRepairResourceIntTest(
       fun `will send staff details to DPS`() {
         dpsStaffServer.verify(
           putRequestedFor(urlPathEqualTo("/prison-users/staff"))
-            .withRequestBodyJsonPath("user.id", equalTo("1234"))
-            .withRequestBodyJsonPath("user.email", equalTo("john.smith@justice.gov.uk"))
+            .withRequestBodyJsonPath("user.staffId", equalTo("1234"))
+            .withRequestBodyJsonPath("user.emails[0].legacyEmailId", equalTo("3456"))
+            .withRequestBodyJsonPath("user.emails[0].email", equalTo("john.smith@justice.gov.uk"))
             .withRequestBodyJsonPath("user.firstName", equalTo("JOHN"))
             .withRequestBodyJsonPath("user.lastName", equalTo("SMITH"))
             .withRequestBodyJsonPath("accounts[0].username", equalTo("JOHNSMITH_ADM"))

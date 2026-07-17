@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffDpsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccessibleCaseload
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccount
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserEmail
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserRole
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationResponse
@@ -71,9 +72,17 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
     fun migrateStaff() = UserMigrationRequest(
       user = MigratedUser(
-        // TODO this should be a long
-        id = 1234.toString(),
-        email = "john.smith@justice.gov.uk",
+        staffId = 1234,
+        emails = listOf(
+          MigratedUserEmail(
+            email = "john.smith@justice.gov.uk",
+            legacyEmailId = 3456,
+            createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
+            createdBy = "JIM_BEAM",
+            modifiedTimestamp = LocalDateTime.parse("2021-09-12T10:42:43"),
+            modifiedBy = "FRED_BROWN",
+          ),
+        ),
         firstName = "John",
         lastName = "Smith",
         status = MigratedUser.Status.ACTIVE,
@@ -129,9 +138,7 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
     fun migrateStaffResponse(nomisStaffId: Long, dpsStaffId: UUID, username: String = "JOHNSMITH_ADM") = UserMigrationResponse(
       userId = dpsStaffId,
-      staffId = nomisStaffId.toString(),
-      // TOD this should be a list
-      username = username,
+      staffId = nomisStaffId,
     )
 
     fun verifyUserSyncRequest() {
@@ -144,8 +151,14 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       )
       with(request) {
         with(user) {
-          assertThat(id).isEqualTo("1234")
-          assertThat(email).isEqualTo("john.smith@justice.gov.uk")
+          assertThat(staffId).isEqualTo(1234)
+          assertThat(emails!!.size).isEqualTo(1)
+          assertThat(emails[0].legacyEmailId).isEqualTo(3456)
+          assertThat(emails[0].email).isEqualTo("john.smith@justice.gov.uk")
+          assertThat(emails[0].createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+          assertThat(emails[0].createdBy).isEqualTo("KOFEADDY")
+          assertThat(emails[0].modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
+          assertThat(emails[0].modifiedBy).isEqualTo("KOFE_MOD")
           assertThat(firstName).isEqualTo("JOHN")
           assertThat(lastName).isEqualTo("SMITH")
           assertThat(status).isEqualTo(MigratedUser.Status.ACTIVE)
@@ -154,7 +167,7 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
           assertThat(modifiedBy).isEqualTo("KOFE_MOD")
         }
-        assertThat(accounts.size).isEqualTo(1)
+        assertThat(accounts!!.size).isEqualTo(1)
         with(accounts[0]) {
           assertThat(username).isEqualTo("JOHNSMITH_ADM")
           assertThat(accountType).isEqualTo(MigratedUserAccount.AccountType.ADMIN)

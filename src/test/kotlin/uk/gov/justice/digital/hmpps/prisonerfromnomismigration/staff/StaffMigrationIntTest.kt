@@ -270,10 +270,11 @@ class StaffMigrationIntTest(
           postRequestedFor(urlPathEqualTo("/migrate/user")),
         )
 
-        with(migrationRequests.first { it.user.id == "1234" }) {
+        with(migrationRequests.first { it.user.staffId == 1234L }) {
           with(user) {
-            assertThat(id).isEqualTo("1234")
-            assertThat(email).isEqualTo("john.smith@justice.gov.uk")
+            assertThat(staffId).isEqualTo(1234)
+            assertThat(emails!![0].legacyEmailId).isEqualTo(3456)
+            assertThat(emails!![0].email).isEqualTo("john.smith@justice.gov.uk")
             assertThat(firstName).isEqualTo("JOHN")
             assertThat(lastName).isEqualTo("SMITH")
             assertThat(status).isEqualTo(MigratedUser.Status.ACTIVE)
@@ -282,7 +283,7 @@ class StaffMigrationIntTest(
             assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
             assertThat(modifiedBy).isEqualTo("KOFE_MOD")
           }
-          assertThat(accounts.size).isEqualTo(1)
+          assertThat(accounts!!.size).isEqualTo(1)
           with(accounts[0]) {
             assertThat(username).isEqualTo("JOHNSMITH_ADM")
             assertThat(accountType).isEqualTo(MigratedUserAccount.AccountType.ADMIN)
