@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RoleResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffAccount
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffDetails
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffEmail
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffIdsPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -135,7 +136,9 @@ class StaffNomisApiMockServer(private val jsonMapper: JsonMapper) {
     firstName = "JOHN",
     lastName = "SMITH",
     status = "ACTIVE",
-    email = "john.smith@justice.gov.uk",
+    emailAddresses = listOf(
+      StaffEmail(emailAddressId = 3456, email = "john.smith@justice.gov.uk", audit = audit()),
+    ),
     audit = audit(),
     accounts = listOf(
       StaffAccount(

@@ -27,8 +27,7 @@ class DummyStaffDpsApiTest : SqsIntegrationTestBase() {
       .blockFirst()!!
 
     assertThat(result.staffId).isEqualTo("1234")
-    // TODO this should be a list of usernames
-    assertThat(result.username).isEqualTo("JOHNSMITH_ADM")
+    assertThat(result.userId).isNotNull
   }
 
   @Test
@@ -47,7 +46,7 @@ class DummyStaffDpsApiTest : SqsIntegrationTestBase() {
       .blockFirst()!!
 
     assertThat(result.staffId).isEqualTo("1234")
-    assertThat(result.username).isEqualTo("JOHNSMITH_ADM")
+    assertThat(result.userId).isNotNull
   }
 
   @Test

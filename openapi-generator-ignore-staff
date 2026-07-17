@@ -15,6 +15,7 @@
 !**/MigratedUser.kt
 !**/MigratedUserAccessibleCaseload.kt
 !**/MigratedUserAccount.kt
+!**/MigratedUserEmail.kt
 !**/MigratedUserRole.kt
 !**/PrisonCaseload.kt
 !**/UserBasicDetails.kt
