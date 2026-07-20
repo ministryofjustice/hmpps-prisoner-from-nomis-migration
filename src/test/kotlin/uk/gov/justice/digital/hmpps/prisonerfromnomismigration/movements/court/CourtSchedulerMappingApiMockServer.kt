@@ -138,7 +138,11 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetCourtScheduleMapping(nomisEventId: Long = 1L, dpsCourtAppearanceId: UUID = UUID.randomUUID()) {
+  fun stubGetCourtScheduleMapping(
+    nomisEventId: Long = 1L,
+    dpsCourtAppearanceId: UUID = UUID.randomUUID(),
+    prisonerNumber: String = "A1234BC",
+  ) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/court-scheduler/schedule/nomis-id/$nomisEventId")).willReturn(
         aResponse()
@@ -148,6 +152,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
               courtScheduleMapping(
                 nomisEventId = nomisEventId,
                 dpsCourtAppearanceId = dpsCourtAppearanceId,
+                prisonerNumber = prisonerNumber,
               ),
             ),
           ),
@@ -413,6 +418,8 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
         ),
     )
   }
+
+  fun stubUpdateMappingPrisonerFailureFollowedBySuccess(eventId: Long = 123L) = mappingApi.stubMappingUpdateFailureFollowedBySuccess("/mapping/court-scheduler/schedule/update-prisoner/nomis-id/$eventId")
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
