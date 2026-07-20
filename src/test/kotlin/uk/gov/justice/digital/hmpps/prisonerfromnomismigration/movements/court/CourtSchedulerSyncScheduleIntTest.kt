@@ -1002,6 +1002,115 @@ class CourtSchedulerSyncScheduleIntTest(
         )
       }
     }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenCourtScheduleMovedToDifferentPrisoner {
+      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
+
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+
+        // The mapping is for a different prisoner number
+        mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, dpsCourtAppearanceId = dpsCourtAppearanceId, prisonerNumber = "B1234BB")
+        nomisApi.stubGetCourtScheduleOut("A1234BC", 123L)
+        dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
+        mappingApi.stubUpdateMappingPrisoner(123L)
+
+        sendMessage(courtScheduleEvent("COURT_EVENTS-UPDATED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should update DPS court appearance`() {
+        dpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/court-appearances/A1234BC")),
+        )
+      }
+
+      @Test
+      fun `should update mapping twice`() {
+        mappingApi.verify(
+          count = 0,
+          pattern = putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/update-prisoner/nomis-id/123"))
+            .withRequestBodyJsonPath("oldPrisonerNumber", "A1234BC")
+            .withRequestBodyJsonPath("newPrisonerNumber", "B1234BB"),
+        )
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-schedule-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["movedFromOffenderNo"]).isEqualTo("B1234BB")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenCourtScheduleMovedWithMappingRetry {
+      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
+
+      @BeforeAll
+      fun setUp() {
+        setUpTestClass()
+
+        // The existing mapping is for a different prisoner number
+        mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, dpsCourtAppearanceId = dpsCourtAppearanceId, prisonerNumber = "B1234BB")
+        nomisApi.stubGetCourtScheduleOut("A1234BC", 123L)
+        dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
+        // Fail to update the mapping the first time
+        mappingApi.stubUpdateMappingPrisonerFailureFollowedBySuccess(123L)
+
+        sendMessage(courtScheduleEvent("COURT_EVENTS-UPDATED"))
+          .also { waitForAnyProcessingToComplete("court-scheduler-sync-schedule-update-mapping-prisoner-success") }
+      }
+
+      @Test
+      fun `should update DPS court appearance`() {
+        dpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/court-appearances/A1234BC")),
+        )
+      }
+
+      @Test
+      fun `should update mapping`() {
+        mappingApi.verify(
+          pattern = putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/update-prisoner/nomis-id/123"))
+            .withRequestBodyJsonPath("newPrisonerNumber", "A1234BC")
+            .withRequestBodyJsonPath("oldPrisonerNumber", "B1234BB"),
+        )
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-schedule-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should create mapping updated telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-scheduler-sync-schedule-update-mapping-prisoner-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["movedFromOffenderNo"]).isEqualTo("B1234BB")
+          },
+          isNull(),
+        )
+      }
+    }
   }
 
   @Nested

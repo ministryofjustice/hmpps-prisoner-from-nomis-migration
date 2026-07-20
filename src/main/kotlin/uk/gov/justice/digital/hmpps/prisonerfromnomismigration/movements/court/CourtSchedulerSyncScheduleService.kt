@@ -17,8 +17,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.tryFetchP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode.OUT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtMovementRetryMappingMessageTypes.RETRY_MAPPING_COURT_SCHEDULE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtMovementRetryMappingMessageTypes.RETRY_UPDATE_SCHEDULE_MAPPING_PRISONER
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtScheduleMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.UpdateScheduleMappingPrisonerRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtScheduleOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -148,7 +150,8 @@ class CourtSchedulerSyncScheduleService(
         ?: throw IllegalStateException("No mapping found when handling an update event for court schedule $eventId - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
 
       syncScheduleOut(prisonerNumber, eventId, telemetry, existingMapping)
-      // TODO SDIT-4039 if the mapping has a different prisoner to the existing mapping then we need to update it
+        ?.takeIf { existingMapping.prisonerNumber != it.prisonerNumber || existingMapping.bookingId != it.bookingId }
+        ?.also { tryToUpdateScheduleMappingPrisoner(existingMapping, it, telemetry) }
     }
   }
 
@@ -264,6 +267,51 @@ class CourtSchedulerSyncScheduleService(
       }
     }
   }
+
+  private suspend fun tryToUpdateScheduleMappingPrisoner(
+    existingMapping: CourtScheduleMappingDto,
+    newMapping: CourtScheduleMappingDto,
+    telemetry: MutableMap<String, Any>,
+  ) {
+    val retryableRequest = UpdateMappingPrisonerRetry(
+      eventId = newMapping.nomisEventId,
+      request = UpdateScheduleMappingPrisonerRequest(
+        dpsCourtAppearanceId = newMapping.dpsCourtAppearanceId,
+        oldPrisonerNumber = existingMapping.prisonerNumber,
+        oldBookingId = existingMapping.bookingId,
+        newPrisonerNumber = newMapping.prisonerNumber,
+        newBookingId = newMapping.bookingId,
+      ),
+    )
+    try {
+      updateScheduleMappingPrisoner(retryableRequest, telemetry)
+    } catch (e: Exception) {
+      log.error("Failed to update schedule mapping prisoner for court schedule with NOMIS id ${retryableRequest.eventId}", e)
+      queueService.sendMessage(
+        messageType = RETRY_UPDATE_SCHEDULE_MAPPING_PRISONER.name,
+        synchronisationType = SynchronisationType.COURT_SCHEDULER,
+        message = retryableRequest,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+
+  suspend fun retryUpdateScheduleMappingPrisoner(retryMessage: InternalMessage<UpdateMappingPrisonerRetry>) {
+    val telemetry = retryMessage.telemetryAttributes.toMutableMap<String, Any>()
+    updateScheduleMappingPrisoner(retryMessage.body, telemetry)
+      .also {
+        telemetryClient.trackEvent(
+          "${TELEMETRY_PREFIX}-update-mapping-prisoner-success",
+          telemetry,
+        )
+      }
+  }
+
+  private suspend fun updateScheduleMappingPrisoner(retryableRequest: UpdateMappingPrisonerRetry, telemetry: MutableMap<String, Any>) = mappingApi.updateMappingPrisoner(retryableRequest.eventId, retryableRequest.request)
+    .also {
+      telemetry["movedFromOffenderNo"] = retryableRequest.request.oldPrisonerNumber
+      telemetry["movedFromBookingId"] = retryableRequest.request.oldBookingId
+    }
 }
 
 private fun CourtScheduleOut.toDpsRequest(courtAppearanceId: UUID?, sentencingCourtAppearanceId: String?) = SyncCourtEvent(
@@ -285,3 +333,5 @@ private fun CourtScheduleOut.toDpsRequest(courtAppearanceId: UUID?, sentencingCo
     activeCaseloadId = userActiveCaseloadId,
   ),
 )
+
+class UpdateMappingPrisonerRetry(val eventId: Long, val request: UpdateScheduleMappingPrisonerRequest)

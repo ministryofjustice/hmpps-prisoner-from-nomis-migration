@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.Directi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtMovementRetryMappingMessageTypes.RETRY_MAPPING_COURT_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtMovementRetryMappingMessageTypes.RETRY_MAPPING_COURT_SCHEDULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtMovementRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_COURT_SCHEDULER
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtMovementRetryMappingMessageTypes.RETRY_UPDATE_SCHEDULE_MAPPING_PRISONER
 import java.util.concurrent.CompletableFuture
 
 const val SYNC_COURT_SCHEDULE: String = "courtscheduler.sync.court.schedule"
@@ -64,6 +65,7 @@ class CourtSchedulerEventListener(
     RETRY_MAPPING_COURT_SCHEDULE -> courtScheduleService.retryCreateScheduleMapping(message.fromJson())
     RETRY_MAPPING_COURT_MOVEMENT -> courtMovementService.retryCreateMovementMapping(message.fromJson())
     RETRY_MOVE_BOOKING_MAPPING_COURT_SCHEDULER -> moveBookingService.retryMoveBookingMapping(message.fromJson())
+    RETRY_UPDATE_SCHEDULE_MAPPING_PRISONER -> courtScheduleService.retryUpdateScheduleMappingPrisoner(message.fromJson())
   }
 
   private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
@@ -88,4 +90,5 @@ enum class CourtMovementRetryMappingMessageTypes {
   RETRY_MAPPING_COURT_SCHEDULE,
   RETRY_MAPPING_COURT_MOVEMENT,
   RETRY_MOVE_BOOKING_MAPPING_COURT_SCHEDULER,
+  RETRY_UPDATE_SCHEDULE_MAPPING_PRISONER,
 }
