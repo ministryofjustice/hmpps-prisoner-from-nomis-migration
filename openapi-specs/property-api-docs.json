@@ -7,7 +7,7 @@
       "name" : "Move a prisoner Team",
       "email" : "Moveaprisoner-gg@justice.gov.uk"
     },
-    "version" : "2026-07-16.156.f1522c1"
+    "version" : "2026-07-20.166.31c0c06"
   },
   "servers" : [ {
     "url" : "/",
@@ -1283,7 +1283,7 @@
             "type" : "array",
             "items" : {
               "type" : "string",
-              "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR" ]
+              "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR", "REMOVED" ]
             }
           },
           "example" : "STORED"
@@ -1417,7 +1417,7 @@
       "get" : {
         "tags" : [ "Property containers" ],
         "summary" : "Get a prisoner's whole-property history timeline, newest first",
-        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO. Returns a single interleaved timeline of every event across all of the prisoner's (non-archived) containers, newest first, plus a de-duplicated \"arrived at ...\" item for each prison the prisoner moved into. Prison and location ids are resolved to names, and each container event carries the seal number and acting establishment as at that point in its history. Returns an empty list if the prisoner has no property.",
+        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO. Returns a single interleaved timeline of every event across all of the prisoner's containers, newest first, plus a de-duplicated \"arrived at ...\" item for each prison the prisoner moved into. Prison and location ids are resolved to names, and each container event carries the seal number and acting establishment as at that point in its history. Returns an empty list if the prisoner has no property.",
         "operationId" : "getPrisonerEvents",
         "parameters" : [ {
           "name" : "prisonerNumber",
@@ -1545,7 +1545,7 @@
             "type" : "array",
             "items" : {
               "type" : "string",
-              "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR" ]
+              "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR", "REMOVED" ]
             }
           },
           "example" : "STORED"
@@ -2046,6 +2046,12 @@
             "description" : "Internal storage location id (locations-inside-prison-api), if known",
             "example" : "11111111-1111-1111-1111-111111111111"
           },
+          "locationType" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where the container is stored: INTERNAL (a prison location, given by internalLocationId) or BRANSTON (the offsite warehouse, no internal location). Send BRANSTON to move excess property offsite. Leave null (with no internalLocationId) to leave the storage location unchanged.",
+            "enum" : [ "INTERNAL", "BRANSTON" ],
+            "example" : "INTERNAL"
+          },
           "proposedDisposalDate" : {
             "type" : [ "string", "null" ],
             "format" : "date",
@@ -2089,7 +2095,7 @@
           "currentStatus" : {
             "type" : "string",
             "description" : "Current status, derived from the most recent event",
-            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR" ],
+            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR", "REMOVED" ],
             "example" : "STORED"
           },
           "currentLocation" : {
@@ -2113,7 +2119,7 @@
           "removalOutcome" : {
             "type" : [ "string", "null" ],
             "description" : "Why the container left active storage (disposed, returned, transferred, combined), if it has",
-            "enum" : [ "DISPOSED", "RETURNED", "TRANSFERRED", "COMBINED", "CREATED_IN_ERROR" ],
+            "enum" : [ "DISPOSED", "RETURNED", "TRANSFERRED", "COMBINED", "CREATED_IN_ERROR", "REMOVED" ],
             "example" : "DISPOSED"
           },
           "removalDate" : {
@@ -2131,14 +2137,9 @@
             "type" : "string",
             "description" : "Id of the user who created the container",
             "example" : "AUSER_GEN"
-          },
-          "archived" : {
-            "type" : "boolean",
-            "description" : "Whether the container is archived (hidden from normal reads, e.g. NOMIS inactive containers)",
-            "example" : false
           }
         },
-        "required" : [ "archived", "containerType", "createDateTime", "createdByUserId", "currentStatus", "id", "prisonId", "prisonerNumber" ]
+        "required" : [ "containerType", "createDateTime", "createdByUserId", "currentStatus", "id", "prisonId", "prisonerNumber" ]
       },
       "SetActiveAgencyRequest" : {
         "type" : "object",
@@ -2211,7 +2212,7 @@
           "internalLocationId" : {
             "type" : [ "string", "null" ],
             "format" : "uuid",
-            "description" : "DPS locations-inside-prison-api location UUID for NOMIS INTERNAL_LOCATION_ID, resolved by the caller. Null if NOMIS had no location, or for 'Branston Storage' containers which are held offsite with no internal location.",
+            "description" : "DPS locations-inside-prison-api location UUID for NOMIS INTERNAL_LOCATION_ID, resolved by the caller. Null if NOMIS had no location. Send it whenever NOMIS has one, including for 'Branston Storage' containers: they are excess property that may be held at a prison location as well as offsite, so a non-null value places them at that internal location and a null value leaves them offsite at Branston.",
             "example" : "11111111-1111-1111-1111-111111111111"
           },
           "sealMark" : {
@@ -2228,7 +2229,7 @@
           "expiryDate" : {
             "type" : [ "string", "null" ],
             "format" : "date",
-            "description" : "NOMIS EXPIRY_DATE - the date the container became inactive. Used as the disposal/removal date only when the container is inactive (active=false); it may be a future planned date while still active, in which case it does not dispose the container.",
+            "description" : "NOMIS EXPIRY_DATE - the date the container became inactive. Used as the removal date only when the container is inactive (active=false), falling back to MODIFY_DATETIME's date when EXPIRY_DATE is absent (it is often null on inactive rows). While the container is active it may be a future planned date, in which case it does not remove the container.",
             "example" : "2026-09-15"
           },
           "createDateTime" : {
@@ -2255,7 +2256,7 @@
           "active" : {
             "type" : "boolean",
             "default" : true,
-            "description" : "NOMIS ACTIVE_FLAG. False (inactive) means the container has left storage and is recorded as disposed (dated by EXPIRY_DATE); it remains visible with a disposed status.",
+            "description" : "NOMIS ACTIVE_FLAG. False (inactive) means the container has left the establishment, reason unknown, and is recorded as removed (a reversible outcome, dated by EXPIRY_DATE or the modify date); its location is cleared and it remains visible with a removed status. Reactivating it (active=true) clears the removal.",
             "example" : true
           }
         },
@@ -2346,6 +2347,12 @@
             "description" : "Internal storage location id (locations-inside-prison-api), if known",
             "example" : "11111111-1111-1111-1111-111111111111"
           },
+          "locationType" : {
+            "type" : [ "string", "null" ],
+            "description" : "Where the container is stored: INTERNAL (a prison location, given by internalLocationId) or BRANSTON (the offsite warehouse, no internal location). Defaults to INTERNAL when an internalLocationId is given. Use BRANSTON for excess property held offsite.",
+            "enum" : [ "INTERNAL", "BRANSTON" ],
+            "example" : "INTERNAL"
+          },
           "proposedDisposalDate" : {
             "type" : [ "string", "null" ],
             "format" : "date",
@@ -2362,7 +2369,7 @@
           "outcome" : {
             "type" : "string",
             "description" : "Why the container is being removed - one of RETURNED, DISPOSED, TRANSFERRED or CREATED_IN_ERROR (COMBINED is not accepted; use the combine endpoint)",
-            "enum" : [ "DISPOSED", "RETURNED", "TRANSFERRED", "COMBINED", "CREATED_IN_ERROR" ],
+            "enum" : [ "DISPOSED", "RETURNED", "TRANSFERRED", "COMBINED", "CREATED_IN_ERROR", "REMOVED" ],
             "example" : "RETURNED"
           },
           "date" : {
@@ -2464,7 +2471,7 @@
           "eventType" : {
             "type" : "string",
             "description" : "What happened to the container",
-            "enum" : [ "CREATED_SEALED", "SEAL_CHANGED", "CONTAINER_TYPE_CHANGE", "MOVED", "PRISONER_RECEIVED", "PRISONER_RELEASED", "DIED_IN_CUSTODY", "TRANSFERRED", "RETURNED", "DISPOSAL_REQUIRED", "DISPOSED", "COMBINED", "CREATED_IN_ERROR" ],
+            "enum" : [ "CREATED_SEALED", "SEAL_CHANGED", "CONTAINER_TYPE_CHANGE", "MOVED", "PRISONER_RECEIVED", "PRISONER_RELEASED", "DIED_IN_CUSTODY", "TRANSFERRED", "RETURNED", "DISPOSAL_REQUIRED", "DISPOSED", "COMBINED", "CREATED_IN_ERROR", "REMOVED", "REACTIVATED" ],
             "example" : "MOVED"
           },
           "eventDateTime" : {
@@ -2537,6 +2544,11 @@
             "format" : "uuid",
             "description" : "Id of a related container, for combine events",
             "example" : "33333333-3333-3333-3333-333333333333"
+          },
+          "relatedContainerSealNumber" : {
+            "type" : [ "string", "null" ],
+            "description" : "Seal number of the related container, for combine events - the container this one was combined into",
+            "example" : "SN991234"
           }
         },
         "required" : [ "containerType", "eventDateTime", "eventType", "eventUserId", "id" ]
@@ -2606,7 +2618,7 @@
           "currentStatus" : {
             "type" : "string",
             "description" : "Current status, derived from the most recent event",
-            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR" ],
+            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR", "REMOVED" ],
             "example" : "STORED"
           },
           "currentLocation" : {
@@ -2635,7 +2647,7 @@
           "removalOutcome" : {
             "type" : [ "string", "null" ],
             "description" : "Why the container left active storage (disposed, returned, transferred, combined), if it has",
-            "enum" : [ "DISPOSED", "RETURNED", "TRANSFERRED", "COMBINED", "CREATED_IN_ERROR" ],
+            "enum" : [ "DISPOSED", "RETURNED", "TRANSFERRED", "COMBINED", "CREATED_IN_ERROR", "REMOVED" ],
             "example" : "DISPOSED"
           },
           "removalDate" : {
@@ -2653,14 +2665,9 @@
             "type" : "string",
             "description" : "Id of the user who created the container",
             "example" : "AUSER_GEN"
-          },
-          "archived" : {
-            "type" : "boolean",
-            "description" : "Whether the container is archived (hidden from normal reads, e.g. NOMIS inactive containers)",
-            "example" : false
           }
         },
-        "required" : [ "archived", "containerType", "createDateTime", "createdByUserId", "currentStatus", "id", "inPrisonersCurrentPrison", "prisonId", "prisonerNumber" ]
+        "required" : [ "containerType", "createDateTime", "createdByUserId", "currentStatus", "id", "inPrisonersCurrentPrison", "prisonId", "prisonerNumber" ]
       },
       "PrisonerPropertySummaryDto" : {
         "type" : "object",
@@ -2751,13 +2758,13 @@
           "eventType" : {
             "type" : [ "string", "null" ],
             "description" : "What happened to the container, for container events; null for prisoner movements",
-            "enum" : [ "CREATED_SEALED", "SEAL_CHANGED", "CONTAINER_TYPE_CHANGE", "MOVED", "PRISONER_RECEIVED", "PRISONER_RELEASED", "DIED_IN_CUSTODY", "TRANSFERRED", "RETURNED", "DISPOSAL_REQUIRED", "DISPOSED", "COMBINED", "CREATED_IN_ERROR" ],
+            "enum" : [ "CREATED_SEALED", "SEAL_CHANGED", "CONTAINER_TYPE_CHANGE", "MOVED", "PRISONER_RECEIVED", "PRISONER_RELEASED", "DIED_IN_CUSTODY", "TRANSFERRED", "RETURNED", "DISPOSAL_REQUIRED", "DISPOSED", "COMBINED", "CREATED_IN_ERROR", "REMOVED", "REACTIVATED" ],
             "example" : "TRANSFERRED"
           },
           "eventStatus" : {
             "type" : [ "string", "null" ],
             "description" : "The status this event put the container into (used for the item's status tag); null for prisoner movements",
-            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR" ],
+            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR", "REMOVED" ],
             "example" : "TRANSFER"
           },
           "eventDateTime" : {
@@ -2818,6 +2825,11 @@
             "description" : "Id of a related container, for combine events",
             "example" : "33333333-3333-3333-3333-333333333333"
           },
+          "relatedContainerSealNumber" : {
+            "type" : [ "string", "null" ],
+            "description" : "Seal number of the related container, for combine events - the container this one was combined into",
+            "example" : "SN991234"
+          },
           "containerId" : {
             "type" : [ "string", "null" ],
             "format" : "uuid",
@@ -2838,7 +2850,7 @@
           "containerStatus" : {
             "type" : [ "string", "null" ],
             "description" : "The container's current status, for the item's expandable details",
-            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR" ],
+            "enum" : [ "STORED", "DUE_FOR_TRANSFER_OUT", "DUE_FOR_RETURN", "DISPOSAL_REQUIRED", "DISPOSED", "RETURNED", "TRANSFER", "COMBINED", "CREATED_IN_ERROR", "REMOVED" ],
             "example" : "STORED"
           },
           "containerLocationDescription" : {
@@ -2852,13 +2864,13 @@
       "PagePrisonerPropertyGroupDto" : {
         "type" : "object",
         "properties" : {
-          "totalPages" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "totalElements" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -3071,13 +3083,13 @@
       "PageBoxLocationDto" : {
         "type" : "object",
         "properties" : {
-          "totalPages" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "totalElements" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
