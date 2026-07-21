@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-07-17.940.04ea6e8"
+    "version" : "2026-07-20.950.74312ed"
   },
   "servers" : [ {
     "url" : "https://prisoner-finance-sync-api-dev.hmpps.service.justice.gov.uk/",
@@ -1717,7 +1717,7 @@
           "action" : {
             "type" : "string",
             "description" : "The action taken on the transaction by the finance system during synchronization.",
-            "enum" : [ "CREATED", "UPDATED", "PROCESSED" ],
+            "enum" : [ "CREATED", "UPDATED", "PROCESSED", "PROCESSED_WITH_ERRORS" ],
             "example" : "CREATED"
           }
         },
