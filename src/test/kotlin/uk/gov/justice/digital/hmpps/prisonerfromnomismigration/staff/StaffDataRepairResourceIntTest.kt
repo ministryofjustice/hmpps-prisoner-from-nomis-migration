@@ -77,16 +77,16 @@ class StaffDataRepairResourceIntTest(
       @Test
       fun `will send staff details to DPS`() {
         dpsStaffServer.verify(
-          putRequestedFor(urlPathEqualTo("/prison-users/staff"))
-            .withRequestBodyJsonPath("user.staffId", equalTo("1234"))
-            .withRequestBodyJsonPath("user.emails[0].legacyEmailId", equalTo("3456"))
-            .withRequestBodyJsonPath("user.emails[0].email", equalTo("john.smith@justice.gov.uk"))
-            .withRequestBodyJsonPath("user.firstName", equalTo("JOHN"))
-            .withRequestBodyJsonPath("user.lastName", equalTo("SMITH"))
+          putRequestedFor(urlPathEqualTo("/sync/user/1234"))
+            // TODO determine if needed
+            // .withRequestBodyJsonPath("emails[0].legacyEmailId", equalTo("3456"))
+            .withRequestBodyJsonPath("emails[0].email", equalTo("john.smith@justice.gov.uk"))
+            .withRequestBodyJsonPath("firstName", equalTo("JOHN"))
+            .withRequestBodyJsonPath("lastName", equalTo("SMITH"))
             .withRequestBodyJsonPath("accounts[0].username", equalTo("JOHNSMITH_ADM"))
             .withRequestBodyJsonPath("accounts[0].activeCaseloadId", equalTo("MDI"))
-            .withRequestBodyJsonPath("roles[0].roleCode", equalTo("DPS_CODE_1"))
-            .withRequestBodyJsonPath("accessibleCaseloads[0].caseloadId", equalTo("LEI")),
+            .withRequestBodyJsonPath("accounts[0].roles[0].roleCode", equalTo("DPS_CODE_1"))
+            .withRequestBodyJsonPath("accounts[0].caseloads[0].caseloadId", equalTo("LEI")),
         )
       }
 

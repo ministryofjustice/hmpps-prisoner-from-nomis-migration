@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -23,6 +24,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.Migra
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccount
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserEmail
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserRole
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.PrisonUserSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncPrisonUserAccount
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncPrisonUserCaseload
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncPrisonUserEmail
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncPrisonUserRole
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
@@ -101,6 +107,7 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           createdBy = "JIM_BEAM2",
           modifiedTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
           modifiedBy = "FRED_BROWN2",
+          lastLoggedIn = LocalDateTime.parse("2026-03-17T12:30:00"),
         ),
       ),
       roles = listOf(
@@ -133,21 +140,144 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
 
-    // TODO Temporarily Set syncRequest to migrationRequest - update when endpoint ready
-    fun syncStaff() = migrateStaff()
+    fun syncStaff() = PrisonUserSyncRequest(
+      firstName = "John",
+      lastName = "Smith",
+      status = PrisonUserSyncRequest.Status.ACTIVE,
+      emails = listOf(
+        SyncPrisonUserEmail(
+          email = "john.smith@justice.gov.uk",
+          // TODO Determine if needed
+          // legacyEmailId = 3456,
+          createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
+          createdBy = "JIM_BEAM",
+          modifiedTimestamp = LocalDateTime.parse("2021-09-12T10:42:43"),
+          modifiedBy = "FRED_BROWN",
+        ),
+      ),
+      accounts = listOf(
+        SyncPrisonUserAccount(
+          username = "JOHNSMITH_ADM",
+          accountType = SyncPrisonUserAccount.AccountType.ADMIN,
+          accountStatus = SyncPrisonUserAccount.AccountStatus.OPEN,
+          activeCaseloadId = "MDI",
+          caseloads = listOf(
+            SyncPrisonUserCaseload(
+              caseloadId = "MDI",
+              createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
+              createdBy = "JIM_BEAM4",
+            ),
+            SyncPrisonUserCaseload(
+              caseloadId = "NWEB",
+              createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
+              createdBy = "JIM_BEAM4",
+            ),
+          ),
+          roles = listOf(
+            SyncPrisonUserRole(
+              roleCode = "DPS_CODE_1",
+              createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
+              createdBy = "JIM_BEAM3",
+            ),
+            SyncPrisonUserRole(
+              roleCode = "DPS_CODE_2",
+              createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
+              createdBy = "JIM_BEAM3",
+            ),
+          ),
+          lastLoggedIn = LocalDateTime.parse("2026-03-17T12:30:00"),
 
-    fun migrateStaffResponse(nomisStaffId: Long, dpsStaffId: UUID, username: String = "JOHNSMITH_ADM") = UserMigrationResponse(
+          createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
+          createdBy = "JIM_BEAM2",
+          modifiedTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
+          modifiedBy = "FRED_BROWN2",
+        ),
+      ),
+      createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
+      createdBy = "JIM_BEAM",
+      modifiedTimestamp = LocalDateTime.parse("2021-09-12T10:42:43"),
+      modifiedBy = "FRED_BROWN",
+    )
+
+    fun migrateStaffResponse(nomisStaffId: Long, dpsStaffId: UUID) = UserMigrationResponse(
       userId = dpsStaffId,
       staffId = nomisStaffId,
     )
 
-    fun verifyUserSyncRequest() {
-      verifyUserMigrationRequest()
+    fun verifyUserSyncRequest(staffId: Long) {
+      val request: PrisonUserSyncRequest = StaffDpsApiExtension.getRequestBody(
+        putRequestedFor(urlPathEqualTo("/sync/user/$staffId")),
+      )
+      with(request) {
+        assertThat(staffId).isEqualTo(1234)
+        assertThat(emails.size).isEqualTo(1)
+        // TODO Check if needed
+        // assertThat(emails[0].legacyEmailId).isEqualTo(3456)
+        assertThat(emails[0].email).isEqualTo("john.smith@justice.gov.uk")
+        assertThat(emails[0].createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+        assertThat(emails[0].createdBy).isEqualTo("KOFEADDY")
+        assertThat(emails[0].modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
+        assertThat(emails[0].modifiedBy).isEqualTo("KOFE_MOD")
+        assertThat(firstName).isEqualTo("JOHN")
+        assertThat(lastName).isEqualTo("SMITH")
+        assertThat(status).isEqualTo(PrisonUserSyncRequest.Status.ACTIVE)
+        assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+        assertThat(createdBy).isEqualTo("KOFEADDY")
+        assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
+        assertThat(modifiedBy).isEqualTo("KOFE_MOD")
+
+        assertThat(accounts.size).isEqualTo(1)
+        with(accounts[0]) {
+          assertThat(username).isEqualTo("JOHNSMITH_ADM")
+          assertThat(accountType).isEqualTo(SyncPrisonUserAccount.AccountType.ADMIN)
+          assertThat(accountStatus).isEqualTo(SyncPrisonUserAccount.AccountStatus.OPEN)
+          assertThat(lastLoggedIn).isEqualTo(LocalDateTime.parse("2026-03-17T12:30:00"))
+          assertThat(activeCaseloadId).isEqualTo("MDI")
+          assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+          assertThat(createdBy).isEqualTo("KOFEADDY")
+          assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
+          assertThat(modifiedBy).isEqualTo("KOFE_MOD")
+
+          assertThat(roles.size).isEqualTo(2)
+          with(roles[0]) {
+            assertThat(username).isEqualTo("JOHNSMITH_ADM")
+            assertThat(roleCode).isEqualTo("DPS_CODE_1")
+            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+            assertThat(createdBy).isEqualTo("KOFEADDY")
+          }
+          with(roles[1]) {
+            assertThat(username).isEqualTo("JOHNSMITH_ADM")
+            assertThat(roleCode).isEqualTo("DPS_CODE_2")
+            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+            assertThat(createdBy).isEqualTo("KOFEADDY")
+          }
+
+          assertThat(caseloads.size).isEqualTo(3)
+          with(caseloads[0]) {
+            assertThat(username).isEqualTo("JOHNSMITH_ADM")
+            assertThat(caseloadId).isEqualTo("LEI")
+            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+            assertThat(createdBy).isEqualTo("KOFEADDY")
+          }
+          with(caseloads[1]) {
+            assertThat(username).isEqualTo("JOHNSMITH_ADM")
+            assertThat(caseloadId).isEqualTo("MDI")
+            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+            assertThat(createdBy).isEqualTo("KOFEADDY")
+          }
+          with(caseloads[2]) {
+            assertThat(username).isEqualTo("JOHNSMITH_ADM")
+            assertThat(caseloadId).isEqualTo("NWEB")
+            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+            assertThat(createdBy).isEqualTo("KOFEADDY")
+          }
+        }
+      }
     }
 
     fun verifyUserMigrationRequest() {
       val request: UserMigrationRequest = StaffDpsApiExtension.getRequestBody(
-        putRequestedFor(urlPathEqualTo("/prison-users/staff")),
+        postRequestedFor(urlPathEqualTo("/migrate/user")),
       )
       with(request) {
         with(user) {
@@ -247,18 +377,13 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubSyncStaff(
     nomisStaffId: Long = 1234,
-    dpsStaffId: UUID = UUID.randomUUID(),
-    username: String = "JOHNSMITH_ADM",
-    response: UserMigrationResponse =
-      migrateStaffResponse(nomisStaffId, dpsStaffId, username),
   ) {
     stubFor(
-      put("/prison-users/staff")
+      put("/sync/user/$nomisStaffId")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(200)
-            .withBody(jsonMapper.writeValueAsString(response)),
+            .withStatus(200),
         ),
     )
   }
@@ -268,8 +393,8 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       delete(urlPathMatching("/prison-users/staff/$nomisStaffId"))
         .willReturn(
           aResponse()
-            .withStatus(204)
-            .withHeader("Content-Type", "application/json"),
+            .withHeader("Content-Type", "application/json")
+            .withStatus(204),
         ),
     )
   }

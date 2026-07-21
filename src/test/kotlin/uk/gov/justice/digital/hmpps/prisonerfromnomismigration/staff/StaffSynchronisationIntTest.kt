@@ -18,7 +18,7 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffDpsApiExtension.Companion.dpsStaffServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffDpsApiMockServer.Companion.verifyUserMigrationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffDpsApiMockServer.Companion.verifyUserSyncRequest
 
 class StaffSynchronisationIntTest(
   @Autowired private val nomisApiMock: StaffNomisApiMockServer,
@@ -84,8 +84,8 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will create the staff in DPS`() {
-            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
-            verifyUserMigrationRequest()
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")))
+            verifyUserSyncRequest(nomisStaffId)
           }
 
           @Test
@@ -155,8 +155,8 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will update the staff in DPS`() {
-            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
-            verifyUserMigrationRequest()
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")))
+            verifyUserSyncRequest(nomisStaffId)
           }
 
           @Test
@@ -306,8 +306,8 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will update the staff in DPS`() {
-            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
-            verifyUserMigrationRequest()
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")))
+            verifyUserSyncRequest(nomisStaffId)
           }
 
           @Test
@@ -381,8 +381,8 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will update the staff in DPS`() {
-            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
-            verifyUserMigrationRequest()
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")))
+            verifyUserSyncRequest(nomisStaffId)
           }
 
           @Test
@@ -456,8 +456,8 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will update the staff in DPS`() {
-            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
-            verifyUserMigrationRequest()
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")))
+            verifyUserSyncRequest(nomisStaffId)
           }
 
           @Test
@@ -538,8 +538,8 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will update the staff in DPS`() {
-            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
-            verifyUserMigrationRequest()
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")))
+            verifyUserSyncRequest(nomisStaffId)
           }
 
           @Test
@@ -613,8 +613,8 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will update the staff in DPS`() {
-            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
-            verifyUserMigrationRequest()
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")))
+            verifyUserSyncRequest(nomisStaffId)
           }
 
           @Test
@@ -762,8 +762,8 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will update the staff in DPS`() {
-            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
-            verifyUserMigrationRequest()
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")))
+            verifyUserSyncRequest(nomisStaffId)
           }
 
           @Test
@@ -841,8 +841,8 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will update the staff in DPS`() {
-            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
-            verifyUserMigrationRequest()
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")))
+            verifyUserSyncRequest(nomisStaffId)
           }
 
           @Test
@@ -931,8 +931,8 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will update the staff in DPS`() {
-            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
-            verifyUserMigrationRequest()
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")))
+            verifyUserSyncRequest(nomisStaffId)
           }
 
           @Test
@@ -1014,8 +1014,8 @@ class StaffSynchronisationIntTest(
 
           @Test
           fun `will update the staff in DPS`() {
-            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/prison-users/staff")))
-            verifyUserMigrationRequest()
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")))
+            verifyUserSyncRequest(nomisStaffId)
           }
 
           @Test

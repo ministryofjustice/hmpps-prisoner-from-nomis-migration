@@ -76,7 +76,7 @@ class StaffDpsApiServiceTest {
     internal fun `will pass oath2 token to sync endpoint`() = runTest {
       dpsStaffServer.stubSyncStaff()
 
-      apiService.syncStaff(syncStaff())
+      apiService.syncStaff(1234, syncStaff())
 
       dpsStaffServer.verify(
         putRequestedFor(anyUrl())
@@ -88,10 +88,10 @@ class StaffDpsApiServiceTest {
     fun `will call the sync endpoint`() = runTest {
       dpsStaffServer.stubSyncStaff()
 
-      apiService.syncStaff(syncStaff())
+      apiService.syncStaff(1234, syncStaff())
 
       dpsStaffServer.verify(
-        putRequestedFor(urlPathEqualTo("/prison-users/staff")),
+        putRequestedFor(urlPathEqualTo("/sync/user/1234")),
       )
     }
 
@@ -99,18 +99,18 @@ class StaffDpsApiServiceTest {
     internal fun `will send request data to sync endpoint`() = runTest {
       dpsStaffServer.stubSyncStaff()
 
-      apiService.syncStaff(syncStaff())
+      apiService.syncStaff(1234, syncStaff())
 
       dpsStaffServer.verify(
         putRequestedFor(anyUrl())
-          .withRequestBodyJsonPath("user.staffId", equalTo("1234"))
-          .withRequestBodyJsonPath("user.emails[0].legacyEmailId", equalTo("3456"))
-          .withRequestBodyJsonPath("user.emails[0].email", equalTo("john.smith@justice.gov.uk"))
-          .withRequestBodyJsonPath("user.firstName", equalTo("John"))
-          .withRequestBodyJsonPath("user.lastName", equalTo("Smith"))
+          // TODO check if needed
+          // .withRequestBodyJsonPath("emails[0].legacyEmailId", equalTo("3456"))
+          .withRequestBodyJsonPath("emails[0].email", equalTo("john.smith@justice.gov.uk"))
+          .withRequestBodyJsonPath("firstName", equalTo("John"))
+          .withRequestBodyJsonPath("lastName", equalTo("Smith"))
           .withRequestBodyJsonPath("accounts[0].username", equalTo("JOHNSMITH_ADM"))
-          .withRequestBodyJsonPath("roles[0].roleCode", equalTo("DPS_CODE_1"))
-          .withRequestBodyJsonPath("accessibleCaseloads[0].caseloadId", equalTo("MDI")),
+          .withRequestBodyJsonPath("accounts[0].roles[0].roleCode", equalTo("DPS_CODE_1"))
+          .withRequestBodyJsonPath("accounts[0].caseloads[0].caseloadId", equalTo("MDI")),
       )
     }
   }

@@ -7,6 +7,7 @@ import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffDpsApiMockServer.Companion.migrateStaff
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffDpsApiMockServer.Companion.syncStaff
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.PrisonUserSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationResponse
 
@@ -32,21 +33,15 @@ class DummyStaffDpsApiTest : SqsIntegrationTestBase() {
 
   @Test
   fun testSync() {
-    val body: UserMigrationRequest = syncStaff()
+    val body: PrisonUserSyncRequest = syncStaff()
 
-    val result = webTestClient.put()
-      .uri("/prison-users/staff")
+    webTestClient.put()
+      .uri("/sync/user/1234")
       .headers(setAuthorisation(roles = listOf("ROLE_PRISON_USER_STAFF__SYNC__RW")))
       .contentType(MediaType.APPLICATION_JSON)
       .bodyValue(body)
       .exchange()
       .expectStatus().isOk
-      .returnResult<UserMigrationResponse>()
-      .responseBody
-      .blockFirst()!!
-
-    assertThat(result.staffId).isEqualTo(1234)
-    assertThat(result.userId).isNotNull
   }
 
   @Test

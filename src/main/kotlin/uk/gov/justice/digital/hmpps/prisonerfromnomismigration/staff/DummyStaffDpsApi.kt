@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.PrisonUserSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationResponse
 import java.util.UUID
@@ -33,15 +34,11 @@ class DummyStaffDpsApi {
       log.info("Migrated staff ${staff.user.staffId}")
     }
 
-  @PutMapping("/prison-users/staff")
+  @PutMapping("/sync/user/{legacyStaffId}")
   @ResponseStatus(value = HttpStatus.OK)
-  suspend fun syncStaff(@RequestBody @Valid staff: UserMigrationRequest): UserMigrationResponse = UserMigrationResponse(
-    userId = UUID.randomUUID(),
-    staffId = staff.user.staffId,
-  )
-    .also {
-      log.info("Upserted staff ${staff.user.staffId}")
-    }
+  suspend fun syncStaff(@PathVariable legacyStaffId: Long, @RequestBody @Valid request: PrisonUserSyncRequest) {
+    log.info("Upserted staff $legacyStaffId; user ${request.firstName} ${request.lastName}")
+  }
 
   @DeleteMapping("/prison-users/staff/{nomisStaffId}")
   @ResponseStatus(value = HttpStatus.NO_CONTENT)
