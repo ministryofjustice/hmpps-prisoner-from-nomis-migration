@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-07-17.132.0aacfd9"
+    "version" : "2026-07-17.135.351bba1"
   },
   "servers" : [ {
     "url" : "https://prison-users-api-dev.prison.service.justice.gov.uk",
@@ -308,7 +308,7 @@
       "get" : {
         "tags" : [ "reconciliation-resource" ],
         "summary" : "Get the details of a migrated user by the legacy staff Id",
-        "description" : "Get the full view of a migrated user.. Requires role ROLE_PRISON_USERS_API__MIGRATION__RW",
+        "description" : "Get the full view of a migrated user. Requires role ROLE_PRISON_USERS_API__MIGRATION__RW",
         "operationId" : "getPrisonUserForReconciliation",
         "parameters" : [ {
           "name" : "legacyStaffId",
@@ -323,15 +323,6 @@
           },
           "example" : 123456
         } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/UserMigrationRequest"
-              }
-            }
-          }
-        },
         "responses" : {
           "200" : {
             "description" : "Returns the prison user data.",
@@ -345,6 +336,16 @@
           },
           "400" : {
             "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "User not found",
             "content" : {
               "application/json" : {
                 "schema" : {

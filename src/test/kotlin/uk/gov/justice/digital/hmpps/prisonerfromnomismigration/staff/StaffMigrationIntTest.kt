@@ -36,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffDpsApiMockServer.Companion.verifyUserMigrationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccount
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
@@ -149,6 +150,11 @@ class StaffMigrationIntTest(
             .withRequestBodyJsonPath("dpsId", dpsStaffId.toString())
             .withRequestBodyJsonPath("nomisId", 1234),
         )
+      }
+
+      @Test
+      fun `will transform and migrate staff into DPS`() {
+        verifyUserMigrationRequest()
       }
 
       @Test
@@ -274,7 +280,7 @@ class StaffMigrationIntTest(
           with(user) {
             assertThat(staffId).isEqualTo(1234)
             assertThat(emails!![0].legacyEmailId).isEqualTo(3456)
-            assertThat(emails!![0].email).isEqualTo("john.smith@justice.gov.uk")
+            assertThat(emails[0].email).isEqualTo("john.smith@justice.gov.uk")
             assertThat(firstName).isEqualTo("JOHN")
             assertThat(lastName).isEqualTo("SMITH")
             assertThat(status).isEqualTo(MigratedUser.Status.ACTIVE)

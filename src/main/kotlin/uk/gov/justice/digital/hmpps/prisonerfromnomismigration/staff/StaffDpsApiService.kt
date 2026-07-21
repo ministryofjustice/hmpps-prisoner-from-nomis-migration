@@ -6,6 +6,8 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.api.MigrationResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.api.SyncResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.PrisonUserSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationResponse
 
@@ -13,16 +15,19 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserM
 class StaffDpsApiService(
   @Qualifier("staffApiWebClient") private val webClient: WebClient,
 ) {
-  private val api = MigrationResourceApi(webClient)
+  private val migrateApi = MigrationResourceApi(webClient)
+  private val syncApi = SyncResourceApi(webClient)
 
-  suspend fun migrateStaff(userMigrationRequest: UserMigrationRequest): UserMigrationResponse = api.migrateUser(userMigrationRequest)
+  suspend fun migrateStaff(userMigrationRequest: UserMigrationRequest): UserMigrationResponse = migrateApi.migrateUser(userMigrationRequest)
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncStaff(userMigrationRequest: UserMigrationRequest): UserMigrationResponse = webClient.put()
-    .uri("/prison-users/staff")
-    .bodyValue(userMigrationRequest)
-    .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
+  suspend fun syncStaff(nomisStaffId: Long, userMigrationRequest: PrisonUserSyncRequest) {
+    webClient.put()
+      .uri("/sync/user/{nomisStaffId}", nomisStaffId)
+      .bodyValue(userMigrationRequest)
+      .retrieve()
+      .awaitBodilessEntity()
+  }
 
   suspend fun deleteStaff(nomisStaffId: Long) {
     webClient.delete()

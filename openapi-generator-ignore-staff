@@ -1,4 +1,4 @@
-**/build.gradle
+   **/build.gradle
 **/gradlew
 **/docs/
 **/gradle/
@@ -11,6 +11,7 @@
 **/api/*
 **/model/*
 !**/MigrationResourceApi.kt
+!**/SyncResourceApi.kt
 !**/ErrorResponse.kt
 !**/MigratedUser.kt
 !**/MigratedUserAccessibleCaseload.kt
@@ -18,6 +19,11 @@
 !**/MigratedUserEmail.kt
 !**/MigratedUserRole.kt
 !**/PrisonCaseload.kt
+!**/PrisonUserSyncRequest.kt
+!**/SyncPrisonUserAccount.kt
+!**/SyncPrisonUserCaseload.kt
+!**/SyncPrisonUserEmail.kt
+!**/SyncPrisonUserRole.kt
 !**/UserBasicDetails.kt
 !**/UserCaseloadDetail.kt
 !**/UserMigrationRequest.kt
