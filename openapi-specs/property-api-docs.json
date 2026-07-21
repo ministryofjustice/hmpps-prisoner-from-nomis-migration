@@ -7,7 +7,7 @@
       "name" : "Move a prisoner Team",
       "email" : "Moveaprisoner-gg@justice.gov.uk"
     },
-    "version" : "2026-07-20.166.31c0c06"
+    "version" : "2026-07-20.168.a3d37e2"
   },
   "servers" : [ {
     "url" : "/",
@@ -1484,7 +1484,7 @@
       "get" : {
         "tags" : [ "Property containers" ],
         "summary" : "Get the property containers held in a prison, paged and grouped by prisoner",
-        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO. Returns the establishment-wide property list as a page of prisoners (each with all their matching containers), so a prisoner's containers are never split across a page boundary - the page total is the number of matching prisoners. Each container is enriched with the prisoner name (prisoner-search), prison name (prison-register) and location description (locations-inside-prison-api). Optionally filtered by a free-text query (prisoner number, seal number or storage location), prisoner number, seal number, container type(s), status and storage location. With no status filter, containers that have left active storage (disposed, returned, transferred, combined) are hidden; pass a status filter, or includeRemoved=true to also surface returned/disposed containers. Set dueForTransferIn=true to additionally surface property held at another prison that is due to be transferred in to this establishment (its owner was received here). Use the standard page, size and sort query parameters for pagination.",
+        "description" : "Requires role ROLE_PRISONER_PROPERTY__RO. Returns the establishment-wide property list as a page of prisoners (each with all their matching containers), so a prisoner's containers are never split across a page boundary - the page total is the number of matching prisoners. Each container is enriched with the prisoner name (prisoner-search), prison name (prison-register) and location description (locations-inside-prison-api). Optionally filtered by a free-text query (prisoner number, seal number or storage location), prisoner number, seal number, container type(s), status and storage location. With no status filter, containers that have left active storage (disposed, returned, transferred, combined) are hidden; pass a status filter, or includeRemoved=true to also surface removed/returned/disposed containers. Set dueForTransferIn=true to additionally surface property held at another prison that is due to be transferred in to this establishment (its owner was received here). Use the standard page, size and sort query parameters for pagination.",
         "operationId" : "getByPrisonId",
         "parameters" : [ {
           "name" : "prisonId",
@@ -1561,7 +1561,7 @@
         }, {
           "name" : "includeRemoved",
           "in" : "query",
-          "description" : "Also include containers that have been returned or disposed of",
+          "description" : "Also include containers that have been removed, returned or disposed of",
           "required" : false,
           "schema" : {
             "type" : "boolean",
@@ -2864,13 +2864,13 @@
       "PagePrisonerPropertyGroupDto" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -3083,13 +3083,13 @@
       "PageBoxLocationDto" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",

@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-07-06.4078.e214bd2"
+    "version" : "2026-07-21.4197.a52d787"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -3391,11 +3391,14 @@
               "$ref" : "#/components/schemas/StaffAccountSummary"
             }
           },
-          "email" : {
-            "type" : "string"
+          "emails" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
           }
         },
-        "required" : [ "accounts", "firstName", "lastName", "status" ]
+        "required" : [ "accounts", "emails", "firstName", "lastName", "status" ]
       },
       "DlqMessage" : {
         "type" : "object",
@@ -3700,8 +3703,11 @@
           "id" : {
             "type" : "string"
           },
-          "email" : {
-            "type" : "string"
+          "emails" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/MigratedUserEmail"
+            }
           },
           "firstName" : {
             "type" : "string"
@@ -3714,7 +3720,7 @@
             "enum" : [ "ACTIVE", "INACTIVE" ]
           }
         },
-        "required" : [ "email", "firstName", "id", "lastName", "status" ]
+        "required" : [ "firstName", "id", "lastName", "status" ]
       },
       "MigratedUserAccessibleCaseload" : {
         "type" : "object",
@@ -3772,6 +3778,33 @@
           }
         },
         "required" : [ "accountStatus", "accountType", "createdBy", "createdTimestamp", "username" ]
+      },
+      "MigratedUserEmail" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "legacyEmailId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "createdTimestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createdBy" : {
+            "type" : "string"
+          },
+          "modifiedTimestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "modifiedBy" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "createdBy", "createdTimestamp", "email", "legacyEmailId" ]
       },
       "MigratedUserRole" : {
         "type" : "object",
