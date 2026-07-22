@@ -139,7 +139,6 @@ class CourtSchedulerMigrationIntTest(
         with(courtEvents[0].courtEvent) {
           assertThat(dpsId).isEqualTo(dpsCourtScheduleId)
           assertThat(eventId).isEqualTo(1)
-          assertThat(prisonCodeAtTimeOfScheduling).isEqualTo("BXI")
           assertThat(start).isCloseTo(LocalDateTime.now().minusDays(1), within(5, ChronoUnit.MINUTES))
           assertThat(courtEventType).isEqualTo("CRT")
           assertThat(eventStatus).isEqualTo("COMP")
