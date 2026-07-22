@@ -316,7 +316,6 @@ class CourtSchedulerSyncScheduleService(
 
 private fun CourtScheduleOut.toDpsRequest(courtAppearanceId: UUID?, sentencingCourtAppearanceId: String?) = SyncCourtEvent(
   courtEvent = CourtEvent(
-    prisonCodeAtTimeOfScheduling = this.prison,
     agyLocId = court,
     start = startTime,
     courtEventType = eventType,

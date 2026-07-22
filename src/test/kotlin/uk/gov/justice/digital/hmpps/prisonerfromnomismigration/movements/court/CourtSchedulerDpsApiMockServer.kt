@@ -82,7 +82,6 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
       courtEvent = CourtEvent(
         dpsId = id ?: UUID.randomUUID(),
-        prisonCodeAtTimeOfScheduling = "MDI",
         agyLocId = "LEEDMC",
         eventId = 1L,
         start = LocalDateTime.now(),

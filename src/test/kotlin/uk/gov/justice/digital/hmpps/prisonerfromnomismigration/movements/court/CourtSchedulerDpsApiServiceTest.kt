@@ -55,7 +55,7 @@ class CourtSchedulerDpsApiServiceTest {
       dpsCourtSchedulerServer.verify(
         putRequestedFor(urlPathEqualTo("/sync/court-appearances/A1234BC"))
           .withRequestBody(matchingJsonPath("user.username", equalTo("USER")))
-          .withRequestBody(matchingJsonPath("courtEvent.prisonCodeAtTimeOfScheduling", equalTo("MDI"))),
+          .withRequestBody(matchingJsonPath("courtEvent.agyLocId", equalTo("LEEDMC"))),
       )
     }
 

@@ -206,7 +206,6 @@ fun OffenderCourtMovementsResponse.toDpsRequest(
       ResyncCourtEvent(
         courtEvent = CourtEvent(
           dpsId = oldMappingIds.schedules.find { it.nomisEventId == schedule.eventId }?.dpsCourtAppearanceId,
-          prisonCodeAtTimeOfScheduling = schedule.prison,
           agyLocId = schedule.court,
           start = schedule.startTime,
           courtEventType = schedule.eventType,
