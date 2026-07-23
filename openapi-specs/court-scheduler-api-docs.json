@@ -680,7 +680,7 @@
           "start" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "courtEventType" : {
             "type" : "string"
@@ -712,7 +712,7 @@
           "occurredAt" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "user" : {
             "$ref" : "#/components/schemas/SyncUser"
@@ -769,7 +769,7 @@
           "occurredAt" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "movementReasonCode" : {
             "type" : "string"
@@ -796,7 +796,7 @@
           "occurredAt" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "user" : {
             "$ref" : "#/components/schemas/SyncUser"
@@ -813,7 +813,7 @@
           "at" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "by" : {
             "type" : "string"
@@ -1164,7 +1164,7 @@
           "occurredAt" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "domainEvents" : {
             "type" : "array",
@@ -1358,13 +1358,13 @@
           "start" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "end" : {
             "type" : "string",
             "format" : "date-time",
             "nullable" : true,
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "comments" : {
             "type" : "string",
@@ -1518,13 +1518,13 @@
           "start" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "end" : {
             "type" : "string",
             "format" : "date-time",
             "nullable" : true,
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "status" : {
             "$ref" : "#/components/schemas/AppearanceStatus"
@@ -1633,13 +1633,13 @@
           "start" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "end" : {
             "type" : "string",
             "format" : "date-time",
             "nullable" : true,
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "comments" : {
             "type" : "string",
@@ -1703,13 +1703,13 @@
           "start" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "end" : {
             "type" : "string",
             "format" : "date-time",
             "nullable" : true,
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "comments" : {
             "type" : "string",
@@ -1778,7 +1778,7 @@
           "occurredAt" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "comments" : {
             "type" : "string",
@@ -1845,13 +1845,13 @@
           "start" : {
             "type" : "string",
             "format" : "date-time",
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "end" : {
             "type" : "string",
             "format" : "date-time",
             "nullable" : true,
-            "example" : "2026-07-22T14:14:55"
+            "example" : "2026-07-23T09:17:13"
           },
           "comments" : {
             "type" : "string",
