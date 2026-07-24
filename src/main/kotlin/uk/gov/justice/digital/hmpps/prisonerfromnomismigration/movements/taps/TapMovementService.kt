@@ -5,6 +5,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.EDIT_EXTERNAL_MOVEMENTS_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -37,6 +38,7 @@ class TapMovementService(
   private val mappingApiService: TapMappingApiService,
   private val nomisApiService: TapsNomisApiService,
   private val dpsApiService: TapDpsApiService,
+  private val migrationService: TapMigrationService,
 ) : TelemetryEnabled {
   companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -44,6 +46,7 @@ class TapMovementService(
 
   suspend fun tapMovementChanged(event: ExternalMovementEvent) = when {
     event.movementType != TAP -> {}
+    event.auditModuleName == EDIT_EXTERNAL_MOVEMENTS_AUDIT_MODULE -> migrationService.resyncPrisonerTaps(event.offenderIdDisplay!!)
     event.recordInserted -> tapMovementInserted(event)
     event.recordDeleted -> tapMovementDeleted(event)
     else -> tapMovementUpdated(event)

@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
@@ -24,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsTapsServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiMockServer.Companion.migrateResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementMappingDto
@@ -1540,6 +1542,118 @@ class TapMovementIntTest(
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["movementSeq"]).isEqualTo("154")
             assertThat(it["directionCode"]).isEqualTo("OUT")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  inner class NomisAdminScreenUpdates {
+    private val prisonerNumber = "A1234BC"
+    private val dpsAuthorisationId = UUID.randomUUID()
+    private val dpsOccurrenceId = UUID.randomUUID()
+    private val dpsScheduledMovementOutId = UUID.randomUUID()
+    private val dpsScheduledMovementInId = UUID.randomUUID()
+    private val dpsUnscheduledMovementOutId = UUID.randomUUID()
+    private val dpsUnscheduledMovementInId = UUID.randomUUID()
+
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetTapPrisonerMappingIds(prisonerNumber, 12345L, 1, dpsAuthorisationId, 1, dpsOccurrenceId, 3, dpsScheduledMovementOutId, 4, dpsScheduledMovementInId, 1, dpsUnscheduledMovementOutId, 2, dpsUnscheduledMovementInId)
+        nomisApi.stubGetAllOffenderTaps(prisonerNumber)
+        dpsApi.stubResyncPrisonerTaps(
+          personIdentifier = prisonerNumber,
+          response = migrateResponse(
+            dpsAuthorisationId,
+            dpsOccurrenceId,
+            dpsScheduledMovementOutId,
+            dpsScheduledMovementInId,
+            dpsUnscheduledMovementOutId,
+            dpsUnscheduledMovementInId,
+          ),
+        )
+        mappingApi.stubCreateTapPrisonerMappings()
+
+        sendMessage(tapMovementEvent(direction = "OUT", auditModuleName = "OUMEEMOV"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will create mappings`() {
+        mappingApi.verify(
+          putRequestedFor(urlEqualTo("/mapping/taps/migrate"))
+            .withRequestBodyJsonPath("prisonerNumber", prisonerNumber),
+        )
+      }
+
+      @Test
+      fun `will call DPS for each offender`() {
+        dpsApi.verify(
+          putRequestedFor(urlEqualTo("/resync/temporary-absences/$prisonerNumber")),
+        )
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absences-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class MappingFailsAndWorksOnRetry {
+      @BeforeEach
+      fun setUp() {
+        mappingApi.stubGetTapPrisonerMappingIds(prisonerNumber, 12345L, 1, dpsAuthorisationId, 1, dpsOccurrenceId, 3, dpsScheduledMovementOutId, 4, dpsScheduledMovementInId, 1, dpsUnscheduledMovementOutId, 2, dpsUnscheduledMovementInId)
+        nomisApi.stubGetAllOffenderTaps(prisonerNumber)
+        dpsApi.stubResyncPrisonerTaps(
+          personIdentifier = prisonerNumber,
+          response = migrateResponse(
+            dpsAuthorisationId,
+            dpsOccurrenceId,
+            dpsScheduledMovementOutId,
+            dpsScheduledMovementInId,
+            dpsUnscheduledMovementOutId,
+            dpsUnscheduledMovementInId,
+          ),
+        )
+        mappingApi.stubCreateTapPrisonerMappingsFailureFollowedBySuccess()
+
+        sendMessage(tapMovementEvent(direction = "OUT", auditModuleName = "OUMEEMOV"))
+          .also { waitForAnyProcessingToComplete("temporary-absences-migration-entity-migrated") }
+      }
+
+      @Test
+      fun `will update mappings twice`() {
+        mappingApi.verify(
+          count = 2,
+          putRequestedFor(urlEqualTo("/mapping/taps/migrate"))
+            .withRequestBodyJsonPath("prisonerNumber", prisonerNumber),
+        )
+      }
+
+      @Test
+      fun `will call DPS for each offender`() {
+        dpsApi.verify(
+          putRequestedFor(urlEqualTo("/resync/temporary-absences/$prisonerNumber")),
+        )
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absences-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
           },
           isNull(),
         )
