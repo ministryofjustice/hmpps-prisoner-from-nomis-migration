@@ -1591,7 +1591,7 @@ class TapMovementIntTest(
       }
 
       @Test
-      fun `will call DPS for each offender`() {
+      fun `will call DPS to resync prisoner TAPs`() {
         dpsApi.verify(
           putRequestedFor(urlEqualTo("/resync/temporary-absences/$prisonerNumber")),
         )
