@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-07-21.4197.a52d787"
+    "version" : "2026-07-23.4237.a808e55"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -1750,6 +1750,35 @@
         }
       }
     },
+    "/reconciliation/user/{staffId}" : {
+      "get" : {
+        "tags" : [ "dummy-staff-dps-api" ],
+        "operationId" : "getDpsStaff",
+        "parameters" : [ {
+          "name" : "staffId",
+          "in" : "path",
+          "description" : "staff Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "staff Id"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonUserReconciliationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/queue-admin/get-dlq-messages/{dlqName}" : {
       "get" : {
         "tags" : [ "hmpps-reactive-queue-resource" ],
@@ -2094,70 +2123,6 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/MismatchPrisonerBalance"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/prison-users/staff/{staffId}" : {
-      "get" : {
-        "tags" : [ "dummy-staff-dps-api" ],
-        "operationId" : "getDpsStaff",
-        "parameters" : [ {
-          "name" : "staffId",
-          "in" : "path",
-          "description" : "staff Id",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "staff Id"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/DpsStaffDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/prison-users/staff/ids" : {
-      "get" : {
-        "tags" : [ "dummy-staff-dps-api" ],
-        "operationId" : "getDpsStaffIds",
-        "parameters" : [ {
-          "name" : "page",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        }, {
-          "name" : "size",
-          "in" : "query",
-          "required" : false,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "OK",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/PagedModelDpsStaffId"
                 }
               }
             }
@@ -3400,6 +3365,170 @@
         },
         "required" : [ "accounts", "emails", "firstName", "lastName", "status" ]
       },
+      "PrisonUserAccount" : {
+        "type" : "object",
+        "properties" : {
+          "username" : {
+            "type" : "string"
+          },
+          "accountType" : {
+            "type" : "string",
+            "enum" : [ "ADMIN", "GENERAL" ]
+          },
+          "accountStatus" : {
+            "type" : "string",
+            "enum" : [ "OPEN", "EXPIRED", "EXPIRED_GRACE", "LOCKED_TIMED", "LOCKED", "EXPIRED_LOCKED_TIMED", "EXPIRED_GRACE_LOCKED_TIMED", "EXPIRED_LOCKED", "EXPIRED_GRACE_LOCKED" ]
+          },
+          "caseloads" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PrisonUserCaseload"
+            }
+          },
+          "roles" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PrisonUserRole"
+            }
+          },
+          "createdTimestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createdBy" : {
+            "type" : "string"
+          },
+          "lastLoggedIn" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "activeCaseloadId" : {
+            "type" : "string"
+          },
+          "modifiedTimestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "modifiedBy" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "accountStatus", "accountType", "caseloads", "createdBy", "createdTimestamp", "roles", "username" ]
+      },
+      "PrisonUserCaseload" : {
+        "type" : "object",
+        "properties" : {
+          "caseloadId" : {
+            "type" : "string"
+          },
+          "createdTimestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createdBy" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "caseloadId", "createdBy", "createdTimestamp" ]
+      },
+      "PrisonUserEmail" : {
+        "type" : "object",
+        "properties" : {
+          "emailId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "isPrimary" : {
+            "type" : "string"
+          },
+          "createdTimestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createdBy" : {
+            "type" : "string"
+          },
+          "modifiedTimestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "modifiedBy" : {
+            "type" : "string"
+          },
+          "primary" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "createdBy", "createdTimestamp", "email", "emailId", "isPrimary" ]
+      },
+      "PrisonUserReconciliationResponse" : {
+        "type" : "object",
+        "properties" : {
+          "userId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "staffId" : {
+            "type" : "string"
+          },
+          "firstName" : {
+            "type" : "string"
+          },
+          "lastName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "ACTIVE", "INACTIVE" ]
+          },
+          "createdTimestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createdBy" : {
+            "type" : "string"
+          },
+          "emails" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PrisonUserEmail"
+            }
+          },
+          "accounts" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PrisonUserAccount"
+            }
+          },
+          "modifiedTimestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "modifiedBy" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "accounts", "createdBy", "createdTimestamp", "emails", "firstName", "lastName", "staffId", "status", "userId" ]
+      },
+      "PrisonUserRole" : {
+        "type" : "object",
+        "properties" : {
+          "roleCode" : {
+            "type" : "string"
+          },
+          "createdTimestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createdBy" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "createdBy", "createdTimestamp", "roleCode" ]
+      },
       "DlqMessage" : {
         "type" : "object",
         "properties" : {
@@ -3669,205 +3798,6 @@
           }
         },
         "required" : [ "itemsChecked", "mismatches", "pagesChecked" ]
-      },
-      "DpsStaffDetails" : {
-        "type" : "object",
-        "properties" : {
-          "user" : {
-            "$ref" : "#/components/schemas/DpsUser"
-          },
-          "accounts" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/MigratedUserAccount"
-            }
-          },
-          "roles" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/MigratedUserRole"
-            }
-          },
-          "accessibleCaseloads" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/MigratedUserAccessibleCaseload"
-            }
-          }
-        },
-        "required" : [ "accounts", "user" ]
-      },
-      "DpsUser" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "string"
-          },
-          "emails" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/MigratedUserEmail"
-            }
-          },
-          "firstName" : {
-            "type" : "string"
-          },
-          "lastName" : {
-            "type" : "string"
-          },
-          "status" : {
-            "type" : "string",
-            "enum" : [ "ACTIVE", "INACTIVE" ]
-          }
-        },
-        "required" : [ "firstName", "id", "lastName", "status" ]
-      },
-      "MigratedUserAccessibleCaseload" : {
-        "type" : "object",
-        "properties" : {
-          "username" : {
-            "type" : "string"
-          },
-          "caseloadId" : {
-            "type" : "string"
-          },
-          "createdTimestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "createdBy" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "caseloadId", "createdBy", "createdTimestamp", "username" ]
-      },
-      "MigratedUserAccount" : {
-        "type" : "object",
-        "properties" : {
-          "username" : {
-            "type" : "string"
-          },
-          "accountType" : {
-            "type" : "string",
-            "enum" : [ "ADMIN", "GENERAL" ]
-          },
-          "accountStatus" : {
-            "type" : "string",
-            "enum" : [ "OPEN", "EXPIRED", "EXPIRED_GRACE", "LOCKED_TIMED", "LOCKED", "EXPIRED_LOCKED_TIMED", "EXPIRED_GRACE_LOCKED_TIMED", "EXPIRED_LOCKED", "EXPIRED_GRACE_LOCKED" ]
-          },
-          "createdTimestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "createdBy" : {
-            "type" : "string"
-          },
-          "lastLoggedIn" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "activeCaseloadId" : {
-            "type" : "string"
-          },
-          "modifiedTimestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "modifiedBy" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "accountStatus", "accountType", "createdBy", "createdTimestamp", "username" ]
-      },
-      "MigratedUserEmail" : {
-        "type" : "object",
-        "properties" : {
-          "email" : {
-            "type" : "string"
-          },
-          "legacyEmailId" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "createdTimestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "createdBy" : {
-            "type" : "string"
-          },
-          "modifiedTimestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "modifiedBy" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "createdBy", "createdTimestamp", "email", "legacyEmailId" ]
-      },
-      "MigratedUserRole" : {
-        "type" : "object",
-        "properties" : {
-          "username" : {
-            "type" : "string"
-          },
-          "roleCode" : {
-            "type" : "string"
-          },
-          "createdTimestamp" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "createdBy" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "createdBy", "createdTimestamp", "roleCode", "username" ]
-      },
-      "DpsStaffId" : {
-        "type" : "object",
-        "properties" : {
-          "staffId" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "staffId" ]
-      },
-      "PageMetadata" : {
-        "type" : "object",
-        "properties" : {
-          "size" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "number" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "totalPages" : {
-            "type" : "integer",
-            "format" : "int64"
-          }
-        }
-      },
-      "PagedModelDpsStaffId" : {
-        "type" : "object",
-        "properties" : {
-          "content" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/DpsStaffId"
-            }
-          },
-          "page" : {
-            "$ref" : "#/components/schemas/PageMetadata"
-          }
-        }
       },
       "MismatchPrisonTransaction" : {
         "type" : "object",
