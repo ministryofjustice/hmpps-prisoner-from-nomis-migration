@@ -784,6 +784,68 @@ class PrisonerTransactionSynchronisationIntTest(
     }
   }
 
+  @Nested
+  @DisplayName("GET /sync/prisoner-transaction/payload/{transactionId}")
+  inner class SyncPrisonerTransactionDebug {
+
+    @Test
+    internal fun `must have valid token to retrieve transaction sync payload`() {
+      webTestClient.get().uri("/sync/prisoner-transaction/payload/$NOMIS_TRANSACTION_ID")
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    internal fun `must have correct role to retrieve migration payload`() {
+      webTestClient.get().uri("/sync/prisoner-transaction/payload/$NOMIS_TRANSACTION_ID")
+        .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+        .header("Content-Type", "application/json")
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    internal fun `migration payload can be accessed for debug purposes`() {
+      financeNomisApiMockServer.stubGetPrisonerTransaction(
+        bookingId = BOOKING_ID,
+        transactionId = NOMIS_TRANSACTION_ID,
+      )
+
+      val t1 = nomisTransactions().first()
+      val g1 = t1.generalLedgerTransactions.first()
+
+      webTestClient.get().uri("/sync/prisoner-transaction/payload/$NOMIS_TRANSACTION_ID")
+        .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
+        .exchange()
+        .expectStatus().isOk
+        .expectBody()
+        .jsonPath("requestId").isNotEmpty
+        .jsonPath("caseloadId").isEqualTo("SWI")
+        .jsonPath("transactionTimestamp").isEqualTo(g1.transactionTimestamp)
+        .jsonPath("createdAt").isEqualTo(t1.createdAt)
+        .jsonPath("createdBy").isEqualTo(t1.createdBy)
+        .jsonPath("createdByDisplayName").isEqualTo(t1.createdByDisplayName)
+        .jsonPath("lastModifiedAt").isEqualTo(t1.lastModifiedAt.toString())
+        .jsonPath("lastModifiedBy").isEqualTo(t1.lastModifiedBy.toString())
+        .jsonPath("lastModifiedByDisplayName").isEqualTo(t1.lastModifiedByDisplayName.toString())
+        .jsonPath("offenderTransactions[0].entrySequence").isEqualTo(t1.transactionEntrySequence.toString())
+        .jsonPath("offenderTransactions[0].offenderId").isEqualTo(OFFENDER_ID)
+        .jsonPath("offenderTransactions[0].offenderDisplayId").isEqualTo(OFFENDER_ID_DISPLAY)
+        .jsonPath("offenderTransactions[0].subAccountType").isEqualTo(t1.subAccountType.name)
+        .jsonPath("offenderTransactions[0].postingType").isEqualTo(t1.postingType.name)
+        .jsonPath("offenderTransactions[0].type").isEqualTo(t1.type)
+        .jsonPath("offenderTransactions[0].description").isEqualTo(t1.description)
+        .jsonPath("offenderTransactions[0].amount").isEqualTo("5.42")
+        .jsonPath("offenderTransactions[0].offenderBookingId").isEqualTo(t1.bookingId.toString())
+        .jsonPath("offenderTransactions[0].reference").isEqualTo(equalTo(t1.reference))
+        .jsonPath("offenderTransactions[0].generalLedgerEntries[0].entrySequence").isEqualTo(g1.generalLedgerEntrySequence.toString())
+        .jsonPath("offenderTransactions[0].generalLedgerEntries[0].code").isEqualTo(g1.accountCode)
+        .jsonPath("offenderTransactions[0].generalLedgerEntries[0].postingType").isEqualTo(g1.postingType.name)
+        .jsonPath("offenderTransactions[0].generalLedgerEntries[0].amount").isEqualTo("6.71")
+    }
+  }
+
   private fun Any.toJson(): String = jsonMapper.writeValueAsString(this)
 
   fun offenderTransactionEvent(
