@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncOffenderTransactionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
@@ -240,6 +241,8 @@ class TransactionSynchronisationService(
       )
     }
   }
+
+  suspend fun getPrisonerTransactionSyncPayload(nomisTransactionId: Long): SyncOffenderTransactionRequest = nomisApiService.getPrisonerTransactions(nomisTransactionId).toSyncOffenderTransactionRequest(UUID.randomUUID())
 }
 
 private fun OffenderTransactionDto.toTransactionEvent() = TransactionEvent(
