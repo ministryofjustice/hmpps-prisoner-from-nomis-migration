@@ -64,10 +64,12 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
     movementSeq: Int = 3,
     movementTime: LocalDateTime = yesterday,
     courtScheduleOutId: Long? = null,
+    courtCaseId: Long? = null,
     response: CourtMovementOut = courtMovementOutResponse(
       movementTime = movementTime,
       movementSeq = movementSeq,
       courtScheduleOutId = courtScheduleOutId,
+      courtCaseId = courtCaseId,
     ),
   ) {
     nomisApi.stubFor(
@@ -97,10 +99,12 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
     movementSeq: Int = 4,
     movementTime: LocalDateTime = yesterday,
     courtScheduleOutId: Long? = null,
+    courtCaseId: Long? = null,
     response: CourtMovementIn = courtMovementInResponse(
       movementSeq = movementSeq,
       movementTime = movementTime,
       courtScheduleOutId = courtScheduleOutId,
+      courtCaseId = courtCaseId,
     ),
   ) {
     nomisApi.stubFor(
@@ -220,6 +224,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       movementSeq: Int = 3,
       movementTime: LocalDateTime = now,
       courtScheduleOutId: Long? = null,
+      courtCaseId: Long? = null,
     ) = CourtMovementOut(
       bookingId = 12345,
       sequence = movementSeq,
@@ -230,6 +235,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       toCourt = "LEEDMC",
       courtScheduleOutId = courtScheduleOutId,
       userActiveCaseloadId = "MDI",
+      caseId = courtCaseId,
       audit = NomisAudit(
         createDatetime = now,
         createUsername = "PRISONER_MANAGER_API",
@@ -240,6 +246,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       movementSeq: Int = 4,
       movementTime: LocalDateTime = now,
       courtScheduleOutId: Long? = null,
+      courtCaseId: Long? = null,
     ) = CourtMovementIn(
       bookingId = 12345,
       sequence = movementSeq,
@@ -250,6 +257,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       fromCourt = "LEEDMC",
       courtScheduleOutId = courtScheduleOutId,
       userActiveCaseloadId = "MDI",
+      caseId = courtCaseId,
       audit = NomisAudit(
         createDatetime = now,
         createUsername = "PRISONER_MANAGER_API",
