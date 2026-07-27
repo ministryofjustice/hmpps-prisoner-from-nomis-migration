@@ -48,11 +48,11 @@ class CorePersonSynchronisationBeliefsService(
     if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
     } else {
-      val mapping = religionsMappingService.getReligionByNomisIdOrNull(event.offenderBeliefId)
-      if (mapping != null) {
+      val mappingExists = religionsMappingService.existsReligionMappingByNomisPrisonNumber(event.offenderIdDisplay)
+      if (mappingExists) {
         telemetryClient.trackEvent(
           "$telemetryName-ignored",
-          telemetry + ("cprId" to mapping.cprId),
+          telemetry,
         )
       } else {
         track(telemetryName, telemetry) {

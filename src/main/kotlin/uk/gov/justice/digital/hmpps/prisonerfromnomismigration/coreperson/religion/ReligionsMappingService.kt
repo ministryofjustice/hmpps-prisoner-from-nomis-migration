@@ -26,11 +26,6 @@ class ReligionsMappingService(@Qualifier("mappingApiWebClient") webClient: WebCl
     .getReligionMappingByNomisId(nomisId = nomisReligionId)
     .awaitSingle()
 
-  suspend fun getReligionByNomisIdOrNull(nomisReligionId: Long): ReligionMappingDto? = api
-    .prepare(api.getReligionMappingByNomisIdRequestConfig(nomisId = nomisReligionId))
-    .retrieve()
-    .awaitBodyOrNullWhenNotFound()
-
   suspend fun deleteReligionByNomisId(nomisReligionId: Long) {
     api.deleteReligionMappingByNomisId(nomisId = nomisReligionId).awaitSingle()
   }
@@ -43,4 +38,6 @@ class ReligionsMappingService(@Qualifier("mappingApiWebClient") webClient: WebCl
     api.replaceMappings(mappings)
       .awaitSingle()
   }
+
+  suspend fun existsReligionMappingByNomisPrisonNumber(prisonNumber: String): Boolean = api.existsReligionMappingByNomisPrisonNumber(prisonNumber).awaitSingle().exists
 }
