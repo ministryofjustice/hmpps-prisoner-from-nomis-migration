@@ -19,7 +19,7 @@ class PrisonerBalanceNomisApiService(@Qualifier("nomisApiWebClient") webClient: 
     .bodyToMono(typeReference<RestResponsePagedModel<Long>>())
     .awaitSingle()
 
-  suspend fun getPrisonerBalance(rootOffenderId: Long): PrisonerBalanceDto = api
-    .getPrisonerAccountDetails(rootOffenderId)
+  suspend fun getPrisonerBalanceForMigration(rootOffenderId: Long): PrisonerBalanceDto = api
+    .getPrisonerAccountDetailsForMigration(rootOffenderId)
     .awaitSingle()
 }
