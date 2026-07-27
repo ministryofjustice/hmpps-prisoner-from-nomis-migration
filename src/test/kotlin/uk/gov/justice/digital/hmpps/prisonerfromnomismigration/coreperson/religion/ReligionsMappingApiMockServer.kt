@@ -162,6 +162,18 @@ class ReligionsMappingApiMockServer(private val jsonMapper: JsonMapper) {
       )
     }
   }
+
+  fun stubExistsReligionMappingByNomisPrisonNumber(nomisPrisonNumber: String = "A1234BC", exists: Boolean = true) {
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/core-person-religion/religion/nomis-prison-number/$nomisPrisonNumber/exists")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(jsonMapper.writeValueAsString(mapOf("exists" to exists))),
+      ),
+    )
+  }
+
   fun stubGetReligionByNomisId(
     nomisId: Long = 123456,
     nomisPrisonNumber: String = "A1234BC",
