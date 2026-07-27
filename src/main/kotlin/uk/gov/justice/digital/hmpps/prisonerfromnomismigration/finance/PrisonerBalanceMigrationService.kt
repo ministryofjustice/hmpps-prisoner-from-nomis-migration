@@ -74,7 +74,7 @@ class PrisonerBalanceMigrationService(
     alreadyMigratedMapping?.run {
       log.info("Will not migrate the nomis root offender id={} and prison number={} since it was already mapped during migration {}", nomisRootOffenderId, dpsId, label)
     } ?: run {
-      val prisonerBalance = prisonerBalanceNomisApiService.getPrisonerBalance(nomisRootOffenderId)
+      val prisonerBalance = prisonerBalanceNomisApiService.getPrisonerBalanceForMigration(nomisRootOffenderId)
       dpsApiService.migratePrisonerBalance(prisonerBalance.prisonNumber, prisonerBalance.toMigrationDto())
       val mapping = PrisonerBalanceMappingDto(nomisRootOffenderId = nomisRootOffenderId, dpsId = prisonerBalance.prisonNumber, mappingType = MIGRATED, label = context.migrationId)
       createMappingOrOnFailureDo(context, mapping) {

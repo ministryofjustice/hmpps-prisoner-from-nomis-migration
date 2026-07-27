@@ -85,7 +85,7 @@ class PrisonerBalanceNomisApiServiceTest {
     fun `will pass oath2 token to service`() = runTest {
       mockServer.stubGetPrisonerBalance()
 
-      apiService.getPrisonerBalance(10000)
+      apiService.getPrisonerBalanceForMigration(10000)
 
       mockServer.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -96,7 +96,7 @@ class PrisonerBalanceNomisApiServiceTest {
     fun `will pass NOMIS root offender id to service`() = runTest {
       mockServer.stubGetPrisonerBalance()
 
-      apiService.getPrisonerBalance(10000)
+      apiService.getPrisonerBalanceForMigration(10000)
 
       mockServer.verify(
         getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/10000/balance")),
@@ -107,7 +107,7 @@ class PrisonerBalanceNomisApiServiceTest {
     fun `will return the prisoner balance details`() = runTest {
       mockServer.stubGetPrisonerBalance(rootOffenderId = 10000, prisonNumber = "A0001BC")
 
-      val prisonerBalance = apiService.getPrisonerBalance(10000)
+      val prisonerBalance = apiService.getPrisonerBalanceForMigration(10000)
 
       assertThat(prisonerBalance.rootOffenderId).isEqualTo(10000)
       assertThat(prisonerBalance.prisonNumber).isEqualTo("A0001BC")
