@@ -74,7 +74,7 @@ class CorePersonSynchronisationBeliefsService(
       val allBeliefs = corePersonNomisApiService.getOffenderReligions(event.offenderIdDisplay)
       val currentBelief = allBeliefs.first()
       val currentBeliefMapping = religionsMappingService.getReligionByNomisIdOrNull(currentBelief.beliefId)
-      if (currentBeliefMapping != null) {Ï
+      if (currentBeliefMapping != null) {
         // This event can only be a simple update of the comments field.
         track("$TELEMETRY_PREFIX-updated", telemetry) {
           religionsMappingService.getReligionByNomisId(nomisReligionId = event.offenderBeliefId)
