@@ -205,7 +205,11 @@ fun OffenderCourtMovementsResponse.toDpsRequest(
     booking.courtSchedules.map { schedule ->
       ResyncCourtEvent(
         courtEvent = CourtEvent(
-          dpsId = oldMappingIds.schedules.find { it.nomisEventId == schedule.eventId }?.dpsCourtAppearanceId,
+          dpsId = if (schedule.courtCaseId == null) {
+            oldMappingIds.schedules.find { it.nomisEventId == schedule.eventId }?.dpsCourtAppearanceId
+          } else {
+            null
+          },
           agyLocId = schedule.court,
           start = schedule.startTime,
           courtEventType = schedule.eventType,
@@ -225,26 +229,28 @@ fun OffenderCourtMovementsResponse.toDpsRequest(
         created = AtAndBy(schedule.audit.createDatetime, schedule.audit.createUsername.toDpsUser()),
         modified = schedule.audit.modifyDatetime?.let { AtAndBy(it, schedule.audit.modifyUserId!!.toDpsUser()) },
         movements = listOfNotNull(
-          schedule.courtMovementOut?.toDpsRequest(oldMappingIds, booking.bookingId, schedule.eventId),
-          schedule.courtMovementIn?.toDpsRequest(oldMappingIds, booking.bookingId, schedule.eventId),
+          schedule.courtMovementOut?.toDpsRequest(oldMappingIds, sentencingMappings, booking.bookingId, schedule.eventId, schedule.courtCaseId != null),
+          schedule.courtMovementIn?.toDpsRequest(oldMappingIds, sentencingMappings, booking.bookingId, schedule.eventId, schedule.courtCaseId != null),
         ),
       )
     }
   },
   unscheduledMovements = bookings.flatMap { booking ->
     booking.unscheduledCourtMovementOuts.map { movementOut ->
-      movementOut.toDpsRequest(oldMappingIds, booking.bookingId, null)
+      movementOut.toDpsRequest(oldMappingIds, sentencingMappings, booking.bookingId, null)
     } +
       booking.unscheduledCourtMovementIns.map { movementIn ->
-        movementIn.toDpsRequest(oldMappingIds, booking.bookingId, null)
+        movementIn.toDpsRequest(oldMappingIds, sentencingMappings, booking.bookingId, null)
       }
   },
 )
 
 private fun BookingCourtMovementOut.toDpsRequest(
   oldMappingIds: CourtSchedulerPrisonerMappingIdsDto,
+  sentencingMappings: List<CourtAppearanceMappingDto>,
   bookingId: Long,
   eventId: Long?,
+  hasCourtCase: Boolean = false,
 ): ResyncCourtEventMovement = ResyncCourtEventMovement(
   movement = CourtEventMovement(
     dpsId = oldMappingIds.movements.find { it.nomisBookingId == bookingId && it.nomisMovementSeq == sequence }?.dpsCourtMovementId,
@@ -253,7 +259,16 @@ private fun BookingCourtMovementOut.toDpsRequest(
     directionCode = "OUT",
     fromAgencyId = fromPrison,
     toAgencyId = toCourt ?: MISSING_COURT,
-    dpsCourtAppearanceScheduleId = oldMappingIds.schedules.find { it.nomisEventId == eventId }?.dpsCourtAppearanceId,
+    dpsCourtAppearanceScheduleId = if (!hasCourtCase) {
+      oldMappingIds.schedules.find { it.nomisEventId == eventId }?.dpsCourtAppearanceId
+    } else {
+      null
+    },
+    dpsCourtAppearanceExternalReference = if (hasCourtCase) {
+      sentencingMappings.find { it.nomisCourtAppearanceId == eventId }?.dpsCourtAppearanceId?.let { "$EXTERNAL_REF_PREFIX$it" }
+    } else {
+      null
+    },
     offenderBookId = bookingId,
     movementSeq = sequence,
     commentText = commentText,
@@ -264,8 +279,10 @@ private fun BookingCourtMovementOut.toDpsRequest(
 
 private fun BookingCourtMovementIn.toDpsRequest(
   oldMappingIds: CourtSchedulerPrisonerMappingIdsDto,
+  sentencingMappings: List<CourtAppearanceMappingDto>,
   bookingId: Long,
   eventId: Long?,
+  hasCourtCase: Boolean = false,
 ): ResyncCourtEventMovement = ResyncCourtEventMovement(
   movement = CourtEventMovement(
     dpsId = oldMappingIds.movements.find { it.nomisBookingId == bookingId && it.nomisMovementSeq == sequence }?.dpsCourtMovementId,
@@ -274,7 +291,16 @@ private fun BookingCourtMovementIn.toDpsRequest(
     directionCode = "IN",
     fromAgencyId = fromCourt ?: MISSING_COURT,
     toAgencyId = toPrison,
-    dpsCourtAppearanceScheduleId = oldMappingIds.schedules.find { it.nomisEventId == eventId }?.dpsCourtAppearanceId,
+    dpsCourtAppearanceScheduleId = if (!hasCourtCase) {
+      oldMappingIds.schedules.find { it.nomisEventId == eventId }?.dpsCourtAppearanceId
+    } else {
+      null
+    },
+    dpsCourtAppearanceExternalReference = if (hasCourtCase) {
+      sentencingMappings.find { it.nomisCourtAppearanceId == eventId }?.dpsCourtAppearanceId?.let { "$EXTERNAL_REF_PREFIX$it" }
+    } else {
+      null
+    },
     offenderBookId = bookingId,
     movementSeq = sequence,
     commentText = commentText,

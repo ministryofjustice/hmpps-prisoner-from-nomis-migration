@@ -130,7 +130,8 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubGetOffenderCourtMovements(
     offenderNo: String = "A1234BC",
-    response: OffenderCourtMovementsResponse = offenderCourtMovementsResponse(),
+    courtCaseId: Long? = null,
+    response: OffenderCourtMovementsResponse = offenderCourtMovementsResponse(courtCaseId = courtCaseId),
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/movements/$offenderNo/court")).willReturn(
@@ -268,7 +269,8 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       bookingId: Long = 12345L,
       activeBooking: Boolean = true,
       latestBooking: Boolean = true,
-      courtSchedules: List<BookingCourtScheduleOut> = listOf(bookingCourtSchedule()),
+      courtCaseId: Long? = null,
+      courtSchedules: List<BookingCourtScheduleOut> = listOf(bookingCourtSchedule(courtCaseId = courtCaseId)),
       unscheduledCourtMovementOuts: List<BookingCourtMovementOut> = listOf(bookingCourtMovementOut(seq = 1)),
       unscheduledCourtMovementIns: List<BookingCourtMovementIn> = listOf(bookingCourtMovementIn(seq = 2)),
     ): OffenderCourtMovementsResponse = OffenderCourtMovementsResponse(
@@ -288,6 +290,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       eventId: Long = 1,
       movementOutSeq: Int? = 3,
       movementInSeq: Int? = 4,
+      courtCaseId: Long? = null,
     ) = BookingCourtScheduleOut(
       eventId = eventId,
       eventDate = yesterday.toLocalDate(),
@@ -302,7 +305,7 @@ class CourtSchedulerNomisApiMockServer(private val jsonMapper: JsonMapper) {
       courtMovementOut = movementOutSeq?.let { bookingCourtMovementOut(seq = movementOutSeq) },
       courtMovementIn = movementInSeq?.let { bookingCourtMovementIn(seq = movementInSeq) },
       comment = "Some schedule comment",
-      courtCaseId = 87878L,
+      courtCaseId = courtCaseId,
     )
 
     fun bookingCourtMovementOut(seq: Int) = BookingCourtMovementOut(

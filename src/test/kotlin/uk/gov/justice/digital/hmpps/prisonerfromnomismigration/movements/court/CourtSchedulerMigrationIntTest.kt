@@ -80,14 +80,14 @@ class CourtSchedulerMigrationIntTest(
   @AfterAll
   fun tearDownTelemetryClient() = reset(telemetryClient)
 
-  private fun stubMigrationDependencies(entities: Int = 2) {
+  private fun stubMigrationDependencies(entities: Int = 2, courtCaseId: Long? = null) {
     NomisApiExtension.nomisApi.stubGetPrisonerIds(totalElements = entities.toLong(), pageSize = 10, firstOffenderNo = "A0001KT")
     mappingApi.stubCreateCourtSchedulerPrisonerMappings()
     (1..entities)
       .map { index -> "A%04dKT".format(index) }
       .forEach { prisonerNumber ->
-        mappingApi.stubGetCourtSchedulerPrisonerMappingIds(prisonerNumber, 12345L, 1, dpsCourtScheduleId, 3, dpsScheduledMovementOutId, 4, dpsScheduledMovementInId, 1, dpsUnscheduledMovementOutId, 2, dpsUnscheduledMovementInId)
-        nomisApi.stubGetOffenderCourtMovements(prisonerNumber)
+        mappingApi.stubGetCourtSchedulerPrisonerMappingIds(prisonerNumber, 12345L, 1, dpsCourtScheduleId.takeIf { courtCaseId == null }, 3, dpsScheduledMovementOutId, 4, dpsScheduledMovementInId, 1, dpsUnscheduledMovementOutId, 2, dpsUnscheduledMovementInId)
+        nomisApi.stubGetOffenderCourtMovements(prisonerNumber, courtCaseId = courtCaseId)
         sentencingMappingApi.stubGetAllCourtAppearanceByNomisIds(
           mappings = listOf(CourtAppearanceMappingDto(1, dpsSentencingCourtAppearanceId.toString(), "any", CourtAppearanceMappingDto.MappingType.MIGRATED)),
         )
@@ -144,7 +144,7 @@ class CourtSchedulerMigrationIntTest(
           assertThat(eventStatus).isEqualTo("COMP")
           assertThat(commentText).isEqualTo("Some schedule comment")
           assertThat(currentTerm).isTrue
-          assertThat(externalReferenceUrn).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
+          assertThat(externalReferenceUrn).isNull()
         }
         with(courtEvents[0].created) {
           assertThat(by).isEqualTo("SYS")
@@ -155,7 +155,7 @@ class CourtSchedulerMigrationIntTest(
     }
 
     @Test
-    fun `should populate DPS court movement`() {
+    fun `should populate DPS court movement OUT`() {
       CourtSchedulerDpsApiMockServer.getRequestBody<ResyncCourtEvents>(
         putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")),
       ).apply {
@@ -168,12 +168,164 @@ class CourtSchedulerMigrationIntTest(
           assertThat(fromAgencyId).isEqualTo("BXI")
           assertThat(toAgencyId).isEqualTo("LEEDMC")
           assertThat(commentText).isEqualTo("Some movement out comment")
+          assertThat(dpsCourtScheduleId).isEqualTo(dpsCourtScheduleId)
+          assertThat(dpsCourtAppearanceExternalReference).isNull()
         }
         with(courtEvents[0].movements[0].created) {
           assertThat(by).isEqualTo("SYS")
           assertThat(at).isCloseTo(LocalDateTime.now().minusDays(1), within(5, ChronoUnit.MINUTES))
         }
         assertThat(courtEvents[0].movements[0].modified).isNull()
+      }
+    }
+
+    @Test
+    fun `should populate DPS court movement IN`() {
+      CourtSchedulerDpsApiMockServer.getRequestBody<ResyncCourtEvents>(
+        putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")),
+      ).apply {
+        with(courtEvents[0].movements[1].movement) {
+          assertThat(dpsId).isEqualTo(dpsScheduledMovementInId)
+          assertThat(offenderBookId).isEqualTo(12345)
+          assertThat(movementSeq).isEqualTo(4)
+          assertThat(dpsCourtScheduleId).isEqualTo(dpsCourtScheduleId)
+          assertThat(dpsCourtAppearanceExternalReference).isNull()
+        }
+      }
+    }
+
+    @Test
+    fun `should populate unscheduled DPS court movement`() {
+      CourtSchedulerDpsApiMockServer.getRequestBody<ResyncCourtEvents>(
+        putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")),
+      ).apply {
+        with(unscheduledMovements[0].movement) {
+          assertThat(dpsId).isEqualTo(dpsUnscheduledMovementOutId)
+          assertThat(offenderBookId).isEqualTo(12345)
+          assertThat(movementSeq).isEqualTo(1)
+          assertThat(dpsCourtAppearanceScheduleId).isNull()
+          assertThat(dpsCourtAppearanceExternalReference).isNull()
+        }
+      }
+    }
+
+    @Test
+    fun `should send all movements`() {
+      CourtSchedulerDpsApiMockServer.getRequestBody<ResyncCourtEvents>(
+        putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")),
+      ).apply {
+        assertThat(courtEvents[0].movements.size).isEqualTo(2)
+        assertThat(courtEvents[0].movements[0].movement.movementSeq).isEqualTo(3)
+        assertThat(courtEvents[0].movements[1].movement.movementSeq).isEqualTo(4)
+        assertThat(unscheduledMovements.size).isEqualTo(2)
+        assertThat(unscheduledMovements[0].movement.movementSeq).isEqualTo(1)
+        assertThat(unscheduledMovements[1].movement.movementSeq).isEqualTo(2)
+      }
+    }
+
+    @Test
+    fun `should update mappings`() {
+      CourtSchedulerMappingApiMockServer.getRequestBody<CourtSchedulerPrisonerMappingsDto>(
+        putRequestedFor(urlPathEqualTo("/mapping/court-scheduler/migrate")),
+      ).apply {
+        assertThat(offenderNo).isEqualTo("A0001KT")
+        with(bookings[0]) {
+          assertThat(bookingId).isEqualTo(12345)
+          with(courtSchedules[0]) {
+            assertThat(nomisEventId).isEqualTo(1)
+            assertThat(dpsCourtAppearanceId).isEqualTo(dpsCourtScheduleId)
+            assertThat(movements[0].nomisMovementSeq).isEqualTo(3)
+            assertThat(movements[0].dpsCourtMovementId).isEqualTo(dpsScheduledMovementOutId)
+            assertThat(movements[1].nomisMovementSeq).isEqualTo(4)
+            assertThat(movements[1].dpsCourtMovementId).isEqualTo(dpsScheduledMovementInId)
+          }
+          assertThat(unscheduledMovements[0].nomisMovementSeq).isEqualTo(1)
+          assertThat(unscheduledMovements[0].dpsCourtMovementId).isEqualTo(dpsUnscheduledMovementOutId)
+          assertThat(unscheduledMovements[1].nomisMovementSeq).isEqualTo(2)
+          assertThat(unscheduledMovements[1].dpsCourtMovementId).isEqualTo(dpsUnscheduledMovementInId)
+        }
+      }
+    }
+
+    @Test
+    fun `will publish telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("court-scheduler-migration-entity-migrated"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class MigrateEntityLinkedToCourtCase {
+    @BeforeAll
+    fun setUp() = runTest {
+      setupMigrationTest()
+
+      stubMigrationDependencies(entities = 1, courtCaseId = 1314L)
+      migrationId = performMigration()
+    }
+
+    @Test
+    fun `should populate DPS court appearance with court sentencing external reference`() {
+      CourtSchedulerDpsApiMockServer.getRequestBody<ResyncCourtEvents>(
+        putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")),
+      ).apply {
+        with(courtEvents[0].courtEvent) {
+          assertThat(dpsId).isNull()
+          assertThat(eventId).isEqualTo(1)
+          assertThat(externalReferenceUrn).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
+        }
+      }
+    }
+
+    @Test
+    fun `should populate DPS court movement with court sentencing external reference`() {
+      CourtSchedulerDpsApiMockServer.getRequestBody<ResyncCourtEvents>(
+        putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")),
+      ).apply {
+        with(courtEvents[0].movements[0].movement) {
+          assertThat(dpsId).isEqualTo(dpsScheduledMovementOutId)
+          assertThat(offenderBookId).isEqualTo(12345)
+          assertThat(movementSeq).isEqualTo(3)
+          assertThat(dpsCourtAppearanceScheduleId).isNull()
+          assertThat(dpsCourtAppearanceExternalReference).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
+        }
+      }
+    }
+
+    @Test
+    fun `should populate DPS court movement IN`() {
+      CourtSchedulerDpsApiMockServer.getRequestBody<ResyncCourtEvents>(
+        putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")),
+      ).apply {
+        with(courtEvents[0].movements[1].movement) {
+          assertThat(dpsId).isEqualTo(dpsScheduledMovementInId)
+          assertThat(offenderBookId).isEqualTo(12345)
+          assertThat(movementSeq).isEqualTo(4)
+          assertThat(dpsCourtAppearanceScheduleId).isNull()
+          assertThat(dpsCourtAppearanceExternalReference).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
+        }
+      }
+    }
+
+    @Test
+    fun `should populate unscheduled DPS court movement with court sentencing external reference`() {
+      CourtSchedulerDpsApiMockServer.getRequestBody<ResyncCourtEvents>(
+        putRequestedFor(urlPathEqualTo("/resync/court-appearances/A0001KT")),
+      ).apply {
+        with(unscheduledMovements[0].movement) {
+          assertThat(dpsId).isEqualTo(dpsUnscheduledMovementOutId)
+          assertThat(offenderBookId).isEqualTo(12345)
+          assertThat(movementSeq).isEqualTo(1)
+          assertThat(dpsCourtAppearanceScheduleId).isNull()
+          assertThat(dpsCourtAppearanceExternalReference).isNull()
+        }
       }
     }
 
@@ -583,7 +735,7 @@ class CourtSchedulerMigrationIntTest(
       @BeforeEach
       fun setUp() = runTest {
         mappingApi.stubGetCourtSchedulerPrisonerMappingIds(prisonerNumber, 12345L, 1, dpsCourtScheduleId, 3, dpsScheduledMovementOutId, 4, dpsScheduledMovementInId, 1, dpsUnscheduledMovementOutId, 2, dpsUnscheduledMovementInId)
-        nomisApi.stubGetOffenderCourtMovements(prisonerNumber)
+        nomisApi.stubGetOffenderCourtMovements(prisonerNumber, courtCaseId = 1314L)
         // The NOMIS response has a court case but there is no court sentencing mapping
         sentencingMappingApi.stubGetAllCourtAppearanceByNomisIds(mappings = listOf())
       }
