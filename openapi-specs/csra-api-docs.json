@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-07-20.337.841557e"
+    "version" : "2026-07-27.340.3a0170a"
   },
   "servers" : [ {
     "url" : "/",
@@ -19,6 +19,9 @@
   "tags" : [ {
     "name" : "CSRA Assessment",
     "description" : "Creates and completes new-model initial CSRA assessments for prisoners"
+  }, {
+    "name" : "Active agencies",
+    "description" : "Controls which prisons have the CSRA service switched on in DPS"
   }, {
     "name" : "CSRA Review",
     "description" : "Returns CSRA reviews for prisoners"
@@ -270,6 +273,78 @@
           },
           "404" : {
             "description" : "No such assessment for this prisoner",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/active-agencies/{agencyId}" : {
+      "put" : {
+        "tags" : [ "Active agencies" ],
+        "summary" : "Switch the CSRA service on or off for an agency",
+        "description" : "Switches the CSRA service on or off in DPS for a prison. Idempotent. Requires role PRISONER_CSRA__ADMIN.",
+        "operationId" : "setActiveAgency",
+        "parameters" : [ {
+          "name" : "agencyId",
+          "in" : "path",
+          "description" : "The agency (prison) id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The agency (prison) id",
+            "example" : "MDI"
+          },
+          "example" : "MDI"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SetActiveAgencyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "The agency's new state",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyStatus"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Missing required role. Requires the PRISONER_CSRA__ADMIN role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1234,6 +1309,92 @@
           }
         }
       }
+    },
+    "/active-agencies" : {
+      "get" : {
+        "tags" : [ "Active agencies" ],
+        "summary" : "List the agencies the CSRA service is switched on for",
+        "description" : "Returns the ids of the prisons using CSRA in DPS. The same list is published unauthenticated on /info as activeAgencies. Requires role PRISONER_CSRA__ADMIN.",
+        "operationId" : "getActiveAgencies",
+        "responses" : {
+          "200" : {
+            "description" : "The active agency ids",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "type" : "string"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Missing required role. Requires the PRISONER_CSRA__ADMIN role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/active-agencies/all" : {
+      "get" : {
+        "tags" : [ "Active agencies" ],
+        "summary" : "List every prison with whether the CSRA service is switched on",
+        "description" : "Returns every operational prison, plus any already switched on, for the rollout admin screen. Requires role PRISONER_CSRA__ADMIN.",
+        "operationId" : "getAllAgencies",
+        "responses" : {
+          "200" : {
+            "description" : "The prisons and their current state",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AgencyStatus"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Missing required role. Requires the PRISONER_CSRA__ADMIN role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components" : {
@@ -1518,6 +1679,40 @@
           }
         },
         "required" : [ "prisonerNumber", "provisional", "riskTo", "status", "vulnerabilities" ]
+      },
+      "SetActiveAgencyRequest" : {
+        "type" : "object",
+        "description" : "Switch the CSRA service on or off in DPS for an agency (prison)",
+        "properties" : {
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether the CSRA service should be switched on for this agency",
+            "example" : true
+          }
+        },
+        "required" : [ "active" ]
+      },
+      "AgencyStatus" : {
+        "type" : "object",
+        "description" : "A prison (agency) and whether the CSRA service is switched on for it in DPS",
+        "properties" : {
+          "agencyId" : {
+            "type" : "string",
+            "description" : "Agency (prison) id",
+            "example" : "MDI"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "Agency (prison) name",
+            "example" : "Moorland (HMP & YOI)"
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether the CSRA service is switched on for this agency in DPS",
+            "example" : true
+          }
+        },
+        "required" : [ "active", "agencyId", "name" ]
       },
       "CsraAssessmentType" : {
         "type" : "string",
