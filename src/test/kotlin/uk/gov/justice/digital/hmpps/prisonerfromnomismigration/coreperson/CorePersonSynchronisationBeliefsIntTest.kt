@@ -356,12 +356,10 @@ class CorePersonSynchronisationBeliefsIntTest(
 
         @Test
         fun `should sync belief to CPR`() = runTest {
-          verifyNomis(offenderNo = "A1234AA", 2)
+          verifyNomis(offenderNo = "A1234AA")
           verifyMappingCheck(nomisId = 2)
           cprApi.verify(
             putRequestedFor(urlPathEqualTo("/person/prison/A1234AA/religion/123456"))
-              .withRequestBodyJsonPath("nomisReligionId", 2)
-              .withRequestBodyJsonPath("current", false)
               .withRequestBodyJsonPath("comments", "No longer believes in Zoroastrianism")
               .withRequestBodyJsonPath("modifyUserId", "KOFE_MOD")
               .withRequestBodyJsonPath("modifyDateTime", "2017-08-01T10:55:00"),

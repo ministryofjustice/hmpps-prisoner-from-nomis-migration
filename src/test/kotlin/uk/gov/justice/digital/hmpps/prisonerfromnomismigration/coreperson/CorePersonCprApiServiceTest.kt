@@ -108,10 +108,7 @@ class CorePersonCprApiServiceTest {
 
       cprCorePersonServer.verify(
         putRequestedFor(anyUrl())
-          .withRequestBodyJsonPath("nomisReligionId", equalTo("1"))
-          .withRequestBodyJsonPath("current", equalTo("true"))
           .withRequestBodyJsonPath("comments", equalTo("This is a comment"))
-          .withRequestBodyJsonPath("endDate", equalTo("2022-07-19"))
           .withRequestBodyJsonPath("modifyDateTime", equalTo("2020-11-01T04:05:00"))
           .withRequestBodyJsonPath("modifyUserId", equalTo("FRED_ADM")),
       )
@@ -153,10 +150,7 @@ class CorePersonCprApiServiceTest {
   )
 
   fun prisonReligionUpdateRequest() = PrisonReligionUpdateRequest(
-    nomisReligionId = "1",
-    current = true,
     comments = "This is a comment",
-    endDate = LocalDate.parse("2022-07-19"),
     modifyDateTime = LocalDateTime.parse("2020-11-01T04:05:00"),
     modifyUserId = "FRED_ADM",
   )
