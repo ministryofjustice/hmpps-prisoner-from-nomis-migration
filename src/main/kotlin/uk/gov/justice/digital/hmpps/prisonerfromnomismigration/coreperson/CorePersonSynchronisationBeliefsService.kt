@@ -79,7 +79,7 @@ class CorePersonSynchronisationBeliefsService(
           religionsMappingService.getReligionByNomisId(nomisReligionId = event.offenderBeliefId)
             .also { mapping ->
               telemetry["cprId"] = mapping.cprId
-              event.toPrisonReligionUpdateRequest().apply {
+              allBeliefs.toPrisonReligionUpdateRequest(event.offenderBeliefId).apply {
                 corePersonCprApiService.syncUpdateOffenderBelief(
                   offenderIdDisplay,
                   mapping.cprId,
@@ -164,18 +164,13 @@ class CorePersonSynchronisationBeliefsService(
     modifyUserId = audit.modifyUserId,
   )
 
-  suspend fun OffenderBeliefEvent.toPrisonReligionUpdateRequest(): PrisonReligionUpdateRequest = corePersonNomisApiService.getOffenderReligions(offenderIdDisplay)
-    .mapIndexed { i, r -> Pair(i == 0, r) }
-    .first { it.second.beliefId == offenderBeliefId }
+  suspend fun List<OffenderBelief>.toPrisonReligionUpdateRequest(offenderBeliefId: Long): PrisonReligionUpdateRequest = first { it.beliefId == offenderBeliefId }
     .let {
       PrisonReligionUpdateRequest(
-        nomisReligionId = it.second.beliefId.toString(),
-        current = it.first,
-        comments = it.second.comments,
-        endDate = it.second.endDate,
+        comments = it.comments,
         // for an update we must have the modified by fields set
-        modifyDateTime = it.second.audit.modifyDatetime!!,
-        modifyUserId = it.second.audit.modifyUserId!!,
+        modifyDateTime = it.audit.modifyDatetime!!,
+        modifyUserId = it.audit.modifyUserId!!,
       )
     }
 
