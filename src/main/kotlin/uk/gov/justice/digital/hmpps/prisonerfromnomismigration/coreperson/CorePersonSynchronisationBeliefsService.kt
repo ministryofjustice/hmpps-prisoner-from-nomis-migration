@@ -23,7 +23,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
-import kotlin.collections.plus
 
 private const val TELEMETRY_PREFIX = "coreperson-beliefs-synchronisation"
 typealias Telemetry = MutableMap<String, Any>
